@@ -168,3 +168,18 @@ pub fn mode_switch(id: &'static str, label: &'static str, icon_name: IconName, p
 
 /// 窗口切换按钮的宽度。
 pub const MODE_SWITCH_W: f32 = 92.;
+
+/// 把提示词填进当前会话的输入框并回到对话页(不自动发送)。画布、浏览器等页面的「让 Claude …」入口共用。
+pub fn ask_claude(prompt: &str, window: &mut Window, cx: &mut App) {
+    if let Some(wb) = cx.try_global::<crate::WorkbenchRef>().and_then(|r| r.0.upgrade()) {
+        wb.update(cx, |w, cx| {
+            w.set_page(crate::workbench::Page::Chat, cx);
+            if let Some((_, composer)) = w.chat_parts() {
+                composer.update(cx, |c, cx| {
+                    c.set_text(prompt, window, cx);
+                    c.focus(window, cx);
+                });
+            }
+        });
+    }
+}

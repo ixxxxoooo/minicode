@@ -95,18 +95,6 @@ impl CanvasPage {
         }).collect()
     }
 
-    /// 让 Claude 修改:把提示词填进当前会话输入框并回到对话页(不自动发送)。
-    fn ask_claude(prompt: String, window: &mut Window, cx: &mut App) {
-        if let Some(wb) = cx.try_global::<crate::WorkbenchRef>().and_then(|r| r.0.upgrade()) {
-            wb.update(cx, |w, cx| {
-                w.set_page(crate::workbench::Page::Chat, cx);
-                if let Some((_, composer)) = w.chat_parts() {
-                    composer.update(cx, |c, cx| { c.set_text(&prompt, window, cx); c.focus(window, cx); });
-                }
-            });
-        }
-    }
-
     /// 右侧栏:大纲 / 版本 / 让 Claude 修改(对标设计稿「全幅文档 + 大纲 / 版本」)。
     fn aside(&self, doc: &CanvasDocument, cx: &mut Context<Self>) -> impl IntoElement {
         let t = cx.theme().clone();
@@ -138,7 +126,7 @@ impl CanvasPage {
                 let prompt = format!("请修改画布「{title}」:{a}");
                 h_flex().id(SharedString::from(format!("cv-ask-{i}"))).h(px(26.)).px_1().gap_1p5().items_center().rounded(px(5.)).cursor_pointer()
                     .hover(|d| d.bg(t.list_hover))
-                    .on_click(move |_, window, cx| Self::ask_claude(prompt.clone(), window, cx))
+                    .on_click(move |_, window, cx| crate::ui::ask_claude(&prompt, window, cx))
                     .child(icon(IconName::ArrowRight, 11., t.primary))
                     .child(div().text_size(px(12.5)).child(a.to_string()))
             })))
