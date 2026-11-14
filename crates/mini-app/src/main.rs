@@ -8,6 +8,7 @@
 #![recursion_limit = "512"]
 
 mod ansi;
+mod welcome;
 mod reopen;
 mod shimmer_text;
 mod ide_diff;

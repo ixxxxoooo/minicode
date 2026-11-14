@@ -156,6 +156,8 @@ pub struct Workbench {
     pub ui_state_path: PathBuf,
     /// 侧栏是否显示已归档会话
     pub show_archived: bool,
+    /// 侧栏的状态筛选(全部 / 运行中 / 待处理)
+    pub sess_filter: crate::sidebar_filter::SessFilter,
     /// 后台跑完、用户还没看过的会话
     pub unread: HashSet<String>,
     /// 各目录的 Git 快照(分支、worktree),后台刷新后供分支菜单渲染
@@ -276,12 +278,12 @@ impl Workbench {
         // 源代码管理视图:全工作台唯一,Agent 右栏与 IDE 共用
         let scm = cx.new(|cx| crate::scm::ScmView::new(String::new(), window, cx));
         let panel = cx.new(|cx| RightPanel::new(panel_root, demo, Some(editor.clone()), scm.clone(), window, cx));
-        // 右面板标签行末尾放「面板开关 + IDE 入口」(没有整条标题栏后它们跟着右栏走)
+        // 右面板标签行末尾只放「放大 / 还原」;面板开关与 IDE 入口在对话区顶部行右端
         {
             let weak = cx.entity().downgrade();
             panel.update(cx, |p, _| {
                 p.trailing = Some(std::rc::Rc::new(move |_, cx| {
-                    weak.update(cx, |wb, cx| wb.right_buttons(cx).into_any_element()).unwrap_or_else(|_| div().into_any_element())
+                    weak.update(cx, |wb, cx| wb.right_zoom_button(cx).into_any_element()).unwrap_or_else(|_| div().into_any_element())
                 }));
             });
         }
@@ -333,6 +335,7 @@ impl Workbench {
             update_reminded: false,
             ui_state_path,
             show_archived: false,
+            sess_filter: Default::default(),
             unread: HashSet::new(),
             git: HashMap::new(),
             view_order: Vec::new(),
@@ -551,6 +554,10 @@ impl Workbench {
         if let Ok(src) = std::env::var("MINI_DIAGRAM") {
             let src = if src == "demo" { "flowchart LR\n  A[需求] --> B(设计) --> C{评审}\n  C -->|通过| D[开发] --> E[测试] --> F((上线))\n  C -.->|驳回| A".to_string() } else { src };
             cx.defer_in(window, move |_, window, cx| crate::diagram_viewer::open_mermaid("Mermaid · 流程图", &src, window, cx));
+        }
+        // 调试用:MINI_NEWSESSION=1 启动后新建一个空会话(看欢迎页)
+        if std::env::var("MINI_NEWSESSION").is_ok_and(|v| v == "1") {
+            cx.defer_in(window, |this, window, cx| this.new_session(this.target_project(), window, cx));
         }
         if std::env::var("MINI_IDE").is_ok_and(|v| v == "1") {
             // 独立窗口要新开窗口,推迟到构造完成后
@@ -1795,7 +1802,12 @@ impl Workbench {
         if let Some((model, _)) = self.chat_parts() {
             crate::wizard_input::ensure(&model, window, cx);
         }
-        chat_panel_with_footer(self.chat_parts(), crate::branch_bar::footer(self, cx), true, cx)
+        let footer = crate::branch_bar::footer(self, cx);
+        // 新会话(还没有任何内容):居中问候 + 起手式 + 最近会话
+        if let Some((model, composer)) = self.chat_parts() && model.read(cx).state.items.is_empty() {
+            return crate::welcome::render(self, composer, footer, cx);
+        }
+        chat_panel_with_footer(self.chat_parts(), footer, true, cx)
     }
 
 }

@@ -2,7 +2,27 @@
 //!
 //! @author ixxxxoooo
 
-use mini_core::{Project, SessionMeta};
+use mini_core::{Project, SessionBadge, SessionMeta};
+
+/// 侧栏的状态筛选:全部 / 只看运行中 / 只看待处理(等待你的许可)。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SessFilter {
+    #[default]
+    All,
+    Running,
+    Waiting,
+}
+
+impl SessFilter {
+    /// 某个状态的会话在当前筛选下是否保留。
+    pub fn keep(self, badge: SessionBadge) -> bool {
+        match self {
+            Self::All => true,
+            Self::Running => badge == SessionBadge::Running,
+            Self::Waiting => badge == SessionBadge::Waiting,
+        }
+    }
+}
 
 /// 忽略大小写、忽略首尾空白的包含匹配;关键字为空时匹配一切。
 ///
@@ -36,6 +56,15 @@ mod tests {
 
     fn meta(id: &str, title: &str, archived: bool) -> SessionMeta {
         SessionMeta { id: id.into(), title: title.into(), updated: String::new(), pinned: false, archived, badge: SessionBadge::Idle }
+    }
+
+    #[test]
+    fn 状态筛选只留命中状态() {
+        assert!(SessFilter::All.keep(SessionBadge::Idle));
+        assert!(SessFilter::Running.keep(SessionBadge::Running));
+        assert!(!SessFilter::Running.keep(SessionBadge::Waiting));
+        assert!(SessFilter::Waiting.keep(SessionBadge::Waiting));
+        assert!(!SessFilter::Waiting.keep(SessionBadge::Idle));
     }
 
     fn project() -> Project {

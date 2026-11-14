@@ -91,7 +91,7 @@ impl RightPanel {
         let tabs = self.open.iter().copied().map(|rt| {
             let on = rt == cur;
             let group = SharedString::from(format!("rt-g-{}", rt.key()));
-            h_flex().id(SharedString::from(format!("rt-{}", rt.key()))).group(group.clone()).h(px(28.)).pl_2().pr_1().gap_1().items_center().rounded(px(6.)).cursor_pointer()
+            h_flex().id(SharedString::from(format!("rt-{}", rt.key()))).group(group.clone()).relative().h(px(26.)).px_2().gap_1().items_center().rounded(px(6.)).cursor_pointer()
                 .text_size(px(12.)).flex_none()
                 .text_color(if on { t.foreground } else { t.muted_foreground })
                 .when(on, |d| d.bg(t.muted))
@@ -105,8 +105,10 @@ impl RightPanel {
                 .child(icon(rt.icon(), 12., if on { t.foreground } else { t.muted_foreground }))
                 .child(rt.label())
                 .when(rt == RightTab::Changes && changes > 0, |d| d.child(pill(changes.to_string(), t.primary_foreground, t.primary)))
+                // 关闭按钮悬停才出现,浮在标签右端、不占宽度(标签条更紧凑)
                 .child(
-                    div().id(SharedString::from(format!("rt-x-{}", rt.key()))).size(px(16.)).flex().items_center().justify_center().rounded(px(4.))
+                    div().id(SharedString::from(format!("rt-x-{}", rt.key()))).absolute().top(px(4.)).right(px(2.)).size(px(18.)).flex().items_center().justify_center().rounded(px(4.))
+                        .bg(if on { t.muted } else { t.sidebar })
                         .invisible().group_hover(group, |d| d.visible())
                         .hover(|d| d.bg(t.border))
                         .on_mouse_down(MouseButton::Left, cx.listener(move |this, _, _, cx| { cx.stop_propagation(); this.close_tab(rt, cx); }))

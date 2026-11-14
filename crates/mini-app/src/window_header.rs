@@ -99,7 +99,7 @@ impl Workbench {
         header_row("hd-left-row").pl(px(TRAFFIC_PAD)).pr_2().child(left_buttons(self, cx))
     }
 
-    /// 对话区顶部行:侧栏收起时承接红绿灯与按钮,中间是当前会话标题,右面板收起时右端放面板开关与 IDE 入口。
+    /// 对话区顶部行:侧栏收起时承接红绿灯与按钮,左边是当前会话标题 + 项目小标签,右端固定是 IDE 入口与右面板开关。
     pub fn center_header(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let t = cx.theme().clone();
         let left_hidden = !self.left_visible();
@@ -107,22 +107,39 @@ impl Workbench {
             Page::Chat => self.active_model().map(|m| m.read(cx).state.title.clone()),
             // 设置是整窗页面,不显示顶部行(见 settings::render)
             Page::Settings => None,
-            Page::Canvas => Some("Canvas".to_string()),
+            Page::Canvas => Some("画布".to_string()),
             Page::Automation => Some("自动化".to_string()),
             Page::Browser => Some("浏览器".to_string()),
             Page::Customize => Some("自定义".to_string()),
         };
-        let right_hidden = !self.right_visible();
-        header_row("hd-center-row").pl(px(if left_hidden { TRAFFIC_PAD } else { 12. })).pr_2()
+        // 项目名小标签:只在聊天页显示,说明这个会话属于哪个项目
+        let project = (self.page == Page::Chat).then(|| self.active_project_path()).flatten()
+            .and_then(|p| std::path::Path::new(&p).file_name().map(|n| n.to_string_lossy().to_string()));
+        header_row("hd-center-row").pl(px(if left_hidden { TRAFFIC_PAD } else { 14. })).pr_2().gap_2()
             .when(left_hidden, |d| d.child(left_buttons(self, cx)))
             .when(self.page != Page::Chat, |d| d.child(no_drag(Button::new("hd-back").small().ghost().icon(IconName::ArrowLeft).tooltip("返回会话")
                 .on_click(cx.listener(|this, _, _, cx| this.set_page(Page::Chat, cx))))))
+            // 标题:不再套底色胶囊,直接是加粗文字 + 项目小标签
             .when_some(title.filter(|s| !s.is_empty()), |d, title| d.child(
-                h_flex().h(px(28.)).px_3().items_center().rounded(px(8.)).bg(t.muted).text_size(px(13.)).max_w(px(360.)).overflow_hidden()
-                    .child(div().truncate().child(title)),
+                div().min_w_0().flex_shrink(1.).max_w(px(420.)).truncate().text_size(px(13.)).font_weight(FontWeight::SEMIBOLD).child(title),
+            ))
+            .when_some(project, |d, name| d.child(
+                h_flex().flex_none().h(px(18.)).px_1p5().items_center().rounded(px(4.)).bg(t.muted).text_size(px(11.)).text_color(t.muted_foreground)
+                    .child(name),
             ))
             .child(div().flex_1().h_full())
-            .when(right_hidden, |d| d.child(self.right_buttons(cx)))
+            .child(self.right_buttons(cx))
+    }
+
+    /// 右栏放大 / 还原按钮:只在右栏展开时放在它自己的标签行末尾。
+    pub fn right_zoom_button(&self, _cx: &mut Context<Self>) -> impl IntoElement {
+        let zoomed = self.right_zoom && self.right_visible();
+        no_drag(
+            Button::new("hd-right-zoom").xsmall().ghost()
+                .icon(if zoomed { IconName::Minimize2 } else { IconName::Maximize2 })
+                .tooltip(if zoomed { "还原右侧面板" } else { "放大右侧面板" })
+                .on_click(_cx.listener(|this, _, _, cx| { this.right_zoom = !this.right_zoom; cx.notify(); })),
+        )
     }
 
     /// 右端按钮:右面板开关 + IDE 入口。右面板展开时放在它自己的标签行末尾。
@@ -131,17 +148,10 @@ impl Workbench {
     /// 参数:`cx` 视图上下文。返回:按钮组。
     pub fn right_buttons(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let ide_icon = if self.settings.fused_ide { IconName::Code } else { IconName::ExternalLink };
-        let zoomed = self.right_zoom && self.right_visible();
         h_flex().gap_1().items_center().flex_none()
-            .when(self.right_visible(), |d| d.child(no_drag(
-                Button::new("hd-right-zoom").small().ghost()
-                    .icon(if zoomed { IconName::Minimize2 } else { IconName::Maximize2 })
-                    .tooltip(if zoomed { "还原右侧面板" } else { "放大右侧面板" })
-                    .on_click(cx.listener(|this, _, _, cx| { this.right_zoom = !this.right_zoom; cx.notify(); })),
-            )))
-            .child(no_drag(Button::new("hd-right").small().ghost().icon(IconName::PanelRight).tooltip("右侧面板(⌥⌘B)")
-                .on_click(cx.listener(|this, _, _, cx| { this.right_open = !this.right_open; this.right_zoom = false; cx.notify(); }))))
             .child(no_drag(mode_switch("hd-ide", "IDE", ide_icon, false).tooltip("切换到 IDE(⇧⌘E)")
                 .on_click(cx.listener(|this, _, window, cx| this.toggle_ide(window, cx)))))
+            .child(no_drag(Button::new("hd-right").small().ghost().icon(IconName::PanelRight).tooltip("右侧面板(⌥⌘B)")
+                .on_click(cx.listener(|this, _, _, cx| { this.right_open = !this.right_open; this.right_zoom = false; cx.notify(); }))))
     }
 }
