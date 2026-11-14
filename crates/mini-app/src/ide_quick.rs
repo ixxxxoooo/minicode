@@ -70,7 +70,11 @@ impl IdeWindow {
         cmd("切换到 Agent", "⇧⌘E", IconName::MessageSquare, PaletteAction::ToggleIde);
         cmd("显示 / 隐藏侧栏", "⌘B", IconName::PanelLeft, PaletteAction::ToggleLeft);
         cmd("显示 / 隐藏对话栏", "⌥⌘B", IconName::PanelRight, PaletteAction::ToggleRight);
-        let palette = cx.new(|cx| Palette::new(items, window, cx));
+        let palette = cx.new(|cx| {
+            let mut p = Palette::new(items, window, cx);
+            p.set_root(&root);
+            p
+        });
         self.attach_quick(&palette, window, cx);
         self.quick = Some(palette);
         cx.notify();

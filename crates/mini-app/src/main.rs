@@ -147,6 +147,7 @@ mod window_header;
 mod ide_window;
 mod layout_rules;
 mod palette;
+mod palette_preview;
 mod palette_search;
 mod project_actions;
 mod project_add;

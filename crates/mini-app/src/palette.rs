@@ -111,6 +111,10 @@ pub struct Palette {
     theme_mode: Option<ThemeChoice>,
     /// 「转到符号」模式:没有分段栏与分组标题,无查询时按文件顺序列出全部符号
     symbols: bool,
+    /// 预览栏里文件开头的缓存:(路径, 内容)
+    head_cache: Option<(String, Option<Vec<String>>)>,
+    /// 项目根:文件条目的相对路径据此补成绝对路径再读预览
+    root: String,
     _sub: Subscription,
 }
 
@@ -130,7 +134,7 @@ impl Palette {
         });
         input.update(cx, |i, cx| i.focus(window, cx));
         let shown = filter_items(&items, "", 50, Segment::All);
-        Self { input, items, shown, segment: Segment::All, sel: 0, query: String::new(), scroll: ScrollHandle::new(), theme_mode: None, symbols: false, _sub: sub }
+        Self { input, items, shown, segment: Segment::All, sel: 0, query: String::new(), scroll: ScrollHandle::new(), theme_mode: None, symbols: false, head_cache: None, root: String::new(), _sub: sub }
     }
 
     /// 「转到符号」面板(⇧⌘O):`items` 是当前文件的符号(`Group::Symbol`),按文件顺序列出,输入后模糊筛选。
@@ -237,6 +241,11 @@ impl Palette {
         }
     }
 
+    /// 设置项目根(用于文件预览)。
+    pub fn set_root(&mut self, root: &str) {
+        self.root = root.to_string();
+    }
+
     fn move_sel(&mut self, delta: isize, cx: &mut Context<Self>) {
         if self.shown.is_empty() {
             return;
@@ -250,9 +259,18 @@ impl Palette {
 }
 
 impl Render for Palette {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let t = cx.theme().clone();
         let this = cx.entity();
+        // 预览栏:主题列表与「转到符号」不需要;窗口太窄时也收起
+        let preview = !self.theme_mode.is_some() && !self.symbols && window.viewport_size().width > px(820.);
+        let selected = self.shown.get(self.sel).cloned();
+        if preview && let Some(it) = selected.as_ref().filter(|i| matches!(i.group, Group::File | Group::Recent)) {
+            if self.head_cache.as_ref().map(|(p, _)| p.as_str()) != Some(it.subtitle.as_str()) {
+                self.head_cache = Some((it.subtitle.clone(), crate::palette_preview::file_head(&crate::palette_preview::resolve(&self.root, &it.subtitle))));
+            }
+        }
+        let head: Option<Vec<String>> = self.head_cache.as_ref().filter(|(p, _)| selected.as_ref().is_some_and(|i| &i.subtitle == p)).and_then(|(_, h)| h.clone());
         let theme_mode = self.theme_mode.is_some();
         // 无查询时按分组显示小标题(命令 / 会话 / 最近文件…),有查询时按得分排序,右侧标签说明来源
         let headers = !theme_mode && !self.symbols && self.query.trim().is_empty();
@@ -261,7 +279,7 @@ impl Render for Palette {
             .bg(t.background.opacity(0.35))
             .child(div().absolute().inset_0().id("palette-backdrop").on_click(cx.listener(|this, _, _, cx| this.close(cx))))
             .child(
-                v_flex().relative().occlude().w(px(620.)).max_h(px(520.)).rounded(px(14.)).border_1().border_color(t.border).bg(t.popover).shadow_lg().overflow_hidden()
+                v_flex().relative().occlude().w(px(if preview { 860. } else { 620. })).max_h(px(520.)).rounded(px(14.)).border_1().border_color(t.border).bg(t.popover).shadow_lg().overflow_hidden()
                     .capture_action(cx.listener(|this, _: &MoveUp, _, cx| this.move_sel(-1, cx)))
                     .capture_action(cx.listener(|this, _: &MoveDown, _, cx| this.move_sel(1, cx)))
                     .capture_action(cx.listener(|this, _: &gpui_kit::component::input::Escape, _, cx| this.close(cx)))
@@ -283,8 +301,9 @@ impl Render for Palette {
                             })),
                         )
                     })
+                    .child(h_flex().flex_1().min_h_0().when(preview, |d| d.h(px(380.)))
                     .child(
-                        v_flex().id("palette-list").flex_1().min_h_0().overflow_y_scroll().track_scroll(&self.scroll).p_1()
+                        v_flex().id("palette-list").flex_1().min_w_0().h_full().overflow_y_scroll().track_scroll(&self.scroll).p_1()
                             .when(self.shown.is_empty(), |d| d.child(div().p_4().text_size(px(13.)).text_color(t.muted_foreground).child("没有匹配的结果")))
                             .children(self.shown.iter().enumerate().map(|(i, item)| {
                                 let this = this.clone();
@@ -310,6 +329,8 @@ impl Render for Palette {
                                             .when(!headers && !theme_mode && !self.symbols, |d| d.child(div().text_size(px(11.)).text_color(t.muted_foreground).child(item.group.label()))),
                                     )
                             })),
+                    )
+                    .when(preview, |d| d.child(div().w(px(300.)).h_full().flex_none().border_l_1().border_color(t.border).bg(t.sidebar).child(crate::palette_preview::render(selected.as_ref(), head.as_deref(), cx))))
                     )
                     .child(
                         h_flex().h(px(26.)).px_3().gap_3().items_center().border_t_1().border_color(t.border).text_size(px(11.)).text_color(t.muted_foreground)

@@ -688,7 +688,12 @@ impl Workbench {
             return;
         }
         let items = self.palette_items(cx);
-        let palette = cx.new(|cx| Palette::new(items, window, cx));
+        let root = self.active_project_path().unwrap_or_default();
+        let palette = cx.new(|cx| {
+            let mut p = Palette::new(items, window, cx);
+            p.set_root(&root);
+            p
+        });
         self._palette_sub = Some(cx.subscribe_in(&palette, window, |this, _, ev: &PaletteEvent, window, cx| match ev {
             PaletteEvent::Close => this.toggle_palette(window, cx),
             PaletteEvent::PreviewTheme(c) => {
