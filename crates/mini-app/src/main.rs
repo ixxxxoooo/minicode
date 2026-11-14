@@ -9,6 +9,7 @@
 
 mod ansi;
 mod welcome;
+mod ide_overview;
 mod reopen;
 mod shimmer_text;
 mod ide_diff;

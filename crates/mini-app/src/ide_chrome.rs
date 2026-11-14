@@ -7,7 +7,7 @@ use crate::ui::icon;
 use gpui_kit::assets::IconName;
 use gpui_kit::component::button::{Button, ButtonVariants};
 use gpui_kit::component::menu::{ContextMenuExt as _, DropdownMenu as _, PopupMenu, PopupMenuItem};
-use gpui_kit::component::{ActiveTheme, Selectable as _, Sizable, h_flex, v_flex};
+use gpui_kit::component::{ActiveTheme, Selectable as _, Sizable, h_flex};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 use std::path::{Path, PathBuf};
@@ -306,21 +306,4 @@ pub fn breadcrumbs(path: &Path, root: &str, saved: bool, note: Option<String>, b
                 .tooltip("从磁盘重新载入(丢弃未保存修改)")
                 .on_click(cx.listener(|this, _, window, cx| this.reload(window, cx))),
         )
-}
-
-/// 没有打开文件时的欢迎页:常用快捷键。
-pub fn welcome(cx: &App) -> impl IntoElement {
-    let t = cx.theme();
-    let hints = [("快速打开文件", "⌘P"), ("命令面板", "⇧⌘P"), ("在项目中搜索", "⇧⌘F"), ("在文件中查找", "⌘F"), ("转到符号", "⇧⌘O"), ("显示 / 隐藏终端", "⌃`"), ("引用选中内容到对话", "⌘L"), ("显示 / 隐藏侧栏 / 对话栏", "⌘B / ⌥⌘B"), ("切换到 Agent", "⇧⌘E")];
-    v_flex()
-        .size_full()
-        .overflow_hidden()
-        .items_center()
-        .justify_center()
-        .gap_4()
-        .child(icon(IconName::Code, 40., t.muted_foreground))
-        // 嵌在 Agent 右栏时很窄:宽度随容器收缩(最宽 280),不再固定撑出去
-        .child(v_flex().gap_1().w_full().max_w(px(280.)).px_3().children(hints.into_iter().map(|(label, key)| {
-            h_flex().gap_2().text_size(px(12.)).text_color(t.muted_foreground).child(div().flex_1().min_w_0().truncate().child(label)).child(div().flex_none().child(key))
-        })))
 }

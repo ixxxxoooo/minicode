@@ -4,7 +4,7 @@
 //! @author ixxxxoooo
 
 use crate::file_tree::language_for;
-use crate::ide_chrome::{TabItem, breadcrumbs, tab_bar, welcome};
+use crate::ide_chrome::{TabItem, breadcrumbs, tab_bar};
 use crate::ide_tabs::TabModel;
 use crate::ui::empty_state;
 use gpui_kit::assets::IconName;
@@ -637,7 +637,7 @@ impl IdeView {
             if let Some(note) = self.note.clone() {
                 return root.child(empty_state(IconName::Code, "无法打开", &note, cx)).into_any_element();
             }
-            return root.child(welcome(cx)).into_any_element();
+            return root.child(crate::ide_overview::render(self, cx)).into_any_element();
         };
         // 切换主题 / 语法高亮开关后,当前文档的迷你地图配色要跟着重建
         let want = (cx.theme().highlight_theme.clone(), crate::prefs(cx).editor.syntax_highlight);
