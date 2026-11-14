@@ -88,6 +88,39 @@ pub fn to_ts(t: NaiveDateTime) -> i64 {
     Local.from_local_datetime(&t).earliest().map(|d| d.timestamp()).unwrap_or_else(|| t.and_utc().timestamp())
 }
 
+/// 周历里某一天的一次触发。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DaySlot {
+    /// 当天固定时刻
+    At { hour: u32, minute: u32 },
+    /// 全天按间隔重复(不逐次列出)
+    Every { minutes: u32 },
+}
+
+impl Schedule {
+    /// 在一周里第 `weekday` 天(0 = 周一)的触发;当天不触发返回 `None`。
+    pub fn slot_on(&self, weekday: u32) -> Option<DaySlot> {
+        match *self {
+            Schedule::Interval { minutes } => Some(DaySlot::Every { minutes }),
+            Schedule::Daily { hour, minute } => Some(DaySlot::At { hour, minute }),
+            Schedule::Weekly { weekday: w, hour, minute } => (w == weekday).then_some(DaySlot::At { hour, minute }),
+        }
+    }
+}
+
+/// 包含 `ts` 的那一周的七天 `(月, 日)`,周一在前;第二项是 `ts` 在这一周里的序号(0 = 周一)。
+pub fn week_of(ts: i64) -> ([(u32, u32); 7], u32) {
+    let d = to_naive(ts).date();
+    let ix = d.weekday().num_days_from_monday();
+    let monday = d - Duration::days(ix as i64);
+    let mut out = [(0, 0); 7];
+    for (i, o) in out.iter_mut().enumerate() {
+        let day = monday + Duration::days(i as i64);
+        *o = (day.month(), day.day());
+    }
+    (out, ix)
+}
+
 /// 当前 Unix 秒。
 pub fn now_ts() -> i64 {
     Local::now().timestamp()
@@ -126,6 +159,23 @@ mod tests {
         assert_eq!(thu.next_after(naive(2026, 10, 22, 8, 0)), naive(2026, 10, 22, 9, 0));
         let mon = Schedule::Weekly { weekday: 0, hour: 9, minute: 0 };
         assert_eq!(mon.next_after(naive(2026, 10, 22, 8, 0)), naive(2026, 10, 26, 9, 0));
+    }
+
+    #[test]
+    fn 周历触发与周范围() {
+        assert_eq!(Schedule::Daily { hour: 9, minute: 0 }.slot_on(3), Some(DaySlot::At { hour: 9, minute: 0 }));
+        let w = Schedule::Weekly { weekday: 0, hour: 10, minute: 30 };
+        assert_eq!(w.slot_on(0), Some(DaySlot::At { hour: 10, minute: 30 }));
+        assert_eq!(w.slot_on(1), None);
+        assert_eq!(Schedule::Interval { minutes: 60 }.slot_on(6), Some(DaySlot::Every { minutes: 60 }));
+        // 2026-10-22 是周四:这一周是 10-19 ~ 10-25
+        let (days, ix) = week_of(to_ts(naive(2026, 10, 22, 12, 0)));
+        assert_eq!(ix, 3);
+        assert_eq!(days[0], (10, 19));
+        assert_eq!(days[6], (10, 25));
+        // 跨月:2026-11-01 是周日,这一周从 10-26 开始
+        let (days, ix) = week_of(to_ts(naive(2026, 11, 1, 8, 0)));
+        assert_eq!((ix, days[0], days[6]), (6, (10, 26), (11, 1)));
     }
 
     #[test]

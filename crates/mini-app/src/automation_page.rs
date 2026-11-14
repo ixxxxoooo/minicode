@@ -1,6 +1,6 @@
 //! 自动化页:按计划在项目里无人值守地运行一段提示词。
 //!
-//! 左侧是自动化列表(带停用开关与下次运行时间),右侧是编辑表单与运行记录。
+//! 主区是本周周历 + 自动化卡片(带停用开关与下次运行时间),点开某条后右侧抽屉里是编辑表单与最近运行。
 //! 真实模式下,页面常驻一个 30 秒一次的调度节拍,到期的自动化会调用 `claude -p` 执行;
 //! 演示模式只写入示意性的运行记录,不会启动任何进程。
 
@@ -259,35 +259,97 @@ impl AutomationPage {
 
     // ---------- 渲染 ----------
 
-    fn sidebar(&self, cx: &mut Context<Self>) -> impl IntoElement {
+    /// 关闭右侧编辑抽屉。
+    fn close_drawer(&mut self, cx: &mut Context<Self>) {
+        self.selected = None;
+        self.draft = None;
+        self.runs.clear();
+        self.message = None;
+        cx.notify();
+    }
+
+    /// 第 `i` 条自动化在周历与卡片里的识别色。
+    fn tint(&self, i: usize, cx: &App) -> Hsla {
+        let t = cx.theme();
+        [t.primary, t.info, t.success, t.warning, t.chart_4][i % 5]
+    }
+
+    /// 本周周历:七列,今天高亮,每天列出当天触发的自动化(点击打开编辑抽屉)。
+    fn calendar(&self, cx: &mut Context<Self>) -> AnyElement {
         let t = cx.theme().clone();
-        v_flex().w(px(280.)).h_full().flex_none().border_r_1().border_color(t.border).bg(t.sidebar)
-            .child(
-                h_flex().h(px(36.)).px_3().items_center().text_size(px(12.)).text_color(t.muted_foreground)
-                    .child(div().flex_1().child("自动化"))
-                    .child(Button::new("auto-new").small().ghost().icon(IconName::Plus).on_click(cx.listener(|this, _, window, cx| this.new_draft(window, cx)))),
-            )
-            .child(v_flex().id("auto-list").flex_1().min_h_0().overflow_y_scroll().px_2().gap_0p5().children(self.items.iter().map(|a| {
-                let on = self.selected.as_deref() == Some(a.id.as_str());
-                let (id, id2) = (a.id.clone(), a.id.clone());
-                let running = self.running.contains(&a.id);
-                let next = match (a.enabled, a.next_run_ts()) {
-                    (true, Some(ts)) => format!("下次 {}", format_ts(ts)),
-                    _ => "已停用".to_string(),
-                };
-                h_flex().id(SharedString::from(format!("au-{}", a.id))).gap_2().px_2().py_1p5().rounded(px(6.)).cursor_pointer().items_center()
-                    .when(on, |d| d.bg(t.list_active))
-                    .hover(|d| d.bg(t.list_hover))
-                    .on_click(cx.listener(move |this, _, window, cx| this.select(&id, window, cx)))
-                    .child(
-                        v_flex().flex_1().min_w_0().gap_0p5()
-                            .child(h_flex().gap_1p5().items_center()
-                                .child(div().min_w_0().text_size(px(12.5)).truncate().child(a.name.clone()))
-                                .when(running, |d| d.child(pill("运行中", t.primary_foreground, t.primary))))
-                            .child(caption(format!("{} · {next}", a.schedule.describe()), cx)),
-                    )
-                    .child(Switch::new(SharedString::from(format!("au-sw-{}", a.id))).checked(a.enabled).on_click(cx.listener(move |this, checked: &bool, _, cx| this.set_enabled(&id2, *checked, cx))))
+        let (days, today) = week_of(now_ts());
+        let names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+        let range = format!("{}/{} – {}/{}", days[0].0, days[0].1, days[6].0, days[6].1);
+        v_flex().w_full().rounded(px(10.)).border_1().border_color(t.border).overflow_hidden()
+            .child(h_flex().h(px(30.)).px_3().gap_2().items_center().border_b_1().border_color(t.border)
+                .child(icon(IconName::Calendar, 13., t.muted_foreground))
+                .child(div().text_size(px(12.5)).font_weight(FontWeight::MEDIUM).child("本周"))
+                .child(caption(range, cx)))
+            .child(h_flex().w_full().items_stretch().children((0..7u32).map(|d| {
+                let is_today = d == today;
+                let (m, day) = days[d as usize];
+                let mut slots: Vec<(u32, usize, &Automation, DaySlot)> = self.items.iter().enumerate()
+                    .filter_map(|(i, a)| a.schedule.slot_on(d).map(|s| (match s { DaySlot::At { hour, minute } => hour * 60 + minute, DaySlot::Every { .. } => 24 * 60 }, i, a, s)))
+                    .collect();
+                slots.sort_by_key(|x| x.0);
+                v_flex().flex_1().min_w_0().min_h(px(112.)).p_1p5().gap_1()
+                    .when(d > 0, |c| c.border_l_1().border_color(t.border))
+                    .when(is_today, |c| c.bg(t.primary.opacity(0.05)))
+                    .child(h_flex().gap_1().items_center()
+                        .child(div().text_size(px(11.)).text_color(if is_today { t.primary } else { t.muted_foreground }).child(names[d as usize]))
+                        .child(div().text_size(px(11.)).font_weight(FontWeight::MEDIUM).text_color(if is_today { t.primary } else { t.foreground }).child(format!("{m}/{day}"))))
+                    .children(slots.into_iter().map(|(_, i, a, slot)| {
+                        let color = self.tint(i, cx);
+                        let id = a.id.clone();
+                        let on = self.selected.as_deref() == Some(a.id.as_str());
+                        let label = match slot {
+                            DaySlot::At { hour, minute } => format!("{hour:02}:{minute:02}"),
+                            DaySlot::Every { minutes } if minutes % 60 == 0 => format!("每{}时", minutes / 60),
+                            DaySlot::Every { minutes } => format!("每{minutes}分"),
+                        };
+                        v_flex().id(SharedString::from(format!("au-cal-{d}-{}", a.id))).w_full().px_1p5().py_0p5().rounded(px(5.)).cursor_pointer()
+                            .border_l_2().border_color(color).bg(color.opacity(if on { 0.28 } else { 0.12 }))
+                            .when(!a.enabled, |c| c.opacity(0.45))
+                            .on_click(cx.listener(move |this, _, window, cx| this.select(&id, window, cx)))
+                            .child(div().font_family(MONO).text_size(px(10.5)).text_color(color).child(label))
+                            .child(div().text_size(px(11.)).truncate().child(a.name.clone()))
+                    }))
             })))
+            .into_any_element()
+    }
+
+    /// 自动化卡片列表:名称 / 计划 / 下次运行 / 上次运行,带停用开关与「立即运行」。
+    fn cards(&self, cx: &mut Context<Self>) -> AnyElement {
+        let t = cx.theme().clone();
+        v_flex().w_full().gap_1p5().children(self.items.iter().enumerate().map(|(i, a)| {
+            let on = self.selected.as_deref() == Some(a.id.as_str());
+            let (id, id2, id3) = (a.id.clone(), a.id.clone(), a.id.clone());
+            let running = self.running.contains(&a.id);
+            let color = self.tint(i, cx);
+            let next = match (a.enabled, a.next_run_ts()) {
+                (true, Some(ts)) => format!("下次 {}", format_ts(ts)),
+                _ => "已停用".to_string(),
+            };
+            let last = a.last_run.map(|ts| format!("上次 {}", format_ts(ts))).unwrap_or_else(|| "还没运行过".to_string());
+            let project = std::path::Path::new(&a.project_path).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+            h_flex().id(SharedString::from(format!("au-{}", a.id))).w_full().gap_2().px_3().py_2().rounded(px(8.)).border_1().items_center().cursor_pointer()
+                .border_color(if on { t.primary.opacity(0.6) } else { t.border })
+                .when(on, |d| d.bg(t.primary.opacity(0.04)))
+                .hover(|d| d.bg(t.list_hover))
+                .on_click(cx.listener(move |this, _, window, cx| this.select(&id, window, cx)))
+                .child(div().flex_none().w(px(3.)).h(px(28.)).rounded_full().bg(color))
+                .child(
+                    v_flex().flex_1().min_w_0().gap_0p5()
+                        .child(h_flex().gap_1p5().items_center()
+                            .child(div().min_w_0().text_size(px(13.)).font_weight(FontWeight::MEDIUM).truncate().child(a.name.clone()))
+                            .when(running, |d| d.child(pill("运行中", t.primary_foreground, t.primary))))
+                        .child(caption(format!("{} · {next} · {last}", a.schedule.describe()), cx)),
+                )
+                .child(div().flex_none().max_w(px(110.)).truncate().child(pill(project, t.muted_foreground, t.muted)))
+                .child(Button::new(SharedString::from(format!("au-go-{}", a.id))).xsmall().ghost().icon(IconName::Play).disabled(running)
+                    .on_click(cx.listener(move |this, _, _, cx| { cx.stop_propagation(); this.run_now(&id3, cx) })))
+                .child(Switch::new(SharedString::from(format!("au-sw-{}", a.id))).checked(a.enabled).on_click(cx.listener(move |this, checked: &bool, _, cx| this.set_enabled(&id2, *checked, cx))))
+        })).into_any_element()
     }
 
     /// 一行分段按钮。
@@ -428,15 +490,38 @@ fn field(label: &str, body: AnyElement, cx: &App) -> Div {
 impl Render for AutomationPage {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let t = cx.theme().clone();
-        let body: AnyElement = match self.draft.clone() {
-            None => empty_state(IconName::Timer, "还没有自动化", "点左上角「+」创建一条按计划运行的任务", cx).into_any_element(),
-            Some(d) => div().id("auto-scroll").size_full().overflow_y_scroll().child(
-                v_flex().w_full().max_w(px(720.)).mx_auto().px_6().py_5().gap_5()
-                    .child(h_flex().gap_2().items_center().child(icon(IconName::Timer, 16., t.primary)).child(div().text_size(px(15.)).font_weight(FontWeight::SEMIBOLD).child(if d.name.is_empty() { "新自动化".to_string() } else { d.name.clone() })))
-                    .child(self.form(&d, cx))
-                    .child(v_flex().w_full().gap_2().child(div().text_size(px(13.)).font_weight(FontWeight::MEDIUM).child("运行记录")).child(self.runs_view(cx))),
-            ).into_any_element(),
-        };
-        h_flex().size_full().bg(t.background).child(self.sidebar(cx)).child(div().flex_1().min_w_0().h_full().child(body))
+        let count = self.items.len();
+        let main: AnyElement = v_flex().flex_1().min_w_0().h_full()
+            .child(h_flex().h(px(40.)).px_4().gap_2().items_center().flex_none().border_b_1().border_color(t.border)
+                .child(icon(IconName::Timer, 15., t.primary))
+                .child(div().text_size(px(13.)).font_weight(FontWeight::MEDIUM).child("自动化"))
+                .child(pill(format!("{count} 条"), t.muted_foreground, t.muted))
+                .child(div().flex_1())
+                .child(Button::new("auto-new").small().primary().icon(IconName::Plus).label("新建自动化").on_click(cx.listener(|this, _, window, cx| this.new_draft(window, cx)))))
+            .child(if count == 0 && self.draft.is_none() {
+                empty_state(IconName::Timer, "还没有自动化", "点右上角「新建自动化」创建一条按计划运行的任务", cx).into_any_element()
+            } else {
+                div().id("auto-main").flex_1().min_h_0().overflow_y_scroll().child(
+                    v_flex().w_full().max_w(px(960.)).mx_auto().px_4().py_4().gap_4()
+                        .child(self.calendar(cx))
+                        .child(v_flex().w_full().gap_2()
+                            .child(div().text_size(px(12.)).text_color(t.muted_foreground).child(format!("全部自动化 · {count}")))
+                            .child(self.cards(cx))),
+                ).into_any_element()
+            })
+            .into_any_element();
+        let drawer: Option<AnyElement> = self.draft.clone().map(|d| {
+            v_flex().w(px(380.)).h_full().flex_none().border_l_1().border_color(t.border).bg(t.sidebar)
+                .child(h_flex().h(px(40.)).px_3().gap_2().items_center().flex_none().border_b_1().border_color(t.border)
+                    .child(div().flex_1().min_w_0().truncate().text_size(px(13.)).font_weight(FontWeight::MEDIUM).child(if d.name.is_empty() { "新自动化".to_string() } else { d.name.clone() }))
+                    .child(Button::new("auto-close").xsmall().ghost().icon(IconName::X).on_click(cx.listener(|this, _, _, cx| this.close_drawer(cx)))))
+                .child(div().id("auto-drawer").flex_1().min_h_0().overflow_y_scroll().child(
+                    v_flex().w_full().px_4().py_4().gap_5()
+                        .child(self.form(&d, cx))
+                        .child(v_flex().w_full().gap_2().child(div().text_size(px(13.)).font_weight(FontWeight::MEDIUM).child("最近运行")).child(self.runs_view(cx))),
+                ))
+                .into_any_element()
+        });
+        h_flex().size_full().bg(t.background).child(main).children(drawer)
     }
 }
