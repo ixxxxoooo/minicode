@@ -62,7 +62,7 @@ impl SelectableText {
     /// Applies per-range highlight styles (syntax colors, ANSI runs) to the text
     /// without affecting what gets selected or copied. Ranges are byte offsets.
     ///
-    /// LoomCode patch: lets tool output / code keep its colors while selectable.
+    /// MiniCode patch: lets tool output / code keep its colors while selectable.
     pub fn highlights(
         mut self,
         highlights: impl IntoIterator<Item = (Range<usize>, gpui::HighlightStyle)>,

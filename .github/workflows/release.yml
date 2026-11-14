@@ -36,7 +36,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           VERSION="${TAG#v}"
-          DMG="dist/LoomCode-$VERSION.dmg"
+          DMG="dist/MiniCode-$VERSION.dmg"
           [ -f "$DMG" ] || { echo "dmg 版本与 tag 不一致"; exit 1; }
           SHA=$(shasum -a 256 "$DMG" | awk '{print $1}')
           BUILD=$(git rev-list --count HEAD)
@@ -45,7 +45,7 @@ jobs:
           import json, os
           e = os.environ
           feed = {"stable": {"version": e["VERSION"], "build": int(e["BUILD"]),
-                  "url": f'https://github.com/{os.environ["REPO"]}/releases/download/{os.environ["TAG"]}/LoomCode-{e["VERSION"]}.dmg',
+                  "url": f'https://github.com/{os.environ["REPO"]}/releases/download/{os.environ["TAG"]}/MiniCode-{e["VERSION"]}.dmg',
                   "sha256": e["SHA"], "notes": e["NOTES"]}}
           json.dump(feed, open("dist/appcast.json", "w"), ensure_ascii=False, indent=2)
           PY
@@ -59,5 +59,5 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG 已在构建期间由 scripts/publish.sh 发布,跳过上传"
           else
-            gh release create "$TAG" --title "LoomCode $TAG" --generate-notes --latest dist/LoomCode-*.dmg dist/appcast.json
+            gh release create "$TAG" --title "MiniCode $TAG" --generate-notes --latest dist/MiniCode-*.dmg dist/appcast.json
           fi

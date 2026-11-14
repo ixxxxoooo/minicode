@@ -1,0 +1,12 @@
+[package]
+name = "mini-config"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+mini-core = { path = "../mini-core" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+mini-diag = { path = "../mini-diag" }
+ureq = { version = "2", features = ["json"] }

@@ -41,7 +41,7 @@ const CONTEXT: &'static str = "TextView";
 const MAX_COALESCED_UPDATES_PER_PARSE: usize = 64;
 // Preserve exact first-layout height for small documents while bounding the
 // amount of source parsed synchronously on the UI thread.
-// LoomCode 补丁:4 KiB → 256 KiB。超过阈值的文档在后台解析,首次布局只有占位高度、解析完才突然变高,
+// MiniCode 补丁:4 KiB → 256 KiB。超过阈值的文档在后台解析,首次布局只有占位高度、解析完才突然变高,
 // 会话流里长回复进入视口(或被「一次测完」测量)时行高与滚动条会跳几千像素;同步解析几十 KB 的 Markdown 只要几毫秒。
 const MAX_SYNC_FULL_REPLACE_BYTES: usize = 256 * 1024;
 // Repaint a streamed fade at about 30 fps, not at the display refresh rate.

@@ -71,7 +71,7 @@ struct StateInner {
     scroll_handler: Option<Box<dyn FnMut(&ListScrollEvent, &mut Window, &mut App)>>,
     scrollbar_drag_start_height: Option<Pixels>,
     measuring_behavior: ListMeasuringBehavior,
-    /// LoomCode 补丁:最近一次「一次测完」的行数与耗时,供调用方取走记日志。
+    /// MiniCode 补丁:最近一次「一次测完」的行数与耗时,供调用方取走记日志。
     measure_all_stats: Option<(usize, Duration)>,
     pending_scroll: Option<PendingScroll>,
     follow_state: FollowState,
@@ -341,7 +341,7 @@ impl ListState {
         self
     }
 
-    /// LoomCode 补丁:取走最近一次「一次测完」的统计(行数, 耗时);没有新的返回 None。
+    /// MiniCode 补丁:取走最近一次「一次测完」的统计(行数, 耗时);没有新的返回 None。
     pub fn take_measure_all_stats(&self) -> Option<(usize, Duration)> {
         self.0.borrow_mut().measure_all_stats.take()
     }
@@ -1555,7 +1555,7 @@ impl Element for List {
             .last_layout_bounds
             .is_none_or(|last_bounds| last_bounds.size.width != bounds.size.width)
         {
-            // LoomCode 补丁:保留旧高度(或调用方给的估高)作提示。原实现清成 None,未测量的行按 0 高度计,
+            // MiniCode 补丁:保留旧高度(或调用方给的估高)作提示。原实现清成 None,未测量的行按 0 高度计,
             // 往上滚进未渲染区时「滚动位置 → 行」的换算塌缩,一下跨过十几行(会话流「跳屏」)
             let new_items = SumTree::from_iter(
                 state.items.iter().map(|item| ListItem::Unmeasured {
@@ -1566,7 +1566,7 @@ impl Element for List {
             );
 
             state.items = new_items;
-            // LoomCode 补丁:宽度变化不再触发「一次测完」(拖动窗口 / 分栏时每帧测全部行会卡死),
+            // MiniCode 补丁:宽度变化不再触发「一次测完」(拖动窗口 / 分栏时每帧测全部行会卡死),
             // 沿用旧高度作提示,行滚进视口时再换成真实高度
         }
 

@@ -3650,175 +3650,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "loom-app"
-version = "0.1.22"
-dependencies = [
- "anyhow",
- "async-channel",
- "block2 0.6.2",
- "gpui-base",
- "gpui-kit",
- "gpui-kit-markdown-editor",
- "loom-automation",
- "loom-browser",
- "loom-canvas",
- "loom-claude",
- "loom-config",
- "loom-core",
- "loom-demo",
- "loom-diag",
- "loom-lsp",
- "loom-mermaid",
- "loom-search",
- "loom-sheet",
- "loom-term",
- "lsp-types",
- "notify",
- "objc2 0.6.5",
- "objc2-app-kit 0.3.2",
- "objc2-foundation 0.3.2",
- "objc2-user-notifications",
- "ropey",
- "serde_json",
- "similar",
- "tree-sitter-c-sharp",
- "tree-sitter-cmake",
- "tree-sitter-proto",
- "tree-sitter-swift",
- "uuid",
-]
-
-[[package]]
-name = "loom-automation"
-version = "0.1.22"
-dependencies = [
- "chrono",
- "loom-diag",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "loom-browser"
-version = "0.1.22"
-dependencies = [
- "thiserror 2.0.21",
- "ureq",
- "url",
-]
-
-[[package]]
-name = "loom-canvas"
-version = "0.1.22"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "loom-claude"
-version = "0.1.22"
-dependencies = [
- "async-channel",
- "base64 0.22.1",
- "chrono",
- "libc",
- "loom-core",
- "loom-diag",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "uuid",
-]
-
-[[package]]
-name = "loom-config"
-version = "0.1.22"
-dependencies = [
- "loom-core",
- "loom-diag",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "ureq",
-]
-
-[[package]]
-name = "loom-core"
-version = "0.1.22"
-dependencies = [
- "async-channel",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "loom-demo"
-version = "0.1.22"
-dependencies = [
- "async-channel",
- "loom-core",
- "serde_json",
-]
-
-[[package]]
-name = "loom-diag"
-version = "0.1.22"
-dependencies = [
- "backtrace",
- "crash-handler",
- "libc",
- "rustc-demangle",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "loom-lsp"
-version = "0.1.22"
-dependencies = [
- "async-channel",
- "loom-diag",
- "serde_json",
-]
-
-[[package]]
-name = "loom-mermaid"
-version = "0.1.22"
-dependencies = [
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "loom-search"
-version = "0.1.22"
-dependencies = [
- "ignore",
- "regex",
-]
-
-[[package]]
-name = "loom-sheet"
-version = "0.1.22"
-dependencies = [
- "calamine",
- "chardetng",
- "encoding_rs",
-]
-
-[[package]]
-name = "loom-term"
-version = "0.1.22"
-dependencies = [
- "alacritty_terminal",
- "loom-diag",
- "portable-pty",
-]
-
-[[package]]
 name = "loop9"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4042,6 +3873,175 @@ checksum = "f7c44f8e672c00fe5308fa235f821cb4198414e1c77935c1ab6948d3fd78550e"
 dependencies = [
  "mime",
  "unicase",
+]
+
+[[package]]
+name = "mini-app"
+version = "0.1.22"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "block2 0.6.2",
+ "gpui-base",
+ "gpui-kit",
+ "gpui-kit-markdown-editor",
+ "lsp-types",
+ "mini-automation",
+ "mini-browser",
+ "mini-canvas",
+ "mini-claude",
+ "mini-config",
+ "mini-core",
+ "mini-demo",
+ "mini-diag",
+ "mini-lsp",
+ "mini-mermaid",
+ "mini-search",
+ "mini-sheet",
+ "mini-term",
+ "notify",
+ "objc2 0.6.5",
+ "objc2-app-kit 0.3.2",
+ "objc2-foundation 0.3.2",
+ "objc2-user-notifications",
+ "ropey",
+ "serde_json",
+ "similar",
+ "tree-sitter-c-sharp",
+ "tree-sitter-cmake",
+ "tree-sitter-proto",
+ "tree-sitter-swift",
+ "uuid",
+]
+
+[[package]]
+name = "mini-automation"
+version = "0.1.22"
+dependencies = [
+ "chrono",
+ "mini-diag",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "mini-browser"
+version = "0.1.22"
+dependencies = [
+ "thiserror 2.0.21",
+ "ureq",
+ "url",
+]
+
+[[package]]
+name = "mini-canvas"
+version = "0.1.22"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "mini-claude"
+version = "0.1.22"
+dependencies = [
+ "async-channel",
+ "base64 0.22.1",
+ "chrono",
+ "libc",
+ "mini-core",
+ "mini-diag",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "uuid",
+]
+
+[[package]]
+name = "mini-config"
+version = "0.1.22"
+dependencies = [
+ "mini-core",
+ "mini-diag",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "ureq",
+]
+
+[[package]]
+name = "mini-core"
+version = "0.1.22"
+dependencies = [
+ "async-channel",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "mini-demo"
+version = "0.1.22"
+dependencies = [
+ "async-channel",
+ "mini-core",
+ "serde_json",
+]
+
+[[package]]
+name = "mini-diag"
+version = "0.1.22"
+dependencies = [
+ "backtrace",
+ "crash-handler",
+ "libc",
+ "rustc-demangle",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "mini-lsp"
+version = "0.1.22"
+dependencies = [
+ "async-channel",
+ "mini-diag",
+ "serde_json",
+]
+
+[[package]]
+name = "mini-mermaid"
+version = "0.1.22"
+dependencies = [
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "mini-search"
+version = "0.1.22"
+dependencies = [
+ "ignore",
+ "regex",
+]
+
+[[package]]
+name = "mini-sheet"
+version = "0.1.22"
+dependencies = [
+ "calamine",
+ "chardetng",
+ "encoding_rs",
+]
+
+[[package]]
+name = "mini-term"
+version = "0.1.22"
+dependencies = [
+ "alacritty_terminal",
+ "mini-diag",
+ "portable-pty",
 ]
 
 [[package]]
