@@ -117,7 +117,7 @@ pub fn render(session: &Entity<SessionModel>, req: &QuestionRequest, queued: usi
 
     let focus = session.read(cx).wizard_focus.clone();
     let key_session = session.clone();
-    v_flex().w_full().rounded(px(12.)).border_1().border_color(t.border).bg(t.background).shadow_sm()
+    v_flex().w_full().rounded(px(14.)).border_1().border_color(t.primary.opacity(0.75)).bg(t.popover).shadow_sm().overflow_hidden()
         .key_context("QuestionWizard")
         .when_some(focus, |d, f| d.track_focus(&f))
         // 键盘:A–Z 选择、⏎ 下一题 / 提交、Esc 跳过、← → 翻页

@@ -22,25 +22,24 @@ pub const COMPOSER_OUTER_PAD: f32 = 32.;
 /// 工具栏内边距(各 8)与框线(各 1)。
 #[cfg(test)]
 pub const COMPOSER_BAR_PAD: f32 = 18.;
-/// 模式 chip 收缩后的最小宽度(图标 + 下拉箭头 + 内边距)。
-pub const MODE_CHIP_MIN: f32 = 44.;
-/// 模型 chip 收缩后的最小宽度(品牌图标 + 一小段文字 + 下拉箭头)。
-pub const MODEL_CHIP_MIN: f32 = 80.;
-/// 思考强度 chip 收缩后的最小宽度(文字 + 下拉箭头 + 内边距)。
-pub const EFFORT_CHIP_MIN: f32 = 40.;
+/// 运行配置胶囊(权限模式 · 模型 · 思考强度)收缩后的最小宽度:模型名先被截断,模式与强度文字保留。
+pub const CONFIG_CHIP_MIN: f32 = 120.;
+/// 工具栏左端「+」按钮的宽度。
+#[cfg(test)]
+pub const COMPOSER_PLUS: f32 = 24.;
 /// MCP chip 收缩后的最小宽度(图标 + 数字 + 下拉箭头 + 内边距)。
 pub const MCP_CHIP_MIN: f32 = 44.;
 /// 上下文环、提示词优化、发送三个固定控件的宽度。
 #[cfg(test)]
 pub const COMPOSER_FIXED: f32 = 26. + 28. + 28.;
-/// 工具栏里 7 个控件之间的间距(gap_1 = 4,共 6 处)。
+/// 工具栏里 6 个控件之间的间距(gap_1 = 4,共 5 处,留一处余量)。
 #[cfg(test)]
 pub const COMPOSER_GAPS: f32 = 24.;
 
 /// 输入框各部分固定宽度之和:`COMPOSER_MIN_W` 不得小于它(只在测试里校验)。
 #[cfg(test)]
 pub fn composer_floor() -> f32 {
-    COMPOSER_OUTER_PAD + COMPOSER_BAR_PAD + MODE_CHIP_MIN + MODEL_CHIP_MIN + EFFORT_CHIP_MIN + MCP_CHIP_MIN + COMPOSER_FIXED + COMPOSER_GAPS
+    COMPOSER_OUTER_PAD + COMPOSER_BAR_PAD + COMPOSER_PLUS + CONFIG_CHIP_MIN + MCP_CHIP_MIN + COMPOSER_FIXED + COMPOSER_GAPS
 }
 
 /// 窗口窄于这个宽度时自动收起侧栏。

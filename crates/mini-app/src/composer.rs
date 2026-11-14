@@ -3,6 +3,8 @@
 use crate::model::SessionModel;
 use crate::ui::icon;
 use gpui_kit::assets::IconName;
+use gpui_kit::component::button::{Button, ButtonVariants};
+use gpui_kit::component::Sizable as _;
 use gpui_kit::component::input::{Indent, InputEvent, MoveDown, MoveUp, Textarea, TextareaState};
 use gpui_kit::component::{ActiveTheme, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
@@ -36,6 +38,8 @@ enum Pick {
     /// MCP 服务器:查看当前项目在用的、一键开关
     Mcp,
     Mode,
+    /// 运行配置(权限模式 + 模型 + 思考强度合成一个胶囊,弹层里三项都能改)
+    Config,
     /// 上下文用量面板
     Context,
 }
@@ -138,6 +142,7 @@ impl Composer {
             Ok("model") => Some(Pick::Model),
             Ok("context") => Some(Pick::Context),
             Ok("mode") => Some(Pick::Mode),
+            Ok("config") => Some(Pick::Config),
             Ok("effort") => Some(Pick::Effort),
             Ok("mcp") => Some(Pick::Mcp),
             _ => None,
@@ -352,7 +357,7 @@ impl Composer {
         let st = &self.session.read(cx).state;
         match kind {
             // 模型与上下文有各自的弹层(composer_pop),这里只剩权限模式的简单列表
-            Pick::Model | Pick::Effort | Pick::Mcp | Pick::Context => Vec::new(),
+            Pick::Model | Pick::Effort | Pick::Mcp | Pick::Context | Pick::Config => Vec::new(),
             Pick::Mode => PermissionMode::ALL.iter().map(|m| (m.label().to_string(), m.cli_value().to_string(), *m == st.mode, m.cli_value().to_string())).collect(),
         }
     }
@@ -367,9 +372,23 @@ impl Composer {
         cx.notify();
     }
 
+    /// 选完一项后收起弹层;「运行配置」弹层里一次能连着调三项,所以保持打开。
+    fn settle(&mut self) {
+        if self.open != Some(Pick::Config) {
+            self.open = None;
+        }
+    }
+
+    /// 设置权限模式(运行配置弹层用,弹层保持打开)。
+    pub(crate) fn choose_mode(&mut self, mode: PermissionMode, cx: &mut Context<Self>) {
+        self.settle();
+        self.session.update(cx, |m, cx| m.set_mode(mode, cx));
+        cx.notify();
+    }
+
     /// 选择模型并关闭弹层。
     pub(crate) fn choose_model(&mut self, id: &str, cx: &mut Context<Self>) {
-        self.open = None;
+        self.settle();
         self.session.update(cx, |m, cx| m.set_model(id.to_string(), cx));
         // 记住这次选择:之后新开会话、重启应用都用它
         let id = id.to_string();
@@ -455,7 +474,7 @@ impl Composer {
 
     /// 设置思考强度并关闭弹层。
     pub(crate) fn choose_effort(&mut self, effort: Effort, cx: &mut Context<Self>) {
-        self.open = None;
+        self.settle();
         self.session.update(cx, |m, cx| m.set_effort(effort, cx));
         // 记住这次选择:之后新开会话、重启应用都用它
         cx.defer(move |cx| crate::composer_models::remember_effort(effort, cx));
@@ -492,11 +511,11 @@ impl Composer {
 impl Render for Composer {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let t = cx.theme().clone();
-        let (phase, mode, model_id, model_name, effort, usage) = {
+        let (phase, mode, model_name, effort, usage) = {
             let m = self.session.read(cx);
             // 用第三方服务时显示「服务商 · 真实模型名」(而不是 claude 报的别名 / 自定义说明)
             let name = crate::composer_models::chip_label(&m.state, cx);
-            (m.state.phase, m.state.mode, m.state.model.clone(), name, m.state.effort, m.state.usage.clone())
+            (m.state.phase, m.state.mode, name, m.state.effort, m.state.usage.clone())
         };
         let running = phase == Phase::Running;
         // MCP:配置 + 本会话状态;配置按项目读,项目变了就在渲染后补读一次
@@ -547,6 +566,10 @@ impl Render for Composer {
                 crate::composer_mcp::mcp_popup(mcp_rows.clone(), self.mcp_open.as_deref(), &usage, has_project, left, this.clone(), cx)
             }
             Pick::Context => crate::context_panel::context_popup(&usage, this.clone(), cx),
+            Pick::Config => {
+                let picker = crate::composer_models::picker(&self.session.read(cx).state, cx);
+                crate::composer_pop::config_popup(mode, &picker, running, effort, this.clone(), cx)
+            }
             Pick::Mode => {
                 let items = self.pick_list(kind, cx);
                 let this = this.clone();
@@ -667,19 +690,34 @@ impl Render for Composer {
                         })))
                         .child(
                             h_flex().h(px(36.)).px_2().gap_1().items_center().overflow_hidden()
-                                .child(chip("chip-mode", mode.label().to_string(), mode_color, Pick::Mode, Some(icon(crate::mode_style::mode_icon(mode), 13., mode_color).into_any_element()), crate::layout_rules::MODE_CHIP_MIN, this.clone()))
-                                .child(chip("chip-model", model_name.clone(), t.foreground, Pick::Model, Some(crate::brand_icons::brand_icon(&model_id, &model_name, 13., t.foreground)), crate::layout_rules::MODEL_CHIP_MIN, this.clone()))
+                                // 「+」:引用文件 / 命令(在输入框里插入 @,直接弹出文件补全)
                                 .child({
-                                    // 思考强度:独立的选择框;顺带量出自己的位置,供弹层对齐
-                                    let cell = self.effort_bounds.clone();
-                                    chip("chip-effort", format!("思考 {}", effort.label()), t.muted_foreground, Pick::Effort, None, crate::layout_rules::EFFORT_CHIP_MIN, this.clone())
-                                        .relative().child(canvas(move |b, _, _| cell.set(b), |_, _, _, _| {}).absolute().size_full())
+                                    let this = this.clone();
+                                    Button::new("cmp-plus").xsmall().ghost().icon(IconName::Plus).tooltip("引用文件(@)或命令(/)")
+                                        .on_click(move |_, window, cx| { this.update(cx, |c, cx| { c.insert_text("@", window, cx); c.focus(window, cx); }); })
+                                })
+                                // 运行配置胶囊:权限模式 · 模型 · 思考强度,点开一个弹层统一调整
+                                .child({
+                                    let this = this.clone();
+                                    let open = self.open == Some(Pick::Config);
+                                    let model_short = model_name.clone();
+                                    h_flex().id("chip-config").h(px(24.)).min_w(px(crate::layout_rules::CONFIG_CHIP_MIN)).flex_shrink(1.).overflow_hidden().px_2().gap_1p5().items_center().rounded(px(12.)).cursor_pointer().text_size(px(12.))
+                                        .border_1().border_color(if open { t.primary } else { t.border })
+                                        .hover(|d| d.bg(t.list_hover))
+                                        .on_click(move |_, _, cx| { this.update(cx, |c, cx| c.toggle(Pick::Config, cx)); })
+                                        .child(div().flex_none().child(icon(crate::mode_style::mode_icon(mode), 13., mode_color)))
+                                        .child(div().flex_none().text_color(mode_color).child(mode.label()))
+                                        .child(div().flex_none().text_color(t.muted_foreground).child("·"))
+                                        .child(div().flex_1().min_w_0().truncate().child(model_short))
+                                        .child(div().flex_none().text_color(t.muted_foreground).child("·"))
+                                        .child(div().flex_none().text_color(t.muted_foreground).child(effort.label()))
+                                        .child(div().flex_none().child(icon(IconName::ChevronDown, 10., t.muted_foreground)))
                                 })
                                 .child({
                                     // MCP:图标 + 已启用个数;有连不上的服务器时用警告色
                                     let cell = self.mcp_bounds.clone();
                                     let color = if crate::composer_mcp::has_problem(&mcp_rows) { t.warning } else { t.muted_foreground };
-                                    chip("chip-mcp", format!("MCP {}", crate::composer_mcp::enabled_count(&mcp_rows)), color, Pick::Mcp, Some(icon(IconName::Plug, 13., color).into_any_element()), crate::layout_rules::MCP_CHIP_MIN, this.clone())
+                                    chip("chip-mcp", format!("{}", crate::composer_mcp::enabled_count(&mcp_rows)), color, Pick::Mcp, Some(icon(IconName::Plug, 13., color).into_any_element()), crate::layout_rules::MCP_CHIP_MIN, this.clone())
                                         .relative().child(canvas(move |b, _, _| cell.set(b), |_, _, _, _| {}).absolute().size_full())
                                 })
                                 .child(div().flex_1())

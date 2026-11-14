@@ -31,10 +31,15 @@ pub fn footer(wb: &Workbench, cx: &mut Context<Workbench>) -> AnyElement {
         }
         _ => h_flex().gap_1().items_center().when_some(branch, |d, b| d.child(icon(IconName::GitBranch, 12., t.muted_foreground)).child(b)).into_any_element(),
     };
-    h_flex().h(px(26.)).px_1().items_center().text_size(px(12.)).text_color(t.muted_foreground)
+    // 未提交改动数:有改动才显示,跟在分支名后面
+    let changes = wb.scm.read(cx).count(cx);
+    let key = |k: &'static str| div().h(px(16.)).px_1().flex().items_center().rounded(px(4.)).border_1().border_color(t.border).text_size(px(10.)).child(k);
+    h_flex().h(px(26.)).px_1().gap_1().items_center().text_size(px(12.)).text_color(t.muted_foreground)
         .child(left)
+        .when(changes > 0, |d| d.child(format!("· {changes} 项改动")))
         .child(div().flex_1())
-        .child(if wb.demo { "" } else { "Claude Code" })
+        // 右侧固定提示:Shift+Tab 循环切换权限模式
+        .child(h_flex().gap_1().items_center().text_size(px(11.)).child(key("⇧")).child(key("Tab")).child("切换模式"))
         .into_any_element()
 }
 

@@ -12,7 +12,7 @@ use gpui_kit::component::progress::ProgressCircle;
 use gpui_kit::component::{ActiveTheme, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
-use mini_core::{Effort, ModelInfo, Usage};
+use mini_core::{Effort, ModelInfo, PermissionMode, Usage};
 
 /// 把 token 数缩写成 `12.3K` / `1.2M`。
 pub fn short_tokens(n: u64) -> String {
@@ -49,6 +49,14 @@ pub fn context_ring(usage: &Usage, on_click: impl Fn(&mut App) + 'static, cx: &A
 ///
 /// 参数:`picker` 分组数据;`running` 回合是否进行中(进行中不能切换服务商);`this` 输入框实体(回调用)。
 pub fn model_popup(picker: &Picker, running: bool, this: Entity<Composer>, cx: &App) -> Div {
+    let t = cx.theme().clone();
+    let list = model_rows(picker, running, this, cx);
+    v_flex().absolute().bottom(px(44.)).left(px(8.)).min_w(px(140.)).p_1().rounded(px(10.)).border_1().border_color(t.border).bg(t.popover).shadow_lg()
+        .child(v_flex().id("pick-model-list").max_h(px(380.)).overflow_y_scroll().children(list))
+}
+
+/// 模型列表的全部行(组头 + 模型行),模型弹层与「运行配置」弹层共用。
+fn model_rows(picker: &Picker, running: bool, this: Entity<Composer>, cx: &App) -> Vec<AnyElement> {
     let t = cx.theme().clone();
     let mut list: Vec<AnyElement> = Vec::new();
     // 每组:组头(服务商名 + 状态)+ 模型行;不是当前服务商时点模型 = 切换服务商
@@ -89,8 +97,48 @@ pub fn model_popup(picker: &Picker, running: bool, this: Entity<Composer>, cx: &
         let models = g.models.iter().map(|m| ModelInfo::new(m, m, "")).collect();
         push_group(&mut list, Some(g.id.clone()), g.name.clone(), models, g.blocked.clone());
     }
-    v_flex().absolute().bottom(px(44.)).left(px(8.)).min_w(px(140.)).p_1().rounded(px(10.)).border_1().border_color(t.border).bg(t.popover).shadow_lg()
-        .child(v_flex().id("pick-model-list").max_h(px(380.)).overflow_y_scroll().children(list))
+    list
+}
+
+/// 「运行配置」弹层(一个胶囊里的三件事):权限模式 / 模型 / 思考强度,只对当前会话生效。
+/// 选择后弹层保持打开,可以连着调;点外部或按 Esc 关闭。
+///
+/// 参数:`mode` 当前权限模式;`picker` 模型分组数据;`running` 回合是否进行中;`effort` 当前强度;`this` 输入框实体。
+pub fn config_popup(mode: PermissionMode, picker: &Picker, running: bool, effort: Effort, this: Entity<Composer>, cx: &App) -> Div {
+    let t = cx.theme().clone();
+    let cap = |text: &'static str| div().px_2().pt_1p5().pb_0p5().text_size(px(11.)).text_color(t.muted_foreground).child(text);
+    let modes = PermissionMode::ALL.into_iter().map(|m| {
+        let (this, on) = (this.clone(), m == mode);
+        let color = crate::mode_style::mode_color(m, cx);
+        h_flex().id(SharedString::from(format!("cfg-mode-{}", m.cli_value()))).gap_2().px_2().h(px(30.)).items_center().rounded(px(6.)).cursor_pointer()
+            .when(on, |d| d.bg(t.primary.opacity(0.10)))
+            .hover(|d| d.bg(t.list_hover))
+            .on_click(move |_, _, cx| { this.update(cx, |c, cx| c.choose_mode(m, cx)); })
+            .child(icon(crate::mode_style::mode_icon(m), 14., color))
+            .child(div().text_size(px(13.)).when(on, |d| d.text_color(color).font_weight(FontWeight::MEDIUM)).child(m.label()))
+            .child(div().flex_1().min_w_0().truncate().text_size(px(11.)).text_color(t.muted_foreground).child(crate::mode_style::mode_hint(m)))
+            .child(div().w(px(14.)).flex_none().child(if on { icon(IconName::Check, 12., color).into_any_element() } else { div().into_any_element() }))
+    });
+    let efforts = h_flex().w_full().gap_1().px_2().pb_1().children(Effort::ALL.into_iter().map(|e| {
+        let (this, on) = (this.clone(), e == effort);
+        div().id(SharedString::from(format!("cfg-effort-{}", e.cli_value()))).flex_1().h(px(24.)).flex().items_center().justify_center().rounded(px(6.)).cursor_pointer().text_size(px(12.))
+            .border_1().border_color(if on { t.primary } else { t.border })
+            .bg(if on { t.primary.opacity(0.10) } else { t.transparent })
+            .text_color(if on { t.primary } else { t.foreground })
+            .hover(|d| d.bg(t.list_hover))
+            .on_click(move |_, _, cx| { this.update(cx, |c, cx| c.choose_effort(e, cx)); })
+            .child(e.label())
+    }));
+    let model_list = model_rows(picker, running, this.clone(), cx);
+    v_flex().absolute().bottom(px(44.)).left(px(8.)).w(px(320.)).max_h(px(560.)).p_1().rounded(px(10.)).border_1().border_color(t.border).bg(t.popover).shadow_lg()
+        .child(h_flex().px_2().pt_1().pb_0p5().items_center().child(div().flex_1().text_size(px(12.)).font_weight(FontWeight::SEMIBOLD).child("运行配置")).child(div().text_size(px(11.)).text_color(t.muted_foreground).child("仅对当前会话")))
+        .child(cap("权限模式"))
+        .child(v_flex().children(modes))
+        .child(cap("模型"))
+        .child(v_flex().id("cfg-model-list").max_h(px(190.)).overflow_y_scroll().children(model_list))
+        .child(cap("思考强度"))
+        .child(efforts)
+        .child(div().px_2().pb_1().text_size(px(11.)).text_color(t.muted_foreground).child(effort.hint()))
 }
 
 /// 思考强度弹层:每档一行(名称 + 一句话说明),当前档打勾。

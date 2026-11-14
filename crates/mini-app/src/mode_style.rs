@@ -31,3 +31,15 @@ pub fn mode_color(mode: PermissionMode, cx: &App) -> Hsla {
         PermissionMode::BypassPermissions => t.danger,
     }
 }
+
+/// 模式的一句话说明(运行配置弹层里每行右侧的灰字)。
+pub fn mode_hint(mode: PermissionMode) -> &'static str {
+    match mode {
+        PermissionMode::Default => "每次修改与命令都问我",
+        PermissionMode::AcceptEdits => "自动改文件,命令仍需确认",
+        PermissionMode::Plan => "只读规划,批准后再动手",
+        PermissionMode::Auto => "模型自行判断风险",
+        PermissionMode::DontAsk => "不询问,未授权的直接拒绝",
+        PermissionMode::BypassPermissions => "全部放行(谨慎)",
+    }
+}

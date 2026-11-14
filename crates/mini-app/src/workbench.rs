@@ -1841,11 +1841,14 @@ pub fn chat_panel_with_footer(parts: Option<(Entity<SessionModel>, Entity<Compos
     v_flex().size_full().bg(t.background)
         // 时间线是独立的缓存视图:工作台因动画等原因重跑时直接复用上一帧
         .child(div().flex_1().min_h_0().w_full().children(timeline.map(|tl| tl.cached(StyleRefinement::default().size_full()))))
-        .children(crate::dock_cards::render(&model_for_dock, cx))
         .children(crate::rewind_card::render(&model_for_dock, cx))
         .children(crate::todo_view::dock(&model_for_dock, cx))
         .children(crate::task_dock::dock(&model_for_dock, cx))
-        .child(composer)
+        // 有待处理的权限 / 提问时,请求卡就地替换输入框(输入框让位,处理完恢复);否则正常显示输入框
+        .child(match crate::dock_cards::render(&model_for_dock, cx) {
+            Some(card) => card,
+            None => composer.into_any_element(),
+        })
         // 页脚(分支 / 运行模式)与输入框同宽居中:分支在输入框左下、说明在右下
         .child(footer_row(footer))
         .into_any_element()
