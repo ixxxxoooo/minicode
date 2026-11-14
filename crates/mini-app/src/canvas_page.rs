@@ -25,11 +25,13 @@ pub struct CanvasPage {
     toggled: HashSet<String>,
     /// 读取失败的说明
     error: Option<String>,
+    /// 正文滚动句柄(大纲点击跳转用)
+    doc_scroll: ScrollHandle,
 }
 
 impl CanvasPage {
     pub fn new(store: CanvasStore) -> Self {
-        let mut page = Self { store, list: Vec::new(), current: None, source: false, source_editor: None, toggled: HashSet::new(), error: None };
+        let mut page = Self { store, list: Vec::new(), current: None, source: false, source_editor: None, toggled: HashSet::new(), error: None, doc_scroll: ScrollHandle::new() };
         page.reload();
         if let Some(first) = page.list.first().map(|s| s.id.clone()) {
             page.load(&first);
@@ -82,6 +84,64 @@ impl CanvasPage {
             }
             cx.notify();
         }
+    }
+
+    /// 大纲:顶层标题与分区,返回 (顶层块序号, 缩进级别, 文字)。
+    fn outline(doc: &CanvasDocument) -> Vec<(usize, u8, String)> {
+        doc.blocks.iter().enumerate().filter_map(|(i, b)| match b {
+            Block::Heading { text, level } => Some((i, level.saturating_sub(1).min(2), text.clone())),
+            Block::Section { title, .. } => Some((i, 1, title.clone())),
+            _ => None,
+        }).collect()
+    }
+
+    /// 让 Claude 修改:把提示词填进当前会话输入框并回到对话页(不自动发送)。
+    fn ask_claude(prompt: String, window: &mut Window, cx: &mut App) {
+        if let Some(wb) = cx.try_global::<crate::WorkbenchRef>().and_then(|r| r.0.upgrade()) {
+            wb.update(cx, |w, cx| {
+                w.set_page(crate::workbench::Page::Chat, cx);
+                if let Some((_, composer)) = w.chat_parts() {
+                    composer.update(cx, |c, cx| { c.set_text(&prompt, window, cx); c.focus(window, cx); });
+                }
+            });
+        }
+    }
+
+    /// 右侧栏:大纲 / 版本 / 让 Claude 修改(对标设计稿「全幅文档 + 大纲 / 版本」)。
+    fn aside(&self, doc: &CanvasDocument, cx: &mut Context<Self>) -> impl IntoElement {
+        let t = cx.theme().clone();
+        let head = |text: &str| div().px_3().pt_3().pb_1().text_size(px(11.)).text_color(t.muted_foreground).child(text.to_string());
+        let outline = Self::outline(doc);
+        let title = doc.title.clone();
+        let asks = ["补充一段结论与建议", "把数据更新到最新", "精简内容,只保留要点"];
+        v_flex().w(px(224.)).h_full().flex_none().border_l_1().border_color(t.border).bg(t.sidebar).overflow_hidden()
+            .child(head("大纲"))
+            .child(v_flex().id("canvas-outline").max_h(px(260.)).overflow_y_scroll().px_2().gap_0p5()
+                .when(outline.is_empty(), |d| d.child(div().px_1().py_1().text_size(px(12.)).text_color(t.muted_foreground).child("文档里还没有标题")))
+                .children(outline.into_iter().map(|(ix, lv, text)| {
+                    let handle = self.doc_scroll.clone();
+                    h_flex().id(SharedString::from(format!("cv-ol-{ix}"))).h(px(24.)).pr_1().gap_1p5().items_center().rounded(px(5.)).cursor_pointer()
+                        .pl(px(4. + lv as f32 * 12.))
+                        .hover(|d| d.bg(t.list_hover))
+                        .on_click(move |_, _, _| handle.scroll_to_item(ix))
+                        .child(div().flex_none().size(px(4.)).rounded_full().bg(if lv == 0 { t.primary } else { t.muted_foreground.opacity(0.6) }))
+                        .child(div().flex_1().min_w_0().truncate().text_size(px(12.5)).when(lv == 0, |d| d.font_weight(FontWeight::MEDIUM)).child(text))
+                })))
+            .child(head("版本"))
+            .child(v_flex().px_3().gap_1()
+                .child(h_flex().gap_1p5().items_center().child(pill(format!("v{}", doc.revision), t.primary, t.primary.opacity(0.12))).child(caption("当前版本", cx)))
+                .child(caption(format!("更新于 {}", mini_automation_like_time(doc.updated_at)), cx))
+                .child(caption(format!("创建于 {}", mini_automation_like_time(doc.created_at)), cx))
+                .child(caption(format!("共 {} 个块 · 每次修改版本号加一", doc.block_count()), cx)))
+            .child(head("让 Claude 修改"))
+            .child(v_flex().px_2().gap_0p5().children(asks.iter().enumerate().map(|(i, a)| {
+                let prompt = format!("请修改画布「{title}」:{a}");
+                h_flex().id(SharedString::from(format!("cv-ask-{i}"))).h(px(26.)).px_1().gap_1p5().items_center().rounded(px(5.)).cursor_pointer()
+                    .hover(|d| d.bg(t.list_hover))
+                    .on_click(move |_, window, cx| Self::ask_claude(prompt.clone(), window, cx))
+                    .child(icon(IconName::ArrowRight, 11., t.primary))
+                    .child(div().text_size(px(12.5)).child(a.to_string()))
+            })))
     }
 
     // ---------- 渲染 ----------
@@ -331,9 +391,12 @@ impl Render for CanvasPage {
                         // 调试用:MINI_CANVAS_SKIP=n 跳过前 n 个块,方便截图检查靠后的内容
                         let skip = std::env::var("MINI_CANVAS_SKIP").ok().and_then(|v| v.parse().ok()).unwrap_or(0usize);
                         let blocks = self.render_blocks(&doc.blocks[skip.min(doc.blocks.len())..], "b", cx);
-                        div().id("canvas-doc").flex_1().min_h_0().overflow_y_scroll().child(
-                            v_flex().w_full().max_w(px(860.)).mx_auto().px_6().py_5().gap_4().children(blocks),
-                        ).into_any_element()
+                        // 每个顶层块直接是滚动容器的子元素,大纲才能按序号跳转;限宽居中写在每个块的外壳上
+                        let shells: Vec<AnyElement> = blocks.into_iter().map(|b| div().w_full().max_w(px(900.)).px_8().py_2().child(b).into_any_element()).collect();
+                        h_flex().flex_1().min_h_0()
+                            .child(v_flex().id("canvas-doc").flex_1().min_w_0().h_full().overflow_y_scroll().track_scroll(&self.doc_scroll).items_center().py_3().children(shells))
+                            .child(self.aside(&doc, cx))
+                            .into_any_element()
                     })
                     .into_any_element()
             }
