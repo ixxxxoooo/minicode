@@ -82,8 +82,8 @@ ${live ? 'test matches_trailing_slash ... <span class="caret"></span>' : 'test r
     return `<div class="queue"><div class="qh">${ic('clock', 's12')}<b>待发送 ${items.length}</b><span class="grow"></span><span class="f ai g2">${kbd('⏎')}排队<span style="width:6px"></span>${kbd('⌘⏎')}引导</span></div>
     ${o.paused ? `<div class="qwarn">${ic('alert', 's12 c-warn')}<span class="grow t2 fs-cap">回合被中断,排队已暂停</span>${btn('继续', 'sm soft')}${btn('撤回', 'sm ghost')}</div>` : ''}
     ${items.map((it, n) => it.k === 'steer'
-      ? `<div class="row steer"><span class="qk">${ic('bolt', 's12')}引导</span><span class="grow ell">${it.t}</span><span class="qs"><span class="spin"></span>等 Claude 接收</span></div>`
-      : `<div class="row queue-i"><span class="qk"><span class="num">${n + 1}</span>排队</span><span class="grow ell" data-tip="点击退回输入框编辑">${it.t}</span><span class="acts">${ib('bolt', 'sm', '改为引导:现在就插进当前回合')}${ib('stop', 'sm', '停止并发送')}${ib('trash', 'sm', '删除')}</span></div>`).join('')}</div>`; };
+      ? `<div class="row steer"><span class="qk">${ic('bolt', 's12')}引导</span><span class="grow ell">${it.t || '(图片)'}</span>${it.img ? `<span class="t3 fs-cap f ai g2">${ic('image', 's12')}${it.img} 张图</span>` : ''}<span class="qs"><span class="spin"></span>等 Claude 接收</span></div>`
+      : `<div class="row queue-i"><span class="qk"><span class="num">${n + 1}</span>排队</span><span class="grow ell" data-tip="点击退回输入框编辑">${it.t || '(图片)'}</span>${it.img ? `<span class="t3 fs-cap f ai g2">${ic('image', 's12')}${it.img} 张图</span>` : ''}<span class="acts">${ib('bolt', 'sm', '改为引导:现在就插进当前回合')}${ib('stop', 'sm', '停止并发送')}${ib('trash', 'sm', '删除')}</span></div>`).join('')}</div>`; };
   /** 回到最新:输入框正上方居中的圆形向下箭头。fresh:离开底部后又有新内容 */
   F.toLatest = (fresh) => `<div class="to-latest ${fresh ? 'fresh' : ''}" data-act="to-latest" data-tip="回到最新" role="button" aria-label="回到最新">${ic('arrowDown', 's12')}</div>`;
   /** 运行配置弹层:权限模式 + 按服务商分组的模型 + 思考强度(详情见 providers.js) */

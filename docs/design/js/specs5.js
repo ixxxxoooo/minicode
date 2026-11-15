@@ -22,6 +22,7 @@
     ${sec('待发送区:排队与引导', '对标 Cursor / Claude Code。输入框上方这一块只放「还没真正进入对话」的消息:排队 = 等本轮结束再按顺序发;引导 = 立刻写给 Claude,下一次工具调用之间被吸收,吸收之前先显示在这里(不会同时出现在会话流里),被接收后才变成会话流里的用户消息。', grid(
       cell('排队 + 引导 同时存在', '', snip(F.tdock() + F.queue() + F.composer({ running: true, focus: true })), '引导的行靠前、带强调色标签与「等 Claude 接收」;排队的行带序号。悬停排队行出现:改为引导 / 停止并发送 / 删除;点文字退回输入框编辑。'),
       cell('回合被中断:队列暂停', '', snip(F.queue([{ k: 'queue', t: '顺便把 README 里的路由示例也更新一下' }], { paused: true }) + F.composer({ focus: true })), '中断或出错时不自动发送;「继续」恢复自动发送,「撤回」清空。引导消息已发给 Claude,不在暂停之列。'),
+      cell('带图片 / 窄档对话栏', '', `<div class="snip" style="height:auto;width:360px;padding:12px 14px">${F.queue([{ k: 'queue', t: '按这张截图改一下间距', img: 2 }, { k: 'steer', t: '', img: 1 }]).replace('<span class="f ai g2">' , '<span class="f ai g2 dock-wide">')}</div>`, '附带图片的消息:文字照常显示,行尾多一个「N 张图」小标;只有图片没有文字时显示「(图片)」。对话栏 < 420 宽时头部隐藏 ⏎ / ⌘⏎ 的提示,行内不变。'),
       cell('进入方式', ['⏎', '⌘⏎'], `<div class="snip" style="height:auto;width:560px;padding:6px 14px">${tbl([['操作', 150], ['结果']], [
         ['⏎(默认)', '排队:进待发送区,序号递增;本轮正常结束后自动发队首,逐条发送'],
         ['⌘⏎', '引导:立刻发给 Claude(priority: next),待发送区里以「引导」行显示,直到被接收'],
