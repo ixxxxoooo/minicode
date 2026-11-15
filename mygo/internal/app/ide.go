@@ -30,6 +30,7 @@ type ideTab struct {
 	virt    string  // 虚拟标签的种类(review / plan / sub / task / conflict),空 = 文件或对比
 	ref     string  // 虚拟标签引用的对象 id(子 Agent / 任务 id、冲突文件路径)
 
+	lay     int8    // 差异视图:0 跟随偏好 scm.diff,1 左右,2 统一(用户在标签上点过的选择,窄档只是临时强制统一、不改它)
 	dk      string  // 差异来源:head / work / staged(空 = 提交里的差异)
 	hooked  bool    // 已接上悬停 / 转到定义 / 补全
 	diagSet bool    // 演示诊断已装

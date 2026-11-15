@@ -321,6 +321,10 @@ func (a *App) reviewHunk(c *ui.Context, f chFile, i int, d *core.DiffBlock) {
 		}
 	})
 	ui.Column(c).Key("rvl-"+k).Padding(3, 0).Opacity(map[bool]float32{true: .38, false: 1}[st == "rev"]).Children(func() {
+		if a.rv.side && !a.wsNarrow() {
+			a.diffSplitLines(c, ls)
+			return
+		}
 		for j, l := range ls {
 			a.diffLine(c, j, l)
 		}
@@ -358,4 +362,68 @@ func trimSlash(s string) string {
 		return s[:n-1]
 	}
 	return s
+}
+
+// splitRow 是左右对比的一行:左 = 旧侧,右 = 新侧,某一侧为 nil 表示这一侧留空。
+type splitRow struct{ l, r *diff.Line }
+
+// splitRows 把行内差异排成左右对比:相同行两侧都有;连续的删除与随后的新增一一配对,多出的一侧留空。
+func splitRows(ls []diff.Line) []splitRow {
+	var out []splitRow
+	for i := 0; i < len(ls); {
+		if ls[i].Kind == diff.Same {
+			out = append(out, splitRow{&ls[i], &ls[i]})
+			i++
+			continue
+		}
+		var dels, adds []*diff.Line
+		for ; i < len(ls) && ls[i].Kind == diff.Del; i++ {
+			dels = append(dels, &ls[i])
+		}
+		for ; i < len(ls) && ls[i].Kind == diff.Add; i++ {
+			adds = append(adds, &ls[i])
+		}
+		for k := 0; k < max(len(dels), len(adds)); k++ {
+			var r splitRow
+			if k < len(dels) {
+				r.l = dels[k]
+			}
+			if k < len(adds) {
+				r.r = adds[k]
+			}
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+// diffSplitLines 画左右对比(两栏等宽,中间一条细线),窄档不会走到这里。
+func (a *App) diffSplitLines(c *ui.Context, ls []diff.Line) {
+	t := a.tk
+	for i, r := range splitRows(ls) {
+		ui.Row(c).Key(i).Height(monoLH).AlignItems(ui.Center).Children(func() {
+			for side, ln := range []*diff.Line{r.l, r.r} {
+				cell := ui.Row(c).Key(side).Grow(1).Basis(0).MinWidth(0).Height(monoLH).AlignItems(ui.Center).Clip()
+				if side == 1 {
+					cell.BorderWidth(0, 0, 0, 1).BorderColor(t.Bd1)
+				}
+				if ln != nil && ln.Kind == diff.Del {
+					cell.Background(t.DiffDel)
+				} else if ln != nil && ln.Kind == diff.Add {
+					cell.Background(t.DiffAdd)
+				}
+				cell.Children(func() {
+					if ln == nil {
+						return
+					}
+					no := ln.NewNo
+					if side == 0 {
+						no = ln.OldNo
+					}
+					ui.Text(c, itoa(no)).Font("monospace").FontSize(11.5).TextColor(t.Tx4).TextAlign(ui.End).Width(30).PaddingEnd(6).Shrink(0)
+					ui.RichText(c, kit.RustSpans(ln.Text, t.Tx1, 11.5)...).NoWrap().Grow(1).MinWidth(0).Clip()
+				})
+			}
+		})
+	}
 }

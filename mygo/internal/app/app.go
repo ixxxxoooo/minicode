@@ -98,6 +98,8 @@ type App struct {
 	winW, winH   float32     // 窗口内容区尺寸(夹栏宽用)
 	chatW        float32     // 对话栏上一帧的宽度(响应式三档按它判断)
 	wsW          float32     // 工作区上一帧的宽度
+	fit          autoFit     // 窗口变窄时自动收起的状态(responsive.go)
+	diffPref     int         // 已应用的 Diff 默认视图偏好(0 左右 / 1 统一)
 	nav          string      // chat / files / search / scm
 	navBy        [2]string   // 各形态各自记住的左栏分段(切回来还停在原处)
 	popup        string      // 状态栏 / 输入框弹层:cfg / ctx / upd / acct
@@ -390,6 +392,7 @@ func (a *App) View(c *ui.Context) {
 	defer diag.SpanSlow("app", "构建界面", 33*time.Millisecond)()
 	c.SetTheme(a.tk.UITheme())
 	a.winW, a.winH = c.Size()
+	a.fitPanels()
 	a.shortcuts(c)
 	if a.popup == "" {
 		a.popSeen = ""

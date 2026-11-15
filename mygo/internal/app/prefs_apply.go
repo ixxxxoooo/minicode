@@ -65,6 +65,13 @@ func (a *App) applyBehavior() {
 		}
 	}
 	edScale = float32(a.prefs.Int(pEdFont, 12)) / 12
+	// 设置里改了 Diff 默认视图:已开的差异标签放弃各自的选择,统一跟随新默认
+	if v := a.prefs.Int("scm.diff", 0); v != a.diffPref {
+		a.diffPref = v
+		for _, tb := range a.ide.tabs {
+			tb.lay = 0
+		}
+	}
 }
 
 // applyEditorPrefs 把编辑器偏好套到一个编辑器状态(每帧调用,值没变时什么都不做)。

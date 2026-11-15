@@ -181,9 +181,8 @@
   W.settings = (st) => {
     const cur = W.settingsCur(st), q = (st.setQ || '').trim(), by = {};
     if (q) hits(q).forEach(h => by[h.id] = (by[h.id] || 0) + 1);
-    return `<div class="set"><div class="set-nav fc g1">${inp('搜索设置', { id: 'setq', icon: 'search', cls: 'fill', v: esc(st.setQ || ''), style: 'margin-bottom:6px' })}
-      <div class="scroll fc g1" style="flex:1;min-height:0">${GROUPS.map(([g, ids]) => `<div class="grp-h" style="margin-top:4px">${g}</div>${ids.map(id => navi(id, cur, q ? (by[id] || 0) : undefined)).join('')}`).join('')}</div>
-      ${btn('返回', 'ghost', 'chevL', 'data-act="screen" data-screen="work"')}</div>
+    return `<div class="set"><div class="set-nav fc g1"><div class="row set-back" data-act="screen" data-screen="work" tabindex="0" style="margin-bottom:6px;color:var(--tx-2)">${ic('arrowL', 's12')}<span class="grow">返回应用</span>${kbd('esc')}</div>${inp('搜索设置', { id: 'setq', icon: 'search', cls: 'fill', v: esc(st.setQ || ''), style: 'margin-bottom:6px' })}
+      <div class="scroll fc g1" style="flex:1;min-height:0">${GROUPS.map(([g, ids]) => `<div class="grp-h" style="margin-top:4px">${g}</div>${ids.map(id => navi(id, cur, q ? (by[id] || 0) : undefined)).join('')}`).join('')}</div></div>
       <div class="set-main scroll" id="set-main"><div class="set-col a-rise" id="set-col">${W.settingsView(st)}</div>
         <div class="rbar" hidden><span class="grow">${ic('refresh', 's12')} <b class="rcount">1</b> 项更改需要重启后生效</span>${btn('稍后', 'sm ghost', '', 'data-act="rbar-later"')}${btn('立即重启', 'sm pri', '', 'data-act="rbar-go"')}</div></div></div>`;
   };

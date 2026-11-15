@@ -179,8 +179,17 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 	if hov {
 		row.Background(t.Fill1)
 	}
-	if body != nil && sp.hasBody {
+	switch {
+	case body != nil && sp.hasBody:
 		row.OnClick(func() { a.folds[sp.id] = !open; a.foldAt[sp.id] = time.Now() })
+	case sp.path != "": // 没有可展开内容的文件步骤(读取):点整行 = 在工作区打开文件
+		row.Cursor(ui.CursorPointer).OnClick(func() {
+			if !a.openPathRef(joinRef(sp.path, sp.line)) {
+				a.toast = "文件已不存在:" + baseName(sp.path)
+			}
+		})
+	case sp.term != nil: // 命令没有输出体时:点整行 = 在终端面板查看
+		row.Cursor(ui.CursorPointer).OnClick(func() { a.viewInPanel(sp.term) })
 	}
 	tone := a.famColor(sp.fam)
 	row.Children(func() {
@@ -192,6 +201,8 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 				kit.Spin(c, tone)
 			case sp.state == "err":
 				kit.Ic(c, sp.icon, kit.S12).TextColor(t.Err)
+			case sp.path != "": // 文件相关的步骤:显示文件 / 语言图标(按扩展名上色),点图标跳到文件
+				kit.Ic(c, fileIcon(sp.path), kit.S12).TextColor(a.fileTint(sp.path, t.Tx3.Mix(tone, .78)))
 			default:
 				kit.Ic(c, sp.icon, kit.S12).TextColor(t.Tx3.Mix(tone, .78))
 			}
@@ -211,6 +222,9 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 		ui.Spacer(c).Grow(1)
 		// 右侧结果
 		ui.Row(c).Gap(6).PaddingStart(8).Shrink(0).AlignItems(ui.Center).Children(func() {
+			if hov && sp.state != "run" {
+				a.stepActions(c, sp)
+			}
 			if sp.add > 0 || sp.del > 0 {
 				if sp.add > 0 {
 					ui.Text(c, "+"+itoa(sp.add)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Ok)
@@ -342,7 +356,8 @@ func (a *App) diffCard(c *ui.Context, d *core.DiffBlock, head bool) {
 			ui.Text(c, d.Path).Grow(1).SingleLine()
 			ui.Text(c, "+"+itoa(add)).Font("monospace").FontSize(11.5).TextColor(t.Ok)
 			ui.Text(c, "−"+itoa(del)).Font("monospace").FontSize(11.5).TextColor(t.Err)
-			kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制"})
+			kit.Ib(c, "ext", kit.IbOpt{Small: true, Tip: "在工作区查看差异"}).OnClick(func() { a.OpenDiffTab(d.Path) })
+			kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制改动后的内容"}).OnClick(func() { a.copyOut(d.New, "改动后的内容") })
 		}
 	}
 	a.card(c, h, func() {
@@ -463,7 +478,9 @@ func (a *App) termCard(c *ui.Context, tc *core.ToolCall, tb *core.TerminalBlock)
 			}
 		}
 		kit.Ib(c, "terminal", kit.IbOpt{Small: true, Tip: "在终端面板查看"}).OnClick(func() { a.viewInPanel(tb) })
-		kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制"})
+		kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制命令与输出"}).OnClick(func() {
+			a.copyOut("$ "+tb.Command+"\n"+strings.TrimRight(tb.Output, "\n"), "命令与输出")
+		})
 	}, func() {
 		ui.Column(c).Padding(6, 10).Children(func() {
 			lines := strings.Split(strings.TrimRight(tb.Output, "\n"), "\n")

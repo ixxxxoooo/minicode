@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
@@ -56,6 +57,14 @@ type step struct {
 	state      string // "" 完成 / run 运行中 / err 失败 / deny 已拒绝
 	open       bool   // 默认展开
 	hasBody    bool
+
+	// 行内动作(悬停出现,点对象名 / 图标也能跳):
+	path    string              // 涉及的文件(原样,可能是绝对路径),空 = 无
+	line    int                 // 跳转行(1 起,0 = 不定位)
+	diffAs  bool                // 有文件差异可看(编辑 / 写入)
+	term    *core.TerminalBlock // 命令输出(可在终端面板查看)
+	url     string              // 抓取的网址
+	copyStr string              // 「复制」的内容(命令 / 路径 / 网址 / 搜索词)
 }
 
 func baseName(p string) string { return filepath.Base(p) }
@@ -145,6 +154,8 @@ func presentTool(tc *core.ToolCall) step {
 	switch tc.Kind {
 	case core.KindRead:
 		s.icon, s.verb, s.obj = "fileText", "读取", baseName(path)
+		s.path, s.copyStr = path, path
+		s.line, _ = strconv.Atoi(inputStr(tc, "offset"))
 		s.meta = dirOf(path)
 		if n := textLines(firstText(tc)); n > 0 {
 			s.meta += fmt.Sprintf(" · L1–%d", n)
@@ -158,6 +169,7 @@ func presentTool(tc *core.ToolCall) step {
 			s.icon, s.verb = "search", "搜索"
 		}
 		s.obj = `"` + pat + `"`
+		s.copyStr = pat
 		s.meta = inputStr(tc, "path")
 		txt := firstText(tc)
 		if strings.HasPrefix(txt, "No ") || (tc.Status == core.ToolCompleted && txt == "") {
@@ -174,6 +186,7 @@ func presentTool(tc *core.ToolCall) step {
 		if tc.Kind == core.KindWrite {
 			s.icon, s.verb = "file", "写入"
 		}
+		s.path, s.copyStr, s.diffAs = path, path, true
 		s.add, s.del = diffStat(tc)
 		s.hasBody = hasContent[*core.DiffBlock](tc)
 		s.open = s.hasBody && tc.Status == core.ToolCompleted && s.add+s.del <= 8 // 小改动默认展开,大改动折叠
@@ -185,11 +198,21 @@ func presentTool(tc *core.ToolCall) step {
 			s.obj = tc.Title
 		}
 		s.right = durText(tc.DurationMs)
+		s.copyStr = s.obj
+		for _, ct := range tc.Content {
+			if tb, ok := ct.(*core.TerminalBlock); ok {
+				s.term = tb
+			}
+		}
 		s.hasBody = hasContent[*core.TerminalBlock](tc)
 		s.open = s.hasBody
 	case core.KindFetch:
 		s.fam = famWeb
 		s.icon, s.verb, s.obj = "globe", "抓取", firstNonEmpty(inputStr(tc, "url"), inputStr(tc, "query"), tc.Title)
+		s.copyStr = s.obj
+		if u := inputStr(tc, "url"); strings.HasPrefix(u, "http") {
+			s.url = u
+		}
 	case core.KindMCP, core.KindBrowser:
 		s.fam = famMCP
 		s.icon, s.verb, s.obj = "plug", "调用", tc.Title

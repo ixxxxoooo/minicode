@@ -193,6 +193,14 @@ func (a *App) settingsNav(c *ui.Context) {
 		}
 	}
 	ui.Column(c).Width(196).Shrink(0).Padding(10, 8).Gap(1).Background(t.Chrome).BorderWidth(0, 1, 0, 0).BorderColor(t.Bd2).Children(func() {
+		// 顶部「返回应用」:离开设置的出口放在最显眼的位置(与红绿灯同一视线),Esc 同效
+		back := kit.RowEl(c, false).Key("set-back").Gap(6).Margin(0, 0, 6, 0).TextColor(t.Tx2)
+		back.OnClick(a.closeSettings)
+		back.Children(func() {
+			kit.Ic(c, "arrowL", kit.S12)
+			ui.Text(c, "返回应用").Grow(1)
+			kit.Kbd(c, "esc")
+		})
 		// 搜索框
 		ui.Row(c).Height(24).PaddingX(8).Gap(6).Radius(t.RSm()).Background(t.Fill1).AlignItems(ui.Center).Margin(0, 0, 6, 0).Children(func() {
 			kit.Ic(c, "search", kit.S12).TextColor(t.Tx3)
@@ -226,7 +234,6 @@ func (a *App) settingsNav(c *ui.Context) {
 				}
 			})
 		})
-		kit.Btn(c, "返回", kit.BtnOpt{Variant: kit.BtnGhost, Icon: "chevL"}).OnClick(a.closeSettings)
 	})
 }
 

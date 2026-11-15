@@ -86,6 +86,8 @@
     sort: '<path d="M7 5v14M4 16l3 3 3-3M17 19V5M14 8l3-3 3 3"/>',
     cal: '<rect x="4" y="5.5" width="16" height="14" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    arrowL: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+    quote: '<path d="M10 7H6.5A1.5 1.5 0 0 0 5 8.5V12a1.5 1.5 0 0 0 1.5 1.5H9V15a2 2 0 0 1-2 2M19 7h-3.5A1.5 1.5 0 0 0 14 8.5V12a1.5 1.5 0 0 0 1.5 1.5H18V15a2 2 0 0 1-2 2"/>',
     ret: '<path d="M19 6v6a2 2 0 0 1-2 2H6M10 10l-4 4 4 4"/>',
     diff: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v6M9 11h6M9 16.5h6"/>',
     fork: '<circle cx="6" cy="5.5" r="2"/><circle cx="18" cy="5.5" r="2"/><circle cx="12" cy="18.5" r="2"/><path d="M6 7.5v2a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-2M12 12.5v4"/>',

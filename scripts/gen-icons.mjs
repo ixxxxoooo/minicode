@@ -2,6 +2,7 @@
 // 用法:node scripts/gen-icons.mjs  → 写 mygo/internal/kit/icons_gen.go
 import { readFileSync, writeFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { execSync } from 'node:child_process';
 
 const win = {};
 const ctx = vm.createContext({ window: win, document: {}, ICONS: undefined, U: undefined });
@@ -19,3 +20,5 @@ for (const n of names) out += `\t${JSON.stringify(n)}: ${JSON.stringify(icons[n]
 out += '}\n';
 writeFileSync('mygo/internal/kit/icons_gen.go', out);
 console.log(`写入 ${names.length} 个图标`);
+// 生成后统一格式(gofmt -l 要求零输出)
+try { execSync('gofmt -w mygo/internal/kit/icons_gen.go'); } catch (e) { /* 没装 gofmt 就跳过 */ }

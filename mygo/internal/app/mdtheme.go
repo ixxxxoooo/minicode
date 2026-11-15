@@ -33,7 +33,7 @@ func (a *App) mdTheme() *markdown.Theme {
 // mdOptions 返回(并缓存)会话流用的 Markdown 选项;换主题时清掉。
 func (a *App) mdOptions() *markdown.Options {
 	if a.md == nil {
-		a.md = &markdown.Options{Theme: a.mdTheme()}
+		a.md = &markdown.Options{Theme: a.mdTheme(), OnLink: a.openMdLink, LinkMenu: a.linkMenu}
 	}
 	return a.md
 }

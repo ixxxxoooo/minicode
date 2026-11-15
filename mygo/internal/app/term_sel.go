@@ -416,9 +416,7 @@ func (a *App) termFindBar(c *ui.Context, tp *termPanel) {
 			cnt = itoa(f.cur+1) + "/" + itoa(len(f.hits))
 		}
 		ui.Text(c, cnt).FontSize(theme.FsCap).TextColor(map[bool]ui.Color{true: t.Err, false: t.Tx3}[cnt == "无结果"]).FontFeatures("tnum").MinWidth(40)
-		if kit.Ib(c, "caseSens", kit.IbOpt{Small: true, Tip: "区分大小写", On: f.cs}).Clicked() {
-			f.cs = !f.cs
-		}
+		a.toggleBtn(c, "Aa", &f.cs, "区分大小写")
 		if kit.Ib(c, "chevD", kit.IbOpt{Small: true, Tip: "下一个 Enter"}).Clicked() {
 			a.findStep(tp, 1)
 		}

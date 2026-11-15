@@ -174,6 +174,19 @@ func (a *App) hunkPatch(t *ideTab, h editor.DiffHunk) string {
 	return b.String()
 }
 
+// diffLayout 是差异标签此刻的视图:窄档强制统一 > 标签上的选择 > 偏好 scm.diff。
+// 窄档只是临时覆盖、不改写选择,窗口变宽后自动回到左右。
+func (a *App) diffLayout(tb *ideTab, narrow bool) editor.DiffLayout {
+	want := tb.lay
+	if want == 0 {
+		want = int8(1 + a.prefs.Int("scm.diff", 0))
+	}
+	if narrow || want == 2 {
+		return editor.DiffUnified
+	}
+	return editor.DiffSplit
+}
+
 // diffTab 是差异标签的内容:顶栏(文件 / 来源 / 增删 / 上下一处 / 视图切换)+ 差异正文。
 func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 	t := a.tk
@@ -181,9 +194,7 @@ func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 	dv.Theme = a.editorTheme()
 	dv.Font = ui.Font{Family: "monospace", Size: 12}
 	narrow := a.wsNarrow()
-	if narrow { // 工作区 < 520:强制统一视图
-		dv.Layout = editor.DiffUnified
-	}
+	dv.Layout = a.diffLayout(tb, narrow)
 	adds, dels := dv.Stats()
 	hunks := dv.Hunks()
 	ui.Row(c).Height(30).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
@@ -214,11 +225,10 @@ func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 				on = 1
 			}
 			if i := kit.Seg(c, items, on, kit.SegOpt{Key: "dvseg"}); i >= 0 {
-				if i == 0 {
-					dv.Layout = editor.DiffSplit
-				} else {
-					dv.Layout = editor.DiffUnified
-				}
+				tb.lay = int8(i + 1)
+				a.prefs.Set("scm.diff", i) // 记住:之后新开的差异标签沿用
+				a.diffPref = i
+				log.Info("切换差异视图", "统一", i == 1)
 			}
 		}
 		kit.Btn(c, "打开文件", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "ext"}).OnClick(func() {

@@ -3,6 +3,9 @@ package app
 import (
 	"strings"
 	"testing"
+
+	"github.com/egoist/mygo/ui/editor"
+	"github.com/ixxxxoooo/minicode/internal/diff"
 )
 
 func TestHunkStageAndRevert(t *testing.T) {
@@ -62,5 +65,49 @@ func TestStagedDiffUnstageHunk(t *testing.T) {
 	a.unstageHunk(tb, 0)
 	if idx, _ := a.repo.Index("src/router.rs"); idx != tb.dv.New.String() {
 		t.Fatal("取消暂存后暂存区应等于还原后的暂存区一侧")
+	}
+}
+
+// 左右对比排行:删除与新增一一配对,多出的一侧留空,相同行两侧都有。
+func TestSplitRows(t *testing.T) {
+	ls := diff.Lines("a\nb\nc\n", "a\nB\nB2\nc\n", 1, 1)
+	rows := splitRows(ls)
+	if len(rows) != 4 {
+		t.Fatalf("应排成 4 行:%d", len(rows))
+	}
+	if rows[0].l == nil || rows[0].r == nil || rows[0].l.Text != "a" {
+		t.Fatalf("相同行两侧都有:%+v", rows[0])
+	}
+	if rows[1].l == nil || rows[1].l.Text != "b" || rows[1].r == nil || rows[1].r.Text != "B" {
+		t.Fatalf("删除与新增配对:%+v", rows[1])
+	}
+	if rows[2].l != nil || rows[2].r == nil || rows[2].r.Text != "B2" {
+		t.Fatalf("多出的新增左侧留空:%+v", rows[2])
+	}
+}
+
+// 窄档临时强制统一,窗口变宽后回到用户选的左右;没点过的标签跟随偏好。
+func TestDiffLayoutSurvivesNarrow(t *testing.T) {
+	a, tt := demoIDE(t)
+	tt.Frame()
+	a.openDiffKind(dkHead, "src/router.rs", true)
+	tb := a.ide.cur()
+	if tb == nil || !tb.diff {
+		t.Fatal("应打开了差异标签")
+	}
+	if a.diffLayout(tb, false) != editor.DiffSplit {
+		t.Fatal("默认偏好是左右")
+	}
+	tb.lay = 1 // 用户选了左右
+	if a.diffLayout(tb, true) != editor.DiffUnified {
+		t.Fatal("窄档应强制统一")
+	}
+	if a.diffLayout(tb, false) != editor.DiffSplit || tb.lay != 1 {
+		t.Fatal("变宽后应回到左右,选择不能被改写")
+	}
+	tb.lay = 0
+	a.prefs.Set("scm.diff", 1)
+	if a.diffLayout(tb, false) != editor.DiffUnified {
+		t.Fatal("没点过的标签应跟随偏好(统一)")
 	}
 }
