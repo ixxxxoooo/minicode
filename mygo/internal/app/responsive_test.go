@@ -2,54 +2,50 @@ package app
 
 import "testing"
 
-func TestFitNeeds(t *testing.T) {
-	s, r := fitNeeds(ModeAgent, 228, 352)
-	if s != 228+400+360 || r != 400+360 {
-		t.Fatalf("Agent 阈值 %v %v", s, r)
-	}
-	s, r = fitNeeds(ModeIDE, 228, 352)
-	if s != 228+480+352 || r != 480+352 {
-		t.Fatalf("IDE 阈值 %v %v", s, r)
+func TestWinTier(t *testing.T) {
+	a, _ := demoIDE(t)
+	for _, tc := range []struct {
+		w    float32
+		want int
+	}{
+		{1280, 0},
+		{1050, 1},
+		{800, 2},
+		{640, 3},
+	} {
+		a.winW = tc.w
+		if got := a.winTier(); got != tc.want {
+			t.Fatalf("w=%v tier=%d want %d", tc.w, got, tc.want)
+		}
 	}
 }
 
-// 变窄先收导航栏、再收右侧栏;变宽(过了回差)只恢复自动收起的;用户手动打开的不被再收回。
-func TestFitPanelsShrinkAndRestore(t *testing.T) {
-	a, tt := demoIDE(t)
-	tt.Frame()
+func TestUseWsOverlay(t *testing.T) {
+	a, _ := demoIDE(t)
 	a.SetMode(ModeAgent)
-	a.rightOn, a.sideOpen = true, true
-	a.fit = autoFit{mode: ModeAgent}
-	a.winW = 1280
-	a.fitPanels()
-	if !a.sideOpen || !a.rightOn {
-		t.Fatal("1280 两侧都放得下")
+	a.winW = 1000
+	if !a.useWsOverlay() {
+		t.Fatal("1000 Agent 应用工作区浮层")
 	}
-	a.winW = 1000 // < 228+400+360 = 988? 不,1000 ≥ 988,仍放得下
-	a.fitPanels()
-	if !a.sideOpen {
-		t.Fatal("1000 导航栏还放得下")
+	a.winW = 1200
+	if a.useWsOverlay() {
+		t.Fatal("1200 不应浮层")
 	}
-	a.winW = 960
+}
+
+func TestFitPanelsSideRestore(t *testing.T) {
+	a, _ := demoIDE(t)
+	a.SetMode(ModeIDE)
+	a.sideOpen, a.rightOn = true, true
+	a.fit = autoFit{w: 1280, mode: ModeIDE}
+	a.winW = 800
 	a.fitPanels()
-	if a.sideOpen || !a.rightOn || !a.fit.side {
-		t.Fatalf("960 应只收导航栏:side=%v right=%v", a.sideOpen, a.rightOn)
+	if a.sideOpen || !a.fit.side {
+		t.Fatal("900 以下应自动收起导航栏")
 	}
-	a.winW = 700
+	a.winW = 1150
 	a.fitPanels()
-	if a.rightOn || !a.fit.right {
-		t.Fatal("700 应再收右侧栏")
-	}
-	a.winW = 1300
-	a.fitPanels()
-	if !a.sideOpen || !a.rightOn || a.fit.side || a.fit.right {
-		t.Fatal("变宽后两侧都应恢复")
-	}
-	// 手动收起的不被自动恢复
-	a.sideOpen = false
-	a.winW = 1400
-	a.fitPanels()
-	if a.sideOpen {
-		t.Fatal("手动收起的导航栏不该被恢复")
+	if !a.sideOpen || a.fit.side {
+		t.Fatal("变宽应恢复自动收起的导航栏")
 	}
 }

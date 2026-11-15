@@ -58,6 +58,7 @@ func (a *App) revealWorkspace() {
 	if a.mode == ModeAgent && !a.rightOn {
 		a.rightOn = true
 	}
+	a.openWsOverlay()
 	if a.mode == ModeIDE {
 		a.chatMax = false
 	}
@@ -69,7 +70,13 @@ func (a *App) revealWorkspace() {
 func (a *App) toggleRight() {
 	a.rightOn = !a.rightOn
 	if a.mode == ModeIDE && !a.rightOn {
-		a.chatMax = false
+		a.chatMax, a.dockFloat = false, false
+	}
+	if a.mode == ModeAgent && a.rightOn && a.useWsOverlay() {
+		a.wsFloat = true
+	}
+	if a.mode == ModeIDE && a.rightOn && a.useDockRail() {
+		a.dockFloat = true
 	}
 }
 

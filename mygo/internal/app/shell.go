@@ -34,6 +34,9 @@ func (a *App) root(c *ui.Context) {
 		a.paletteView(c)
 		a.quickView(c)
 		a.projDialogs(c)
+		a.overlayLayer(c)
+		a.noticeToasts(c)
+		a.morphShield(c)
 		if a.toast != "" {
 			c.Toast(a.toast)
 			a.toast = ""

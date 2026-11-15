@@ -24,7 +24,11 @@ func (a *App) titlebar(c *ui.Context) {
 		// 左
 		ui.Row(c).Grow(1).Basis(0).MinWidth(0).Gap(4).Children(func() {
 			a.lights(c, bar.Left)
-			kit.Ib(c, "panelL", kit.IbOpt{Tip: "导航栏 ⌘B", On: false}).OnClick(func() { a.sideOpen = !a.sideOpen })
+			tip := "导航栏 ⌘B"
+			if a.useSideDrawer() {
+				tip = "打开导航抽屉"
+			}
+			kit.Ib(c, "panelL", kit.IbOpt{Tip: tip, On: a.sideOpen && a.useSideDrawer()}).OnClick(func() { a.sideOpen = !a.sideOpen })
 			// 前进 / 后退两个形态都在:IDE = 跳转历史(转到定义 / 搜索命中 / 引用入栈),Agent = 打开过的会话
 			dim := func(on bool) ui.Color {
 				if on {
@@ -42,28 +46,36 @@ func (a *App) titlebar(c *ui.Context) {
 			if kit.Ib(c, "arrow", kit.IbOpt{Tip: ft, Color: dim(a.canForward())}).Clicked() {
 				a.navGo(1)
 			}
-			switch t.Scheme.ID {
-			case "b":
-				a.modeSeg(c)
-			default:
-				a.crumb(c)
+			if a.compactModeSeg() {
+				a.modeSegCompact(c)
+			} else {
+				switch t.Scheme.ID {
+				case "b":
+					a.modeSeg(c)
+				default:
+					a.crumb(c)
+				}
 			}
 		})
 		// 中
 		ui.Row(c).Gap(8).Shrink(0).Children(func() {
-			switch t.Scheme.ID {
-			case "a":
-				a.modeSeg(c)
-			case "b":
-				a.cmdk(c)
-			case "c":
-				a.modeSeg(c)
-				a.cmdk(c)
+			if !a.compactModeSeg() {
+				switch t.Scheme.ID {
+				case "a":
+					a.modeSeg(c)
+				case "b":
+					a.cmdk(c)
+				case "c":
+					a.modeSeg(c)
+					a.cmdk(c)
+				}
 			}
 		})
 		// 右
 		ui.Row(c).Grow(1).Basis(0).MinWidth(0).Gap(4).Justify(ui.End).Children(func() {
-			if t.Scheme.ID == "a" {
+			if a.compactTitle() {
+				kit.Ib(c, "search", kit.IbOpt{Tip: "命令面板 ⌘K"}).OnClick(a.openPalette)
+			} else if t.Scheme.ID == "a" {
 				a.cmdk(c)
 			}
 			kit.Ib(c, "panelB", kit.IbOpt{Tip: "底部面板 ⌘J", On: a.ide.bottomOpen}).OnClick(func() { a.ide.bottomOpen = !a.ide.bottomOpen })
@@ -72,7 +84,12 @@ func (a *App) titlebar(c *ui.Context) {
 				rt = "对话栏 ⌥⌘B"
 			}
 			kit.Ib(c, "panelR", kit.IbOpt{Tip: rt, On: a.rightOn}).OnClick(a.toggleRight)
-			kit.Ib(c, "bell", kit.IbOpt{Tip: "通知"})
+			if a.mode == ModeIDE {
+				bell := a.noticeBell(c)
+				a.noticePanel(c, bell)
+			} else {
+				kit.Ib(c, "bell", kit.IbOpt{Tip: "通知(IDE 形态可用)"})
+			}
 			if t.Scheme.ID == "b" {
 				av := a.avatar(c).Margin(0, 0, 0, 4)
 				av.OnClick(func() { a.togglePop("acct@avatar") })
@@ -99,6 +116,21 @@ func (a *App) lights(c *ui.Context, room float32) {
 }
 
 // modeSeg 是 Agent | IDE 分段(⌘E)。
+// modeSegCompact 极窄窗:单个图标按钮在 Agent / IDE 间切换。
+func (a *App) modeSegCompact(c *ui.Context) {
+	icon := "bot"
+	if a.mode == ModeIDE {
+		icon = "code"
+	}
+	kit.Ib(c, icon, kit.IbOpt{Tip: "切换 Agent / IDE ⌘E"}).OnClick(func() {
+		if a.mode == ModeAgent {
+			a.SetMode(ModeIDE)
+		} else {
+			a.SetMode(ModeAgent)
+		}
+	})
+}
+
 func (a *App) modeSeg(c *ui.Context) {
 	on := 0
 	if a.mode == ModeIDE {

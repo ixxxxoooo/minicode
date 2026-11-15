@@ -100,7 +100,11 @@ func (r *realSetup) open(id string) backend.Backend {
 		}
 		id = ""
 	}
-	if loc, ok := r.ix.Locate(id); ok && id != "" {
+	if parts := strings.Split(id, ":"); len(parts) == 3 && parts[0] == "fork" {
+		f := claude.ForkConfig{ParentSessionID: parts[1], NewSessionID: parts[2]}
+		f.ApplyConfig(&cfg)
+		id = parts[2]
+	} else if loc, ok := r.ix.Locate(id); ok && id != "" {
 		cfg.Cwd, cfg.SessionID, cfg.HistoryPath = loc.Cwd, id, loc.Path
 		r.curCwd = loc.Cwd
 	}
@@ -182,6 +186,7 @@ func initialCwd(ix *claude.Index) string {
 
 func main() {
 	dev := os.Getenv("MINI_DEV") != ""
+	secondary, nwProject := app.ParseArgs()
 	demoMode := resolveDemo(dev)
 	runMode := "real"
 	if demoMode {
@@ -190,15 +195,23 @@ func main() {
 	diag.Init(diag.Options{Version: version, Mode: runMode, Mirror: dev && os.Getenv("MINI_MIRROR") != ""})
 	log.Info("启动", "version", version, "mode", runMode, "dev", dev)
 
-	opts := app.Options{
-		Palette: env("MINI_THEME", "paper"),
-		Scheme:  env("MINI_SCHEME", "a"),
-		Mode:    app.ModeAgent,
-		Screen:  app.Screen(env("MINI_SCREEN", "work")),
-		Prefs:   prefs.Open(filepath.Join(diag.Home(), "settings.json")),
+	prefStore := prefs.Open(filepath.Join(diag.Home(), "settings.json"))
+	startMode := app.ModeAgent
+	switch env("MINI_MODE", "") {
+	case "ide":
+		startMode = app.ModeIDE
+	case "agent":
+		startMode = app.ModeAgent
+	default:
+		startMode = app.ResolveStartupMode(app.NewPrefsReader(prefStore.Int), false)
 	}
-	if env("MINI_MODE", "agent") == "ide" {
-		opts.Mode = app.ModeIDE
+	opts := app.Options{
+		Palette:   env("MINI_THEME", "paper"),
+		Scheme:    env("MINI_SCHEME", "a"),
+		Mode:      startMode,
+		Screen:    app.Screen(env("MINI_SCREEN", "work")),
+		Prefs:     prefStore,
+		Secondary: secondary,
 	}
 	if dev {
 		opts.DevBadge = map[bool]string{true: "演示模式", false: "开发版"}[demoMode]
@@ -214,7 +227,13 @@ func main() {
 		}
 	} else {
 		claude.SetCacheFile(filepath.Join(diag.Home(), "session-index-go.json"))
-		reg := projects.Open(filepath.Join(diag.Home(), "workspaces.json"))
+		regPath := filepath.Join(diag.Home(), "workspaces.json")
+		var reg *projects.Store
+		if secondary {
+			reg = projects.NewMem()
+		} else {
+			reg = projects.Open(regPath)
+		}
 		a.SetRegistry(reg)
 		rs = &realSetup{reg: reg}
 		a.SetSessMeta(sessmeta.Open(filepath.Join(diag.Home(), "session-meta.json")))
@@ -228,8 +247,12 @@ func main() {
 			return loc.Cwd, ok
 		}))
 		ix := rs.refresh()
-		rs.curCwd = initialCwd(ix)
-		log.Info("真实模式", "projects", len(ix.Projects), "cwd", rs.curCwd)
+		if nwProject != "" {
+			rs.curCwd = nwProject
+		} else {
+			rs.curCwd = initialCwd(ix)
+		}
+		log.Info("真实模式", "projects", len(ix.Projects), "cwd", rs.curCwd, "secondary", secondary)
 		a.SetProjects(ix.Projects, "")
 		a.SetProject(rs.curCwd)
 		rs.onCwd = a.SetProject
@@ -244,20 +267,39 @@ func main() {
 		if v, err := strconv.Atoi(os.Getenv("MINI_WIN_H")); err == nil {
 			h = v
 		}
+		sk := "main"
+		if secondary {
+			sk = "win:" + strconv.Itoa(os.Getpid())
+		}
+		wx, wy := 0, 0
+		if v, err := strconv.Atoi(os.Getenv("MINI_WIN_X")); err == nil {
+			wx = v
+		}
+		if v, err := strconv.Atoi(os.Getenv("MINI_WIN_Y")); err == nil {
+			wy = v
+		}
 		win := mygo.NewWindow(mygo.WindowOptions{
 			Title:         "MiniCode",
 			Width:         w,
 			Height:        h,
-			MinWidth:      900,
+			X:             wx,
+			Y:             wy,
+			MinWidth:      720,
 			MinHeight:     560,
-			StateKey:      "main",
+			StateKey:      sk,
 			TitleBarStyle: mygo.TitleBarHidden,
 			// 红绿灯与 36 高的标题栏垂直居中(按钮高 14:顶边距 = (36−14)/2)
 			TrafficLightPosition: &mygo.Point{X: 14, Y: 11},
 			Content:              ui.View(a.View),
 		})
 		a.SetWindow(win)
-		win.OnClosed(func() { a.CloseTerminals(); diag.CleanExit("关闭窗口") })
+		a.InstallAppMenu()
+		a.InitBrand()
+		win.OnClosed(func() {
+			a.SaveLayMemToPrefs()
+			a.CloseTerminals()
+			diag.CleanExit("关闭窗口")
+		})
 
 		// 主线程卡死看门狗:每 500 ms 让主线程回一次执行
 		diag.Watchdog(func(done func()) { mygo.RunOnMain(done) }, 400*time.Millisecond, 3*time.Second)
@@ -266,8 +308,16 @@ func main() {
 		if v, err := strconv.ParseFloat(os.Getenv("MINI_DEMO_SLOW"), 64); err == nil && v > 0 {
 			speed = v
 		}
+		if secondary && !demoMode {
+			a.SetSessionOpener(rs.open)
+			a.Attach(rs.open(""))
+			return
+		}
 		if demoMode {
 			a.SetSessionOpener(func(id string) backend.Backend {
+				if strings.HasPrefix(id, "fork:") {
+					return demo.ForkSession(id, speed)
+				}
 				if strings.HasPrefix(id, "new:") {
 					id = ""
 				}

@@ -193,6 +193,7 @@ func (a *App) subView(c *ui.Context, id string) {
 			})
 		})
 	})
+	a.taskScrollBtn(c)
 }
 
 // wsSection 是工作区内容里的小标题。
@@ -236,7 +237,7 @@ func (a *App) taskView(c *ui.Context, id string) {
 			a.taskNoFollow = !a.taskNoFollow
 		}
 		kit.Btn(c, "在终端面板中打开", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "terminal"}).OnClick(func() {
-			a.ide.bottomOpen, a.ide.bottomTab = true, "term"
+			a.viewTaskInPanel(tk)
 		})
 	})
 	st := &a.taskSt
@@ -257,6 +258,7 @@ func (a *App) taskView(c *ui.Context, id string) {
 			}
 		})
 	})
+	a.taskScrollBtn(c)
 }
 
 // taskFollowOn 跟随输出默认开启。

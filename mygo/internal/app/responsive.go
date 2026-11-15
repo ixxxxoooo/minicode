@@ -1,36 +1,72 @@
 package app
 
-// 窗口宽度自适应(设计稿「响应式」页的窗口宽度断点):窗口变窄放不下时,按优先级自动收起次要区域,
-// 变宽后只恢复「自动收起的」那些;用户手动开合优先,不会被覆盖。
-//
-//	Agent 形态  对话栏是主角:先收导航栏(宽 < 导航栏 + 对话栏 400 + 工作区 360),再收右侧工作区(宽 < 400 + 360)
-//	IDE 形态    工作区是主角:先收导航栏(宽 < 导航栏 + 工作区 480 + 对话栏),再收右侧对话栏(宽 < 480 + 对话栏)
-//
-// 恢复带 24px 的回差,避免在阈值附近抖动。只在宽度「继续变窄」或第一帧才会触发收起。
-const (
-	fitChatMin = 400 // Agent 对话栏最小宽度
-	fitWsMin   = 360 // Agent 工作区最小宽度
-	fitMainMin = 480 // IDE 工作区最小宽度
-	fitHyst    = 24
+import (
+	"github.com/ixxxxoooo/minicode/internal/diag"
 )
 
-// autoFit 记录自动收起的状态。
+var respLog = diag.L("resp")
+
+// 窗口断点(设计稿 resp / arch 页,固定 1100 / 900 / 720):
+//
+//	≥1100  默认并排
+//	900–1099  Agent 工作区改浮层;IDE 导航栏自动收起(⌘B 可展开为浮层)
+//	720–899  IDE 对话栏收成图标条 + 浮层;标题栏 ⌘K 收成图标
+//	<720   导航栏改抽屉;形态分段收成单图标
+const (
+	bpWide     = 1100
+	bpMid      = 900
+	bpNarrow   = 720
+	fitHyst    = 24
+	palHidePrv = 820
+	palNarrow  = 520
+)
+
+// autoFit 记录自动收起的状态(用户手动打开后不再算自动)。
 type autoFit struct {
-	w     float32 // 上一帧窗口宽度
-	side  bool    // 导航栏是被自动收起的
-	right bool    // 右侧栏是被自动收起的
-	mode  Mode    // right 标记属于哪个形态(形态切换后作废)
+	w      float32
+	side   bool
+	right  bool
+	wsOvl  bool // Agent:工作区从并排改为浮层
+	dockRl bool // IDE:对话栏收成图标条
+	mode   Mode
 }
 
-// fitNeeds 返回当前形态下「导航栏 + 右侧栏都开」与「只开右侧栏」所需的最小窗口宽度。
-func fitNeeds(mode Mode, sideW, dockW float32) (withSide, withRight float32) {
-	if mode == ModeIDE {
-		return sideW + fitMainMin + dockW, fitMainMin + dockW
+// winTier 返回当前窗口档位 0–3。
+func (a *App) winTier() int {
+	w := a.winW
+	switch {
+	case w >= bpWide:
+		return 0
+	case w >= bpMid:
+		return 1
+	case w >= bpNarrow:
+		return 2
+	default:
+		return 3
 	}
-	return sideW + fitChatMin + fitWsMin, fitChatMin + fitWsMin
 }
 
-// fitPanels 每帧在构建界面之前调用:按窗口宽度收起 / 恢复导航栏与右侧栏。
+func (a *App) useWsOverlay() bool {
+	return a.mode == ModeAgent && a.winTier() >= 1
+}
+
+func (a *App) useDockRail() bool {
+	return a.mode == ModeIDE && !a.chatMax && a.winTier() >= 2
+}
+
+func (a *App) useSideDrawer() bool {
+	return a.winTier() >= 3
+}
+
+func (a *App) compactTitle() bool {
+	return a.winTier() >= 2
+}
+
+func (a *App) compactModeSeg() bool {
+	return a.winTier() >= 3
+}
+
+// fitPanels 按断点自动收起 / 恢复次要区域;变宽只恢复曾被自动收起的项。
 func (a *App) fitPanels() {
 	w := a.winW
 	if w <= 0 {
@@ -40,31 +76,71 @@ func (a *App) fitPanels() {
 	first, shrinking := f.w == 0, w < f.w
 	f.w = w
 	if f.mode != a.mode {
-		f.right, f.mode = false, a.mode
+		*f = autoFit{w: w, mode: a.mode}
 	}
-	needSide, needRight := fitNeeds(a.mode, a.sideW(), a.dockW())
+	a.sideDrawer = a.useSideDrawer()
 
-	// 用户在自动收起之后又自己打开了:不再算「自动收起」
+	// 用户在自动收起后又手动打开 → 清除自动标记
 	if f.side && a.sideOpen {
 		f.side = false
 	}
-	if f.right && a.rightOn {
+	if f.right && a.rightOn && !a.useDockRail() && !a.useWsOverlay() {
 		f.right = false
 	}
+	if f.wsOvl && !a.useWsOverlay() {
+		f.wsOvl = false
+	}
+	if f.dockRl && !a.useDockRail() {
+		f.dockRl = false
+	}
+
+	tier := a.winTier()
 	switch {
-	case w < needSide && a.sideOpen && (first || shrinking):
+	case tier >= 1 && a.mode == ModeIDE && a.sideOpen && (first || shrinking):
 		a.sideOpen, f.side = false, true
-		log.Info("窗口变窄:自动收起导航栏", "w", w)
-	case w >= needSide+fitHyst && f.side:
+		respLog.Info("窗口变窄:收起导航栏", "w", w, "tier", tier)
+	case tier < 1 && f.side:
 		a.sideOpen, f.side = true, false
-		log.Info("窗口变宽:恢复导航栏", "w", w)
+		respLog.Info("窗口变宽:恢复导航栏", "w", w)
+	}
+
+	switch {
+	case tier >= 1 && a.mode == ModeAgent && a.winTier() == 1 && a.rightOn && !a.useWsOverlay() && (first || shrinking):
+		// 仍算「开着工作区」,但并排改浮层
+		f.wsOvl = true
+		respLog.Info("窗口变窄:Agent 工作区改浮层", "w", w)
+	case tier == 0 && f.wsOvl:
+		f.wsOvl = false
+	}
+
+	switch {
+	case a.useDockRail() && a.rightOn && !f.dockRl && (first || shrinking):
+		f.dockRl, f.right = true, true
+		respLog.Info("窗口变窄:IDE 对话栏收成图标条", "w", w)
+	case !a.useDockRail() && f.dockRl:
+		f.dockRl, f.right = false, false
+	}
+
+	// <900 Agent 若仍并排占不下:收起右侧(浮层模式下靠 wsFloat)
+	needRightInline := float32(0)
+	if a.mode == ModeAgent && !a.useWsOverlay() {
+		needRightInline = 400 + 360
 	}
 	switch {
-	case w < needRight && a.rightOn && (first || shrinking):
+	case w < needRightInline && needRightInline > 0 && a.rightOn && (first || shrinking):
 		a.rightOn, f.right = false, true
-		log.Info("窗口变窄:自动收起右侧栏", "w", w, "mode", a.mode)
-	case w >= needRight+fitHyst && f.right:
+		respLog.Info("窗口变窄:收起 Agent 工作区", "w", w)
+	case needRightInline > 0 && w >= needRightInline+fitHyst && f.right && !f.wsOvl:
 		a.rightOn, f.right = true, false
-		log.Info("窗口变宽:恢复右侧栏", "w", w, "mode", a.mode)
+	}
+
+	if a.useWsOverlay() && a.rightOn {
+		a.wsFloat = a.wsFloat || f.wsOvl
+	}
+	if a.useDockRail() && f.dockRl {
+		a.dockFloat = a.dockFloat && a.rightOn
+	}
+	if !a.rightOn {
+		a.wsFloat, a.dockFloat = false, false
 	}
 }

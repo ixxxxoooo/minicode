@@ -128,6 +128,9 @@ func (a *App) resizeHandle(c *ui.Context, key, edge string, cur, def, lo, hi flo
 var uiFade = ui.Animation{Duration: kit.DurFast, Ease: kit.EaseOut}
 
 func (a *App) saveLayout(key string) {
+	if a.secondary {
+		return
+	}
 	var v float32
 	switch key {
 	case lySide:

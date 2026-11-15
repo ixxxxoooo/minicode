@@ -37,6 +37,7 @@ func (a *App) SetProject(dir string) {
 		return
 	}
 	a.proj = dir
+	a.noteRecentProject(dir)
 	log.Info("切换项目", "dir", dir)
 	a.SetRepo(nil)
 	a.sc = scmState{gen: a.sc.gen + 1}

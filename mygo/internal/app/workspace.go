@@ -37,6 +37,9 @@ func (a *App) wsActive(left bool) bool {
 	if left {
 		return a.mode == ModeIDE && !a.chatMax
 	}
+	if a.useWsOverlay() {
+		return false
+	}
 	return a.mode == ModeAgent && a.rightOn
 }
 
@@ -102,11 +105,20 @@ func (a *App) workspace(c *ui.Context) {
 		a.bottomPanel(c)
 		return
 	}
-	a.etabs(c)
+	if a.ide.splitDir == 0 {
+		a.etabs(c)
+	} else {
+		a.etabsSplitBar(c)
+	}
 	cur := a.ide.cur()
 	switch {
-	case cur == nil:
+	case cur == nil && a.ide.splitDir == 0:
 		a.wsEmpty(c)
+	case a.ide.splitDir != 0 && !cur.isVirt():
+		if cur != nil {
+			a.crumbs(c, cur)
+		}
+		a.wsSplit(c, cur)
 	case cur.isVirt():
 		a.virtView(c, cur)
 	case cur.err != "":
@@ -176,7 +188,8 @@ func (a *App) etabs(c *ui.Context) {
 			})
 		})
 		ui.Row(c).Gap(1).PaddingX(6).AlignItems(ui.Center).Shrink(0).Children(func() {
-			kit.Ib(c, "cols", kit.IbOpt{Small: true, Tip: "向右拆分 ⌘\\"})
+			kit.Ib(c, "cols", kit.IbOpt{Small: true, Tip: "向右拆分 ⌘\\"}).OnClick(func() { a.splitEditor(1) })
+			kit.Ib(c, "rows", kit.IbOpt{Small: true, Tip: "向下拆分"}).OnClick(func() { a.splitEditor(2) })
 			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.tabStripMenu)
 		})
 	})
@@ -184,7 +197,7 @@ func (a *App) etabs(c *ui.Context) {
 
 func (a *App) etab(c *ui.Context, tb *ideTab) {
 	t := a.tk
-	on := tb.id == a.ide.active
+	on := tb.id == a.ide.active || tb.id == a.ide.active2
 	el := ui.ButtonBase(c).Key("etab-" + tb.id).PaddingX(10).Gap(6).AlignItems(ui.Center).Shrink(0).
 		TextColor(t.Tx3).Cursor(ui.CursorDefault).Transition(kit.Fade)
 	if isFileTab(tb) {

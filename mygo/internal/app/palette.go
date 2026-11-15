@@ -146,6 +146,9 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 	common[add("sliders", "设置:外观", "⌘,", "打开设置的「外观」:主题、布局方案、强调色。", func() { a.openSettings("appearance") })] = true
 	add("gear", "设置:通用", "", "打开设置的「通用」。", func() { a.openSettings("general") })
 	common[add("panelL", "显示 / 隐藏导航栏", "⌘B", "收起或展开左侧导航栏。", func() { a.sideOpen = !a.sideOpen })] = true
+	if !a.secondary {
+		add("win", "新建窗口", "⇧⌘N", "再起一个本应用进程,会话与布局各自独立。", func() { a.SpawnNewWindow(a.proj) })
+	}
 	add("panelR", "显示 / 隐藏右侧栏", "⌥⌘B", "Agent 形态 = 工作区,IDE 形态 = 对话栏。", a.toggleRight)
 	if a.mode == ModeIDE {
 		add("terminal", "显示 / 隐藏底部面板", "⌘J", "终端、问题、输出所在的底部面板。", func() { a.ide.bottomOpen = !a.ide.bottomOpen })
@@ -197,6 +200,9 @@ func (a *App) palItems() []palItem {
 	n := 0
 	for _, p := range a.projects {
 		for _, s := range p.Sessions {
+			if s.Archived {
+				continue
+			}
 			s, p := s, p
 			it := palItem{group: "会话", icon: "chat", title: s.Title, right: p.Name, desc: p.Name + " · " + s.Label,
 				run: func() { a.openSession(p.ID, s.ID) }}
@@ -340,7 +346,14 @@ func (a *App) paletteView(c *ui.Context) {
 	}
 	ui.DialogBase(c, &open, func(backdrop, panel ui.Element) {
 		backdrop.Background(t.Scrim).Justify(ui.Start).AlignItems(ui.Center).Padding(96, 0, 0, 0)
-		panel.Width(620).Background(t.Raised).Radius(t.RXl()).Clip().Column()
+		pw := float32(620)
+		if a.winW > 0 && a.winW < palHidePrv {
+			pw = min(520, a.winW-24)
+			if pw < 280 {
+				pw = max(280, a.winW-24)
+			}
+		}
+		panel.Width(pw).Background(t.Raised).Radius(t.RXl()).Clip().Column()
 		for _, s := range t.Shadow3() {
 			panel.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
@@ -361,7 +374,9 @@ func (a *App) paletteView(c *ui.Context) {
 			})
 			ui.Row(c).Height(palListH).AlignItems(ui.Stretch).Children(func() {
 				a.palList(c, items, run)
-				a.palPreview(c, items)
+				if a.winW >= palHidePrv || a.winW <= 0 {
+					a.palPreview(c, items)
+				}
 			})
 			ui.Row(c).Height(28).PaddingX(12).Gap(12).AlignItems(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx3).
 				BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
