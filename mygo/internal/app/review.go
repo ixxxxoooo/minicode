@@ -407,7 +407,7 @@ func (a *App) reviewFile(c *ui.Context, f chFile, first bool) {
 		head.Children(func() {
 			ch := kit.Ic(c, "chevD", kit.S12).TextColor(t.Tx3)
 			ch.Rotate(ch.AnimateWith("rot", map[bool]float32{true: -90, false: 0}[closed], kit.DurBase, kit.EaseOut))
-			kit.Ic(c, "code", kit.S12).TextColor(t.Tx3)
+			a.fileIc(c, baseName(f.path))
 			ui.Text(c, baseName(f.path)).FontWeight(600).SingleLine().Shrink(0)
 			ui.Text(c, a.fileDispDir(f.path)).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().Grow(1).Shrink(1)
 			if f.add > 0 {

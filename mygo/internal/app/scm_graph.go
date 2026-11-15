@@ -1,6 +1,7 @@
 package app
 
 import (
+	"path"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
@@ -225,7 +226,14 @@ func (a *App) graphDetail(c *ui.Context) {
 					a.scmOpenCommitFile(*cm, ch.Path, true)
 				}
 				fr.Children(func() {
-					ui.Text(c, ch.Path).SingleLine().Shrink(1).MinWidth(0).FontSize(theme.FsCap)
+					a.fileIc(c, path.Base(ch.Path))
+					nm := ui.Text(c, path.Base(ch.Path)).SingleLine().Shrink(0)
+					if ch.Status == 'D' {
+						nm.Strikethrough()
+					}
+					if d := path.Dir(ch.Path); d != "." {
+						ui.Text(c, d).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().Shrink(1).MinWidth(0)
+					}
 					ui.Spacer(c).Grow(1)
 					a.scmStat(c, ch)
 				})

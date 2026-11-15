@@ -247,7 +247,7 @@ func (a *App) etabPane(c *ui.Context, tb *ideTab, pane int8) {
 		ic := kit.Ic(c, a.tabIcon(tb), kit.S12)
 		if tb.virt == vReview || tb.virt == vPlan {
 			ic.TextColor(t.Ac)
-		} else if tb.virt == "" && !tb.diff {
+		} else if tb.virt == "" {
 			ic.TextColor(a.fileTint(tb.path, t.Tx3))
 		}
 		nm := ui.Text(c, a.tabTitle(tb)).SingleLine()

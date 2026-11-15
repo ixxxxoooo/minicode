@@ -32,6 +32,7 @@ type qpState struct {
 
 type qpRow struct {
 	group, icon, title, right string
+	fpath                     string // 非空 = 文件行:图标按文件类型着色
 	current                   bool
 	run                       func()
 }
@@ -109,7 +110,7 @@ func (a *App) qpRows() []qpRow {
 				continue
 			}
 			p := f.Path
-			rows = append(rows, qpRow{group: " ", icon: fileIcon(path.Base(p)), title: p, right: statusLetter(f.Status), run: func() { a.openCompareWork(s.cmpC, p) }})
+			rows = append(rows, qpRow{group: " ", icon: fileIcon(path.Base(p)), fpath: p, title: p, right: statusLetter(f.Status), run: func() { a.openCompareWork(s.cmpC, p) }})
 		}
 	case "cmphead":
 		for _, f := range s.cmpFiles {
@@ -117,7 +118,7 @@ func (a *App) qpRows() []qpRow {
 				continue
 			}
 			p := f.Path
-			rows = append(rows, qpRow{group: " ", icon: fileIcon(path.Base(p)), title: p, right: statusLetter(f.Status), run: func() { a.openCompareHead(s.cmpC, p) }})
+			rows = append(rows, qpRow{group: " ", icon: fileIcon(path.Base(p)), fpath: p, title: p, right: statusLetter(f.Status), run: func() { a.openCompareHead(s.cmpC, p) }})
 		}
 	case "cmp2":
 		for _, f := range s.cmpFiles {
@@ -125,7 +126,7 @@ func (a *App) qpRows() []qpRow {
 				continue
 			}
 			p, ah, bh := f.Path, s.cmpA.Hash, s.cmpB.Hash
-			rows = append(rows, qpRow{group: " ", icon: fileIcon(path.Base(p)), title: p, right: statusLetter(f.Status), run: func() { a.openCompareTwo(ah, bh, p) }})
+			rows = append(rows, qpRow{group: " ", icon: fileIcon(path.Base(p)), fpath: p, title: p, right: statusLetter(f.Status), run: func() { a.openCompareTwo(ah, bh, p) }})
 		}
 	case "branch":
 		exact := false
@@ -381,7 +382,11 @@ func (a *App) qpList(c *ui.Context, rows []qpRow, run func(int)) {
 				}
 				row.OnClick(func() { run(i) })
 				row.Children(func() {
-					kit.Ic(c, r.icon, kit.S12)
+					if r.fpath != "" {
+						a.fileIc(c, path.Base(r.fpath))
+					} else {
+						kit.Ic(c, r.icon, kit.S12)
+					}
 					ui.Text(c, r.title).Grow(1).SingleLine().MinWidth(0)
 					if r.right != "" {
 						col := t.Tx4

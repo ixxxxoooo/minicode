@@ -1,6 +1,7 @@
 package app
 
 import (
+	"path"
 	"strings"
 	"time"
 
@@ -133,15 +134,8 @@ func (a *App) tabIcon(t *ideTab) string {
 	case vConflict, vGraph:
 		return "fork"
 	}
-	switch {
-	case t.diff:
-		return "diff"
-	case strings.HasSuffix(t.path, ".toml"):
-		return "gear"
-	case strings.HasSuffix(t.path, ".md"):
-		return "fileText"
-	}
-	return "code"
+	// 差异标签与普通文件标签一样按文件类型取图标(差异靠标题里的「(HEAD ↔ 工作区)」区分)
+	return fileIcon(path.Base(t.path))
 }
 
 // findSub 在时间线里按 id 找子 Agent 卡片(含嵌套)。

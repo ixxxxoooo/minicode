@@ -1,6 +1,7 @@
 package app
 
 import (
+	"path"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -119,8 +120,12 @@ func (a *App) scmStashFileRows(c *ui.Context, i int) {
 		fr.ContextMenu(func(m *ui.Menu) { a.scmStashFileMenu(m, i, ch) })
 		fr.OnClick(func() { a.scmOpenStashDiff(i, ch) })
 		fr.Children(func() {
-			kit.Ic(c, fileIcon(ch.Path), kit.S12)
-			ui.Text(c, ch.Path).SingleLine().Grow(1).FontSize(theme.FsCap)
+			a.fileIc(c, path.Base(ch.Path))
+			ui.Text(c, path.Base(ch.Path)).SingleLine().Shrink(0)
+			if d := path.Dir(ch.Path); d != "." {
+				ui.Text(c, d).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().Shrink(1).MinWidth(0)
+			}
+			ui.Spacer(c).Grow(1)
 			ui.Text(c, statusLetter(ch.Status)).Font("monospace").FontSize(theme.FsMicro).TextColor(t.Tx4)
 		})
 	}

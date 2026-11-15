@@ -39,6 +39,7 @@ func (a *App) changesCard(c *ui.Context) {
 				break
 			}
 			ui.Row(c).Gap(6).AlignItems(ui.Center).PaddingStart(20).Children(func() {
+				a.fileIc(c, baseName(f.path))
 				ui.Text(c, baseName(f.path)).FontSize(theme.FsCap).TextColor(t.Tx2).SingleLine().Shrink(0)
 				ui.Text(c, trimSlash(dirOf(a.wsRel(f.path)))).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().Grow(1)
 			})

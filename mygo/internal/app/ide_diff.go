@@ -268,7 +268,7 @@ func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 	adds, dels := dv.Stats()
 	hunks := dv.Hunks()
 	ui.Row(c).Height(30).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
-		kit.Ic(c, "diff", kit.S12)
+		a.fileIc(c, path.Base(tb.path))
 		ui.Text(c, path.Base(tb.path)).FontWeight(600).SingleLine().Shrink(0)
 		ui.Text(c, tb.diffLabel()).TextColor(t.Tx3).SingleLine()
 		kit.Tag(c, "+"+itoa(adds)+" −"+itoa(dels), kit.KOk)
