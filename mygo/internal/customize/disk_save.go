@@ -74,7 +74,10 @@ func (ds *DiskStore) saveAgent(old *Item, draft Item) error {
 }
 
 func (ds *DiskStore) rulePath(it *Item) string {
-	p := it.Path
+	p := strings.TrimSpace(it.Path)
+	if p == "" {
+		return ""
+	}
 	if strings.HasPrefix(p, "~") {
 		return filepath.Join(ds.home, strings.TrimPrefix(p, "~"))
 	}
@@ -90,7 +93,20 @@ func (ds *DiskStore) rulePath(it *Item) string {
 func (ds *DiskStore) saveRule(old *Item, draft Item) error {
 	path := ds.rulePath(old)
 	if path == "" {
-		return fmt.Errorf("不知道规则文件写到哪里")
+		name := strings.TrimSpace(draft.Name)
+		switch {
+		case strings.HasPrefix(name, "~"):
+			path = filepath.Join(ds.home, strings.TrimPrefix(name, "~"))
+		case filepath.IsAbs(name):
+			path = name
+		case ds.proj != "" && (strings.Contains(name, "/") || strings.HasSuffix(name, ".md")):
+			path = filepath.Join(ds.proj, name)
+		case ds.proj != "":
+			path = filepath.Join(ds.proj, ".claude", "rules", name+".md")
+		default:
+			path = filepath.Join(userClaude(ds.home), "rules", name+".md")
+		}
+		old.Path = ds.relDisplay(path)
 	}
 	if err := writeAtomic(path, []byte(draft.Body), 0o644); err != nil {
 		return err
@@ -151,45 +167,56 @@ func (ds *DiskStore) saveHook(old *Item, draft Item) error {
 	return writeAtomic(path, b, 0o600)
 }
 
+func (ds *DiskStore) skillDirAbs(it *Item, draft Item) string {
+	name := strings.TrimSpace(draft.Name)
+	if name == "" {
+		name = it.Name
+	}
+	if it.Path != "" {
+		p := it.Path
+		if strings.HasPrefix(p, "~") {
+			return filepath.Join(ds.home, strings.TrimPrefix(p, "~/"))
+		}
+		if filepath.IsAbs(p) {
+			return p
+		}
+		if strings.HasPrefix(p, ".claude/") {
+			return filepath.Join(ds.home, p)
+		}
+		if draft.Scope == Project && ds.proj != "" {
+			return filepath.Join(ds.proj, p)
+		}
+		if ds.proj != "" {
+			return filepath.Join(ds.proj, p)
+		}
+		return filepath.Join(ds.home, p)
+	}
+	if draft.Scope == Project && ds.proj != "" {
+		return filepath.Join(ds.proj, ".claude", "skills", name)
+	}
+	return filepath.Join(userClaude(ds.home), "skills", name)
+}
+
 func (ds *DiskStore) saveSkillMeta(old *Item, draft Item) error {
 	newName := strings.TrimSpace(draft.Name)
 	if newName == "" {
 		return fmt.Errorf("名称不能为空")
 	}
-	dir := old.Path
-	if dir != "" && newName != old.Name {
-		abs := dir
-		if strings.HasPrefix(abs, "~") {
-			abs = filepath.Join(ds.home, strings.TrimPrefix(abs, "~"))
-		} else if !filepath.IsAbs(abs) && ds.proj != "" {
-			abs = filepath.Join(ds.proj, abs)
-		}
+	abs := ds.skillDirAbs(old, draft)
+	if old.Path != "" && newName != old.Name {
 		parent := filepath.Dir(abs)
 		dst := filepath.Join(parent, newName)
 		if err := os.Rename(abs, dst); err != nil {
 			return fmt.Errorf("重命名目录失败:%w", err)
 		}
-		dir = ds.relDisplay(dst)
-		old.Path = dir
+		abs = dst
 		old.Name = newName
 	}
-	if dir == "" {
-		base := filepath.Join(userClaude(ds.home), "skills", strings.TrimSpace(draft.Name))
-		if draft.Scope == Project && ds.proj != "" {
-			base = filepath.Join(ds.proj, ".claude", "skills", strings.TrimSpace(draft.Name))
-		}
-		dir = base
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return err
-		}
-		old.Path = ds.relDisplay(dir)
+	if err := os.MkdirAll(abs, 0o755); err != nil {
+		return err
 	}
-	skill := filepath.Join(dir, "SKILL.md")
-	if strings.HasPrefix(dir, "~") {
-		skill = filepath.Join(ds.home, strings.TrimPrefix(dir, "~"), "SKILL.md")
-	} else if !filepath.IsAbs(dir) && ds.proj != "" {
-		skill = filepath.Join(ds.proj, dir, "SKILL.md")
-	}
+	old.Path = ds.relDisplay(abs)
+	skill := filepath.Join(abs, "SKILL.md")
 	body := joinFrontmatter(setFmLine("", "name", draft.Name)+"\n"+setFmLine("", "description", draft.Desc), "# "+draft.Name+"\n")
 	return writeAtomic(skill, []byte(body), 0o644)
 }
