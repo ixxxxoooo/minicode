@@ -57,6 +57,7 @@ type termPanel struct {
 	hoverMods ui.Modifiers
 	link      *termLink // 当前悬停的链接(⌘ 按住时才有)
 	nerdWarn  string    // Nerd Font 缺字形提示(见 term_nerd.go)
+	nerdKey   string    // 上次判断时的「画面版本|字体|扫描完成」,没变就不重判
 }
 
 // redraw 让窗口重画一帧(终端输出到达时由内核的通知调用,任意 goroutine)。
