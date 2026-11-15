@@ -111,3 +111,51 @@ func TestAutomationPage(t *testing.T) {
 		t.Fatalf("应已删除:%d", len(a.auto.List()))
 	}
 }
+
+func TestCanvasPage(t *testing.T) {
+	a, tt := newTestApp(t)
+	a.screen = ScreenCanvas
+	tt.Frame()
+	tt.Frame() // 第二帧才量得到各块的位置
+	s := a.cvStore()
+	if len(s.Versions) != 3 || len(s.Doc.Blocks) != 7 {
+		t.Fatalf("演示画布不对:%d 个版本 %d 个块", len(s.Versions), len(s.Doc.Blocks))
+	}
+	if _, ok := a.cv.pos["h-ms"]; !ok {
+		t.Fatalf("应记下里程碑标题的位置:%v", a.cv.pos)
+	}
+	// 点大纲「待办」→ 滚动位置被设置(>0)
+	if err := tt.Click("待办"); err != nil {
+		t.Fatal(err)
+	}
+	if a.cv.outline != "h-todo" {
+		t.Fatalf("大纲当前项应是待办:%q", a.cv.outline)
+	}
+	// 编辑 → 切预览时落成新版本
+	s.Doc.Block("h-bg").Text = "改写后的导语"
+	if err := tt.Click("预览"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if !a.cv.preview || len(s.Versions) != 4 || s.Versions[0].By != "你" {
+		t.Fatalf("切预览应提交一个版本:%d", len(s.Versions))
+	}
+	// 回退到 v1:没有里程碑与待办
+	if err := s.Rewind(1, a.now()); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if len(s.Doc.Blocks) != 3 || len(s.Versions) != 5 {
+		t.Fatalf("回退后应只剩架构部分:%d 个块", len(s.Doc.Blocks))
+	}
+	// 导出 Markdown
+	a.exportCanvas()
+	if !strings.HasPrefix(a.toast, "已导出为 Markdown:") {
+		t.Fatalf("导出提示不对:%q", a.toast)
+	}
+	// 让 Claude 修改 → 回到对话并填好输入框
+	a.AskClaude("请修改画布:加一节风险")
+	if a.screen != ScreenWork || a.draft != "请修改画布:加一节风险" {
+		t.Fatalf("应回到对话并填入提示词:%v %q", a.screen, a.draft)
+	}
+}

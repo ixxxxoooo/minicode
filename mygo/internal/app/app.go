@@ -11,6 +11,7 @@ import (
 	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/automation"
 	"github.com/ixxxxoooo/minicode/internal/backend"
+	"github.com/ixxxxoooo/minicode/internal/canvas"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/diag"
@@ -108,6 +109,8 @@ type App struct {
 	auto         *automation.Store              // 自动化清单
 	au           autoState                      // 自动化页状态
 	clock        func() time.Time               // 当前时间(测试 / 截图注入固定时间)
+	canv         *canvas.Store                  // 画布文档(首次打开页面时建立)
+	cv           canvasState                    // 画布页状态
 	use          usageState                     // 用量页
 	usageSrc     func(rng int) core.UsageReport // 用量数据源(nil = 演示数据)
 	qp           *qpState                       // 快速选择浮层(历史会话 / 分支),nil = 关闭
