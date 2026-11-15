@@ -133,8 +133,12 @@ func (a *App) autoNewDlg(c *ui.Context) {
 		})
 		ui.Column(c).Gap(4).Children(func() {
 			lbl("提示词")
-			ui.TextArea(c.Key("aun-prompt"), &s.newPrompt).Height(72)
-			if e := errOf("prompt"); e != "" {
+			pe := errOf("prompt")
+			ta := ui.TextArea(c.Key("aun-prompt"), &s.newPrompt).Height(72)
+			if pe != "" {
+				ta.Border(1.5, t.Err) // 与 kit.Field 的错误态一致:红色描边
+			}
+			if e := pe; e != "" {
 				ui.Row(c).Gap(5).AlignItems(ui.Center).Children(func() {
 					kit.Ic(c, "alert", kit.S12).TextColor(t.Err)
 					ui.Text(c, e).FontSize(10.5).TextColor(t.Err)
