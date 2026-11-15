@@ -221,3 +221,97 @@ func slugID(title string, at time.Time) string {
 	}
 	return strings.ToLower(s)
 }
+
+// maxImportBytes 导入的画布文件大小上限(防止误选巨大文件)。
+const maxImportBytes = 8 << 20
+
+// ErrNotCanvasFile 文件不是画布文件(不是合法 JSON,或没有画布内容)。
+var ErrNotCanvasFile = fmt.Errorf("不是有效的画布文件")
+
+// uniqueID 在库里找一个没被占用的 id(磁盘文件或内存里的都算),避免导入时覆盖已有画布。
+func (l *Library) uniqueID(base string) string {
+	taken := func(id string) bool {
+		if _, ok := l.stores[id]; ok {
+			return true
+		}
+		for _, x := range l.ids {
+			if x == id {
+				return true
+			}
+		}
+		_, err := os.Stat(filepath.Join(l.dir, id+".json"))
+		return err == nil
+	}
+	if !taken(base) {
+		return base
+	}
+	for i := 2; ; i++ {
+		id := fmt.Sprintf("%s-%d", base, i)
+		if !taken(id) {
+			return id
+		}
+	}
+}
+
+// Import 读取 .mccanvas 文件(与库里单张画布同一格式),作为新画布落盘并设为当前,返回新 id。
+// 已有同名画布不会被覆盖,新画布换一个 id。
+func (l *Library) Import(src string, at time.Time) (string, error) {
+	st, err := os.Stat(src)
+	if err != nil {
+		return "", err
+	}
+	if st.Size() > maxImportBytes {
+		return "", fmt.Errorf("文件太大(超过 %d MB)", maxImportBytes>>20)
+	}
+	b, err := os.ReadFile(src)
+	if err != nil {
+		return "", err
+	}
+	var blob fileBlob
+	if err := json.Unmarshal(b, &blob); err != nil {
+		return "", ErrNotCanvasFile
+	}
+	if blob.Doc.Title == "" {
+		blob.Doc.Title = blob.Title
+	}
+	if blob.Doc.Title == "" && len(blob.Doc.Blocks) == 0 && len(blob.Versions) == 0 {
+		return "", ErrNotCanvasFile
+	}
+	if blob.Doc.Title == "" {
+		blob.Doc.Title = strings.TrimSuffix(filepath.Base(src), filepath.Ext(src))
+	}
+	base := slugID(blob.Doc.Title, at)
+	if base == "" {
+		base = fmt.Sprintf("canvas-%d", at.Unix())
+	}
+	id := l.uniqueID(base)
+	s := &Store{Doc: blob.Doc, Versions: blob.Versions}
+	if len(s.Versions) == 0 {
+		s.Versions = []Version{{N: 1, By: "你", Note: "导入", At: at, Doc: s.Doc.Clone()}}
+	}
+	l.stores[id] = s
+	l.ids = append([]string{id}, l.ids...)
+	l.active = id
+	if err := l.save(id, s); err != nil {
+		return id, err
+	}
+	return id, nil
+}
+
+// Export 把一张画布写成 .mccanvas 文件(格式同库里单张画布),dest 的目录必须存在。
+func (l *Library) Export(id, dest string) error {
+	s, err := l.Store(id)
+	if err != nil {
+		return err
+	}
+	blob := fileBlob{ID: id, Title: s.Doc.Title, Status: s.Doc.Status, Updated: time.Now(), Doc: s.Doc, Versions: s.Versions}
+	b, err := json.MarshalIndent(blob, "", "  ")
+	if err != nil {
+		return err
+	}
+	tmp := dest + ".tmp"
+	if err := os.WriteFile(tmp, b, 0o644); err != nil {
+		return err
+	}
+	return os.Rename(tmp, dest)
+}

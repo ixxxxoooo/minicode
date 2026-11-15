@@ -71,6 +71,10 @@ func (a *App) canvasListMenu(m *ui.Menu, l *canvas.Library, id, title string) {
 	if menuItem(m, "重命名").Chosen() {
 		v.listRenID, v.listRenName = id, title
 	}
+	if menuItem(m, "导出为 .mccanvas").Tooltip("写到「下载」并在访达里显示;双击该文件可导入成新画布").Chosen() {
+		a.exportCanvasFile(l, id, title)
+	}
+	m.Separator()
 	if menuItem(m, "删除…").Chosen() {
 		st, err := l.Store(id)
 		if err != nil {

@@ -59,7 +59,7 @@ var menuIconTable = map[string]string{
 	"切换左右 / 统一": "swap", "忽略空白差异": "diff", "显示空白差异": "diff",
 	"开启行内 Git 追溯": "commit", "关闭行内 Git 追溯": "commit",
 	"切换为树形视图": "list", "切换为列表视图": "list", "设为活动仓库": "arrow", "设为主文件夹": "arrow",
-	"终端设置": "gear",
+	"终端设置": "gear", "导出为 .mccanvas": "download",
 }
 
 // menuIconFor 按文字找图标名;表里没有就按开头的动词兜底,再不行返回空(该项不显示图标)。

@@ -529,7 +529,7 @@ var settingsTabs = []setTabDef{
 				kit.Mono(c, "~/.minicode", a.tk.Tx2)
 				kit.Btn(c, "打开", kit.BtnOpt{Small: true, Icon: "folder"}).OnClick(func() { openPath(c, diag.Home()) })
 			}),
-			{key: "settings.io", title: "设置文件", desc: "导出 / 导入 settings.json(不含密钥)", kind: kNone, right: func(a *App, c *ui.Context) {
+			{key: "settings.io", title: "设置文件", desc: "导出到「下载」/ 导入设置备份(.mcsettings,不含密钥);双击备份文件也能导入", kind: kNone, right: func(a *App, c *ui.Context) {
 				ui.Row(c).Gap(8).Children(func() {
 					kit.Btn(c, "导出", kit.BtnOpt{Small: true, Icon: "download"}).OnClick(func() { a.exportSettingsJSON() })
 					kit.Btn(c, "导入…", kit.BtnOpt{Small: true, Icon: "upload"}).OnClick(func() { a.askImportSettings() })

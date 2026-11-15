@@ -323,6 +323,7 @@ func main() {
 		a.SetWindow(win)
 		a.InstallAppMenu()
 		a.InitBrand()
+		a.HoldExternalOpen(false) // 窗口出来了:处理冷启动时排队的「双击打开的文件」
 		if nwVirt != "" {
 			a.ApplyStartupVirt(nwVirt)
 		}
@@ -410,6 +411,9 @@ func main() {
 			}
 		}()
 	})
+	// 系统要求用本应用打开文件(访达双击 / 拖到 Dock / open -a):窗口出来前先排队,出来后处理
+	a.HoldExternalOpen(true)
+	mygo.App.OnOpenFile(a.OpenExternalFile)
 	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) {
 		a.SaveLayMemToPrefs()
 		a.SaveRuntimeState()

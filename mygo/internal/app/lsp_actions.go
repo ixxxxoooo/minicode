@@ -4,6 +4,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"testing"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/lsp"
@@ -302,6 +303,9 @@ func (a *App) absPath(rel string) string {
 
 // revealInFinder 在访达里显示文件。
 func (a *App) revealInFinder(abs string) {
+	if testing.Testing() { // 单测里不要真的弹出访达
+		return
+	}
 	if err := exec.Command("open", "-R", abs).Start(); err != nil {
 		a.toast = "无法在访达中显示:" + err.Error()
 	}

@@ -146,6 +146,9 @@ func (a *App) wsMenu(m *ui.Menu, w projects.Workspace) {
 	if mItem(m, "copy", "复制主文件夹路径").Chosen() {
 		a.copyOut(w.Primary(), "路径")
 	}
+	if mItem(m, "download", "导出为工作区文件…").Disabled(a.demoWs()).Tooltip(map[bool]string{true: "演示模式没有真实目录", false: "写到「下载」并在访达里显示;双击该文件可在别处导入"}[a.demoWs()]).Chosen() {
+		a.exportWorkspaceFile(w)
+	}
 	m.Separator()
 	if mItem(m, "trash", "从列表移除工作区").Danger().Tooltip("只移出列表,不删除磁盘上的文件").Chosen() {
 		a.confirmDlg("移除工作区「"+w.Name+"」?", "只会从列表里移除这个工作区,磁盘上的文件夹与会话记录都不会动。", "移除", true, func() { a.removeWorkspace(w.ID) })

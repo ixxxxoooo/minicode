@@ -189,6 +189,8 @@ type App struct {
 	autoLive        map[int]*autoLive    // 运行中输出的累积与取消
 	live            map[string]*liveSess // 切走时还在跑的会话:后端继续保活,事件归约到自己的状态
 	framePending    bool                 // frameSoon 已排队
+	extHold         bool                 // 窗口还没出来:系统要求打开的文件先排队
+	extQueue        []string             // 排队中的文件(窗口出来后依次处理)
 	foldAt          map[string]time.Time // 步骤行展开的时刻(入场动画)
 	dlgSeen         string               // 已开始计时入场动画的居中浮层
 	dlgAt           time.Time

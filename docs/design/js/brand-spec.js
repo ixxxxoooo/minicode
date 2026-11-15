@@ -124,7 +124,10 @@
     ${cards(2, `<div class="usage-card">${cap('图标右侧的数字(可选)')}<div class="f g3 ai"><span class="mb-chip l">${tray({ state: 'waiting', z: 20, col: 0 })}<span>1</span></span><span class="mb-chip d">${tray({ state: 'running', z: 20 })}<span>3</span></span><span class="mb-chip l">${tray({ state: 'idle', z: 20 })}</span></div>${why('数字 = 待处理数(权限 + 提问),0 时隐藏;只在「待确认」或「运行中」时出现。关闭后菜单栏只剩图标,最省位置。')}</div>`,
       `<div class="usage-card">${cap('点击行为')}${tbl([['操作', 100], ['默认'], ['可选']], [['单击', '弹出菜单', '直接打开主窗口'], ['⌥ 单击', '打开主窗口', '弹出菜单'], ['右键', '弹出菜单', '—'], ['⌘ 拖出', '移除图标', '(系统行为,不拦截)']])}</div>`)}
 
-    ${sec('文件类型图标', '为 MiniCode 自己的文件准备三枚文档图标:纸页 + 小图形 + 扩展名。图形取当前样式、固定用浅色(文档图标不随主题变)。这是提案,尚未注册文件类型。', `<div class="doc-row">${[['.mcworkspace', '多根工作区', 'MCWS'], ['.mccanvas', '画布文档', 'CANVAS'], ['.mcsettings', '设置备份(不含密钥)', 'CONF']].map(([ext, n, lab]) => `<figure>${docSvg(lab, { z: 108 })}<figcaption><b>${n}</b><br><code>${ext}</code></figcaption></figure>`).join('')}<div class="grow" style="min-width:300px">${tbl([['做法', 96], ['说明']], [['声明', 'Info.plist 里 <span class="kcode">UTExportedTypeDeclarations</span> + <span class="kcode">CFBundleDocumentTypes</span>,图标放进包内 Resources'], ['双击', '工作区 → 打开并加入侧栏;画布 → 打开画布页;设置备份 → 弹导入确认'], ['小尺寸', '≤ 32px 去掉扩展名文字,只留纸页与图形']])}</div></div>`)}
+    ${sec('文件类型图标', '为 MiniCode 自己的文件准备三枚文档图标:纸页 + 小图形 + 扩展名。图形取当前样式、固定用浅色(文档图标不随主题变)。dev.sh 已在 Info.plist 注册三种类型,双击 / 拖到 Dock 图标 / <span class="kcode">open -a</span> 都会交给应用。', `<div class="doc-row">${[['.mcworkspace', '多根工作区', 'MCWS'], ['.mccanvas', '画布文档', 'CANVAS'], ['.mcsettings', '设置备份(不含密钥)', 'CONF']].map(([ext, n, lab]) => `<figure>${docSvg(lab, { z: 108 })}<figcaption><b>${n}</b><br><code>${ext}</code></figcaption></figure>`).join('')}<div class="grow" style="min-width:300px">${tbl([['做法', 96], ['说明']], [['声明', 'Info.plist 里 <span class="kcode">UTExportedTypeDeclarations</span> + <span class="kcode">CFBundleDocumentTypes</span>,图标放进包内 Resources'], ['双击', '工作区 → 打开并加入侧栏(并切进该工作区);画布 → 导入为一张新画布并打开画布页;设置备份 → 弹导入确认,确认后才合并'],
+        ['格式', '三种都是 JSON:工作区 = 一条工作区记录(名称 / 文件夹 / CLAUDE.md 开关);画布 = 与 <span class="kcode">~/.minicode/canvases/</span> 里单张画布同格式(含版本历史);设置备份 = 偏好键值,<b>导出时剔除密钥类键</b>'],
+        ['出口', '画布列表行「···」→ 导出为 .mccanvas;设置 → 高级 → 导出 = 写到「下载」并在访达里显示;工作区文件可由工作区「···」导出'],
+        ['失败与冲突', '文件不存在 / 不是 JSON / 太大(画布 > 8 MB)→ toast 写明原因,不动现有数据;同名画布不覆盖,另存为新画布;工作区里不存在的文件夹被跳过并提示,全都不存在则拒绝;同一组文件夹已有工作区 → 直接切过去;应用还没就绪(冷启动双击)→ 排队,窗口出来后再处理'], ['小尺寸', '≤ 32px 去掉扩展名文字,只留纸页与图形']])}</div></div>`)}
 
     ${sec('应用内的品牌用法', '应用内不再用一个通用的「&lt;/&gt;」符号当标志,统一用应用图标本身;小尺寸自动换「经纬」。下面几处都用设计令牌,跟随主题。', cards(3,
       `<div class="usage-card">${cap('标题栏 / 侧栏小标', '18 px')}<div class="f ai g3" style="height:34px;padding:0 12px;border-radius:var(--r-md);background:var(--bg-chrome);box-shadow:inset 0 0 0 1px var(--bd-1)"><span class="tl"><i></i><i></i><i></i></span>${B.logo(18)}<b>router-demo</b><span class="t4 fs-cap">main</span></div>${why('图标本体 18 px、无投影无高光;和标题文字同一基线,不加背景块。')}</div>`,
@@ -165,7 +168,7 @@
       ['菜单栏图标(<span class="kcode">general.tray</span> 开关)', '五样式 × 八态 PNG 内嵌进二进制(不依赖工作目录)+ running 三帧 + 彩色徽标(随菜单栏深浅重绘);设置里有真实预览与八态条', stt('ok')],
       ['托盘状态 / 动画 / 菜单 / 数字', '优先级 待确认 > 出错 > 已完成 > 运行中 > 有更新 > 暂停 > 空闲;出错 / 已完成只记「不在前台时发生」,回前台清除;已用 MINI_TRAY 在真实菜单栏逐态核对 8 种图标(出错 / 已完成 / 有更新 / 暂停 / 运行中 / 演示 / 待确认 / 空闲,Computer Use + 截图);菜单头总览 + 最多 5 个会话(状态点,待确认在前)+ 新对话 / 打开 / 暂停通知 ▸(暂停 1 小时 · 到明天 9:00 · 一直暂停;暂停中标题写「通知已暂停 · 到 HH:MM」,二级只剩「恢复通知」,到点自动恢复)/ 设置 / 检查更新 / 退出;织线流动 / 呼吸 / 无;数字与单击偏好', stt('part')],
       ['应用菜单栏(MiniCode / 文件 / 编辑 / 视图 / 窗口 / 帮助)', '标准项走系统角色(关于 / 服务 / 隐藏 / 退出 / 编辑 / 窗口 / 全屏);自定义项不挂快捷键,快捷键仍由应用内按用户设置分发;新建窗口 ⇧⌘N', stt('ok')],
-      ['文件类型图标与关联', 'dev.sh Info.plist UTType + 文档 .icns;双击打开行为未接', stt('part')],
+      ['文件类型图标与关联', 'dev.sh Info.plist UTType + 文档 .icns;OnOpenFile 接 open_external.go:.mcworkspace 导入并进入 / .mccanvas 导入成新画布 / .mcsettings 弹确认后合并(剔除密钥键);冷启动先排队;出口:画布行 ··· / 工作区右键 / 设置 → 高级导出;go test 覆盖,真实双击待 Computer Use 实测', stt('part')],
       ['应用内小标统一用应用图标', '欢迎 64px / 关于 96px brandLogo 跟随所选样式与外观(≤ 28px 的织纹换「经纬」);IDE 空态用当前菜单栏样式的空闲图、25% 单色(brandEmptyMark)', stt('ok')]]))}
     </div>`;
 })();
