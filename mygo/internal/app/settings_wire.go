@@ -37,7 +37,8 @@ const (
 // defaultModelIDs 与设置页「默认模型」胶囊顺序一致。
 var defaultModelIDs = []string{"default", "opus", "sonnet", "haiku"}
 
-var defaultModelLabels = []string{"Fable 5.2", "Opus 5.5", "Sonnet 5.5", "Haiku 5.5"}
+// 第一项 default = 不指定,交给 claude 自己选(随账号 / 服务商变化),所以叫「默认」而不是某个具体型号
+var defaultModelLabels = []string{"默认", "Opus 5.5", "Sonnet 5.5", "Haiku 5.5"}
 
 // MigrateSettingsPrefs 把已废弃的键迁移到当前键(只执行一次,有旧键且新键空时拷贝)。
 func (a *App) MigrateSettingsPrefs() {
