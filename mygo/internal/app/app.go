@@ -78,10 +78,14 @@ type App struct {
 	mode      Mode
 	screen    Screen
 	sideOpen  bool
-	inspOpen  bool
+	rightOn   bool      // 右侧栏开合:Agent 形态 = 工作区,IDE 形态 = 对话栏
+	chatMax   bool      // IDE 形态:对话栏占满主区(工作区让位)
+	memBy     [2]layMem // 各形态各自记住的右侧栏 / 底部面板开合(切回来还是原样)
+	flashAt   time.Time // 工作区被「打开标签」唤起的时刻(边框闪一下)
+	chatW     float32   // 对话栏上一帧的宽度(响应式三档按它判断)
+	wsW       float32   // 工作区上一帧的宽度
 	nav       string    // chat / files / search / scm
 	navBy     [2]string // 各形态各自记住的左栏分段(切回来还停在原处)
-	inspTab   string    // changes / files / term / plan / tasks
 	popup     string    // 状态栏 / 输入框弹层:cfg / ctx / upd / acct
 	paletteOn bool
 	pq        palState // 命令面板状态
@@ -127,6 +131,9 @@ type App struct {
 	branch       string                         // 当前分支名(缓存,避免每帧查 git)
 	toast        string                         // 待显示的一条轻提示(渲染时消费)
 	welcomeFocus bool                           // 欢迎页的输入框自动聚焦
+	rv           reviewState                    // 审查标签状态
+	taskSt       ui.ScrollState                 // 任务输出标签的滚动
+	taskNoFollow bool                           // 任务输出:关闭「跟随输出」
 	q            promptQueue                    // 排队的消息
 	qa           map[string]*qaState            // 提问向导的本地进度
 
@@ -159,9 +166,7 @@ func New(o Options) *App {
 		mode:       o.Mode,
 		screen:     o.Screen,
 		sideOpen:   true,
-		inspOpen:   true,
 		nav:        "",
-		inspTab:    "changes",
 		projOpen:   map[string]bool{},
 		sessMore:   map[string]bool{},
 		folds:      map[string]bool{},
@@ -175,6 +180,9 @@ func New(o Options) *App {
 	if a.screen == "" {
 		a.screen = ScreenWork
 	}
+	// 默认开合:Agent = 工作区收起、底部面板收起;IDE = 对话栏展开、底部面板展开
+	a.memBy = [2]layMem{{right: false, panel: false}, {right: true, panel: true}}
+	a.rightOn, a.ide.bottomOpen = a.memBy[a.mode].right, a.memBy[a.mode].panel
 	if a.prefs == nil {
 		a.prefs = prefs.Memory()
 	}
@@ -307,9 +315,15 @@ func (a *App) SetMode(m Mode) {
 	}
 	log.Info("切换形态", "from", a.mode, "to", m)
 	a.navBy[a.mode] = a.nav
+	a.memBy[a.mode] = layMem{right: a.rightOn, panel: a.ide.bottomOpen}
 	a.mode = m
 	a.nav = a.navBy[m]
+	a.rightOn, a.ide.bottomOpen = a.memBy[m].right, a.memBy[m].panel
+	a.chatMax = false
 }
+
+// layMem 是一个形态记住的开合。
+type layMem struct{ right, panel bool }
 
 // View 是窗口的根视图。
 func (a *App) View(c *ui.Context) {
@@ -347,6 +361,7 @@ func (a *App) SeedDemoExtras() {
 	a.auto = automation.NewStore(demo.Automations(a.now()))
 	a.au.sel = 2 // 设计稿里选中的是第二张卡
 	a.ide.seedDemo()
+	a.seedWorkspace()
 	a.update = "更新 42%"
 }
 
@@ -359,14 +374,14 @@ func (a *App) ScrollFlowTop() {
 // SetPopup 直接打开某个弹层(截图 / 调试用:cfg / sbcfg / ctx / upd / acct)。
 func (a *App) SetPopup(k string) { a.popup = k }
 
-// shortcuts 是窗口级快捷键(与设计稿一致):⌘B 导航栏、⌥⌘B 检查器、⌘E 切换形态、⌘K 命令面板、
+// shortcuts 是窗口级快捷键(与设计稿一致):⌘B 导航栏、⌥⌘B 右侧栏、⌘E 切换形态、⌘K 命令面板、
 // ⌘J 底部面板、⌘S 保存、⌘, 设置。输入框里的 Enter 等由各自控件处理,这里只放带 ⌘ 的组合键。
 func (a *App) shortcuts(c *ui.Context) {
 	switch {
 	case c.Shortcut(ui.Cmd, ui.KeyB):
 		a.sideOpen = !a.sideOpen
 	case c.Shortcut(ui.Cmd|ui.Alt, ui.KeyB):
-		a.inspOpen = !a.inspOpen
+		a.toggleRight()
 	case c.Shortcut(ui.Cmd, ui.KeyE):
 		if a.mode == ModeAgent {
 			a.SetMode(ModeIDE)

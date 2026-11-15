@@ -13,11 +13,19 @@ import (
 func (a *App) chatPane(c *ui.Context, gap float32) {
 	t := a.tk
 	p := a.pane(c).Key("chat").Transition(morph)
-	if a.mode == ModeIDE {
-		// IDE 形态:对话栏停靠在右侧,固定宽度
-		p.Width(theme.WDock).Shrink(0).Margin(0, 0, 0, gap)
-	} else {
+	switch {
+	case a.mode == ModeAgent || a.chatMax:
 		p.Grow(1).Basis(0)
+	case a.rightOn:
+		// IDE 形态:对话栏停靠在右侧,固定 352 宽(设计稿 --w-dock)
+		p.Width(theme.WDock).Shrink(0).Margin(0, 0, 0, gap)
+	default:
+		p.Width(0).Shrink(0).Opacity(0)
+		p.Children(func() {})
+		return
+	}
+	if w := p.Bounds().W; w > 0 {
+		a.chatW = w
 	}
 	p.Children(func() {
 		if len(a.st.Items) == 0 {

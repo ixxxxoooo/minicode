@@ -72,7 +72,7 @@ const (
 	HStatus   = 22
 	WRail     = 44
 	WSide     = 228
-	WInsp     = 304
+	WWs       = 560 // Agent 形态右侧工作区宽度
 	WDock     = 352
 	WCol      = 712
 	IconSize  = 14

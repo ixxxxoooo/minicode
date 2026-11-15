@@ -49,11 +49,12 @@ func (a *App) titlebar(c *ui.Context) {
 			if t.Scheme.ID == "a" {
 				a.cmdk(c)
 			}
+			kit.Ib(c, "panelB", kit.IbOpt{Tip: "底部面板 ⌘J", On: a.ide.bottomOpen}).OnClick(func() { a.ide.bottomOpen = !a.ide.bottomOpen })
+			rt := "工作区 ⌥⌘B"
 			if a.mode == ModeIDE {
-				kit.Ib(c, "panelB", kit.IbOpt{Tip: "终端 ⌃`"})
-			} else {
-				kit.Ib(c, "panelR", kit.IbOpt{Tip: "检查器 ⌥⌘B", On: false}).OnClick(func() { a.inspOpen = !a.inspOpen })
+				rt = "对话栏 ⌥⌘B"
 			}
+			kit.Ib(c, "panelR", kit.IbOpt{Tip: rt, On: a.rightOn}).OnClick(a.toggleRight)
 			kit.Ib(c, "bell", kit.IbOpt{Tip: "通知"})
 			if t.Scheme.ID == "b" {
 				av := a.avatar(c).Margin(0, 0, 0, 4)

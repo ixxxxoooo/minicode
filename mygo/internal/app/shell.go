@@ -72,23 +72,6 @@ func (a *App) pane(c *ui.Context) ui.Element {
 // 面板过渡:宽度 / 外边距 440 ms 变形曲线(Agent ⇄ IDE)。
 var morph = ui.ElementTransition{Size: true, Position: true, Duration: kit.DurMorph, Ease: kit.EaseMorph}
 
-// stage 是舞台:Agent 形态 = 对话栏 + 检查器;IDE 形态 = 编辑区 + 停靠的对话栏。
-func (a *App) stage(c *ui.Context) {
-	t := a.tk
-	gap := t.Scheme.GapPane
-	ui.Row(c).Grow(1).MinWidth(0).AlignItems(ui.Stretch).Children(func() {
-		if a.screen != ScreenWork && a.screen != ScreenWelcome {
-			if !a.page(c) {
-				a.pagePlaceholder(c)
-			}
-			return
-		}
-		a.editorPane(c, gap)
-		a.chatPane(c, gap)
-		a.inspector(c, gap)
-	})
-}
-
 func (a *App) pagePlaceholder(c *ui.Context) {
 	a.pane(c).Grow(1).Children(func() {
 		ui.Text(c, string(a.screen)).Margin(24)

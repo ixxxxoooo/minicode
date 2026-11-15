@@ -27,6 +27,8 @@ type ideTab struct {
 	saved   string  // 最近一次落盘的内容(判断是否有未保存修改)
 	err     string  // 读取失败 / 太大时的提示
 	reveal  *[3]int // 待选中的范围:行、起止列(下一次渲染时应用)
+	virt    string  // 虚拟标签的种类(review / plan / sub / task / conflict),空 = 文件或对比
+	ref     string  // 虚拟标签引用的对象 id(子 Agent / 任务 id、冲突文件路径)
 }
 
 func (t *ideTab) dirty() bool { return !t.diff && t.buf != nil && t.buf.String() != t.saved }
@@ -305,7 +307,6 @@ func (d *ide) seedDemo() {
 		t.saved = "// 磁盘上的版本\n" // 与缓冲区不同 = 有未保存修改
 	}
 	d.openFile("Cargo.toml", false)
-	d.openDiff("src/router.rs", true)
 	d.active = "src/router.rs"
 	d.sel = "src/router.rs"
 	if t := d.tab("src/router.rs"); t != nil && t.st != nil {

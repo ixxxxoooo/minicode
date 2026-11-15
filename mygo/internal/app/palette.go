@@ -139,7 +139,7 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 	common[add("sliders", "设置:外观", "⌘,", "打开设置的「外观」:主题、布局方案、强调色。", func() { a.openSettings("appearance") })] = true
 	add("gear", "设置:通用", "", "打开设置的「通用」。", func() { a.openSettings("general") })
 	common[add("panelL", "显示 / 隐藏导航栏", "⌘B", "收起或展开左侧导航栏。", func() { a.sideOpen = !a.sideOpen })] = true
-	add("panelR", "显示 / 隐藏检查器", "⌥⌘B", "收起或展开右侧检查器(Agent 形态)。", func() { a.inspOpen = !a.inspOpen })
+	add("panelR", "显示 / 隐藏右侧栏", "⌥⌘B", "Agent 形态 = 工作区,IDE 形态 = 对话栏。", a.toggleRight)
 	if a.mode == ModeIDE {
 		add("terminal", "显示 / 隐藏底部面板", "⌘J", "终端、问题、输出所在的底部面板。", func() { a.ide.bottomOpen = !a.ide.bottomOpen })
 		add("download", "保存当前文件", "⌘S", "把当前编辑器标签写回磁盘。", func() { _ = a.ide.save() })
