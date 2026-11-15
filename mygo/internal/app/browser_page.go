@@ -1,6 +1,8 @@
 package app
 
 import (
+	"strings"
+
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/browser"
@@ -157,6 +159,19 @@ func (a *App) browserReader(c *ui.Context, b *browser.Browser, pg browser.Page) 
 				}
 				return
 			}
+			if pageHasNoText(pg) {
+				// 空态:抓到了页面但没有正文(纯脚本渲染 / 非 HTML / 空页面),给原因与下一步
+				a.box(c).Padding(16, 14).Gap(6).Margin(0, 0, 14, 0).Children(func() {
+					ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+						kit.Ic(c, "file", kit.S12).TextColor(t.Tx3)
+						ui.Text(c, "这个页面没有可读取的正文").FontWeight(600).SingleLine()
+					})
+					ui.Text(c, pg.Site+" 返回了内容,但阅读模式没找到文字:可能是纯文本 / 图片、需要脚本渲染的页面,或本身就是空页面。").
+						TextColor(t.Tx3).LineHeight(1.5)
+					kit.Btn(c, "在系统浏览器打开", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() { a.openExtBrowser(v.url) })
+				})
+				return
+			}
 			ui.Text(c, pg.Site+" · 阅读约 "+itoa(pg.ReadMin)+" 分钟").FontSize(theme.FsCap).TextColor(t.Tx3).Margin(0, 0, 6, 0)
 			for i, s := range pg.Sections {
 				el := ui.Column(c.Key("brs-" + itoa(i)))
@@ -254,4 +269,14 @@ func dim(ok bool, t *theme.Tokens) ui.Color {
 		return ui.Color{}
 	}
 	return t.Tx4
+}
+
+// pageHasNoText 页面是否没有任何可显示的文字(标题与正文都为空)。
+func pageHasNoText(pg browser.Page) bool {
+	for _, s := range pg.Sections {
+		if strings.TrimSpace(s.Heading) != "" || strings.TrimSpace(s.Body) != "" {
+			return false
+		}
+	}
+	return true
 }
