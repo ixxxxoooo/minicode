@@ -58,6 +58,9 @@ func drawRuleGroup(a *App, c *ui.Context, kind, lbl string, tag kit.TagKind, rul
 		}
 		ui.Text(c, map[string]string{"allow": "始终允许", "ask": "每次询问", "deny": "始终拒绝"}[kind]).
 			FontSize(theme.FsCap).FontWeight(700).TextColor(t.Tx3).Padding(8, 12, 4, 12)
+		if len(rules) == 0 {
+			ui.Text(c, "暂无规则").FontSize(theme.FsCap).TextColor(t.Tx4).Padding(0, 12, 8, 12)
+		}
 		for i, r := range rules {
 			rule := r
 			rowBox(a, c, i == 0, 30).Children(func() {

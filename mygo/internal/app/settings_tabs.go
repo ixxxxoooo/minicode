@@ -394,7 +394,7 @@ var settingsTabs = []setTabDef{
 				right: func(a *App, c *ui.Context) {
 					kit.Tog(c, false, "tog-perm.sandbox-disabled")
 				}},
-			rFld("perm.dirs", "额外可访问目录", "permissions.additionalDirectories", "~/Projects/shared", 200, true, ""),
+			rFld("perm.dirs", "额外可访问目录", "permissions.additionalDirectories", "", 200, true, "例如 ~/Projects/shared"),
 		}},
 		{title: "权限规则", body: func(a *App, c *ui.Context) { a.rulesBody(a, c) }},
 		{title: "项目信任", body: func(a *App, c *ui.Context) { a.trustBody(a, c) }},
