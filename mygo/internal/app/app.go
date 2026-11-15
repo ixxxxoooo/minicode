@@ -85,6 +85,7 @@ type App struct {
 	flashAt      time.Time                                // 工作区被「打开标签」唤起的时刻(边框闪一下)
 	genText      func(dir, prompt string) (string, error) // 一次性文本生成(提交说明等)
 	graphTab     graphTabState                            // Git 图谱标签的搜索与选中
+	out          outState                                 // 底部「输出」面板
 	termHasFocus bool                                     // 终端面板此刻有键盘焦点(⌘F 查找走终端)
 	sessNav      []string                                 // Agent 形态的「后退 / 前进」:打开过的会话序列
 	sessI        int

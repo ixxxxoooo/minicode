@@ -163,9 +163,11 @@ func (a *App) scmAct(what string, f func(r vcs.Repo) error, onOK ...func()) {
 				return
 			}
 			if err != nil {
+				a.outAppend(outGit, what+"失败:"+err.Error())
 				log.Warn(what+"失败", "err", err)
 				a.toast = what + "失败:" + err.Error()
 			} else {
+				a.outAppend(outGit, what+"完成")
 				log.Info(what)
 				for _, f := range onOK {
 					f()

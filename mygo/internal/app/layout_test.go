@@ -127,3 +127,27 @@ func TestWorkspaceStartPage(t *testing.T) {
 		t.Fatal("空工作区应显示起始页")
 	}
 }
+
+// 面板上缘向上拖到头会吸附成最大化;最大化时从上缘向下拖一段还原。
+func TestPanelDragSnapMax(t *testing.T) {
+	a, tt := demoIDE(t)
+	tt.Advance(time.Second)
+	tt.Frame()
+	r := a.ide.panelTop
+	if r <= 0 {
+		t.Skip("面板上缘位置未量到")
+	}
+	dragTo(tt, 400, r+1, 400, 20)
+	tt.Frame()
+	if !a.ly.panelMax {
+		t.Fatalf("拖到顶应吸附成最大化(高度 %v)", a.panelHeight())
+	}
+	tt.Advance(time.Second)
+	tt.Frame()
+	r2 := a.ide.panelTop
+	dragTo(tt, 400, r2+1, 400, r2+200)
+	tt.Frame()
+	if a.ly.panelMax {
+		t.Fatal("在最大化的上缘向下拖应还原")
+	}
+}

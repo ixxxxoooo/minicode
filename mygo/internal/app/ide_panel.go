@@ -22,12 +22,26 @@ func (a *App) bottomPanel(c *ui.Context) {
 		a.ide.panelTop = b.Y // 上一帧量到的面板上缘(测试与浮层定位用)
 	}
 	box.Children(func() {
-		if !a.ly.panelMax {
-			def := float32(172)
-			if a.ide.bottomTab == "problems" || a.ide.bottomTab == "refs" {
-				def = 236
-			}
-			a.resizeHandle(c, lyPanel, "t", h, def, 96, max(120, a.winH-theme.HBar-theme.HTab-120), func(v float32) { a.ly.panel = v })
+		def := float32(172)
+		if a.ide.bottomTab == "problems" || a.ide.bottomTab == "refs" {
+			def = 236
+		}
+		hi := max(120, a.winH-theme.HBar-theme.HTab-120)
+		if a.ly.panelMax {
+			// 最大化时把手仍在面板上缘:向下拖一点就还原成拖到的高度
+			a.resizeHandle(c, lyPanel, "t", hi, def, 96, hi, func(v float32) {
+				if v < hi-12 {
+					a.ly.panelMax, a.ly.panel = false, v
+				}
+			})
+		} else {
+			// 向上拖到头(离工作区顶部只剩一点)就吸附成最大化:终端占满整个工作区
+			a.resizeHandle(c, lyPanel, "t", h, def, 96, hi, func(v float32) {
+				a.ly.panel = v
+				if v >= hi-1 {
+					a.ly.panelMax = true
+				}
+			})
 		}
 		items := []kit.TabItem{
 			{ID: "term", Text: "终端", Icon: "terminal"},
@@ -78,7 +92,6 @@ func (a *App) bottomPanel(c *ui.Context) {
 							a.newTerm()
 						}
 					})
-					kit.Ib(c, "cols", kit.IbOpt{Small: true})
 					gear := kit.Ib(c, "gear", kit.IbOpt{Small: true, Tip: "终端设置", On: a.popup == "termset"})
 					gear.OnClick(func() { a.togglePop("termset") })
 					a.termSettings(c, gear)
@@ -99,9 +112,7 @@ func (a *App) bottomPanel(c *ui.Context) {
 		case "refs":
 			a.refsPanel(c)
 		case "output":
-			ui.Column(c).Grow(1).Padding(6, 10).Children(func() {
-				ui.Text(c, "暂无输出").TextColor(t.Tx3)
-			})
+			a.outPanel(c)
 		default:
 			a.terminal(c)
 		}
