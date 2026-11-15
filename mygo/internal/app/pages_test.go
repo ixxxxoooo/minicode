@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/ixxxxoooo/minicode/internal/customize"
 	"os"
 	"strings"
 	"testing"
@@ -224,5 +225,128 @@ func TestBrowserPage(t *testing.T) {
 	}
 	if a.screen != ScreenWork || !strings.Contains(a.draft, "docs.rs/axum/latest/axum/routing") || !strings.Contains(a.draft, "总结要点") {
 		t.Fatalf("应回到对话并填好提示词:%q", a.draft)
+	}
+}
+
+func TestCustomizePage(t *testing.T) {
+	a, tt := newTestApp(t)
+	a.SeedDemoExtras()
+	a.screen = ScreenCustomize
+	tt.Frame()
+	tt.Frame()
+	st := a.cuStore()
+	if a.cuCat() != customize.MCP || a.cu.sel == nil || a.cu.sel.Name != "github" {
+		t.Fatalf("默认应是 MCP 并选中第一项:%v", a.cu.sel)
+	}
+	// 授权:figma 的「授权」按钮
+	if err := tt.Click("授权"); err != nil {
+		t.Fatal(err)
+	}
+	if fg := st.List(customize.MCP, customize.All, "figma")[0]; fg.Status != customize.StOK {
+		t.Fatalf("授权后应连通:%v", fg.Status)
+	}
+	// 选中 postgres(已停用):重试仍失败
+	if err := tt.Click("postgres"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if a.cu.sel.Name != "postgres" {
+		t.Fatalf("应选中 postgres:%v", a.cu.sel.Name)
+	}
+	if err := tt.Click("重试"); err != nil {
+		t.Fatal(err)
+	}
+	if a.cu.sel.Status != customize.StErr {
+		t.Fatal("已停用的服务器重试不应连通")
+	}
+	// 关键字筛选
+	a.cu.q = "git"
+	tt.Frame()
+	if len(st.List(customize.MCP, a.cu.scope, a.cu.q)) != 1 || a.cu.sel.Name != "github" {
+		t.Fatalf("筛选后选中项应退回 github:%v", a.cu.sel.Name)
+	}
+	a.cu.q = ""
+	// 新建:名称冲突报错,合法则创建并选中
+	if err := tt.Click("添加服务器"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if a.cu.dlg == nil {
+		t.Fatal("应打开新建对话框")
+	}
+	a.cu.dlg.name, a.cu.dlg.extra = "github", "npx x"
+	tt.Frame()
+	if err := tt.Click("创建"); err != nil {
+		t.Fatal(err)
+	}
+	if a.cu.dlg == nil || a.cu.dlg.err == "" {
+		t.Fatal("重名应在对话框里报错")
+	}
+	a.cu.dlg.name = "linear"
+	tt.Frame()
+	if err := tt.Click("创建"); err != nil {
+		t.Fatal(err)
+	}
+	if a.cu.dlg != nil || a.cu.sel == nil || a.cu.sel.Name != "linear" || st.Count(customize.MCP) != 5 {
+		t.Fatalf("应创建并选中 linear:%v", a.cu.sel)
+	}
+	// 两步删除
+	tt.Frame()
+	tt.Frame()
+	if err := tt.Click("删除"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if st.Count(customize.MCP) != 5 || a.cu.delArm == nil {
+		t.Fatal("第一次点删除只应进入确认")
+	}
+	if err := tt.Click("确认删除"); err != nil {
+		t.Fatal(err)
+	}
+	if st.Count(customize.MCP) != 4 {
+		t.Fatal("确认后应删除")
+	}
+	// 命令:草稿改成重名,保存应失败且不改原条目
+	a.SetCustomize("commands")
+	tt.Frame()
+	tt.Frame()
+	a.cu.draft.Name = "/test"
+	if err := tt.Click("保存"); err != nil {
+		t.Fatal(err)
+	}
+	if a.cu.err == "" || a.cu.sel.Name != "/review" {
+		t.Fatalf("重名保存应失败:%q %q", a.cu.err, a.cu.sel.Name)
+	}
+	a.cu.draft.Name = "/review2"
+	tt.Frame()
+	if err := tt.Click("保存"); err != nil {
+		t.Fatal(err)
+	}
+	if a.cu.sel.Name != "/review2" || a.cu.err != "" {
+		t.Fatalf("应保存成功:%q", a.cu.sel.Name)
+	}
+	// 在输入框试用 → 回对话并填好命令
+	tt.Frame()
+	if err := tt.Click("在输入框试用"); err != nil {
+		t.Fatal(err)
+	}
+	if a.screen != ScreenWork || !strings.HasPrefix(a.draft, "/review2") {
+		t.Fatalf("应回对话并填入命令:%v %q", a.screen, a.draft)
+	}
+	// 插件市场:安装
+	a.screen = ScreenCustomize
+	a.SetCustomize("plugins")
+	a.cu.market = true
+	tt.Frame()
+	tt.Frame()
+	if err := tt.Click("frontend-design"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if err := tt.Click("安装"); err != nil {
+		t.Fatal(err)
+	}
+	if st.Count(customize.Plugins) != 5 || !a.cu.mk.Installed {
+		t.Fatal("应安装 frontend-design")
 	}
 }

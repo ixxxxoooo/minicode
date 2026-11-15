@@ -33,7 +33,7 @@ func main() {
 	clicks := flag.String("click", "", "截图前依次点击,形如 IDE;100,200(文字或 DIP 坐标);每次点击后推进 -step 毫秒")
 	step := flag.Int("step", 600, "每次点击后推进的毫秒数")
 	palette := flag.String("palette", "", "打开命令面板并预填查询(用 _ 表示空查询)")
-	tab := flag.String("tab", "", "设置页分类(配合 -screen settings)")
+	tab := flag.String("tab", "", "设置页 / 自定义页分类(配合 -screen settings / customize)")
 	squery := flag.String("squery", "", "设置页搜索词")
 	state := flag.String("state", "", "会话状态:welcome(空会话)/ perm / ask / plan / queue(权限·提问·计划·排队)")
 	quick := flag.String("quick", "", "快速选择浮层:history / branch,可带预填查询,如 branch:feat")
@@ -76,6 +76,9 @@ func main() {
 	a.SetPopup(*popup)
 	if *screen == "settings" {
 		a.SetSettings(*tab, *squery)
+	}
+	if *screen == "customize" && *tab != "" {
+		a.SetCustomize(*tab)
 	}
 	if *top {
 		a.ScrollFlowTop()

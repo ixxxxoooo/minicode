@@ -25,6 +25,8 @@ func (a *App) page(c *ui.Context) bool {
 		a.canvasPage(c)
 	case ScreenBrowser:
 		a.browserPage(c)
+	case ScreenCustomize:
+		a.customizePage(c)
 	default:
 		return false
 	}

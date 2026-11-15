@@ -14,6 +14,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/browser"
 	"github.com/ixxxxoooo/minicode/internal/canvas"
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/customize"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -114,6 +115,9 @@ type App struct {
 	cv           canvasState                    // 画布页状态
 	br           *browser.Browser               // 内置浏览器(首次打开页面时建立)
 	brs          browserState                   // 浏览器页状态
+	cust         *customize.Store               // 自定义页数据(首次打开页面时建立)
+	cu           custState                      // 自定义页状态
+	cuNoMem      bool                           // 自定义页:「加载 CLAUDE.md 记忆文件」被关掉(只是界面状态,尚未接入 env)
 	use          usageState                     // 用量页
 	usageSrc     func(rng int) core.UsageReport // 用量数据源(nil = 演示数据)
 	qp           *qpState                       // 快速选择浮层(历史会话 / 分支),nil = 关闭
