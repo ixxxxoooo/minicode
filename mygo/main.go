@@ -30,7 +30,7 @@ import (
 // 构建时可用 -ldflags "-X main.version=..." 覆盖。
 var log = diag.L("app")
 
-var version = "0.2.0-mygo"
+var version = "0.3.0-mygo"
 
 func env(k, def string) string {
 	if v := os.Getenv(k); v != "" {
@@ -210,6 +210,7 @@ func main() {
 		runMode = "demo"
 	}
 	diag.Init(diag.Options{Version: version, Mode: runMode, Mirror: dev && os.Getenv("MINI_MIRROR") != ""})
+	app.Version = version // 关于页与日志共用同一个版本号(构建时 -X main.version 覆盖)
 	diag.WatchSignals()
 	log.Info("启动", "version", version, "mode", runMode, "dev", dev)
 
