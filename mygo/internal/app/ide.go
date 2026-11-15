@@ -93,6 +93,7 @@ type ide struct {
 	closed     []string          // 最近关闭的文件标签(⇧⌘T 重新打开,最多 20 个)
 	panelTop   float32           // 底部面板上缘(上一帧)
 	bottomTab  string            // term / problems / output
+	probScope  string            // 问题面板分段:open / ws
 	probErr    bool              // 问题面板:仅显示错误
 	termLines  []termLine
 	termSt     ui.ScrollState
@@ -111,6 +112,7 @@ type ide struct {
 	ni             int                // 历史里当前项的下标
 	refs           *refsState         // 底部「引用」分段的内容
 	ov             ideOv              // 代码区浮层
+	gotoLn         gotoLineUI         // 转到行浮条(ide_goto.go)
 	blameLine      int
 	blameHoverAt   time.Time           // 悬停追溯文字的起始时刻(满 300ms 才出卡)
 	blameCardShow  bool                // 提交卡已显示
@@ -420,6 +422,10 @@ func (d *ide) save() error {
 		d.onDiskSnap(t)
 	}
 	t.extBanner = false
+	t.extKeep = false
+	if !t.extOrphan {
+		t.extDeleted = false
+	}
 	ideLog.Info("已保存", "path", t.path, "bytes", len(s))
 	return nil
 }

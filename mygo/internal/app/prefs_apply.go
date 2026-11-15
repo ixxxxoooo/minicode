@@ -90,6 +90,7 @@ func (a *App) applyBehavior() {
 	}
 	morph = ui.ElementTransition{Size: true, Position: true, Duration: d, Ease: kit.EaseMorph}
 	a.applyCheapPrefs()
+	a.applySettingsRuntime()
 	// 终端字号:改了之后各终端标签重新量字宽
 	fam := a.termFontFamily()
 	lh := []float32{1.4, 1.6, 1.8}[min(max(a.prefs.Int("term.lineHeight", 1), 0), 2)]
@@ -158,7 +159,7 @@ func (a *App) autosave() {
 	mode := a.prefs.Int(pEdAutosave, 1)
 	cur := d.cur()
 	if mode == 2 && d.lastActive != "" && (cur == nil || cur.id != d.lastActive) {
-		if prev := d.tab(d.lastActive); prev != nil && prev.dirty() && !prev.diff && prev.virt == "" {
+		if prev := d.tab(d.lastActive); prev != nil && prev.dirty() && !prev.diff && prev.virt == "" && !prev.extKeep && !prev.extOrphan {
 			a.saveTab(prev)
 		}
 	}
@@ -167,7 +168,7 @@ func (a *App) autosave() {
 	} else {
 		d.lastActive = ""
 	}
-	if mode != 1 || cur == nil || cur.diff || cur.virt != "" || cur.buf == nil {
+	if mode != 1 || cur == nil || cur.diff || cur.virt != "" || cur.buf == nil || cur.extKeep || cur.extOrphan {
 		return
 	}
 	v := cur.buf.Version()

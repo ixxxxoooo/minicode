@@ -9,7 +9,7 @@ import (
 )
 
 // EditorDemo 按「动作:参数」驱动编辑器进入某个状态(cmd/shot 截图用,多个动作用逗号隔开):
-// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签;review:empty 空态)、expand:路径、newfile|newdir:文件夹:名字、renamef:路径:名字、foerr、discardask:路径、cmpfiles:提交、resetask:序号、delask:路径、rename:会话id、archived:项目id、scm、syncall、repobusy:N、search:查询、scope:文件夹、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容、goto:行、extmod[:auto]、crumb:路径、termrename;
+// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签;review:empty 空态)、expand:路径、newfile|newdir:文件夹:名字、renamef:路径:名字、foerr、discardask:路径、cmpfiles:提交、resetask:序号、delask:路径、rename:会话id、archived:项目id、scm、syncall、repobusy:N、search:查询、scope:文件夹、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、mdkeep(块写回演示样例)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容、goto:行、extmod[:auto|clean|dirty|deleted]、crumb[:file|sym|路径]、termrename;
 // queue(排两条)、steer[:正文](登记引导)、ask[:题号](切问答卡题号,1 起)、latest[:fresh](滚离底部, fresh=有新内容圆点)。
 func (a *App) EditorDemo(spec string) {
 	for _, act := range strings.Split(spec, ",") {
@@ -270,6 +270,15 @@ func (a *App) EditorDemo(spec string) {
 					md.doc.SetText(richtext.ParseMarkdown(strings.ReplaceAll(arg, `\n`, "\n")))
 					a.mdWrite(tb, md)
 				}
+			}
+			continue
+		case "mdkeep": // mdkeep:载入含段内换行 / 语言标注 / * 列表的样例并留在预览
+			if tb != nil && tb.buf != nil && isMarkdownFile(tb.path) {
+				sample := "# 快速开始\n\n第一段:设计稿先行。\n\n第二段:先改这一\n段。\n\n第三段:段内硬换行\n仍在本段。\n\n```rust\nfn main() {}\n```\n\n- 用 * 列表\n"
+				tb.buf.Set(sample)
+				tb.mdMode = mdWysiwyg
+				tb.md = nil
+				a.mdEnsure(tb)
 			}
 			continue
 		}

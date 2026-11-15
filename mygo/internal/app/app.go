@@ -234,6 +234,7 @@ type App struct {
 	rv              reviewState                    // 审查标签状态
 	rvStageUndo     kit.UndoSlot                   // 审查「暂存已接受」撤销
 	reviewDemoEmpty bool                           // 演示:审查标签空态(-ed review:empty)
+	wsDiagDemo      string                         // 演示 / -ed:工作区诊断态 scan|done|trunc|empty|err
 	diffSelTab      *ideTab                        // 差异标签的行选区
 	diffSelRange    editor.DiffLineRange
 	cw              *commitWizard       // 「逐个提交」向导(nil = 没有进行中的)
@@ -402,11 +403,11 @@ func (a *App) afterEvent(ev core.Event) {
 	}
 	if e, ok := ev.(core.EvTurnEnded); ok {
 		if a.q.preempt != "" {
-			a.q.turnEnded(e.Reason == core.StopEndTurn)
+			a.qTurnEnded(e.Reason == core.StopEndTurn)
 			a.flushPreempt()
 			return
 		}
-		a.q.turnEnded(e.Reason == core.StopEndTurn)
+		a.qTurnEnded(e.Reason == core.StopEndTurn)
 		a.drainQueue()
 	}
 	if e, ok := ev.(core.EvPlanUpdated); ok && e.Streaming {
@@ -707,6 +708,9 @@ func (a *App) shortcuts(c *ui.Context) {
 		a.navGo(1)
 	case a.shortcutHit(c, "save", ui.Cmd, ui.KeyS):
 		if a.mode == ModeIDE {
+			if a.extmodSaveIntercept() {
+				break
+			}
 			if err := a.ide.save(); err != nil {
 				log.Error("保存失败", "err", err)
 			}

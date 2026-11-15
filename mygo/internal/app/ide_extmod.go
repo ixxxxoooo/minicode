@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"os"
 	"path"
 	"time"
@@ -19,7 +20,10 @@ type diskSnap struct {
 	size int64
 }
 
-const extmodPoll = 2 * time.Second
+const (
+	extmodPollFast = time.Second
+	extmodPollSlow = 5 * time.Second
+)
 
 // diskBacked 是否值得对磁盘做 Stat(演示内存、Multi 里含 OS 根时仍轮询)。
 func diskBacked(fs workspace.FS) bool {
@@ -31,73 +35,127 @@ func diskBacked(fs workspace.FS) bool {
 	}
 }
 
+// extmodParticipates 差异 / 虚拟 / 无缓冲区 / 无路径的标签不参与轮询。
+func extmodParticipates(tb *ideTab) bool {
+	if tb == nil || tb.diff || tb.virt != "" || tb.buf == nil || tb.path == "" || tb.err != "" {
+		return false
+	}
+	return true
+}
+
 func (a *App) recordDiskSnap(tb *ideTab) {
-	if tb == nil || tb.diff || tb.virt != "" || tb.buf == nil || !diskBacked(a.ide.fs) {
+	if tb == nil || !extmodParticipates(tb) || !diskBacked(a.ide.fs) {
 		return
 	}
 	st, err := os.Stat(a.ide.fs.Abs(tb.path))
 	if err != nil {
 		return
 	}
-	if a.ide.diskSnaps == nil {
-		a.ide.diskSnaps = map[string]diskSnap{}
+	a.setDiskSnap(tb.path, diskSnap{mod: st.ModTime(), size: st.Size()})
+}
+
+func (a *App) setDiskSnap(p string, s diskSnap) {
+	d := a.ide
+	if d.diskSnaps == nil {
+		d.diskSnaps = map[string]diskSnap{}
 	}
-	a.ide.diskSnaps[tb.path] = diskSnap{mod: st.ModTime(), size: st.Size()}
+	d.diskSnaps[p] = s
 }
 
 func (a *App) extmodTick() {
-	if a.win == nil || !a.win.IsFocused() || a.mode != ModeIDE || a.screen != ScreenWork {
+	if a.win == nil || a.mode != ModeIDE || a.screen != ScreenWork {
 		return
 	}
 	if !diskBacked(a.ide.fs) {
 		return
 	}
+	focused := a.win.IsFocused()
+	d := a.ide
+	if focused && !d.extmodFocus {
+		d.extmodLast = time.Time{}
+	}
+	d.extmodFocus = focused
 	now := a.now()
-	if !a.ide.extmodLast.IsZero() && now.Sub(a.ide.extmodLast) < extmodPoll {
+	interval := extmodPollSlow
+	if focused {
+		interval = extmodPollFast
+	}
+	if !d.extmodLast.IsZero() && now.Sub(d.extmodLast) < interval {
 		return
 	}
-	a.ide.extmodLast = now
-	if len(a.ide.tabs) == 0 && len(a.ide.tabs2) == 0 {
+	d.extmodLast = now
+	paths := a.extmodPaths()
+	if len(paths) == 0 {
 		return
 	}
-	for _, tb := range a.allFileTabs() {
-		if tb != nil && tb.buf != nil {
-			if _, ok := a.ide.diskSnaps[tb.path]; !ok {
+	for p := range paths {
+		if _, ok := d.diskSnaps[p]; !ok {
+			if tb := a.ide.tabByPath(p); tb != nil {
 				a.recordDiskSnap(tb)
 			}
 		}
 	}
 	a.bg("extmod-poll", func() func() {
 		type hit struct {
-			tb    *ideTab
-			snap  diskSnap
-			dirty bool
+			path    string
+			snap    diskSnap
+			dirty   bool
+			deleted bool
 		}
 		var hits []hit
-		for _, tb := range a.allFileTabs() {
-			if tb == nil || tb.diff || tb.virt != "" || tb.buf == nil {
+		for p := range paths {
+			tb := a.ide.tabByPath(p)
+			if tb == nil || !extmodParticipates(tb) {
 				continue
 			}
-			st, err := os.Stat(a.ide.fs.Abs(tb.path))
+			abs := a.ide.fs.Abs(p)
+			st, err := os.Stat(abs)
 			if err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					if _, ok := d.diskSnaps[p]; ok && !tb.extOrphan {
+						hits = append(hits, hit{path: p, dirty: a.anyDirtyForPath(p), deleted: true})
+					}
+				}
 				continue
 			}
 			cur := diskSnap{mod: st.ModTime(), size: st.Size()}
-			prev, ok := a.ide.diskSnaps[tb.path]
+			prev, ok := d.diskSnaps[p]
 			if !ok {
 				continue
 			}
 			if cur.mod.Equal(prev.mod) && cur.size == prev.size {
 				continue
 			}
-			hits = append(hits, hit{tb: tb, snap: cur, dirty: tb.dirty()})
+			if d.extmodAlert != nil {
+				if alerted, ok := d.extmodAlert[p]; ok && alerted.mod.Equal(cur.mod) && alerted.size == cur.size {
+					continue
+				}
+			}
+			hits = append(hits, hit{path: p, snap: cur, dirty: a.anyDirtyForPath(p)})
 		}
 		return func() {
 			for _, h := range hits {
-				a.applyExtmod(h.tb, h.snap, h.dirty)
+				if tb := a.ide.tabByPath(h.path); tb != nil {
+					if h.deleted {
+						a.applyExtmodDeleted(tb, h.dirty)
+					} else {
+						a.applyExtmod(tb, h.snap, h.dirty)
+					}
+				}
 			}
 		}
 	})
+}
+
+// extmodPaths 返回当前应轮询的唯一文件路径(多拆分共享缓冲区只算一次)。
+func (a *App) extmodPaths() map[string]bool {
+	out := map[string]bool{}
+	for _, tb := range a.allFileTabs() {
+		if extmodParticipates(tb) {
+			out[tb.path] = true
+		}
+	}
+	return out
 }
 
 func (a *App) allFileTabs() []*ideTab {
@@ -105,6 +163,48 @@ func (a *App) allFileTabs() []*ideTab {
 	out := append([]*ideTab(nil), d.tabs...)
 	out = append(out, d.tabs2...)
 	return out
+}
+
+func (a *App) tabsForPath(p string) []*ideTab {
+	var out []*ideTab
+	for _, tb := range a.allFileTabs() {
+		if tb != nil && tb.path == p && !tb.diff && tb.virt == "" {
+			out = append(out, tb)
+		}
+	}
+	return out
+}
+
+func (a *App) anyDirtyForPath(p string) bool {
+	for _, tb := range a.tabsForPath(p) {
+		if tb.buf != nil && tb.dirty() {
+			return true
+		}
+	}
+	return false
+}
+
+func (a *App) markExtmodAlerted(p string, s diskSnap) {
+	d := a.ide
+	if d.extmodAlert == nil {
+		d.extmodAlert = map[string]diskSnap{}
+	}
+	d.extmodAlert[p] = s
+}
+
+func (a *App) setExtBanner(p string, on bool) {
+	for _, tb := range a.tabsForPath(p) {
+		tb.extBanner = on
+	}
+}
+
+func (a *App) setExtDeleted(p string, on bool) {
+	for _, tb := range a.tabsForPath(p) {
+		tb.extDeleted = on
+		if on {
+			tb.extBanner = false
+		}
+	}
 }
 
 func (a *App) applyExtmod(tb *ideTab, snap diskSnap, dirty bool) {
@@ -115,23 +215,32 @@ func (a *App) applyExtmod(tb *ideTab, snap diskSnap, dirty bool) {
 			extmodLog.Warn("外部修改后重载失败", "path", tb.path, "err", err)
 			return
 		}
-		setKeepCursor(tb, src)
-		tb.saved = src
-		tb.buf.MarkSaved()
-		tb.extBanner = false
-		a.ide.diskSnaps[tb.path] = snap
-		a.noticeInfo("已重新载入", name+":磁盘上的文件已被外部修改,已自动同步。")
+		for _, t := range a.tabsForPath(tb.path) {
+			if t.buf != nil {
+				setKeepCursor(t, src)
+				t.saved = src
+				t.buf.MarkSaved()
+				t.extBanner, t.extKeep, t.extDeleted, t.extOrphan = false, false, false, false
+			}
+		}
+		a.setDiskSnap(tb.path, snap)
+		a.markExtmodAlerted(tb.path, snap)
+		a.toast = "已从磁盘重新载入 " + name
 		extmodLog.Info("外部修改自动重载", "path", tb.path)
 		return
 	}
-	tb.extBanner = true
-	a.ide.diskSnaps[tb.path] = snap
-	body := name + ":磁盘上的文件已被外部修改。"
-	a.noticeWarn("文件已在外部修改", body, []noticeAction{
-		{label: "重新载入", run: func() { a.reloadTabFromDisk(tb, true) }},
-		{label: "保留我的", run: func() { tb.extBanner = false; a.recordDiskSnap(tb) }},
-	})
+	a.setExtBanner(tb.path, true)
+	a.setDiskSnap(tb.path, snap)
+	a.markExtmodAlerted(tb.path, snap)
 	extmodLog.Warn("外部修改与本地未保存冲突", "path", tb.path)
+}
+
+func (a *App) applyExtmodDeleted(tb *ideTab, dirty bool) {
+	name := path.Base(tb.path)
+	a.setExtDeleted(tb.path, true)
+	a.markExtmodAlerted(tb.path, diskSnap{})
+	extmodLog.Warn("磁盘文件已删除", "path", tb.path, "dirty", dirty)
+	_ = name
 }
 
 // reloadTabFromDisk 丢弃缓冲区,读回磁盘(用户点「重新载入」或调试)。
@@ -144,37 +253,151 @@ func (a *App) reloadTabFromDisk(tb *ideTab, user bool) {
 		a.toast = "重新载入失败:" + err.Error()
 		return
 	}
-	setKeepCursor(tb, src)
-	tb.saved = src
-	tb.buf.MarkSaved()
-	tb.extBanner = false
+	for _, t := range a.tabsForPath(tb.path) {
+		if t.buf == nil {
+			continue
+		}
+		setKeepCursor(t, src)
+		t.saved = src
+		t.buf.MarkSaved()
+		t.extBanner, t.extKeep, t.extDeleted, t.extOrphan = false, false, false, false
+	}
 	a.recordDiskSnap(tb)
 	a.ide.invalidate()
 	if user {
-		a.toast = "已从磁盘重新载入"
+		name := path.Base(tb.path)
+		a.toast = "已从磁盘重新载入 " + name
 	}
 	extmodLog.Info("用户重新载入", "path", tb.path)
 }
 
-// extmodBanner 有未保存修改且磁盘已变时在编辑器顶部显示。
+func (a *App) keepMineExtmod(tb *ideTab) {
+	if tb == nil {
+		return
+	}
+	for _, t := range a.tabsForPath(tb.path) {
+		t.extBanner = false
+		t.extKeep = true
+	}
+	a.recordDiskSnap(tb)
+	extmodLog.Info("保留本地版本", "path", tb.path)
+}
+
+func (a *App) keepOrphanExtmod(tb *ideTab) {
+	if tb == nil {
+		return
+	}
+	for _, t := range a.tabsForPath(tb.path) {
+		t.extBanner = false
+		t.extDeleted = false
+		t.extOrphan = true
+	}
+	if d := a.ide; d.extmodAlert != nil {
+		delete(d.extmodAlert, tb.path)
+	}
+	extmodLog.Info("删除后保留在编辑器", "path", tb.path)
+}
+
+func (a *App) openExtmodDiff(tb *ideTab) {
+	if tb == nil || tb.buf == nil {
+		return
+	}
+	disk, err := a.ide.fs.Read(tb.path)
+	if err != nil {
+		disk = ""
+	}
+	buf := tb.buf.String()
+	id := "diff:extmod:" + tb.path
+	if t := a.ide.tab(id); t != nil {
+		a.ide.active, a.ide.sel = id, tb.path
+		return
+	}
+	a.ide.addDiffTab(id, tb.path, "磁盘 ↔ 编辑器", disk, buf, true)
+	if t := a.ide.tab(id); t != nil && t.dv != nil {
+		t.dv.Editable = false
+	}
+	a.ide.active = id
+	extmodLog.Info("打开外部修改差异", "path", tb.path)
+}
+
+// extmodBanner 磁盘变化时在编辑器顶部显示(修改冲突或文件已删除)。
 func (a *App) extmodBanner(c *ui.Context, tb *ideTab) {
-	if tb == nil || !tb.extBanner {
+	if tb == nil {
 		return
 	}
 	t := a.tk
+	name := path.Base(tb.path)
+	if tb.extDeleted && !tb.extOrphan {
+		ui.Row(c).Shrink(0).Gap(8).Padding(6, 12).Background(t.ErrSoft).BorderWidth(0, 0, 1, 0).BorderColor(t.Err).
+			AlignItems(ui.Center).FontSize(theme.FsCap).Children(func() {
+			kit.Ic(c, "errc", kit.S12).TextColor(t.Err)
+			ui.Text(c, name+" 已在磁盘上被删除").TextColor(t.Err).Grow(1)
+			kit.Btn(c, "保留在编辑器", kit.BtnOpt{Small: true}).OnClick(func() { a.keepOrphanExtmod(tb) })
+			kit.Btn(c, "关闭标签", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() { a.closeExtmodTabs(tb.path) })
+		})
+		return
+	}
+	if !tb.extBanner {
+		return
+	}
 	ui.Row(c).Shrink(0).Gap(8).Padding(6, 12).Background(t.WarnSoft).BorderWidth(0, 0, 1, 0).BorderColor(t.Warn).
 		AlignItems(ui.Center).FontSize(theme.FsCap).Children(func() {
 		kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
-		ui.Text(c, "文件已在磁盘上被修改").TextColor(t.Warn).Grow(1)
+		ui.Text(c, "磁盘上的 "+name+" 已被其它程序修改").TextColor(t.Warn).Grow(1)
 		kit.Btn(c, "重新载入", kit.BtnOpt{Small: true}).OnClick(func() { a.reloadTabFromDisk(tb, true) })
-		kit.Btn(c, "保留我的", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() {
-			tb.extBanner = false
-			a.recordDiskSnap(tb)
-		})
+		kit.Btn(c, "保留我的", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() { a.keepMineExtmod(tb) })
+		kit.Btn(c, "查看差异", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() { a.openExtmodDiff(tb) })
 	})
 }
 
-// dbgExtmod 演示 / 截图:强制展示外部修改横幅(内存 FS 不调轮询)。
+func (a *App) closeExtmodTabs(p string) {
+	ids := []string{}
+	for _, tb := range a.allFileTabs() {
+		if tb != nil && tb.path == p {
+			ids = append(ids, tb.id)
+		}
+	}
+	for _, id := range ids {
+		a.ide.closeTab(id)
+	}
+	extmodLog.Info("关闭已删除文件的标签", "path", p)
+}
+
+// extmodSaveIntercept 在 ⌘S / 保存命令前调用;需要确认时弹框并返回 true(中止同步保存)。
+func (a *App) extmodSaveIntercept() bool {
+	tb := a.ide.cur()
+	if tb == nil || tb.diff || tb.virt != "" || tb.buf == nil {
+		return false
+	}
+	name := path.Base(tb.path)
+	if tb.extOrphan {
+		a.confirmDlg("保存 "+name+"?",
+			"文件已在磁盘上被删除;保存将按当前路径重新创建该文件。",
+			"保存", false, func() {
+				tb.extOrphan = false
+				if err := a.ide.save(); err != nil {
+					a.toast = "保存失败:" + err.Error()
+				}
+			})
+		return true
+	}
+	if !tb.extKeep {
+		return false
+	}
+	a.confirmDlg("用编辑器里的内容覆盖磁盘上的 "+name+"?",
+		"外部版本将被替换;可在源代码管理或访达历史里找回(若仓库有提交)。",
+		"覆盖保存", false, func() {
+			for _, t := range a.tabsForPath(tb.path) {
+				t.extKeep = false
+			}
+			if err := a.ide.save(); err != nil {
+				a.toast = "保存失败:" + err.Error()
+			}
+		})
+	return true
+}
+
+// dbgExtmod 演示 / 截图: -ed extmod:dirty|clean|deleted|auto
 func (a *App) dbgExtmod(arg string) {
 	tb := a.ide.cur()
 	if tb == nil || tb.buf == nil {
@@ -189,17 +412,27 @@ func (a *App) dbgExtmod(arg string) {
 		if diskBacked(a.ide.fs) {
 			a.recordDiskSnap(tb)
 			_ = a.ide.fs.Write(tb.path, tb.saved+"\n// extmod demo\n")
+			a.ide.extmodLast = time.Time{}
 			a.extmodTick()
-			a.extmodLastForce()
 			return
 		}
 		fallthrough
+	case "dirty":
+		for _, t := range a.tabsForPath(tb.path) {
+			if t.buf != nil && t.saved == t.buf.String() {
+				t.buf.Insert(t.buf.Len(), "\n// local edit")
+			}
+			t.extBanner = true
+			t.extDeleted = false
+		}
+		a.markExtmodAlerted(tb.path, diskSnap{mod: time.Now(), size: 1})
+	case "deleted":
+		for _, t := range a.tabsForPath(tb.path) {
+			t.extDeleted = true
+			t.extBanner = false
+		}
 	default:
 		tb.extBanner = true
-		a.noticeWarn("文件已在外部修改", path.Base(tb.path)+":磁盘上的文件已被外部修改。", []noticeAction{
-			{label: "重新载入", run: func() { a.reloadTabFromDisk(tb, true) }},
-			{label: "保留我的", run: func() { tb.extBanner = false }},
-		})
 	}
 }
 

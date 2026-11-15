@@ -189,7 +189,11 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 	add("panelR", "显示 / 隐藏右侧栏", "⌥⌘B", "Agent 形态 = 工作区,IDE 形态 = 对话栏。", a.toggleRight)
 	if a.mode == ModeIDE {
 		add("terminal", "显示 / 隐藏底部面板", "⌘J", "终端、问题、输出所在的底部面板。", func() { a.ide.bottomOpen = !a.ide.bottomOpen })
-		add("download", "保存当前文件", "⌘S", "把当前编辑器标签写回磁盘。", func() { _ = a.ide.save() })
+		add("download", "保存当前文件", "⌘S", "把当前编辑器标签写回磁盘。", func() {
+			if !a.extmodSaveIntercept() {
+				_ = a.ide.save()
+			}
+		})
 	}
 	for _, s := range theme.Schemes {
 		s := s
