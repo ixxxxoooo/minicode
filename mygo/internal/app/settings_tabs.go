@@ -543,7 +543,7 @@ var settingsTabs = []setTabDef{
 			rTog(pAdvWatchdog, "主线程卡死看门狗", "停滞超过阈值时抓取调用栈,写入诊断记录", true),
 			rTog(pAdvFlowMeas, "会话流一次测完行高", "载入长会话时先测量全部行,滚动更稳(首帧稍慢)(Go 版暂不生效:列表由库自行测量)", true),
 		}},
-		{title: "Claude 配置摘要(演示)", body: func(a *App, c *ui.Context) { a.claudeDiagBody(a, c) }},
+		{title: "Claude 配置摘要", body: func(a *App, c *ui.Context) { a.claudeDiagBody(a, c) }},
 		{title: "重置", rows: []setRow{
 			rCustom("恢复默认客户端偏好", "主题、发送键、通知、代理等恢复默认;不影响 Claude 配置、栏宽与最近项目", func(a *App, c *ui.Context) {
 				kit.Btn(c, "恢复默认…", kit.BtnOpt{Small: true, Variant: kit.BtnDanger}).OnClick(func() {

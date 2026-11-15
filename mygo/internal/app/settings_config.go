@@ -1,8 +1,10 @@
 package app
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/claudecfg"
@@ -226,11 +228,26 @@ func (a *App) runNetCheck(hosts []string) {
 }
 
 func (a *App) claudeDiagBody(a2 *App, c *ui.Context) {
+	t := a2.tk
 	if !a2.demoWs() {
-		ui.Text(c, "真实模式请在自定义页查看插件与 MCP。").FontSize(theme.FsCap).TextColor(a2.tk.Tx3).Padding(8, 12)
+		lines := a2.realCfgSummary()
+		if len(lines) == 0 {
+			ui.Text(c, "正在读取…").FontSize(theme.FsCap).TextColor(t.Tx3).Padding(8, 12)
+			return
+		}
+		ui.Column(c).Gap(0).Padding(0, 0, 4, 0).Children(func() {
+			for i, line := range lines {
+				rowBox(a2, c, i == 0, 28).Children(func() {
+					kit.Ic(c, "info", kit.S12).TextColor(t.Tx3)
+					ui.Text(c, line).FontSize(theme.FsCap).Grow(1)
+				})
+			}
+			rowBox(a2, c, false, 32).Children(func() {
+				ui.Text(c, "插件与 MCP 请到「自定义」页查看。").FontSize(theme.FsCap).TextColor(t.Tx3).Grow(1)
+			})
+		})
 		return
 	}
-	t := a2.tk
 	ui.Column(c).Gap(0).Padding(0, 0, 4, 0).Children(func() {
 		for i, line := range demo.ClaudeDiagLines() {
 			rowBox(a2, c, i == 0, 28).Children(func() {
@@ -265,4 +282,36 @@ func (a *App) initSettingsConfig() {
 	if a.set.netMs == nil {
 		a.set.netMs = map[string]int64{}
 	}
+}
+
+// realCfgSummary 返回真实模式下的 Claude 配置摘要(三层权限规则数 + 环境变量数)。
+// 缓存 5 秒、后台读取,渲染线程不碰磁盘;还没读完时返回 nil。
+func (a *App) realCfgSummary() []string {
+	if !a.set.sumBusy && time.Since(a.set.sumAt) > 5*time.Second {
+		a.set.sumBusy = true
+		proj := a.proj
+		a.bg("claude-cfg-summary", func() func() {
+			var out []string
+			for _, l := range []struct {
+				name  string
+				layer claudecfg.Layer
+			}{{"用户层", claudecfg.LayerUser}, {"项目层", claudecfg.LayerProject}, {"本地层", claudecfg.LayerLocal}} {
+				r, err := claudecfg.ReadRules(l.layer, proj)
+				if err != nil {
+					out = append(out, l.name+"权限规则:读取失败")
+					continue
+				}
+				out = append(out, fmt.Sprintf("%s权限规则:允许 %d · 询问 %d · 拒绝 %d", l.name, len(r.Allow), len(r.Ask), len(r.Deny)))
+			}
+			if env, err := claudecfg.ReadEnvRows(proj); err == nil {
+				out = append(out, fmt.Sprintf("环境变量:%d 个(只显示变量名)", len(env)))
+			}
+			return func() {
+				a.set.sum = out
+				a.set.sumAt = time.Now()
+				a.set.sumBusy = false
+			}
+		})
+	}
+	return a.set.sum
 }

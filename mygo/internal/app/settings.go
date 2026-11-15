@@ -127,6 +127,9 @@ type settingsState struct {
 	cr          []crashBrief // 崩溃记录缓存(后台刷新)
 	crAt        time.Time
 	crBusy      bool
+	sum         []string // Claude 配置摘要缓存
+	sumAt       time.Time
+	sumBusy     bool
 	envErr      string
 }
 
