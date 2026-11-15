@@ -3,7 +3,6 @@ package app
 import (
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/canvas"
-	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -12,22 +11,28 @@ import (
 // 文档与版本在 internal/canvas;「让 Claude 修改」把提示词交给对话(等 Claude 后端接上后由它改画布)。
 
 type canvasState struct {
-	preview bool
-	code    bool // 预览时的源码视图
-	st      ui.ScrollState
-	pos     map[string]float32 // 块 ID → 相对文档顶端的 Y(上一帧量到的)
-	outline string             // 大纲里当前项
-	ask     string
-	apply   string // 粘贴 Claude 回复以写回画布
-	selBlk  string // 让 Claude 修改时引用的块
-	verIx   int    // 版本步进器(0=最新)
-	drawBot bool   // 窄窗右栏落底部
+	preview     bool
+	code        bool // 预览时的源码视图
+	st          ui.ScrollState
+	pos         map[string]float32 // 块 ID → 相对文档顶端的 Y(上一帧量到的)
+	outline     string             // 大纲里当前项
+	ask         string
+	apply       string // 粘贴 Claude 回复以写回画布
+	selBlk      string // 让 Claude 修改时引用的块
+	verIx       int    // 版本步进器(0=最新)
+	drawBot     bool   // 窄窗右栏落底部
+	listRenID   string
+	listRenName string
+	undo        kit.UndoSlot
 }
 
 func (a *App) cvStore() *canvas.Store {
 	if a.demoExtra {
+		_ = a.cvLib()
 		if a.canv == nil {
-			a.canv = demo.Canvas(a.now())
+			if s, err := a.cvLibData.ActiveStore(); err == nil {
+				a.canv = s
+			}
 		}
 		return a.canv
 	}
@@ -120,7 +125,7 @@ func (a *App) canvasPage(c *ui.Context) {
 		if narrow {
 			ui.Column(c).Grow(1).MinHeight(0).Children(func() {
 				ui.Row(c).Grow(1).MinHeight(0).Children(func() {
-					if !a.demoExtra {
+					if !a.demoExtra || len(a.cvLib().IDs()) > 1 {
 						a.canvasList(c)
 					}
 					ui.Scroll(c).Key("cv-main").Grow(1).TrackScroll(&v.st).Children(func() {
@@ -131,7 +136,7 @@ func (a *App) canvasPage(c *ui.Context) {
 			})
 		} else {
 			ui.Row(c).Grow(1).MinHeight(0).Children(func() {
-				if !a.demoExtra {
+				if !a.demoExtra || len(a.cvLib().IDs()) > 1 {
 					a.canvasList(c)
 				}
 				a.pageSplitW(c, "cv", 280, &v.st, body, drawer)

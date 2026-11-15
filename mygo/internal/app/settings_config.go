@@ -3,10 +3,10 @@ package app
 import (
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/claudecfg"
+	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/lsp"
 	"github.com/ixxxxoooo/minicode/internal/theme"
@@ -26,12 +26,15 @@ func (a *App) permLayer() claudecfg.Layer {
 func (a *App) rulesBody(a2 *App, c *ui.Context) {
 	layer := a2.permLayer()
 	rules, err := claudecfg.ReadRules(layer, a2.proj)
-	if err != nil || (len(rules.Allow)+len(rules.Ask)+len(rules.Deny) == 0 && a2.demoWs()) {
+	if a2.demoWs() {
+		rules = demo.SettingDemoRules()
+	} else if err != nil || len(rules.Allow)+len(rules.Ask)+len(rules.Deny) == 0 {
 		rules = claudecfg.DemoRules()
 	}
 	drawRuleGroup(a2, c, "allow", "允许", kit.KOk, rules.Allow, 0)
 	drawRuleGroup(a2, c, "ask", "询问", kit.KWarn, rules.Ask, 1)
 	drawRuleGroup(a2, c, "deny", "拒绝", kit.KErr, rules.Deny, 2)
+	a2.rulesAddRow(a2, c)
 }
 
 func drawRuleGroup(a *App, c *ui.Context, kind, lbl string, tag kit.TagKind, rules []string, gi int) {
@@ -69,8 +72,8 @@ func (a *App) deleteRuleWithUndo(kind, rule string) {
 
 func (a *App) trustBody(a2 *App, c *ui.Context) {
 	var rows []claudecfg.TrustEntry
-	if a2.demoWs() && len(a2.projects) == 0 {
-		rows = claudecfg.DemoTrust()
+	if a2.demoWs() {
+		rows = demo.DemoTrust()
 	} else {
 		paths := make([]string, 0, len(a2.projects))
 		for _, pi := range a2.projects {
@@ -117,9 +120,15 @@ func filepathBase(p string) string {
 }
 
 func (a *App) envBody(a2 *App, c *ui.Context) {
-	rows, err := claudecfg.ReadEnvRows(a2.proj)
-	if err != nil {
-		rows = claudecfg.DemoEnv()
+	var rows []claudecfg.EnvRow
+	var err error
+	if a2.demoWs() {
+		rows = demo.DemoEnv()
+	} else {
+		rows, err = claudecfg.ReadEnvRows(a2.proj)
+		if err != nil {
+			rows = claudecfg.DemoEnv()
+		}
 	}
 	for i, e := range rows {
 		e := e
@@ -132,6 +141,7 @@ func (a *App) envBody(a2 *App, c *ui.Context) {
 			}
 		})
 	}
+	a2.envAddRow(a2, c)
 }
 
 func (a *App) deleteEnvWithUndo(name string) {
@@ -143,6 +153,21 @@ func (a *App) deleteEnvWithUndo(name string) {
 }
 
 func (a *App) lspBody(a2 *App, c *ui.Context) {
+	if a2.demoWs() {
+		for i, row := range demo.LSPDemoRows() {
+			r := row
+			rowBox(a2, c, i == 0, 32).Children(func() {
+				if r.OK {
+					kit.Ic(c, "okc", kit.S12).TextColor(a2.tk.Ok)
+				} else {
+					kit.Ic(c, "alert", kit.S12).TextColor(a2.tk.Warn)
+				}
+				ui.Text(c, r.Name).FontWeight(500).Grow(1)
+				ui.Text(c, r.Status).FontSize(theme.FsCap).TextColor(a2.tk.Tx3).SingleLine()
+			})
+		}
+		return
+	}
 	show := []string{"rust-analyzer", "Pyright", "gopls", "typescript-language-server"}
 	for i, name := range show {
 		var sp *lsp.Spec
@@ -190,6 +215,7 @@ func (a *App) providersBody(a2 *App, c *ui.Context) {
 	if a2.set.providers == nil {
 		a2.set.providers = list
 	}
+	masks := demo.ProviderKeyMasks()
 	for i, p := range a2.set.providers {
 		p := p
 		first := i == 0
@@ -213,17 +239,21 @@ func (a *App) providersBody(a2 *App, c *ui.Context) {
 					}
 				})
 				ui.Text(c, p.BaseURL).Font("monospace").FontSize(theme.FsCap).TextColor(a2.tk.Tx3).SingleLine()
+				if m := masks[p.ID]; a2.demoWs() && m != "" {
+					ui.Text(c, "密钥 "+m).Font("monospace").FontSize(theme.FsCap).TextColor(a2.tk.Tx4).SingleLine()
+				}
 			})
 			st := a2.set.provBusy[p.ID]
 			btnLabel := "测试"
 			if st == 1 {
 				btnLabel = "测试中"
 			}
-			kit.Btn(c, btnLabel, kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() {
+			kit.Btn(c, btnLabel, kit.BtnOpt{Small: true, Icon: "refresh", Loading: st == 1, Disabled: st == 1}).OnClick(func() {
 				a2.testProvider(p.ID)
 			})
 		})
 	}
+	a2.providersToolbar(a2, c)
 }
 
 func (a *App) testProvider(id string) {
@@ -332,26 +362,40 @@ func (a *App) runNetCheck(hosts []string) {
 	})
 }
 
-func (a *App) settingsUndoToast(c *ui.Context) {
-	if !a.set.undo.Active() {
+func (a *App) claudeDiagBody(a2 *App, c *ui.Context) {
+	if !a2.demoWs() {
+		ui.Text(c, "真实模式请在自定义页查看插件与 MCP。").FontSize(theme.FsCap).TextColor(a2.tk.Tx3).Padding(8, 12)
 		return
 	}
-	t := a.tk
-	ui.Row(c).Gap(10).Padding(8, 10).Radius(t.RMd()).Background(t.Fill1).Border(1, t.Bd2).Margin(0, 0, 8, 0).Children(func() {
-		ui.Text(c, a.set.undo.Label).Grow(1).FontSize(theme.FsCap)
-		kit.Btn(c, "撤销", kit.BtnOpt{Small: true}).OnClick(func() {
-			fn := a.set.undo.Undo
-			a.set.undo.Clear()
-			if fn != nil {
-				fn()
-			}
-		})
-		rem := time.Until(a.set.undo.Until).Seconds()
-		ui.Text(c, itoa(int(rem+0.5))+"s").FontSize(theme.FsMicro).TextColor(t.Tx4).FontFeatures("tnum")
+	t := a2.tk
+	ui.Column(c).Gap(0).Padding(0, 0, 4, 0).Children(func() {
+		for i, line := range demo.ClaudeDiagLines() {
+			rowBox(a2, c, i == 0, 28).Children(func() {
+				kit.Ic(c, "info", kit.S12).TextColor(t.Tx3)
+				ui.Text(c, line).FontSize(theme.FsCap).Grow(1)
+			})
+		}
 	})
 }
 
+func (a *App) settingsUndoToast(c *ui.Context) {
+	kit.UndoBar(c, &a.set.undo)
+}
+
 func (a *App) initSettingsConfig() {
+	if a.demoWs() && len(a.set.providers) == 0 {
+		a.set.providers = demo.DemoProviders()
+		a.set.net = map[string]int{"api.anthropic.com": 2, "github.com": 2}
+		a.set.netMs = map[string]int64{"api.anthropic.com": 142, "github.com": 96}
+		for k, v := range demo.ShortcutDemoPrefs() {
+			if !a.prefs.Has(k) {
+				a.prefs.Set(k, v)
+			}
+		}
+		if a.set.kbWarn == "" {
+			a.set.kbWarn = "⌘ E 已被「切换 Agent / IDE」占用"
+		}
+	}
 	if a.set.providers == nil {
 		list, _ := claudecfg.LoadProviders()
 		a.set.providers = list

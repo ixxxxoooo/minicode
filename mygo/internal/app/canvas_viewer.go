@@ -52,10 +52,37 @@ func (a *App) canvasViewerOverlay(c *ui.Context) {
 				kit.Btn(c, "－", kit.BtnOpt{Small: true}).OnClick(func() { v.fit = false; v.scale = clamp(v.scale/1.15, 0.25, 4) })
 				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭 Esc"}).OnClick(func() { v.open = false })
 			})
-			cv := ui.Box(c).Grow(1)
+			panel.OnShortcut(0, ui.KeyEscape, func() { v.open = false })
+			for _, sk := range []struct {
+				key ui.Key
+				dx  float32
+				dy  float32
+			}{
+				{ui.KeyLeft, -24, 0}, {ui.KeyRight, 24, 0}, {ui.KeyUp, 0, -24}, {ui.KeyDown, 0, 24},
+			} {
+				sk := sk
+				panel.OnShortcut(ui.Shift, sk.key, func() {
+					v.fit = false
+					v.panX += sk.dx * 2
+					v.panY += sk.dy * 2
+				})
+				panel.OnShortcut(0, sk.key, func() {
+					v.fit = false
+					v.panX += sk.dx
+					v.panY += sk.dy
+				})
+			}
+			cv := ui.Box(c).Grow(1).Cursor(ui.CursorGrab)
 			const designW = float32(520)
 			const designH = float32(150)
 			cv.Draw(func(p *ui.Painter, r ui.Rect) {
+				if cv.Pressed() {
+					if dx, dy, ok := cv.Dragged(); ok {
+						v.fit = false
+						v.panX += dx
+						v.panY += dy
+					}
+				}
 				w, h := r.W, r.H
 				sc := v.scale
 				if w > 0 && h > 0 && v.fit {

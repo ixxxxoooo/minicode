@@ -9,7 +9,7 @@ import (
 // ApplyClaudeReply 从 Claude 回复里提取画布 JSON 并合并进当前文档;成功则提交新版本。
 // 支持整份 {"title","status","blocks":[…]} 或仅 blocks 数组。
 func (s *Store) ApplyClaudeReply(text, by, note string, at time.Time) (bool, string) {
-	text = strings.TrimSpace(text)
+	text = strings.TrimSpace(ExtractCanvasJSON(text))
 	if text == "" {
 		return false, "回复为空"
 	}

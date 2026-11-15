@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -13,9 +14,25 @@ import (
 )
 
 type autoLive struct {
+	mu     sync.Mutex
 	cancel context.CancelFunc
 	buf    strings.Builder
 	at     time.Time
+}
+
+func (lv *autoLive) appendChunk(s string) {
+	if s == "" {
+		return
+	}
+	lv.mu.Lock()
+	lv.buf.WriteString(s)
+	lv.mu.Unlock()
+}
+
+func (lv *autoLive) snapshot() string {
+	lv.mu.Lock()
+	defer lv.mu.Unlock()
+	return lv.buf.String()
 }
 
 // openAutoNewDlg 打开「新建自动化」模态(设计稿 behave.js au-new)。
@@ -212,7 +229,7 @@ func (a *App) autoRunView(c *ui.Context) {
 		var live bool
 		if lv := a.autoLive[id]; lv != nil && s.runView == liveKey(id) {
 			live = true
-			body = lv.buf.String()
+			body = lv.snapshot()
 		}
 		if ok {
 			for _, r := range it.Runs {

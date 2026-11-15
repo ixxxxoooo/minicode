@@ -31,7 +31,11 @@ func OpenDisk(proj string) (*DiskStore, error) {
 		home:       home,
 		claudeJSON: filepath.Join(home, ".claude.json"),
 	}
-	ds.Market = defaultMarket()
+	if mk := RunMarketplaceList(); len(mk) > 0 {
+		ds.Market = mk
+	} else {
+		ds.Market = defaultMarket()
+	}
 	ds.loadAll()
 	return ds, nil
 }
@@ -457,8 +461,10 @@ func (ds *DiskStore) Persist(c Cat, it *Item, draft Item) error {
 		return ds.saveHook(it, draft)
 	case Skills:
 		return ds.saveSkillMeta(it, draft)
+	case MCP:
+		return ds.SaveMCP(it, draft)
 	default:
-		return nil // 插件/MCP 由专门动作处理
+		return nil // 插件由 CLI 安装
 	}
 }
 

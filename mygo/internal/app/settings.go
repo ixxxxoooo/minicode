@@ -89,7 +89,18 @@ type settingsState struct {
 	undo kit.UndoSlot
 	// 输入校验抖动
 	fieldShake map[string]time.Time
-	navDrop    bool // 窄窗分类下拉展开
+	enterAt    time.Time // 分类切换时分组 stagger 起点
+	navDrop    bool      // 窄窗分类下拉展开
+	// 权限 / 环境变量表单
+	ruleDraft string
+	ruleKind  int
+	envName   string
+	envVal    string
+	envLayer  int
+	// 服务商编辑
+	provEdit  bool
+	provDraft claudecfg.Provider
+	provKey   string
 }
 
 func (a *App) setTabByID(id string) *setTabDef {
@@ -276,6 +287,7 @@ func (a *App) settingsMain(c *ui.Context) {
 	if a.set.lastTab != a.setTab+"|"+q {
 		a.set.mainSt.Y = 0 // 换分类 / 搜索词回到顶部
 		a.set.lastTab = a.setTab + "|" + q
+		a.set.enterAt = time.Now()
 	}
 	ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 		ui.Scroll(c).Key("set-main").TrackScroll(&a.set.mainSt).Grow(1).MinHeight(0).Children(func() {
@@ -296,11 +308,11 @@ func (a *App) settingsMain(c *ui.Context) {
 					ui.Column(c).Gap(2).Children(func() {
 						ui.Text(c, tab.title).FontSize(theme.FsHead).FontWeight(700)
 						if tab.desc != "" {
-							ui.Text(c, tab.desc).TextColor(t.Tx3).LineHeight(1.5)
+							ui.Text(c, tab.desc).TextColor(t.Tx3).LineHeight(theme.LhBody)
 						}
 					})
-					for _, g := range tab.groups {
-						a.settingsGroup(c, g)
+					for gi, g := range tab.groups {
+						a.settingsGroup(c, g, gi)
 					}
 					if tab.note != "" {
 						ui.Text(c, tab.note).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.5).Padding(0, 4)
@@ -318,9 +330,11 @@ func (a *App) settingsMain(c *ui.Context) {
 }
 
 // settingsGroup 是一张分组卡(小标题 + 白底卡片)。
-func (a *App) settingsGroup(c *ui.Context, g setGroup) {
+func (a *App) settingsGroup(c *ui.Context, g setGroup, index int) {
 	t := a.tk
-	ui.Column(c).Gap(5).Children(func() {
+	grp := ui.Column(c).Gap(5)
+	kit.StaggerRise(grp, index, a.set.enterAt, a.frameSoon)
+	grp.Children(func() {
 		if g.title != "" {
 			ui.Text(c, g.title).FontSize(theme.FsCap).FontWeight(700).TextColor(t.Tx3).LetterSpacing(.2).Padding(0, 4)
 		}

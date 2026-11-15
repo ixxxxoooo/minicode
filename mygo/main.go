@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	_ "github.com/egoist/mygo/locales/zh-Hans" // 控件自带文案的简体中文译文
 	"os"
 	"path/filepath"
@@ -333,11 +334,11 @@ func main() {
 		if home, err := os.UserHomeDir(); err == nil {
 			a.SetAutomations(automation.OpenStore(filepath.Join(home, ".minicode", "automations.json")))
 		}
-		a.SetAutomationRunner(func(it automation.Automation, dir string) (string, error) {
+		a.SetAutomationRunnerCtx(func(ctx context.Context, it automation.Automation, dir string, onChunk func(string)) (string, error) {
 			defer diag.Recover("自动化运行")
 			end := diag.SpanSlow("app", "运行自动化", 30*time.Second, "name", it.Name)
 			defer end()
-			return claude.RunPrompt(dir, it.Prompt, claude.PermModeOf(it.Perm), 15*time.Minute)
+			return claude.RunPromptStreamCtx(ctx, dir, it.Prompt, claude.PermModeOf(it.Perm), 15*time.Minute, onChunk)
 		})
 		a.SetTextGenerator(func(dir, prompt string) (string, error) {
 			end := diag.SpanSlow("app", "AI 提交说明", 20*time.Second)
@@ -354,8 +355,12 @@ func main() {
 		go func() {
 			defer diag.Recover("会话索引刷新")
 			for range time.Tick(20 * time.Second) {
+				win.Update(func() { a.SetProjScanning(true) })
 				ix := rs.refresh()
-				win.Update(func() { a.RefreshProjects(ix.Projects) })
+				win.Update(func() {
+					a.RefreshProjects(ix.Projects)
+					a.SetProjScanning(false)
+				})
 			}
 		}()
 	})

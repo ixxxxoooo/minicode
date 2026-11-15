@@ -148,30 +148,40 @@ func (a *App) cuToggleRow(c *ui.Context, key, title, sub string, on bool, flip f
 	})
 }
 
-// cuDelete 是两步删除:第一次点变成「确认删除」,再点才真的删。
+// cuDelete 删除并给 6 秒撤销窗口(设计稿 states「删除折叠 + 撤销」)。
 func (a *App) cuDelete(c *ui.Context, st *customize.Store, it *customize.Item, verb string) {
-	s := &a.cu
-	text := verb
-	if s.delArm == it {
-		text = "确认" + verb
-	}
-	kit.Btn(c, text, kit.BtnOpt{Variant: kit.BtnDangerGhost, Icon: "trash"}).OnClick(func() {
-		if s.delArm != it {
-			s.delArm = it
-			return
-		}
-		if a.cuDisk() != nil && a.cuCat() != customize.Plugins {
+	cat := a.cuCat()
+	snap := *it
+	kit.Btn(c, verb, kit.BtnOpt{Variant: kit.BtnDangerGhost, Icon: "trash"}).OnClick(func() {
+		if a.cuDisk() != nil && cat != customize.Plugins {
 			a.cuRemoveDisk(st, it)
-		} else if a.cuCat() == customize.Plugins {
+		} else if cat == customize.Plugins {
+			if !a.cuDemo() {
+				res := customize.RunPluginUninstall(it.Name)
+				if res.Code != 0 && res.Err != "" {
+					a.toast = res.Err
+					return
+				}
+				if ds := a.cuDisk(); ds != nil {
+					ds.Reload()
+				}
+			}
 			st.Uninstall(it)
 		} else {
-			st.Remove(a.cuCat(), it)
+			st.Remove(cat, it)
 		}
-		log.Info("删除自定义项", "cat", a.cuCat(), "name", it.Name)
-		s.sel, s.dOf, s.delArm = nil, nil, nil
-		if s.err == "" {
-			a.toast = "已" + verb + "「" + it.Name + "」"
-		}
+		log.Info("删除自定义项", "cat", cat, "name", it.Name)
+		a.cu.sel, a.cu.dOf = nil, nil
+		a.delUndo.Begin("已"+verb+"「"+it.Name+"」", func() {
+			if cat == customize.Plugins {
+				return
+			}
+			n := &snap
+			if ni, err := st.Add(cat, n.Name, n.Scope, n.Note); err == nil {
+				*ni = snap
+			}
+			a.cu.sel = n
+		})
 	})
 }
 
@@ -225,8 +235,10 @@ func (a *App) cuMarketDetail(c *ui.Context, st *customize.Store) {
 					p = 0
 				}
 				kit.Tag(c, phases[p], kit.KInfo)
-				if a.cu.plug.phase == 3 {
-					kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() { a.cuInstallPlugin(st, m) })
+				if a.cu.plug.phase < 3 {
+					kit.Btn(c, "安装中", kit.BtnOpt{Variant: kit.BtnPri, Loading: true, Disabled: true})
+				} else if a.cu.plug.phase == 3 {
+					kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnSoft, Icon: "refresh"}).OnClick(func() { a.cuInstallPlugin(st, m) })
 				}
 			} else {
 				kit.Btn(c, "安装", kit.BtnOpt{Variant: kit.BtnPri, Icon: "download"}).OnClick(func() { a.cuInstallPlugin(st, m) })

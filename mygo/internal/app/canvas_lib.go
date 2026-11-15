@@ -3,13 +3,11 @@ package app
 import (
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/canvas"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/kit"
-	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 func (a *App) cvLib() *canvas.Library {
@@ -17,12 +15,16 @@ func (a *App) cvLib() *canvas.Library {
 		return a.cvLibData
 	}
 	if a.demoExtra {
-		s := demo.Canvas(a.now())
 		l, _ := canvas.OpenLibrary(filepath.Join(os.TempDir(), "minicode-demo-canvas"))
-		id := "q3-router"
-		l.SetActive(id)
+		active, stores := demo.CanvasDemoLibrary(a.demoPgCanvas, a.now())
+		for id, s := range stores {
+			l.SeedDemo(id, s)
+		}
+		l.SetActive(active)
 		a.cvLibData = l
-		a.canv = s
+		if s, ok := stores[active]; ok {
+			a.canv = s
+		}
 		return l
 	}
 	home, _ := os.UserHomeDir()
@@ -54,7 +56,6 @@ func (a *App) cvLib() *canvas.Library {
 func (a *App) canvasList(c *ui.Context) {
 	t := a.tk
 	l := a.cvLib()
-	v := &a.cv
 	ui.Column(c).Width(200).Shrink(0).Padding(0, 12, 0, 0).Gap(8).BorderWidth(0, 1, 0, 0).BorderColor(t.Bd1).Children(func() {
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 			ui.Text(c, "画布").FontWeight(600).Grow(1)
@@ -67,25 +68,13 @@ func (a *App) canvasList(c *ui.Context) {
 				}
 			}
 		})
+		a.canvasUndoBar(c)
 		for _, id := range l.IDs() {
 			s, err := l.Store(id)
 			if err != nil {
 				continue
 			}
-			on := l.Active() == id
-			row := kit.RowEl(c, on).Key("cv-id-"+id).Padding(6, 8).Justify(ui.Start)
-			row.OnClick(func() {
-				l.SetActive(id)
-				a.canv = s
-				v.preview = false
-			})
-			row.Children(func() {
-				kit.Ic(c, "fileText", kit.S12)
-				ui.Column(c).Grow(1).MinWidth(0).Children(func() {
-					ui.Text(c, s.Doc.Title).SingleLine()
-					ui.Text(c, canvas.Ago(a.now(), time.Now())).FontSize(theme.FsMicro).TextColor(t.Tx4)
-				})
-			})
+			a.canvasListRow(c, l, id, s, l.Active() == id)
 		}
 	})
 }

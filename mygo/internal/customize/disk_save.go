@@ -241,3 +241,24 @@ func (ds *DiskStore) SetMCPTool(server, tool string, on bool) error {
 	}
 	return writeAtomic(path, b, 0o600)
 }
+
+// MCPToolDenied 判断本地层 permissions.deny 是否禁用了该 MCP 工具。
+func (ds *DiskStore) MCPToolDenied(server, tool string) bool {
+	path := filepath.Join(ds.proj, ".claude", "settings.local.json")
+	var root map[string]any
+	if !readJSON(path, &root) {
+		return false
+	}
+	perms, _ := root["permissions"].(map[string]any)
+	if perms == nil {
+		return false
+	}
+	deny, _ := perms["deny"].([]any)
+	key := "mcp__" + strings.ReplaceAll(server, " ", "_") + "__" + tool
+	for _, x := range deny {
+		if s, ok := x.(string); ok && s == key {
+			return true
+		}
+	}
+	return false
+}

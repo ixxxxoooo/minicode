@@ -251,12 +251,15 @@ func (a *App) shortcutRecordCapture(c *ui.Context) {
 	if a.set.recID == "" {
 		return
 	}
-	trap := ui.Box(c).Absolute().Top(0).Left(0).Right(0).Bottom(0).Opacity(0)
+	ui.Row(c).Gap(8).Padding(8, 12).Margin(0, 0, 8, 0).Background(a.tk.WarnSoft).Radius(a.tk.RSm()).Children(func() {
+		ui.Text(c, "正在录制快捷键:按下一组键,或 Esc / 点别处取消").FontSize(theme.FsCap).TextColor(a.tk.Warn).Grow(1)
+		kit.Btn(c, "取消", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() { a.set.recID = ""; a.set.kbWarn = "" })
+	})
 	for _, b := range recordBinds {
 		b := b
-		trap.OnShortcut(b.mods, b.key, func() { a.recordShortcut(b.mods, b.key) })
+		c.OnShortcut(b.mods, b.key, func() { a.recordShortcut(b.mods, b.key) })
 	}
-	trap.OnShortcut(0, ui.KeyEscape, func() { a.set.recID = ""; a.set.kbWarn = "" })
+	c.OnShortcut(0, ui.KeyEscape, func() { a.set.recID = ""; a.set.kbWarn = "" })
 }
 
 func (a *App) resetShortcuts() {

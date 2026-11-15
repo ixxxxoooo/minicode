@@ -37,7 +37,15 @@ func (a *App) syncBrand() {
 	dark := a.tk != nil && a.tk.Palette.Dark
 	if a.brand.dockDark != dark {
 		a.brand.dockDark = dark
-		a.setDockIcon(dark)
+		a.setDockIconFromPrefs(dark)
+	}
+	if a.prefs != nil {
+		if mode := a.prefs.Int(pAppMode, 1); mode == 1 {
+			if sysDark := systemIsDark(); sysDark != a.brand.dockDark {
+				a.brand.dockDark = sysDark
+				a.setDockIconFromPrefs(sysDark)
+			}
+		}
 	}
 	a.syncDockBadge()
 	a.syncTray(dark)

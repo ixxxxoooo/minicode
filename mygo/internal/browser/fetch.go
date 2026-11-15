@@ -69,12 +69,12 @@ func (h HTTPSource) Fetch(raw string) (Page, error) {
 	req.Header.Set("Accept", "text/html,application/xhtml+xml")
 	resp, err := client.Do(req)
 	if err != nil {
-		blog.Warn("抓取失败", "host", hostOnly(full), "err", err, "ms", time.Since(start).Milliseconds())
+		blog.Warn("抓取失败", "host", RedactURL(full), "err", err, "ms", time.Since(start).Milliseconds())
 		return Page{}, fmt.Errorf("无法连接:%v;可检查网络或在系统浏览器中打开", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
-		blog.Warn("HTTP 错误", "host", hostOnly(full), "code", resp.StatusCode)
+		blog.Warn("HTTP 错误", "host", RedactURL(full), "code", resp.StatusCode)
 		return Page{}, fmt.Errorf("服务器返回 %d;稍后重试或换用系统浏览器", resp.StatusCode)
 	}
 	body, err := io.ReadAll(io.LimitReader(resp.Body, max))
@@ -88,7 +88,7 @@ func (h HTTPSource) Fetch(raw string) (Page, error) {
 	if err != nil {
 		return Page{}, err
 	}
-	blog.Info("抓取完成", "host", hostOnly(full), "sections", len(pg.Sections), "ms", time.Since(start).Milliseconds())
+	blog.Info("抓取完成", "host", RedactURL(full), "sections", len(pg.Sections), "ms", time.Since(start).Milliseconds())
 	return pg, nil
 }
 

@@ -53,6 +53,63 @@ func RunPluginInstall(name, marketplace string) PluginInstallResult {
 	return PluginInstallResult{Code: code, Err: msg}
 }
 
+// RunPluginUninstall 调用 claude plugin uninstall。
+func RunPluginUninstall(name string) PluginInstallResult {
+	path, ok := claude.FindClaude("")
+	if !ok {
+		return PluginInstallResult{Err: "没有找到 claude 命令"}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, path, "plugin", "uninstall", name)
+	cmd.Env = os.Environ()
+	var errb bytes.Buffer
+	cmd.Stderr = &errb
+	err := cmd.Run()
+	code := 0
+	if cmd.ProcessState != nil {
+		code = cmd.ProcessState.ExitCode()
+	}
+	msg := strings.TrimSpace(errb.String())
+	if err != nil && msg == "" {
+		msg = err.Error()
+	}
+	alog.Info("plugin uninstall", "name", name, "code", code)
+	return PluginInstallResult{Code: code, Err: msg}
+}
+
+// RunMarketplaceList 读取插件市场列表;失败返回 nil 由调用方兜底演示数据。
+func RunMarketplaceList() []*Market {
+	path, ok := claude.FindClaude("")
+	if !ok {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, path, "plugin", "marketplace", "list")
+	cmd.Env = os.Environ()
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	if err := cmd.Run(); err != nil || out.Len() == 0 {
+		alog.Warn("marketplace list 失败", "err", err)
+		return nil
+	}
+	var list []*Market
+	for _, line := range strings.Split(out.String(), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "Available") {
+			continue
+		}
+		parts := strings.Fields(line)
+		if len(parts) == 0 {
+			continue
+		}
+		list = append(list, &Market{Name: parts[0], By: "市场", Desc: strings.Join(parts[1:], " ")})
+	}
+	return list
+}
+
 // DiskStore.Reload 重新从磁盘读取(安装插件后)。
 func (ds *DiskStore) Reload() {
 	ds.items = map[Cat][]*Item{}

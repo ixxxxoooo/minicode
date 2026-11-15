@@ -111,7 +111,12 @@ func (a *App) browserPage(c *ui.Context) {
 		if !v.hideDr && pg.URL != "" {
 			drawer = func() { a.browserDrawer(c, b, pg) }
 		}
-		a.pageSplitW(c, "br", drawerW, &v.st, func() { a.browserReader(c, b, pg) }, drawer)
+		a.pageSplitW(c, "br", drawerW, &v.st, func() {
+			ui.Column(c).Grow(1).MinHeight(0).Children(func() {
+				a.browserReader(c, b, pg)
+				a.browserReaderSelectLayer(c, pg)
+			})
+		}, drawer)
 	})
 }
 

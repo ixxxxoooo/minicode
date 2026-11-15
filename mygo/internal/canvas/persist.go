@@ -77,6 +77,20 @@ func OpenLibrary(dir string) (*Library, error) {
 // IDs 返回画布 id 列表(最近修改在前)。
 func (l *Library) IDs() []string { return append([]string(nil), l.ids...) }
 
+// SeedDemo 把一张画布挂进库(不写盘,演示模式用)。
+func (l *Library) SeedDemo(id string, s *Store) {
+	if l.stores == nil {
+		l.stores = map[string]*Store{}
+	}
+	l.stores[id] = s
+	for _, x := range l.ids {
+		if x == id {
+			return
+		}
+	}
+	l.ids = append(l.ids, id)
+}
+
 // Active 当前选中的画布 id。
 func (l *Library) Active() string { return l.active }
 
