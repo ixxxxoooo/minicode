@@ -88,6 +88,16 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 		st.GoTo(p0)
 		st.Select(tb.buf.Offset(p0), tb.buf.Offset(editor.Pos{Line: r[0], Col: r[2]}))
 	}
+	if isMarkdownFile(tb.path) && a.mdSource(tb) {
+		st.OnInput = func(ev ui.InputEvent) bool {
+			if ev.Kind != ui.InputKeyDown || ev.Mods != ui.Mod || ev.Key != ui.KeyV {
+				return false
+			}
+			return a.mdTryPasteImage(c, tb, tb.md)
+		}
+	} else {
+		st.OnInput = nil
+	}
 	a.decorate(tb)
 	a.syncDiffBase(tb)
 	a.suggestTick(tb)
@@ -97,6 +107,7 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 		a.ide.openFile(ref.Path, false)
 	}
 	col.Children(func() {
+		a.blockCmtBanner(c, tb)
 		a.extmodBanner(c, tb)
 		ui.Row(c).Grow(1).MinHeight(0).Children(func() {
 			editor.View(c.Key("ed-"+tb.id), st).Grow(1).MinWidth(0).FillHeight()
@@ -113,7 +124,9 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 		a.blameGutterOverlay(c, tb)
 		a.blameCardOverlay(c, tb)
 		a.ovPanel(c, tb)
+		a.gotoLineStrip(c, tb)
 	})
+	a.mcSync(tb)
 	_ = t
 	_ = col
 }
@@ -540,11 +553,15 @@ func (a *App) editorShortcuts(c *ui.Context) bool {
 	case c.Shortcut(ui.Ctrl|ui.Shift, ui.KeyMinus):
 		a.navGo(1)
 	case a.shortcutHit(c, "gotoLine", ui.Ctrl, ui.KeyG):
-		tb.st.Run(editor.GoToLine)
+		a.openGotoLine()
 	case a.shortcutHit(c, "blockComment", ui.Alt|ui.Shift, ui.KeyA):
-		if !tb.st.Run(editor.ToggleBlockComment) {
-			a.toast = "该语言没有块注释"
+		a.toggleBlockComment()
+	case a.ide.gotoLn.open && c.Shortcut(0, ui.KeyEscape):
+		a.closeGotoLine()
+	case tb.mcCount() > 1 && !a.ide.gotoLn.open && a.ide.ov.kind == "" && c.Shortcut(0, ui.KeyEscape):
+		if tb.st.Find("") == false {
 		}
+		a.mcSingle(tb)
 	case a.inl != nil && a.inl.busy && c.Shortcut(0, ui.KeyEscape):
 		a.revertInline()
 	case a.ide.ov.kind != "" && c.Shortcut(0, ui.KeyEscape):
