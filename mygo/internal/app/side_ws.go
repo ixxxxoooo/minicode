@@ -117,112 +117,38 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 	if !open {
 		return
 	}
-	for i, f := range w.Folders {
-		a.memberRow(c, w, i, f)
-	}
-	prim := a.primaryProject(w)
-	a.sessionRows(c, prim)
+	// 展开后只显示主文件夹的会话:里面有哪些文件夹在「编辑工作区」里看与改,列表里不重复展示。
+	a.sessionRows(c, a.primaryProject(w))
 }
 
-func (a *App) memberRow(c *ui.Context, w projects.Workspace, i int, f projects.Folder) {
-	t := a.tk
-	key := "mem-" + w.ID + "-" + itoa(i)
-	r := kit.RowEl(c, false).Key(key).Height(22).PaddingStart(34).Gap(5).TextColor(t.Tx3)
-	r.Drag(memDrag{WS: w.ID, Idx: i})
-	if d, ok := ui.Drop[memDrag](r); ok && d.WS == w.ID {
-		a.moveFolder(w.ID, d.Idx, i)
-	}
-	d, over := ui.DragOver[memDrag](r)
-	over = over && d.WS == w.ID && i >= 1 && d.Idx != i && d.Idx >= 1 // 主文件夹行不可放
-	r.OnClick(func() { a.locateFolder(w, f) })
-	r.ContextMenu(func(m *ui.Menu) { a.memberMenu(m, w, i, f) })
-	kit.DragLift(r, r.Dragging())
-	r.Children(func() {
-		if over {
-			dropLine(c, t)
-		}
-		kit.Ic(c, "folder", kit.S12)
-		ui.Text(c, f.Label()).Grow(1).SingleLine()
-		if i == 0 {
-			kit.Tag(c, "主", kit.KAc)
-		} else if !a.isRepoDir(f.Path) {
-			kit.Tag(c, "非仓库")
-		}
-	})
+// mItem 是带图标的菜单项(图标取设计稿的线性图标,窗口内自绘菜单才会显示)。
+func mItem(m *ui.Menu, icon, label string) *ui.MenuItem {
+	return m.Item(label).Icon(kit.MenuIcon(icon))
 }
 
-// locateFolder 在文件树里定位到成员文件夹(必要时先进入这个工作区)。
-func (a *App) locateFolder(w projects.Workspace, f projects.Folder) {
-	a.ActivateWorkspace(w.ID)
-	if a.ws == nil {
-		return
-	}
-	a.nav = "files"
-	for _, e := range a.repos {
-		if e.dir == f.Path {
-			a.ide.open[e.name] = true
-			a.ide.sel = e.name
-		}
-	}
-}
-
+// wsMenu 是工作区行的右键菜单:主要动作是「编辑工作区…」(名称 / 文件夹 / 主文件夹 / 顺序都在那一个对话框里)。
 func (a *App) wsMenu(m *ui.Menu, w projects.Workspace) {
-	if m.Item("新对话(主文件夹)").Chosen() {
+	if mItem(m, "plus", "新对话(主文件夹)").Chosen() {
 		a.NewSessionIn(a.primaryProject(w))
+	}
+	m.Separator()
+	if mItem(m, "edit", "编辑工作区…").Tooltip("改名称、增删文件夹、设主文件夹、调整顺序").Chosen() {
+		a.openWsDialog(w.ID, "")
+	}
+	if mItem(m, "folder", "添加文件夹…").Chosen() {
+		a.pickFolders(true, func(ps []string) { a.wsAddFolders(w.ID, ps) })
 	}
 	a.wsMoveItems(m, w)
 	m.Separator()
-	if m.Item("重命名…").Chosen() || m.Item("编辑文件夹…").Chosen() {
-		a.openWsDialog(w.ID, "")
-	}
-	if m.Item("添加文件夹…").Chosen() {
-		a.pickFolders(true, func(ps []string) { a.wsAddFolders(w.ID, ps) })
-	}
-	m.Separator()
-	if m.Item("在访达中显示主文件夹").Chosen() {
+	if mItem(m, "folder", "在访达中显示主文件夹").Chosen() {
 		a.revealInFinder(w.Primary())
 	}
-	if m.Item("复制主文件夹路径").Chosen() {
+	if mItem(m, "copy", "复制主文件夹路径").Chosen() {
 		a.copyOut(w.Primary(), "路径")
 	}
 	m.Separator()
-	if m.Item("从列表移除工作区").Chosen() {
+	if mItem(m, "trash", "从列表移除工作区").Danger().Tooltip("只移出列表,不删除磁盘上的文件").Chosen() {
 		a.confirmDlg("移除工作区「"+w.Name+"」?", "只会从列表里移除这个工作区,磁盘上的文件夹与会话记录都不会动。", "移除", true, func() { a.removeWorkspace(w.ID) })
-	}
-}
-
-func (a *App) memberMenu(m *ui.Menu, w projects.Workspace, i int, f projects.Folder) {
-	if m.Item("在文件树中定位").Chosen() {
-		a.locateFolder(w, f)
-	}
-	if i > 0 && m.Item("设为主文件夹").Chosen() {
-		a.wsMutate(w.ID, func(w *projects.Workspace) {
-			w.Folders[0], w.Folders[i] = w.Folders[i], w.Folders[0]
-		})
-	}
-	a.memberMoveItems(m, w, i)
-	m.Separator()
-	if m.Item("在源代码管理中查看").Chosen() {
-		a.locateFolder(w, f)
-		for k, e := range a.repos {
-			if e.dir == f.Path {
-				a.setActiveRepo(k)
-			}
-		}
-		a.nav = "scm"
-		a.SetMode(ModeIDE)
-	}
-	if m.Item("在访达中显示").Chosen() {
-		a.revealInFinder(f.Path)
-	}
-	if m.Item("复制路径").Chosen() {
-		a.copyOut(f.Path, "路径")
-	}
-	if i > 0 {
-		m.Separator()
-		if m.Item("从工作区移出").Chosen() {
-			a.wsMutate(w.ID, func(w *projects.Workspace) { w.Folders = append(w.Folders[:i:i], w.Folders[i+1:]...) })
-		}
 	}
 }
 
@@ -262,10 +188,14 @@ func (a *App) removeWorkspace(id string) {
 	a.toast = "已移除工作区"
 }
 
-// projMenu 是项目行的右键菜单。
+// projMenu 是项目行的右键菜单:主要动作是「编辑项目…」。
 func (a *App) projMenu(m *ui.Menu, p core.ProjectInfo) {
-	if m.Item("在此项目新对话").Chosen() {
+	if mItem(m, "plus", "在此项目新对话").Chosen() {
 		a.NewSessionIn(p)
+	}
+	m.Separator()
+	if mItem(m, "edit", "编辑项目…").Tooltip("改侧栏里显示的名称,查看位置与所属工作区").Chosen() {
+		a.openProjDialog(p)
 	}
 	ws := a.registry().Workspaces()
 	if len(ws) > 0 {
@@ -283,40 +213,29 @@ func (a *App) projMenu(m *ui.Menu, p core.ProjectInfo) {
 			if sm.Item("新建工作区…").Chosen() {
 				a.openWsDialog("", p.Path)
 			}
-		})
-	} else if m.Item("加入新工作区…").Chosen() {
+		}).Icon(kit.MenuIcon("layers"))
+	} else if mItem(m, "layers", "加入新工作区…").Chosen() {
 		a.openWsDialog("", p.Path)
 	}
 	m.Separator()
-	if m.Item("在访达中显示").Chosen() {
+	if mItem(m, "folder", "在访达中显示").Chosen() {
 		a.revealInFinder(p.Path)
 	}
-	if m.Item("复制路径").Chosen() {
+	if mItem(m, "copy", "复制路径").Chosen() {
 		a.copyOut(p.Path, "路径")
 	}
 	if a.registry().HasProject(p.Path) { // 只有手动添加的能移除;Claude 会话索引里的项目随会话存在
 		m.Separator()
-		if m.Item("从列表移除项目").Chosen() {
-			body := "只会从列表里移除这个项目,磁盘上的文件夹不会动。"
-			if n := len(a.registry().WorkspacesOf(p.Path)); n > 0 {
-				body = "它属于 " + itoa(n) + " 个工作区,移除只影响这个列表,工作区里的引用保留。\n" + body
-			}
-			a.confirmDlg("移除项目「"+p.Name+"」?", body, "移除", true, func() {
-				_ = a.registry().RemoveProject(p.Path)
-				a.toast = "已移除项目"
-			})
+		if mItem(m, "trash", "从列表移除项目").Danger().Tooltip("只移出列表,不删除文件夹").Chosen() {
+			a.removeProjectAsk(p)
 		}
 	}
 }
 
 // ───────── 拖拽排序 ─────────
 
-// wsDrag / memDrag 是侧栏里工作区行 / 成员文件夹行的拖拽载荷。
+// wsDrag 是侧栏里工作区行的拖拽载荷。
 type wsDrag struct{ ID string }
-type memDrag struct {
-	WS  string
-	Idx int
-}
 
 // dropLine 是拖拽经过时行顶部的 2px 插入线。
 func dropLine(c *ui.Context, t *theme.Tokens) {
@@ -354,29 +273,15 @@ func (a *App) wsMoveItems(m *ui.Menu, w projects.Workspace) {
 		return
 	}
 	m.Separator()
-	if m.Item("上移").Disabled(pos == 0).Chosen() {
+	if mItem(m, "chevU", "上移").Disabled(pos == 0).Chosen() {
 		a.moveWorkspace(w.ID, all[pos-1].ID)
 	}
-	if m.Item("下移").Disabled(pos == len(all)-1).Chosen() {
+	if mItem(m, "chevD", "下移").Disabled(pos == len(all)-1).Chosen() {
 		before := ""
 		if pos+2 < len(all) {
 			before = all[pos+2].ID
 		}
 		a.moveWorkspace(w.ID, before)
-	}
-}
-
-// memberMoveItems 成员文件夹右键菜单里的「上移 / 下移」(主文件夹固定在第一个)。
-func (a *App) memberMoveItems(m *ui.Menu, w projects.Workspace, i int) {
-	if len(w.Folders) < 3 || i == 0 {
-		return
-	}
-	m.Separator()
-	if m.Item("上移").Disabled(i <= 1).Tooltip(map[bool]string{true: "再往上就是主文件夹,用「设为主文件夹」更换"}[i <= 1]).Chosen() {
-		a.moveFolder(w.ID, i, i-1)
-	}
-	if m.Item("下移").Disabled(i >= len(w.Folders)-1).Chosen() {
-		a.moveFolder(w.ID, i, i+2)
 	}
 }
 

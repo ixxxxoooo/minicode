@@ -18,7 +18,10 @@ import (
 
 // projDlg 是这几个对话框共用的状态;kind 为空表示没有打开。
 type projDlg struct {
-	kind string // addProj / ws / confirm / branch-dirty
+	kind string // addProj / ws / proj / confirm / branch-dirty
+
+	// 编辑项目(复用 name 作显示名输入)
+	projPath string
 
 	// 添加项目
 	path    string
@@ -231,6 +234,8 @@ func (a *App) projDialogs(c *ui.Context) {
 		a.addProjectDialog(c)
 	case "ws":
 		a.workspaceDialog(c)
+	case "proj":
+		a.projectDialog(c)
 	case "confirm":
 		a.confirmDialog(c)
 	case "branch-dirty":
@@ -460,6 +465,17 @@ func (a *App) workspaceDialog(c *ui.Context) {
 					ui.Text(c, tildePath(f.Path)).Font("monospace").FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine()
 				})
 				ui.Text(c, a.repoNote(f.Path)).FontSize(theme.FsCap).TextColor(t.Tx3).Shrink(0)
+				// 文件树顺序 = 这里的顺序;第一个是主文件夹,别的不能越过它,要换主文件夹用「设为主文件夹」。
+				if i >= 2 {
+					kit.Ib(c, "chevU", kit.IbOpt{Small: true, Tip: "上移"}).OnClick(func() {
+						d.folders[i-1], d.folders[i] = d.folders[i], d.folders[i-1]
+					})
+				}
+				if i >= 1 && i < len(d.folders)-1 {
+					kit.Ib(c, "chevD", kit.IbOpt{Small: true, Tip: "下移"}).OnClick(func() {
+						d.folders[i+1], d.folders[i] = d.folders[i], d.folders[i+1]
+					})
+				}
 				if i > 0 {
 					kit.Ib(c, "arrow", kit.IbOpt{Small: true, Tip: "设为主文件夹"}).OnClick(func() {
 						d.folders[0], d.folders[i] = d.folders[i], d.folders[0]

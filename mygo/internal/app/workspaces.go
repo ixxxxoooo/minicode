@@ -124,6 +124,12 @@ func (a *App) sideProjects() []core.ProjectInfo {
 			out = append(out, core.ProjectInfo{ID: "path:" + p, Name: filepath.Base(p), Path: p})
 		}
 	}
+	// 「编辑项目」里改过的显示名(只改显示,不动文件夹与会话文件)。
+	for i := range out {
+		if n := a.registry().ProjectName(out[i].Path); n != "" {
+			out[i].Name = n
+		}
+	}
 	return out
 }
 

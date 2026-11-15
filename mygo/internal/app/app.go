@@ -517,6 +517,9 @@ type layMem struct {
 func (a *App) View(c *ui.Context) {
 	defer diag.SpanSlow("app", "构建界面", 33*time.Millisecond)()
 	c.SetTheme(a.tk.UITheme())
+	// 右键菜单与输入框编辑菜单一律画在窗口里、跟随当前主题(而不是系统原生菜单),
+	// 圆角 / 描边 / 阴影 / 悬停色与应用内其它弹层一致。
+	c.SetMenuPresentation(ui.PopoverMenus)
 	a.winW, a.winH = c.Size()
 	a.fitPanels()
 	a.reposTick()

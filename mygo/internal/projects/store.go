@@ -73,13 +73,15 @@ type Store struct {
 	path       string
 	projects   []string
 	workspaces []Workspace
+	names      map[string]string // 项目显示名(路径 → 名称);没有 = 用文件夹名
 	// Exists 判断路径是不是存在的目录;测试 / 演示可替换。
 	Exists func(string) bool
 }
 
 type disk struct {
-	Projects   []string    `json:"projects"`
-	Workspaces []Workspace `json:"workspaces"`
+	Projects   []string          `json:"projects"`
+	Workspaces []Workspace       `json:"workspaces"`
+	Names      map[string]string `json:"names,omitempty"`
 }
 
 func isDir(p string) bool {
@@ -103,7 +105,7 @@ func Open(path string) *Store {
 		_ = os.Rename(path, path+".bad-"+time.Now().Format("20060102-150405"))
 		return s
 	}
-	s.projects, s.workspaces = d.Projects, d.Workspaces
+	s.projects, s.workspaces, s.names = d.Projects, d.Workspaces, d.Names
 	return s
 }
 
@@ -114,7 +116,7 @@ func (s *Store) save() error {
 	if s.path == "" {
 		return nil
 	}
-	b, err := json.MarshalIndent(disk{s.projects, s.workspaces}, "", "  ")
+	b, err := json.MarshalIndent(disk{Projects: s.projects, Workspaces: s.workspaces, Names: s.names}, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -221,7 +223,32 @@ func (s *Store) RemoveProject(p string) error {
 		}
 	}
 	s.projects = out
+	delete(s.names, c)
 	log.Info("移除项目", "path", c)
+	return s.save()
+}
+
+// ProjectName 返回项目的自定义显示名;没有设置返回 ""。
+func (s *Store) ProjectName(p string) string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.names[Clean(p)]
+}
+
+// SetProjectName 设置项目的显示名(只存在本机整理信息里,不改文件夹);name 为空 = 恢复文件夹名。
+func (s *Store) SetProjectName(p, name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	c, name := Clean(p), strings.TrimSpace(name)
+	if name == "" || name == filepath.Base(c) {
+		delete(s.names, c)
+	} else {
+		if s.names == nil {
+			s.names = map[string]string{}
+		}
+		s.names[c] = name
+	}
+	log.Info("项目显示名", "path", c, "name", name)
 	return s.save()
 }
 
