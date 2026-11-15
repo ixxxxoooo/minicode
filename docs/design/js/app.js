@@ -10,7 +10,7 @@
     ['整页功能', [['automation', 'timer', '自动化'], ['canvas', 'canvas', '画布'], ['browser', 'globe', '浏览器'], ['customize', 'plug', '自定义(7 类)'], ['usage', 'chart', '用量与成本']]],
     ['工作区标签', [['ide-review', 'eye', '审查 · Claude 本轮改动'], ['ws-plan', 'list', '计划'], ['ws-sub', 'bot', '子 Agent 记录'], ['ws-task', 'activity', '任务输出']]],
     ['IDE 细节', [['ide-editor', 'code', '编辑器 · 迷你地图与标尺'], ['ide-nav', 'arrow', '编辑器能力 · 跳转与浮层'], ['ide-search', 'search', '搜索与替换'], ['ide-scm', 'branch', '源代码管理 · 图谱'], ['ide-diff', 'diff', '差异标签 · 块级暂存'], ['ide-merge', 'swap', '合并冲突(三方)'], ['ide-git', 'fork', 'Git 工作流清单'], ['ide-problems', 'alert', '问题面板']]],
-    ['架构', [['forms', 'swap', '窗口形态(单窗口)'], ['flows', 'link', '交互串联 · 入口矩阵'], ['resp', 'cols', '响应式 · 三档对话栏'], ['ia', 'list', '信息架构 · 功能归位'], ['layout-dock', 'cols', '布局 · 拖拽与面板停靠'], ['term-spec', 'terminal', '终端 · 能力与主题'], ['lsp-spec', 'code', '语言服务 · 识别与安装'], ['artifact-spec', 'canvas', '画布 / 浏览器 / 自定义 · 业界做法'], ['task-spec', 'activity', '会话流 · 待办 / 审批 / 后台任务']]],
+    ['架构', [['forms', 'swap', '窗口形态(单窗口)'], ['flows', 'link', '交互串联 · 入口矩阵'], ['resp', 'cols', '响应式 · 三档对话栏'], ['ia', 'list', '信息架构 · 功能归位'], ['layout-dock', 'cols', '布局 · 拖拽与面板停靠'], ['term-spec', 'terminal', '终端 · 能力与主题'], ['lsp-spec', 'code', '语言服务 · 识别与安装'], ['artifact-spec', 'canvas', '画布 / 浏览器 / 自定义 · 业界做法'], ['task-spec', 'activity', '会话流 · 待办 / 审批 / 后台任务'], ['proj-ws', 'layers', '项目与工作区 · 添加与组织'], ['multi-git', 'branch', '多仓库 Git'], ['menus', 'cmd', '右键菜单与动作矩阵'], ['gaps', 'alert', '缺口总表']]],
     ['规范', [['flow', 'chat', '会话流与工具'], ['overlays', 'layers', '浮层与面板'], ['comps', 'cube', '组件'], ['states', 'hand', '交互状态'], ['tokens', 'palette', '设计令牌'], ['motion', 'activity', '动效']]],
   ];
   const HINTS = {
