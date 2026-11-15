@@ -13,7 +13,7 @@ func (a *App) noteLine(c *ui.Context, icon, text string) {
 		ui.Row(c).Width(16).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).Children(func() {
 			kit.Ic(c, icon, kit.S12)
 		})
-		ui.Text(c, text).Grow(1).LineHeight(1.45)
+		ui.Text(c, text).FontSize(a.FlowCapFont()).Grow(1).LineHeight(1.45)
 	})
 }
 
@@ -32,7 +32,7 @@ func (a *App) permissionDenyNote(c *ui.Context, tool *core.ToolCall) {
 	if tool == nil {
 		return
 	}
-	obj := presentTool(tool).obj
+	obj := a.presentTool(tool).obj
 	if obj == "" {
 		obj = tool.Name
 	}

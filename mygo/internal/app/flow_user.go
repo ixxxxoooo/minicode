@@ -7,7 +7,6 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
-	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 // 用户消息卡:长消息折叠、吸顶、就地编辑;会话样式(flowStyle)。
@@ -219,13 +218,14 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 				Gradient(t.BG, t.BG.Alpha(0), 180)
 		}
 		if clamp && exp && lines > userFoldExp {
-			ui.Scroll(c).MaxHeight(float32(userFoldExp) * theme.FsRead * 1.55).Key("user-scroll-" + u.ID).Children(func() {
+			fs := a.FlowFontSize()
+			ui.Scroll(c).MaxHeight(float32(userFoldExp) * fs * 1.55).Key("user-scroll-" + u.ID).Children(func() {
 				a.userMsgBody(c, u)
 			})
 		} else {
 			body := ui.Column(c)
 			if clamp && !exp {
-				body = body.MaxHeight(float32(userFoldMax)*theme.FsRead*1.55 + 8).Clip()
+				body = body.MaxHeight(float32(userFoldMax)*a.FlowFontSize()*1.55 + 8).Clip()
 			}
 			body.Children(func() { a.userMsgBody(c, u) })
 		}
@@ -260,14 +260,14 @@ func (a *App) userMsgBody(c *ui.Context, u *core.User) {
 			spans = append(spans, ui.Span{Text: txt[last:m[0]]})
 		}
 		if m[2] >= 0 {
-			spans = append(spans, ui.Span{Text: txt[m[2]:m[3]], Font: "monospace", Size: 12, Background: t.Fill2, Radius: t.RXs(), PaddingX: 3})
+			spans = append(spans, ui.Span{Text: txt[m[2]:m[3]], Font: "monospace", Size: a.FlowMonoSize(), Background: t.Fill2, Radius: t.RXs(), PaddingX: 3})
 		} else {
-			spans = append(spans, ui.Span{Text: " " + baseName(txt[m[4]:m[5]]) + " ", Size: 11.5, Color: t.Info, Background: t.InfoSoft, Radius: t.RXs(), PaddingX: 4})
+			spans = append(spans, ui.Span{Text: " " + baseName(txt[m[4]:m[5]]) + " ", Size: a.FlowCapFont(), Color: t.Info, Background: t.InfoSoft, Radius: t.RXs(), PaddingX: 4})
 		}
 		last = m[1]
 	}
 	if last < len(txt) {
 		spans = append(spans, ui.Span{Text: txt[last:]})
 	}
-	ui.RichText(c, spans...).FontSize(theme.FsRead).LineHeight(1.55).TextColor(t.Tx1)
+	ui.RichText(c, spans...).FontSize(a.FlowFontSize()).LineHeight(1.55).TextColor(t.Tx1)
 }

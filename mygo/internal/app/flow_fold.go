@@ -62,7 +62,7 @@ func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, co
 	inner := func() {
 		ui.Column(c).Padding(6, 10).Gap(0).Children(func() {
 			for i, ln := range show {
-				row := ui.Row(c).Key(i).Height(monoLH).AlignItems(ui.Center)
+				row := ui.Row(c).Key(i).Height(a.flowMonoLH()).AlignItems(ui.Center)
 				if mono {
 					row.Children(func() {
 						ui.RichText(c, a.termLine(ln)...).NoWrap().Clip()
@@ -71,7 +71,7 @@ func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, co
 						}
 					})
 				} else {
-					ui.Text(c, ln).FontSize(theme.FsCap).LineHeight(1.6).TextColor(t.Tx1)
+					ui.Text(c, ln).FontSize(a.FlowCapFont()).LineHeight(1.6).TextColor(t.Tx1)
 				}
 			}
 		})

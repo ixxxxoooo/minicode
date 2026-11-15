@@ -137,7 +137,7 @@ func durText(ms int64) string {
 }
 
 // presentTool 把一个工具调用翻译成步骤行。
-func presentTool(tc *core.ToolCall) step {
+func (a *App) presentTool(tc *core.ToolCall) step {
 	s := step{id: tc.ID, fam: famExplore}
 	switch tc.Status {
 	case core.ToolRunning, core.ToolPending:
@@ -224,6 +224,16 @@ func presentTool(tc *core.ToolCall) step {
 		s.icon = "errc"
 	case "deny":
 		s.icon = "lock"
+	}
+	if s.hasBody {
+		switch a.ToolDetailLevel() {
+		case 0:
+			s.open = false
+		case 2:
+			if tc.Status == core.ToolCompleted || tc.Status == core.ToolRunning || tc.Status == core.ToolPending {
+				s.open = true
+			}
+		}
 	}
 	return s
 }

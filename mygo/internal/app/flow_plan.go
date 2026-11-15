@@ -25,7 +25,7 @@ func (a *App) planSelectionBar(c *ui.Context, planID, sel string) {
 	}
 	t := a.tk
 	ui.Row(c).Gap(6).Padding(4, 0).AlignItems(ui.Center).Children(func() {
-		ui.Text(c, "选中 "+itoa(runeLen(sel))+" 字").FontSize(11).TextColor(t.Tx3).Grow(1).SingleLine()
+		ui.Text(c, "选中 "+itoa(runeLen(sel))+" 字").FontSize(a.FlowCapFont()).TextColor(t.Tx3).Grow(1).SingleLine()
 		kit.Btn(c, "批注并继续规划", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() {
 			a.send(core.CmdResolvePlan{ID: planID, Approve: false})
 			a.draft = "关于计划这段:「" + trunc(sel, 120) + "」\n"

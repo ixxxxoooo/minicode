@@ -6,7 +6,6 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
-	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 // composer 是输入框(设计稿 .cmp):文本区 + 工具栏(附件 / 运行配置胶囊 / MCP / 上下文环 / 发送)。
@@ -35,7 +34,7 @@ func (a *App) composer(c *ui.Context) {
 	box.Children(func() {
 		a.composerAttachRow(c)
 		in := ui.TextArea(c.Key("draft"), &a.draft).Lines(1, 8).Placeholder(a.composerHint()).
-			PlaceholderColor(t.Tx3).Background(ui.Transparent).BorderWidth(0).Padding(9, 12, 3, 12).FontSize(theme.FsRead).LineHeight(1.55).
+			PlaceholderColor(t.Tx3).Background(ui.Transparent).BorderWidth(0).Padding(9, 12, 3, 12).FontSize(a.FlowFontSize()).LineHeight(1.55).
 			MinHeight(36).TextColor(t.Tx1).FocusRing(false)
 		if a.welcomeFocus {
 			in.AutoFocus()

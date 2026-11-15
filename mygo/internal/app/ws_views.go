@@ -163,7 +163,7 @@ func (a *App) subView(c *ui.Context, id string) {
 				n := 0
 				for _, ch := range s.Children {
 					if tc, ok := ch.(*core.ToolCall); ok {
-						a.stepRow(c, presentTool(tc), nil)
+						a.stepRow(c, a.presentTool(tc), nil)
 						n++
 					}
 				}

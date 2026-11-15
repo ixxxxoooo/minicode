@@ -112,7 +112,7 @@ func (a *App) exploreGroup(c *ui.Context, g []*core.ToolCall) {
 	a.stepRow(c, sp, func() {
 		a.nest(c, func() {
 			for _, tc := range g {
-				a.stepRow(c, presentTool(tc), nil)
+				a.stepRow(c, a.presentTool(tc), nil)
 			}
 		})
 	})
@@ -134,11 +134,11 @@ func (a *App) stepItem(c *ui.Context, it core.Item) {
 		}
 		a.stepRow(c, sp, func() { a.thinkBody(c, v.Text) })
 	case *core.ToolCall:
-		sp := presentTool(v)
+		sp := a.presentTool(v)
 		a.stepRow(c, sp, func() { a.toolBody(c, v) })
 	case *core.PermissionRequest:
 		if v.Tool != nil {
-			sp := presentTool(v.Tool)
+			sp := a.presentTool(v.Tool)
 			denied := strings.Contains(strings.ToLower(v.Resolved), "deny") || strings.Contains(v.Resolved, "reject") || strings.Contains(v.Resolved, "拒绝")
 			if denied {
 				sp.state, sp.icon, sp.right = "deny", "lock", "已拒绝"
@@ -286,7 +286,7 @@ func (a *App) thinkBody(c *ui.Context, text string) {
 	t := a.tk
 	ui.Row(c).Children(func() {
 		ui.Box(c).Width(2).Background(t.Bd2).Margin(0, 8, 0, 0)
-		ui.Text(c, strings.TrimSpace(text)).FontSize(12).LineHeight(1.6).TextColor(t.Tx3).Grow(1)
+		ui.Text(c, strings.TrimSpace(text)).FontSize(a.FlowCapFont()).LineHeight(1.6).TextColor(t.Tx3).Grow(1)
 	})
 }
 
@@ -350,7 +350,9 @@ func (a *App) cardM(c *ui.Context, head func(), menu func(m *ui.Menu), body func
 	})
 }
 
-const monoLH = 11.5 * 1.6
+const monoLH = 11.5 * 1.6 // IDE / 审查等工作区仍用固定行高
+
+func (a *App) flowMonoLH() float32 { return a.FlowMonoSize() * 1.6 }
 
 // diffCard 画差异卡;head 为真时带「src/router.rs +4 −1」文件头。
 func (a *App) diffCard(c *ui.Context, d *core.DiffBlock, head bool) {
@@ -362,8 +364,8 @@ func (a *App) diffCard(c *ui.Context, d *core.DiffBlock, head bool) {
 		h = func() {
 			kit.Ic(c, "diff", kit.S12)
 			ui.Text(c, d.Path).Grow(1).SingleLine()
-			ui.Text(c, "+"+itoa(add)).Font("monospace").FontSize(11.5).TextColor(t.Ok)
-			ui.Text(c, "−"+itoa(del)).Font("monospace").FontSize(11.5).TextColor(t.Err)
+			ui.Text(c, "+"+itoa(add)).Font("monospace").FontSize(a.FlowMonoSize()).TextColor(t.Ok)
+			ui.Text(c, "−"+itoa(del)).Font("monospace").FontSize(a.FlowMonoSize()).TextColor(t.Err)
 			kit.Ib(c, "ext", kit.IbOpt{Small: true, Tip: "在工作区查看差异"}).OnClick(func() { a.OpenDiffTab(d.Path) })
 			kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制改动后的内容"}).OnClick(func() { a.copyOut(d.New, "改动后的内容") })
 		}
@@ -410,7 +412,7 @@ func (a *App) diffLine(c *ui.Context, i int, l diff.Line) {
 	if l.Kind == diff.Del {
 		no = l.OldNo
 	}
-	r := ui.Row(c).Key(i).Height(monoLH).AlignItems(ui.Center)
+	r := ui.Row(c).Key(i).Height(a.flowMonoLH()).AlignItems(ui.Center)
 	switch l.Kind {
 	case diff.Add:
 		r.Background(t.DiffAdd)

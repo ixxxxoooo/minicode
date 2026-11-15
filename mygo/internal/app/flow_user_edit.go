@@ -61,7 +61,7 @@ func (a *App) userEditCard(c *ui.Context, u *core.User) {
 	t := a.tk
 	col := ui.Column(c).Key("user-ed-"+u.ID).Background(t.Raised).Radius(t.RMd()).Padding(8, 10).Gap(6).Border(1, t.Ac)
 	col.Children(func() {
-		ed := ui.TextInput(c.Key("uedit"), &a.userEd.draft).Grow(1).MinHeight(80).MaxHeight(200).FontSize(theme.FsRead).AutoFocus()
+		ed := ui.TextInput(c.Key("uedit"), &a.userEd.draft).Grow(1).MinHeight(80).MaxHeight(200).FontSize(a.FlowFontSize()).AutoFocus()
 		ed.OnShortcut(0, ui.KeyEscape, func() { a.cancelUserEdit() })
 		ui.Row(c).Gap(6).Justify(ui.End).Children(func() {
 			kit.Btn(c, "取消", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(a.cancelUserEdit)

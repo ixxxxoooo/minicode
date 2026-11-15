@@ -6,6 +6,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 // 设置页里真正驱动行为的项(其余控件仍只存偏好,见 AGENTS.md「已知缺口」)。
@@ -54,6 +55,15 @@ func (a *App) ChatFontScale() float32 {
 	return float32(a.prefs.Int(pFontScale, 100)) / 100
 }
 
+// FlowFontSize 是会话流正文与助手 Markdown 的字号(统一走 ChatFontScale)。
+func (a *App) FlowFontSize() float32 { return theme.FsRead * a.ChatFontScale() }
+
+// FlowCapFont 是会话流辅助文案(步骤行附注、子 Agent 摘要等)。
+func (a *App) FlowCapFont() float32 { return theme.FsCap * a.ChatFontScale() }
+
+// FlowMonoSize 是会话流等宽输出与代码块的基准字号。
+func (a *App) FlowMonoSize() float32 { return 11.5 * a.ChatFontScale() }
+
 // ToolDetailLevel 是工具调用详细程度(0 精简 / 1 标准 / 2 详细);会话流读取点见 chat/flow。
 func (a *App) ToolDetailLevel() int {
 	if a == nil || a.prefs == nil {
@@ -98,6 +108,7 @@ func (a *App) applyBehavior() {
 			tb.lay = 0
 		}
 	}
+	a.syncModelEffortPrefs()
 }
 
 // applyEditorPrefs 把编辑器偏好套到一个编辑器状态(每帧调用,值没变时什么都不做)。

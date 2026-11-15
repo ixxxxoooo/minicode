@@ -7,7 +7,6 @@ import (
 	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
-	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 // assistant 是助手正文:已结束用 markdown.View,流式中用 markdown.Stream(逐词淡入)。
@@ -86,10 +85,10 @@ func (a *App) subagentCard(c *ui.Context, s *core.SubagentCard) {
 				meta = append(meta, "疑似停滞")
 			}
 			if len(meta) > 0 {
-				ui.Text(c, strings.Join(meta, "  ")).PaddingStart(22).FontSize(theme.FsCap).TextColor(t.Tx3).FontFeatures("tnum").SingleLine()
+				ui.Text(c, strings.Join(meta, "  ")).PaddingStart(22).FontSize(a.FlowCapFont()).TextColor(t.Tx3).FontFeatures("tnum").SingleLine()
 			}
 			if s.Summary != "" {
-				ui.Text(c, s.Summary).PaddingStart(22).FontSize(theme.FsCap).TextColor(t.Tx3)
+				ui.Text(c, s.Summary).PaddingStart(22).FontSize(a.FlowCapFont()).TextColor(t.Tx3)
 			}
 			a.subagentTimeline(c, s.Children)
 		})

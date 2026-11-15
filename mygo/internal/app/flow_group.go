@@ -46,7 +46,7 @@ func (a *App) groupLatest(c *ui.Context, grpID string, tc *core.ToolCall) {
 		return
 	}
 	t := a.tk
-	sp := presentTool(tc)
+	sp := a.presentTool(tc)
 	prev := a.tickTool[grpID]
 	if prev != "" && prev != tc.ID {
 		a.tickAt[grpID] = time.Now()
