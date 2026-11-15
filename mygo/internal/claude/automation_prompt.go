@@ -41,7 +41,9 @@ func RunAutomationPromptModelStreamCtx(ctx context.Context, cwd, prompt, permMod
 		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
-	args := []string{"-p", "--output-format", "stream-json"}
+	// stream-json 在 -p 下必须带 --verbose,否则 claude 只在 stderr 报一行错、退出码还是 0,
+	// 自动化就会「成功」却没有任何输出(真实模式实测发现)
+	args := []string{"-p", "--output-format", "stream-json", "--verbose"}
 	if permMode != "" {
 		args = append(args, "--permission-mode", permMode)
 	}
@@ -177,6 +179,18 @@ func RunAutomationPromptModelStreamCtx(ctx context.Context, cwd, prompt, permMod
 			}
 			autoPromptLog.Warn("claude 自动化流式失败", "err", msg)
 			return AutomationStreamResult{Output: text, SessionID: sessionID}, fmt.Errorf("%s", msg)
+		}
+		if text == "" && sessionID == "" {
+			// 退出码为 0 却什么都没产生:当作失败并带上 stderr 摘要,不再显示「成功」
+			msg := strings.TrimSpace(errb.String())
+			if r := []rune(msg); len(r) > 200 {
+				msg = string(r[len(r)-200:])
+			}
+			if msg == "" {
+				msg = "claude 没有返回任何内容"
+			}
+			autoPromptLog.Warn("claude 自动化没有输出", "stderr", msg)
+			return empty, fmt.Errorf("%s", msg)
 		}
 		return AutomationStreamResult{Output: text, SessionID: sessionID}, nil
 	}
