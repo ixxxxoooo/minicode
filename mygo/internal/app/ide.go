@@ -27,6 +27,7 @@ type ideTab struct {
 	saved   string  // 最近一次落盘的内容(判断是否有未保存修改)
 	err     string  // 读取失败 / 太大时的提示
 	reveal  *[3]int // 待选中的范围:行、起止列(下一次渲染时应用)
+	headKey string  // 上次用于 DiffBase 的 HEAD 文本摘要(ide_gutter.go)
 	virt    string  // 虚拟标签的种类(review / plan / sub / task / conflict),空 = 文件或对比
 	ref     string  // 虚拟标签引用的对象 id(子 Agent / 任务 id、冲突文件路径)
 
@@ -43,6 +44,7 @@ type ideTab struct {
 	asAt       time.Time // 自动保存:版本变化的时间
 	blameKey   string    // 行内追溯当前显示的内容(去重,避免每帧 SetInlays)
 	blameShown bool
+	inlayVer   uint64 // 内联提示已应用到哪一版缓冲区
 
 	md     *mdState // Markdown 所见即所得的状态(edit_md.go)
 	mdMode int8     // Markdown 视图:0 跟随偏好,mdWysiwyg / mdSource = 在标签上手动选的
@@ -71,8 +73,13 @@ type ide struct {
 	git    map[string]string // 相对路径 → M / A
 	headOf func(string) (string, bool)
 
-	tabs   []*ideTab
-	active string
+	tabs      []*ideTab
+	active    string
+	tabs2     []*ideTab // 第二编辑器组(拆分)
+	active2   string
+	splitDir  int8    // 0 无 / 1 向右 / 2 向下(ide_split.go)
+	splitFrac float32 // 主组占比 0.2–0.8,默认 0.5
+	paneSel   int8    // 当前键盘焦点在哪个组
 
 	open map[string]bool // 文件树里展开的目录
 	sel  string          // 文件树里选中的路径
@@ -83,6 +90,7 @@ type ide struct {
 	closed     []string          // 最近关闭的文件标签(⇧⌘T 重新打开,最多 20 个)
 	panelTop   float32           // 底部面板上缘(上一帧)
 	bottomTab  string            // term / problems / output
+	probErr    bool              // 问题面板:仅显示错误
 	termLines  []termLine
 	termSt     ui.ScrollState
 	cmds       []cmdView    // 「在终端面板查看」打开的只读命令标签
@@ -137,9 +145,14 @@ func (d *ide) useFS(fs workspace.FS, git map[string]string, head func(string) (s
 	d.invalidate()
 }
 
-// tab 返回 id 对应的标签(没有则 nil)。
+// tab 返回 id 对应的标签(没有则 nil);两组编辑器都会找。
 func (d *ide) tab(id string) *ideTab {
 	for _, t := range d.tabs {
+		if t.id == id {
+			return t
+		}
+	}
+	for _, t := range d.tabs2 {
 		if t.id == id {
 			return t
 		}
@@ -147,7 +160,37 @@ func (d *ide) tab(id string) *ideTab {
 	return nil
 }
 
-func (d *ide) cur() *ideTab { return d.tab(d.active) }
+func (d *ide) cur() *ideTab { return d.curOn(d.paneSel) }
+
+func (d *ide) curOn(pane int8) *ideTab {
+	if pane == 1 && d.splitDir != 0 {
+		return d.tabOn(d.active2, d.tabs2)
+	}
+	return d.tabOn(d.active, d.tabs)
+}
+
+func (d *ide) tabOn(id string, tabs []*ideTab) *ideTab {
+	for _, t := range tabs {
+		if t.id == id {
+			return t
+		}
+	}
+	return nil
+}
+
+func (d *ide) paneTabs(pane int8) []*ideTab {
+	if pane == 1 && d.splitDir != 0 {
+		return d.tabs2
+	}
+	return d.tabs
+}
+
+func (d *ide) paneActive(pane int8) *string {
+	if pane == 1 && d.splitDir != 0 {
+		return &d.active2
+	}
+	return &d.active
+}
 
 // openFile 打开文件。pin=false 打开预览标签(替换已有的预览标签),pin=true 固定。
 func (d *ide) openFile(p string, pin bool) {
@@ -245,49 +288,62 @@ func (d *ide) addDiffTab(id, p, label, oldSrc, newSrc string, pin bool) {
 }
 
 func (d *ide) addTab(t *ideTab) {
+	d.addTabTo(d.paneSel, t)
+}
+
+func (d *ide) addTabTo(pane int8, t *ideTab) {
+	tabs := &d.tabs
+	active := &d.active
+	if pane == 1 && d.splitDir != 0 {
+		tabs, active = &d.tabs2, &d.active2
+	}
 	if t.preview {
-		for i, o := range d.tabs { // 替换已有预览标签,原位
+		for i, o := range *tabs { // 替换已有预览标签,原位
 			if o.preview {
-				d.tabs[i] = t
-				d.active, d.sel = t.id, t.path
+				(*tabs)[i] = t
+				*active, d.sel = t.id, t.path
 				return
 			}
 		}
 	}
-	// 就近插入:放在当前标签右侧
-	at := len(d.tabs)
-	for i, o := range d.tabs {
-		if o.id == d.active {
+	at := len(*tabs)
+	for i, o := range *tabs {
+		if o.id == *active {
 			at = i + 1
 		}
 	}
-	d.tabs = append(d.tabs, nil)
-	copy(d.tabs[at+1:], d.tabs[at:])
-	d.tabs[at] = t
-	d.active, d.sel = t.id, t.path
+	*tabs = append(*tabs, nil)
+	copy((*tabs)[at+1:], (*tabs)[at:])
+	(*tabs)[at] = t
+	*active, d.sel = t.id, t.path
 }
 
 // closeTab 关闭标签;关掉的是当前标签时回到右邻(没有就左邻)。
 func (d *ide) closeTab(id string) {
-	for i, t := range d.tabs {
+	d.closeOnPane(id, &d.tabs, &d.active)
+	d.closeOnPane(id, &d.tabs2, &d.active2)
+}
+
+func (d *ide) closeOnPane(id string, tabs *[]*ideTab, active *string) {
+	for i, t := range *tabs {
 		if t.id != id {
 			continue
 		}
-		d.tabs = append(d.tabs[:i], d.tabs[i+1:]...)
+		*tabs = append((*tabs)[:i], (*tabs)[i+1:]...)
 		if isFileTab(t) && !t.diff {
 			d.closed = append(d.closed, t.path)
 			if len(d.closed) > 20 {
 				d.closed = d.closed[len(d.closed)-20:]
 			}
 		}
-		if d.active == id {
+		if *active == id {
 			switch {
-			case len(d.tabs) == 0:
-				d.active = ""
-			case i < len(d.tabs):
-				d.active = d.tabs[i].id
+			case len(*tabs) == 0:
+				*active = ""
+			case i < len(*tabs):
+				*active = (*tabs)[i].id
 			default:
-				d.active = d.tabs[len(d.tabs)-1].id
+				*active = (*tabs)[len(*tabs)-1].id
 			}
 		}
 		return

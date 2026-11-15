@@ -21,6 +21,7 @@ type fileOp struct {
 	dir    string // 新建:放在哪个文件夹里(相对项目根,"" = 根)
 	path   string // 重命名:被改名的路径
 	buf    string
+	ext    string // 重命名时保留的扩展名
 	err    string // 失败原因(不关闭输入行,显示在行下面)
 	frames int    // 已渲染帧数:拿到焦点之前不判「点别处取消」
 }
@@ -70,7 +71,12 @@ func (a *App) beginRenameFile(p string) {
 		return
 	}
 	a.nav, a.sideOpen = "files", true
-	a.fo = fileOp{kind: "rename", path: p, buf: path.Base(p)}
+	base := path.Base(p)
+	ext, name := "", base
+	if e := path.Ext(base); e != "" {
+		ext, name = e, strings.TrimSuffix(base, e)
+	}
+	a.fo = fileOp{kind: "rename", path: p, buf: name, ext: ext}
 }
 
 // opErrText 把文件系统的错误翻成界面上的一句话。
@@ -126,11 +132,15 @@ func (a *App) commitFileOp() {
 			a.fo.err = opErrText(err, name)
 			return
 		}
-		if name == path.Base(o.path) {
+		fullName := name
+		if o.ext != "" && !strings.HasSuffix(name, o.ext) {
+			fullName = name + o.ext
+		}
+		if fullName == path.Base(o.path) {
 			a.fo = fileOp{}
 			return
 		}
-		to := path.Join(parentDir(o.path), name)
+		to := path.Join(parentDir(o.path), fullName)
 		if err := mu.Rename(o.path, to); err != nil {
 			a.fo.err = opErrText(err, name)
 			uxLog.Warn("重命名失败", "from", o.path, "to", to, "err", err)
@@ -142,6 +152,27 @@ func (a *App) commitFileOp() {
 		a.afterFileChange()
 		a.toast = "已重命名为 " + name
 	}
+}
+
+// moveFile 把文件 / 文件夹移到另一个文件夹下(拖放)。
+func (a *App) moveFile(from, dir string) {
+	mu, why := a.mutable()
+	if why != "" {
+		a.toast = why
+		return
+	}
+	if from == dir || strings.HasPrefix(dir+"/", from+"/") {
+		a.toast = "不能移到自己的子文件夹里"
+		return
+	}
+	to := path.Join(dir, path.Base(from))
+	if err := mu.Rename(from, to); err != nil {
+		a.toast = opErrText(err, path.Base(to))
+		return
+	}
+	a.renameTabs(from, to)
+	a.afterFileChange()
+	a.toast = "已移动到 " + dir
 }
 
 // afterFileChange 磁盘上的文件结构变了:清树缓存、符号索引,刷新 Git 状态。
@@ -164,7 +195,7 @@ func (a *App) renameTabs(from, to string) {
 		return p, false
 	}
 	var drop []string
-	for _, tb := range d.tabs {
+	for _, tb := range append(d.tabs, d.tabs2...) {
 		if tb.virt != "" {
 			continue
 		}
@@ -176,8 +207,11 @@ func (a *App) renameTabs(from, to string) {
 			drop = append(drop, tb.id)
 			continue
 		}
-		if d.active == tb.id {
+		switch tb.id {
+		case d.active:
 			d.active = np
+		case d.active2:
+			d.active2 = np
 		}
 		tb.id, tb.path, tb.hooked = np, np, false
 	}

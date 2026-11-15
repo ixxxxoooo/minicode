@@ -106,6 +106,11 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 	on := !e.Dir && d.sel == e.Path
 	r := kit.RowEl(c, on).Key("tr-" + e.Path).PaddingStart(6 + float32(depth)*12).Gap(5)
 	dragRef(r, e.Path, e.Dir) // 拖到对话栏 = 引用
+	if e.Dir {
+		if ref, ok := ui.Drop[fileRef](r); ok && !ref.Dir {
+			a.moveFile(ref.Path, e.Path)
+		}
+	}
 	r.ContextMenu(func(m *ui.Menu) { a.treeMenu(m, e.Path, e.Dir) })
 	g := d.fileGit(e.Path)
 	if e.Dir {
@@ -119,6 +124,8 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 		r.TextColor(t.Ok)
 	}
 	if r.Clicked() {
+		a.filesFocus = true
+		d.sel = e.Path
 		if e.Dir {
 			d.open[e.Path] = !d.open[e.Path]
 		} else {
@@ -206,7 +213,7 @@ func (a *App) outlineRows(c *ui.Context) {
 		ui.Text(c, "打开一个文件查看大纲").FontSize(theme.FsCap).TextColor(t.Tx4).Margin(2, 8, 6, 28)
 		return
 	}
-	syms := a.ide.fileSyms(tb.path)
+	syms := a.symbolsForFile(tb.path)
 	if len(syms) == 0 {
 		ui.Text(c, "这个文件没有可识别的符号").FontSize(theme.FsCap).TextColor(t.Tx4).Margin(2, 8, 6, 28)
 		return

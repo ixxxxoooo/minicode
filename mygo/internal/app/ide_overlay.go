@@ -88,8 +88,14 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 		st.Select(tb.buf.Offset(p0), tb.buf.Offset(editor.Pos{Line: r[0], Col: r[2]}))
 	}
 	a.decorate(tb)
+	a.syncDiffBase(tb)
+	a.suggestTick(tb)
 
-	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
+	col := ui.Column(c).Grow(1).MinHeight(0)
+	if ref, ok := ui.Drop[fileRef](col); ok && !ref.Dir {
+		a.ide.openFile(ref.Path, false)
+	}
+	col.Children(func() {
 		ui.Row(c).Grow(1).MinHeight(0).Children(func() {
 			editor.View(c.Key("ed-"+tb.id), st).Grow(1).MinWidth(0).FillHeight()
 			if !a.wsNarrowMM() && a.prefs.Bool(pMinimap, true) {
@@ -97,10 +103,14 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 			}
 		})
 		a.stickyScroll(c, tb)
+		a.codeLens(c, tb)
 		a.askBar(c, tb)
+		a.inlinePatchUI(c, tb)
+		a.reviewHover(c, tb)
 		a.ovPanel(c, tb)
 	})
 	_ = t
+	_ = col
 }
 
 // wsNarrowMM 工作区中档(520–599)起隐藏迷你地图。
@@ -152,6 +162,8 @@ func (a *App) decorate(tb *ideTab) {
 		}
 		st.SetDiagnostics(tb.buf.Version(), ds)
 	}
+	tbs = append(tbs, a.bracketDecorate(tb)...)
+	st.TextBackgrounds = tbs
 	a.applyEditorPrefs(tb)
 	if a.proj != "" {
 		a.lspTick(tb)
@@ -181,7 +193,8 @@ func (a *App) stickyScroll(c *ui.Context, tb *ideTab) {
 	if len(rows) > 2 {
 		rows = rows[len(rows)-2:]
 	}
-	ui.Column(c).Key("sticky").Absolute().Left(0).Right(mmW+mmRulW+6).Top(0).Background(t.Raised).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd2).Children(func() {
+	rail := a.mmWidth() + mmRulW + 6
+	ui.Column(c).Key("sticky").Absolute().Left(0).Right(rail).Top(0).Background(t.Raised).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd2).Children(func() {
 		for _, s := range rows {
 			r := ui.ButtonBase(c).Key("st-" + itoa(s.Line)).Height(22).PaddingStart(edGutter).PaddingEnd(8).Justify(ui.Start).AlignItems(ui.Center).Gap(6).
 				Cursor(ui.CursorPointer).TextColor(t.Tx2)
@@ -354,6 +367,7 @@ func (a *App) renameLocal(word, to string) {
 func (a *App) openActs() {
 	if tb := a.ide.cur(); tb != nil && tb.st != nil {
 		a.ide.ov = ideOv{kind: "acts", word: a.cursorWord()}
+		a.refreshCodeActions(tb)
 	}
 }
 
@@ -402,18 +416,15 @@ func (a *App) ovPanel(c *ui.Context, tb *ideTab) {
 			in := ui.TextInputBase(c.Key("ov-inl-in"), &ov.input).Height(28).PaddingX(8).Radius(t.RSm()).Background(t.Fill1).Border(1, t.Ac).AutoFocus().
 				Placeholder("例如:把它改成忽略大小写").PlaceholderColor(t.Tx4)
 			in.OnSubmit(func() {
-				if s := strings.TrimSpace(ov.input); s != "" {
-					ref, _ := a.selectionRef()
-					a.draft = strings.TrimSpace(a.draft + "\n请修改 " + ref + ":" + s)
-					if a.mode == ModeIDE {
-						a.rightOn = true
-					}
-					a.toast = "已把修改要求放进输入框"
+				s := strings.TrimSpace(ov.input)
+				if s != "" {
+					a.submitInlineEdit(tb, s)
+					return
 				}
 				a.closeOv()
 			})
 			esc(in)
-			ui.Text(c, "⏎ 发送给 Claude(进入对话) · Esc 取消").FontSize(theme.FsMicro).TextColor(t.Tx3).Margin(2, 6, 3, 6)
+			ui.Text(c, "⏎ 生成行内修改预览 · Esc 取消").FontSize(theme.FsMicro).TextColor(t.Tx3).Margin(2, 6, 3, 6)
 		})
 	case "acts":
 		panel("ov-acts", 260).Children(func() {
@@ -433,6 +444,10 @@ func (a *App) ovPanel(c *ui.Context, tb *ideTab) {
 				item("ref", "search", "查找所有引用", "⇧F12", func() { a.showRefs(word) })
 				item("ren", "edit", "重命名「"+word+"」", "F2", a.openRename)
 			}
+			for i, act := range a.codeActs {
+				idx := i
+				item("lsp"+itoa(i), "wrench", act.Title, "", func() { a.applyCodeAction(idx) })
+			}
 		})
 	case "peek":
 		a.peekPanel(c, tb, y)
@@ -451,7 +466,7 @@ func (a *App) peekPanel(c *ui.Context, tb *ideTab, y float32) {
 	ov.peekSt.Theme = a.editorTheme()
 	ov.peekSt.Font = ui.Font{Family: "monospace", Size: 12}
 	ov.peekSt.LineHeight = 20.0 / 12.0
-	el := ui.Column(c).Key("ov-peek").Absolute().Left(16).Right(mmW+mmRulW+14).Top(y+4).Height(180).Background(t.BG).Radius(t.RLg()).Border(1, t.Ac).Clip()
+	el := ui.Column(c).Key("ov-peek").Absolute().Left(16).Right(a.mmWidth()+mmRulW+14).Top(y+4).Height(180).Background(t.BG).Radius(t.RLg()).Border(1, t.Ac).Clip()
 	for _, s := range t.Shadow2() {
 		el.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
@@ -477,7 +492,11 @@ func (a *App) peekPanel(c *ui.Context, tb *ideTab, y float32) {
 
 // editorShortcuts 是编辑器级快捷键(只在有当前文件时生效):F12 / ⇧F12 / ⌥F12 / F2 / ⌘. / ⌘L / ⌘I / ⌃- / ⌃⇧-。
 func (a *App) editorShortcuts(c *ui.Context) bool {
-	if a.screen != ScreenWork || a.ide.cur() == nil || a.ide.cur().st == nil {
+	tb := a.ide.cur()
+	if tb != nil && tb.st != nil {
+		a.filesFocus = false
+	}
+	if a.screen != ScreenWork || tb == nil || tb.st == nil {
 		if a.ide.ov.kind != "" && c.Shortcut(0, ui.KeyEscape) {
 			a.closeOv()
 			return true
@@ -492,13 +511,19 @@ func (a *App) editorShortcuts(c *ui.Context) bool {
 	case c.Shortcut(ui.Alt, ui.KeyF12):
 		a.openPeek()
 	case c.Shortcut(0, ui.KeyF2):
-		a.openRename()
+		if a.filesFocus && a.ide.sel != "" {
+			a.beginRenameFile(a.ide.sel)
+		} else {
+			a.openRename()
+		}
 	case c.Shortcut(ui.Shift|ui.Alt, ui.KeyF):
 		a.formatDoc()
 	case c.Shortcut(ui.Cmd|ui.Shift, ui.KeyT):
 		a.reopenClosed()
 	case c.Shortcut(ui.Alt, ui.KeyZ):
 		a.toggleWrap()
+	case c.Shortcut(ui.Cmd, ui.KeyBackslash):
+		a.splitEditor(1)
 	case c.Shortcut(ui.Cmd, ui.KeyPeriod):
 		a.openActs()
 	case c.Shortcut(ui.Cmd, ui.KeyL):

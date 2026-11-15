@@ -31,6 +31,11 @@ func (a *App) tabIndex(id string) int {
 			return i
 		}
 	}
+	for i, t := range a.ide.tabs2 {
+		if t.id == id {
+			return i
+		}
+	}
 	return -1
 }
 
@@ -112,6 +117,27 @@ func (a *App) tabMenu(m *ui.Menu, tb *ideTab) {
 	}
 	if m.Item("关闭右侧").Disabled(ix < 0 || ix >= len(d.tabs)-1).Chosen() {
 		a.closeTabsWhere(func(x *ideTab) bool { return a.tabIndex(x.id) <= ix })
+	}
+	if m.Item("向右拆分").Trailing("⌘\\").Chosen() {
+		a.splitEditor(1)
+	}
+	if m.Item("向下拆分").Chosen() {
+		a.splitEditor(2)
+	}
+	if m.Item("固定标签").Disabled(!tb.preview).Chosen() {
+		tb.preview = false
+	}
+	side := m.Item("在侧边打开")
+	if a.ide.splitDir == 0 {
+		side.Disabled(true).Tooltip("先拆分编辑器组")
+	} else if side.Chosen() {
+		a.openSide(tb.path, true)
+	}
+	prev := m.Item("在侧边预览")
+	if a.ide.splitDir == 0 {
+		prev.Disabled(true).Tooltip("先拆分编辑器组")
+	} else if prev.Chosen() {
+		a.openSide(tb.path, false)
 	}
 	if m.Item("关闭已保存").Chosen() {
 		a.closeTabsWhere(func(x *ideTab) bool { return x.dirty() })
@@ -265,6 +291,8 @@ func (a *App) treeHeadMenu(m *ui.Menu) {
 
 const noBackend = "后端暂未支持"
 
+const noFork = "分叉后端尚未接入(internal/claude/fork.go)"
+
 // sessionMenu 是会话的「···」/ 右键菜单(导航栏会话行与对话栏头部共用)。
 // 重命名 / 置顶 / 归档 / 复制为 Markdown / 删除见 session_meta.go;分叉 / 复制链接:后端没有对应命令,置灰并写明原因。
 func (a *App) sessionMenu(m *ui.Menu, id, title string, inHead bool) {
@@ -298,8 +326,13 @@ func (a *App) sessionMenu(m *ui.Menu, id, title string, inHead bool) {
 		a.copySessionMarkdown(id, title)
 	}
 	if inHead {
-		m.Item("复制会话链接").Disabled(true).Tooltip(noBackend)
-		m.Item("分叉会话…").Disabled(true).Tooltip(noBackend)
+		if m.Item("复制会话链接").Disabled(fresh).Tooltip(noID).Chosen() {
+			a.copySessionLink(id)
+		}
+		forkOff := fresh || a.sessFork == nil
+		if m.Item("分叉会话…").Disabled(forkOff).Tooltip(map[bool]string{true: noFork, false: ""}[a.sessFork == nil]).Chosen() {
+			a.forkSessionAsk(id)
+		}
 		if m.Item("历史会话").Trailing("⇧⌘H").Chosen() {
 			a.togglePop("hist")
 		}

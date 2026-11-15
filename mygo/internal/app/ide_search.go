@@ -205,6 +205,34 @@ func (a *App) runSearch(immediate bool) {
 	go func() { defer diag.Recover("app.search"); work() }()
 }
 
+// replaceOne 替换搜索列表里当前选中的一处匹配(⏎)。
+func (a *App) replaceOne() {
+	s := &a.sr
+	if s.list.Selected == nil {
+		return
+	}
+	sel := *s.list.Selected
+	if sel < 0 || sel >= len(s.rows) {
+		return
+	}
+	row := s.rows[sel]
+	if row.match == nil {
+		return
+	}
+	m := *row.match
+	picks := []search.Match{m}
+	n, err := search.Replace(a.ide.fs, s.q(), s.repl, picks)
+	if err != nil {
+		a.toast = "替换失败:" + err.Error()
+		return
+	}
+	if n > 0 {
+		a.toast = "已替换 1 处"
+	}
+	a.ide.reloadOpen()
+	a.runSearch(true)
+}
+
 // replaceAll 替换列出的匹配并重搜。
 func (a *App) replaceAll() {
 	s := &a.sr
@@ -240,7 +268,7 @@ func (a *App) searchView(c *ui.Context) {
 				chev := ui.ButtonBase(c).Key("sr-chev").Size(14, 26).Justify(ui.Center).AlignItems(ui.Center).TextColor(t.Tx3).Cursor(ui.CursorPointer)
 				chev.OnClick(func() { s.showRepl = !s.showRepl })
 				chev.Children(func() { kit.Ic(c, map[bool]string{true: "chevD", false: "chevR"}[s.showRepl], kit.S12) })
-				a.searchBox(c, "sr-q", "search", &s.query, "搜索", func() {
+				_ = a.searchBox(c, "sr-q", "search", &s.query, "搜索", func() {
 					a.toggleBtn(c, "Aa", &s.cs, "区分大小写 ⌥⌘C")
 					a.toggleBtn(c, "ab", &s.word, "全词匹配 ⌥⌘W")
 					a.toggleBtn(c, ".*", &s.re, "正则 ⌥⌘R")
@@ -250,10 +278,11 @@ func (a *App) searchView(c *ui.Context) {
 			if s.showRepl {
 				ui.Row(c).Gap(2).AlignItems(ui.Start).Children(func() {
 					ui.Box(c).Width(14).Shrink(0)
-					a.searchBox(c, "sr-r", "swap", &s.repl, "替换", func() {
+					box := a.searchBox(c, "sr-r", "swap", &s.repl, "替换", func() {
 						a.toggleBtn(c, "AB", &s.pc, "保留大小写 ⌥⌘P")
 						kit.Ib(c, "check", kit.IbOpt{Small: true, Tip: "全部替换 ⌥⌘↩"}).OnClick(a.replaceAll)
 					}, false)
+					box.OnSubmit(a.replaceOne)
 				})
 			}
 			ui.Row(c).Gap(6).PaddingStart(16).AlignItems(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx3).Children(func() {
@@ -304,6 +333,22 @@ func (a *App) searchView(c *ui.Context) {
 					a.searchRow(c, s.rows[i], i)
 				}
 			}).Grow(1).MinHeight(0)
+		} else if s.running {
+			ui.Column(c).Grow(1).Justify(ui.Center).AlignItems(ui.Center).Gap(6).Children(func() {
+				ui.Text(c, "搜索中…").TextColor(t.Tx3)
+			})
+		} else if strings.TrimSpace(s.query) == "" {
+			ui.Column(c).Grow(1).Justify(ui.Center).AlignItems(ui.Center).Gap(6).Children(func() {
+				ui.Text(c, "输入关键字开始搜索").TextColor(t.Tx4)
+				ui.Text(c, "支持 Aa / ab / .* 与包含·排除 glob").FontSize(theme.FsCap).TextColor(t.Tx4)
+			})
+		} else if s.done && len(s.rows) == 0 {
+			ui.Column(c).Grow(1).Justify(ui.Center).AlignItems(ui.Center).Gap(6).Children(func() {
+				ui.Text(c, "没有结果").TextColor(t.Tx3)
+				if s.err != "" {
+					ui.Text(c, s.err).TextColor(t.Err).FontSize(theme.FsCap)
+				}
+			})
 		} else {
 			ui.Spacer(c).Grow(1)
 		}
@@ -334,20 +379,22 @@ func (a *App) searchSummary() string {
 }
 
 // searchBox 是带前缀图标与尾部控件的输入框(设计稿 .inp)。
-func (a *App) searchBox(c *ui.Context, key, icon string, v *string, ph string, trail func(), focus bool) {
+func (a *App) searchBox(c *ui.Context, key, icon string, v *string, ph string, trail func(), focus bool) ui.Element {
 	t := a.tk
 	box := ui.Row(c).Key(key+"-box").Grow(1).MinWidth(0).MinHeight(26).PaddingX(6).Gap(4).AlignItems(ui.Center).Background(t.Raised).Radius(t.RSm()).Border(1, t.Bd2)
 	if box.FocusWithin() {
 		box.BorderColor(t.Ac)
 	}
+	var in ui.Element
 	box.Children(func() {
 		kit.Ic(c, icon, kit.S12).TextColor(t.Tx3)
-		in := ui.TextInputBase(c.Key(key), v).Grow(1).MinWidth(0).FontSize(theme.FsBody).Placeholder(ph).PlaceholderColor(t.Tx4).Background(ui.Transparent).BorderWidth(0).Padding(0).FocusRing(false)
+		in = ui.TextInputBase(c.Key(key), v).Grow(1).MinWidth(0).FontSize(theme.FsBody).Placeholder(ph).PlaceholderColor(t.Tx4).Background(ui.Transparent).BorderWidth(0).Padding(0).FocusRing(false)
 		if focus {
 			in.AutoFocus()
 		}
 		trail()
 	})
+	return in
 }
 
 // toggleBtn 是小方块开关(设计稿 tgl)。

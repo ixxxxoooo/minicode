@@ -13,8 +13,7 @@ import (
 // 标尺:错误 / 警告 / 搜索 / Git / 光标的刻度,点任意位置跳转。
 
 const (
-	mmW     = 64 // 地图宽
-	mmRulW  = 8  // 概览标尺宽
+	mmRulW  = 8 // 概览标尺宽
 	mmRowH  = float32(3.5)
 	mmChar  = float32(0.6)
 	mmMaxPx = float32(52)
@@ -166,10 +165,22 @@ func (a *App) tabWord(tb *ideTab) string {
 	return w
 }
 
+func (a *App) mmWidth() float32 {
+	switch a.prefs.Int(pMmWidth, 1) {
+	case 0:
+		return 48
+	case 2:
+		return 80
+	default:
+		return 64
+	}
+}
+
 // minimap 是迷你地图 + 概览标尺。
 func (a *App) minimap(c *ui.Context, tb *ideTab) {
 	t := a.tk
 	st := tb.st
+	mmW := a.mmWidth()
 	n := tb.buf.LineCount()
 	if n > 2000 {
 		n = 2000
@@ -179,6 +190,15 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 	view := float32(st.ViewportHeight())
 	scroll := float32(st.ScrollY())
 	box := ui.Box(c).Key("mm-"+tb.id).Width(mmW+mmRulW).FillHeight().Shrink(0).BorderWidth(0, 0, 0, 1).BorderColor(t.Bd1)
+	hoverLine := -1
+	if box.Hovered() {
+		if _, y, ok := box.PointerPosition(); ok {
+			hoverLine = int((y - 4) / mmRowH)
+			if hoverLine >= 0 && hoverLine < n {
+				a.mmTip = strings.TrimRight(tb.buf.Line(hoverLine), " \t\r")
+			}
+		}
+	}
 	cursorLine := st.CursorPos().Line
 	rl := a.claudeLines(tb)
 
@@ -195,11 +215,14 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 	}
 	box.Draw(func(p *ui.Painter, r ui.Rect) {
 		y0 := r.Y + 4
-		// 视口滑块
-		if total > 0 && view > 0 {
+		showThumb := a.prefs.Int(pMmSlider, 0) == 1 || box.Hovered() || box.Dragging()
+		if showThumb && total > 0 && view > 0 {
 			vy := y0 + scroll/total*mmRowH*float32(n)
 			vh := view / total * mmRowH * float32(n)
 			p.Fill(ui.Rect{X: r.X, Y: vy, W: mmW, H: float32(math.Max(float64(vh), 8))}, t.Fill2, 0)
+		}
+		if hoverLine >= 0 && hoverLine < n {
+			p.Fill(ui.Rect{X: r.X, Y: y0 + float32(hoverLine)*mmRowH - .5, W: mmW, H: mmRowH + 1}, t.Info.Alpha(.25), 0)
 		}
 		// 行底色:Claude 改过的行(紫)、搜索命中(黄)、同词(蓝)
 		band := func(lines []int, col ui.Color) {
@@ -248,7 +271,11 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 			}
 		}
 		// 左缘 Git 竖条
-		for l, k := range info.git {
+		gitM := info.git
+		if !a.prefs.Bool(pMmGit, true) {
+			gitM = nil
+		}
+		for l, k := range gitM {
 			if l >= n {
 				continue
 			}
@@ -269,7 +296,7 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 			y := r.Y + float32(l)/all*r.H
 			p.Fill(ui.Rect{X: r.X + mmW + left, Y: y, W: w, H: 2}, col, 0)
 		}
-		for l := range info.git {
+		for l := range gitM {
 			k := info.git[l]
 			col := t.Ok
 			if k == '~' {
@@ -294,4 +321,12 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 		}
 		tick(cursorLine, t.Tx2, 0, mmRulW)
 	})
+	if a.mmTip != "" && box.Hovered() {
+		ui.Box(c).Absolute().Left(4).Right(mmRulW+4).Bottom(4).MaxHeight(80).Padding(6, 8).
+			Background(t.Raised).Radius(t.RSm()).Border(1, t.Bd1).Children(func() {
+			ui.Text(c, a.mmTip).Font("monospace").FontSize(11).TextColor(t.Tx2)
+		})
+	} else if !box.Hovered() {
+		a.mmTip = ""
+	}
 }
