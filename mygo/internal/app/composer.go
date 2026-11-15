@@ -107,11 +107,12 @@ func (a *App) composerBar(c *ui.Context) {
 			}
 			a.ring(c, float32(pct)/100)
 		})
+		// 发送 / 停止是 24×24 的圆形按钮(半径 12)
 		if a.st.Phase == core.PhaseRunning {
-			b := kit.Ib(c, "stop", kit.IbOpt{Tip: "停止", NoHover: true}).Background(t.Tx1).Radius(t.RMd()).TextColor(t.BG)
+			b := kit.Ib(c, "stop", kit.IbOpt{Tip: "停止", NoHover: true}).Background(t.Tx1).Radius(12).TextColor(t.BG)
 			b.OnClick(func() { a.send(core.CmdCancel{}) })
 		} else {
-			b := kit.Ib(c, "send", kit.IbOpt{Tip: "发送 ⏎", NoHover: true}).Background(t.Ac).Radius(t.RMd()).TextColor(t.OnAc)
+			b := kit.Ib(c, "send", kit.IbOpt{Tip: "发送 ⏎", NoHover: true}).Background(t.Ac).Radius(12).TextColor(t.OnAc)
 			if b.Hovered() {
 				b.Background(t.Ac.Mix(t.Tx1, .10))
 			}
