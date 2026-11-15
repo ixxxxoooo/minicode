@@ -121,6 +121,26 @@ func (a *App) timelineRows(c *ui.Context) {
 		ui.Text(c, "不在 Git 仓库里").FontSize(theme.FsCap).TextColor(t.Tx4).Margin(2, 8, 6, 28)
 		return
 	}
+	// 顶部:还没提交的本地更改(含未保存的编辑),点开是 HEAD ↔ 工作区
+	if a.ide.git[tb.path] != "" || tb.dirty() {
+		r := ui.ButtonBase(c).Key("tl-local").Height(34).PaddingX(8).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).Margin(0, 4)
+		if r.Hovered() {
+			r.Background(t.Fill1)
+		}
+		if r.Clicked() {
+			a.openDiffKind(dkHead, tb.path, false)
+		}
+		if r.DoubleClicked() {
+			a.openDiffKind(dkHead, tb.path, true)
+		}
+		r.Children(func() {
+			ui.Box(c).Size(7, 7).Radius(4).Border(1.5, t.Warn).Shrink(0)
+			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+				ui.Text(c, "本地更改").SingleLine().FontSize(theme.FsCap)
+				ui.Text(c, map[bool]string{true: "含未保存的修改", false: "未提交"}[tb.dirty()]).SingleLine().FontSize(theme.FsMicro).TextColor(t.Warn)
+			})
+		})
+	}
 	if len(g.log) == 0 {
 		msg := "这个文件还没有提交历史"
 		if g.busy {
@@ -141,6 +161,20 @@ func (a *App) timelineRows(c *ui.Context) {
 		if r.DoubleClicked() {
 			a.scmOpenCommitFile(cm, tb.path, true)
 		}
+		r.ContextMenu(func(m *ui.Menu) {
+			if m.Item("打开该次提交里的改动").Chosen() {
+				a.scmOpenCommitFile(cm, tb.path, true)
+			}
+			if m.Item("在图谱中查看").Chosen() {
+				a.openGraph()
+				a.graphTab.sel = cm.Hash
+				a.scmCommitFiles(cm.Hash)
+			}
+			m.Separator()
+			if m.Item("复制哈希").Chosen() {
+				a.scmCommitOp(cm, "copy")
+			}
+		})
 		r.Children(func() {
 			ui.Box(c).Size(7, 7).Radius(4).Background(t.Ac).Shrink(0)
 			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
