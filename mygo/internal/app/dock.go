@@ -426,6 +426,6 @@ func (a *App) drainQueue() {
 		return
 	}
 	if s, ok := a.q.next(); ok {
-		a.submitPrompt(s, false)
+		a.submitPrompt(a.queueDraftFor(s), false)
 	}
 }

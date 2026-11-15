@@ -43,6 +43,9 @@ func (a *App) composer(c *ui.Context) {
 			in.Focus()
 			a.ux.focusDraft = false
 		}
+		in.OnPaste(func(text string) bool {
+			return a.HandleComposerPaste(text)
+		})
 		in.OnTextKey(func(k ui.TextKey) bool {
 			if a.slashTextKey(k) {
 				return true
@@ -80,7 +83,7 @@ func (a *App) submitKey(text string, steer bool) {
 	if a.st.Phase == core.PhaseRunning {
 		if steer {
 			a.steerSend(text)
-		} else if a.q.add(text) {
+		} else if a.q.add(a.queueDraftFor(text)) {
 			log.Info("排队", "len", len(text), "队列", a.q.len())
 		}
 		return
