@@ -2,8 +2,10 @@ package app
 
 import (
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/claudecfg"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -71,6 +73,23 @@ type settingsState struct {
 	restart map[string]bool    // 改过且需要重启的项
 	mainSt  ui.ScrollState
 	lastTab string
+	// 搜索跳转高亮
+	jumpKey    string
+	flashKey   string
+	flashUntil time.Time
+	// 快捷键录制
+	recID  string
+	kbWarn string
+	// 服务商 / 连通性
+	providers []claudecfg.Provider
+	provBusy  map[string]int
+	net       map[string]int
+	netMs     map[string]int64
+	// 删除撤销(kit.UndoSlot)
+	undo kit.UndoSlot
+	// 输入校验抖动
+	fieldShake map[string]time.Time
+	navDrop    bool // 窄窗分类下拉展开
 }
 
 func (a *App) setTabByID(id string) *setTabDef {
@@ -101,6 +120,9 @@ func (a *App) prefStr(r setRow) string {
 
 // setPref 写入一项:等于默认值就删键(「已修改」标记随之消失),然后重新应用会影响界面的偏好。
 func (a *App) setPref(r setRow, v any) {
+	if !a.persistPrefs() {
+		return
+	}
 	if v == r.def {
 		a.prefs.Reset(r.key)
 	} else {
@@ -177,8 +199,12 @@ func (a *App) applyPrefs() {
 // settingsPage 是整页设置:左侧导航(196)+ 右侧内容(620 居中)。
 func (a *App) settingsPage(c *ui.Context) {
 	t := a.tk
+	a.initSettingsConfig()
+	a.shortcutRecordCapture(c)
 	ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Background(t.BG).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2).Children(func() {
-		a.settingsNav(c)
+		if !a.settingsNarrow() {
+			a.settingsNav(c)
+		}
 		a.settingsMain(c)
 	})
 }
@@ -255,7 +281,14 @@ func (a *App) settingsMain(c *ui.Context) {
 		ui.Scroll(c).Key("set-main").TrackScroll(&a.set.mainSt).Grow(1).MinHeight(0).Children(func() {
 			ui.Row(c).Justify(ui.Center).Padding(18, 0, 28, 0).Children(func() {
 				col := ui.Column(c).Width(620).Shrink(1).MinWidth(0).Gap(14)
+				if a.settingsNarrow() {
+					col.Width(0).Grow(1)
+				}
 				col.Children(func() {
+					if a.settingsNarrow() && q == "" {
+						a.settingsTabPicker(c)
+					}
+					a.settingsUndoToast(c)
 					if q != "" {
 						a.settingsSearchView(c, q)
 						return
@@ -272,6 +305,11 @@ func (a *App) settingsMain(c *ui.Context) {
 					if tab.note != "" {
 						ui.Text(c, tab.note).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.5).Padding(0, 4)
 					}
+					if a.setTab == "shortcuts" {
+						a.shortcutWarnBar(c)
+						kit.Btn(c, "恢复默认", kit.BtnOpt{Small: true, Icon: "undo"}).OnClick(a.resetShortcuts)
+					}
+					a.syncSettingJump()
 				})
 			})
 		})
@@ -309,6 +347,11 @@ func (a *App) settingsRow(c *ui.Context, r setRow, first bool) {
 	row := ui.Row(c.Key("sr-"+r.key+r.title)).MinHeight(38).Padding(6, 12).Gap(12).AlignItems(ui.Center)
 	if !first {
 		row.BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1)
+	}
+	if a.settingRowFlash(r) {
+		row.Background(t.AcSoft)
+	} else if a.set.jumpKey == rowFlashID(r) {
+		row.Background(t.AcSoft.Alpha(.6))
 	}
 	hov := row.Hovered()
 	row.Children(func() {
@@ -433,7 +476,7 @@ func (a *App) restartBar(c *ui.Context) {
 			ui.Text(c, itoa(n)+" 项更改需要重启后生效")
 			kit.Btn(c, "稍后", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() { a.set.restart = nil })
 			kit.Btn(c, "立即重启", kit.BtnOpt{Small: true, Variant: kit.BtnPri}).OnClick(func() {
-				log.Warn("请求重启以应用设置", "项", n)
+				a.restartForSettings("设置项")
 				a.set.restart = nil
 			})
 		})
@@ -512,7 +555,7 @@ func (a *App) settingsSearchView(c *ui.Context, q string) {
 					if r.Hovered() {
 						r.Background(t.Fill1)
 					}
-					r.OnClick(func() { a.setTab, a.set.query = h.tab, "" })
+					r.OnClick(func() { a.jumpSettingRow(h.tab, h.row) })
 					r.Children(func() {
 						ui.Column(c).Grow(1).MinWidth(0).Gap(1).Children(func() {
 							a.highlight(c, h.row.title, q, 500, theme.FsBody, t.Tx1)

@@ -324,6 +324,7 @@ var settingsTabs = []setTabDef{
 			{key: kRadius, title: "圆角", desc: "圆角倍率 --r-k:利落 ×0.55 / 适中 / 圆润 ×1.35", kind: kSeg, def: 1, opts: []string{"利落", "适中", "圆润"}},
 		}},
 		{title: "Agent 会话", rows: []setRow{
+			rSeg("appearance.flowStyle", "会话样式", "对话:你的消息靠右成气泡;通栏:与正文同宽的整行卡片", 0, "跟随布局", "对话", "通栏"),
 			rSeg("appearance.width", "内容宽度", "会话时间线与输入框的最大宽度;窄屏或分屏时会自动收窄", 1, "窄", "标准", "宽"),
 			rSeg("appearance.density2", "工具调用详细程度", "精简只显示动词与对象;详细默认展开输出", 1, "精简", "标准", "详细"),
 			rStp("appearance.fontScale", "时间线字号", "会话里 Claude 回复正文的字号(85%–150%)", 100, 85, 150, 5, "%"),
@@ -331,6 +332,8 @@ var settingsTabs = []setTabDef{
 		{title: "文件树", rows: []setRow{
 			rTog("appearance.fileIcons", "彩色文件图标", "按文件类型给图标上色(Rust 橙、Go 蓝、Python 绿…);关闭后全部用灰色。作用于文件树、标签、搜索与源代码管理", true),
 		}},
+		brandAppGroup(),
+		brandTrayGroup(),
 		{title: "动效", rows: []setRow{
 			rTog("appearance.motion", "动效", "流光、滑入与布局变形;关闭后所有时长令牌归零(也跟随系统「减弱动态效果」)", true),
 			rSeg("appearance.morph", "形态切换动画", "Agent ⇄ IDE 的布局变形,约 0.44 秒;「简化」只淡入淡出", 0, "流畅", "简化", "无"),
@@ -338,7 +341,7 @@ var settingsTabs = []setTabDef{
 		}},
 	}},
 
-	{id: "shortcuts", title: "快捷键", icon: "kbd", desc: "当前生效的快捷键一览(录制与自定义尚未接入,按键固定)。", groups: shortcutGroups()},
+	{id: "shortcuts", title: "快捷键", icon: "kbd", desc: "点键帽录制;冲突会当场提示;恢复默认会清掉自定义组合。", groups: shortcutGroupsLive()},
 
 	{id: "models", title: "模型与服务商", icon: "cpu", desc: "默认模型与思考强度、上下文压缩,以及第三方模型服务商。密钥单独存放在 0600 权限的文件里。", groups: []setGroup{
 		{title: "默认", rows: []setRow{
@@ -351,11 +354,7 @@ var settingsTabs = []setTabDef{
 			rStp("models.compactAt", "压缩触发阈值", "占用达到该比例时压缩", 85, 50, 95, 5, "%"),
 			rCustom("输出风格", "", func(a *App, c *ui.Context) { kit.Chip(c, "默认", kit.ChipOpt{Line: true, Car: true}) }),
 		}},
-		{title: "服务商", body: func(a *App, c *ui.Context) {
-			provRow(a, c, true, "Anthropic 官方", "https://api.anthropic.com", "已连通")
-			provRow(a, c, false, "DeepSeek", "https://api.deepseek.com/anthropic", "已连通")
-			provRow(a, c, false, "自建网关", "https://llm.example.com", "未验证")
-		}},
+		{title: "服务商", body: func(a *App, c *ui.Context) { a.providersBody(a, c) }},
 		{title: "模型映射 · DeepSeek", rows: []setRow{
 			rFld("models.mapOpus", "Opus 槽位", "", "deepseek-reasoner", 190, true, ""),
 			rFld("models.mapSonnet", "Sonnet 槽位", "", "deepseek-chat", 190, true, ""),
@@ -367,6 +366,7 @@ var settingsTabs = []setTabDef{
 		{title: "显示", rows: []setRow{
 			rTog("chat.thinkOpen", "思考内容默认展开", "关闭时只显示「思考 · 4 秒」一行", false),
 			rTog("chat.fold", "回合结束后折叠过程", "把本回合的工具步骤折成「已处理 1 分 13 秒」", true),
+			rTog("chat.stickyUser", "用户消息吸顶", "长会话滚动时当前回合的提问固定在顶部;下一轮顶走后只留一张", true),
 			rTog("chat.stats", "显示回合用量", "回复下方的模型 · 用时 · token · 费用", true),
 			rTog("chat.groupFold", "工具组默认折叠", "连续的读取 / 搜索收进一行;失败时自动展开", true),
 		}},
@@ -394,38 +394,8 @@ var settingsTabs = []setTabDef{
 			restart(rTog("perm.sandbox", "Bash 沙盒", "sandbox.enabled:在受限环境里执行 Bash 命令", false)),
 			rFld("perm.dirs", "额外可访问目录", "permissions.additionalDirectories", "~/Projects/shared", 200, true, ""),
 		}},
-		{title: "始终允许", body: func(a *App, c *ui.Context) {
-			ruleRows(a, c, "allow", []string{"Bash(git status)", "Bash(cargo test:*)", "Read(src/**)"})
-		}},
-		{title: "每次询问", body: func(a *App, c *ui.Context) { ruleRows(a, c, "ask", []string{"Bash(git push:*)"}) }},
-		{title: "始终拒绝", body: func(a *App, c *ui.Context) { ruleRows(a, c, "deny", []string{"Read(.env)", "Bash(rm -rf:*)"}) }},
-		{title: "项目信任", body: func(a *App, c *ui.Context) {
-			type trustRow struct {
-				n, path   string
-				hook, mcp bool
-			}
-			rows := []trustRow{{"router-demo", "~/Projects/router-demo", true, true}, {"web-dashboard", "~/Projects/web-dashboard", true, false}, {"docs-site", "~/Projects/docs-site", false, false}}
-			if a.proj != "" { // 真实模式:列出侧栏里的真实项目(信任状态尚未接入,按「未信任」显示)
-				rows = nil
-				for _, pi := range a.projects {
-					if len(rows) >= 6 {
-						break
-					}
-					rows = append(rows, trustRow{n: pi.Name, path: tildePath(pi.Path)})
-				}
-			}
-			for i, p := range rows {
-				p := p
-				rowBox(a, c, i == 0, 44).Children(func() {
-					iconBox(a, c, "folder")
-					titled(a, c, p.n, p.path, true)
-					ui.Text(c, "钩子").FontSize(theme.FsCap).TextColor(a.tk.Tx3)
-					kit.Tog(c, p.hook, "trust-h-"+p.n)
-					ui.Text(c, "MCP").FontSize(theme.FsCap).TextColor(a.tk.Tx3)
-					kit.Tog(c, p.mcp, "trust-m-"+p.n)
-				})
-			}
-		}},
+		{title: "权限规则", body: func(a *App, c *ui.Context) { a.rulesBody(a, c) }},
+		{title: "项目信任", body: func(a *App, c *ui.Context) { a.trustBody(a, c) }},
 	}, note: "陌生项目带来的钩子与 MCP 默认不运行,信任后才生效。"},
 
 	{id: "runtime", title: "运行环境", icon: "cube", desc: "MiniCode 如何找到并启动 claude:可执行文件、代理与网络、环境变量。", groups: []setGroup{
@@ -439,15 +409,8 @@ var settingsTabs = []setTabDef{
 			rFld("runtime.noProxy", "绕过代理", "NO_PROXY:这些主机直连", "localhost,127.0.0.1", 200, true, ""),
 			rFld("runtime.timeout", "请求超时(秒)", "API_TIMEOUT_MS;留空为 claude 默认", "", 90, false, "默认"),
 		}},
-		{title: "环境变量(只显示变量名,值已遮盖)", body: func(a *App, c *ui.Context) {
-			for i, e := range [][2]string{{"ANTHROPIC_API_KEY", "用户"}, {"HTTPS_PROXY", "用户"}, {"ENABLE_TOOL_SEARCH", "项目"}, {"API_TIMEOUT_MS", "本地"}} {
-				rowBox(a, c, i == 0, 32).Children(func() {
-					kit.Mono(c, e[0], a.tk.Tx1).Width(230)
-					kit.Mono(c, "••••••••", a.tk.Tx3).Grow(1)
-					kit.Tag(c, e[1])
-				})
-			}
-		}},
+		{title: "环境变量(只显示变量名,值已遮盖)", body: func(a *App, c *ui.Context) { a.envBody(a, c) }},
+		{title: "连通性", body: func(a *App, c *ui.Context) { a.netCheckBody(a, c) }},
 	}},
 
 	{id: "editor", title: "编辑器与语言服务", icon: "code", desc: "代码编辑器的显示、括号与 Git 追溯,以及语言服务器(LSP)与搜索忽略规则。", groups: []setGroup{
@@ -480,31 +443,13 @@ var settingsTabs = []setTabDef{
 			rTog("editor.blameInline", "行内追溯", "光标行末尾显示作者与时间", true),
 			rTog("editor.blameGutter", "追溯栏", "行号左侧逐行显示提交", false),
 		}},
-		{title: "语言服务", rows: []setRow{rTog("editor.lsp", "启用语言服务", "悬停、补全、转到定义、诊断", true)}},
-		{title: "语言服务器", body: func(a *App, c *ui.Context) {
-			for i, s := range []struct {
-				n, st string
-				ok    bool
-			}{{"rust-analyzer", "已就绪 · 索引完成", true}, {"Pyright", "未安装", false}, {"gopls", "未安装", false}, {"typescript-language-server", "未安装", false}} {
-				s := s
-				rowBox(a, c, i == 0, 32).Children(func() {
-					if s.ok {
-						kit.Ic(c, "okc", kit.S12).TextColor(a.tk.Ok)
-					} else {
-						kit.Ic(c, "alert", kit.S12).TextColor(a.tk.Warn)
-					}
-					ui.Text(c, s.n).FontWeight(500).Grow(1)
-					ui.Text(c, s.st).FontSize(theme.FsCap).TextColor(a.tk.Tx3)
-					if !s.ok {
-						kit.Btn(c, "复制安装命令", kit.BtnOpt{Small: true, Icon: "copy"}).OnClick(func() {
-							c.WriteClipboard(map[string]string{"Pyright": "npm i -g pyright", "gopls": "go install golang.org/x/tools/gopls@latest",
-								"typescript-language-server": "npm i -g typescript-language-server typescript"}[s.n])
-							c.Toast("已复制安装命令")
-						})
-					}
-				})
-			}
+		{title: "语言服务", rows: []setRow{
+			rTog("editor.lsp", "启用语言服务", "悬停、补全、转到定义、诊断", true),
+			rTog("editor.inlay", "内联提示", "类型与参数名(inlayHint);无能力时自动跳过", true),
+			rTog("lsp.workspaceDiag", "工作区级诊断", "重新检查时额外扫项目源文件(有上限)", true),
+			rFld("lsp.workspaceDiagLimit", "工作区检查上限", "单次最多 didOpen 的文件数", "80", 60, false, ""),
 		}},
+		{title: "语言服务器", body: func(a *App, c *ui.Context) { a.lspBody(a, c) }},
 		{title: "忽略规则", body: func(a *App, c *ui.Context) { ignoreArea(a, c) }},
 	}},
 
@@ -516,6 +461,7 @@ var settingsTabs = []setTabDef{
 			rSeg("term.cursor", "光标形状", "", 0, "块", "竖线", "下划线"),
 			rTog("term.blink", "光标闪烁", "", true),
 			rFld("term.scrollback", "回看行数", "滚轮可回看的历史输出行数;对之后新开的终端生效", "10000", 90, false, ""),
+			rTog("term.nerdFallback", "无 Nerd Font 时回退系统等宽", "图标显示成方框时可开启", true),
 		}},
 		{title: "Shell", rows: []setRow{
 			rFld("term.shell", "Shell 程序", "留空使用环境变量 $SHELL;失焦或回车应用", "/bin/zsh", 160, true, ""),
@@ -538,6 +484,7 @@ var settingsTabs = []setTabDef{
 
 	{id: "browser", title: "浏览器", icon: "globe", desc: "内置阅读模式浏览器的抓取参数。浏览器页右上角的齿轮会直接跳到这里。", groups: []setGroup{
 		{title: "抓取", rows: []setRow{
+			rTog("browser.fetch", "允许抓取网页", "关闭后只保留演示源与已缓存页面;真实网址会提示去设置开启", true),
 			rStp("browser.timeout", "请求超时", "单个页面的最长等待时间", 20, 5, 120, 5, "秒"),
 			rFld("browser.ua", "User-Agent", "留空使用内置标识;个别站点会按它返回不同内容", "", 220, false, "默认"),
 			rTog("browser.reader", "默认进入阅读模式", "", true),

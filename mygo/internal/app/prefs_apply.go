@@ -11,35 +11,57 @@ import (
 // 设置页里真正驱动行为的项(其余控件仍只存偏好,见 AGENTS.md「已知缺口」)。
 // 键名与 settings_tabs.go 里的声明一一对应;默认值也必须和那里一致(setPref 在值等于默认时会删键)。
 const (
-	pMotion      = "appearance.motion"
-	pMorph       = "appearance.morph"
-	pShimmer     = "appearance.shimmer"
-	pFontScale   = "appearance.fontScale"
-	pThinkOpen   = "chat.thinkOpen"
-	pStats       = "chat.stats"
-	pGroupFold   = "chat.groupFold"
-	pSend        = "general.send"
-	pBusy        = "general.busy"
-	pEdFont      = "editor.fontSize"
-	pEdIndent    = "editor.indent"
-	pEdAutosave  = "editor.autosave"
-	pMinimap     = "editor.minimap"
-	pEdNumbers   = "editor.lineNumbers"
-	pEdFolding   = "editor.folding"
-	pEdWrap      = "editor.wrap"
-	pMdView      = "editor.mdView"       // Markdown 默认视图:0 所见即所得,1 源码
-	pFmtSave     = "editor.formatOnSave" // 保存时格式化
-	pTrimSave    = "editor.trimOnSave"   // 保存时去掉行尾空白
-	pBlameInline = "editor.blameInline"
-	pTermFont    = "term.fontSize"
+	pMotion       = "appearance.motion"
+	pMorph        = "appearance.morph"
+	pShimmer      = "appearance.shimmer"
+	pFontScale    = "appearance.fontScale"
+	pThinkOpen    = "chat.thinkOpen"
+	pStats        = "chat.stats"
+	pGroupFold    = "chat.groupFold"
+	pSend         = "general.send"
+	pBusy         = "general.busy"
+	pEdFont       = "editor.fontSize"
+	pEdIndent     = "editor.indent"
+	pEdAutosave   = "editor.autosave"
+	pMinimap      = "editor.minimap"
+	pMmSlider     = "editor.minimapSlider"
+	pMmWidth      = "editor.minimapWidth"
+	pMmGit        = "editor.minimapGit"
+	pBracketGuide = "editor.bracketGuide"
+	pBracketColor = "editor.bracketColor"
+	pBracketMatch = "editor.bracketMatch"
+	pEdNumbers    = "editor.lineNumbers"
+	pEdFolding    = "editor.folding"
+	pEdWrap       = "editor.wrap"
+	pMdView       = "editor.mdView"       // Markdown 默认视图:0 所见即所得,1 源码
+	pFmtSave      = "editor.formatOnSave" // 保存时格式化
+	pTrimSave     = "editor.trimOnSave"   // 保存时去掉行尾空白
+	pBlameInline  = "editor.blameInline"
+	pTermFont     = "term.fontSize"
 )
 
 // edScale 是编辑器字号相对 12px 的倍数(浮层定位用的字宽 / 行高按它缩放)。
 var edScale float32 = 1
 
+// ChatFontScale 是会话流正文 Markdown 的字号倍率(appearance.fontScale,默认 1)。
+func (a *App) ChatFontScale() float32 {
+	if a == nil || a.prefs == nil {
+		return 1
+	}
+	return float32(a.prefs.Int(pFontScale, 100)) / 100
+}
+
+// ToolDetailLevel 是工具调用详细程度(0 精简 / 1 标准 / 2 详细);会话流读取点见 chat/flow。
+func (a *App) ToolDetailLevel() int {
+	if a == nil || a.prefs == nil {
+		return 1
+	}
+	return a.prefs.Int("appearance.density2", 1)
+}
+
 // applyBehavior 把会立刻影响行为的偏好套到运行时(applyPrefs 末尾调用)。
 func (a *App) applyBehavior() {
-	on := a.prefs.Bool(pMotion, true)
+	on := a.prefs.Bool(pMotion, true) && !kit.SystemReduceMotion()
 	kit.SetMotion(on)
 	kit.SetPulse(a.prefs.Int(pShimmer, 0) != 2)
 	// 形态切换动画:流畅 = 440 ms;简化 = 160 ms;无 = 立即(动效整体关闭时也是立即)
@@ -54,11 +76,9 @@ func (a *App) applyBehavior() {
 		d = 0
 	}
 	morph = ui.ElementTransition{Size: true, Position: true, Duration: d, Ease: kit.EaseMorph}
+	a.applyCheapPrefs()
 	// 终端字号:改了之后各终端标签重新量字宽
-	fam := a.prefs.Str("term.font", "")
-	if fam == "" {
-		fam = "monospace"
-	}
+	fam := a.termFontFamily()
 	lh := []float32{1.4, 1.6, 1.8}[min(max(a.prefs.Int("term.lineHeight", 1), 0), 2)]
 	f := float32(a.prefs.Int(pTermFont, 12)) - .5
 	if f != termFont || fam != termFamily || f*lh != termLineH {
@@ -108,6 +128,13 @@ func (a *App) applyEditorPrefs(tb *ideTab) {
 		st.LineNumbers = editor.LineNumbersOff
 	}
 	st.NoFolding = !a.prefs.Bool(pEdFolding, true)
+	st.NoIndentGuides = !a.prefs.Bool(pBracketGuide, true)
+	if !a.prefs.Bool(pBracketMatch, true) {
+		st.Theme = a.editorTheme()
+		if st.Theme != nil {
+			st.Theme.MatchingBracket = ui.Transparent
+		}
+	}
 }
 
 // autosave 自动保存:「延时」= 最后一次修改 1.5 秒后写盘;「失焦」= 切到别的标签时写盘。
