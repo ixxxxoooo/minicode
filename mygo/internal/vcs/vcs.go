@@ -47,6 +47,10 @@ type Repo interface {
 	PullRebase() error
 	PullMerge() error
 	RebaseAbort() error
+	// MergeAbort 中止进行中的合并(git merge --abort)。
+	MergeAbort() error
+	// OpState 进行中的多步操作:"" / "merge" / "rebase"(按仓库真实状态判断,重启后也能接上)。
+	OpState() string
 	Push() error
 	// PushForce 强制推送(带 lease);仅在用户明确确认后调用。
 	PushForce() error

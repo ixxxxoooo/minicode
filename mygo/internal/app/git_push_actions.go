@@ -24,6 +24,16 @@ func (a *App) scmPullMerge() {
 	})
 }
 
+// scmMergeAbort 中止进行中的合并(git merge --abort):回到合并前,冲突分组随之清空。
+func (a *App) scmMergeAbort() {
+	a.scmAct("中止合并", func(r vcs.Repo) error { return r.MergeAbort() }, func() {
+		a.sc.merging = false
+		a.clearPushGuide()
+		a.toast = "已中止合并"
+		pushLog.Info("中止合并")
+	})
+}
+
 func (a *App) scmRebaseAbort() {
 	a.scmAct("中止变基", func(r vcs.Repo) error { return r.RebaseAbort() }, func() {
 		a.sc.rebase = false
@@ -35,5 +45,5 @@ func (a *App) scmRebaseAbort() {
 
 func (a *App) pushGuideHasConflict() bool {
 	g := a.sc.pushGuide
-	return a.sc.rebase || strings.Contains(g, "冲突") || strings.Contains(strings.ToLower(g), "conflict") || strings.Contains(g, "变基")
+	return a.sc.rebase || a.sc.merging || strings.Contains(g, "冲突") || strings.Contains(strings.ToLower(g), "conflict") || strings.Contains(g, "变基")
 }

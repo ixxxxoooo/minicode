@@ -1,6 +1,10 @@
 package app
 
-import "time"
+import (
+	"time"
+
+	"github.com/ixxxxoooo/minicode/internal/vcs"
+)
 
 // gitDebug 处理 -ed 中与 Git / 差异相关的调试动作。
 func (a *App) gitDebug(name, arg string) bool {
@@ -8,6 +12,13 @@ func (a *App) gitDebug(name, arg string) bool {
 	case "pushreject":
 		a.dbgSCM()
 		a.sc.pushGuide = "远端 origin/main 比本地多 2 个提交(non-fast-forward)"
+		return true
+	case "mergeconflict": // 演示:拉取并合并遇到冲突,SCM 顶部出现「正在合并」条(中止合并)
+		a.dbgSCM()
+		if m, ok := a.repo.(*vcs.Mem); ok {
+			m.SetMergeConflict("合并冲突:router.rs")
+			a.scmPullMerge()
+		}
 		return true
 	case "cmp2":
 		a.dbgSCM()

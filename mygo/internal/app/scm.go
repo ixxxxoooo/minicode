@@ -39,6 +39,7 @@ type scmState struct {
 	createAt      string // 非空:分支选择器里「创建并切换」从这个提交起
 	pushGuide     string // 推送被拒时的引导文案(空 = 不显示)
 	rebase        bool   // 变基冲突中(可中止)
+	merging       bool   // 合并冲突中(可中止,git merge --abort)
 	stashOpen     map[int]bool
 	stashFiles    map[int][]vcs.Change
 	stashBusy     map[int]bool // 正在读取储藏文件列表
@@ -94,6 +95,7 @@ func (a *App) scmRefresh() {
 		}
 		ah, bh := repo.AheadBehind()
 		ss, _ := repo.Stashes()
+		op := repo.OpState() // 重启后也能接上进行中的合并 / 变基
 		end()
 		return func() {
 			if gen != a.sc.gen || repo != a.repo {
@@ -109,6 +111,7 @@ func (a *App) scmRefresh() {
 			s.err = ""
 			sortChanges(cs)
 			s.changes, s.log, s.ahead, s.behind, s.stashes = cs, lg, ah, bh, ss
+			s.rebase, s.merging = op == "rebase", op == "merge"
 			s.rows = vcs.Layout(lg)
 			s.lanes = 1
 			for _, r := range s.rows {
@@ -213,6 +216,9 @@ func (a *App) scmAct(what string, f func(r vcs.Repo) error, onOK ...func()) {
 				a.toast = what + "失败:" + friendlyGitErr(err.Error())
 				if what == "推送" || what == "同步" || what == "提交并同步" {
 					a.notePushFail(err)
+				}
+				if what == "拉取并合并" && (strings.Contains(err.Error(), "冲突") || strings.Contains(strings.ToLower(err.Error()), "conflict")) {
+					a.sc.merging = true
 				}
 				if what == "拉取并变基" {
 					a.notePushFail(err)

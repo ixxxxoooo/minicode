@@ -24,49 +24,68 @@ func (a *App) notePushFail(err error) {
 
 func (a *App) clearPushGuide() { a.sc.pushGuide = "" }
 
-// scmPushGuide 推送被拒后的引导条。
+// opWord 进行中的多步操作的中文名("" 表示没有)。
+func (a *App) opWord() string {
+	switch {
+	case a.sc.merging:
+		return "合并"
+	case a.sc.rebase:
+		return "变基"
+	}
+	return ""
+}
+
+// scmPushGuide 推送被拒后的引导条;合并 / 变基冲突进行中也在这里给出口(打开冲突 / 中止)。
 func (a *App) scmPushGuide(c *ui.Context) {
-	if a.sc.pushGuide == "" && !a.sc.rebase {
+	if a.sc.pushGuide == "" && !a.sc.rebase && !a.sc.merging {
 		return
 	}
 	t := a.tk
 	msg := a.sc.pushGuide
-	if msg == "" {
-		msg = "变基未完成:请解决冲突或中止变基。"
+	title := "推送被拒绝"
+	if msg == "" { // 没有被拒的推送,只是冲突还没处理完
+		title = "正在" + a.opWord()
+		msg = a.opWord() + "未完成:请解决冲突,或中止" + a.opWord() + "。"
 	}
 	ui.Column(c).Padding(6, 8).Gap(6).Background(t.WarnSoft).Radius(t.RSm()).Margin(0, 2, 4, 2).Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
-			ui.Text(c, "推送被拒绝").FontWeight(600).TextColor(t.Tx1)
+			ui.Text(c, title).FontWeight(600).TextColor(t.Tx1)
 			ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Tx2).Grow(1)
 			kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭"}).OnClick(a.clearPushGuide)
 		})
 		busy := a.sc.busy != ""
-		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-			kit.Btn(c, "拉取并变基", kit.BtnOpt{
-				Small: true, Variant: kit.BtnPri, Icon: "download",
-				Disabled: busy, Loading: busy && a.sc.busy == "拉取并变基",
-			}).OnClick(func() {
-				a.clearPushGuide()
-				a.scmPullRebase()
-			})
-			kit.Btn(c, "拉取并合并", kit.BtnOpt{
-				Small: true, Variant: kit.BtnSoft,
-				Disabled: busy, Loading: busy && a.sc.busy == "拉取并合并",
-			}).OnClick(func() {
-				a.clearPushGuide()
-				a.scmPullMerge()
-			})
-			kit.Btn(c, "强制推送(带租约)", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Disabled: busy}).OnClick(func() {
-				a.confirmDlg("强制推送到远端?", "使用 --force-with-lease,仅当你确认没有人在基于远端独有提交工作时才继续。", "强制推送", true, func() {
+		if a.sc.pushGuide != "" {
+			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+				kit.Btn(c, "拉取并变基", kit.BtnOpt{
+					Small: true, Variant: kit.BtnPri, Icon: "download",
+					Disabled: busy, Loading: busy && a.sc.busy == "拉取并变基",
+				}).OnClick(func() {
 					a.clearPushGuide()
-					a.scmAct("强制推送", func(r vcs.Repo) error { return r.PushForce() }, nil)
+					a.scmPullRebase()
+				})
+				kit.Btn(c, "拉取并合并", kit.BtnOpt{
+					Small: true, Variant: kit.BtnSoft,
+					Disabled: busy, Loading: busy && a.sc.busy == "拉取并合并",
+				}).OnClick(func() {
+					a.clearPushGuide()
+					a.scmPullMerge()
+				})
+				kit.Btn(c, "强制推送(带租约)", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Disabled: busy}).OnClick(func() {
+					a.confirmDlg("强制推送到远端?", "使用 --force-with-lease,仅当你确认没有人在基于远端独有提交工作时才继续。", "强制推送", true, func() {
+						a.clearPushGuide()
+						a.scmAct("强制推送", func(r vcs.Repo) error { return r.PushForce() }, nil)
+					})
 				})
 			})
-		})
+		}
 		if a.pushGuideHasConflict() {
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, "变基产生冲突:在源代码管理打开冲突文件,或中止变基。").FontSize(theme.FsCap).TextColor(t.Tx2).Grow(1)
+				word := a.opWord()
+				if word == "" {
+					word = "变基"
+				}
+				ui.Text(c, word+"产生冲突:在源代码管理打开冲突文件,或中止"+word+"。").FontSize(theme.FsCap).TextColor(t.Tx2).Grow(1)
 				kit.Btn(c, "打开合并冲突", kit.BtnOpt{Small: true, Icon: "merge"}).OnClick(func() {
 					a.OpenSCM()
 					for _, ch := range a.sc.changes {
@@ -76,7 +95,11 @@ func (a *App) scmPushGuide(c *ui.Context) {
 						}
 					}
 				})
-				kit.Btn(c, "中止变基", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(a.scmRebaseAbort)
+				if a.sc.merging {
+					kit.Btn(c, "中止合并", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Disabled: busy, Loading: busy && a.sc.busy == "中止合并"}).OnClick(a.scmMergeAbort)
+				} else {
+					kit.Btn(c, "中止变基", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(a.scmRebaseAbort)
+				}
 			})
 		}
 	})

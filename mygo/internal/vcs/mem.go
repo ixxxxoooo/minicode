@@ -28,6 +28,7 @@ type Mem struct {
 	once    bool                         // 失败只发生一次(第二次「重试」成功)
 	delay   time.Duration                // 演示:拉取 / 推送耗时,界面才看得到转圈
 	rebase  bool                         // 演示:变基冲突中
+	merging bool                         // 演示:合并冲突中
 	stashDt map[int]map[string][2]string // 演示:储藏条目→路径→[旧,新] diff 内容
 }
 
@@ -318,6 +319,7 @@ func (m *Mem) PullMerge() error {
 	if err := m.slow("PullMerge"); err != nil {
 		if strings.Contains(err.Error(), "冲突") || strings.Contains(strings.ToLower(err.Error()), "conflict") {
 			m.mu.Lock()
+			m.merging = true
 			m.changes = append(m.changes, Change{Path: "src/router.rs", Status: StatusConflict, Add: 2, Del: 2})
 			m.mu.Unlock()
 		}
@@ -343,6 +345,36 @@ func (m *Mem) RebaseAbort() error {
 		}
 	}
 	return nil
+}
+
+// MergeAbort 演示:中止合并,清掉冲突条目。
+func (m *Mem) MergeAbort() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if !m.merging {
+		return fmt.Errorf("当前没有进行中的合并")
+	}
+	m.merging = false
+	for i := range m.changes {
+		if m.changes[i].Status == StatusConflict {
+			m.changes = append(m.changes[:i], m.changes[i+1:]...)
+			break
+		}
+	}
+	return nil
+}
+
+// OpState 演示:进行中的合并 / 变基。
+func (m *Mem) OpState() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	switch {
+	case m.rebase:
+		return "rebase"
+	case m.merging:
+		return "merge"
+	}
+	return ""
 }
 
 func (m *Mem) Push() error {
