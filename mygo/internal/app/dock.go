@@ -6,6 +6,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/diff"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -63,12 +64,15 @@ func permTitle(r *core.PermissionRequest) string {
 }
 
 // permDetail 是卡片里的等宽详情:命令 / 路径 / 网址。
-func permDetail(r *core.PermissionRequest) string {
+func (a *App) permDetail(r *core.PermissionRequest) string {
 	if r.Tool == nil {
 		return ""
 	}
 	for _, k := range []string{"command", "file_path", "url", "pattern"} {
 		if s := inputStr(r.Tool, k); s != "" {
+			if k == "file_path" {
+				return a.shortPath(s)
+			}
 			return s
 		}
 	}
@@ -109,11 +113,12 @@ func (a *App) permCard(c *ui.Context, r *core.PermissionRequest) {
 				kit.Tag(c, r.Tool.Name, kit.KAc)
 			}
 		})
-		if d := permDetail(r); d != "" {
+		if d := a.permDetail(r); d != "" {
 			ui.Column(c).Background(t.Sunken).Radius(t.RSm()).Border(1, t.Bd1).Padding(6, 9).Children(func() {
 				ui.Text(c, d).Font("monospace").FontSize(11.5).LineHeight(1.5).TextColor(t.Tx1)
 			})
 		}
+		a.permDiffPreview(c, r)
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 			for _, o := range r.Options {
 				v := kit.BtnDefault
@@ -427,5 +432,39 @@ func (a *App) drainQueue() {
 	}
 	if s, ok := a.q.next(); ok {
 		a.submitPrompt(a.queueDraftFor(s), false)
+	}
+}
+
+// permDiffPreviewMax 权限卡里最多直接画多少行差异,再多只给摘要(完整差异批准后在工作区审查)。
+const permDiffPreviewMax = 14
+
+// permDiffPreview 编辑 / 写入类权限请求:在卡片里预览将要发生的改动,让用户批准前看得到改什么。
+func (a *App) permDiffPreview(c *ui.Context, r *core.PermissionRequest) {
+	if r.Tool == nil || (r.Tool.Kind != core.KindEdit && r.Tool.Kind != core.KindWrite) {
+		return
+	}
+	t := a.tk
+	budget := permDiffPreviewMax
+	hidden, hAdd, hDel := 0, 0, 0
+	for _, ct := range r.Tool.Content {
+		d, ok := ct.(*core.DiffBlock)
+		if !ok {
+			continue
+		}
+		n := len(diff.Lines(d.Old, d.New, d.Line, d.Line))
+		if n > budget {
+			ad, de := diff.Stat(diff.Lines(d.Old, d.New, d.Line, d.Line))
+			hidden, hAdd, hDel = hidden+1, hAdd+ad, hDel+de
+			continue
+		}
+		budget -= n
+		a.diffCard(c, d, false)
+	}
+	if hidden > 0 {
+		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+			ui.Text(c, "另有 "+itoa(hidden)+" 处较大改动未展开").FontSize(theme.FsCap).TextColor(t.Tx3)
+			ui.Text(c, "+"+itoa(hAdd)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Ok)
+			ui.Text(c, "−"+itoa(hDel)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Err)
+		})
 	}
 }

@@ -75,3 +75,40 @@ func TestChangesCardOnlyOnLastRound(t *testing.T) {
 		t.Fatalf("改动卡出现 %d 次,期望 1", n)
 	}
 }
+
+// 失败 / 被拒绝的编辑没有落盘,不计入改动统计。
+func TestChangedFilesSkipsFailedEdits(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true})
+	a.proj = "/tmp/mc-e2e"
+	a.st.Apply(core.EvAppend{Item: &core.User{ID: "u1", Text: "改"}})
+	bad := core.NewToolCall("t1", "Edit", "编辑").WithContent(&core.DiffBlock{Path: "/tmp/mc-e2e/a.go", Old: "x", New: "y", Line: 1})
+	bad.Status = core.ToolFailed
+	ok := core.NewToolCall("t2", "Edit", "编辑").WithContent(&core.DiffBlock{Path: "/tmp/mc-e2e/b.go", Old: "x", New: "y", Line: 1})
+	ok.Status = core.ToolCompleted
+	a.st.Apply(core.EvAppend{Item: bad})
+	a.st.Apply(core.EvAppend{Item: ok})
+	fs := a.changedFiles()
+	if len(fs) != 1 || fs[0].path != "/tmp/mc-e2e/b.go" {
+		t.Fatalf("changedFiles=%v,期望只有 b.go", fs)
+	}
+}
+
+// 编辑权限卡要预览改动,路径写相对项目根。
+func TestPermCardShowsDiffPreview(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true})
+	a.proj = "/tmp/mc-e2e"
+	a.st.Apply(core.EvAppend{Item: &core.User{ID: "u1", Text: "改"}})
+	tool := core.NewToolCall("p1", "Edit", "编辑 main.go").
+		WithInput(map[string]any{"file_path": "/private/tmp/mc-e2e/sub/main.go"}).
+		WithContent(&core.DiffBlock{Path: "/private/tmp/mc-e2e/sub/main.go", Old: "return a - b", New: "return a + b", Line: 3})
+	a.st.Apply(core.EvAppend{Item: &core.PermissionRequest{ID: "p1", Tool: tool,
+		Options: []core.PermissionOption{{ID: "allow", Label: "允许一次", Kind: core.AllowOnce}, {ID: "no", Label: "拒绝", Kind: core.RejectOnce}}}})
+	tt := ui.NewTester(a.View, 1280, 800)
+	tt.Frame()
+	if !tt.HasText("return a + b") {
+		t.Fatalf("权限卡应预览改动后的代码,实际文本:%v", tt.Texts())
+	}
+	if !tt.HasText("sub/main.go") {
+		t.Fatal("权限卡的路径应是相对项目根的 sub/main.go")
+	}
+}

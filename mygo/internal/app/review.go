@@ -61,6 +61,9 @@ func (a *App) changedFiles() []chFile {
 		for _, it := range items {
 			switch v := it.(type) {
 			case *core.ToolCall:
+				if v.Status.Unsuccessful() { // 失败 / 被拒绝 / 被中断的编辑并没有真正落盘,不计入改动
+					continue
+				}
 				for _, ct := range v.Content {
 					d, ok := ct.(*core.DiffBlock)
 					if !ok {
@@ -178,18 +181,37 @@ func (a *App) wsRel(p string) string {
 // relToProj 把绝对路径换成相对项目根的路径。claude 汇报的是解开软链后的真实路径
 // (macOS 上 /tmp → /private/tmp),所以项目根的原样写法与真实写法都要试。
 func (a *App) relToProj(p string) string {
+	if r, ok := a.underProj(p); ok {
+		return r
+	}
+	return strings.TrimPrefix(p, "/")
+}
+
+// underProj p 在项目根之下时返回相对路径(项目根的原样写法与解开软链后的写法都认)。
+func (a *App) underProj(p string) (string, bool) {
 	for _, root := range []string{a.proj, a.projRealPath()} {
 		if root == "" {
 			continue
 		}
 		if p == root {
-			return ""
+			return "", true
 		}
 		if strings.HasPrefix(p, root+"/") {
-			return strings.TrimPrefix(p, root+"/")
+			return strings.TrimPrefix(p, root+"/"), true
 		}
 	}
-	return strings.TrimPrefix(p, "/")
+	return "", false
+}
+
+// shortPath 界面上显示的路径:项目根之下的写成相对路径,其余原样(单项目;多根时原样)。
+func (a *App) shortPath(p string) string {
+	if a.proj == "" || a.multiRoot() || !strings.HasPrefix(p, "/") {
+		return p
+	}
+	if r, ok := a.underProj(p); ok {
+		return r
+	}
+	return p
 }
 
 // projRealPath 项目根解开软链后的路径(按项目缓存,失败返回空)。

@@ -156,7 +156,7 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 		s.icon, s.verb, s.obj = "fileText", "读取", baseName(path)
 		s.path, s.copyStr = path, path
 		s.line, _ = strconv.Atoi(inputStr(tc, "offset"))
-		s.meta = dirOf(path)
+		s.meta = dirOf(a.shortPath(path))
 		if n := textLines(firstText(tc)); n > 0 {
 			s.meta += fmt.Sprintf(" · L1–%d", n)
 			s.right = fmt.Sprintf("%d 行", n)
@@ -182,7 +182,7 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 		}
 	case core.KindEdit, core.KindWrite:
 		s.fam = famEdit
-		s.icon, s.verb, s.obj, s.meta = "edit", "编辑", baseName(path), dirOf(path)
+		s.icon, s.verb, s.obj, s.meta = "edit", "编辑", baseName(path), dirOf(a.shortPath(path))
 		if tc.Kind == core.KindWrite {
 			s.icon, s.verb = "file", "写入"
 		}
