@@ -138,7 +138,7 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 		common[add("swap", "切换到 Agent", "⌘E", "把窗口切到 Agent 形态:对话在前,工作区在右侧。", func() { a.SetMode(ModeAgent) })] = true
 	}
 	if tb := a.ide.cur(); tb != nil && tb.buf != nil && isMarkdownFile(tb.path) {
-		add("code", "Markdown:切换所见即所得 / 源码", "", "当前 Markdown 标签在渲染后直接编辑与源码之间切换,两边读写同一份文本。", a.toggleMdView)
+		add("code", "Markdown:切换预览 / 源码", "", "当前 Markdown 标签在渲染后直接编辑与源码之间切换,两边读写同一份文本。", a.toggleMdView)
 	}
 	if tb := a.ide.cur(); tb != nil && tb.buf != nil && tb.virt == "" && !tb.diff {
 		add("align", "格式化文档", "⇧⌥F", "有语言服务器就交给它,否则用内置格式化(Go / JSON / Markdown / 文本)。", a.formatDoc)

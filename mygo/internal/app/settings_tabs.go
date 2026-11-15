@@ -431,7 +431,7 @@ var settingsTabs = []setTabDef{
 			rTog("editor.syntax", "语法高亮", "", true),
 		}},
 		{title: "Markdown 与格式化", rows: []setRow{
-			rSeg("editor.mdView", "Markdown 默认视图", "打开 .md / .mdc 时先显示哪一种;标签上随时可切换", 0, "所见即所得", "源码"),
+			rSeg("editor.mdView", "Markdown 默认视图", "打开 .md / .mdc 时先显示哪一种;标签上随时可切换", 0, "预览", "源码"),
 			rTog("editor.formatOnSave", "保存时格式化", "语言服务可用时用它,否则用内置格式化(Go / JSON / Markdown / 文本)", false),
 			rTog("editor.trimOnSave", "保存时去掉行尾空白", "并保证文件末尾只有一个换行", false),
 		}},

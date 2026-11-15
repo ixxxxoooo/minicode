@@ -77,13 +77,13 @@ func (a *App) tabStripMenu(m *ui.Menu) {
 	}
 	m.Separator()
 	mdSrc := a.prefs.Int(pMdView, 0) == 1
-	if m.Item("默认以所见即所得打开 Markdown").Checked(!mdSrc).Chosen() {
+	if menuItem(m, "默认以预览打开 Markdown").Checked(!mdSrc).Chosen() {
 		if mdSrc {
 			a.prefs.Reset(pMdView)
 		} else {
 			a.prefs.Set(pMdView, 1)
 		}
-		a.toast = map[bool]string{true: "Markdown 默认以所见即所得打开", false: "Markdown 默认以源码打开"}[mdSrc]
+		a.toast = map[bool]string{true: "Markdown 默认以预览打开", false: "Markdown 默认以源码打开"}[mdSrc]
 		for _, tb := range d.tabs { // 默认变了:各标签放弃自己的手动选择,统一跟随
 			tb.mdMode = 0
 		}

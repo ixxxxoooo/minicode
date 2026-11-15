@@ -1,5 +1,5 @@
-/* 设计稿 v3.4 · Markdown 所见即所得与格式化、拖拽引用与「···」菜单盘点
-   依据:Typora / Obsidian 实时预览 / Notion(所见即所得里直接改,有源码开关)、VS Code(Markdown 预览与编辑分开,所以不照搬)、
+/* 设计稿 v3.4 · Markdown 预览与格式化、拖拽引用与「···」菜单盘点
+   依据:Typora / Obsidian 实时预览 / Notion(预览里直接改,有源码开关)、VS Code(Markdown 预览与编辑分开,所以不照搬)、
    Zed / Cursor(把文件拖进对话 = 插入 @ 引用)、VS Code「更多操作…」菜单的分组。
    每页都带「实现状态」列,与 Go 代码保持一致。
    @author ixxxxoooo */
@@ -17,11 +17,11 @@
 
   Object.assign(WS.TAB, { 'README.md': { k: 'file', icon: 'fileText', t: 'README.md' }, 'CHANGELOG.md': { k: 'file', icon: 'fileText', t: 'CHANGELOG.md', mod: 1 } });
 
-  /* ───────── Markdown 所见即所得 ───────── */
+  /* ───────── Markdown 预览 ───────── */
   /** 编辑器顶部的面包屑条:左边路径,右边是视图切换 / 换行 / 格式化 / 语言 / 编码 */
   const bar = (right, cls = '') => `<div class="${cls}" style="height:26px;display:flex;align-items:center;gap:6px;padding:0 12px 0 14px;color:var(--tx-3);font-size:11.5px;flex:none;border-bottom:1px solid var(--bd-1)">docs${ic('chevR', 's12')}<b style="color:var(--tx-1);font-weight:500">README.md</b><span style="margin-left:auto;display:flex;gap:6px;align-items:center">${right}</span></div>`;
-  const tools = (o = {}) => `${seg(['所见即所得', '源码'], o.src ? 1 : 0, 'sm')}${ib('wrap', o.wrap ? 'sm on' : 'sm', o.wrap ? '自动换行(已开)  ⌥Z' : '自动换行  ⌥Z')}${ib('align', 'sm', '格式化文档  ⇧⌥F')}<span class="t4">Markdown</span><span class="t4">UTF-8</span>`;
-  /** 所见即所得的格式条:B I S code link | 标题 | 列表 任务 引用 代码块 */
+  const tools = (o = {}) => `${seg(['预览', '源码'], o.src ? 1 : 0, 'sm')}${ib('wrap', o.wrap ? 'sm on' : 'sm', o.wrap ? '自动换行(已开)  ⌥Z' : '自动换行  ⌥Z')}${ib('align', 'sm', '格式化文档  ⇧⌥F')}<span class="t4">Markdown</span><span class="t4">UTF-8</span>`;
+  /** 预览的格式条:B I S code link | 标题 | 列表 任务 引用 代码块 */
   const fbtn = (t, tip, on = '') => `<span class="tip" data-tip="${tip}" style="min-width:24px;height:24px;display:inline-grid;place-items:center;border-radius:var(--r-sm);font-size:12px;${on ? 'background:var(--fill-2);color:var(--tx-1)' : 'color:var(--tx-2)'}">${t}</span>`;
   const fsep = '<span style="width:1px;height:14px;background:var(--bd-2);margin:0 4px"></span>';
   const fbar = `<div style="height:32px;display:flex;align-items:center;gap:1px;padding:0 10px;flex:none;border-bottom:1px solid var(--bd-1)">${fbtn('<b>B</b>', '粗体 ⌘B')}${fbtn('<i>I</i>', '斜体 ⌘I')}${fbtn('<s>S</s>', '删除线 ⇧⌘X')}${fbtn(ic('code', 's12'), '行内代码 ⌘E')}${fbtn(ic('link', 's12'), '链接 ⌘K')}${fsep}${fbtn('H1', '一级标题', 1)}${fbtn('H2', '二级标题')}${fbtn('H3', '三级标题')}${fsep}${fbtn(ic('list', 's12'), '无序列表')}${fbtn('1.', '有序列表')}${fbtn(ic('todo', 's12'), '任务列表')}${fbtn(ic('quote', 's12'), '引用')}${fbtn('{ }', '代码块')}<span class="grow"></span><span class="t4 fs-micro" style="white-space:nowrap"># 空格 · - 空格 · \`\`\` 即时生效</span></div>`;
@@ -41,34 +41,34 @@
   const toast = (i, t, c = '') => `<div class="pop" style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;margin:8px 0 0">${ic(i, `s12 ${c}`)}<span>${t}</span></div>`;
   const fmtCase = (label, result, why) => `<div class="fc g2"><div class="f ai g2"><b>${label}</b></div>${result}<div class="t3 fs-cap" style="line-height:1.6">${why}</div></div>`;
 
-  P['ide-md'] = () => `<div class="ds" style="max-width:1240px">${head('Markdown · 所见即所得与格式化', '规则:① Markdown 文件(.md / .markdown / .mdc)默认以「所见即所得」打开——直接在渲染后的文档里改,不是左源码右预览;② 标签右上角的分段「所见即所得 | 源码」随时切换,两边读写的是同一份文本,切换不丢光标之外的任何状态;③ 无法在所见即所得里无损表示的内容(表格、HTML、脚注)不冒险改写:这类文件以只读预览打开并提示「用源码编辑」;④ 自动换行与格式化是所有文本编辑器共有的能力,放在顶部条右侧,不藏进菜单。')}
-    ${sec('Markdown 标签', '默认视图 = 所见即所得;设置 → 编辑器与语言服务 → 「Markdown 默认视图」可改成源码,标签上手动切换的选择优先于偏好(只在该标签开着时记住,关掉即忘)。', grid(
-      cell('所见即所得(默认)', [], box(tabsMd('README.md') + bar(tools()) + fbar + mdbody, 370, 560), '格式条随光标所在块高亮当前格式;⌘B / ⌘I / ⌘K 与 Markdown 快捷输入(# 空格、- 空格、``` )都生效;选中文字时再次点格式钮取消。'),
+  P['ide-md'] = () => `<div class="ds" style="max-width:1240px">${head('Markdown · 预览与格式化', '规则:① Markdown 文件(.md / .markdown / .mdc)默认以「预览」打开——直接在渲染后的文档里改,不是左源码右预览;② 标签右上角的分段「预览 | 源码」随时切换,两边读写的是同一份文本,切换不丢光标之外的任何状态;③ 无法在预览里无损表示的内容(表格、HTML、脚注)不冒险改写:这类文件以只读预览打开并提示「用源码编辑」;④ 自动换行与格式化是所有文本编辑器共有的能力,放在顶部条右侧,不藏进菜单。')}
+    ${sec('Markdown 标签', '默认视图 = 预览;设置 → 编辑器与语言服务 → 「Markdown 默认视图」可改成源码,标签上手动切换的选择优先于偏好(只在该标签开着时记住,关掉即忘)。', grid(
+      cell('预览(默认)', [], box(tabsMd('README.md') + bar(tools()) + fbar + mdbody, 370, 560), '格式条随光标所在块高亮当前格式;⌘B / ⌘I / ⌘K 与 Markdown 快捷输入(# 空格、- 空格、``` )都生效;选中文字时再次点格式钮取消。'),
       cell('源码', [], box(tabsMd('README.md') + bar(tools({ src: 1, wrap: 1 })) + srcBody, 370, 560), '源码视图就是普通代码编辑器:行号、查找替换、迷你地图、自动换行、格式化、Git 竖条全有。'),
-      cell('含表格 / HTML:只读预览', [], box(tabsMd('README.md') + bar(tools()) + notice('warn', '这个文件含表格,所见即所得会把它压成普通段落,所以只读显示。', btn('用源码编辑', 'sm', 'code')) + `<div class="md" style="padding:12px 34px;flex:1;overflow:hidden"><div style="font-size:15px;font-weight:650;margin:0 0 6px">接口</div><table style="border-collapse:collapse;font-size:12px;width:100%"><tr style="background:var(--fill-1)"><th style="text-align:left;padding:4px 8px;border:1px solid var(--bd-1)">方法</th><th style="text-align:left;padding:4px 8px;border:1px solid var(--bd-1)">路径</th></tr><tr><td style="padding:4px 8px;border:1px solid var(--bd-1)">GET</td><td style="padding:4px 8px;border:1px solid var(--bd-1)">/users</td></tr><tr><td style="padding:4px 8px;border:1px solid var(--bd-1)">POST</td><td style="padding:4px 8px;border:1px solid var(--bd-1)">/users</td></tr></table></div>`, 300, 560), '只读预览走会话流同一套渲染(表格、代码块、链接都完整);点链接 / 路径照常跳转。想改就切到源码。'),
-      cell('写法会被规范化:提示条', [], box(tabsMd('README.md') + bar(tools()) + notice('info', '有 3 行的写法(如代码块语言标注、段内换行)在所见即所得里会被规范化。只有你开始编辑后才会改写文件。', btn('用源码编辑', 'sm', 'code') + btn('知道了', 'sm ghost')) + `<div class="md" style="padding:12px 34px;flex:1;overflow:hidden;opacity:.7"><p>正文……</p></div>`, 190, 560), '浏览不改文件;第一次输入才把缓冲区换成规范化后的文本;所见即所得里的 ⌘Z 用富文本自带的历史。')))}
+      cell('含表格 / HTML:只读预览', [], box(tabsMd('README.md') + bar(tools()) + notice('warn', '这个文件含表格,预览会把它压成普通段落,所以只读显示。', btn('用源码编辑', 'sm', 'code')) + `<div class="md" style="padding:12px 34px;flex:1;overflow:hidden"><div style="font-size:15px;font-weight:650;margin:0 0 6px">接口</div><table style="border-collapse:collapse;font-size:12px;width:100%"><tr style="background:var(--fill-1)"><th style="text-align:left;padding:4px 8px;border:1px solid var(--bd-1)">方法</th><th style="text-align:left;padding:4px 8px;border:1px solid var(--bd-1)">路径</th></tr><tr><td style="padding:4px 8px;border:1px solid var(--bd-1)">GET</td><td style="padding:4px 8px;border:1px solid var(--bd-1)">/users</td></tr><tr><td style="padding:4px 8px;border:1px solid var(--bd-1)">POST</td><td style="padding:4px 8px;border:1px solid var(--bd-1)">/users</td></tr></table></div>`, 300, 560), '只读预览走会话流同一套渲染(表格、代码块、链接都完整);点链接 / 路径照常跳转。想改就切到源码。'),
+      cell('写法会被规范化:提示条', [], box(tabsMd('README.md') + bar(tools()) + notice('info', '有 3 行的写法(如代码块语言标注、段内换行)在预览里会被规范化。只有你开始编辑后才会改写文件。', btn('用源码编辑', 'sm', 'code') + btn('知道了', 'sm ghost')) + `<div class="md" style="padding:12px 34px;flex:1;overflow:hidden;opacity:.7"><p>正文……</p></div>`, 190, 560), '浏览不改文件;第一次输入才把缓冲区换成规范化后的文本;预览里的 ⌘Z 用富文本自带的历史。')))}
     ${sec('行为规则', '', tbl([['项', 200], ['规则', 520], ['状态']], [
-      ['默认视图', 'Markdown 文件 → 所见即所得;偏好 editor.mdView(0 所见即所得 / 1 源码);每个标签的手动切换优先于偏好', st('ok')],
-      ['切换', '分段控件 + 命令面板「Markdown:切换所见即所得 / 源码」;切换时把文本从缓冲区重新读入,所以两边永远一致', st('ok')],
-      ['保存', '所见即所得里每次修改都写回同一份缓冲区,⌘S / 自动保存与源码完全一样;未保存圆点照常', st('ok')],
+      ['默认视图', 'Markdown 文件 → 预览;偏好 editor.mdView(0 预览 / 1 源码);每个标签的手动切换优先于偏好', st('ok')],
+      ['切换', '分段控件 + 命令面板「Markdown:切换预览 / 源码」;切换时把文本从缓冲区重新读入,所以两边永远一致', st('ok')],
+      ['保存', '预览里每次修改都写回同一份缓冲区,⌘S / 自动保存与源码完全一样;未保存圆点照常', st('ok')],
       ['格式条', 'B / I / 删除线 / 行内代码 / 链接 / H1–H3 / 无序 · 有序 · 任务列表 / 引用 / 代码块;只读预览时隐藏', st('ok')],
       ['从搜索 / 引用 / 转到定义打开并定位到某一行', '需要行列坐标,所以自动切到源码再定位(标签上的分段同步变化)', st('ok')],
       ['含表格 / HTML / 脚注', '只读预览(会话流同款渲染)+ 提示条「用源码编辑」;不尝试有损往返', st('ok')],
       ['写法规范化提示', '粗略比对「解析再序列化」与原文,差异行数 ≥ 1 时提示;仍可编辑', st('ok')],
-      ['撤销 / 重做', '所见即所得 ⌘Z 走富文本历史;切源码走缓冲区;切换视图 BreakUndoCoalescing', st('ok')],
+      ['撤销 / 重做', '预览 ⌘Z 走富文本历史;切源码走缓冲区;切换视图 BreakUndoCoalescing', st('ok')],
       ['图片 / 附件', '相对路径 LoadImage 预览;拖入保存到 editor.mdAssets(默认 docs/assets)并插入语法;对话拖入为 ![]() 附件', st('ok')],
-      ['大纲', 'Markdown 标题点击在所见即所得里滚动定位,不强制切源码', st('ok')]]))}
+      ['大纲', 'Markdown 标题点击在预览里滚动定位,不强制切源码', st('ok')]]))}
     ${sec('自动换行与格式化', '两个动作都在顶部条右侧(换行钮有「已开」高亮态),也在右键菜单与命令面板里;快捷键 ⌥Z / ⇧⌥F。', grid(
       cell('顶部条', [], `<div class="snip" style="height:78px;width:560px">${bar(tools({ wrap: 1 }))}${bar(`${seg(['左右', '统一'], 0, 'sm')}${ib('wrap', 'sm', '自动换行  ⌥Z')}<span class="t4">差异</span>`)}</div>`, '上:文本标签(换行已开);下:差异标签的右侧同样有换行钮。换行是全局偏好 editor.wrap,开关即时作用于所有编辑器与差异标签。'),
       cell('格式化的三种结果', ['⇧', '⌥', 'F'], `<div class="fc g3">${fmtCase('有语言服务器', toast('okc', '已格式化(rust-analyzer)', 'c-ok'), '整篇交给服务器返回编辑,期间文件被改动则取消。')}${fmtCase('没有服务器,但有内置格式化器', toast('okc', '已格式化(内置 · Go)', 'c-ok'), 'Go(gofmt)、JSON(缩进整理)、Markdown(规范化)、其余文本:去行尾空白 + 末尾恰好一个换行。')}${fmtCase('已经是整齐的', toast('info', '已经是格式化好的', 'c-info'), '不产生改动,也不弄脏文件。')}</div>`, '一律先试服务器,再退内置;都不行才提示。「保存时格式化」打开后保存前自动走同一条路径。'),
-      cell('设置里的对应项', [], box(`<div style="padding:10px 14px;display:flex;flex-direction:column;gap:10px"><div class="set-row">${'<span class="m grow">自动换行</span>'}${tog(0)}</div><div class="set-row"><span class="m grow">Markdown 默认视图</span>${seg(['所见即所得', '源码'], 0)}</div><div class="set-row"><span class="m grow">保存时格式化</span>${tog(0)}</div><div class="set-row"><span class="m grow">保存时去掉行尾空白</span>${tog(0)}</div></div>`, 190, 560), '设置 → 编辑器与语言服务;「Markdown 与格式化」是新分组,自动换行仍在「显示」。')))}
+      cell('设置里的对应项', [], box(`<div style="padding:10px 14px;display:flex;flex-direction:column;gap:10px"><div class="set-row">${'<span class="m grow">自动换行</span>'}${tog(0)}</div><div class="set-row"><span class="m grow">Markdown 默认视图</span>${seg(['预览', '源码'], 0)}</div><div class="set-row"><span class="m grow">保存时格式化</span>${tog(0)}</div><div class="set-row"><span class="m grow">保存时去掉行尾空白</span>${tog(0)}</div></div>`, 190, 560), '设置 → 编辑器与语言服务;「Markdown 与格式化」是新分组,自动换行仍在「显示」。')))}
     ${sec('差异标签', '差异标签与编辑器共用一套顶部条:上一处 / 下一处、左右 · 统一、自动换行、打开文件。', tbl([['能力', 200], ['说明', 520], ['状态']], [
       ['自动换行', '跟随偏好 editor.wrap;顶部条有换行钮,点它改的是全局偏好', st('ok')],
-      ['Markdown 文件的差异', '仍是源码级差异(逐行),不做渲染后的差异;「打开文件」按钮按所见即所得打开', st('ok')],
+      ['Markdown 文件的差异', '仍是源码级差异(逐行),不做渲染后的差异;「打开文件」按钮按预览打开', st('ok')],
       ['可编辑一侧 / 块级暂存 / 词级高亮', '见「差异标签 · 块级暂存」', st('ok')],
       ['忽略空白差异', '差异顶部条「忽略空白」开关;比较前归一化空白,显示仍用原文', st('ok')]]))}
     ${sec('实现状态', '', tbl([['范围', 220], ['说明', 440], ['状态']], [
-      ['Markdown 所见即所得 / 源码切换', '格式条 / YAML 头 / 只读预览 / 拖入与 ⌘V 粘贴 PNG 到 editor.mdAssets;围栏语言标注保守补回;段内换行仍可能规范化(提示条)', st('part')],
+      ['Markdown 预览 / 源码切换', '格式条 / YAML 头 / 只读预览 / 拖入与 ⌘V 粘贴 PNG 到 editor.mdAssets;围栏语言标注保守补回;段内换行仍可能规范化(提示条)', st('part')],
       ['自动换行 / 格式化(顶部条 · 菜单 · 快捷键)', '服务器优先,内置格式化器兜底', st('ok')],
       ['保存时格式化 / 去行尾空白', '源码保存可走内置格式化;WYSIWYG 保存不整理(以免冲光标);LSP 异步不参与保存', st('ok')]]))}</div>`;
 
@@ -94,13 +94,13 @@
       ['图片文件', '', '拖到对话栏或 Markdown:复制进工作区 assets 并插入 ![]() 语法', st('ok')],
       ['把对话里的文件引用拖进编辑区', '', '拖到代码区 = 打开该文件', st('ok')]]))}
     ${sec('「···」菜单盘点', '下面逐个列出每个「···」入口应有的菜单。已有右键菜单的对象,「···」与右键菜单内容一致(只是触发方式不同)。', `<div class="gal" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))">
-      ${M('编辑器标签条 ···', [['x', '关闭已保存'], ['x', '关闭全部'], ['-'], ['split', '向右拆分', '⌘\\'], ['split', '向下拆分'], ['-'], ['code', '默认以所见即所得打开 Markdown'], ['wrap', '自动换行', '⌥Z'], ['-'], ['clock', '重新打开已关闭的标签', '⇧⌘T'], ['copy', '复制所有标签路径']])}
+      ${M('编辑器标签条 ···', [['x', '关闭已保存'], ['x', '关闭全部'], ['-'], ['split', '向右拆分', '⌘\\'], ['split', '向下拆分'], ['-'], ['code', '默认以预览打开 Markdown'], ['wrap', '自动换行', '⌥Z'], ['-'], ['clock', '重新打开已关闭的标签', '⇧⌘T'], ['copy', '复制所有标签路径']])}
       ${M('标签(右键)', [['x', '关闭', '⌘W'], ['x', '关闭其他'], ['x', '关闭右侧'], ['x', '关闭已保存'], ['-'], ['pin', '固定标签'], ['split', '向右拆分', '⌘\\'], ['split', '向下拆分'], ['split', '在侧边打开', '⌘⏎'], ['eye', '在侧边预览'], ['-'], ['spark', '引用到对话'], ['copy', '复制路径'], ['copy', '复制相对路径'], ['folder', '在访达中显示'], ['tree', '在文件树中定位'], ['arrow', '在新窗口中打开']])}
       ${M('文件(文件树右键)', [['code', '打开', '⏎'], ['split', '在侧边打开', '⌘⏎'], ['-'], ['spark', '引用到对话'], ['clock', '显示文件历史'], ['-'], ['copy', '复制路径'], ['copy', '复制相对路径'], ['folder', '在访达中显示']])}
       ${M('文件夹(文件树右键)', [['search', '在文件夹中搜索…'], ['terminal', '在此处打开终端'], ['-'], ['spark', '引用到对话'], ['-'], ['copy', '复制路径'], ['copy', '复制相对路径'], ['folder', '在访达中显示']])}
       ${M('对话栏头部 ···', [['edit', '重命名…'], ['pin', '置顶'], ['archive', '归档'], ['-'], ['copy', '复制会话 ID'], ['copy', '复制标题'], ['copy', '复制为 Markdown'], ['link', '复制会话链接'], ['-'], ['fork', '分叉会话…'], ['history', '历史会话', '⇧⌘H']])}
       ${M('会话行 ···(导航栏)', [['play', '打开', '⏎'], ['edit', '重命名…'], ['pin', '置顶'], ['archive', '归档'], ['-'], ['copy', '复制会话 ID'], ['copy', '复制标题'], ['copy', '复制为 Markdown'], ['-'], ['trash', '删除会话…', '', 'danger']])}
-      ${M('Markdown 标签 ···(同标签条,附加)', [['code', '切换所见即所得 / 源码'], ['eye', '只读预览'], ['-'], ['align', '格式化文档', '⇧⌥F'], ['wrap', '自动换行', '⌥Z']])}
+      ${M('Markdown 标签 ···(同标签条,附加)', [['code', '切换预览 / 源码'], ['eye', '只读预览'], ['-'], ['align', '格式化文档', '⇧⌥F'], ['wrap', '自动换行', '⌥Z']])}
       ${M('差异标签 ···', [['wrap', '自动换行', '⌥Z'], ['swap', '切换左右 / 统一'], ['-'], ['code', '打开文件'], ['copy', '复制路径'], ['clock', '显示文件历史']])}
       ${M('SCM 标题 ···', [['arrow', '拉取'], ['arrow', '推送'], ['sync', '同步'], ['-'], ['layers', '储藏所有更改'], ['layers', '弹出最近的储藏'], ['-'], ['list', '切换列表 / 树'], ['refresh', '刷新']])}
       ${M('文件树标题 ···', [['plus', '新建文件…'], ['folder', '新建文件夹…'], ['-'], ['refresh', '刷新'], ['tree', '全部折叠'], ['-'], ['folder', '在访达中显示项目']])}

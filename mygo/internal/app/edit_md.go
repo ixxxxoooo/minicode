@@ -233,7 +233,7 @@ func (a *App) mdView(c *ui.Context, tb *ideTab) {
 	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
 		switch {
 		case md.unsafe != "":
-			a.mdBanner(c, tb, true, "这个文件含"+md.unsafe+",所见即所得会把它压成普通段落,所以只读显示。", nil)
+			a.mdBanner(c, tb, true, "这个文件含"+md.unsafe+",预览里编辑会把它压成普通段落,所以只读显示。", nil)
 			ui.Scroll(c).Key("mdprev-" + tb.id).Grow(1).MinHeight(0).Children(func() {
 				ui.Column(c).Padding(14, 34, 28, 34).MaxWidth(860).Children(func() {
 					markdown.View(c, tb.buf.String(), a.mdOptions())
@@ -241,7 +241,7 @@ func (a *App) mdView(c *ui.Context, tb *ideTab) {
 			})
 			return
 		case md.notes > 0 && !md.edited && !a.ux.mdNoteOff[tb.id]:
-			a.mdBanner(c, tb, false, "有 "+itoa(md.notes)+" 行的写法(如代码块语言标注、段内换行)在所见即所得里会被规范化。只有你开始编辑后才会改写文件。", func() {
+			a.mdBanner(c, tb, false, "有 "+itoa(md.notes)+" 行的写法(如代码块语言标注、段内换行)在预览里会被规范化。只有你开始编辑后才会改写文件。", func() {
 				kit.Btn(c, "知道了", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(func() {
 					if a.ux.mdNoteOff == nil {
 						a.ux.mdNoteOff = map[string]bool{}

@@ -38,7 +38,7 @@ func (a *App) crumbTools(c *ui.Context, tb *ideTab) {
 			if src {
 				on = 1
 			}
-			if i := kit.Seg(c, []kit.SegItem{{Text: "所见即所得", Tip: "渲染后直接编辑"}, {Text: "源码", Tip: "显示 Markdown 原文"}}, on, kit.SegOpt{Key: "md-view"}); i >= 0 && i != on {
+			if i := kit.Seg(c, []kit.SegItem{{Text: "预览", Tip: "渲染后的文档,可直接编辑"}, {Text: "源码", Tip: "显示 Markdown 原文"}}, on, kit.SegOpt{Key: "md-view"}); i >= 0 && i != on {
 				a.setMdMode(tb, i == 1)
 			}
 			ui.Box(c).Size(6, 1)
