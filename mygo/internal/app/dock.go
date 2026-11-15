@@ -304,11 +304,32 @@ func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 	})
 }
 
-// ───────── 排队卡 ─────────
+// ───────── 待发送区(排队 + 引导) ─────────
 
-// queueCard 是输入框上方的排队卡(设计稿 .queue):序号 / 文字 / 引导 / 删除;暂停时顶部有「继续 / 撤回」。
+// queueKind 是待发送行左侧的类型标签(设计稿 .qk):引导 = 强调淡底 + 闪电,排队 = 灰底 + 序号。
+func (a *App) queueKind(c *ui.Context, steer bool, n int) {
+	t := a.tk
+	bg, fg := t.Fill2, t.Tx2
+	if steer {
+		bg, fg = t.AcSoft, t.AcTx
+	}
+	ui.Row(c).Height(17).PaddingX(6).Gap(4).Radius(9).Background(bg).AlignItems(ui.Center).Shrink(0).Children(func() {
+		if steer {
+			kit.Ic(c, "bolt", kit.S12).TextColor(fg)
+			ui.Text(c, "引导").FontSize(11).TextColor(fg)
+			return
+		}
+		ui.Text(c, itoa(n)).FontSize(11).TextColor(fg).FontFeatures("tnum")
+		ui.Text(c, "排队").FontSize(11).TextColor(fg)
+	})
+}
+
+// queueCard 是输入框正上方的「待发送区」(设计稿 flow-queue):排队与引导共用。
+// 引导 = 已发给 Claude、等它接收(接收后才进会话流);排队 = 等本轮结束后依次发送。
+// 排队行悬停有:改为引导 / 停止并发送 / 删除,点文字退回输入框编辑;暂停时顶部有「继续 / 撤回」。
 func (a *App) queueCard(c *ui.Context) {
-	if a.q.len() == 0 {
+	nq, ns := a.q.len(), len(a.q.steers)
+	if nq+ns == 0 {
 		return
 	}
 	t := a.tk
@@ -317,13 +338,34 @@ func (a *App) queueCard(c *ui.Context) {
 		box.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
 	box.Children(func() {
-		if a.q.paused {
+		ui.Row(c).Gap(8).Padding(2, 6, 3, 6).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
+			kit.Ic(c, "clock", kit.S12)
+			ui.Text(c, "待发送 "+itoa(nq+ns)).FontWeight(600).TextColor(t.Tx2)
+			ui.Spacer(c).Grow(1)
+			e, m := a.busyKeys()
+			kit.Kbd(c, "⏎")
+			ui.Text(c, e)
+			kit.Kbd(c, "⌘⏎")
+			ui.Text(c, m)
+		})
+		if a.q.paused && nq > 0 {
 			ui.Row(c).Gap(6).Padding(2, 6).AlignItems(ui.Center).Children(func() {
 				kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
 				ui.Text(c, "回合被中断,排队已暂停").FontSize(theme.FsCap).TextColor(t.Tx2).Shrink(1)
 				ui.Spacer(c).Grow(1)
 				kit.Btn(c, "继续", kit.BtnOpt{Variant: kit.BtnSoft, Small: true}).OnClick(func() { a.q.paused = false; a.drainQueue() })
 				kit.Btn(c, "撤回", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(func() { a.q.clear() })
+			})
+		}
+		for k, sp := range a.q.steers { // 引导靠前:已经发给 Claude
+			sp := sp
+			ui.Row(c).Key("steer" + itoa(k)).Height(26).PaddingX(6).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Children(func() {
+				a.queueKind(c, true, 0)
+				ui.Text(c, sp.Show).SingleLine().Grow(1).MinWidth(0)
+				ui.Row(c).Gap(5).AlignItems(ui.Center).Shrink(0).Children(func() {
+					kit.Spin(c, t.Tx3)
+					ui.Text(c, "等 Claude 接收").FontSize(theme.FsCap).TextColor(t.Tx3)
+				})
 			})
 		}
 		for i, it := range a.q.items {
@@ -333,16 +375,16 @@ func (a *App) queueCard(c *ui.Context) {
 				row.Background(t.Fill1)
 			}
 			row.Children(func() {
-				ui.Text(c, itoa(i+1)).FontSize(theme.FsCap).TextColor(t.Tx4).FontFeatures("tnum").Shrink(0)
-				ui.Text(c, it.Text).SingleLine().Grow(1).MinWidth(0).Cursor(ui.CursorPointer).OnClick(func() { // 点文字:退回输入框编辑
+				a.queueKind(c, false, i+1)
+				ui.Text(c, it.Text).SingleLine().Grow(1).MinWidth(0).Cursor(ui.CursorPointer).Tooltip("点击退回输入框编辑").OnClick(func() { // 点文字:退回输入框编辑
 					if s, ok := a.q.take(i); ok {
 						a.draft = s
 					}
 				})
 				if row.Hovered() {
-					kit.Ib(c, "bolt", kit.IbOpt{Small: true, Tip: "引导"}).OnClick(func() {
+					kit.Ib(c, "bolt", kit.IbOpt{Small: true, Tip: "改为引导:现在就插进当前回合"}).OnClick(func() {
 						if s, ok := a.q.take(i); ok {
-							a.send(core.CmdPrompt{Text: s, Steer: true})
+							a.steerSend(s)
 						}
 					})
 					kit.Ib(c, "stop", kit.IbOpt{Small: true, Tip: "停止并发送"}).OnClick(func() { a.qStopAndSend(i) })

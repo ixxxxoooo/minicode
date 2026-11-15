@@ -34,7 +34,7 @@ func (a *App) composer(c *ui.Context) {
 	anchor := box
 	box.Children(func() {
 		a.composerAttachRow(c)
-		in := ui.TextArea(c.Key("draft"), &a.draft).Lines(1, 8).Placeholder("描述任务,@ 引用文件,/ 调用命令").
+		in := ui.TextArea(c.Key("draft"), &a.draft).Lines(1, 8).Placeholder(a.composerHint()).
 			PlaceholderColor(t.Tx3).Background(ui.Transparent).BorderWidth(0).Padding(9, 12, 3, 12).FontSize(theme.FsRead).LineHeight(1.55).
 			MinHeight(36).TextColor(t.Tx1).FocusRing(false)
 		if a.welcomeFocus {
@@ -80,8 +80,7 @@ func (a *App) submitKey(text string, steer bool) {
 	}
 	if a.st.Phase == core.PhaseRunning {
 		if steer {
-			log.Info("引导", "len", len(text))
-			a.submitPrompt(text, true)
+			a.steerSend(text)
 		} else if a.q.add(text) {
 			log.Info("排队", "len", len(text), "队列", a.q.len())
 		}
@@ -242,4 +241,13 @@ func (a *App) ringColored(c *ui.Context, p float32) {
 			arc(min(p, .999), col)
 		}
 	})
+}
+
+// composerHint 输入框占位:回合进行中写明 ⏎ / ⌘⏎ 各自的含义,不靠用户记快捷键。
+func (a *App) composerHint() string {
+	if a.st.Phase == core.PhaseRunning {
+		e, m := a.busyKeys()
+		return "Claude 正在工作 · ⏎ " + e + ",⌘⏎ " + m
+	}
+	return "描述任务,@ 引用文件,/ 调用命令"
 }

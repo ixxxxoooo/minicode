@@ -145,6 +145,13 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
   - 动效 / 控件:`kit/motion_ui.go`(DrawerSlide / DragLift / ToastSlide / TextShimmer)、`kit/connectivity.go`(ConnTestRow)、`chat_fade.go`(流底部渐隐)、`dialogOpen`(对话框退场);Markdown 大纲定位 / 粘贴图片 / 往返保留(`edit_md_nav|paste|preserve.go`);OSC 133 注入 bash / zsh(`term/integration.go`);`--virt` 虚拟标签新窗口(`newwindow_virt.go`);MCP 编辑配置、Skill 重命名、服务商编辑、画布全屏坐标 / 适应、演示自动化运行器、用量重试。
 - **三期仍未做**:语义高亮(MyGo 无 API,文档已写明取舍)、`resume_session_at` 分叉的真实后端核验、Mermaid 完整引擎、fish 的 OSC 133、JPEG 剪贴板、工作区 / 诊断 pull、`.icon` 打包与 Finder 图标换装、托盘按样式分图、规则 / 环境变量行与 quickpick 接 `Field` / `dialogOpen`、ok-pop / 折叠高度插值、侧栏会话行错峰入场、插件表单回写、会话内画布版本步进。**以上全部未做过截图 / `go test` 验证,等用户通知再进入阶段三。**
 
+### 排队引导 / 问答卡 / 回到最新(设计稿 `flow-queue` 页,`js/specs5.js`,仅 `go build` 通过,**未测试**)
+
+- **待发送区**(`dock.go::queueCard`、`queue.go`、`composer_queue.go`):排队(⏎,偏好 `general.busy` 可对调)与引导(⌘⏎)都先落在输入框正上方。引导 = `steerSend`:立刻 `CmdPrompt{Steer}` 发给 Claude,但登记成 `promptQueue.steers`,行内显示「引导 · 等 Claude 接收」,会话流里用 `visibleItems()` 藏起后端回显的那条用户消息;`syncSteers` 每帧启发式判定接收(其后出现新的非用户条目且停留 ≥ 700 ms,或回合结束)后才放进会话流(后端没有显式确认信号)。排队行悬停:改为引导 / 停止并发送 / 删除,点文字退回编辑。输入框占位随回合状态写明 ⏎ / ⌘⏎。
+- **问答卡**(`dock_ask.go`):多题时顶部步骤条可直接跳任意一题(已答带对勾)、「上一题 / 下一题(最后是提交)」、← → 切换(无文字输入框时);提交前校验,前面有题没答会跳回去。回答后会话流里是回答卡片(`askEcho`:问题 + 回答胶囊,多选多枚,自由输入方角,跳过灰色)。
+- **回到最新**(`flow_scroll.go`):输入框正上方居中的 30px 圆形向下箭头(替换右下角「↓ 回到底部」),距底 > 32px 才出现,离开期间有新内容右上角亮点(`flowTailMark`);手动滚回底部自动恢复跟随;子 Agent / 任务输出同形态。
+- Markdown 标签的「所见即所得」界面文案已改叫「预览」(功能不变),预览顶部格式条默认不显示(`mdShowFormatBar`)。
+
 ### 已知缺口(真实模式)
 
 - **逐页盘点(设计稿 v3.6,缺口总表以 `docs/design/js/status.js` 扫描结果为准,下面旧条目有的已过时)**:340 个功能点,已实现 220 / 部分 82 / 待做 38(**数字是设计稿状态表自评,未经阶段三验证**)。新增登记的缺口,按批次:

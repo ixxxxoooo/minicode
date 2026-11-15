@@ -447,7 +447,7 @@ func (a *App) OpenSession(id string) {
 	if lv := a.live[id]; lv != nil && id != "" { // 回到一个在后台跑着的会话:接回它的后端与状态
 		delete(a.live, id)
 		a.be, a.st = lv.be, lv.st
-		a.q.clear()
+		a.q.reset()
 		a.qa = nil
 		a.folds = map[string]bool{}
 		a.outFold = map[string]bool{}
@@ -463,7 +463,7 @@ func (a *App) OpenSession(id string) {
 		return
 	}
 	a.st = core.NewState()
-	a.q.clear()
+	a.q.reset()
 	a.qa = nil
 	a.folds = map[string]bool{}
 	a.outFold = map[string]bool{}

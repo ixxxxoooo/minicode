@@ -25,7 +25,7 @@ type userEdit struct {
 
 // flowRounds 按「回合」渲染会话流(一轮 = 用户消息 + 后续条目直到下一条用户消息)。
 func (a *App) flowRounds(c *ui.Context) {
-	items := a.st.Items
+	items := a.visibleItems()
 	i := 0
 	for i < len(items) {
 		u, ok := items[i].(*core.User)

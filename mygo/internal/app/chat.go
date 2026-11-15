@@ -45,6 +45,7 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 			a.welcome(c)
 			return
 		}
+		a.syncSteers()
 		a.chatHead(c, a.st.Title)
 		// 会话流:停在底部时随新内容跟随,用户上滑后不再抢滚动位置
 		if a.flowNoFollow && a.flowSt.MaxY-a.flowSt.Y < 8 { // 手动滚回底部:恢复跟随
