@@ -13,6 +13,9 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
+// pScmWorktrees 是 worktree 存放位置偏好(与 settings_tabs.go 里的键一致)
+const pScmWorktrees = "scm.worktrees"
+
 type worktreeRow struct {
 	branch, path string
 }
@@ -41,6 +44,11 @@ func (a *App) ScmFetchTick() {
 }
 
 func (a *App) scmWorktreeBody(c *ui.Context) {
+	a.scmWorktreeList(c)
+	a.worktreeNewRow(c)
+}
+
+func (a *App) scmWorktreeList(c *ui.Context) {
 	t := a.tk
 	rows := a.worktreeCached()
 	if len(rows) == 0 {
@@ -135,15 +143,30 @@ func (a *App) removeWorktree(path string) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, "git", "-C", a.proj, "worktree", "remove", path)
-		err := cmd.Run()
+		out, err := cmd.CombinedOutput()
 		return func() {
 			if err != nil {
-				a.toast = "删除失败"
-				setLog.Warn("worktree 删除失败", "err", err)
+				msg := friendlyWorktreeRmErr(string(out))
+				a.toast = "删除失败:" + msg
+				setLog.Warn("worktree 删除失败", "err", err, "out", string(out))
 				return
 			}
 			a.toast = "已删除 worktree"
 			a.set.wtAt = time.Time{} // 让列表立即重读
 		}
 	})
+}
+
+// friendlyWorktreeRmErr 把 git worktree remove 的报错翻成一句话(有未提交改动 / 被锁定 / 其它)。
+func friendlyWorktreeRmErr(raw string) string {
+	m := strings.ToLower(raw)
+	switch {
+	case strings.Contains(m, "contains modified or untracked files"):
+		return "里面有未提交的改动,先提交或丢弃它们"
+	case strings.Contains(m, "locked"):
+		return "这个 worktree 被锁定了(git worktree unlock 后再删)"
+	case strings.Contains(m, "is a main working tree"):
+		return "主工作树不能删除"
+	}
+	return friendlyGitErr(raw)
 }

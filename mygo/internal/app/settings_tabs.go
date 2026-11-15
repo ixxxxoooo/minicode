@@ -481,7 +481,7 @@ var settingsTabs = []setTabDef{
 			rTog(pScmExpandAll, "多仓库:全部展开", "多根工作区里每个仓库各显示一整块更改与提交框(默认只显示活动仓库 + 总览)", false),
 		}},
 		{title: "Worktree", rows: []setRow{
-			rFld("scm.worktrees", "存放位置", "用于新建 worktree 时的默认位置(新建入口尚未做)", "~/.minicode/worktrees", 200, true, ""),
+			rFld(pScmWorktrees, "存放位置", "新建 worktree 的目录放这里,每个叫「项目名-分支名」", "~/.minicode/worktrees", 200, true, ""),
 		}, body: func(a *App, c *ui.Context) { a.scmWorktreeBody(c) }},
 	}},
 
