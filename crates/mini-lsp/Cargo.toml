@@ -1,9 +1,0 @@
-[package]
-name = "mini-lsp"
-version.workspace = true
-edition.workspace = true
-
-[dependencies]
-mini-diag = { path = "../mini-diag" }
-serde_json.workspace = true
-async-channel = "2"

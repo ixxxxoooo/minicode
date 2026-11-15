@@ -2,7 +2,6 @@
 # 重启开发版(MyGo 原生界面):先编译,成功后杀掉旧实例,再在最小 .app 包里启动唯一的新实例。
 # 用法:scripts/dev.sh [环境变量…]   例:MINI_THEME=ink MINI_SCHEME=b scripts/dev.sh
 # 日志:应用日志 ~/.minicode/logs/minicode.log;标准错误 / 帧统计 target/dev.log(上一个实例在 dev.log.prev)。
-# 旧的 Rust 版开发脚本是 scripts/dev-rust.sh。
 set -e
 cd "$(dirname "$0")/.."
 unset GOROOT
