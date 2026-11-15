@@ -317,6 +317,47 @@ func (s *Store) RemoveWorkspace(id string) error {
 	return s.save()
 }
 
+// MoveWorkspace 把工作区 id 放到工作区 before 之前(before 为空 = 放到最后);顺序写盘。
+func (s *Store) MoveWorkspace(id, before string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	from := -1
+	for i, w := range s.workspaces {
+		if w.ID == id {
+			from = i
+		}
+	}
+	if from < 0 || id == before {
+		return nil
+	}
+	w := s.workspaces[from]
+	rest := append(append([]Workspace(nil), s.workspaces[:from]...), s.workspaces[from+1:]...)
+	at := len(rest)
+	for i, x := range rest {
+		if x.ID == before {
+			at = i
+		}
+	}
+	s.workspaces = append(rest[:at], append([]Workspace{w}, rest[at:]...)...)
+	log.Info("工作区换序", "id", id, "before", before)
+	return s.save()
+}
+
+// MoveBefore 把 list 里第 from 项放到第 before 项之前(before == len = 放到最后),返回新顺序的拷贝与它落下的位置。
+func MoveBefore[T any](list []T, from, before int) ([]T, int) {
+	out := append([]T(nil), list...)
+	if from < 0 || from >= len(out) || before < 0 || before > len(out) || before == from || before == from+1 {
+		return out, from
+	}
+	x := out[from]
+	out = append(out[:from], out[from+1:]...)
+	if before > from {
+		before--
+	}
+	out = append(out[:before], append([]T{x}, out[before:]...)...)
+	return out, before
+}
+
 // WorkspacesOf 引用了某个文件夹的工作区(移除项目前提示用)。
 func (s *Store) WorkspacesOf(path string) []Workspace {
 	c := Clean(path)

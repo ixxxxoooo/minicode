@@ -97,6 +97,9 @@ func (a *App) seedDemoRegistry() {
 	_, _ = r.SaveWorkspace(projects.Workspace{ID: "ws-fullstack", Name: "全栈工作区", Folders: []projects.Folder{
 		{Path: "/demo/router-demo"}, {Path: "/demo/web-dashboard"}, {Path: "/demo/docs-site"},
 	}})
+	_, _ = r.SaveWorkspace(projects.Workspace{ID: "ws-content", Name: "文档与素材", Folders: []projects.Folder{ // 第二个工作区:演示工作区之间的拖拽换序
+		{Path: "/demo/docs-site"}, {Path: "/demo/design-assets"},
+	}})
 	a.reg = r
 	a.seedDemoSessMeta()
 	a.projOpen["ws-fullstack"] = true

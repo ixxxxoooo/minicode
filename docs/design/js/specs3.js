@@ -71,11 +71,18 @@
       cell('工作区行', '', menu(230, [['plus', '新对话(主文件夹)', '⌘N'], ['-'], ['edit', '重命名…'], ['folder', '编辑文件夹…'], ['plus', '添加文件夹…'], ['-'], ['folder', '在访达中显示主文件夹'], ['copy', '复制主文件夹路径'], ['-'], ['trash', '从列表移除工作区', '', 'danger']]), '移除只删列表项,不碰磁盘上的任何文件;确认框写明「不会删除文件」。'),
       cell('成员文件夹行', '', menu(230, [['folder', '在文件树中定位'], ['arrow', '设为主文件夹'], ['-'], ['branch', '在源代码管理中查看'], ['folder', '在访达中显示'], ['copy', '复制路径'], ['-'], ['x', '从工作区移出', '', 'danger']]), '主文件夹不能直接移出,先把别的设为主。'),
       cell('项目行', '', menu(230, [['plus', '在此项目新对话'], ['layers', '加入工作区…'], ['edit', '重命名显示名'], ['-'], ['folder', '在访达中显示'], ['copy', '复制路径'], ['-'], ['archive', '归档该项目的会话'], ['trash', '从列表移除项目', '', 'danger']]), '项目被某个工作区引用时,移除前提示「它属于 1 个工作区」。')))}
+    ${sec('拖拽排序', '工作区与工作区里的成员文件夹可以拖着换位置;顺序写进 ' + mono('~/.minicode/workspaces.json') + '(工作区列表顺序 / 工作区内 folders 顺序,文件树顺序跟着变)。项目行按最近活动排序,不手动排。', grid(
+      cell('拖动中', '', box(`<div style="padding:8px"><div class="row" style="height:28px">${ic('chevD', 's12')}${ic('layers', 's12', 'c-ac')}<span class="grow b">全栈工作区</span><span class="t4 fs-micro">3 个文件夹</span></div>
+        <div class="row" style="height:22px;padding-left:34px;color:var(--tx-3)">${ic('folder', 's12')}<span class="grow ell">router-demo</span>${tag('主', 'ac')}</div>
+        <div class="row" style="height:22px;padding-left:34px;color:var(--tx-3);box-shadow:inset 0 2px 0 var(--ac)">${ic('folder', 's12')}<span class="grow ell">web-dashboard</span></div>
+        <div class="row" style="height:22px;padding-left:34px;color:var(--tx-3);opacity:.5">${ic('folder', 's12')}<span class="grow ell">docs-site</span></div>
+        <div class="pop" style="position:relative;width:170px;padding:4px 10px;margin:-30px 0 0 120px;opacity:.92">${ic('folder', 's12')} docs-site</div></div>`, 170, 330), '拖起的行变淡、指针旁跟一份副本;经过的行顶部出现 2px 强调色插入线,松手 = 放到那一行之前。拖到主文件夹(第一行)上不可放:插入线不出现,松手提示「第一个是主文件夹,用「设为主文件夹」更换」。'),
+      cell('菜单与键盘', '', box(menu(190, [['arrow', '上移'], ['arrow', '下移'], ['-'], ['arrow', '设为主文件夹']]) + `<div class="t3 fs-cap" style="padding:8px 4px;line-height:1.7">· 工作区行与成员文件夹行右键都有「上移 / 下移」,处在边界时置灰<br>· 成员文件夹不能经「上移」越过主文件夹(第二个上移 = 设为主文件夹,要用专门的菜单项)<br>· 工作区正在使用时,文件夹换序后文件树即时跟着变</div>`, 170, 330), '拖拽是快捷方式,菜单是等价的无障碍路径,两者走同一个存储函数。')))}
     ${sec('Git 与工作区的关系', '工作区本身不是仓库。每个成员文件夹各自是(或不是)一个仓库,SCM、图谱、分支、同步全部按仓库独立工作 —— 详见「多仓库 Git」页。', '')}
     ${sec('实现状态', '', tbl([['能力', 220], ['说明', 440], ['状态']], [
       ['侧栏「+」入口与添加项目对话框', '路径输入 + 最近 / 发现 + 校验;真实模式浏览按钮走系统文件夹选择器;路径不存在时给出相近路径建议', st('ok')],
       ['工作区存储', '~/.minicode/workspaces.json 一个文件同时存手动添加的项目与工作区,原子落盘;损坏时改名留底不丢数据', st('ok')],
-      ['侧栏的工作区行与成员行', '工作区行 / 成员行 / 项目行右键菜单已做;成员文件夹折进工作区;拖拽排序未做', st('part')],
+      ['侧栏的工作区行与成员行', '工作区行 / 成员行 / 项目行右键菜单已做;成员文件夹折进工作区;拖拽排序与上移 / 下移已做', st('ok')],
       ['多根文件树 / 多根搜索', '虚拟顶层目录 = 文件夹名(workspace.Multi),路径加文件夹前缀,顶层行带「主 / 改动数 / 非仓库」;搜索按前缀路径工作,搜索条有「范围」chip 与文件夹右键「仅在此文件夹搜索」', st('ok')],
       ['Claude 附加目录', '主文件夹启动会话时追加 --add-dir(附加文件夹),开关打开时设置 CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1', st('ok')],
       ['演示数据', '演示模式内置「全栈工作区」(router-demo / web-dashboard / docs-site 各有自己的分支与改动)+ 一个手动添加的非仓库项目 design-assets', st('ok')]]))}</div>`;
@@ -209,5 +216,5 @@
       ['新元素的入场 / 退出动效', '弹层有 popIn;终端搜索条、安装卡、对话框未统一', '全部走 popIn / dialogIn', st('part')],
       ['文字流光 / 流底部渐隐遮罩', '用呼吸代替', '库支持后换', st('todo')],
       ['完成通知(系统通知)', '未做', '回合结束 / 需要审批 / 任务完成', st('todo')],
-      ['拖拽排序(项目 / 工作区 / 文件夹)', '未做', '先做上移 / 下移菜单', st('todo')]]))}</div>`;
+      ['拖拽排序(工作区 / 成员文件夹)', '拖动换位 + 上移 / 下移菜单(见 proj-ws「拖拽排序」);项目行按最近活动排序,不手动排', '—', st('ok')]]))}</div>`;
 })();

@@ -74,6 +74,12 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 	open := a.projOpen[w.ID]
 	on := a.ws != nil && a.ws.ID == w.ID
 	r := kit.RowEl(c, false).Key("ws-" + w.ID).Gap(5).TextColor(t.Tx1).FontWeight(500)
+	r.Drag(wsDrag{ID: w.ID}) // 拖动换位
+	if d, ok := ui.Drop[wsDrag](r); ok {
+		a.moveWorkspace(d.ID, w.ID)
+	}
+	d, over := ui.DragOver[wsDrag](r)
+	over = over && d.ID != w.ID
 	hov := r.Hovered()
 	r.OnClick(func() {
 		a.projOpen[w.ID] = !open
@@ -83,6 +89,9 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 	})
 	r.ContextMenu(func(m *ui.Menu) { a.wsMenu(m, w) })
 	r.Children(func() {
+		if over {
+			dropLine(c, t)
+		}
 		rot := float32(0)
 		if open {
 			rot = 90
@@ -114,9 +123,18 @@ func (a *App) memberRow(c *ui.Context, w projects.Workspace, i int, f projects.F
 	t := a.tk
 	key := "mem-" + w.ID + "-" + itoa(i)
 	r := kit.RowEl(c, false).Key(key).Height(22).PaddingStart(34).Gap(5).TextColor(t.Tx3)
+	r.Drag(memDrag{WS: w.ID, Idx: i})
+	if d, ok := ui.Drop[memDrag](r); ok && d.WS == w.ID {
+		a.moveFolder(w.ID, d.Idx, i)
+	}
+	d, over := ui.DragOver[memDrag](r)
+	over = over && d.WS == w.ID && i >= 1 && d.Idx != i && d.Idx >= 1 // 主文件夹行不可放
 	r.OnClick(func() { a.locateFolder(w, f) })
 	r.ContextMenu(func(m *ui.Menu) { a.memberMenu(m, w, i, f) })
 	r.Children(func() {
+		if over {
+			dropLine(c, t)
+		}
 		kit.Ic(c, "folder", kit.S12)
 		ui.Text(c, f.Label()).Grow(1).SingleLine()
 		if i == 0 {
@@ -146,6 +164,7 @@ func (a *App) wsMenu(m *ui.Menu, w projects.Workspace) {
 	if m.Item("新对话(主文件夹)").Chosen() {
 		a.NewSessionIn(a.primaryProject(w))
 	}
+	a.wsMoveItems(m, w)
 	m.Separator()
 	if m.Item("重命名…").Chosen() || m.Item("编辑文件夹…").Chosen() {
 		a.openWsDialog(w.ID, "")
@@ -175,6 +194,7 @@ func (a *App) memberMenu(m *ui.Menu, w projects.Workspace, i int, f projects.Fol
 			w.Folders[0], w.Folders[i] = w.Folders[i], w.Folders[0]
 		})
 	}
+	a.memberMoveItems(m, w, i)
 	m.Separator()
 	if m.Item("在源代码管理中查看").Chosen() {
 		a.locateFolder(w, f)
@@ -280,5 +300,76 @@ func (a *App) projMenu(m *ui.Menu, p core.ProjectInfo) {
 				a.toast = "已移除项目"
 			})
 		}
+	}
+}
+
+// ───────── 拖拽排序 ─────────
+
+// wsDrag / memDrag 是侧栏里工作区行 / 成员文件夹行的拖拽载荷。
+type wsDrag struct{ ID string }
+type memDrag struct {
+	WS  string
+	Idx int
+}
+
+// dropLine 是拖拽经过时行顶部的 2px 插入线。
+func dropLine(c *ui.Context, t *theme.Tokens) {
+	ui.Box(c).Absolute().Left(0).Right(0).Top(0).Height(2).Background(t.Ac).PassThrough()
+}
+
+// moveWorkspace 把工作区 id 放到 before 之前(顺序落盘)。
+func (a *App) moveWorkspace(id, before string) {
+	if err := a.registry().MoveWorkspace(id, before); err != nil {
+		a.toast = "保存失败:" + err.Error()
+		return
+	}
+	log.Info("拖动工作区", "id", id, "before", before)
+}
+
+// moveFolder 把工作区里第 from 个文件夹放到第 before 个之前;第一个是主文件夹,不参与换位。
+func (a *App) moveFolder(wsID string, from, before int) {
+	if from < 1 || before < 1 {
+		a.toast = "第一个是主文件夹,用「设为主文件夹」更换"
+		return
+	}
+	a.wsMutate(wsID, func(w *projects.Workspace) { w.Folders, _ = projects.MoveBefore(w.Folders, from, before) })
+}
+
+// wsMoveItems 工作区行右键菜单里的「上移 / 下移」。
+func (a *App) wsMoveItems(m *ui.Menu, w projects.Workspace) {
+	all := a.registry().Workspaces()
+	pos := -1
+	for i, x := range all {
+		if x.ID == w.ID {
+			pos = i
+		}
+	}
+	if pos < 0 || len(all) < 2 {
+		return
+	}
+	m.Separator()
+	if m.Item("上移").Disabled(pos == 0).Chosen() {
+		a.moveWorkspace(w.ID, all[pos-1].ID)
+	}
+	if m.Item("下移").Disabled(pos == len(all)-1).Chosen() {
+		before := ""
+		if pos+2 < len(all) {
+			before = all[pos+2].ID
+		}
+		a.moveWorkspace(w.ID, before)
+	}
+}
+
+// memberMoveItems 成员文件夹右键菜单里的「上移 / 下移」(主文件夹固定在第一个)。
+func (a *App) memberMoveItems(m *ui.Menu, w projects.Workspace, i int) {
+	if len(w.Folders) < 3 || i == 0 {
+		return
+	}
+	m.Separator()
+	if m.Item("上移").Disabled(i <= 1).Tooltip(map[bool]string{true: "再往上就是主文件夹,用「设为主文件夹」更换"}[i <= 1]).Chosen() {
+		a.moveFolder(w.ID, i, i-1)
+	}
+	if m.Item("下移").Disabled(i >= len(w.Folders)-1).Chosen() {
+		a.moveFolder(w.ID, i, i+2)
 	}
 }

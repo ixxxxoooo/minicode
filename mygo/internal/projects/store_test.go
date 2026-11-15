@@ -146,3 +146,44 @@ func TestByPrimary(t *testing.T) {
 		t.Fatal("附加文件夹不是主文件夹")
 	}
 }
+
+func TestMoveWorkspaceAndMoveBefore(t *testing.T) {
+	r := NewMem()
+	for _, n := range []string{"a", "b", "c"} {
+		_, err := r.SaveWorkspace(Workspace{ID: "ws-" + n, Name: n, Folders: []Folder{{Path: "/x/" + n + "1"}, {Path: "/x/" + n + "2"}}})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	names := func() string {
+		s := ""
+		for _, w := range r.Workspaces() {
+			s += w.Name
+		}
+		return s
+	}
+	_ = r.MoveWorkspace("ws-c", "ws-a")
+	if names() != "cab" {
+		t.Fatalf("c 放到 a 之前:%s", names())
+	}
+	_ = r.MoveWorkspace("ws-c", "")
+	if names() != "abc" {
+		t.Fatalf("c 放到最后:%s", names())
+	}
+	_ = r.MoveWorkspace("ws-a", "ws-a") // 自己放自己之前:不动
+	_ = r.MoveWorkspace("ws-zz", "ws-a")
+	if names() != "abc" {
+		t.Fatalf("无效移动不应改变顺序:%s", names())
+	}
+	got, at := MoveBefore([]int{0, 1, 2, 3}, 1, 4)
+	if at != 3 || got[3] != 1 || got[0] != 0 || got[1] != 2 {
+		t.Fatalf("放到最后:%v %d", got, at)
+	}
+	got, at = MoveBefore([]int{0, 1, 2, 3}, 3, 1)
+	if at != 1 || got[1] != 3 || got[2] != 1 {
+		t.Fatalf("往前:%v %d", got, at)
+	}
+	if got, at = MoveBefore([]int{0, 1, 2}, 1, 2); at != 1 || got[1] != 1 {
+		t.Fatalf("紧邻的下一个之前 = 原位:%v %d", got, at)
+	}
+}
