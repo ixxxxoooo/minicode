@@ -14,6 +14,8 @@ var sessRestoreLog = diag.L("session.restore")
 const (
 	pRestore      = "general.restore"
 	lastStateFile = "last-session.json"
+	// 演示模式单独存一份,避免把真实项目的标签 / 会话恢复进演示(显示「无法打开」)。
+	lastStateFileDemo = "last-session-demo.json"
 )
 
 // lastRuntime 关闭时落盘的运行状态(仅 general.restore 开启时读写)。
@@ -28,7 +30,10 @@ type lastRuntime struct {
 	BottomTab  string   `json:"bottomTab,omitempty"`
 }
 
-func lastStatePath() string {
+func lastStatePath(demo bool) string {
+	if demo {
+		return filepath.Join(diag.Home(), lastStateFileDemo)
+	}
 	return filepath.Join(diag.Home(), lastStateFile)
 }
 
@@ -73,7 +78,7 @@ func (a *App) SaveRuntimeState() {
 		sessRestoreLog.Warn("序列化运行状态失败", "err", err)
 		return
 	}
-	path := lastStatePath()
+	path := lastStatePath(a.runDemo)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		sessRestoreLog.Warn("创建目录失败", "err", err)
 		return
@@ -96,7 +101,7 @@ func (a *App) ApplySavedRuntime() string {
 	if v := strings.TrimSpace(os.Getenv("MINI_SESSION")); v != "" {
 		return v
 	}
-	b, err := os.ReadFile(lastStatePath())
+	b, err := os.ReadFile(lastStatePath(a.runDemo))
 	if err != nil {
 		if !os.IsNotExist(err) {
 			sessRestoreLog.Warn("读取运行状态失败", "err", err)
