@@ -77,10 +77,10 @@
       ['可编辑一侧 / 块级暂存 / 词级高亮', '见「差异标签 · 块级暂存」', st('ok')],
       ['忽略空白差异', '差异顶部条「忽略空白」开关;比较前归一化空白,显示仍用原文', st('ok')]]))}
     ${sec('实现状态', '', tbl([['范围', 220], ['说明', 440], ['状态']], [
-      ['Markdown 预览 / 源码切换', '格式条 / YAML 头 / 只读预览 / 拖入与 ⌘V 粘贴 PNG 到 editor.mdAssets;围栏语言标注保守补回;段内换行仍可能规范化(提示条)', st('part')],
+      ['Markdown 预览 / 源码切换', '格式条(默认隐藏)/ YAML 头 / 只读预览 / 拖入与 ⌘V 粘贴 PNG·JPEG 到 editor.mdAssets;预览写回只重写被编辑的块(未改段落的段内换行、列表符、围栏语言原样保留,增删块 LCS 对齐,对不齐的局部退回整段序列化);规范化提示条只统计会被改写的块。缺口:跨多块选区的合并写回、匹配率 <50% 时退回整篇往返;未测试', st('part')],
       ['自动换行 / 格式化(顶部条 · 菜单 · 快捷键)', '服务器优先,内置格式化器兜底', st('ok')],
       ['保存时格式化 / 去行尾空白', '源码保存可走内置格式化;WYSIWYG 保存不整理(以免冲光标);LSP 异步不参与保存', st('ok')],
-      ['⌘V 粘贴 JPEG 图片', 'edit_md_paste.go 先读 PNG、读不到再读 image/jpeg 并存成 .jpg;未测试', st('part')]]))}</div>`;
+      ['⌘V 粘贴 JPEG 图片', 'edit_md_paste.go:先读 PNG、读不到再读 image/jpeg 存成 .jpg;去重文件名、超过 10 MB 提示、预览与源码视图都可粘贴、可撤销;未测试', st('ok')]]))}</div>`;
 
   /* ───────── 拖拽引用与「···」菜单 ───────── */
   const chatDrop = `<div style="position:relative;height:100%;background:var(--bg);display:flex;flex-direction:column"><div style="padding:10px 14px;font-weight:700;border-bottom:1px solid var(--bd-1)">完整修复一个 Bug:路由大小写</div><div style="flex:1;padding:12px 14px;color:var(--tx-3)">……上一条回复……</div>
