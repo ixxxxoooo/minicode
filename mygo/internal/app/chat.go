@@ -71,7 +71,9 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		}
 		a.flowFadeMask(c)
 		a.flowScrollBtn(c)
-		ui.Column(c).Padding(4, 0, 10, 0).Shrink(0).AlignItems(ui.Center).Children(func() {
+		dockBox := ui.Column(c).Key("chat-dock").Padding(4, 0, 10, 0).Shrink(0).AlignItems(ui.Center)
+		a.dockH = dockBox.Bounds().H // 上一帧的高度:「回到最新」按钮要抬到输入框区域之上
+		dockBox.Children(func() {
 			a.flowCol(c, func() {
 				a.syncDockComposer()
 				a.taskDock(c)
