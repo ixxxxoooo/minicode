@@ -22,6 +22,8 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 rm -f "$BIN"
 mv target/dev/minicode-new "$BIN"
 cp assets/icon/MiniCode.icns "$APP/Contents/Resources/MiniCode.icns"
+# 品牌图标(托盘各状态 PNG、深色 / 各样式 Dock 图标)放进包内 Resources,运行时按可执行文件位置查找
+for f in assets/icon/*.png assets/icon/*.icns; do cp "$f" "$APP/Contents/Resources/"; done
 for ic in doc-mcworkspace doc-mccanvas doc-mcsettings; do
   [ -f "assets/icon/${ic}.icns" ] && cp "assets/icon/${ic}.icns" "$APP/Contents/Resources/${ic}.icns"
 done

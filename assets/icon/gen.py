@@ -15,8 +15,10 @@ import textwrap
 OUT = pathlib.Path(__file__).parent
 LAYERS = OUT / "layers"
 
-# Go appearance.appIcon 下标 → 样式 id(与 settings_brand.appStyles 顺序一致)
-STYLES = ("warp", "prompt", "weave", "grid", "lines", "braces")
+# Go appearance.appIcon 下标 → 样式 id(与设计稿 brand.js::STYLES、settings_brand.appStyles 顺序一致,默认下标 0 = 织纹)
+STYLES = ("weave", "warp", "prompt", "grid", "lines", "braces")
+# 菜单栏图标样式(设计稿 TRAYS = STYLES 去掉 warp);下标即 appearance.trayStyle
+TRAY_STYLES = ("weave", "prompt", "grid", "lines", "braces")
 APPEARANCES = ("light", "dark", "clear", "tint")
 TRAY_STATES = ("idle", "running", "waiting", "unread", "error", "update", "paused", "demo")
 
@@ -237,14 +239,19 @@ def app_icon_svg(style: str, mode: str, uid: str = "a") -> str:
 </svg>'''
 
 
+def _lv(i: int, frame: int | None) -> str:
+    """动画层:frame 为 None 时常亮;否则只有第 frame%3 层亮,其余 .26(与设计稿 brand.js 的 lv 同义)。"""
+    op = 1.0 if frame is None or i == frame % 3 else 0.26
+    return f'opacity="{op}"'
+
+
 def tray_weave_body(frame: int | None = None) -> str:
     b, g, cut, tail, pad, n = 6, 3, 1, 3, 3, 3
     pos = [pad + tail + i * (b + g) for i in range(n)]
     lo, hi = pad, 36 - pad
     parts = []
     for j, y in enumerate(pos):
-        op = 1.0 if frame is None or j == frame % 3 else 0.26
-        parts.append(f'<rect x="{lo}" y="{y}" width="{hi - lo}" height="{b}" rx="{b / 2}" fill="#000" opacity="{op}"/>')
+        parts.append(f'<rect x="{lo}" y="{y}" width="{hi - lo}" height="{b}" rx="{b / 2}" fill="#000" {_lv(j, frame)}/>')
     for x in pos:
         parts.append(f'<rect x="{x}" y="{lo}" width="{b}" height="{hi - lo}" rx="{b / 2}" fill="#000"/>')
     for i, x in enumerate(pos):
@@ -262,28 +269,78 @@ def tray_weave_body(frame: int | None = None) -> str:
     return "\n  ".join(parts)
 
 
-def tray_badge(state: str) -> str:
+def tray_body(style: str, frame: int | None = None) -> str:
+    """五种菜单栏图标的主体(36 画布、单色黑;白底在渲染成模板图时转成透明)。移植自设计稿 brand.js::TRAY。"""
+    if style == "weave":
+        return tray_weave_body(frame)
+    if style == "prompt":
+        return (
+            '<path d="M10.5 9.5 18 18l-7.5 8.5" fill="none" stroke="#000" stroke-width="4.4" '
+            'stroke-linecap="round" stroke-linejoin="round"/>'
+            f'<rect {_lv(1, frame)} x="20.5" y="23.6" width="8" height="4.4" rx="2.2" fill="#000"/>'
+        )
+    if style == "grid":
+        c, g = 7.4, 2.4
+        o = 18 - (3 * c + 2 * g) / 2
+        out, k = "", 0
+        for i in range(3):
+            for j in range(3):
+                geo = f'x="{o + i * (c + g):.2f}" y="{o + j * (c + g):.2f}" width="{c}" height="{c}" rx="2.2"'
+                if (i + j) % 2 == 0:
+                    out += f'<rect {geo} fill="#000"/>'
+                else:
+                    out += f'<rect {_lv(k, frame)} {geo} fill="#000" fill-opacity=".42"/>'
+                    k += 1
+        return out
+    if style == "lines":
+        sx, x0, h, gap = 27 / 424, 4.5, 4.4, 3.6
+        y0 = 18 - (4 * h + 3 * gap) / 2
+        rows = [[(0, 150, 1), (174, 250, 0)], [(96, 328, 0)], [(96, 190, 1), (214, 114, 0)], [(0, 230, 0), (254, 96, 1)]]
+        out, k = "", 0
+        for j, row in enumerate(rows):
+            for x, w, t in row:
+                geo = f'x="{x0 + x * sx:.2f}" y="{y0 + j * (h + gap):.2f}" width="{w * sx:.2f}" height="{h}" rx="{h / 2}"'
+                if t:
+                    out += f'<rect {_lv(k, frame)} {geo} fill="#000"/>'
+                    k += 1
+                else:
+                    out += f'<rect {geo} fill="#000" fill-opacity=".55"/>'
+        return out
+    if style == "braces":
+        return (
+            '<g transform="translate(18 18) scale(.047) translate(-512 -512)">'
+            '<g fill="none" stroke="#000" stroke-width="84" stroke-linecap="round" stroke-linejoin="round">'
+            f'<path d="{BRACE}"/><path d="{BRACE}" transform="translate(1024 0) scale(-1 1)"/></g>'
+            f'<circle {_lv(1, frame)} cx="512" cy="512" r="64" fill="#000"/></g>'
+        )
+    raise ValueError(style)
+
+
+def tray_badge(state: str, style: str = "weave", frame: int | None = None) -> str:
+    """带徽标的状态:主体先用圆形遮罩挖出一圈空白,再画徽标(demo 是空心圆环,paused 整体半透明)。"""
     x, y = 28.2, 8
-    if state == "demo":
-        return f'<circle cx="{x}" cy="{y}" r="3.7" fill="none" stroke="#000" stroke-width="1.9"/>'
     spec = {
         "waiting": (6.4, "!"),
         "unread": (4.6, None),
         "error": (6.4, "x"),
         "update": (6.4, "arr"),
         "paused": (6.4, "||"),
+        "demo": (4.2, "ring"),
     }
     if state not in spec:
         return ""
     r, sym = spec[state]
-    mask = f'<mask id="mk"><rect width="36" height="36" fill="#fff"/><circle cx="{x}" cy="{y}" r="{r + 2.3}" fill="#000"/></mask>'
-    body = f'<g mask="url(#mk)">{tray_weave_body()}</g>'
-    if sym == "!":
+    mask = f'<mask id="mk" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36"><rect width="36" height="36" fill="#fff"/><circle cx="{x}" cy="{y}" r="{r + 2.3}" fill="#000"/></mask>'
+    body_op = ' opacity=".5"' if state == "paused" else ""
+    body = f'<g mask="url(#mk)"{body_op}>{tray_body(style, frame)}</g>'
+    if sym == "ring":
+        g = f'<circle cx="{x}" cy="{y}" r="3.7" fill="none" stroke="#000" stroke-width="1.9"/>'
+    elif sym == "!":
         g = f'<circle cx="{x}" cy="{y}" r="{r}" fill="#000"/><rect x="{x - .95}" y="{y - 3.5}" width="1.9" height="4.2" rx=".95" fill="#fff"/><circle cx="{x}" cy="{y + 2.6}" r="1.1" fill="#fff"/>'
     elif sym == "x":
         g = f'<circle cx="{x}" cy="{y}" r="{r}" fill="#000"/><path d="M{x - 2.1} {y - 2.1}l4.2 4.2M{x + 2.1} {y - 2.1}l-4.2 4.2" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>'
     elif sym == "arr":
-        g = f'<circle cx="{x}" cy="{y}" r="{r}" fill="#000"/><path d="M{x} {y - 3}v5.2M{x - 2.4} {y - .3}l2.4 2.6 2.4-2.6" stroke="#fff" stroke-width="1.7" stroke-linecap="round" fill="none"/>'
+        g = f'<circle cx="{x}" cy="{y}" r="{r}" fill="#000"/><path d="M{x} {y - 3}v5.2M{x - 2.4} {y - .3}l2.4 2.6 2.4-2.6" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
     elif sym == "||":
         g = f'<circle cx="{x}" cy="{y}" r="{r}" fill="#000"/><rect x="{x - 2.3}" y="{y - 2.6}" width="1.7" height="5.2" rx=".6" fill="#fff"/><rect x="{x + .6}" y="{y - 2.6}" width="1.7" height="5.2" rx=".6" fill="#fff"/>'
     else:
@@ -291,12 +348,19 @@ def tray_badge(state: str) -> str:
     return mask + body + g
 
 
-def tray_icon_svg(state: str = "idle", frame: int | None = None) -> str:
+def tray_icon_svg(state: str = "idle", frame: int | None = None, style: str = "weave") -> str:
+    head = '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><rect width="36" height="36" fill="#fff"/>'
     if state in ("waiting", "unread", "error", "update", "paused", "demo"):
-        inner = tray_badge(state)
-        return f'<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><rect width="36" height="36" fill="#fff"/>  {inner}</svg>'
-    body = tray_weave_body(frame if state == "running" else None)
-    return f'<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><rect width="36" height="36" fill="#fff"/>  {body}</svg>'
+        return head + "  " + tray_badge(state, style, frame) + "</svg>"
+    return head + "  " + tray_body(style, frame if state == "running" else None) + "</svg>"
+
+
+def tray_file(style_idx: int, state: str, frame: int | None = None) -> str:
+    """托盘文件名:样式 0(织纹)沿用旧名 tray-<状态>,其余是 tray-s<下标>-<状态>。"""
+    pre = "tray" if style_idx == 0 else f"tray-s{style_idx}"
+    if frame is not None:
+        return f"{pre}-{state}-{frame}.svg"
+    return f"{pre}-{state}.svg"
 
 
 def doc_icon_svg(label: str, style: str = "weave") -> str:
@@ -355,10 +419,11 @@ def generate_all():
                 suf = "-dark"
             name = f"app-style{si}{suf}.svg"
             (OUT / name).write_text(app_icon_svg(st, mode, f"s{si}{mode}"))
-    for state in TRAY_STATES:
-        (OUT / f"tray-{state}.svg").write_text(tray_icon_svg(state))
-    for fr in range(3):
-        (OUT / f"tray-running-{fr}.svg").write_text(tray_icon_svg("running", fr))
+    for si, tst in enumerate(TRAY_STYLES):
+        for state in TRAY_STATES:
+            (OUT / tray_file(si, state)).write_text(tray_icon_svg(state, None, tst))
+        for fr in range(3):
+            (OUT / tray_file(si, "running", fr)).write_text(tray_icon_svg("running", fr, tst))
     (OUT / "tray.svg").write_text(tray_icon_svg("idle"))
     for lab, fn in (("MCWS", "doc-mcworkspace.svg"), ("CANVAS", "doc-mccanvas.svg"), ("CONF", "doc-mcsettings.svg")):
         (OUT / fn).write_text(doc_icon_svg(lab))
@@ -378,8 +443,9 @@ def main():
         (OUT / "app-dark.svg").write_text(app_icon_svg("weave", "dark"))
         (OUT / "tray.svg").write_text(tray_icon_svg("idle"))
     elif args.cmd == "tray":
-        for state in TRAY_STATES:
-            (OUT / f"tray-{state}.svg").write_text(tray_icon_svg(state))
+        for si, tst in enumerate(TRAY_STYLES):
+            for state in TRAY_STATES:
+                (OUT / tray_file(si, state)).write_text(tray_icon_svg(state, None, tst))
     elif args.cmd == "layers":
         write_layers()
 
