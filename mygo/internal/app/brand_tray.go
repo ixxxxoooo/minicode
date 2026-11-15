@@ -222,14 +222,7 @@ func (a *App) trayMenuFull() *mygo.Menu {
 		&mygo.MenuItem{Type: mygo.MenuItemSeparator},
 		&mygo.MenuItem{Label: "新对话", Click: func(*mygo.MenuItem, *mygo.Window) { a.NewSession(); mygo.App.Focus() }},
 		&mygo.MenuItem{Label: "打开 MiniCode", Click: func(*mygo.MenuItem, *mygo.Window) { mygo.App.Focus() }},
-		&mygo.MenuItem{Label: "暂停通知", Type: mygo.MenuItemCheckbox, Checked: a.notifyPaused(),
-			Click: func(it *mygo.MenuItem, _ *mygo.Window) {
-				if a.prefs != nil {
-					a.prefs.Set(pNotifyPause, it.Checked) // 复选项在回调前已翻转
-				}
-				brandLog.Info("托盘:切换暂停通知", "paused", it.Checked)
-				a.syncBrand()
-			}},
+		a.pauseMenu(),
 		&mygo.MenuItem{Type: mygo.MenuItemSeparator},
 		&mygo.MenuItem{Label: "设置…", Click: func(*mygo.MenuItem, *mygo.Window) { a.openSettings("general"); mygo.App.Focus() }},
 		&mygo.MenuItem{Label: "检查更新…", Click: func(*mygo.MenuItem, *mygo.Window) {
@@ -390,4 +383,23 @@ func trayClip(s string, n int) string {
 		return string(r)
 	}
 	return string(r[:n]) + "…"
+}
+
+// pauseMenu 「暂停通知 ▸」二级:未暂停 = 1 小时 / 到明天 9:00 / 一直暂停;已暂停 = 恢复通知。
+func (a *App) pauseMenu() *mygo.MenuItem {
+	do := func(d time.Duration) func(*mygo.MenuItem, *mygo.Window) {
+		return func(*mygo.MenuItem, *mygo.Window) { a.pauseNotifyFor(d) }
+	}
+	if a.notifyPaused() {
+		return &mygo.MenuItem{Label: a.pauseLabel(), Submenu: []*mygo.MenuItem{
+			{Label: "恢复通知", Click: do(-1)},
+		}}
+	}
+	now := a.now()
+	tomorrow := time.Date(now.Year(), now.Month(), now.Day()+1, 9, 0, 0, 0, now.Location())
+	return &mygo.MenuItem{Label: a.pauseLabel(), Submenu: []*mygo.MenuItem{
+		{Label: "暂停 1 小时", Click: do(time.Hour)},
+		{Label: "暂停到明天 9:00", Click: do(tomorrow.Sub(now))},
+		{Label: "一直暂停", Click: do(0)},
+	}}
 }

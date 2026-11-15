@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/egoist/mygo"
 	"github.com/ixxxxoooo/minicode/internal/core"
@@ -27,6 +28,10 @@ type brand struct {
 	bounceID  int
 	// 用户不在前台时发生的「回合出错 / 回合完成」:回到前台(或开始新回合)即清除,驱动托盘 error / unread 状态
 	trayErr, trayUnread bool
+	// 限时暂停通知的到期定时器
+	pauseTimer *time.Timer
+	// 访达图标上次同步的签名(开关 + 样式 + 外观),不变就不重复写
+	finderSig string
 	// 缺图标只警告一次,避免每次同步刷屏
 	warnedMissing bool
 }
@@ -35,6 +40,7 @@ func (a *App) initBrand() {
 	if a.secondary {
 		return
 	}
+	a.schedulePauseExpiry() // 重启后仍在暂停期内:到点自动恢复
 	a.syncBrand()
 }
 
@@ -58,6 +64,7 @@ func (a *App) syncBrand() {
 			}
 		}
 	}
+	a.syncFinderIcon(dark)
 	a.syncDockBadge()
 	a.syncTray(dark)
 	a.syncDockProgress()
