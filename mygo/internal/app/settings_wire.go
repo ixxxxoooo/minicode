@@ -44,15 +44,7 @@ func (a *App) MigrateSettingsPrefs() {
 	if a == nil || a.prefs == nil {
 		return
 	}
-	if a.prefs.Has("models.model") && !a.prefs.Has(prefModel) {
-		ix := a.prefs.Int("models.model", 2)
-		if ix >= 0 && ix < len(defaultModelIDs) {
-			a.prefs.Set(prefModel, defaultModelIDs[ix])
-		}
-	}
-	if a.prefs.Has("models.effort") && !a.prefs.Has(prefEffort) {
-		a.prefs.Set(prefEffort, a.prefs.Int("models.effort", 2))
-	}
+	a.syncModelEffortPrefs()
 	if a.prefs.Has("chat.mode") && !a.prefs.Has(pPermMode) {
 		a.prefs.Set(pPermMode, a.prefs.Int("chat.mode", 0))
 	}

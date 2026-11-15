@@ -18,6 +18,7 @@ func (a *App) defaultModelRow(c *ui.Context) {
 			if ch.Clicked() {
 				id := defaultModelIDs[i]
 				a.prefs.Set(prefModel, id)
+				a.syncModelEffortPrefs()
 				if a.be != nil {
 					a.pickModel(id)
 				}
