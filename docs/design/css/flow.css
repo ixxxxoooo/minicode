@@ -109,3 +109,18 @@
 [data-scheme="c"] .step:hover .si { background: transparent; }
 [data-scheme="c"] .flow { gap: 6px; }
 [data-scheme="c"] .cmp { border-radius: var(--r-md); }
+
+/* ───────── 上下文弹层(输入框圆环 / 状态栏共用内容,见 js/ctxpop.js) ───────── */
+.ctx-pop { position: absolute; right: 6px; bottom: calc(100% + 6px); width: min(300px, calc(100% - 12px)); z-index: 20; padding: 10px 12px; display: flex; flex-direction: column; gap: 9px; transform-origin: bottom right; }
+.spec > .ctx-pop { position: static; }
+.ctx-pop .ring.big, .sb-pop .ring.big { width: 34px; height: 34px; -webkit-mask: radial-gradient(circle, transparent 11px, #000 12px); mask: radial-gradient(circle, transparent 11px, #000 12px); }
+.ring.warn { background: conic-gradient(var(--warn) calc(var(--p) * 1%), var(--fill-3) 0); } .ring.err { background: conic-gradient(var(--err) calc(var(--p) * 1%), var(--fill-3) 0); }
+.cmp-bar .chip.on { background: var(--fill-2); color: var(--tx-1); } .cmp-bar .chip.on[data-tip]::after { display: none; }
+.ctxbar.thr { position: relative; overflow: visible; } .ctxbar.thr > i:first-child { border-radius: 3px 0 0 3px; }
+.ctxbar .tick { position: absolute; top: -2px; bottom: -2px; width: 1.5px; margin-left: -1px; border-radius: 1px; background: var(--tx-3); }
+.ctx-row { display: flex; align-items: center; gap: 7px; font-size: var(--fs-cap); } .ctx-row .pc { width: 28px; text-align: right; }
+.ctx-lim { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-cap); } .meter.warn > i { background: var(--warn); }
+.ctx-hint, .ctx-none { display: flex; align-items: flex-start; gap: 6px; padding: 6px 8px; border-radius: var(--r-sm); background: var(--fill-1); font-size: var(--fs-cap); color: var(--tx-2); line-height: 1.5; }
+.ctx-hint.warn { background: var(--warn-soft); color: var(--warn); } .ctx-hint.err { background: var(--err-soft); color: var(--err); align-items: center; } .ctx-none { color: var(--tx-3); }
+.ctx-skel .skel { display: block; }
+.ctx-foot { padding-top: 7px; box-shadow: inset 0 1px var(--bd-1); margin: 0 -12px -4px; padding-inline: 12px 8px; }

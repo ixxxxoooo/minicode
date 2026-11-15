@@ -94,8 +94,28 @@
   ACT.sbpop = (el, w) => openPop(el.dataset.pop, W.sbPop(el.dataset.pop), w);
   document.addEventListener('mousedown', (e) => { if (!$('.acct, .sb-pop') || !e.target.closest || e.target.closest('.acct, .sb-pop, [data-act="acct"], [data-act="sbpop"]')) return; closePop(); });
 
+  /* ═════════ 上下文弹层(输入框圆环;状态栏那份走 sbpop,内容同一份 F.ctxBody) ═════════ */
+  const closeCtx = (root = win() || document) => { const p = $('.ctx-pop', root); if (!p) return false;
+    $$('.ctx-chip.on', root).forEach(c => c.classList.remove('on')); p.classList.remove('a-pop-up'); p.classList.add('a-out'); later(160, () => p.remove()); return true; };
+  /** 点圆环:展开 / 收起;与运行配置弹层互斥 */
+  ACT.ctx = (el) => { const cmp = el.closest('.cmp'); if (!cmp) return;
+    if (closeCtx(cmp)) return;
+    const cfg = $('.cfg-pop', cmp); if (cfg) { cfg.remove(); $('.cfg.on', cmp)?.classList.remove('on'); }
+    cmp.insertAdjacentHTML('afterbegin', F.ctxPop({ state: cmp.dataset.ctxState || 'ok' })); el.classList.add('on'); };
+  /** 就地换弹层内容与状态(外壳不动,圆环与状态一起换) */
+  const ctxSet = (pop, state, upd) => { pop.dataset.state = state; pop.innerHTML = F.ctxBody({ state, upd }); };
+  /** 刷新:按钮转圈、文案变「更新中…」,约 0.9 秒后写「更新于 刚刚」;失败态点重试同样走这里 */
+  ACT['ctx-refresh'] = (el) => { const pop = el.closest('.ctx-pop, .sb-pop'); if (!pop || pop._busy) return; pop._busy = true;
+    const upd = $('.ctx-upd', pop); if (upd) upd.textContent = '更新中…'; $('.ib svg', pop)?.classList.add('spin');
+    later(900, () => { pop._busy = false; if (pop.isConnected) ctxSet(pop, 'ok', '刚刚'); }); };
+  /** 压缩:进入压缩中(按钮禁用、不定进度)→ 约 1.8 秒后占用降到 31k / 16%,并弹一条提示 */
+  ACT['ctx-compact'] = (el) => { const pop = el.closest('.ctx-pop, .sb-pop'); if (!pop) return; ctxSet(pop, 'busy');
+    later(1800, () => { if (pop.isConnected) { pop.dataset.state = 'ok'; pop.innerHTML = F.ctxBody({ state: 'ok', upd: '刚刚' }).replace(/76k/g, '31k').replace(/· 38%/, '· 16%').replace('--p:38', '--p:16'); }
+      toast('已压缩上下文', { sub: '184k → 31k,保留了任务目标与关键决定', lvl: 'ok' }); }); };
+  document.addEventListener('mousedown', (e) => { if (!$('.ctx-pop') || !e.target.closest || e.target.closest('.ctx-pop, .ctx-chip')) return; closeCtx(); });
+
   /** Esc:按「模态 → 录制 → 弹层 → 搜索」的顺序,关掉最上面的一层 */
-  A.closeLayer = () => { if (M) { closeModal(); return true; } if (A.recording) { endRec(true); return true; } if (closePop()) return true;
+  A.closeLayer = () => { if (M) { closeModal(); return true; } if (A.recording) { endRec(true); return true; } if (closeCtx()) return true; if (closePop()) return true;
     if (st.setQ) { st.setQ = ''; refreshSettings(true); return true; } return false; };
 
   /* ═════════ 设置页:搜索 ═════════ */

@@ -123,9 +123,7 @@
     <div class="menu">${ami('sliders', '设置', kbd('⌘', ','), 'data-act="screen" data-screen="settings"')}${ami('chart', '用量与成本', '', 'data-act="screen" data-screen="usage"')}${ami('kbd', '快捷键', '', 'data-act="settab" data-tab="shortcuts" data-goto="settings"')}<div class="sep"></div>${ami('refresh', '检查更新', '', 'data-act="settab" data-tab="about" data-goto="settings"')}${ami('info', '关于 MiniCode', '0.2.0', 'data-act="settab" data-tab="about" data-goto="settings"')}</div></div>`;
   /** 状态栏弹层:ctx 上下文 / upd 更新 / cfg 运行配置 */
   W.sbPop = (kind) => ({
-    ctx: `<div class="sb-pop pop a-pop-up"><div class="f ai g4"><span class="ring big" style="--p:38"></span><div class="grow"><b class="num">76k / 200k</b> <span class="t3">· 38%</span><div class="t3 fs-cap">Sonnet 5.5 · 自动压缩阈值 85%</div></div>${btn('压缩', 'sm')}</div>
-      <div class="ctxbar"><i style="width:14%;background:var(--info)"></i><i style="width:11%;background:var(--ok)"></i><i style="width:9%;background:var(--warn)"></i><i style="width:4%;background:var(--c-vio)"></i></div>
-      <div class="f ai fs-cap t3"><span class="grow">5 小时限额 38%</span>${btn('用量与成本', 'sm ghost', 'arrow', 'data-act="screen" data-screen="usage"')}</div></div>`,
+    ctx: `<div class="sb-pop pop a-pop-up" data-state="ok">${F.ctxBody()}</div>`,
     upd: `<div class="sb-pop pop a-pop-up"><div class="f ai g3"><b class="grow">发现新版本 0.2.1</b>${tag('42%', 'ac')}</div><div class="meter"><i style="width:42%"></i></div><div class="t3 fs-cap">正在后台下载,完成后提示重启。</div></div>`,
     cfg: `<div class="sb-pop pop a-pop-up" style="padding:4px;gap:0"><div class="cap">权限模式</div><div class="mi on">${ic('shield', 's12')}<span class="grow">逐项确认</span>${ic('check', 's12')}</div><div class="mi">${ic('edit', 's12')}<span class="grow">自动接受编辑</span></div><div class="mi">${ic('list', 's12')}<span class="grow">计划模式</span></div><div class="sep"></div><div class="cap">模型</div><div class="mi on"><span class="grow">Sonnet 5.5</span>${ic('check', 's12')}</div><div class="mi"><span class="grow">Opus 5.5</span></div><div class="mi"><span class="grow">Haiku 5.5</span></div></div>`,
   })[kind];

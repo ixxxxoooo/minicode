@@ -75,10 +75,10 @@ ${live ? 'test matches_trailing_slash ... <span class="caret"></span>' : 'test r
     ${[['Fable 5.2', '最强'], ['Opus 5.5', ''], ['Sonnet 5.5', '', 1], ['Haiku 5.5', '最快']].map(([t, d, on]) => `<div class="mi ${on ? 'on' : ''}"><span class="grow">${t}</span><span class="t3 fs-cap">${d}</span>${on ? ic('check', 's12') : ''}</div>`).join('')}
     <div class="sep"></div><div class="f ai jb" style="padding:4px 8px 6px"><span class="t3 fs-cap m">思考强度</span>${seg(['关', '低', '中', '高'], 2)}</div></div>`;
   /** 输入框。o.focus / o.text(已输入内容)/ o.running(回合进行中,发送变停止)/ o.pop(展开运行配置) */
-  F.composer = (o = {}) => `<div class="cmp ${o.focus ? 'focus' : ''}">${o.pop ? F.cfgPop() : ''}
+  F.composer = (o = {}) => `<div class="cmp ${o.focus ? 'focus' : ''}">${o.pop ? F.cfgPop() : ''}${o.ctx ? F.ctxPop({ state: o.ctx === true ? 'ok' : o.ctx }) : ''}
     <div class="cmp-in ${o.text ? 'v' : ''}">${o.text || '描述任务,@ 引用文件,/ 调用命令'}</div>
     <div class="cmp-bar">${ib('plus', 'tip-u', '添加附件')}<span class="cfg ${o.pop ? 'on' : ''}" data-act="cfg">${ic('shield', 's12')}逐项确认<i></i>Sonnet 5.5<i class="dock-wide"></i><span class="dock-wide f ai g2">${ic('brain', 's12')}中</span>${ic('chevD', 's12 car')}</span>${chip(`<span class="lbl">MCP</span> <b class="num">3</b>`, 'plug', 'mcp-chip')}
-      <span class="grow"></span><span class="chip tip-u" data-tip="上下文 76k / 200k"><span class="num dock-wide">38%</span><span class="ring" style="--p:38"></span></span>${o.running ? ib('stop', 'stop') : ib('send', 'send')}</div></div>`;
+      <span class="grow"></span><span class="chip tip-u ctx-chip ${o.ctx ? 'on' : ''}" data-tip="上下文 76k / 200k" data-act="ctx" tabindex="0" role="button" aria-label="上下文用量">${o.ctx ? '' : ''}<span class="num dock-wide">38%</span><span class="ring" style="--p:38"></span></span>${o.running ? ib('stop', 'stop') : ib('send', 'send')}</div></div>`;
 
   /* ───────── 一个完整回合的脚本:静态渲染与重播共用 ───────── */
   const exploreBody = `<div class="nest">${F.step('read', 'router.rs', 'src/ · L1–86', '86 行')}${F.step('grep', '"match_path"', 'src/', '5 处')}${F.step('read', 'router_test.rs', 'tests/', '64 行')}</div>`;
