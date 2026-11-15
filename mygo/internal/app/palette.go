@@ -130,7 +130,7 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 	if a.mode == ModeAgent {
 		common[add("swap", "切换到 IDE", "⌘E", "把窗口切到 IDE 形态:编辑区在前,对话停靠在右侧。", func() { a.SetMode(ModeIDE) })] = true
 	} else {
-		common[add("swap", "切换到 Agent", "⌘E", "把窗口切到 Agent 形态:对话在前,检查器在右侧。", func() { a.SetMode(ModeAgent) })] = true
+		common[add("swap", "切换到 Agent", "⌘E", "把窗口切到 Agent 形态:对话在前,工作区在右侧。", func() { a.SetMode(ModeAgent) })] = true
 	}
 	common[add("search", "在项目中搜索", "⇧⌘F", "在整个项目里搜索 / 替换文本,支持正则、全词、包含与排除。", func() { a.OpenSearch() })] = true
 	common[add("branch", "源代码管理", "⌃⇧G", "查看改动、暂存与提交,浏览提交图谱。", func() { a.OpenSCM() })] = true
@@ -147,6 +147,9 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 	for _, s := range theme.Schemes {
 		s := s
 		add("cols", "布局:"+s.Name, "", "把整个窗口切到「"+s.Name+"」布局方案。", func() { a.setScheme(s.ID) })
+	}
+	if a.demoExtra {
+		add("fork", "演示:打开合并冲突", "", "写入一个带冲突标记的文件并打开三方合并标签。", a.demoConflict)
 	}
 	add("chart", "用量与成本", "", "打开用量整页。", func() { a.screen = ScreenUsage })
 	add("clock", "自动化", "", "打开自动化页面。", func() { a.screen = ScreenAutomation })

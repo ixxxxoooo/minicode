@@ -30,6 +30,8 @@ type scmState struct {
 	files         map[string][]vcs.Change
 	busy          string // 正在进行的操作名(提交 / 拉取 / 推送),空 = 空闲
 	amend         bool
+	stashes       []vcs.Stash
+	createAt      string // 非空:分支选择器里「创建并切换」从这个提交起
 }
 
 // scmRefreshEvery 是面板可见时自动重读状态的间隔(git status 很轻,另外文件监视接上后可去掉)。
@@ -80,6 +82,7 @@ func (a *App) scmRefresh() {
 			lg, _ = repo.Log(60)
 		}
 		ah, bh := repo.AheadBehind()
+		ss, _ := repo.Stashes()
 		end()
 		return func() {
 			if gen != a.sc.gen || repo != a.repo {
@@ -94,7 +97,7 @@ func (a *App) scmRefresh() {
 			}
 			s.err = ""
 			sortChanges(cs)
-			s.changes, s.log, s.ahead, s.behind = cs, lg, ah, bh
+			s.changes, s.log, s.ahead, s.behind, s.stashes = cs, lg, ah, bh, ss
 			s.rows = vcs.Layout(lg)
 			s.lanes = 1
 			for _, r := range s.rows {
@@ -341,5 +344,37 @@ func (a *App) SetSCM(msg, expanded string) {
 	if expanded != "" {
 		a.sc.expanded = expanded
 		a.scmCommitFiles(expanded)
+	}
+}
+
+// 储藏与提交上的操作(都走 scmAct:后台执行、完成后提示并刷新)。
+func (a *App) scmStashPush() {
+	a.scmAct("储藏", func(r vcs.Repo) error { return r.StashPush("") }, func() { a.toast = "已储藏全部更改" })
+}
+func (a *App) scmStashApply(i int, drop bool) {
+	what := map[bool]string{true: "弹出储藏", false: "应用储藏"}[drop]
+	a.scmAct(what, func(r vcs.Repo) error { return r.StashApply(i, drop) })
+}
+func (a *App) scmStashDrop(i int) {
+	a.scmAct("删除储藏", func(r vcs.Repo) error { return r.StashDrop(i) })
+}
+func (a *App) scmUndoCommit() {
+	a.scmAct("撤销上次提交", func(r vcs.Repo) error { return r.UndoCommit() }, func() { a.toast = "已撤销上次提交,改动保留在暂存区" })
+}
+func (a *App) scmCommitOp(cm vcs.Commit, op string) {
+	h := cm.Hash
+	switch op {
+	case "checkout":
+		a.scmAct("检出提交", func(r vcs.Repo) error { return r.Checkout(h) }, func() { a.toast = "已检出 " + cm.Short() + "(游离 HEAD)" })
+	case "pick":
+		a.scmAct("拣选", func(r vcs.Repo) error { return r.CherryPick(h) })
+	case "revert":
+		a.scmAct("还原提交", func(r vcs.Repo) error { return r.RevertCommit(h) })
+	case "branch":
+		a.sc.createAt = h
+		a.OpenQuick("branch", "")
+	case "copy":
+		a.copyText = cm.Hash
+		a.toast = "已复制哈希 " + cm.Short()
 	}
 }

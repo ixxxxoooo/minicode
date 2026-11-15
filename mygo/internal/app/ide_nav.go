@@ -418,6 +418,14 @@ func (a *App) editorMenu(tb *ideTab, m *ui.Menu) {
 		a.openRename()
 	}
 	m.Separator()
+	if m.Item(map[bool]string{true: "关闭行内 Git 追溯", false: "开启行内 Git 追溯"}[a.blameOn]).Chosen() {
+		a.blameOn = !a.blameOn
+	}
+	if m.Item("显示文件历史").Chosen() {
+		a.ide.sections["时间线"] = true
+		a.nav, a.sideOpen = "files", true
+	}
+	m.Separator()
 	if m.Item("问 Claude").Chosen() {
 		a.askClaude("问")
 	}

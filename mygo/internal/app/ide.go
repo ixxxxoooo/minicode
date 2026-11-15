@@ -30,11 +30,15 @@ type ideTab struct {
 	virt    string  // 虚拟标签的种类(review / plan / sub / task / conflict),空 = 文件或对比
 	ref     string  // 虚拟标签引用的对象 id(子 Agent / 任务 id、冲突文件路径)
 
+	dk      string  // 差异来源:head / work / staged(空 = 提交里的差异)
 	hooked  bool    // 已接上悬停 / 转到定义 / 补全
 	diagSet bool    // 演示诊断已装
 	fq      *string // 编辑器查找条的查询词(迷你地图画命中刻度)
 	fcs     *bool   // 查找是否区分大小写
 	mm      *mmInfo // 迷你地图叠加数据缓存
+
+	blameKey   string // 行内追溯当前显示的内容(去重,避免每帧 SetInlays)
+	blameShown bool
 }
 
 func (t *ideTab) dirty() bool { return !t.diff && t.buf != nil && t.buf.String() != t.saved }
@@ -274,6 +278,15 @@ func (d *ide) closeTab(id string) {
 // save 保存当前文件。
 func (d *ide) save() error {
 	t := d.cur()
+	if t != nil && t.diff && t.dv != nil && t.dv.Editable && t.dk != dkStaged { // 差异的工作区一侧:写回文件
+		src := t.dv.New.String()
+		if err := d.fs.Write(t.path, src); err != nil {
+			return err
+		}
+		d.invalidate()
+		d.reloadOpen()
+		return nil
+	}
 	if t == nil || t.diff || t.buf == nil {
 		return nil
 	}

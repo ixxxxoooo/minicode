@@ -351,7 +351,7 @@ func (a *App) diffCard(c *ui.Context, d *core.DiffBlock, head bool) {
 
 // OpenDiffTab 在工作区开某个文件的差异标签(HEAD ↔ 工作区)。
 func (a *App) OpenDiffTab(path string) {
-	a.ide.openDiff(a.wsRel(path), true)
+	a.openDiffKind(dkHead, a.wsRel(path), true)
 	a.revealWorkspace()
 }
 

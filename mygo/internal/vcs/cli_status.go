@@ -44,6 +44,10 @@ func parseStatus(out string) []Change {
 			continue
 		}
 		x, y, p := e[0], e[1], e[3:]
+		if x == 'U' || y == 'U' || (x == y && (x == 'A' || x == 'D')) { // 合并冲突:UU / AA / DD / AU / UA / DU / UD
+			cs = append(cs, Change{Path: p, Status: StatusConflict})
+			continue
+		}
 		if x == 'R' || x == 'C' { // 重命名 / 复制:下一项是旧路径
 			i++
 		}

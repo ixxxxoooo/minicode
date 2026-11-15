@@ -152,6 +152,7 @@ func (a *App) decorate(tb *ideTab) {
 		}
 		st.SetDiagnostics(tb.buf.Version(), ds)
 	}
+	a.blameInlay(tb)
 }
 
 // ───────── 粘性滚动 ─────────

@@ -59,7 +59,7 @@ func (a *App) OpenQuick(kind, query string) {
 	log.Debug("打开快速选择", "kind", kind)
 }
 
-func (a *App) closeQuick() { a.qp = nil }
+func (a *App) closeQuick() { a.qp = nil; a.sc.createAt = "" }
 
 // qpRows 按查询构建当前列表。
 func (a *App) qpRows() []qpRow {
@@ -140,6 +140,11 @@ func (a *App) switchBranch(name string) {
 	a.gitOp("切换分支", "已切换到 "+name, func() error { return a.repo.Switch(name) })
 }
 func (a *App) createBranch(name string) {
+	if h := a.sc.createAt; h != "" { // 从某个提交起
+		a.sc.createAt = ""
+		a.scmAct("创建分支", func(r vcs.Repo) error { return r.CreateAt(name, h) }, func() { a.toast = "已从该提交创建并切换到 " + name })
+		return
+	}
 	a.gitOp("创建分支", "已创建并切换到 "+name, func() error { return a.repo.Create(name) })
 }
 

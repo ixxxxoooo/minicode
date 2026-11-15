@@ -45,12 +45,34 @@ type Repo interface {
 	AheadBehind() (ahead, behind int)
 	Pull() error
 	Push() error
+
+	// Index 暂存区里文件的内容(没有暂存过就是 HEAD 的);StageContent 把内容写成暂存区里的版本(块级暂存的落点)。
+	Index(path string) (string, bool)
+	StageContent(path, content string) error
+	// FileLog 文件的提交历史(跟随重命名);Blame 逐行追溯(下标 = 行号 - 1)。
+	FileLog(path string, n int) ([]Commit, error)
+	Blame(path string) ([]BlameLine, error)
+	// 储藏。
+	Stashes() ([]Stash, error)
+	StashPush(msg string) error
+	StashApply(i int, drop bool) error
+	StashDrop(i int) error
+	// 提交上的操作(图谱右键菜单)。
+	Checkout(hash string) error
+	CherryPick(hash string) error
+	RevertCommit(hash string) error
+	CreateAt(name, hash string) error
+	// UndoCommit 撤销上一次提交,改动留在暂存区(git reset --soft HEAD~1)。
+	UndoCommit() error
 }
+
+// StatusConflict 是合并冲突文件的状态字母。
+const StatusConflict = 'C'
 
 // Change 是一个文件的改动。
 type Change struct {
 	Path     string
-	Status   byte // M 修改 / A 新增 / D 删除 / R 重命名 / U 未跟踪
+	Status   byte // M 修改 / A 新增 / D 删除 / R 重命名 / U 未跟踪 / C 合并冲突
 	Staged   bool // 在暂存区(否则在工作区)
 	Add, Del int
 }

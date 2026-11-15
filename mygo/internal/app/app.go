@@ -113,6 +113,9 @@ type App struct {
 	// 输入框
 	draft        string
 	sr           searchState                    // 项目内搜索
+	gi           map[string]*gitInfo            // 文件的追溯 / 历史缓存
+	blameOn      bool                           // 行内追溯(光标行末尾的作者 · 时间 · 摘要)
+	cf           map[string]*confState          // 合并冲突标签的状态(按文件)
 	sc           scmState                       // 源代码管理
 	auto         *automation.Store              // 自动化清单
 	au           autoState                      // 自动化页状态
@@ -129,6 +132,7 @@ type App struct {
 	qp           *qpState                       // 快速选择浮层(历史会话 / 分支),nil = 关闭
 	repo         vcs.Repo                       // 当前项目的仓库(演示为内存实现)
 	branch       string                         // 当前分支名(缓存,避免每帧查 git)
+	copyText     string                         // 待写入剪贴板的文字(需要 ui.Context 才能写,下一帧消费)
 	toast        string                         // 待显示的一条轻提示(渲染时消费)
 	welcomeFocus bool                           // 欢迎页的输入框自动聚焦
 	cardHov      bool                           // 当前这张工具卡是否被悬停(卡片内容里的悬停按钮用)
@@ -178,6 +182,7 @@ func New(o Options) *App {
 		radius:     1,
 		fakeLights: o.FakeLights,
 		devBadge:   o.DevBadge,
+		blameOn:    true,
 	}
 	if a.screen == "" {
 		a.screen = ScreenWork
@@ -379,6 +384,10 @@ func (a *App) SetPopup(k string) { a.popup = k }
 // shortcuts 是窗口级快捷键(与设计稿一致):⌘B 导航栏、⌥⌘B 右侧栏、⌘E 切换形态、⌘K 命令面板、
 // ⌘J 底部面板、⌘S 保存、⌘, 设置。输入框里的 Enter 等由各自控件处理,这里只放带 ⌘ 的组合键。
 func (a *App) shortcuts(c *ui.Context) {
+	if a.copyText != "" {
+		c.WriteClipboard(a.copyText)
+		a.copyText = ""
+	}
 	if a.editorShortcuts(c) {
 		return
 	}

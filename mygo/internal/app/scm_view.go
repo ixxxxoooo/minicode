@@ -31,18 +31,32 @@ func (a *App) scmView(c *ui.Context) {
 	}
 	a.scmTick()
 	staged, work := s.split()
+	var conf []vcs.Change // 合并冲突单独成组,排在最前
+	for i := 0; i < len(work); {
+		if work[i].Status == vcs.StatusConflict {
+			conf = append(conf, work[i])
+			work = append(work[:i:i], work[i+1:]...)
+			continue
+		}
+		i++
+	}
 	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
 		a.scmHead(c)
 		a.scmCommitBox(c, len(staged))
+		a.scmReviewRow(c)
 		ui.Scroll(c).Key("scm").Grow(1).MinHeight(0).Children(func() {
 			ui.Column(c).Padding(0, 0, 8, 0).Children(func() {
+				if len(conf) > 0 {
+					a.scmGroup(c, "merge", "合并冲突", conf, "", "")
+				}
 				if len(staged) > 0 {
 					a.scmGroup(c, "staged", "暂存的更改", staged, "minus", "全部取消暂存")
 				}
 				a.scmGroup(c, "changes", "更改", work, "plus", "全部暂存")
-				if len(staged)+len(work) == 0 && s.loaded {
+				if len(staged)+len(work)+len(conf) == 0 && s.loaded {
 					ui.Text(c, "没有未提交的更改").FontSize(theme.FsCap).TextColor(t.Tx4).Padding(6, 8)
 				}
+				a.scmStashes(c)
 				a.scmGraph(c)
 			})
 		})
@@ -69,6 +83,7 @@ func (a *App) scmHead(c *ui.Context) {
 			kit.Spin(c, t.Ac)
 			ui.Text(c, s.busy+"中").FontSize(theme.FsMicro).TextColor(t.Tx3).Shrink(0)
 		}
+		kit.Ib(c, "layers", kit.IbOpt{Small: true, Tip: "储藏全部更改"}).OnClick(a.scmStashPush)
 		kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { s.last = s.last.Add(-scmRefreshEvery * 2) })
 		pull := kit.Ib(c, "download", kit.IbOpt{Small: true, Tip: "拉取" + countTip("落后", s.behind)})
 		pull.OnClick(func() { a.scmSync(true, false) })
@@ -146,6 +161,10 @@ func (a *App) scmCommitBox(c *ui.Context, nStaged int) {
 						a.popup = ""
 						a.scmCommit(true)
 					}
+					if a.mi(c, "scm-undo", "rewind", "撤销上次提交(保留改动)", "", false).Clicked() {
+						a.popup = ""
+						a.scmUndoCommit()
+					}
 					if a.mi(c, "scm-amend", "undo", map[bool]string{true: "取消修改上次提交", false: "修改上次提交"}[s.amend], "", s.amend).Clicked() {
 						a.popup = ""
 						s.amend = !s.amend
@@ -172,7 +191,7 @@ func (a *App) scmGroup(c *ui.Context, id, title string, cs []vcs.Change, actIcon
 		kit.Ic(c, map[bool]string{true: "chevR", false: "chevD"}[s.folded[id]], kit.S12)
 		ui.Text(c, title).FontSize(10.5).FontWeight(700).LetterSpacing(.3)
 		ui.Spacer(c).Grow(1)
-		if h.Hovered() {
+		if h.Hovered() && actIcon != "" {
 			paths := make([]string, len(cs))
 			for i, ch := range cs {
 				paths[i] = ch.Path
@@ -199,7 +218,7 @@ func statusColor(t *theme.Tokens, st byte) ui.Color {
 	switch st {
 	case 'A', 'U':
 		return t.Ok
-	case 'D':
+	case 'D', vcs.StatusConflict:
 		return t.Err
 	case 'R':
 		return t.Info
@@ -223,10 +242,10 @@ func (a *App) scmFile(c *ui.Context, grp string, ch vcs.Change) {
 		r.Background(t.Fill1)
 	}
 	if r.Clicked() {
-		a.ide.openDiff(ch.Path, false)
+		a.scmOpenFile(grp, ch, false)
 	}
 	if r.DoubleClicked() {
-		a.ide.openDiff(ch.Path, true)
+		a.scmOpenFile(grp, ch, true)
 	}
 	col := t.Tx2
 	if ch.Status == 'D' {
@@ -316,6 +335,25 @@ func (a *App) scmCommitRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow,
 	} else if r.Hovered() {
 		r.Background(t.Fill1)
 	}
+	r.ContextMenu(func(m *ui.Menu) {
+		if m.Item("检出此提交").Chosen() {
+			a.scmCommitOp(cm, "checkout")
+		}
+		if m.Item("从此提交创建分支…").Chosen() {
+			a.scmCommitOp(cm, "branch")
+		}
+		m.Separator()
+		if m.Item("拣选(cherry-pick)").Chosen() {
+			a.scmCommitOp(cm, "pick")
+		}
+		if m.Item("还原(revert)").Chosen() {
+			a.scmCommitOp(cm, "revert")
+		}
+		m.Separator()
+		if m.Item("复制哈希").Chosen() {
+			a.scmCommitOp(cm, "copy")
+		}
+	})
 	r.OnClick(func() {
 		if open {
 			s.expanded = ""
@@ -427,5 +465,83 @@ func (a *App) graphCell(c *ui.Context, gr vcs.GraphRow, w float32, head bool, t 
 			ri := float32(math.Max(float64(rad-1.6), 1))
 			p.Fill(ui.Rect{X: nx - ri, Y: mid - ri, W: ri * 2, H: ri * 2}, bg, ri)
 		}
+	})
+}
+
+// grpDiffKind 按 SCM 分组决定差异标签对比什么:暂存的更改 = HEAD ↔ 暂存区,其余 = 暂存区 ↔ 工作区。
+func grpDiffKind(grp string) string {
+	if grp == "staged" {
+		return dkStaged
+	}
+	return dkWork
+}
+
+// scmOpenFile 点 SCM 里的文件:冲突 = 打开三方合并标签,其余 = 对应来源的差异标签。
+func (a *App) scmOpenFile(grp string, ch vcs.Change, pin bool) {
+	if grp == "merge" {
+		a.OpenWorkspaceTab(vConflict, ch.Path)
+		return
+	}
+	a.openDiffKind(grpDiffKind(grp), ch.Path, pin)
+}
+
+// scmStashes 是「储藏」分组:应用(保留)/ 弹出(应用并删除)/ 删除。
+func (a *App) scmStashes(c *ui.Context) {
+	t := a.tk
+	s := &a.sc
+	if len(s.stashes) == 0 {
+		return
+	}
+	h := ui.ButtonBase(c).Key("scm-h-stash").Height(24).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3).Margin(8, 0, 0, 0)
+	if h.Hovered() {
+		h.Background(t.Fill1)
+	}
+	h.OnClick(func() { s.folded["stash"] = !s.folded["stash"] })
+	h.Children(func() {
+		kit.Ic(c, map[bool]string{true: "chevR", false: "chevD"}[s.folded["stash"]], kit.S12)
+		ui.Text(c, "储藏").FontSize(10.5).FontWeight(700).LetterSpacing(.3)
+		ui.Spacer(c).Grow(1)
+		kit.Cnt(c, itoa(len(s.stashes)), false)
+	})
+	if s.folded["stash"] {
+		return
+	}
+	for i, st := range s.stashes {
+		i, st := i, st
+		r := ui.Row(c).Key("stash-" + itoa(i)).Height(36).PaddingX(6).Gap(6).AlignItems(ui.Center).Radius(t.RSm())
+		if r.Hovered() {
+			r.Background(t.Fill1)
+		}
+		r.Children(func() {
+			kit.Ic(c, "layers", kit.S12).TextColor(t.Tx3)
+			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+				ui.Text(c, st.Msg).SingleLine().FontSize(theme.FsCap)
+				ui.Text(c, st.When+" · "+itoa(st.Files)+" 个文件").FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine()
+			})
+			if r.Hovered() {
+				kit.Ib(c, "play", kit.IbOpt{Small: true, Tip: "应用(保留储藏)"}).OnClick(func() { a.scmStashApply(i, false) })
+				kit.Ib(c, "download", kit.IbOpt{Small: true, Tip: "弹出(应用并删除)"}).OnClick(func() { a.scmStashApply(i, true) })
+				kit.Ib(c, "trash", kit.IbOpt{Small: true, Tip: "删除"}).OnClick(func() { a.scmStashDrop(i) })
+			}
+		})
+	}
+}
+
+// scmReviewRow 是「审查本轮」入口:Claude 这一轮改过文件时显示,点击打开审查标签(改动审查的唯一的家)。
+func (a *App) scmReviewRow(c *ui.Context) {
+	t := a.tk
+	n := len(a.changedFiles())
+	if n == 0 {
+		return
+	}
+	r := ui.ButtonBase(c).Key("scm-review").Height(28).PaddingX(8).Gap(6).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).
+		Background(t.AcSoft).Margin(0, 2, 6, 2).Shrink(0)
+	r.OnClick(a.OpenReview)
+	r.Children(func() {
+		kit.Ic(c, "eye", kit.S12).TextColor(t.Ac)
+		ui.Text(c, "审查本轮改动").FontWeight(500).SingleLine()
+		ui.Spacer(c).Grow(1)
+		ui.Text(c, itoa(n)+" 个文件").FontSize(theme.FsCap).TextColor(t.Tx3)
+		kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx3)
 	})
 }

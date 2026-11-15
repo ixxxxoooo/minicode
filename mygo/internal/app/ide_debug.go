@@ -7,7 +7,7 @@ import (
 )
 
 // EditorDemo 按「动作:参数」驱动编辑器进入某个状态(cmd/shot 截图用,多个动作用逗号隔开):
-// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径。
+// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)。
 func (a *App) EditorDemo(spec string) {
 	for _, act := range strings.Split(spec, ",") {
 		name, arg, _ := strings.Cut(act, ":")
@@ -19,6 +19,20 @@ func (a *App) EditorDemo(spec string) {
 				l, c = atoi(parts[0]), atoi(parts[1])
 			}
 			return editor.Pos{Line: max(l-1, 0), Col: max(c-1, 0)}
+		}
+		if name == "conflict" {
+			a.demoConflict()
+			continue
+		}
+		if name == "diff" || name == "staged" {
+			k := map[string]string{"diff": dkWork, "staged": dkStaged}[name]
+			a.openDiffKind(k, arg, true)
+			continue
+		}
+		if name == "timeline" {
+			a.ide.sections["时间线"], a.ide.sections["大纲"] = true, true
+			a.nav, a.sideOpen = "files", true
+			continue
 		}
 		if name == "open" {
 			a.ide.openFile(arg, true)

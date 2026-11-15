@@ -1,7 +1,6 @@
 package app
 
 import (
-	"path"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
@@ -83,41 +82,6 @@ func (a *App) editorTheme() *editor.Theme {
 	set(editor.TokenMeta, t.SynMac, false)
 	a.edTheme, a.edThemeKey = th, a.pal.ID
 	return th
-}
-
-// ───────── 对比标签 ─────────
-
-func (a *App) diffTab(c *ui.Context, tb *ideTab) {
-	t := a.tk
-	dv := tb.dv
-	dv.Theme = a.editorTheme()
-	dv.Font = ui.Font{Family: "monospace", Size: 12}
-	adds, dels := dv.Stats()
-	ui.Row(c).Height(30).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
-		kit.Ic(c, "diff", kit.S12)
-		ui.Text(c, path.Base(tb.path)).FontWeight(600)
-		ui.Text(c, tb.diffLabel()).TextColor(t.Tx3)
-		kit.Tag(c, "+"+itoa(adds)+" −"+itoa(dels), kit.KOk)
-		ui.Spacer(c).Grow(1)
-		kit.Ib(c, "chevU", kit.IbOpt{Small: true, Tip: "上一处差异"})
-		kit.Ib(c, "chevD", kit.IbOpt{Small: true, Tip: "下一处差异"})
-		items := []kit.SegItem{{Text: "左右"}, {Text: "统一"}}
-		on := 0
-		if dv.Layout == editor.DiffUnified {
-			on = 1
-		}
-		if i := kit.Seg(c, items, on, kit.SegOpt{Key: "dvseg"}); i >= 0 {
-			if i == 0 {
-				dv.Layout = editor.DiffSplit
-			} else {
-				dv.Layout = editor.DiffUnified
-			}
-		}
-		kit.Btn(c, "打开文件", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "ext"}).OnClick(func() {
-			a.ide.openFile(tb.path, true)
-		})
-	})
-	editor.DiffView(c.Key("dv-"+tb.id), dv).Grow(1).MinHeight(0).FillWidth()
 }
 
 // ───────── 空编辑器 ─────────

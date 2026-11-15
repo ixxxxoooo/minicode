@@ -33,5 +33,6 @@ func Repo() *vcs.Mem {
 		}
 	}
 	m.SetState(changes, log, files, head, 1)
+	m.SetStash([]vcs.Stash{{Ref: "stash@{0}", Msg: "WIP on main: 路由实验", When: "2 小时前", Files: 3}})
 	return m
 }

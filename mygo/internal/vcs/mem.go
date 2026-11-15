@@ -16,6 +16,8 @@ type Mem struct {
 	head    map[string]string   // 路径 → HEAD 里的内容
 	msgs    []string            // 提交说明(演示:提交后把暂存区清掉并加一条)
 	ahead   int
+	index   map[string]string // 路径 → 暂存区里的内容(没有记录 = 与 HEAD 相同)
+	stash   []Stash
 }
 
 // NewMem 造一个带设计稿里那几个分支的演示仓库。

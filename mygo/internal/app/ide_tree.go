@@ -208,8 +208,3 @@ func (a *App) outlineRows(c *ui.Context) {
 		})
 	}
 }
-
-// timelineRows 是左栏「时间线」:当前文件的提交历史(g5 接入)。
-func (a *App) timelineRows(c *ui.Context) {
-	ui.Text(c, "暂无内容").FontSize(theme.FsCap).TextColor(a.tk.Tx4).Margin(2, 8, 6, 28)
-}
