@@ -62,7 +62,7 @@ func (a *App) cuDrawer(c *ui.Context, st *customize.Store) {
 
 // ───────── 公共小部件 ─────────
 
-func (a *App) cuHead(c *ui.Context, icon, name string, extra func()) {
+func (a *App) cuHead(c *ui.Context, st *customize.Store, it *customize.Item, icon, name string, extra func()) {
 	t := a.tk
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 		kit.Ic(c, icon, kit.S12).TextColor(t.Ac)
@@ -70,7 +70,10 @@ func (a *App) cuHead(c *ui.Context, icon, name string, extra func()) {
 		if extra != nil {
 			extra()
 		}
-		kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多"})
+		mb := kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多"})
+		if it != nil {
+			mb.Menu(func(m *ui.Menu) { a.cuMoreMenu(m, st, it) })
+		}
 	})
 }
 
@@ -196,7 +199,7 @@ func (a *App) cuMarketDetail(c *ui.Context, st *customize.Store) {
 	}
 	ui.Scroll(c).Key("cu-mkscroll").Grow(1).MinHeight(0).Children(func() {
 		ui.Column(c).Padding(14, 16).Gap(12).Children(func() {
-			a.cuHead(c, "plug", m.Name, func() { kit.Tag(c, m.By, kit.KAc) })
+			a.cuHead(c, st, nil, "plug", m.Name, func() { kit.Tag(c, m.By, kit.KAc) })
 			ui.Text(c, m.Desc+"。安装后会把它包含的 Skills、命令、子 Agent 与钩子一并加入。").TextColor(t.Tx2).LineHeight(1.6)
 			a.cuKV(c, [][2]string{{"来源", "claude-plugins-official"}, {"热度", "★ " + m.Stars}, {"安装到", "用户(所有项目)"}})
 			a.cuLbl(c, "将包含", func() {
@@ -233,7 +236,7 @@ func (a *App) cuMarketDetail(c *ui.Context, st *customize.Store) {
 
 func (a *App) cuPlugin(c *ui.Context, st *customize.Store, it *customize.Item) func() {
 	t := a.tk
-	a.cuHead(c, "plug", it.Name, func() { kit.Tag(c, "v"+it.Ver) })
+	a.cuHead(c, st, it, "plug", it.Name, func() { kit.Tag(c, "v"+it.Ver) })
 	if it.Upd != "" {
 		a.cuBanner(c, kit.KInfo, "download", "有新版本 "+it.Upd, func() {
 			kit.Btn(c, "更新", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() {
@@ -282,7 +285,7 @@ func (a *App) cuPlugin(c *ui.Context, st *customize.Store, it *customize.Item) f
 
 func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func() {
 	t := a.tk
-	a.cuHead(c, "server", it.Name, nil)
+	a.cuHead(c, st, it, "server", it.Name, nil)
 	switch it.Status {
 	case customize.StOK:
 		a.cuBanner(c, kit.KOk, "check", "已连接 · "+itoa(len(it.Tools))+" 个工具 · 延迟 23 ms", func() {
@@ -375,7 +378,7 @@ func (a *App) cuReconnect(it *customize.Item) {
 
 func (a *App) cuSkill(c *ui.Context, it *customize.Item) func() {
 	t := a.tk
-	a.cuHead(c, "spark", it.Name, nil)
+	a.cuHead(c, a.cuStore(), it, "spark", it.Name, nil)
 	a.cuKV(c, [][2]string{{"范围", it.Scope.Label()}, {"位置", it.Path}})
 	a.cuLbl(c, "文件", func() {
 		a.cuCard(c, func() {
@@ -443,7 +446,7 @@ func (a *App) cuModelSeg(c *ui.Context, key string, m *int, short bool) {
 func (a *App) cuCommand(c *ui.Context, st *customize.Store, it *customize.Item) func() {
 	t := a.tk
 	d := &a.cu.draft
-	a.cuHead(c, "slash", it.Name, nil)
+	a.cuHead(c, st, it, "slash", it.Name, nil)
 	ui.Column(c).Gap(8).Children(func() {
 		a.cuLbl(c, "名称", func() { a.cuField(c, "cc-n", &d.Name, true, "/command") })
 		a.cuLbl(c, "说明", func() { a.cuField(c, "cc-d", &d.Note, false, "这个命令做什么") })
@@ -490,7 +493,7 @@ func (a *App) cuAgent(c *ui.Context, st *customize.Store, it *customize.Item) fu
 	t := a.tk
 	d := &a.cu.draft
 	colors := []ui.Color{t.Info, t.Ok, t.Vio, t.Cyan, t.Pink, t.Warn}
-	a.cuHead(c, "bot", it.Name, func() { ui.Box(c).Size(7, 7).Radius(4).Background(colors[d.Color%len(colors)]).Shrink(0) })
+	a.cuHead(c, st, it, "bot", it.Name, func() { ui.Box(c).Size(7, 7).Radius(4).Background(colors[d.Color%len(colors)]).Shrink(0) })
 	ui.Column(c).Gap(8).Children(func() {
 		a.cuLbl(c, "名称", func() { a.cuField(c, "ca-n", &d.Name, true, "my-agent") })
 		a.cuLbl(c, "什么时候委派给它", func() { a.cuField(c, "ca-d", &d.Note, false, "例如:审查安全问题") })
@@ -538,7 +541,7 @@ func (a *App) cuAgent(c *ui.Context, st *customize.Store, it *customize.Item) fu
 func (a *App) cuRule(c *ui.Context, st *customize.Store, it *customize.Item) func() {
 	t := a.tk
 	d := &a.cu.draft
-	a.cuHead(c, "fileText", it.Name, nil)
+	a.cuHead(c, st, it, "fileText", it.Name, nil)
 	ui.Row(c).AlignItems(ui.Center).Children(func() {
 		on := 0
 		if a.cu.rulePV {
@@ -603,7 +606,7 @@ func pct1(f float64) string {
 func (a *App) cuHook(c *ui.Context, st *customize.Store, it *customize.Item) func() {
 	t := a.tk
 	d := &a.cu.draft
-	a.cuHead(c, "bolt", it.Name, nil)
+	a.cuHead(c, st, it, "bolt", it.Name, nil)
 	if it.Scope == customize.Project && !it.Trusted {
 		a.cuBanner(c, kit.KWarn, "shield", "这个项目的钩子还没有被信任,不会运行。", func() {
 			kit.Btn(c, "信任", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() {

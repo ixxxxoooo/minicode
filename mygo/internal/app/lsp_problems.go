@@ -3,6 +3,7 @@ package app
 import (
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -70,7 +71,11 @@ func (a *App) realProblems(c *ui.Context) {
 					case 3, 4:
 						icon, col = "info", t.Info
 					}
-					kit.RowEl(c, false).Key("pd-" + f + itoa(i)).Gap(6).Children(func() {
+					prow := kit.RowEl(c, false).Key("pd-" + f + itoa(i)).Gap(6)
+					prow.ContextMenu(func(m *ui.Menu) {
+						a.problemMenu(m, f, d.Range.Start.Line+1, d.Message, func() string { return a.allProblemsText(files) })
+					})
+					prow.Children(func() {
 						kit.Ic(c, icon, kit.S12).TextColor(col)
 						ui.Text(c, d.Message).Grow(1).SingleLine()
 						if d.Source != "" {
@@ -124,3 +129,14 @@ func (a *App) lspCard(c *ui.Context, s *lspSess) {
 
 // lspRelFile 把项目相对路径换成绝对路径(测试用)。
 func (a *App) lspAbs(rel string) string { return filepath.Join(a.proj, rel) }
+
+// allProblemsText 把全部诊断拼成「文件:行 消息」的多行文本(右键「复制全部」)。
+func (a *App) allProblemsText(files []string) string {
+	var sb strings.Builder
+	for _, f := range files {
+		for _, d := range a.lspH.diags[f] {
+			sb.WriteString(f + ":" + itoa(d.Range.Start.Line+1) + " " + d.Message + "\n")
+		}
+	}
+	return strings.TrimSpace(sb.String())
+}

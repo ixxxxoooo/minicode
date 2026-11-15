@@ -124,7 +124,9 @@ func (a *App) outPanel(c *ui.Context) {
 				case strings.Contains(ln, "WARN"):
 					col = t.Warn
 				}
-				ui.Text(c, ln).Key("o" + itoa(i)).Font("monospace").FontSize(11.5).LineHeight(1.5).TextColor(col).SingleLine()
+				ln := ln
+				ui.Text(c, ln).Key("o" + itoa(i)).Font("monospace").FontSize(11.5).LineHeight(1.5).TextColor(col).SingleLine().
+					ContextMenu(func(m *ui.Menu) { a.outputMenu(m, ln, lines) })
 			}
 		})
 	})

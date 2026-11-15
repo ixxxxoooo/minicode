@@ -95,6 +95,7 @@ func (a *App) bottomPanel(c *ui.Context) {
 					gear := kit.Ib(c, "gear", kit.IbOpt{Small: true, Tip: "终端设置", On: a.popup == "termset"})
 					gear.OnClick(func() { a.togglePop("termset") })
 					a.termSettings(c, gear)
+					kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.termMoreMenu)
 				}
 				mi, mt := "max", "最大化面板 ⌘⇧J"
 				if a.ly.panelMax {
@@ -201,7 +202,24 @@ func (a *App) problems(c *ui.Context) {
 					kit.Cnt(c, itoa(len(g.items)), false)
 				})
 				for _, p := range g.items {
-					kit.RowEl(c, false).Gap(6).Children(func() {
+					p := p
+					file := g.file
+					row := kit.RowEl(c, false).Key("dp-" + file + itoa(p.line)).Gap(6)
+					row.ContextMenu(func(m *ui.Menu) {
+						a.problemMenu(m, file, p.line, p.msg, func() string {
+							var sb strings.Builder
+							for _, d := range demoProblems() {
+								sb.WriteString(d.file + ":" + itoa(d.line) + " " + d.msg + "\n")
+							}
+							return strings.TrimSpace(sb.String())
+						})
+					})
+					row.OnClick(func() {
+						if full := a.resolveFile(file); full != "" {
+							a.jumpTo(full, max(p.line-1, 0), 0, 0)
+						}
+					})
+					row.Children(func() {
 						icon, col := "alert", t.Warn
 						if p.level == "err" {
 							icon, col = "errc", t.Err

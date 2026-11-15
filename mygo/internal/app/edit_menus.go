@@ -116,6 +116,11 @@ func (a *App) tabMenu(m *ui.Menu, tb *ideTab) {
 	if m.Item("关闭已保存").Chosen() {
 		a.closeTabsWhere(func(x *ideTab) bool { return x.dirty() })
 	}
+	if tb.isVirt() {
+		m.Separator()
+		a.virtMenu(m, tb)
+		return
+	}
 	if !isFileTab(tb) {
 		return
 	}

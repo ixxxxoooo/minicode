@@ -122,6 +122,8 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 
 - **SCM / 图谱 / 搜索菜单**(`scm_menus.go`,设计稿 `menus`「具体行为」一节):`scmDiscardAsk`(放弃更改统一确认,悬停按钮同走)、`scmFileMenu` / `scmGroupMenu`、`commitMenu`(图谱与 SCM 共用:与工作区比较 = 快速选择 `cmpfiles` 列文件 → `openCompareWork` 只读差异标签 `diff:cmp-<短哈希>:<路径>`;回退到这里 = `vcs.Repo.ResetKeep`(`git reset --keep`,不丢工作区,与回退内容冲突则中止;游离 HEAD / 当前提交 / 不在当前分支上置灰,`resetInfo` 数被移除的提交数)、`searchMatchMenu` / `searchFileMenu`。搜索列表行回调要防越界(菜单里折叠 / 忽略会在本帧中途重排 `rows`)。调试 `-ed discardask:路径`、`cmpfiles:提交`、`resetask:序号`。
 
+- **其余「···」与右键菜单**(`more_menus.go`,设计稿 `menus` / `drag-more` 页):SCM 标题 ···(`scmHeadMenu`:拉取 / 推送 / 同步 / 储藏所有更改 / 弹出最近的储藏 / 刷新)、差异标签 ···(`diffMoreMenu`)、终端标签条 ···(`termMoreMenu`)、问题行与输出行右键(`problemMenu` / `outputMenu`,「让 Claude 修复」把诊断填进输入框)、计划 / 子 Agent / 任务虚拟标签右键(`virtMenu`:复制内容 / 引用到对话)、自定义详情 ···(`cuMoreMenu`:复制名称 / 在访达中显示 / 删除带确认)。测试用 `clickMore` 按位置点同名「更多操作」按钮。缺口:SCM 标题的列表 / 树切换(B3)、「在新窗口中打开」、自定义详情「用编辑器打开」。
+
 ### 已知缺口(真实模式)
 
 - 设置页:快捷键录制、服务商 / 规则 / 环境变量 / LSP 行是演示数据;「项目信任」只列项目,不读写信任状态;除上面列出的偏好外,其它控件只存偏好。

@@ -122,6 +122,7 @@ func (a *App) scmHead(c *ui.Context) {
 		if s.ahead > 0 {
 			ui.Text(c, itoa(s.ahead)).FontSize(theme.FsMicro).TextColor(t.AcTx).FontFeatures("tnum").Shrink(0)
 		}
+		kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.scmHeadMenu)
 	})
 }
 

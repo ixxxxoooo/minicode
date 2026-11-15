@@ -242,6 +242,7 @@ func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 		kit.Btn(c, "打开文件", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "ext"}).OnClick(func() {
 			a.jumpTo(tb.path, 0, 0, 0)
 		})
+		kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(func(m *ui.Menu) { a.diffMoreMenu(m, tb) })
 	})
 	editor.DiffView(c.Key("dv-"+tb.id), dv).Grow(1).MinHeight(0).FillWidth()
 }
