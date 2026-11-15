@@ -74,10 +74,12 @@ func (a *App) turnFooter(c *ui.Context, uid string) {
 func (a *App) subagentCard(c *ui.Context, s *core.SubagentCard) {
 	t := a.tk
 	run := s.Active()
-	card := ui.Column(c).Key("sub-"+s.ID).Background(t.Raised).Radius(t.RMd()).Padding(7, 10).Gap(3).Margin(2, 0)
+	card := ui.ButtonBase(c).Key("sub-"+s.ID).Background(t.Raised).Radius(t.RMd()).Padding(7, 10).Gap(3).Margin(2, 0).
+		Vertical().AlignItems(ui.Stretch).Cursor(ui.CursorPointer).Transition(kit.Fade)
 	for _, sh := range t.Shadow1() {
 		card.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
 	}
+	card.OnClick(func() { a.OpenWorkspaceTab(vSub, s.ID) })
 	card.Children(func() {
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 			if run {

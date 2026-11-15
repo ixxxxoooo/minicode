@@ -1,6 +1,8 @@
 package app
 
 import (
+	"strings"
+
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
@@ -25,7 +27,10 @@ func (a *App) bottomPanel(c *ui.Context) {
 					kit.Chip(c, "全部", kit.ChipOpt{Icon: "filter", On: true})
 					kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "重新检查"})
 				} else {
-					kit.Chip(c, shellName(), kit.ChipOpt{Icon: "terminal", On: true})
+					kit.Chip(c, shellName(), kit.ChipOpt{Icon: "terminal", On: a.ide.termSel == ""}).OnClick(func() { a.ide.termSel = "" })
+					for _, v := range a.ide.cmds {
+						kit.Chip(c, v.title, kit.ChipOpt{Icon: "lock", On: a.ide.termSel == v.id, Tip: "只读 · Claude 运行的命令"}).OnClick(func() { a.ide.termSel = v.id })
+					}
 					kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: map[bool]string{true: "重启终端", false: "新建终端"}[a.proj != ""]}).OnClick(func() {
 						if a.proj != "" {
 							a.restartTerm()
@@ -53,6 +58,15 @@ func (a *App) bottomPanel(c *ui.Context) {
 }
 
 func (a *App) terminal(c *ui.Context) {
+	if a.ide.termSel != "" {
+		for _, v := range a.ide.cmds {
+			if v.id == a.ide.termSel {
+				a.cmdOutput(c, v)
+				return
+			}
+		}
+		a.ide.termSel = ""
+	}
 	if a.proj != "" {
 		a.realTerminal(c)
 		return
@@ -134,6 +148,23 @@ func (a *App) problems(c *ui.Context) {
 						ui.Text(c, "行 "+itoa(p.line)).FontSize(theme.FsMicro).TextColor(t.Tx4)
 					})
 				}
+			}
+		})
+	})
+}
+
+// cmdOutput 显示一条只读命令的输出(Claude 在会话里运行的命令)。
+func (a *App) cmdOutput(c *ui.Context, v cmdView) {
+	t := a.tk
+	ui.Scroll(c).Key("cmdout-" + v.id).Grow(1).Children(func() {
+		ui.Column(c).Padding(6, 10).Children(func() {
+			ui.Row(c).MinHeight(monoLH).AlignItems(ui.Center).Children(func() {
+				ui.RichText(c, ui.Span{Text: "$ ", Font: "monospace", Size: 11.5, Color: t.Ok}, ui.Span{Text: v.title, Font: "monospace", Size: 11.5, Color: t.Tx1, Weight: 600}).NoWrap()
+			})
+			for i, ln := range strings.Split(strings.TrimRight(v.output, "\n"), "\n") {
+				ui.Row(c).Key(i).MinHeight(monoLH).AlignItems(ui.Center).Children(func() {
+					ui.RichText(c, a.termLine(ln)...).NoWrap().Clip()
+				})
 			}
 		})
 	})

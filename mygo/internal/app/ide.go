@@ -64,6 +64,8 @@ type ide struct {
 	bottomTab  string // term / problems / output
 	termLines  []termLine
 	termSt     ui.ScrollState
+	cmds       []cmdView // 「在终端面板查看」打开的只读命令标签
+	termSel    string    // 当前终端分段选中的标签(空 = shell)
 	tp         termPanel // 真实终端(真实模式)
 
 	sections map[string]bool // 资源管理器区块折叠(大纲 / 时间线)
@@ -312,4 +314,10 @@ func (d *ide) seedDemo() {
 	if t := d.tab("src/router.rs"); t != nil && t.st != nil {
 		t.st.GoTo(editor.Pos{Line: 16, Col: 57})
 	}
+}
+
+// cmdView 是终端面板里的一个只读命令标签:查看 Claude 跑过的某条命令及其输出。
+type cmdView struct {
+	id, title, output string
+	exit              *int
 }

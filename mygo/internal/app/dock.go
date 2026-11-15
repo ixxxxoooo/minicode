@@ -343,6 +343,7 @@ func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 				kit.Tag(c, "已拒绝")
 			}
 			ui.Spacer(c).Grow(1)
+			kit.Btn(c, "查看", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "ext", Tip: "在工作区打开计划"}).OnClick(func() { a.OpenWorkspaceTab(vPlan, p.ID) })
 		})
 		if strings.TrimSpace(p.Markdown) != "" {
 			if p.Streaming {

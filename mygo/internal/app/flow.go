@@ -51,6 +51,9 @@ func (a *App) flow(c *ui.Context) {
 			}
 			// 回合尾部操作条:每个已结束回合的最后一项之后(进行中的回合还没有统计,自然不显示)
 			if uid, ok := turnEnd(items, last); ok {
+				if last == len(items)-1 && a.st.Phase != core.PhaseRunning {
+					a.changesCard(c)
+				}
 				a.turnFooter(c, uid)
 			}
 			i = last + 1
@@ -303,7 +306,9 @@ func (a *App) card(c *ui.Context, head func(), body func()) {
 	if t.Scheme.ID == "b" {
 		bg = t.Raised
 	}
-	ui.Column(c).Background(bg).Radius(t.RMd()).Border(1, t.Bd1).Clip().Children(func() {
+	box := ui.Column(c).Background(bg).Radius(t.RMd()).Border(1, t.Bd1).Clip()
+	a.cardHov = box.Hovered()
+	box.Children(func() {
 		if head != nil {
 			ui.Row(c).Height(24).Padding(0, 4, 0, 9).Gap(6).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.FsCap).
 				BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(head)
@@ -330,12 +335,24 @@ func (a *App) diffCard(c *ui.Context, d *core.DiffBlock, head bool) {
 		}
 	}
 	a.card(c, h, func() {
+		hov := a.cardHov
 		ui.Column(c).Padding(3, 0).Children(func() {
 			for i, l := range ls {
 				a.diffLine(c, i, l)
 			}
 		})
+		if !head { // 悬停时右上角出现「在工作区打开差异」(会话流里的差异只是预览,完整的差异在工作区)
+			ui.Row(c).Absolute().Top(2).Right(3).Opacity(map[bool]float32{true: 1, false: 0}[hov]).Children(func() {
+				kit.Ib(c, "ext", kit.IbOpt{Small: true, Tip: "在工作区打开差异"}).OnClick(func() { a.OpenDiffTab(d.Path) })
+			})
+		}
 	})
+}
+
+// OpenDiffTab 在工作区开某个文件的差异标签(HEAD ↔ 工作区)。
+func (a *App) OpenDiffTab(path string) {
+	a.ide.openDiff(a.wsRel(path), true)
+	a.revealWorkspace()
 }
 
 func (a *App) diffLine(c *ui.Context, i int, l diff.Line) {
@@ -434,6 +451,7 @@ func (a *App) termCard(c *ui.Context, tc *core.ToolCall, tb *core.TerminalBlock)
 				ui.Text(c, "退出码 "+itoa(*tb.ExitCode)).TextColor(t.Err)
 			}
 		}
+		kit.Ib(c, "terminal", kit.IbOpt{Small: true, Tip: "在终端面板查看"}).OnClick(func() { a.viewInPanel(tb) })
 		kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制"})
 	}, func() {
 		ui.Column(c).Padding(6, 10).Children(func() {

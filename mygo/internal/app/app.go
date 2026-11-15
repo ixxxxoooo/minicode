@@ -131,6 +131,8 @@ type App struct {
 	branch       string                         // 当前分支名(缓存,避免每帧查 git)
 	toast        string                         // 待显示的一条轻提示(渲染时消费)
 	welcomeFocus bool                           // 欢迎页的输入框自动聚焦
+	cardHov      bool                           // 当前这张工具卡是否被悬停(卡片内容里的悬停按钮用)
+	hist         histState                      // 历史会话弹层的搜索词
 	rv           reviewState                    // 审查标签状态
 	taskSt       ui.ScrollState                 // 任务输出标签的滚动
 	taskNoFollow bool                           // 任务输出:关闭「跟随输出」

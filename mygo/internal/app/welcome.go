@@ -40,11 +40,7 @@ func (a *App) projectName() string {
 
 func (a *App) welcome(c *ui.Context) {
 	t := a.tk
-	ui.Row(c).Height(theme.HTab).Padding(0, 8, 0, 14).Gap(6).Shrink(0).AlignItems(ui.Center).Children(func() {
-		ui.Text(c, "新对话").FontWeight(600).SingleLine()
-		ui.Spacer(c).Grow(1)
-		kit.Ib(c, "history", kit.IbOpt{Small: true, Tip: "历史会话"}).OnClick(func() { a.OpenQuick("history", "") })
-	})
+	a.chatHead(c, "新对话")
 	ui.Column(c).Grow(1).MinHeight(0).AlignItems(ui.Center).Justify(ui.Center).Padding(0, 0, 48, 0).Gap(16).Children(func() {
 		ui.Column(c).Gap(3).AlignItems(ui.Center).Children(func() {
 			ui.Row(c).Size(36, 36).Radius(t.RLg()).Background(t.Ac).Justify(ui.Center).AlignItems(ui.Center).Margin(0, 0, 6, 0).Children(func() {
