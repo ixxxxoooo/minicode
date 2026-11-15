@@ -110,13 +110,17 @@ func EnsureIntegrationScripts() (zsh, bash string) {
 	return zsh, bash
 }
 
+// quietTail 接在注入命令后面:执行完立刻清屏(含回看),
+// 用户看不到那行 source 的回显,只见到干净的提示符。
+const quietTail = "; printf '\\033[H\\033[2J\\033[3J'\n"
+
 // IntegrationCmd 返回应在 shell 启动后执行的一条 source 命令(按 shell 类型)。
 func IntegrationCmd(shell string) string {
 	zsh, bash := EnsureIntegrationScripts()
 	if strings.Contains(filepath.Base(shell), "bash") {
-		return "source " + bash + " 2>/dev/null\n"
+		return "source " + bash + " 2>/dev/null" + quietTail
 	}
-	return "source " + zsh + " 2>/dev/null\n"
+	return "source " + zsh + " 2>/dev/null" + quietTail
 }
 
 const zshIntegration = `# MiniCode shell integration (OSC 133)
