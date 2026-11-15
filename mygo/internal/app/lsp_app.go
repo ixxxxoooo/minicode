@@ -47,6 +47,7 @@ type lspSess struct {
 	work     string             // 服务器正在做的事(索引进度)
 	restarts int                // 自动重启次数
 	uiAt     time.Time          // 安装卡入场动画起点
+	wsPrevID string             // 工作区拉取增量 id
 
 	qmu sync.Mutex
 	q   chan func() // 串行发送通道:保证 didOpen / didChange / 请求按序
@@ -84,7 +85,10 @@ func (s *lspSess) barrier() {
 
 type lspHub struct {
 	sess         map[string]*lspSess
-	diags        map[string][]lsp.Diagnostic // 项目相对路径 → 诊断
+	diags        map[string][]lsp.Diagnostic // 项目相对路径 → 诊断(已打开 + publish)
+	wsDiags      map[string][]lsp.Diagnostic // 工作区扫描单独存储
+	wsScan       map[string]*lspWsScan       // 各会话扫描状态
+	wsPrevID     map[string]string           // 增量拉取 previousResultId
 	gen          int                         // 诊断变化计数
 	workspaceGen int                         // 工作区扫盘代次(取消旧任务)
 	noted        map[string]bool             // 已提示过「没装」的服务器
@@ -378,9 +382,10 @@ func lspPos(tb *ideTab, off int) lsp.Position {
 	return lsp.Position{Line: p.Line, Character: lsp.ColToUTF16(tb.buf.Line(p.Line), p.Col)}
 }
 
-// lspCounts 全项目的错误 / 警告数。
+// lspCounts 全项目的错误 / 警告数(已打开 + 工作区,同文件不重复计数)。
 func (a *App) lspCounts() (errs, warns int) {
-	for _, ds := range a.lspH.diags {
+	seen := map[string]bool{}
+	count := func(ds []lsp.Diagnostic) {
 		for _, d := range ds {
 			switch d.Severity {
 			case 1:
@@ -389,6 +394,16 @@ func (a *App) lspCounts() (errs, warns int) {
 				warns++
 			}
 		}
+	}
+	for path, ds := range a.lspH.diags {
+		seen[path] = true
+		count(ds)
+	}
+	for path, ds := range a.lspH.wsDiags {
+		if seen[path] {
+			continue
+		}
+		count(ds)
 	}
 	return
 }

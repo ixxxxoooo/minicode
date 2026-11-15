@@ -9,20 +9,28 @@ import (
 
 var probLog = diag.L("problems")
 
-// recheckProblems 触发工作区级诊断重扫并刷新各语言服务器会话。
+// recheckProblems 按当前分段触发诊断刷新(已打开 = 同步打开文档;工作区 = 新扫描)。
 func (a *App) recheckProblems() {
 	if a.proj == "" {
+		if a.wsDiagDemo != "" || a.probScope() == "ws" {
+			a.wsDiagDemo = "scan"
+			a.ide.probScope = "ws"
+			a.redraw()
+		}
 		return
 	}
-	probLog.Info("重新检查问题")
-	for _, s := range a.lspH.sess {
-		if s.state == lspReady {
-			a.lspRetry(s)
+	probLog.Info("重新检查问题", "scope", a.probScope())
+	if a.probScope() == "ws" {
+		if a.prefs.Bool("lsp.workspaceDiag", true) {
+			a.lspH.wsDiags = nil
+			for k := range a.lspH.wsScan {
+				a.lspH.wsScan[k] = &lspWsScan{}
+			}
+			a.lspWorkspaceScan()
 		}
-	}
-	if a.prefs.Bool("lsp.workspaceDiag", true) {
-		a.lspH.workspaceGen++
-		a.lspWorkspaceScan()
+		a.toast = "正在检查工作区…"
+		a.redraw()
+		return
 	}
 	for _, tb := range a.ide.tabs {
 		if tb.buf != nil && !tb.diff && tb.virt == "" {
@@ -32,7 +40,7 @@ func (a *App) recheckProblems() {
 			}
 		}
 	}
-	a.toast = "正在重新检查…"
+	a.toast = "正在重新检查已打开文件…"
 	a.redraw()
 }
 

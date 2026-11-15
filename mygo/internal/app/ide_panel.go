@@ -66,6 +66,9 @@ func (a *App) bottomPanel(c *ui.Context) {
 					if kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "重新检查"}).Clicked() {
 						a.recheckProblems()
 					}
+					if a.probScope() == "ws" && a.anyWsScanning() {
+						kit.Btn(c, "取消", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() { a.cancelWorkspaceDiag() })
+					}
 				} else {
 					if a.proj != "" {
 						n := len(a.ide.tps)
@@ -170,7 +173,7 @@ type problem struct {
 
 func (a *App) problems(c *ui.Context) {
 	t := a.tk
-	if a.proj != "" {
+	if a.proj != "" || a.wsDiagDemo != "" {
 		a.realProblems(c)
 		return
 	}

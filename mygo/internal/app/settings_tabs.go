@@ -445,8 +445,9 @@ var settingsTabs = []setTabDef{
 		{title: "语言服务", rows: []setRow{
 			rTog("editor.lsp", "启用语言服务", "悬停、补全、转到定义、诊断", true),
 			rTog("editor.inlay", "内联提示", "类型与参数名(inlayHint);无能力时自动跳过", true),
-			rTog("lsp.workspaceDiag", "工作区级诊断", "重新检查时额外扫项目源文件(有上限)", true),
-			rFld("lsp.workspaceDiagLimit", "工作区检查上限", "单次最多 didOpen 的文件数", "80", 60, false, ""),
+			rTog("lsp.workspaceDiag", "工作区级诊断", "工作区分段下可拉取或扫描项目源文件(有上限)", true),
+			rFld("lsp.workspaceDiagLimit", "工作区扫描文件上限", "单次检查最多包含的文件数", "2000", 60, false, ""),
+			rTog("lsp.workspaceDiagGitignore", "扫描时包含被 gitignore 的文件", "关闭时跳过 target、node_modules 等常见目录", false),
 		}},
 		{title: "语言服务器", body: func(a *App, c *ui.Context) { a.lspBody(a, c) }},
 		{title: "忽略规则", body: func(a *App, c *ui.Context) { ignoreArea(a, c) }},

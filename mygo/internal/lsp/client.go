@@ -147,6 +147,51 @@ type Handlers struct {
 	Progress    func(title, msg string, done bool)
 }
 
+// ParseProgressParams 解析 $/progress 通知(含 percentage)。
+func ParseProgressParams(params json.RawMessage) (title, msg string, pct int, done bool) {
+	pct = -1
+	var p struct {
+		Value struct {
+			Kind       string `json:"kind"`
+			Title      string `json:"title"`
+			Message    string `json:"message"`
+			Percentage *int   `json:"percentage"`
+		} `json:"value"`
+	}
+	if json.Unmarshal(params, &p) != nil {
+		return "", "", -1, false
+	}
+	switch p.Value.Kind {
+	case "end":
+		return "", "", -1, true
+	case "begin":
+		return strings.TrimSpace(p.Value.Title), "", -1, false
+	default:
+		title = strings.TrimSpace(p.Value.Title)
+		msg = strings.TrimSpace(p.Value.Message)
+		if p.Value.Percentage != nil {
+			pct = *p.Value.Percentage
+		}
+		return title, msg, pct, false
+	}
+}
+
+// FormatProgressLine 合成状态栏一行(42% 等)。
+func FormatProgressLine(title, msg string, pct int) string {
+	s := strings.TrimSpace(strings.TrimSpace(title) + " " + strings.TrimSpace(msg))
+	if pct >= 0 && pct <= 100 {
+		suff := fmt.Sprintf("%d%%", pct)
+		if s == "" {
+			return suff
+		}
+		if strings.Contains(s, "%") {
+			return s
+		}
+		return s + " " + suff
+	}
+	return s
+}
+
 // Client 是一个已连接的语言服务器。
 type Client struct {
 	w   io.Writer
@@ -154,6 +199,7 @@ type Client struct {
 	h   Handlers
 
 	next    atomic.Int64
+	lastReq atomic.Int64 // 最近发出的请求 id(取消用)
 	mu      sync.Mutex
 	pending map[int64]chan rpcMsg
 	closed  bool
@@ -163,6 +209,10 @@ type Client struct {
 	Caps map[string]bool
 	// 服务器名(initialize 响应里的 serverInfo.name)
 	ServerName string
+	// 工作区诊断 pull 能力(initialize 的 diagnosticProvider)
+	Diag      DiagnosticCaps
+	partMu    sync.Mutex
+	pullParts map[int64][]json.RawMessage
 }
 
 // NewClient 在读写流上建一个客户端并开始读取;r 结束(服务器退出)后所有等待中的请求返回错误。
@@ -251,14 +301,31 @@ func (c *Client) notify(m rpcMsg) {
 		}
 	case "$/progress":
 		var p struct {
+			Token json.RawMessage `json:"token"`
 			Value struct {
-				Kind    string `json:"kind"`
-				Title   string `json:"title"`
-				Message string `json:"message"`
+				Kind          string          `json:"kind"`
+				Title         string          `json:"title"`
+				Message       string          `json:"message"`
+				PartialResult json.RawMessage `json:"partialResult"`
 			} `json:"value"`
 		}
-		if json.Unmarshal(m.Params, &p) == nil && c.h.Progress != nil {
-			c.h.Progress(p.Value.Title, p.Value.Message, p.Value.Kind == "end")
+		if json.Unmarshal(m.Params, &p) == nil {
+			if len(p.Value.PartialResult) > 0 {
+				var tok int64
+				_ = json.Unmarshal(p.Token, &tok)
+				if tok != 0 {
+					c.appendPartial(tok, p.Value.PartialResult)
+				}
+			}
+			if c.h.Progress != nil {
+				title, msg, pct, done := ParseProgressParams(m.Params)
+				if done {
+					c.h.Progress("", "", true)
+				} else {
+					line := FormatProgressLine(title, msg, pct)
+					c.h.Progress("", line, false)
+				}
+			}
 		}
 	}
 }
@@ -272,6 +339,7 @@ func (c *Client) send(b []byte) error {
 // Call 发请求并等响应(最多 timeout)。result 非 nil 时解码进去。
 func (c *Client) Call(method string, params, result any, timeout time.Duration) error {
 	id := c.next.Add(1)
+	c.lastReq.Store(id)
 	ch := make(chan rpcMsg, 1)
 	c.mu.Lock()
 	if c.closed {
@@ -305,6 +373,14 @@ func (c *Client) Call(method string, params, result any, timeout time.Duration) 
 	}
 }
 
+// CancelRequest 发 $/cancelRequest(停止进行中的拉取等)。
+func (c *Client) CancelRequest(id int64) {
+	_ = c.Notify("$/cancelRequest", map[string]any{"id": id})
+}
+
+// LastRequestID 返回最近发出去的 JSON-RPC 请求 id。
+func (c *Client) LastRequestID() int64 { return c.lastReq.Load() }
+
 // Notify 发通知(没有响应)。
 func (c *Client) Notify(method string, params any) error {
 	b, err := json.Marshal(map[string]any{"jsonrpc": "2.0", "method": method, "params": params})
@@ -326,15 +402,22 @@ func (c *Client) Initialize(rootURI, rootName string, timeout time.Duration) err
 			"window":  map[string]any{"workDoneProgress": true},
 			"workspace": map[string]any{
 				"configuration": true, "workspaceFolders": true,
+				"diagnostics": map[string]any{
+					"refreshSupport": true,
+				},
 			},
 			"textDocument": map[string]any{
 				"synchronization":    map[string]any{"didSave": true},
 				"publishDiagnostics": map[string]any{"relatedInformation": false},
-				"hover":              map[string]any{"contentFormat": []string{"markdown", "plaintext"}},
-				"definition":         map[string]any{"linkSupport": false},
-				"references":         map[string]any{},
-				"documentSymbol":     map[string]any{"hierarchicalDocumentSymbolSupport": true},
-				"inlayHint":          map[string]any{},
+				"diagnostic": map[string]any{
+					"dynamicRegistration":    false,
+					"relatedDocumentSupport": true,
+				},
+				"hover":          map[string]any{"contentFormat": []string{"markdown", "plaintext"}},
+				"definition":     map[string]any{"linkSupport": false},
+				"references":     map[string]any{},
+				"documentSymbol": map[string]any{"hierarchicalDocumentSymbolSupport": true},
+				"inlayHint":      map[string]any{},
 				"completion": map[string]any{"completionItem": map[string]any{
 					"snippetSupport": false, "documentationFormat": []string{"markdown", "plaintext"},
 				}},
@@ -352,6 +435,9 @@ func (c *Client) Initialize(rootURI, rootName string, timeout time.Duration) err
 	}
 	for k, v := range res.Capabilities {
 		c.Caps[k] = string(v) != "false" && string(v) != "null"
+		if k == "diagnosticProvider" {
+			c.Diag = ParseDiagnosticCaps(v)
+		}
 	}
 	c.ServerName = res.ServerInfo.Name
 	return c.Notify("initialized", map[string]any{})
