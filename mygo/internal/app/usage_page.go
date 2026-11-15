@@ -20,6 +20,10 @@ type usageState struct {
 	limitsAt      int64
 	limitsState   core.LimitsState
 	limitsUpdated string
+	loadEmpty     bool      // 上一帧仍在等统计
+	revealAt      time.Time // 骨架 → 内容交叉淡入起点
+	chartAt       time.Time // 柱状生长动画起点
+	lastRng       int       // 上次渲染的范围(切换时重置柱动画)
 }
 
 func (a *App) usage() core.UsageReport {
@@ -58,6 +62,7 @@ func (a *App) usagePage(c *ui.Context) {
 	}
 	u := a.usage()
 	if len(u.Days) == 0 {
+		a.use.loadEmpty = true
 		msg := "正在统计会话记录…"
 		if a.cuDemo() && a.demoPgUsage == 1 {
 			msg = "新账户还没有可统计的会话费用(演示空数据)。"
@@ -79,41 +84,73 @@ func (a *App) usagePage(c *ui.Context) {
 		}
 		return
 	}
+	if a.use.loadEmpty {
+		a.use.loadEmpty = false
+		if a.use.revealAt.IsZero() {
+			a.use.revealAt = time.Now()
+			a.frameSoon()
+		}
+	}
+	reveal := !a.use.revealAt.IsZero()
 	a.pane(c).Grow(1).Children(func() {
-		a.pageHead(c, "用量与成本", "本机各会话的 token 与费用估算(取自会话记录,第三方服务商没有费用时只显示 token),以及账户限额。", func() {
-			items := make([]kit.SegItem, 0, 3)
-			for _, n := range demo.UsageRanges() {
-				items = append(items, kit.SegItem{Text: n})
+		root := ui.Box(c).Grow(1)
+		root.Children(func() {
+			var skel, body ui.Element
+			if reveal {
+				skel = ui.Column(c)
+				skel.Children(func() {
+					ui.Row(c).Gap(10).Padding(8, 12).AlignItems(ui.Center).Children(func() {
+						kit.SkelLine(c, .5, 14)
+					})
+					kit.SkelRows(c, 4)
+				})
+				body = ui.Column(c).Grow(1)
+			} else {
+				body = ui.Column(c).Grow(1)
 			}
-			if i := kit.Seg(c, items, a.use.rng, kit.SegOpt{Key: "use-range"}); i >= 0 {
-				a.use.rng = i
+			body.Children(func() { a.usageBody(c, u) })
+			if reveal {
+				kit.Crossfade(skel, body, a.use.revealAt, 3200*time.Millisecond, a.frameSoon)
 			}
-			kit.Btn(c, "导出 CSV", kit.BtnOpt{Icon: "download"}).OnClick(func() { a.exportUsage(u) })
 		})
-		a.pageSplit(c, "use", func() {
-			ui.Row(c).Gap(10).AlignItems(ui.Stretch).Children(func() {
-				delta := "↓ " + itoa(int(abs(u.DeltaPercent)+.5)) + "% 较上一段"
-				col := t.Ok
-				if u.DeltaPercent >= 0 {
-					delta = "↑ " + itoa(int(u.DeltaPercent+.5)) + "% 较上一段"
-					col = t.Warn
-				}
-				a.stat(c, core.FormatMoney(u.Total), u.RangeName+"费用", delta, col)
-				a.stat(c, u.InputTokens, "输入 token", "", col)
-				a.stat(c, u.OutputTokens, "输出 token", "", col)
-				a.stat(c, itoa(u.Sessions), "会话", "缓存命中 "+itoa(u.CacheHit)+"%", t.Ok)
-			})
-			ui.Box(c).Height(10)
-			a.usageChart(c, u)
-			ui.Box(c).Height(10)
-			ui.Row(c).Gap(10).AlignItems(ui.Stretch).Children(func() {
-				a.usageModels(c, u)
-				a.usageProjects(c, u)
-			})
-			ui.Box(c).Height(10)
-			a.usageTop(c, u)
-		}, func() { a.usageDrawer(c, u) })
 	})
+}
+
+func (a *App) usageBody(c *ui.Context, u core.UsageReport) {
+	t := a.tk
+	a.pageHead(c, "用量与成本", "本机各会话的 token 与费用估算(取自会话记录,第三方服务商没有费用时只显示 token),以及账户限额。", func() {
+		items := make([]kit.SegItem, 0, 3)
+		for _, n := range demo.UsageRanges() {
+			items = append(items, kit.SegItem{Text: n})
+		}
+		if i := kit.Seg(c, items, a.use.rng, kit.SegOpt{Key: "use-range"}); i >= 0 {
+			a.use.rng = i
+		}
+		kit.Btn(c, "导出 CSV", kit.BtnOpt{Icon: "download"}).OnClick(func() { a.exportUsage(u) })
+	})
+	a.pageSplit(c, "use", func() {
+		ui.Row(c).Gap(10).AlignItems(ui.Stretch).Children(func() {
+			delta := "↓ " + itoa(int(abs(u.DeltaPercent)+.5)) + "% 较上一段"
+			col := t.Ok
+			if u.DeltaPercent >= 0 {
+				delta = "↑ " + itoa(int(u.DeltaPercent+.5)) + "% 较上一段"
+				col = t.Warn
+			}
+			a.stat(c, core.FormatMoney(u.Total), u.RangeName+"费用", delta, col)
+			a.stat(c, u.InputTokens, "输入 token", "", col)
+			a.stat(c, u.OutputTokens, "输出 token", "", col)
+			a.stat(c, itoa(u.Sessions), "会话", "缓存命中 "+itoa(u.CacheHit)+"%", t.Ok)
+		})
+		ui.Box(c).Height(10)
+		a.usageChart(c, u)
+		ui.Box(c).Height(10)
+		ui.Row(c).Gap(10).AlignItems(ui.Stretch).Children(func() {
+			a.usageModels(c, u)
+			a.usageProjects(c, u)
+		})
+		ui.Box(c).Height(10)
+		a.usageTop(c, u)
+	}, func() { a.usageDrawer(c, u) })
 }
 
 func abs(f float64) float64 {
@@ -139,6 +176,22 @@ func (a *App) stat(c *ui.Context, v, label, sub string, subCol ui.Color) {
 func (a *App) usageChart(c *ui.Context, u core.UsageReport) {
 	t := a.tk
 	mx := u.MaxDay()
+	if a.use.lastRng != a.use.rng {
+		a.use.lastRng = a.use.rng
+		a.use.chartAt = time.Time{}
+	}
+	if a.use.chartAt.IsZero() {
+		a.use.chartAt = time.Now()
+		a.frameSoon()
+	}
+	frac := float32(1)
+	if kit.MotionOn() {
+		dur := kit.DurSlow + time.Duration(len(u.Days))*24*time.Millisecond
+		frac = float32(time.Since(a.use.chartAt)) / float32(dur)
+		if frac < 1 {
+			a.frameSoon()
+		}
+	}
 	a.box(c).Padding(12, 14).Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Padding(0, 0, 8, 0).Children(func() {
 			ui.Text(c, "每日费用").FontWeight(600)
@@ -155,6 +208,7 @@ func (a *App) usageChart(c *ui.Context, u core.UsageReport) {
 					col = t.Ac
 				}
 				b := ui.Box(c.Key("bar-" + itoa(i))).Grow(1).Basis(0).HeightPercent(h).Radius(2).Background(col).Tooltip(d.Label + " · " + core.FormatMoney(d.Cost))
+				kit.GrowY(b, frac, time.Duration(i)*24*time.Millisecond)
 				if b.Hovered() {
 					b.Background(t.Ac)
 				}
