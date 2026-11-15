@@ -2,6 +2,7 @@ package claude
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -19,7 +20,18 @@ func TestRealClaude(t *testing.T) {
 		t.Skip("本机没有 claude")
 	}
 	mode := core.ModePlan // 计划模式:不会改任何文件
-	r := newRealRig(t, Config{Mode: &mode})
+	cwd := t.TempDir()
+	r := newRealRig(t, Config{Mode: &mode, Cwd: cwd})
+	// 测试会话会被 claude 写进 ~/.claude/projects,结束后清掉,不留在用户的历史里
+	t.Cleanup(func() {
+		r.b.Close()
+		_ = DeleteSession(ProjectsDir(), cwd, r.b.SessionID())
+		if real, err := filepath.EvalSymlinks(cwd); err == nil {
+			_ = DeleteSession(ProjectsDir(), real, r.b.SessionID())
+			_ = os.RemoveAll(filepath.Join(ProjectsDir(), EncodeProjectDir(real))) // 含 claude 顺带建的 memory 目录
+		}
+		_ = os.RemoveAll(filepath.Join(ProjectsDir(), EncodeProjectDir(cwd)))
+	})
 	r.b.Send(core.CmdPrompt{Text: "只回复两个字母:ok,不要调用任何工具。"})
 	r.wait("回合结束", func() bool { return turnsEnded(r) == 1 })
 	r.mu.Lock()

@@ -59,13 +59,14 @@ func SessionOnDisk(projects, cwd, id string) bool {
 // 会话文件只追加不改写,所以记下「已扫描到的字节偏移」:文件变大只扫新增部分;
 // 变小或文件头变了才从头重扫;大小与修改时间都没变直接用缓存。读取按行进行,内存峰值只是最长的一行。
 type scan struct {
-	Offset, Size int64
-	MTime        int64
-	Head         uint64
-	Cwd          string
-	AITitle      string
-	LastPrompt   string
-	FirstUser    string
+	Offset     int64  `json:"offset"`
+	Size       int64  `json:"size"`
+	MTime      int64  `json:"mtime"`
+	Head       uint64 `json:"head"`
+	Cwd        string `json:"cwd"`
+	AITitle    string `json:"ai_title"`
+	LastPrompt string `json:"last_prompt"`
+	FirstUser  string `json:"first_user"`
 }
 
 const headLen = 256

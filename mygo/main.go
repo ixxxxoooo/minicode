@@ -139,7 +139,7 @@ func main() {
 	if demoMode {
 		a.SetProjects(demo.Projects(), "fixbug")
 	} else {
-		claude.SetCacheFile(filepath.Join(diag.Home(), "session-index.json"))
+		claude.SetCacheFile(filepath.Join(diag.Home(), "session-index-go.json"))
 		rs = &realSetup{}
 		ix := rs.refresh()
 		rs.curCwd = initialCwd(ix)
