@@ -76,7 +76,19 @@ func (a *App) statusbar(c *ui.Context) {
 		mode := a.sbItem(c, "mode", func() { kit.Ic(c, modeIcon(a.st.Mode), kit.S12); ui.Text(c, a.st.Mode.Label()) })
 		mode.OnClick(func() { a.togglePop("sbcfg") })
 		a.cfgPopup(c, "sbcfg", mode, true)
-		model := a.sbItem(c, "model", func() { ui.Text(c, a.modelName()) })
+		model := a.sbItem(c, "model", func() {
+			if prov, mid := a.pvModelLabel(); prov != "" {
+				_, pr := a.pvActive()
+				pb := ""
+				if pr != nil {
+					pb = provBrand(pr.Name, pr.BaseURL)
+				}
+				kit.Logo(c, modelBrand(mid, pb), 13, t.Tx2)
+			} else {
+				kit.Logo(c, "claude", 13, t.Tx2)
+			}
+			ui.Text(c, a.modelName())
+		})
 		model.OnClick(func() { a.togglePop("sbcfg") })
 		ctx := a.sbItem(c, "ctx", func() {
 			ui.Text(c, "上下文 "+itoa(int(a.st.Usage.ContextRatio()*100+.5))+"%").FontFeatures("tnum")

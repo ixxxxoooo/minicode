@@ -12,6 +12,11 @@ import (
 
 var provLog = diag.L("provider")
 
+// modelSwitchToastNote 会话内换模型/服务商时 toast 的统一下半句。
+func modelSwitchToastNote() string {
+	return "。新会话与下一条消息起生效,正在进行的回合不受影响"
+}
+
 // provState 是「模型服务商」的界面状态与数据(设置页与输入框的模型选择器共用)。
 // 真实模式读写 ~/.minicode/providers.json 与 provider-keys.json;演示模式只在内存里,绝不落盘。
 type provState struct {

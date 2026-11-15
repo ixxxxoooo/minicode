@@ -26,6 +26,9 @@ func (a *App) ctxState() string {
 	if u.LimitsState == core.LimitsChecking {
 		return "load"
 	}
+	if u.ContextDetailErr != "" && len(u.ContextCategories) == 0 {
+		return "err"
+	}
 	if u.LimitsState == core.LimitsUnavailable && u.FiveHourPct == nil && u.WeeklyPct == nil {
 		return "none"
 	}
@@ -94,16 +97,34 @@ func (a *App) ctxPanelBody(c *ui.Context) {
 			ui.Row(c).Gap(4).Children(func() {
 				ui.Text(c, fmtTok(u.ContextUsed)+" / "+fmtTok(u.ContextSize)).FontWeight(600).FontFeatures("tnum")
 				col := t.Tx3
-				if st == "warn" {
-					col = t.Warn
+				if st == "warn" || st == "err" {
+					if st == "err" {
+						col = t.Err
+					} else {
+						col = t.Warn
+					}
 				}
 				ui.Text(c, "· "+itoa(int(p*100+.5))+"%").TextColor(col)
 			})
-			ui.Text(c, a.modelName()+" · 自动压缩阈值 85%").FontSize(theme.FsCap).TextColor(t.Tx3)
+			ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() {
+				if prov, mid := a.pvModelLabel(); prov != "" {
+					_, pr := a.pvActive()
+					pb := ""
+					if pr != nil {
+						pb = provBrand(pr.Name, pr.BaseURL)
+					}
+					kit.Logo(c, modelBrand(mid, pb), 13, t.Tx3)
+				} else {
+					kit.Logo(c, "claude", 13, t.Tx3)
+				}
+				ui.Text(c, a.modelName()+" · 自动压缩阈值 85%").FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
+			})
 		})
 		switch st {
 		case "busy":
 			kit.Btn(c, "压缩中…", kit.BtnOpt{Small: true, Variant: kit.BtnGhost})
+		case "err":
+			kit.Btn(c, "压缩", kit.BtnOpt{Small: true, Disabled: true})
 		case "warn":
 			kit.Btn(c, "压缩", kit.BtnOpt{Small: true, Variant: kit.BtnPri}).OnClick(a.requestCompact)
 		default:

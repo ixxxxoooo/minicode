@@ -54,6 +54,7 @@ func (a *App) cfgModels(c *ui.Context) {
 							a.pvActivate("", "")
 						}
 						a.pickModel(m.ID)
+						a.toast = "已切换到 " + m.Name + modelSwitchToastNote()
 					}
 				}
 			}
@@ -123,5 +124,5 @@ func (a *App) pvPickModel(providerID, providerName, model string) {
 	a.send(core.CmdSetModel{Model: "default"}) // 用 ANTHROPIC_MODEL 映射出的默认模型
 	a.st.Model = "default"
 	a.popup = ""
-	a.toast = "已切换到 " + providerName + " · " + model + "。下一条消息起使用,正在进行的回合不受影响"
+	a.toast = "已切换到 " + providerName + " · " + model + modelSwitchToastNote()
 }

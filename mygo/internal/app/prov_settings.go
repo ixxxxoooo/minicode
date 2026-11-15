@@ -119,7 +119,7 @@ func (a *App) provUse(id string) {
 		return
 	}
 	a.pvActivate(id, "")
-	a.toast = "已切换到 " + pr.Name
+	a.toast = "已切换到 " + pr.Name + modelSwitchToastNote()
 }
 
 // provAddMenu 是「添加服务商」的下拉菜单:各预设 + 自定义。
@@ -390,18 +390,19 @@ func (a *App) testProvider(id string) {
 	base := p.store.Providers[idx].BaseURL
 	demoMode := a.demoWs()
 	a.bg("连通性测试", func() func() {
-		var ok bool
-		var ms int64
+		var res claudecfg.ProbeResult
 		if demoMode {
 			time.Sleep(900 * time.Millisecond)
-			ok, ms = !strings.Contains(base, "example.com"), int64(80+len(base)%90)
+			if strings.Contains(base, "example.com") {
+				res = claudecfg.ProbeResult{Kind: claudecfg.ProbeAuth, Detail: "密钥无效或已过期(401),到 设置 → 服务商 更新 API Key"}
+			} else {
+				res = claudecfg.ProbeResult{OK: true, Kind: claudecfg.ProbeOK, Ms: int64(80 + len(base)%90), Detail: claudecfg.FormatTestResult(true, int64(80+len(base)%90))}
+			}
 		} else {
-			ok, ms = claudecfg.TestProvider(base)
+			key := strings.TrimSpace(p.keys[id])
+			res = claudecfg.ProbeProvider(p.store.Providers[idx], key)
 		}
-		st := claudecfg.ProvFail
-		if ok {
-			st = claudecfg.FormatTestResult(true, ms)
-		}
+		st := claudecfg.FormatProbe(res)
 		return func() {
 			p.busy[id] = 0
 			for i := range p.store.Providers {
@@ -410,8 +411,8 @@ func (a *App) testProvider(id string) {
 				}
 			}
 			a.pvPersist()
-			if !ok {
-				a.toast = "连接失败:5 秒内没有响应,检查地址与网络"
+			if !res.OK {
+				a.toast = res.Detail
 			}
 		}
 	})
