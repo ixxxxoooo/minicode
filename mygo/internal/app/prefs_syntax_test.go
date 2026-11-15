@@ -14,22 +14,29 @@ func TestSyntaxPrefStripsTokens(t *testing.T) {
 		st.Theme = a.editorTheme() // 与每帧开头一致:先取共享主题
 		return &ideTab{st: st}
 	}
-	var none [len(editor.Theme{}.Tokens)]editor.TokenStyle
+	plain := func(th *editor.Theme) bool { // 每一种词法着色都等于正文色(零值会被库补成默认色,不算)
+		for _, tk := range th.Tokens {
+			if tk.Color != th.Text || tk.Bold || tk.Italic {
+				return false
+			}
+		}
+		return true
+	}
 
 	on := mk()
 	a.prefs.Set(pEdSyntax, true)
 	a.applyEditorPrefs(on)
-	if on.st.Theme.Tokens == none {
+	if plain(on.st.Theme) {
 		t.Fatal("开启时不应抹掉词法着色")
 	}
 
 	off := mk()
 	a.prefs.Set(pEdSyntax, false)
 	a.applyEditorPrefs(off)
-	if off.st.Theme.Tokens != none {
+	if !plain(off.st.Theme) {
 		t.Fatal("关闭后词法着色应全部取正文色")
 	}
-	if a.editorTheme().Tokens == none {
+	if plain(a.editorTheme()) {
 		t.Fatal("不能改动共享的基础主题")
 	}
 }

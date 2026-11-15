@@ -160,10 +160,14 @@ func (a *App) applyEditorPrefs(tb *ideTab) {
 		if st.Theme == nil {
 			st.Theme = a.editorTheme()
 		}
-		var none [len(st.Theme.Tokens)]editor.TokenStyle
-		if st.Theme.Tokens != none {
+		// 不能置零:库会把零值颜色补成它自带的默认主题色,所以逐项显式写成正文色
+		var plain [len(st.Theme.Tokens)]editor.TokenStyle
+		for k := range plain {
+			plain[k] = editor.TokenStyle{Color: st.Theme.Text}
+		}
+		if st.Theme.Tokens != plain {
 			th := *st.Theme
-			th.Tokens = none
+			th.Tokens = plain
 			st.Theme = &th
 		}
 	}
