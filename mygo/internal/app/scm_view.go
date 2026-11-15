@@ -71,6 +71,7 @@ func (a *App) scmBody(c *ui.Context) {
 				ui.Text(c, "· "+a.branch).SingleLine().Shrink(0)
 			})
 		}
+		a.wizardBar(c)
 		a.scmCommitBox(c, len(staged))
 		a.scmReviewRow(c)
 		ui.Scroll(c).Key("scm").Grow(1).MinHeight(0).Children(func() {

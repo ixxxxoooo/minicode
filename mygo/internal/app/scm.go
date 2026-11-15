@@ -25,6 +25,7 @@ type scmState struct {
 	last          time.Time
 	gen           int
 	err           string
+	commitErr     string          // 最近一次提交失败的原因(逐个提交向导显示)
 	folded        map[string]bool // staged / changes / graph
 	expanded      string          // 展开的提交
 	files         map[string][]vcs.Change
@@ -135,7 +136,7 @@ func (a *App) syncTreeGit() {
 			if i == a.repoAct && a.sc.loaded {
 				cs = a.sc.changes
 			}
-			add(e.name+"/", cs)
+			add(e.pre()+"/", cs)
 		}
 	} else {
 		add("", a.sc.changes)
@@ -177,6 +178,9 @@ func (a *App) scmAct(what string, f func(r vcs.Repo) error, onOK ...func()) {
 				return
 			}
 			if err != nil {
+				if what == "提交" {
+					a.sc.commitErr = "提交失败:" + err.Error()
+				}
 				a.outAppend(outGit, what+"失败:"+err.Error())
 				log.Warn(what+"失败", "err", err)
 				a.toast = what + "失败:" + err.Error()
@@ -227,7 +231,10 @@ func (a *App) scmCommit(push bool) {
 			return r.Push()
 		}
 		return nil
-	}, func() { a.sc.msg, a.sc.amend = "", false }) // 成功后才清空输入
+	}, func() {
+		a.sc.msg, a.sc.amend, a.sc.commitErr = "", false, "" // 成功后才清空输入
+		a.wizardAfterCommit()
+	})
 }
 
 func (a *App) scmSync(pull, push bool) {

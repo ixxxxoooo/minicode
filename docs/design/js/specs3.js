@@ -76,7 +76,7 @@
       ['侧栏「+」入口与添加项目对话框', '路径输入 + 最近 / 发现 + 校验;真实模式浏览按钮走系统文件夹选择器;路径不存在时给出相近路径建议', st('ok')],
       ['工作区存储', '~/.minicode/workspaces.json 一个文件同时存手动添加的项目与工作区,原子落盘;损坏时改名留底不丢数据', st('ok')],
       ['侧栏的工作区行与成员行', '工作区行 / 成员行 / 项目行右键菜单已做;成员文件夹折进工作区;拖拽排序未做', st('part')],
-      ['多根文件树 / 多根搜索', '虚拟顶层目录 = 文件夹名(workspace.Multi),路径加文件夹前缀,顶层行带「主 / 改动数 / 非仓库」;搜索按前缀路径工作,「仅某文件夹」范围筛选未做', st('part')],
+      ['多根文件树 / 多根搜索', '虚拟顶层目录 = 文件夹名(workspace.Multi),路径加文件夹前缀,顶层行带「主 / 改动数 / 非仓库」;搜索按前缀路径工作,搜索条有「范围」chip 与文件夹右键「仅在此文件夹搜索」', st('ok')],
       ['Claude 附加目录', '主文件夹启动会话时追加 --add-dir(附加文件夹),开关打开时设置 CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1', st('ok')],
       ['演示数据', '演示模式内置「全栈工作区」(router-demo / web-dashboard / docs-site 各有自己的分支与改动)+ 一个手动添加的非仓库项目 design-assets', st('ok')]]))}</div>`;
 
@@ -103,7 +103,7 @@
     cell('向导条(出现在 SCM 提交框上方)', '', box(`<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px">${wizBar(1, 2, 'router-demo', 'main', '· 已预填说明,检查后 ⌘↩ 提交')}<div class="t3 fs-cap">提交成功 → 自动切到下一个有改动的仓库并预填说明。</div>${wizBar(2, 2, 'web-dashboard', 'feat/charts', '· 提交失败:pre-commit 钩子未通过,留在本步')}<div class="t3 fs-cap">失败不前进,错误写在条里;可修好再提交,或「跳过」。</div></div>`, 240, 560), '向导只是「依次切活动仓库 + 预填说明」的辅助,不会自动提交——每一次提交仍由人按下。随时「退出向导」,已提交的不受影响。'),
     cell('完成与中断', '', box(`<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px"><div class="f ai g3" style="padding:8px 10px;border-radius:8px;background:var(--ok-soft)">${ic('check', 's12', 'c-ok')}<span class="grow"><b>已提交 2 个仓库</b> <span class="t3">· 1 个跳过 · 向导结束</span></span>${btn('查看图谱', 'sm ghost', 'fork')}</div><div class="t3 fs-cap">所有仓库都处理完,向导条变成这一行,6 秒后淡出;被跳过的仓库在总览行保留「有未提交改动」小圆点。</div><div class="f ai g3" style="padding:8px 10px;border-radius:8px;background:var(--fill-1)">${ic('info', 's12', 't3')}<span class="grow t3">手动切到了别的仓库:向导暂停,点「回到向导」继续。</span>${btn('回到向导', 'sm ghost')}</div></div>`, 240, 560), '中途手动点总览行切仓库 = 暂停(不是退出),避免向导和手动操作互相打架。'));
   const mgGraph = grid(
-    cell('图谱标签 · 仓库下拉', '', box(`<div style="padding:10px 12px"><div class="f ai g3" style="margin-bottom:8px">${ic('fork', 's12', 'c-ac')}<b>Git 图谱</b>${chip('router-demo', 'folder', 'on')}<span class="t3">main · 7 个提交</span><span class="grow"></span><div class="inp fill" style="width:140px;height:24px"><span class="t4">搜索提交…</span></div></div><div style="position:relative;height:150px">${menu(240, [['folder', 'router-demo · main', '', 'on'], ['folder', 'web-dashboard · feat/charts'], ['folder', 'docs-site · main'], ['-'], ['arrow', '设为活动仓库']])}</div></div>`, 280, 560), '下拉只列有仓库的文件夹;切换只改「图谱看哪个仓库」,不改源代码管理的活动仓库(菜单里有单独的「设为活动仓库」)。标签名随之变成「图谱 · web-dashboard」。'),
+    cell('图谱标签 · 仓库下拉', '', box(`<div style="padding:10px 12px"><div class="f ai g3" style="margin-bottom:8px">${ic('fork', 's12', 'c-ac')}<b>Git 图谱</b>${chip('router-demo', 'folder', 'on')}<span class="t3">main · 7 个提交</span><span class="grow"></span><div class="inp fill" style="width:140px;height:24px"><span class="t4">搜索提交…</span></div></div><div style="position:relative;height:150px">${menu(240, [['folder', 'router-demo · main', '', 'on'], ['folder', 'web-dashboard · feat/charts'], ['folder', 'docs-site · main']])}</div></div>`, 280, 560), '下拉只列有仓库的文件夹。切换 = 切换活动仓库(图谱、源代码管理、状态栏分支同步变),避免出现「图谱看 A、提交框写 B」的错位;标签名随之变成「图谱 · web-dashboard」。'),
     cell('切换后的状态', '', box(`<div style="padding:12px 14px" class="t2"><div>· 选中的提交与展开详情清空(不同仓库的哈希无意义)</div><div>· 搜索词保留,对新仓库重新匹配</div><div>· 新仓库的提交列表在后台读取,读取期间显示骨架行</div><div>· 非仓库文件夹不出现在下拉里;只有一个仓库时不显示下拉,只显示仓库名</div><div>· 单项目(非工作区)与现在一致,没有仓库 chip</div></div>`, 150, 560), '图谱数据按仓库各读一份,切回来不重读(8 秒内)。'));
   const mgSearch = grid(
     cell('搜索 · 范围 chip', '', box(`<div style="padding:10px 12px"><div class="inp fill" style="height:28px;margin-bottom:6px"><span class="v">match_path</span></div><div class="f ai g2" style="margin-bottom:6px">${chip('范围:全部文件夹', 'folder', 'line')}<span class="t4 fs-cap">只在多根工作区里出现</span></div>${menu(230, [['folder', '全部文件夹', '', 'on'], ['folder', 'router-demo'], ['folder', 'web-dashboard'], ['folder', 'docs-site']])}</div>`, 250, 560), '范围写进搜索条件:结果只含该文件夹;chip 在限定时变高亮并带 ✕ 一键清除。'),
@@ -116,11 +116,11 @@
       cell('活动仓库模式(默认)', '', box(scmMulti, 520, 330), '总览里每行 10 秒在后台读一次状态(只读 git status,带 --no-optional-locks);活动仓库照常 4 秒 + 文件监视刷新。'),
       cell('总览行右键 / 悬停动作', '', box(`<div style="padding:10px 12px" class="fc g3"><div class="row" style="height:32px;background:var(--fill-1);border-radius:6px">${ic('branch', 's12')}<div class="grow"><b>web-dashboard</b> <span class="t3">feat/charts</span></div><span class="acts">${ib('refresh', 'sm', '拉取')}${ib('sync', 'sm', '同步')}${ib('branch', 'sm', '切换分支…')}${ib('more', 'sm')}</span></div>${menu(240, [['arrow', '设为活动仓库'], ['download', '拉取'], ['upload', '推送'], ['sync', '同步'], ['branch', '切换分支…'], ['-'], ['fork', '在图谱中查看'], ['layers', '储藏所有更改'], ['-'], ['folder', '在访达中显示'], ['terminal', '在此处打开终端']])}</div>`, 400, 330), '每个动作只作用于这一行的仓库,与是否为活动仓库无关。')))}
     ${sec('一次操作涉及多个仓库时', '', tbl([['场景', 200], ['怎么做'], ['状态']], [
-      ['提交', '只提交活动仓库的暂存区;提交按钮文案写明仓库名;其它仓库的暂存区在总览行用小圆点提示「有已暂存未提交」', st('part')],
-      ['全部同步 / 全部拉取', '总览头部按钮,逐个仓库顺序执行,每行显示转圈 → 成功 / 失败;失败的一行出现「重试」,不中断其余仓库', st('part')],
+      ['提交', '只提交活动仓库的暂存区;提交按钮文案写明仓库名;其它仓库的暂存区在总览行用小圆点提示「有已暂存未提交」', st('ok')],
+      ['全部同步 / 全部拉取', '总览头部按钮,逐个仓库顺序执行,每行显示转圈 → 成功 / 失败;失败的一行出现「重试」,不中断其余仓库;有合并冲突的仓库跳过并在汇总里说明', st('ok')],
       ['切换分支', '状态栏分支名 = 活动仓库的分支,点它切换的就是活动仓库;总览行的「切换分支…」切换那一个', st('ok')],
-      ['Claude 本轮改动(审查标签)', '按文件所属仓库分组,分组标题 = 仓库名 + 分支;「在源代码管理里暂存」只暂存该仓库内的文件', st('todo')],
-      ['同一次回合改了 2 个仓库', '审查标签顶部提示「改动涉及 2 个仓库,提交需分别进行」,并给出「逐个提交」向导(依次切活动仓库、预填说明)', st('todo')],
+      ['Claude 本轮改动(审查标签)', '按文件所属仓库分组,分组标题 = 仓库名 + 分支;「在源代码管理里暂存」只暂存该仓库内的文件', st('ok')],
+      ['同一次回合改了 2 个仓库', '审查标签顶部提示「改动涉及 2 个仓库,提交需分别进行」,并给出「逐个提交」向导(依次切活动仓库、预填说明)', st('ok')],
       ['路径显示', '多根时路径前缀文件夹名(web-dashboard/src/api.ts);单根与现在一致', st('ok')]]))}
     ${sec('审查标签 · 按仓库分组', '工作区里 Claude 一轮可能改了好几个仓库的文件。审查标签只做「看」和「接受 / 撤销」,提交仍在源代码管理里按仓库分别进行。', mgReview)}
     ${sec('「逐个提交」向导', '一次回合改了 2 个及以上仓库时,审查标签顶部的提示条给出入口;向导把「切仓库 → 预填说明 → 提交 → 下一个」串起来,但不替人按提交。', mgWizard)}
@@ -128,11 +128,11 @@
     ${sec('搜索 · 仅某个文件夹', '', mgSearch)}
     ${sec('嵌套仓库与子模块', '', mgNested)}
     ${sec('图谱、冲突、储藏', '', tbl([['能力', 200], ['怎么做'], ['状态']], [
-      ['Git 图谱', '整页虚拟标签 vGraph 显示活动仓库;标题行有仓库下拉可切换;标签名带仓库名「图谱 · router-demo」', st('todo')],
-      ['合并冲突', 'SCM 顶部「合并冲突」分组出现在对应仓库的区块内;总览行显示红色冲突徽标(阻止「全部同步」)', st('part')],
+      ['Git 图谱', '整页虚拟标签 vGraph 显示活动仓库;标题行有仓库下拉可切换;标签名带仓库名「图谱 · router-demo」', st('ok')],
+      ['合并冲突', 'SCM 顶部「合并冲突」分组出现在对应仓库的区块内;总览行显示红色冲突徽标(阻止「全部同步」)', st('ok')],
       ['储藏', '每个仓库各自的储藏区;总览行「储藏所有更改」只作用该仓库', st('part')],
       ['文件树状态色', '所有仓库的改动一起上色(M 橙 / A 绿 / U 灰),按文件路径前缀归属;文件夹节点右侧显示仓库改动数', st('ok')],
-      ['嵌套仓库(子模块 / 仓库里的仓库)', '按文件夹最近的 .git 归属;子模块作为独立行显示「子模块」标签', st('todo')],
+      ['嵌套仓库(子模块 / 仓库里的仓库)', '按文件夹最近的 .git 归属;子模块作为独立行显示「子模块」标签;总览缩进 + 文件树目录行带标签和改动数;「子模块有未提交改动」的提示行与父仓库的指针变更条目未做', st('part')],
       ['非仓库文件夹', '总览里灰行 + 「初始化仓库」;初始化走 git init 并在输出面板记录', st('ok')]]))}
     ${sec('状态栏与标题栏', '', grid(
       cell('状态栏', '', box(`<div class="f ai g4" style="padding:12px 14px">${chip('router-demo · main', 'branch')}<span class="t3">↑1</span><span class="t3">⚠ 1</span><span class="grow"></span><span class="t3">全栈工作区 · 3 个文件夹</span></div><div class="t3" style="padding:0 14px;line-height:1.7">分支胶囊写「仓库名 · 分支」;点开分支选择器,顶部一行显示作用的仓库,可切换;窄窗口只留分支名。</div>`, 130, 560), '仓库名在多仓库时才出现;单仓库保持现在的「分支」。'),
@@ -177,8 +177,8 @@
   P['gaps'] = () => `<div class="ds" style="max-width:1240px">${head('缺口总表 · 设计稿 ↔ Go 实现', '这一页是「现在还差什么」的唯一清单,每做完一项就把状态改成已实现。按优先级分组:P0 影响主流程,P1 完整度,P2 打磨。')}
     ${sec('P0 · 主流程', '', tbl([['项', 220], ['现状', 360], ['计划', 200], ['状态']], [
       ['添加项目 / 工作区', '已有:侧栏「+」→ 对话框 / 校验 / 右键菜单', '—', st('ok')],
-      ['多根文件树与搜索', '文件树多根已做;搜索范围筛选未做', '搜索「仅某文件夹」', st('part')],
-      ['多仓库 SCM', '总览行 + 活动仓库切换 + 全部拉取 / 同步 + 初始化仓库已做;审查按仓库分组 / 图谱仓库下拉 / 逐个提交向导未做', '补齐 multi-git 页「待做」行', st('part')],
+      ['多根文件树与搜索', '文件树多根与搜索范围筛选已做', '—', st('ok')],
+      ['多仓库 SCM', '总览行 + 活动仓库切换 + 全部拉取 / 同步 + 初始化仓库已做;审查按仓库分组 / 图谱仓库下拉 / 逐个提交向导 / 搜索范围 / 嵌套仓库已做;「子模块有未提交改动」提示未做', '嵌套仓库的提示行', st('part')],
       ['窗口自适应收起', '已按宽度自动收起 / 恢复导航栏与右侧栏', '—', st('ok')],
       ['差异左右 / 统一', '差异标签与审查标签都已生效,视图选择会记住', '—', st('ok')],
       ['会话流动作', '文件图标、跳转、复制、终端面板、链接都可用', '—', st('ok')]]))}

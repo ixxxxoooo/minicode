@@ -25,7 +25,10 @@ import (
 
 // repoEntry 是工作区里一个文件夹的仓库信息。
 type repoEntry struct {
-	name    string // 顶层节点名(= Multi 根名,也是路径第一段)
+	name    string // 顶层节点名(= Multi 根名,也是路径第一段);嵌套仓库是「父文件夹内相对路径」
+	prefix  string // 文件树路径前缀(根 = name;嵌套 = 父文件夹名/相对路径)
+	kind    string // 嵌套仓库的类别:"子模块"(.gitmodules 里有)/"嵌套",根为空
+	parent  int    // 嵌套仓库所属根的序号(根为 0,无意义)
 	dir     string // 绝对目录(演示是虚拟路径)
 	repo    vcs.Repo
 	checked bool // 已经探测过是不是仓库(真实模式异步探测)
@@ -37,6 +40,9 @@ type repoEntry struct {
 	loading       bool
 	last          time.Time
 	msg           string // 该仓库未提交的说明草稿(切换活动仓库时保留)
+	busy          string // 正在对这个仓库执行的操作(拉取 / 推送 / 同步 / 储藏),空 = 空闲
+	opErr         string // 最近一次操作失败的原因(总览行显示「重试」)
+	retry         string // 失败操作的名字,点「重试」再做一遍
 }
 
 // soloState 是进入工作区前的单项目现场,退出工作区时还原。
@@ -150,6 +156,7 @@ type folderSrc struct {
 	repo       vcs.Repo
 	git        map[string]string
 	head       func(string) (string, bool)
+	nested     []demo.WsNested
 }
 
 // ActivateWorkspace 切到某个工作区:文件树 / 搜索变成多根,源代码管理按仓库分开。
@@ -173,7 +180,7 @@ func (a *App) ActivateWorkspace(id string) {
 		for _, f := range w.Folders {
 			for _, d := range all {
 				if d.Path == f.Path {
-					src = append(src, folderSrc{name: f.Label(), path: d.Path, fs: d.FS, repo: d.Repo, git: d.Git, head: d.Head})
+					src = append(src, folderSrc{name: f.Label(), path: d.Path, fs: d.FS, repo: d.Repo, git: d.Git, head: d.Head, nested: d.Nested})
 				}
 			}
 		}
@@ -186,6 +193,7 @@ func (a *App) ActivateWorkspace(id string) {
 		a.toast = "这个工作区里的文件夹都找不到"
 		return
 	}
+	a.sr.scope = ""
 	a.solo = &soloState{fs: a.ide.fs, git: a.ide.git, head: a.ide.headOf, repo: a.repo, proj: a.proj, sc: a.sc}
 	roots := make([]workspace.Root, len(src))
 	for i, s := range src {
@@ -195,7 +203,8 @@ func (a *App) ActivateWorkspace(id string) {
 	a.ws = &w
 	a.repos = nil
 	for i, s := range src {
-		e := &repoEntry{name: multi.Roots()[i].Name, dir: s.path, repo: s.repo, checked: s.repo != nil || a.demoWs()}
+		nm := multi.Roots()[i].Name
+		e := &repoEntry{name: nm, prefix: nm, dir: s.path, repo: s.repo, checked: s.repo != nil || a.demoWs()}
 		if s.repo != nil {
 			e.branch = s.repo.Current()
 		}
@@ -214,10 +223,15 @@ func (a *App) ActivateWorkspace(id string) {
 	if a.demoWs() { // 演示:树上的状态色一开始就齐
 		for i, s := range src {
 			a.repos[i].changes = demoChanges(s.repo)
+			for _, n := range s.nested {
+				ne := a.addNested(i, n.Rel, n.Repo, n.Kind)
+				ne.checked, ne.changes = true, demoChanges(n.Repo)
+			}
 		}
 	}
 	a.syncTreeGit()
 	a.openRepoProbes()
+	a.discoverNested()
 	a.projOpen[w.ID] = true
 	a.ide.open[a.repos[0].name] = true
 	if len(a.repos) > 1 {
@@ -268,6 +282,7 @@ func (a *App) leaveWorkspace() {
 		return
 	}
 	log.Info("退出工作区", "id", a.ws.ID)
+	a.sr.scope = ""
 	a.ws, a.repos, a.repoAct = nil, nil, 0
 	s := a.solo
 	a.solo = nil
@@ -331,15 +346,15 @@ func (a *App) repoSummary(i int) (branch string, ahead, behind, n int) {
 // treePath 活动仓库内的相对路径 → 文件树路径(多根时加文件夹名前缀)。
 func (a *App) treePath(rel string) string {
 	if e := a.activeRepo(); e != nil {
-		return e.name + "/" + rel
+		return e.pre() + "/" + rel
 	}
 	return rel
 }
 
 // repoAt 文件树路径 → 它所在的仓库与仓库内相对路径(单项目时就是 a.repo)。
 func (a *App) repoAt(p string) (vcs.Repo, string) {
-	if m, ok := a.ide.fs.(*workspace.Multi); ok {
-		if i, rest, ok := m.Split(p); ok && i < len(a.repos) {
+	if a.multiRoot() {
+		if i, rest, ok := a.repoIndexOf(p); ok {
 			return a.repos[i].repo, rest
 		}
 		return nil, p
@@ -415,6 +430,9 @@ func (a *App) initRepo(i int) {
 // wsRelMulti 工具调用里的绝对路径 → 文件树路径(多根):找到包含它的文件夹。
 func (a *App) wsRelMulti(p string) (string, bool) {
 	for _, e := range a.repos {
+		if e.kind != "" { // 嵌套仓库的目录在父文件夹里,由父文件夹那一项换算
+			continue
+		}
 		if p == e.dir || strings.HasPrefix(p, e.dir+"/") {
 			return e.name + strings.TrimPrefix(p, e.dir), true
 		}
@@ -425,11 +443,10 @@ func (a *App) wsRelMulti(p string) (string, bool) {
 // focusRepoOf 返回文件树路径在其仓库里的相对路径;多根且这个文件不属于活动仓库时先切过去,
 // 这样随后的 scmAct(作用在活动仓库上)落在正确的仓库。
 func (a *App) focusRepoOf(p string) string {
-	m, ok := a.ide.fs.(*workspace.Multi)
-	if !ok {
+	if !a.multiRoot() {
 		return p
 	}
-	i, rest, ok := m.Split(p)
+	i, rest, ok := a.repoIndexOf(p)
 	if !ok {
 		return p
 	}

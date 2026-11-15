@@ -30,13 +30,20 @@ type reviewState struct {
 	commenting string            // 正在写评论的块
 	comments   map[string]string // 块 → 评论(只留在这里,「发送给 Claude」才会作为下一条消息)
 	draft      string
-	side       bool // 左右对比(默认行内)
+	side       bool            // 左右对比(默认行内)
+	grpClosed  map[string]bool // 多仓库分组是否折叠(键 g<序号>)
 }
 
 func (r *reviewState) init() {
 	if r.open == nil {
 		r.open, r.viewed, r.hunk, r.comments = map[string]bool{}, map[string]bool{}, map[string]string{}, map[string]string{}
+		r.grpClosed = map[string]bool{}
 	}
+}
+
+// reviewStat 一个块的增删行数。
+func reviewStat(d *core.DiffBlock) (int, int) {
+	return diff.Stat(diff.Lines(d.Old, d.New, d.Line, d.Line))
 }
 
 func hunkKey(path string, i int) string { return path + "#" + itoa(i) }
@@ -78,11 +85,12 @@ func (a *App) changedFiles() []chFile {
 	visit(a.st.Items)
 	// 演示:工作区里还有一个没被本会话碰过的未提交文件,与设计稿的「3 个文件」一致
 	if a.demoExtra {
-		src, _ := a.ide.fs.Read("tests/case_test.rs")
+		src, _ := a.ide.fs.Read(a.wsRel("tests/case_test.rs"))
 		blk := &core.DiffBlock{Path: "tests/case_test.rs", New: src, Line: 1}
 		ad, _ := diff.Stat(diff.Lines("", src, 1, 1))
 		out = append(out, chFile{path: blk.Path, status: "A", add: ad, blocks: []*core.DiffBlock{blk}})
 	}
+	out = append(out, a.demoRepoFiles()...) // 演示工作区:另外两个文件夹也各有一轮改动
 	return out
 }
 
@@ -151,7 +159,10 @@ func (a *App) revertHunk(f chFile, i int) {
 // wsRel 把改动里的路径换成相对项目根的路径(真实模式的工具调用带绝对路径)。
 func (a *App) wsRel(p string) string {
 	if a.multiRoot() {
-		r, _ := a.wsRelMulti(p)
+		r, ok := a.wsRelMulti(p)
+		if !ok && !strings.HasPrefix(p, "/") && len(a.repos) > 0 { // 相对路径:会话 cwd = 主文件夹
+			return a.repos[0].name + "/" + strings.TrimPrefix(p, "./")
+		}
 		return r
 	}
 	if a.proj != "" {
@@ -174,7 +185,11 @@ func (a *App) reviewView(c *ui.Context) {
 	ui.Row(c).Height(36).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		kit.Ic(c, "eye", kit.S12).TextColor(t.Ac)
 		ui.Text(c, "本轮改动").FontWeight(700)
-		ui.Text(c, itoa(len(files))+" 个文件").TextColor(t.Tx3)
+		count := itoa(len(files)) + " 个文件"
+		if gs := a.reviewGroups(files); repoGroupCount(gs) > 1 {
+			count += " · " + itoa(repoGroupCount(gs)) + " 个仓库"
+		}
+		ui.Text(c, count).TextColor(t.Tx3)
 		ui.Text(c, "+"+itoa(totalAdd)).Font("monospace").FontSize(11.5).TextColor(t.Ok)
 		ui.Text(c, "−"+itoa(totalDel)).Font("monospace").FontSize(11.5).TextColor(t.Err)
 		ui.Spacer(c).Grow(1)
@@ -200,8 +215,26 @@ func (a *App) reviewView(c *ui.Context) {
 				})
 				return
 			}
-			for i, f := range files {
-				a.reviewFile(c, f, i == 0)
+			if gs := a.reviewGroups(files); gs != nil { // 多根工作区:按仓库分组
+				if n := repoGroupCount(gs); n > 1 {
+					a.reviewBanner(c, n)
+				}
+				first := true
+				for _, g := range gs {
+					a.reviewGroupHead(c, g)
+					if a.rv.grpClosed["g"+itoa(g.idx)] {
+						first = false
+						continue
+					}
+					for _, f := range g.files {
+						a.reviewFile(c, f, first)
+						first = false
+					}
+				}
+			} else {
+				for i, f := range files {
+					a.reviewFile(c, f, i == 0)
+				}
 			}
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Margin(4, 0, 0, 0).TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
 				kit.Ic(c, "info", kit.S12)
@@ -264,7 +297,7 @@ func (a *App) reviewFile(c *ui.Context, f chFile, first bool) {
 			ch.Rotate(ch.AnimateWith("rot", map[bool]float32{true: -90, false: 0}[closed], kit.DurBase, kit.EaseOut))
 			kit.Ic(c, "code", kit.S12).TextColor(t.Tx3)
 			ui.Text(c, baseName(f.path)).FontWeight(600).SingleLine().Shrink(0)
-			ui.Text(c, trimSlash(dirOf(f.path))).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().Grow(1).Shrink(1)
+			ui.Text(c, a.fileDispDir(f.path)).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().Grow(1).Shrink(1)
 			if f.add > 0 {
 				ui.Text(c, "+"+itoa(f.add)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Ok)
 			}

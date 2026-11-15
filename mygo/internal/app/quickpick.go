@@ -235,6 +235,36 @@ func (a *App) quickView(c *ui.Context) {
 				in.OnShortcut(ui.Ctrl, ui.KeyN, func() { move(1) })
 				in.OnShortcut(ui.Ctrl, ui.KeyP, func() { move(-1) })
 			})
+			if s.kind == "branch" && a.multiRoot() && a.repoCount() > 1 { // 多仓库:顶部 chip 选仓库,下面是该仓库的分支
+				ui.Row(c).Gap(6).Padding(6, 10).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+					for i, e := range a.repos {
+						if e.repo == nil {
+							continue
+						}
+						i, e := i, e
+						on := i == a.repoAct
+						b := ui.ButtonBase(c).Key("qp-repo-" + itoa(i)).Height(22).PaddingX(8).Gap(5).Radius(11).AlignItems(ui.Center).Cursor(ui.CursorPointer).
+							FontSize(theme.FsCap).Transition(kit.Fade)
+						switch {
+						case on:
+							b.Background(t.AcSoft).TextColor(t.AcTx)
+						case b.Hovered():
+							b.Background(t.Fill2).TextColor(t.Tx2)
+						default:
+							b.Background(ui.Transparent).TextColor(t.Tx3).Border(1, t.Bd2)
+						}
+						b.OnClick(func() {
+							q := s.query
+							a.setActiveRepo(i)
+							a.OpenQuick("branch", q)
+						})
+						b.Children(func() {
+							kit.Ic(c, "folder", kit.S12)
+							ui.Text(c, e.name).SingleLine()
+						})
+					}
+				})
+			}
 			a.qpList(c, rows, run)
 		})
 	})

@@ -35,3 +35,24 @@ func TestMultiTree(t *testing.T) {
 		t.Fatalf("Split:%d %q %v", i, rest, ok)
 	}
 }
+
+// Only 只留一个根,路径前缀不变(搜索「仅某个文件夹」靠它)。
+func TestMultiOnly(t *testing.T) {
+	a := NewMem("api", map[string]string{"main.go": "A"})
+	b := NewMem("web", map[string]string{"app.ts": "B"})
+	m := NewMulti("ws", []Root{{FS: a}, {FS: b}})
+	o := m.Only(1)
+	top, _ := o.List("")
+	if len(top) != 1 || top[0].Name != "web" {
+		t.Fatalf("只应剩 web:%+v", top)
+	}
+	if s, err := o.Read("web/app.ts"); err != nil || s != "B" {
+		t.Fatalf("前缀不变:%q %v", s, err)
+	}
+	if _, err := o.Read("api/main.go"); err == nil {
+		t.Fatal("别的根不应可读")
+	}
+	if m.Only(9) != m {
+		t.Fatal("越界应原样返回")
+	}
+}

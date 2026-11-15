@@ -93,6 +93,9 @@ func (a *App) tabTitle(t *ideTab) string {
 	case vConflict:
 		return strings.TrimPrefix(t.ref, "") + " (合并冲突)"
 	case vGraph:
+		if e := a.activeRepo(); e != nil && a.repoCount() > 1 {
+			return "图谱 · " + e.name
+		}
 		return "Git 图谱"
 	}
 	return t.title()

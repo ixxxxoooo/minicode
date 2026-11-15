@@ -58,8 +58,18 @@ func (a *App) graphView(c *ui.Context) {
 	a.scmTickNow()
 	m := graphMatch{g.q}
 	a.wsHead(c, "fork", t.Ac, "Git 图谱", func() {
+		if e := a.activeRepo(); e != nil { // 多根:仓库下拉(切换 = 切换活动仓库)
+			if a.repoCount() > 1 {
+				a.folderPicker(c, "graph-repo", a.repoAct, "", true, func(i int) {
+					a.setActiveRepo(i)
+					g.sel = ""
+				})
+			} else {
+				ui.Text(c, e.name).FontWeight(600).TextColor(t.Tx2)
+			}
+		}
 		if len(s.log) > 0 {
-			ui.Text(c, itoa(len(s.log))+" 个提交").FontSize(theme.FsCap).TextColor(t.Tx3)
+			ui.Text(c, a.branch+" · "+itoa(len(s.log))+" 个提交").FontSize(theme.FsCap).TextColor(t.Tx3)
 		}
 	}, func() {
 		in := ui.TextInputBase(c.Key("graph-q"), &g.q).Width(200).Height(24).PaddingX(8).Radius(t.RSm()).Background(t.Fill1).

@@ -167,8 +167,22 @@ func (a *App) treeMenu(m *ui.Menu, rel string, dir bool) {
 			a.ide.openFile(rel, true)
 		}
 	} else {
-		if m.Item("在文件夹中搜索…").Chosen() {
-			a.sr.inc, a.sr.showGlobs = rel+"/**", true
+		label := "在文件夹中搜索…"
+		top := !strings.Contains(rel, "/")
+		if a.multiRoot() && top {
+			label = "仅在此文件夹搜索"
+		}
+		if m.Item(label).Chosen() {
+			if a.multiRoot() { // 多根:第一段是文件夹名,先限定范围;更深的文件夹再叠一个包含规则
+				first, _, _ := strings.Cut(rel, "/")
+				a.setSearchScope(first)
+				a.sr.inc, a.sr.showGlobs = "", false
+				if !top {
+					a.sr.inc, a.sr.showGlobs = rel+"/**", true
+				}
+			} else {
+				a.sr.inc, a.sr.showGlobs = rel+"/**", true
+			}
 			a.OpenSearch()
 		}
 		if m.Item("在此处打开终端").Disabled(a.proj == "").Tooltip(map[bool]string{true: "演示模式没有真实终端目录"}[a.proj == ""]).Chosen() {

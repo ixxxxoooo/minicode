@@ -47,6 +47,15 @@ func itoa(n int) string {
 	return string(b)
 }
 
+// Only 返回只含第 i 个根的多根文件系统(路径前缀不变,所以搜索结果的路径与完整树里一致):
+// 搜索「仅某个文件夹」用它缩小范围。i 越界时原样返回。
+func (m *Multi) Only(i int) *Multi {
+	if i < 0 || i >= len(m.roots) {
+		return m
+	}
+	return &Multi{name: m.name, roots: []Root{m.roots[i]}}
+}
+
 // Roots 各根(顺序 = 添加顺序,第一个是主文件夹)。
 func (m *Multi) Roots() []Root { return m.roots }
 

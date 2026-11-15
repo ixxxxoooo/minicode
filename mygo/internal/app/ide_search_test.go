@@ -64,3 +64,47 @@ func TestSearchReplaceAll(t *testing.T) {
 	}
 	_ = ui.Cmd
 }
+
+// 多根工作区:搜索可限定到某个文件夹;限定后结果只来自那个文件夹,空结果写明范围;退出工作区清除范围。
+func TestSearchFolderScope(t *testing.T) {
+	a, tt := newTestApp(t)
+	a.ActivateWorkspace("ws-fullstack")
+	a.OpenSearch()
+	a.SetSearch("render", "", false)
+	tt.Frame()
+	if a.sr.res.Total == 0 {
+		t.Fatal("全部文件夹应搜到 render")
+	}
+	a.setSearchScope("web-dashboard")
+	tt.Frame()
+	if a.sr.res.Total == 0 {
+		t.Fatal("限定 web-dashboard 应仍有结果")
+	}
+	for _, f := range a.sr.res.Files {
+		if !strings.HasPrefix(f.Path, "web-dashboard/") {
+			t.Fatalf("结果应只来自 web-dashboard:%s", f.Path)
+		}
+	}
+	if !strings.HasPrefix(a.searchSummary(), "在 web-dashboard 内") {
+		t.Fatalf("摘要应写明范围:%q", a.searchSummary())
+	}
+	a.setSearchScope("router-demo")
+	tt.Frame()
+	if a.sr.res.Total != 0 || a.searchSummary() != "router-demo 内没有结果" {
+		t.Fatalf("router-demo 内没有 render:%d %q", a.sr.res.Total, a.searchSummary())
+	}
+	if a.scopeIdx() != 0 {
+		t.Fatalf("范围序号:%d", a.scopeIdx())
+	}
+	a.setSearchScope("")
+	tt.Frame()
+	if a.sr.res.Total == 0 || a.scopeIdx() != -1 {
+		t.Fatal("清除范围后应恢复全部结果")
+	}
+	// 右键「仅在此文件夹搜索」等价于限定范围;退出工作区清除
+	a.setSearchScope("docs-site")
+	a.leaveWorkspace()
+	if a.sr.scope != "" {
+		t.Fatal("退出工作区应清除范围")
+	}
+}

@@ -1,8 +1,10 @@
 package vcs
 
 import (
+	"errors"
 	"fmt"
 	"sync"
+	"time"
 )
 
 // Mem 是内存里的假仓库(演示 / 测试用)。
@@ -19,6 +21,9 @@ type Mem struct {
 	behind  int
 	index   map[string]string // 路径 → 暂存区里的内容(没有记录 = 与 HEAD 相同)
 	stash   []Stash
+	fail    map[string]string // 演示:操作名(Pull / Push)→ 失败原因,用来演示「某个仓库失败、其余照常」
+	once    bool              // 失败只发生一次(第二次「重试」成功)
+	delay   time.Duration     // 演示:拉取 / 推送耗时,界面才看得到转圈
 }
 
 // NewMem 造一个带设计稿里那几个分支的演示仓库。
@@ -206,8 +211,60 @@ func (m *Mem) Show(rev, p string) (string, bool) {
 }
 
 func (m *Mem) AheadBehind() (int, int) { m.mu.Lock(); defer m.mu.Unlock(); return m.ahead, m.behind }
-func (m *Mem) Pull() error             { return nil }
-func (m *Mem) Push() error             { m.mu.Lock(); defer m.mu.Unlock(); m.ahead = 0; return nil }
+
+// SetFail 演示 / 测试:让某个操作(Pull / Push)失败,reason 为空则恢复正常;once 为真时只失败第一次。
+func (m *Mem) SetFail(op, reason string, once bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.fail == nil {
+		m.fail = map[string]string{}
+	}
+	m.once = once
+	if reason == "" {
+		delete(m.fail, op)
+	} else {
+		m.fail[op] = reason
+	}
+}
+
+// SetDelay 演示:让拉取 / 推送各耗时 d(界面上的转圈才看得到)。
+func (m *Mem) SetDelay(d time.Duration) { m.mu.Lock(); m.delay = d; m.mu.Unlock() }
+
+func (m *Mem) slow(op string) error {
+	m.mu.Lock()
+	d, reason := m.delay, m.fail[op]
+	if reason != "" && m.once {
+		delete(m.fail, op)
+	}
+	m.mu.Unlock()
+	if d > 0 {
+		time.Sleep(d)
+	}
+	if reason != "" {
+		return errors.New(reason)
+	}
+	return nil
+}
+
+func (m *Mem) Pull() error {
+	if err := m.slow("Pull"); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	m.behind = 0
+	m.mu.Unlock()
+	return nil
+}
+
+func (m *Mem) Push() error {
+	if err := m.slow("Push"); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.ahead = 0
+	return nil
+}
 
 // SetBranch 演示用:把当前分支设成 name(不存在就加一个),并设定落后数。
 func (m *Mem) SetBranch(name string, behind int) {

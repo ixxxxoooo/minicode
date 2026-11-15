@@ -8,7 +8,7 @@ import (
 )
 
 // EditorDemo 按「动作:参数」驱动编辑器进入某个状态(cmd/shot 截图用,多个动作用逗号隔开):
-// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、md:src|wysiwyg(Markdown 视图)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容。
+// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签)、expand:路径、scm、syncall、repobusy:N、search:查询、scope:文件夹、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容。
 func (a *App) EditorDemo(spec string) {
 	for _, act := range strings.Split(spec, ",") {
 		name, arg, _ := strings.Cut(act, ":")
@@ -42,6 +42,53 @@ func (a *App) EditorDemo(spec string) {
 			if arg != "" {
 				a.graphTab.sel = arg
 				a.scmCommitFiles(arg)
+			}
+			continue
+		}
+		switch name {
+		case "search": // search:查询:打开搜索并填入查询
+			a.OpenSearch()
+			a.SetSearch(arg, "", false)
+			a.runSearch(true)
+			continue
+		case "scope": // scope:文件夹名:多根搜索限定范围
+			a.setSearchScope(arg)
+			a.runSearch(true)
+			continue
+		case "expand": // expand:<树路径>[;<树路径>…] 展开文件树里的文件夹并切到文件导航
+			for _, q := range strings.Split(arg, ";") {
+				a.ide.open[q] = true
+			}
+			a.nav, a.sideOpen = "files", true
+			continue
+		case "scm": // 打开源代码管理
+			a.OpenSCM()
+			continue
+		case "syncall": // 工作区:全部同步(演示:web-dashboard 第一次失败留「重试」,docs-site 有冲突被跳过)
+			a.syncAllRepos(false)
+			continue
+		case "repobusy": // repobusy:N:第 N 个仓库行显示转圈
+			if i := atoi(arg); a.multiRoot() && i < len(a.repos) {
+				a.repos[i].busy = "同步"
+			}
+			continue
+		case "pop": // pop:<键>:直接展开某个弹层(如 fp-graph-repo、fp-search-scope)
+			a.popup = arg
+			continue
+		case "review": // 打开审查标签
+			a.OpenReview()
+			continue
+		case "wizard": // wizard / wizard:1(前进到第 2 个)/ wizard:done(全部处理完):多仓库逐个提交向导
+			a.startCommitWizard()
+			if a.cw != nil {
+				switch arg {
+				case "1":
+					a.wizardNext("ok")
+				case "done":
+					for a.cw != nil && a.cw.finished.IsZero() {
+						a.wizardNext("ok")
+					}
+				}
 			}
 			continue
 		}

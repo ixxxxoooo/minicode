@@ -11,6 +11,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/search"
 	"github.com/ixxxxoooo/minicode/internal/theme"
+	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
 
 // 项目内搜索(对标 VS Code「搜索」,⌘⇧F):内核在 internal/search,走 workspace.FS 所以演示 / 真实通用。
@@ -19,7 +20,8 @@ import (
 
 type searchState struct {
 	query, repl, inc, exc string
-	cs, word, re, pc      bool // 区分大小写 / 全词 / 正则 / 保留大小写
+	scope                 string // 多根:只在这个文件夹里搜(空 = 全部文件夹)
+	cs, word, re, pc      bool   // 区分大小写 / 全词 / 正则 / 保留大小写
 	showRepl, showGlobs   bool
 	gen                   int
 	running               bool
@@ -99,10 +101,39 @@ func (a *App) SetSearch(query string, replace string, showRepl bool) {
 	a.runSearch(true)
 }
 
+// searchFS 搜索用的文件系统:多根且限定了文件夹范围时只含那一个根(路径前缀不变)。
+func (a *App) searchFS() workspace.FS {
+	if m, ok := a.ide.fs.(*workspace.Multi); ok && a.sr.scope != "" {
+		for i, r := range m.Roots() {
+			if r.Name == a.sr.scope {
+				return m.Only(i)
+			}
+		}
+		a.sr.scope = "" // 文件夹已不在工作区里
+	}
+	return a.ide.fs
+}
+
+// scopeIdx 范围对应的 a.repos 序号(-1 = 全部文件夹)。
+func (a *App) scopeIdx() int {
+	for i, e := range a.repos {
+		if e.name == a.sr.scope {
+			return i
+		}
+	}
+	return -1
+}
+
+// setSearchScope 限定(或清除)搜索的文件夹范围并重搜。
+func (a *App) setSearchScope(name string) {
+	a.sr.scope = name
+	log.Info("搜索范围", "folder", name)
+}
+
 // searchTick 每帧调用:查询或选项变了就安排一次搜索。
 func (a *App) searchTick() {
 	s := &a.sr
-	sig := strings.Join([]string{s.query, s.inc, s.exc, b2s(s.cs), b2s(s.word), b2s(s.re)}, "\x00")
+	sig := strings.Join([]string{s.query, s.scope, s.inc, s.exc, b2s(s.cs), b2s(s.word), b2s(s.re)}, "\x00")
 	if sig == s.sig {
 		return
 	}
@@ -133,7 +164,7 @@ func (a *App) runSearch(immediate bool) {
 	s.cancel = cancel
 	s.running = true
 	q := s.q()
-	fs := a.ide.fs
+	fs := a.searchFS()
 	work := func() {
 		if !immediate {
 			select {
@@ -225,6 +256,18 @@ func (a *App) searchView(c *ui.Context) {
 			}
 			ui.Row(c).Gap(6).PaddingStart(16).AlignItems(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx3).Children(func() {
 				a.toggleBtn(c, "···", &s.showGlobs, "要包含 / 排除的文件")
+				if a.multiRoot() { // 多根:范围 chip(只在多根工作区里出现)
+					a.folderPicker(c, "search-scope", a.scopeIdx(), "范围:全部文件夹", false, func(i int) {
+						if i < 0 {
+							a.setSearchScope("")
+						} else {
+							a.setSearchScope(a.repos[i].name)
+						}
+					})
+					if s.scope != "" {
+						kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "清除范围"}).OnClick(func() { a.setSearchScope("") })
+					}
+				}
 				ui.Spacer(c).Grow(1)
 				if s.showRepl {
 					ui.Text(c, "仅替换列出的匹配")
@@ -268,6 +311,8 @@ func (a *App) searchSummary() string {
 		return "查询有误"
 	case s.running:
 		return "搜索中…"
+	case s.res.Total == 0 && s.scope != "":
+		return s.scope + " 内没有结果"
 	case s.res.Total == 0:
 		return "没有结果"
 	}
@@ -275,7 +320,11 @@ func (a *App) searchSummary() string {
 	if s.res.Truncated {
 		extra = "(已达上限)"
 	}
-	return itoa(len(s.res.Files)) + " 个文件中 " + itoa(s.res.Total) + " 处结果" + extra
+	in := ""
+	if s.scope != "" {
+		in = "在 " + s.scope + " 内 · "
+	}
+	return in + itoa(len(s.res.Files)) + " 个文件中 " + itoa(s.res.Total) + " 处结果" + extra
 }
 
 // searchBox 是带前缀图标与尾部控件的输入框(设计稿 .inp)。
