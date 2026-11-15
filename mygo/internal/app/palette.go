@@ -348,8 +348,15 @@ func (a *App) palItems() []palItem {
 	if len(fs) > 20 {
 		fs = fs[:20]
 	}
+	if q != "" && len(ss) > 8 { // 模糊匹配的会话容易很多,只留得分最高的几条
+		ss = ss[:8]
+	}
+	order := [][]scored{cs, ss, fs}
+	if q != "" && a.mode == ModeIDE { // IDE 里搜东西多半是找文件:文件 → 命令 → 会话
+		order = [][]scored{fs, cs, ss}
+	}
 	var out []palItem
-	for _, g := range [][]scored{cs, ss, fs} {
+	for _, g := range order {
 		for _, s := range g {
 			out = append(out, s.palItem)
 		}
