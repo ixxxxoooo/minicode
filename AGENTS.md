@@ -9,7 +9,7 @@
 
 1. **先看设计稿**:动手前先读 `docs/design` 里对应的页面(入口见 `js/app.js` 的 `PAGES`)。设计稿没有、或缺状态 / 右键菜单 / 响应式 / 动效 / 空态 / 错误态 / 演示数据时,**先补设计稿的 UI**(`docs/design` 先改),并在页面的「实现状态」列如实标注,然后才写代码。不允许先写功能、事后补稿。
 2. **集中补缺口(阶段一)**:先不跑测试、不截图。从设计稿「缺口总表」(`js/status.js`)集中盘点所有缺口,列成清单,然后尽快补齐;缺口互相独立时**用子代理并行补**(各管不同文件,避免冲突)。演示模式(`internal/demo`)必须有覆盖该功能各种状态的模拟数据(正常 / 空 / 多项 / 失败 / 进行中);入口、出口、取消、撤销都要有,不留「只进不出」。
-3. **逐项审查(阶段二)**:每补完一个缺口,就**对着设计稿从代码逻辑上审查一遍**(状态、文案、菜单项、置灰原因、空态 / 错误态、可观测性清单),没问题再补下一个。这一步只做静态审查与 `gofmt` / `go build ./...` 保证能编译,**不跑 `go vet` / `go test`、不出截图、不重启开发版**。同一批缺口按「一个功能一个提交」提交并 `git push origin HEAD`(中文 Conventional Commits),设计稿「实现状态」列与 `status.js` 同步更新。
+3. **逐项审查(阶段二)**:每补完一个缺口,就**对着设计稿从代码逻辑上审查一遍**(状态、文案、菜单项、置灰原因、空态 / 错误态、可观测性清单),没问题再补下一个。这一步只做静态审查与 `gofmt` / `go build ./...` 保证能编译,**不跑 `go vet` / `go test`、不出截图、不重启开发版**。**每改完一处代码就立刻提交并 `git push origin HEAD`(中文 Conventional Commits,一个功能一个提交),不等测试、不等「全部补完」**;提交不以 `go vet` / `go test` 为前提,测试阶段发现的问题到时候再单独修复、再提交一个 `fix:`。提交前至少 `gofmt`,尽量保证 `go build` 通过;工作区里有别人 / 别的子代理尚未完成的文件时,只按路径 `git add` 自己改的文件,不要因为别处编不过就不提交,也不要顺手提交别人的半成品。设计稿「实现状态」列与 `status.js` 同步更新,并随同一个提交。
 4. **集中测试(阶段三,只在用户明确说「开始测」时才做)**:全部缺口补完后,由用户手动通知才进入:`cd mygo && unset GOROOT && gofmt -l . ; go vet ./... && go test ./...` 全绿(每个新行为补 `go test`,界面用 `ui.Tester`);再用 `cmd/shot` 出截图,与 `scripts/proto-shot.sh` 的设计稿截图逐项对照(间距、图标、文案、状态、动效),差异写成清单并补齐;最后 `scripts/dev.sh [--demo|--real]` 重启开发版(始终只留一个实例)。**没有用户的通知,不自动测试、不自动截图。**
 5. **汇报要诚实**:列出已实现 / 部分 / 未做,不把「演示数据」说成「真实能力」;还没测过的明确写「未测试」;已知缺口同步写进下面的「已知缺口」与设计稿「实现状态」列。
 
@@ -62,7 +62,7 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 
 - 运行模式优先级:`--demo` / `--real` / `MINI_DEMO=1|0` > 开发版记住的上次选择(`~/.minicode/dev-mode`)> 真实。开发版左下角徽章:演示模式显示「演示模式」,真实模式显示「开发版」。
 - 调试环境变量:`MINI_MODE=ide`(启动进 IDE)、`MINI_PROJECT=<目录>`(真实模式的初始项目)、`MINI_THEME` / `MINI_SCHEME`、`MINI_SCREEN`、`MINI_WIN_W/H`、`MINI_DEMO_SLOW`、`MINI_CLAUDE_PATH`;真实 claude 集成测试用 `MINI_REAL_CLAUDE=1 go test ./internal/claude -run Real`。
-- 提交:中文 Conventional Commits,一个功能一个提交,`go vet` + `go test` 通过后 `git push origin HEAD`(本分支推到 `feat/mygo`)。不提交 `target` / `dist`;不读取、不输出密钥,环境变量只展示名称。
+- 提交:中文 Conventional Commits,一个功能一个提交,**改完立刻提交并 `git push origin HEAD`**(本分支推到 `feat/mygo`),不等 `go vet` / `go test`;测试出问题再修、再提交 `fix:`。不提交 `target` / `dist`;不读取、不输出密钥,环境变量只展示名称。
 - 日志一律用 `diag.L("包名")`,不用 `fmt.Println` / `log`;新增耗时操作用 `diag.SpanSlow` 包起来。
 
 ### MyGo 使用要点(踩过的坑)
@@ -105,7 +105,7 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 ### 项目与工作区、多仓库(v3.3 补充,设计稿 `proj-ws` / `multi-git` / `menus` / `gaps` 页)
 
 - **概念**:项目 = 一个文件夹;工作区 = 一组命名文件夹(第一个是主文件夹 = 会话 cwd,其余经 `--add-dir` 授权,`LoadMD` 开时设 `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1`);仓库 = 文件夹里的 Git 仓库(可没有)。数据 `App.reg *projects.Store`(真实落盘,演示 `projects.NewMem()` + `seedDemoRegistry`)。
-- **侧栏**(`side_ws.go`):标题行「+」(添加项目… / 新建工作区…);工作区行置顶,展开 = 成员文件夹行(「主」/「非仓库」标签)+ 主文件夹的会话;成员文件夹不再单独列;手动添加但没有会话的项目补在列表里。工作区 / 成员 / 项目三种行都有右键菜单(重命名、编辑文件夹、加入工作区、移出、在访达显示、复制路径、移除并确认)。方案 B 的项目下拉暂未接工作区。
+- **侧栏**(`side_ws.go`):标题行「+」(添加项目… / 新建工作区…);工作区行置顶,展开 = 只列主文件夹的会话(成员文件夹不占行,在「编辑工作区」里管理);成员文件夹不再单独列;手动添加但没有会话的项目补在列表里。工作区 / 项目两种行有右键菜单(工作区 = 新对话 · 编辑工作区… · 添加文件夹… · 上移 / 下移 · 访达 / 复制 · 移除;项目 = 新对话 · 编辑项目…(`proj_edit.go`,显示名存 `workspaces.json` 的 `names`)· 加入工作区 · 访达 / 复制 · 移除并确认);全应用右键菜单经 `App.View` 的 `SetMenuPresentation(ui.PopoverMenus)` 画在窗口内,图标用 `kit.MenuIcon`。吸顶的用户消息卡背景必须不透明(`Fill1.Over(BG)`),固定时抬阴影 + 描边 + 下沿渐隐(`flow_user.go`)。方案 B 的项目下拉暂未接工作区。
 - **对话框**(`proj_dialogs.go`):添加项目(路径输入 + 浏览 + 最近 / 发现 + 校验:找不到 → 相近路径建议、是文件 → 用所在文件夹、重复 → 切换过去)、新建 / 编辑工作区(≥2 个文件夹、设为主、移出、从已有项目添加、路径 / 浏览、CLAUDE.md 开关、权限提示)、通用确认框。系统文件夹选择器 `mygo.Dialog.Open`,演示模式没有。入场动画按**真实时钟**计时,截图 / 测试要 `time.Sleep` 一下再 `Frame`。
 - **多根**(`workspaces.go`):`ActivateWorkspace` 把 `a.ide.fs` 换成 `workspace.Multi`,`a.repos` 每个文件夹一项(`repoEntry`:分支 / 领先落后 / 最近状态 / 提交说明草稿);**`a.repo` / `a.sc` 始终是「活动仓库」的**,`setActiveRepo` 切换并重读;文件树路径 = `文件夹名/相对路径`,`a.treePath(rel)` 是仓库内 → 树路径,`a.repoAt(p)` 是树路径 → 仓库 + 相对路径(HEAD / Index / 追溯 / 暂存块都走它),`a.focusRepoOf(p)` 在会改仓库的操作前切到该文件所属仓库;`syncTreeGit` 合并所有仓库的改动(带前缀);非活动仓库每 8 秒后台轻量刷新(`reposTick`)。真实模式 `a.proj = 主文件夹`,每个文件夹后台探测是不是仓库;非仓库在总览里有「初始化仓库」(`vcs.Init`)。`leaveWorkspace` 还原进入前的单项目现场;打开不属于成员的会话会自动退出(演示在 `OpenSession`,真实在 `SetProject`)。
 - **源代码管理**(`scm_repos.go`):多根时顶部「仓库」总览(分支 · ↑↓ · 改动数,点击切换活动仓库,全部拉取 / 同步),提交框上方写明「提交到 <仓库> · <分支>」,状态栏显示「仓库 · 分支」。
@@ -145,11 +145,20 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
   - 动效 / 控件:`kit/motion_ui.go`(DrawerSlide / DragLift / ToastSlide / TextShimmer)、`kit/connectivity.go`(ConnTestRow)、`chat_fade.go`(流底部渐隐)、`dialogOpen`(对话框退场);Markdown 大纲定位 / 粘贴图片 / 往返保留(`edit_md_nav|paste|preserve.go`);OSC 133 注入 bash / zsh(`term/integration.go`);`--virt` 虚拟标签新窗口(`newwindow_virt.go`);MCP 编辑配置、Skill 重命名、服务商编辑、画布全屏坐标 / 适应、演示自动化运行器、用量重试。
 - **三期仍未做**:语义高亮(MyGo 无 API,文档已写明取舍)、`resume_session_at` 分叉的真实后端核验、Mermaid 完整引擎、fish 的 OSC 133、JPEG 剪贴板、工作区 / 诊断 pull、`.icon` 打包与 Finder 图标换装、托盘按样式分图、规则 / 环境变量行与 quickpick 接 `Field` / `dialogOpen`、ok-pop / 折叠高度插值、侧栏会话行错峰入场、插件表单回写、会话内画布版本步进。**以上全部未做过截图 / `go test` 验证,等用户通知再进入阶段三。**
 
-- **阶段三测试要点(已跑 `gofmt` / `go vet` / `go test ./...` 全绿)**:演示的「极端数据」(300 文件 bulk、6 个冲突、5 条储藏、220+ 提交)默认**关闭**——`demo.SetStress(true)` / 环境变量 `MINI_DEMO_STRESS=1` / `cmd/shot -stress` 才打开,默认主演示仓库只有设计稿的三项改动、1 条储藏、6 条提交,截图才能与设计稿对照;测试里需要极端数据时在造 App 之前调 `stressDemo(t)`。无窗口(`a.win == nil`)时 `morphing()` 恒假,过渡遮罩不挡测试点击。同一父元素下不能先建再覆盖同键元素(`foldBody` 曾因此 panic)。截图对照差异清单:演示文件树仍含大量沙盒目录(demo / samples / edge …)、计划卡 / 子代理卡在 FixBug 回放里没有、冲突标签的「结果」区未解决时显示带标记的原文、CodeLens 画在声明行右端(库没有行间小部件),行内追溯在长行上被裁。
-
 ### 已知缺口(真实模式)
 
-- 设置页:快捷键录制、服务商 / 规则 / 环境变量 / LSP 行是演示数据;「项目信任」只列项目,不读写信任状态;除上面列出的偏好外,其它控件只存偏好。
+- **逐页盘点(设计稿 v3.6,缺口总表以 `docs/design/js/status.js` 扫描结果为准,下面旧条目有的已过时)**:340 个功能点,已实现 220 / 部分 82 / 待做 38(**数字是设计稿状态表自评,未经阶段三验证**)。新增登记的缺口,按批次:
+ - B3 Git:推送被拒「拉取并变基 / 合并」分按钮、审查一键暂存已接受改动、追溯悬停提交卡、储藏内文件差异、图谱「与 HEAD 比较 / 比较两个提交」。
+ - B4 会话流:`core.TaskNote` 已有但流里不渲染、并行子 Agent 汇总行、回合折叠(`chat.fold` 没人读)、用户消息悬停动作条与「回退文件」预览入口、用户消息图片、输入框「+」附件与斜杠命令、审批排队「1 / 3」、排队卡「停止并发送」、提示卡动作按钮。
+ - B5 编辑器:转到行 ⌃G(及 ⌘P 的 `:行号`)、块注释 ⌥⇧A、磁盘外部修改检测(没有文件监视)、追溯栏、面包屑同级下拉、多光标未在应用层验证、终端标签重命名、语义高亮、Markdown 粘贴 JPEG。
+ - B6 设置:`chat.sys` / `runtime.bin` / `models.model|effort`(与 `claude.model|effort` 不是同一个键)/ `chat.fold` / `perm.*` / `term.login|cwd` / `scm.diffMax|fetch|worktrees` / `privacy.level` 等**只存偏好不生效**;设计稿有而设置页没有的行(等待动画、滚动条、诊断包导出、claude doctor、settings 导入导出、开源致谢等);Go 里仍叫「检查器」,设计稿 v3.1 已没有这个概念;命令面板缺高频命令;账号菜单用户名 / 用量是写死的。
+ - B2 菜单:文件树右键缺「让 Claude…」「在侧边打开」、侧栏会话行缺「分叉 / 复制会话链接」、搜索「在侧边预览」仍置灰(编辑器拆分已有,可接通)、附加文件夹权限提示卡缺「只读授权」。
+ - B1 多仓:「全部展开」模式未做。B7:自动化运行不能「查看会话」(只有只读输出浮层)、会话流内 Mermaid 图表卡与排版引擎。B8:`kit.OkPop` / `IndetMeter` / `FoldHeight` 定义了但没有调用点,图标按钮 / 开关缺 disabled、统一按下态与键盘聚焦环未做。
+ - 状态降级:多光标、工作区级诊断(`didOpen` 扫盘代替 pull)、终端标签重命名、task-spec 首行等原先标「已实现」的,已改为「部分 / 待做」。
+ - 设计稿脚本:`providers.js` 的 `ensure()` 在 `APP` 就绪前返回 `null`,导致 `overlays.js` 加载期崩溃、「浮层与面板」页整页空白,已用临时状态兜底修复。
+
+- **服务商与模型映射(`prov_*.go`,`claudecfg/providers*.go`,设计稿 `js/providers.js`,未测试)**:`~/.minicode/providers.json` = `{providers, mapping}`(兼容旧数组格式),密钥在 0600 的 `provider-keys.json`;设置 → 服务商可新建自定义 / 预设、「获取模型列表」(`FetchModels` 依次试 `/v1/models` 等候选,全 404 = 不支持,可手动添加)、勾选要用的模型;模型映射 5 个槽位(默认 / Opus / Sonnet / Haiku / 子 Agent)只能从该服务商已勾选的模型里下拉选;输入框配置弹层(`cfgModels`)按「Claude 官方 + 各服务商」分组直接选模型,切换经 `core.CmdSetEnv`(后端只合并受管理的环境变量,回合进行中不推送),新会话启动时由 `claudecfg.ProviderEnv()` 注入。演示模式只改内存、不落盘。缺口:真实连通性只做 HEAD 探测;未做 go test。
+- 设置页:快捷键录制、规则 / 环境变量 / LSP 行是演示数据;「项目信任」只列项目,不读写信任状态;除上面列出的偏好外,其它控件只存偏好。
 - 语言服务器(LSP)已接入诊断 / 悬停 / 定义 / 引用 / 补全 / 重命名 / 格式化;大纲、代码操作、内联提示、语义高亮仍未接,诊断只覆盖已打开的文档,没装服务器时退回本地符号索引。
 - 终端:有多标签、选择复制、搜索、超链接、字体设置,但没有鼠标上报与命令装饰;Nerd Font 图标字形无字体时显示成方框;改项目会结束旧终端。
 - 用量页:没有账户限额与上下文分类明细(后端未接 `get_usage` / 分类);前台命令的实时输出尾读未接入;右栏「改动」仍由会话 diff 推导。
