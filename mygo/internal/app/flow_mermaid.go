@@ -283,8 +283,9 @@ func (a *App) openMmViewer(title, src string) {
 }
 
 func isMermaidInfo(info string) bool {
-	lang := strings.ToLower(strings.Fields(strings.TrimSpace(info))[0])
-	return lang == "mermaid"
+	// 没写语言的围栏(``` 后面直接换行)info 为空,不能直接取第一个词,否则越界 panic
+	f := strings.Fields(strings.TrimSpace(info))
+	return len(f) > 0 && strings.ToLower(f[0]) == "mermaid"
 }
 
 func (a *App) mmSceneSize(sc *mermaid.Scene, scale float32) (float32, float32) {
