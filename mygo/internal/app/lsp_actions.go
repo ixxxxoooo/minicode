@@ -286,6 +286,7 @@ func (a *App) editorMenu(tb *ideTab, m *ui.Menu) {
 	if menuItem(m, "让 Claude 修改这段代码…").Chosen() {
 		a.askClaude("编辑")
 	}
+	a.mcEditMenu(tb, m)
 }
 
 // absPath 项目相对路径 → 绝对路径(演示模式没有真实目录,原样返回)。

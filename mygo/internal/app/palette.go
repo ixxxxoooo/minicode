@@ -126,6 +126,14 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 		return len(cmds) - 1
 	}
 	common = map[int]bool{}
+	addPal := func(icon, title, right, desc string, ok bool, why string, run func()) {
+		i := add(icon, title, right, desc, run)
+		if !ok {
+			cmds[i].off, cmds[i].offWhy = true, why
+		} else {
+			common[i] = true
+		}
+	}
 	common[add("palette", "主题:切换…", "⏎ 展开", "展开主题列表。上下移动时即时预览,回车确认,Esc 还原。", func() {
 		a.pq.sub, a.pq.origPal, a.pq.query, a.pq.sel = "theme", a.pal.ID, "", 0
 		for i, p := range theme.Palettes {
@@ -146,6 +154,12 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 	if tb := a.ide.cur(); tb != nil && tb.buf != nil && tb.virt == "" && !tb.diff {
 		add("align", "格式化文档", "⇧⌥F", "有语言服务器就交给它,否则用内置格式化(Go / JSON / Markdown / 文本)。", a.formatDoc)
 		add("wrap", "切换自动换行", "⌥Z", "编辑器与差异视图共用的偏好 editor.wrap。", a.toggleWrap)
+		add("list", "转到行…", a.shortcutLabel("gotoLine"), "在当前文件跳到指定行,支持 行:列。", a.openGotoLine)
+		add("layers", "块注释", a.shortcutLabel("blockComment"), "用块注释包裹选区;无块注释时改用行注释。", a.toggleBlockComment)
+		okMc, whyMc := a.tbCodeEditable(tb)
+		addPal("cursor", "添加下一个匹配", a.shortcutLabel("selectNext"), "在当前词上重复添加选区。", okMc, whyMc, func() { a.mcRun(tb, editor.SelectNext) })
+		addPal("cursor", "选中所有匹配", a.shortcutLabel("selectAllMatches"), "把当前词的所有出现变成多个光标。", okMc, whyMc, func() { a.mcRun(tb, editor.SelectAllMatches) })
+		addPal("cursor", "回到单光标", "Esc", "只保留主插入点。", okMc, whyMc, func() { a.mcSingle(tb) })
 	}
 	common[add("search", "在项目中搜索", "⇧⌘F", "在整个项目里搜索 / 替换文本,支持正则、全词、包含与排除。", func() { a.OpenSearch() })] = true
 	common[add("branch", "源代码管理", "⌃⇧G", "查看改动、暂存与提交,浏览提交图谱。", func() { a.OpenSCM() })] = true
@@ -165,14 +179,6 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 		common[add(tab.icon, "设置:"+tab.title, "", desc, func() { a.openSettings(tab.id) })] = true
 	}
 	common[add("shield", "切换权限模式", a.shortcutLabel("modeCycle"), "循环切换逐项确认 / 自动接受编辑 / 计划等权限模式。", a.cyclePermissionMode)] = true
-	addPal := func(icon, title, right, desc string, ok bool, why string, run func()) {
-		i := add(icon, title, right, desc, run)
-		if !ok {
-			cmds[i].off, cmds[i].offWhy = true, why
-		} else {
-			common[i] = true
-		}
-	}
 	okSess := a.hasActiveSession()
 	addPal("compress", "压缩上下文", "", "发送 /compact,整理当前会话的上下文。", okSess, "还没有活动会话", func() { a.send(core.CmdCompact{}) })
 	addPal("fork", "分叉当前会话", "", "以当前会话为起点复制出一条新会话。", okSess, "还没有活动会话", func() { a.forkSessionAsk(a.curSess) })
@@ -302,16 +308,7 @@ func (a *App) palItems() []palItem {
 		fs = append(fs, scored{palItem{
 			group: "命令", icon: "hash", title: "转到第 " + itoa(line+1) + " 行",
 			right: "当前文件", desc: "在当前编辑器标签跳到该行并选中。",
-			run: func() {
-				a.gotoLineInCurrent(line)
-				if col > 0 {
-					if tb := a.ide.cur(); tb != nil && tb.st != nil && tb.buf != nil {
-						p0 := editor.Pos{Line: line, Col: col}
-						tb.st.GoTo(p0)
-						tb.st.Select(tb.buf.Offset(p0), tb.buf.Offset(p0))
-					}
-				}
-			},
+			run: func() { a.gotoLineInCurrent(line, col) },
 		}, 1000, 0})
 	}
 	if q == "" {

@@ -3,6 +3,7 @@ package app
 import (
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/richtext"
@@ -18,10 +19,12 @@ var uxLog = diag.L("edit")
 
 // uxState 汇总这一批编辑体验用到的界面状态。
 type uxState struct {
-	focusDraft bool            // 下一帧把键盘焦点给输入框(拖入引用之后接着写)
-	mdNoteOff  map[string]bool // 已点掉「写法会被规范化」提示条的文件
-	demoHint   string          // 截图 / 调试:强制显示「可放」态的提示文字(ide_debug 的 -ed drag)
-	rt         *richtext.Theme // 所见即所得的外观(换主题时清掉)
+	focusDraft    bool            // 下一帧把键盘焦点给输入框(拖入引用之后接着写)
+	mdNoteOff     map[string]bool // 已点掉「写法会被规范化」提示条的文件
+	demoHint      string          // 截图 / 调试:强制显示「可放」态的提示文字(ide_debug 的 -ed drag)
+	rt            *richtext.Theme // 所见即所得的外观(换主题时清掉)
+	blockCmtHint  string          // 块注释退化为行注释时的顶栏提示
+	blockCmtUntil time.Time
 }
 
 // fileRef 是从文件树 / 编辑器标签 / 源代码管理里拖出来的一个文件或文件夹。

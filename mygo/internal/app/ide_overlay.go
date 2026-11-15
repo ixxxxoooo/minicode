@@ -88,15 +88,14 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 		st.GoTo(p0)
 		st.Select(tb.buf.Offset(p0), tb.buf.Offset(editor.Pos{Line: r[0], Col: r[2]}))
 	}
-	if isMarkdownFile(tb.path) && a.mdSource(tb) {
-		st.OnInput = func(ev ui.InputEvent) bool {
-			if ev.Kind != ui.InputKeyDown || ev.Mods != ui.Mod || ev.Key != ui.KeyV {
-				return false
-			}
-			return a.mdTryPasteImage(c, tb, tb.md)
+	st.OnInput = func(ev ui.InputEvent) bool {
+		if a.edMcInput(tb, ev) {
+			return true
 		}
-	} else {
-		st.OnInput = nil
+		if isMarkdownFile(tb.path) && a.mdSource(tb) && ev.Kind == ui.InputKeyDown && ev.Mods == ui.Cmd && ev.Key == ui.KeyV {
+			return a.mdTryPasteImage(c, tb, a.mdEnsure(tb))
+		}
+		return false
 	}
 	a.decorate(tb)
 	a.syncDiffBase(tb)
@@ -558,10 +557,6 @@ func (a *App) editorShortcuts(c *ui.Context) bool {
 		a.toggleBlockComment()
 	case a.ide.gotoLn.open && c.Shortcut(0, ui.KeyEscape):
 		a.closeGotoLine()
-	case tb.mcCount() > 1 && !a.ide.gotoLn.open && a.ide.ov.kind == "" && c.Shortcut(0, ui.KeyEscape):
-		if tb.st.Find("") == false {
-		}
-		a.mcSingle(tb)
 	case a.inl != nil && a.inl.busy && c.Shortcut(0, ui.KeyEscape):
 		a.revertInline()
 	case a.ide.ov.kind != "" && c.Shortcut(0, ui.KeyEscape):
