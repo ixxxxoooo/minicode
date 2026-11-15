@@ -30,11 +30,8 @@ func (a *App) openGotoLine() {
 	g := &a.ide.gotoLn
 	g.open, g.err, g.info = true, "", ""
 	g.focus = true
-	if tb.buf.LineCount() < 1 {
-		g.text = ""
-	} else {
-		g.text = itoa(tb.st.CursorPos().Line + 1)
-	}
+	// 输入框留空(库没有「聚焦即全选」,预填会让新输入被追加成 199 之类);当前行号放在占位符与提示里
+	g.text = ""
 	gotoLog.Info("打开转到行", "path", tb.path, "lines", tb.buf.LineCount())
 }
 
@@ -126,7 +123,7 @@ func (a *App) gotoLineStrip(c *ui.Context, tb *ideTab) {
 				kit.Ic(c, "list", kit.S12).TextColor(t.Tx3)
 				ui.Text(c, "转到").TextColor(t.Tx2).FontWeight(600)
 				in := ui.TextInputBase(c.Key("goto-in"), &g.text).Width(84).Font("monospace").FontFeatures("tnum").
-					Placeholder(map[bool]string{true: "—", false: ""}[n < 1]).Disabled(n < 1)
+					Placeholder(map[bool]string{true: "—", false: itoa(cur)}[n < 1]).Disabled(n < 1)
 				if g.err != "" {
 					in.Border(1, t.Err)
 				}
