@@ -282,7 +282,10 @@ func main() {
 	}
 
 	mygo.App.WhenReady(func() {
-		mygo.App.SetLocale("zh-Hans") // 界面是中文:控件自带文案(差异折叠条、菜单、对话框)也按简体中文
+		// 应用本身没有翻译目录,默认「支持的语言」只有英文,单独 SetLocale 会被忽略(菜单仍是 Copy / Select All);
+		// 先声明应用本身写的是简体中文,再选定它,库自带文案(差异折叠条、菜单、对话框、代码块)才是中文。
+		mygo.App.SetLanguages("zh-Hans")
+		mygo.App.SetLocale("zh-Hans")
 		w, h := 1280, 800
 		if v, err := strconv.Atoi(os.Getenv("MINI_WIN_W")); err == nil {
 			w = v

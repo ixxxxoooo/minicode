@@ -94,7 +94,7 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 - **自动化**:`automation.OpenStore`(`~/.minicode/automations.json`,每次修改原子落盘),`claude.RunPrompt` 以 `claude -p` 运行,main.go 每 30 秒 `AutomationTick` 触发到期项,「立即运行」同一路径。
 - **设置驱动行为**(`prefs_apply.go`,键与默认值必须与 `settings_tabs.go` 一致):动效开关(`kit.SetMotion` 把时长令牌清零)/ 过渡 / 流光、编辑器字号 / 缩进 / 自动保存(延时 1.5 s 或失焦)/ 迷你地图 / 行号 / 折叠 / 换行 / 行内追溯、终端字号、思考默认展开 / 回合统计 / 探索组折叠、发送键(Enter 或 ⌘Enter)与「回合中再发」(排队或引导)、内容宽度。其余设置页控件仍只存偏好。
 - **动效**:弹层入场(`popIn`:透明度 + 4px 升起,120 ms)、居中浮层(`dialogIn`:遮罩淡入 + 卡片落下放大,180 ms)、步骤行展开(淡入 + 下落)、工作区 / 对话栏宽度过渡(440 ms)、边框闪、旋转 / 呼吸 / 光标闪烁、开关滑块与标签下划线弹簧、悬停颜色过渡;`appearance.motion` 关闭或系统「减弱动态」时全部直达终态。需要持续帧的入场动画用 `frameSoon()`。
-- **本地化**:`main.go` 与 `cmd/shot` 都 `import _ ".../locales/zh-Hans"` 并 `SetLocale("zh-Hans")`,控件自带文案(差异折叠条、菜单)才是中文。
+- **本地化**:`main.go` 与 `cmd/shot` 都 `import _ ".../locales/zh-Hans"` 并 `SetLocale("zh-Hans")`,控件自带文案(差异折叠条、菜单)才是中文。**坑**:应用自己没有翻译目录时,库默认「支持的语言」只有英文,单独 `SetLocale` 会被静默忽略(真实应用里菜单仍是 Copy / Select All,而 Tester 里是中文);`main.go` 必须先 `mygo.App.SetLanguages("zh-Hans")` 再 `SetLocale`。
 
 ### 新增模块与约定(v3.2 补充)
 
