@@ -117,8 +117,18 @@ func (a *App) taskDockRow(c *ui.Context, tk *core.BackgroundTask) {
 			if sum != "" {
 				ui.Text(c, sum).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 			}
-			if tk.RunID != "" {
-				ui.Text(c, "run "+shortID(tk.RunID)).FontSize(theme.FsMicro).TextColor(t.Tx4)
+			if tk.RunID != "" || tk.ProcessID > 0 {
+				meta := ""
+				if tk.RunID != "" {
+					meta = "run " + shortID(tk.RunID)
+				}
+				if tk.ProcessID > 0 {
+					if meta != "" {
+						meta += " · "
+					}
+					meta += fmt.Sprintf("pid %d", tk.ProcessID)
+				}
+				ui.Text(c, meta).FontSize(theme.FsMicro).TextColor(t.Tx4)
 			}
 		})
 		ui.Text(c, core.FormatElapsed(tk.ElapsedMs(a.st.Now()))).FontSize(theme.FsMicro).TextColor(t.Tx4).FontFeatures("tnum")
@@ -135,11 +145,10 @@ func (a *App) taskDockRow(c *ui.Context, tk *core.BackgroundTask) {
 			})
 		}
 		if tk.Status == core.TaskRunning || tk.Status == core.TaskStopped || tk.Status == core.TaskFailed {
-			dis := a.be != nil && a.be.Name() == "claude"
-			btn := kit.Btn(c, "重启", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "refresh"})
-			if dis {
-				btn.Opacity(0.4)
-			} else {
+			dis, reason := a.taskRestartDisabled()
+			opt := kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "refresh", Disabled: dis, Tip: reason}
+			btn := kit.Btn(c, "重启", opt)
+			if !dis {
 				btn.OnClick(func() { a.send(core.CmdRestartTask{TaskID: tk.TaskID}) })
 			}
 		}

@@ -17,18 +17,23 @@ func (a *App) initUpdater(demo bool) {
 	}
 	cur := os.Getenv("MINI_VERSION")
 	if cur == "" {
-		cur = "0.2.1"
+		cur = Version
 	}
 	var fetch update.Fetcher = update.GitHubAppcastFetcher{}
 	if demo || os.Getenv("MINI_UPDATE_DEMO") == "1" {
 		fetch = update.DemoFetcher{Version: "0.2.2"}
 	}
+	target := update.BundlePath()
 	a.upd = &update.Runner{
 		Fetch:      fetch,
 		CurrentVer: cur,
 		OnProgress: a.onUpdateProgress,
-		InstallFunc: func(staging string) error {
-			log.Info("更新解包完成", "dir", staging)
+		InstallFunc: func(staging, pkgPath string) error {
+			script := filepath.Join(a.upd.WorkDir(), "replace-minicode.sh")
+			if err := update.WriteReplaceScript(staging, target, script); err != nil {
+				return err
+			}
+			log.Info("更新解包完成", "dir", staging, "pkg", pkgPath, "script", script)
 			return nil
 		},
 	}
@@ -42,6 +47,11 @@ func (a *App) onUpdateProgress(p update.Progress) {
 			ph = updNetErr
 		}
 		a.updSt = updState{Phase: ph, Version: p.Version}
+		a.update = a.updLabel()
+		return
+	}
+	if p.UpToDate {
+		a.updSt = updState{Phase: updLatest, Version: p.Version}
 		a.update = a.updLabel()
 		return
 	}
@@ -62,6 +72,9 @@ func (a *App) onUpdateProgress(p update.Progress) {
 		a.updSt = updState{Phase: updChecking, Version: p.Version}
 	}
 	a.update = a.updLabel()
+	if a.win != nil {
+		a.win.Update(func() { a.syncBrand() })
+	}
 }
 
 func (a *App) checkUpdateAsync() {
@@ -102,5 +115,25 @@ func (a *App) applyUpdateRestart() {
 		})
 		return
 	}
-	a.toast = "正式版将在退出后替换应用包并重启(当前为占位)"
+	script := filepath.Join(a.upd.WorkDir(), "replace-minicode.sh")
+	if _, err := os.Stat(script); err != nil {
+		a.toast = "找不到更新脚本,请重新检查更新"
+		log.Warn("更新脚本缺失", "path", script, "err", err)
+		return
+	}
+	a.bg("apply-update", func() func() {
+		cmd := exec.Command("/bin/sh", script)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err := cmd.Start()
+		return func() {
+			if err != nil {
+				a.toast = "无法启动更新脚本"
+				log.Warn("启动更新脚本失败", "err", err)
+				return
+			}
+			log.Info("退出以应用更新")
+			os.Exit(0)
+		}
+	})
 }

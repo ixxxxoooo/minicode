@@ -132,6 +132,18 @@ func (a *App) ctxPanelBody(c *ui.Context) {
 			}
 			ui.Text(c, "正在读取分类明细…").FontSize(theme.FsCap).TextColor(t.Tx4)
 		})
+	} else if u.ContextDetailErr != "" && len(u.ContextCategories) == 0 {
+		ui.Row(c).Gap(6).Padding(6, 8).Radius(t.RSm()).Background(t.ErrSoft).AlignItems(ui.Center).Children(func() {
+			kit.Ic(c, "alert", kit.S12).TextColor(t.Err)
+			ui.Text(c, u.ContextDetailErr).FontSize(theme.FsCap).Grow(1)
+			kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() {
+				a.ctxLoading = true
+				a.send(core.CmdRefreshUsage{Force: true})
+			})
+		})
+		if a.be != nil && a.be.Name() == "claude" && a.st.Phase == core.PhaseIdle {
+			ui.Text(c, "需要已启动的会话才能查询;先发一条消息或打开历史会话。").FontSize(theme.FsMicro).TextColor(t.Tx4)
+		}
 	} else {
 		a.ctxBarLive(c, u)
 	}

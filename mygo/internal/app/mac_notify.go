@@ -22,6 +22,7 @@ func (a *App) notifyOSAScript(title, body string) {
 
 func (a *App) notifyMacNative(title, body, sessID string) {
 	macNotifyApp = a
+	initMacNotifyBundle()
 	postMacNotification(title, body, sessID)
 }
 

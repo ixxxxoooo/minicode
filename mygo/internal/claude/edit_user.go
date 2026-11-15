@@ -20,7 +20,7 @@ func (b *Backend) onEditUser(c core.CmdEditUser) {
 		return
 	}
 	if c.MsgUUID == "" {
-		b.emit(notice(core.NoticeWarning, "这条消息没有会话检查点 id,无法从该处重发;请用「分叉会话」或只编辑本地演示"))
+		b.emit(notice(core.NoticeWarning, "这条消息没有检查点 id,无法用 resume_session_at 从该处重发;请用「分叉会话…」或本地演示"))
 		// 演示 / 无 uuid 时仍允许当普通新消息发出
 		if c.Text != "" {
 			b.onPrompt(core.CmdPrompt{Text: c.Text})

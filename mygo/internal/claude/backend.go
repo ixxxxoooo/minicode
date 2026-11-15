@@ -424,6 +424,18 @@ func (b *Backend) refreshMcp() {
 	}
 }
 
+func (b *Backend) refreshMcpCLI() {
+	list, err := FetchMcpList(b.cfg.Cwd)
+	if err != nil {
+		log.Warn("无会话时 mcp list 失败", "err", err)
+		b.emit(notice(core.NoticeWarning, "无法获取 MCP 状态:"+err.Error()+";请先打开会话或检查 claude mcp"))
+		return
+	}
+	if len(list) > 0 {
+		b.emit(core.EvMcpServers{Servers: list})
+	}
+}
+
 // ensureProc 确保进程在运行;启动失败时发提示并结束回合。
 func (b *Backend) ensureProc() bool {
 	if b.p != nil {
@@ -550,6 +562,8 @@ func (b *Backend) onCommand(c core.Command) {
 	case core.CmdRefreshMcp:
 		if b.p != nil {
 			b.refreshMcp()
+		} else {
+			b.refreshMcpCLI()
 		}
 	case core.CmdMcpToggle:
 		if b.p != nil {
@@ -732,6 +746,14 @@ func (b *Backend) onControlResponse(v obj) {
 	case rkContext:
 		if ev, ok := b.tr.ContextBreakdown(body, success); ok {
 			b.emit(ev)
+		} else if !success {
+			msg := strings.TrimSpace(errText)
+			if msg == "" {
+				msg = "控制请求失败"
+			}
+			u := b.tr.UsageSnapshot()
+			u.ContextDetailErr = msg
+			b.emit(core.EvUsage{Usage: u})
 		}
 	case rkRewind:
 		o := ParseRewind(r.uuid, r.dryRun, success, body, errText)

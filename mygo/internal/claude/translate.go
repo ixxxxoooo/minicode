@@ -294,6 +294,9 @@ func (t *Translator) taskFrom(v obj) *core.BackgroundTask {
 	task := core.NewBackgroundTask(time.Now().UnixMilli(), str(v, "task_id"), kind, line)
 	task.ToolUseID = toolUse
 	task.RunID = str(v, "run_id")
+	if p, ok := num(v, "pid"); ok {
+		task.ProcessID = int(p)
+	}
 	task.Ambient = boolOf(v, "ambient", false)
 	task.OwnedBySub = boolOf(v, "owned_by_subagent", false)
 	task.Backgrounded = boolOf(v, "is_backgrounded", true)
@@ -986,52 +989,15 @@ func (t *Translator) McpStatusEvent(body obj, ok bool) (core.Event, bool) {
 
 // ContextBreakdown 处理 get_context_usage 的应答:按类别的明细与总量。
 func (t *Translator) ContextBreakdown(body obj, ok bool) (core.Event, bool) {
-	cats := arr(body, "categories")
-	if !ok || cats == nil {
-		return nil, false
+	ev, hit := ApplyContextUsage(body, ok, &t.usage)
+	if hit {
+		t.usage = ev.(core.EvUsage).Usage
 	}
-	var list []core.ContextCategory
-	for _, c := range cats {
-		cm := asObj(c)
-		name := str(cm, "name")
-		n, has := num(cm, "tokens")
-		if name == "" || !has {
-			continue
-		}
-		kind := core.CtxUsed
-		switch str(cm, "kind") {
-		case "free":
-			kind = core.CtxFree
-		case "buffer":
-			kind = core.CtxBuffer
-		case "deferred":
-			kind = core.CtxDeferred
-		}
-		list = append(list, core.ContextCategory{Name: name, Tokens: n, Kind: kind})
-	}
-	if len(list) == 0 {
-		return nil, false
-	}
-	if m := u64(body, "maxTokens"); m > 0 {
-		t.usage.ContextSize = m
-	}
-	if n, has := num(body, "totalTokens"); has {
-		t.usage.ContextUsed = n
-	}
-	t.usage.ContextCategories = list
-	t.usage.McpTools = nil
-	for _, x := range arr(body, "mcpTools") {
-		xm := asObj(x)
-		server, full := str(xm, "serverName"), str(xm, "name")
-		if server == "" || full == "" {
-			continue
-		}
-		t.usage.McpTools = append(t.usage.McpTools, core.McpToolUsage{
-			Server: server, Tool: strings.TrimPrefix(full, "mcp__"+server+"__"), Tokens: u64(xm, "tokens"), Loaded: boolOf(xm, "isLoaded", true),
-		})
-	}
-	return core.EvUsage{Usage: t.usage}, true
+	return ev, hit
 }
+
+// UsageSnapshot 返回当前用量快照(控制请求失败时用于附带错误文案)。
+func (t *Translator) UsageSnapshot() core.Usage { return t.usage }
 
 // UsageChecking 开始查询账户限额:返回带「查询中」状态的快照。
 func (t *Translator) UsageChecking() core.Event {

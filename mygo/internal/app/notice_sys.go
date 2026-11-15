@@ -7,7 +7,7 @@ import (
 )
 
 // maybeSystemNotify 应用在后台且偏好开启时,发一条 macOS 系统通知。
-// Darwin+cgo 走 UserNotifications(点击回会话需系统委托,当前为 part);否则 osascript。
+// Darwin+cgo 且在 .app 包内走 UserNotifications(点击 sess 回会话);否则 osascript(无点击回调)。
 func (a *App) maybeSystemNotify(title, body, sessID string) {
 	if a.appInForeground() || !a.prefs.Bool("general.notify", true) {
 		return

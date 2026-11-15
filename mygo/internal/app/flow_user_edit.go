@@ -75,7 +75,7 @@ func (a *App) userEditCard(c *ui.Context, u *core.User) {
 		})
 		hint := ""
 		if a.be != nil && a.be.Name() == "claude" && a.st.UserUUIDs[u.ID] == "" {
-			hint = "无检查点:发送已置灰"
+			hint = "无检查点:无法 resume_session_at;请用「分叉会话」从该回合重试"
 		}
 		if hint != "" {
 			ui.Text(c, hint).FontSize(theme.FsMicro).TextColor(t.Tx4)

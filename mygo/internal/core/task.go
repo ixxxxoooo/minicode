@@ -90,6 +90,7 @@ const StallMs int64 = 60_000
 type BackgroundTask struct {
 	TaskID         string
 	RunID          string // 同一 task_id 重新运行时每次有新的 run_id
+	ProcessID      int    // task_started 里的 pid(有则显示)
 	ToolUseID      string // 启动它的工具调用 id,用来关联时间线上的工具卡或子 Agent 卡
 	Kind           TaskKind
 	Description    string

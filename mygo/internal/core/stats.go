@@ -122,6 +122,7 @@ type Usage struct {
 	McpTools                 []McpToolUsage
 	LimitsAt                 int64 // 限额数据最近一次更新的时刻(Unix 秒);0 = 还没取到
 	LimitsState              LimitsState
+	ContextDetailErr         string // get_context_usage 失败时的可行动说明(空 = 无错误)
 }
 
 // ContextRatio 上下文使用比例 0..1。

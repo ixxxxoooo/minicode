@@ -27,10 +27,11 @@ const (
 )
 
 type Progress struct {
-	Phase   Phase
-	Percent int
-	Version string
-	Err     string
+	Phase    Phase
+	Percent  int
+	Version  string
+	Err      string
+	UpToDate bool
 }
 
 type Fetcher interface {
@@ -88,7 +89,7 @@ func (d DemoFetcher) Check(ctx context.Context) (string, string, string, bool, e
 type Runner struct {
 	Fetch       Fetcher
 	CurrentVer  string
-	InstallFunc func(staging string) error
+	InstallFunc func(staging, pkgPath string) error
 	OnProgress  func(Progress)
 	workDir     string
 }
@@ -113,6 +114,7 @@ func (r *Runner) run(ctx context.Context) {
 		return
 	}
 	if !ok || ver == r.CurrentVer {
+		r.emit(Progress{Version: r.CurrentVer, UpToDate: true})
 		return
 	}
 	r.emit(Progress{Phase: PhaseDownload, Percent: 5, Version: ver})
@@ -130,12 +132,18 @@ func (r *Runner) run(ctx context.Context) {
 	}
 	r.emit(Progress{Phase: PhaseUnpack, Percent: 100, Version: ver})
 	stage := filepath.Join(r.WorkDir(), "staging")
-	_ = os.RemoveAll(stage)
-	if err := os.MkdirAll(stage, 0o755); err == nil {
-		_ = os.WriteFile(filepath.Join(stage, "Meta.json"), []byte(`{"version":"`+ver+`"}`), 0o644)
+	if path != "" {
+		if err := UnpackPackage(path, stage); err != nil {
+			r.emit(Progress{Err: "解包失败: " + err.Error()})
+			return
+		}
+	} else if err := os.MkdirAll(filepath.Join(stage, "MiniCode.app"), 0o755); err != nil {
+		r.emit(Progress{Err: err.Error()})
+		return
 	}
+	_ = os.WriteFile(filepath.Join(stage, "Meta.json"), []byte(`{"version":"`+ver+`"}`), 0o644)
 	if r.InstallFunc != nil {
-		if err := r.InstallFunc(stage); err != nil {
+		if err := r.InstallFunc(stage, path); err != nil {
 			r.emit(Progress{Err: err.Error()})
 			return
 		}
