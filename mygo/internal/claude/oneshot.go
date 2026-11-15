@@ -39,7 +39,9 @@ func RunPromptModelCtx(ctx context.Context, cwd, prompt, permMode, model string,
 		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
-	args := []string{"-p", "--output-format", "text"}
+	// 一次性调用(提交说明 / 行内补全 / 画布与自定义生成)不留会话:否则每次都会在
+	// ~/.claude/projects 里多出一个「你是 Git 提交说明助手…」之类的会话,污染用户的历史列表
+	args := []string{"-p", "--output-format", "text", "--no-session-persistence"}
 	if permMode != "" {
 		args = append(args, "--permission-mode", permMode)
 	}
