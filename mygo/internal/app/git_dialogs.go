@@ -16,7 +16,7 @@ func (a *App) notePushFail(err error) {
 	}
 	msg := err.Error()
 	if strings.Contains(msg, "non-fast-forward") || strings.Contains(msg, "rejected") || strings.Contains(msg, "拒绝") {
-		a.sc.pushGuide = msg
+		a.sc.pushGuide = friendlyGitErr(msg)
 		log.Warn("推送被拒", "err", msg)
 		return
 	}
