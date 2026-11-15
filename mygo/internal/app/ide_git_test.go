@@ -73,6 +73,7 @@ func TestConflictTabResolve(t *testing.T) {
 }
 
 func TestStashAndUndoCommit(t *testing.T) {
+	stressDemo(t)
 	a, tt := demoIDE(t)
 	a.OpenSCM()
 	tt.Frame()

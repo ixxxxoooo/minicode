@@ -44,7 +44,9 @@ func main() {
 	wsFlag := flag.Bool("ws", false, "进入演示工作区「全栈工作区」(多根文件树 / 多仓库源代码管理)")
 	dlg := flag.String("dlg", "", "打开项目对话框:add / ws / wsedit / confirm;add:路径 = 预填并提交")
 	repoIx := flag.Int("repo", -1, "多根时把第 N 个仓库设为源代码管理的活动仓库")
+	stress := flag.Bool("stress", false, "打开演示的极端数据(300 文件 bulk / 冲突 / 5 条储藏 / 220+ 提交),默认关闭以便与设计稿对照")
 	flag.Parse()
+	demo.SetStress(*stress)
 
 	home := "/tmp/minicode-shot-home"
 	os.Setenv("MINI_HOME", home)

@@ -7,6 +7,7 @@ import (
 
 // 多仓库总览:全部同步逐个执行;有冲突的仓库被跳过并点名;失败的行留「重试」,重试成功后清掉;其它仓库不受影响。
 func TestSyncAllReposStates(t *testing.T) {
+	stressDemo(t)
 	a, tt := newTestApp(t)
 	a.ActivateWorkspace("ws-fullstack")
 	a.OpenSCM()

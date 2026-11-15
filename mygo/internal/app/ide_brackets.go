@@ -28,6 +28,11 @@ func (a *App) bracketDecorate(tb *ideTab) []editor.TextBackground {
 	if a.pal.Dark {
 		cols = bracketColsDark
 	}
+	// 编辑器只提供背景色 API,用低透明度淡色衬底,避免盖过文字与语法色。
+	bAlpha := float32(.24)
+	if a.pal.Dark {
+		bAlpha = .3
+	}
 	var tbs []editor.TextBackground
 	depth := 0
 	pairs := map[byte]byte{'(': ')', '[': ']', '{': '}'}
@@ -56,12 +61,12 @@ func (a *App) bracketDecorate(tb *ideTab) []editor.TextBackground {
 			continue
 		}
 		if pairs[ch] != 0 {
-			col := cols[depth%len(cols)].Alpha(.85)
+			col := cols[depth%len(cols)].Alpha(bAlpha)
 			tbs = append(tbs, editor.TextBackground{Start: i, End: i + 1, Color: col})
 			depth++
 		} else if closers[ch] {
 			depth = max(depth-1, 0)
-			col := cols[depth%len(cols)].Alpha(.85)
+			col := cols[depth%len(cols)].Alpha(bAlpha)
 			tbs = append(tbs, editor.TextBackground{Start: i, End: i + 1, Color: col})
 		}
 		if len(tbs) > 800 {

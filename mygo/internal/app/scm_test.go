@@ -27,6 +27,7 @@ func scmHasSplit(cs []vcs.Change, staged bool, path string) bool {
 }
 
 func TestSCMLoadsAndGroups(t *testing.T) {
+	stressDemo(t)
 	a, _ := scmApp(t)
 	st, wk := a.sc.split()
 	if !a.sc.loaded || len(st) < 60 || len(wk) < 150 {

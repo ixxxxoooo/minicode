@@ -62,7 +62,8 @@ func (a *App) welcome(c *ui.Context) {
 				}
 			})
 		} else {
-			ui.Row(c).Gap(6).Children(func() {
+			// 放不下四张时折行居中,不要横向溢出被裁掉
+			ui.Row(c).Gap(6).Wrap().Justify(ui.Center).WidthPercent(100).MaxWidth(640).PaddingX(20).Children(func() {
 				for _, s := range starters {
 					a.starterCard(c, s)
 				}

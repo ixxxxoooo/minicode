@@ -13,6 +13,7 @@ import (
 
 // 演示工作区:进入后文件树是多根、树上的状态色带前缀、活动仓库可切换,退出后还原单项目。
 func TestDemoWorkspaceLifecycle(t *testing.T) {
+	stressDemo(t)
 	a, tt := newTestApp(t)
 	before := a.ide.fs
 	a.ActivateWorkspace("ws-fullstack")

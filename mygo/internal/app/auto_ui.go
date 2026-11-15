@@ -173,13 +173,28 @@ func (a *App) autoProjPick(c *ui.Context, sel *string, key string) {
 			break
 		}
 	}
-	items := make([]kit.SegItem, len(names))
-	for i, n := range names {
-		items[i] = kit.SegItem{Text: n}
-	}
-	if i := kit.Seg(c, items, idx, kit.SegOpt{Key: key, Fill: true}); i >= 0 && i < len(names) {
-		*sel = names[i]
-	}
+	// 项目很多时分段控件会把名字挤成「ro…」,改成可折行的选择 chip。
+	// 项目一多就限高滚动,别把抽屉底部的「立即运行 / 保存」顶出去。
+	ui.Scroll(c).Key(key + "-scroll").MaxHeight(84).Children(func() {
+		ui.Row(c).Gap(5).Wrap().Children(func() {
+			for i, n := range names {
+				i, n := i, n
+				on := i == idx
+				b := ui.ButtonBase(c).Key(key + "-" + itoa(i)).Height(24).PaddingX(9).Radius(12).AlignItems(ui.Center).
+					Cursor(ui.CursorPointer).FontSize(theme.FsCap).Transition(kit.Fade)
+				switch {
+				case on:
+					b.Background(t.AcSoft).TextColor(t.AcTx).Border(1, t.Ac)
+				case b.Hovered():
+					b.Background(t.Fill2).TextColor(t.Tx2).Border(1, t.Bd2)
+				default:
+					b.Background(ui.Transparent).TextColor(t.Tx3).Border(1, t.Bd2)
+				}
+				b.OnClick(func() { *sel = n })
+				b.Children(func() { ui.Text(c, n).SingleLine() })
+			}
+		})
+	})
 }
 
 func (a *App) projectNames() []string {

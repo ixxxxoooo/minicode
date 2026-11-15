@@ -145,6 +145,8 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
   - 动效 / 控件:`kit/motion_ui.go`(DrawerSlide / DragLift / ToastSlide / TextShimmer)、`kit/connectivity.go`(ConnTestRow)、`chat_fade.go`(流底部渐隐)、`dialogOpen`(对话框退场);Markdown 大纲定位 / 粘贴图片 / 往返保留(`edit_md_nav|paste|preserve.go`);OSC 133 注入 bash / zsh(`term/integration.go`);`--virt` 虚拟标签新窗口(`newwindow_virt.go`);MCP 编辑配置、Skill 重命名、服务商编辑、画布全屏坐标 / 适应、演示自动化运行器、用量重试。
 - **三期仍未做**:语义高亮(MyGo 无 API,文档已写明取舍)、`resume_session_at` 分叉的真实后端核验、Mermaid 完整引擎、fish 的 OSC 133、JPEG 剪贴板、工作区 / 诊断 pull、`.icon` 打包与 Finder 图标换装、托盘按样式分图、规则 / 环境变量行与 quickpick 接 `Field` / `dialogOpen`、ok-pop / 折叠高度插值、侧栏会话行错峰入场、插件表单回写、会话内画布版本步进。**以上全部未做过截图 / `go test` 验证,等用户通知再进入阶段三。**
 
+- **阶段三测试要点(已跑 `gofmt` / `go vet` / `go test ./...` 全绿)**:演示的「极端数据」(300 文件 bulk、6 个冲突、5 条储藏、220+ 提交)默认**关闭**——`demo.SetStress(true)` / 环境变量 `MINI_DEMO_STRESS=1` / `cmd/shot -stress` 才打开,默认主演示仓库只有设计稿的三项改动、1 条储藏、6 条提交,截图才能与设计稿对照;测试里需要极端数据时在造 App 之前调 `stressDemo(t)`。无窗口(`a.win == nil`)时 `morphing()` 恒假,过渡遮罩不挡测试点击。同一父元素下不能先建再覆盖同键元素(`foldBody` 曾因此 panic)。截图对照差异清单:演示文件树仍含大量沙盒目录(demo / samples / edge …)、计划卡 / 子代理卡在 FixBug 回放里没有、冲突标签的「结果」区未解决时显示带标记的原文、CodeLens 画在声明行右端(库没有行间小部件),行内追溯在长行上被裁。
+
 ### 已知缺口(真实模式)
 
 - 设置页:快捷键录制、服务商 / 规则 / 环境变量 / LSP 行是演示数据;「项目信任」只列项目,不读写信任状态;除上面列出的偏好外,其它控件只存偏好。

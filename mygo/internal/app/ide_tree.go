@@ -18,26 +18,31 @@ func (a *App) filesView(c *ui.Context) {
 	}
 	t := a.tk
 	d := a.ide
-	ui.Scroll(c).Key("files").Grow(1).Children(func() {
-		ui.Column(c).Children(func() {
-			ui.Row(c).Height(24).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Children(func() {
-				kit.Ic(c, "chevD", kit.S12)
-				title := strings.ToUpper(d.fs.Name())
-				if a.multiRoot() {
-					title = strings.ToUpper(a.ws.Name) + "(工作区)"
-				}
-				ui.Text(c, title).Grow(1).SingleLine()
-				if a.multiRoot() {
-					kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "添加文件夹"}).OnClick(func() {
-						a.pickFolders(true, func(ps []string) { a.wsAddFolders(a.ws.ID, ps) })
-					})
-				}
-				kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建文件"}).OnClick(func() { a.beginNew(a.newTargetDir(), false) })
-				kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache, d.filesCache = nil, nil })
-				kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.treeHeadMenu)
+	// 外层竖排:文件树自己滚动,「大纲 / 时间线」像 VS Code 的分区那样钉在底部。
+	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
+		ui.Scroll(c).Key("files").Grow(1).MinHeight(0).Children(func() {
+			ui.Column(c).Children(func() {
+				ui.Row(c).Height(24).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Children(func() {
+					kit.Ic(c, "chevD", kit.S12)
+					title := strings.ToUpper(d.fs.Name())
+					if a.multiRoot() {
+						title = strings.ToUpper(a.ws.Name) + "(工作区)"
+					}
+					ui.Text(c, title).Grow(1).SingleLine()
+					if a.multiRoot() {
+						kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "添加文件夹"}).OnClick(func() {
+							a.pickFolders(true, func(ps []string) { a.wsAddFolders(a.ws.ID, ps) })
+						})
+					}
+					kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建文件"}).OnClick(func() { a.beginNew(a.newTargetDir(), false) })
+					kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache, d.filesCache = nil, nil })
+					kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.treeHeadMenu)
+				})
+				a.treeDir(c, "", 0)
 			})
-			a.treeDir(c, "", 0)
-			ui.Box(c).Height(1).Margin(8, 2).Background(t.Bd1)
+		})
+		ui.Column(c).Children(func() {
+			ui.Box(c).Height(1).Background(t.Bd1)
 			for _, name := range []string{"大纲", "时间线"} {
 				open := d.sections[name]
 				r := ui.ButtonBase(c).Key("sec-" + name).Height(24).PaddingX(8).Justify(ui.Start).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).
@@ -54,11 +59,15 @@ func (a *App) filesView(c *ui.Context) {
 					ui.Text(c, name)
 				})
 				if open {
-					if name == "大纲" {
-						a.outlineRows(c)
-					} else {
-						a.timelineRows(c)
-					}
+					ui.Scroll(c).Key("sec-body-" + name).MaxHeight(200).Children(func() {
+						ui.Column(c).Children(func() {
+							if name == "大纲" {
+								a.outlineRows(c)
+							} else {
+								a.timelineRows(c)
+							}
+						})
+					})
 				}
 			}
 		})
