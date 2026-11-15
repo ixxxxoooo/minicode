@@ -220,13 +220,32 @@ func CostText(c float64) string {
 	return fmt.Sprintf("$%.2f", c)
 }
 
+// costShown 是否展示费用:claude CLI 给的 total_cost_usd 是按 Claude 价格表估算的,
+// 第三方模型(DeepSeek 等)的这个数字不是真实账单,宁可不显示也不误导。
+// 没有记录模型名、或是 Claude 系列模型时才展示。
+func (t TurnStats) costShown() bool {
+	if t.CostUSD == nil {
+		return false
+	}
+	m := strings.ToLower(strings.TrimSpace(t.Model))
+	if m == "" || strings.HasPrefix(m, "<") || strings.HasPrefix(m, "claude") {
+		return true
+	}
+	for _, fam := range []string{"sonnet", "opus", "haiku"} {
+		if strings.Contains(m, fam) {
+			return true
+		}
+	}
+	return false
+}
+
 // ShortText 操作条上的简短文案:`↑ 21.1k ↓ 230 · 缓存 98% · $0.004`(没有的项跳过)。
 func (t TurnStats) ShortText() string {
 	parts := []string{fmt.Sprintf("↑ %s ↓ %s", FormatTokens(t.InputTotal()), FormatTokens(t.Output))}
 	if t.InputTotal() > 0 && (t.CacheRead > 0 || t.CacheWrite > 0) {
 		parts = append(parts, fmt.Sprintf("缓存 %d%%", t.HitPercent()))
 	}
-	if t.CostUSD != nil {
+	if t.costShown() {
 		parts = append(parts, CostText(*t.CostUSD))
 	}
 	return strings.Join(parts, " · ")
@@ -244,7 +263,7 @@ func (t TurnStats) DetailText() string {
 	if t.InputTotal() > 0 {
 		lines = append(lines, fmt.Sprintf("缓存命中率 %d%%", t.HitPercent()))
 	}
-	if t.CostUSD != nil {
+	if t.costShown() {
 		lines = append(lines, "费用 "+CostText(*t.CostUSD))
 	}
 	secs := func(ms uint64) string { return fmt.Sprintf("%.1fs", float64(ms)/1000) }
