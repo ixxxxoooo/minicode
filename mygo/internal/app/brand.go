@@ -42,6 +42,9 @@ func (a *App) syncBrand() {
 	if a.secondary || testing.Testing() { // 单测里没有主循环,Dock / 托盘调用会永久阻塞
 		return
 	}
+	if !mygo.App.IsReady() { // 应用就绪前创建托盘会直接 panic(New 里的 retheme 也会走到这);就绪后 InitBrand 会补一次
+		return
+	}
 	dark := a.tk != nil && a.tk.Palette.Dark
 	if a.brand.dockDark != dark {
 		a.brand.dockDark = dark

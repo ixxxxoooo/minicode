@@ -152,11 +152,13 @@ func TestTrayModePriority(t *testing.T) {
 	}
 }
 
-// 菜单里的会话状态点是可用图标,且重复取用走缓存。
-func TestTrayDotIcon(t *testing.T) {
+// 菜单里的会话状态点:三种状态各有不同的彩色圆点。
+func TestTrayDot(t *testing.T) {
+	seen := map[string]bool{}
 	for _, k := range []string{"run", "wait", "ok"} {
-		if trayDotIcon(k) == nil || trayDotIcon(k) != trayDotIcon(k) {
-			t.Fatalf("状态点 %s 应生成并缓存", k)
-		}
+		seen[trayDot(k)] = true
+	}
+	if len(seen) != 3 {
+		t.Fatalf("三种状态应各用不同的状态点,得到 %v", seen)
 	}
 }

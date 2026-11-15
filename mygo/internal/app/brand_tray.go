@@ -1,10 +1,6 @@
 package app
 
 import (
-	"bytes"
-	"image"
-	"image/color"
-	"image/png"
 	"math"
 	"os"
 	"sort"
@@ -189,39 +185,16 @@ func brandPathBase(id string) string {
 	return id
 }
 
-// trayDotIcon 菜单里会话行前的状态点(蓝 = 运行中、橙 = 待确认、绿 = 刚完成,与应用内会话列表同一套),按种类缓存。
-var trayDotCache = map[string]*mygo.MenuIcon{}
-
-func trayDotIcon(kind string) *mygo.MenuIcon {
-	if ic, ok := trayDotCache[kind]; ok {
-		return ic
+// trayDot 菜单里会话行前的状态点(蓝 = 运行中、橙 = 待确认、绿 = 刚完成,与应用内会话列表同一套)。
+// 用彩色圆点字符而不是菜单图标:库的菜单图标在托盘菜单里实机不渲染(实测),字符在所有系统版本都稳定。
+func trayDot(kind string) string {
+	switch kind {
+	case "wait":
+		return "🟠"
+	case "run":
+		return "🔵"
 	}
-	col := map[string]color.NRGBA{
-		"run":  {0x0a, 0x84, 0xff, 0xff},
-		"wait": {0xff, 0x9f, 0x0a, 0xff},
-		"ok":   {0x30, 0xd1, 0x58, 0xff},
-	}[kind]
-	const n = 32 // 16pt @2x
-	img := image.NewNRGBA(image.Rect(0, 0, n, n))
-	for y := 0; y < n; y++ {
-		for x := 0; x < n; x++ {
-			d := math.Hypot(float64(x)+.5-n/2, float64(y)+.5-n/2)
-			al := math.Max(0, math.Min(1, 6.5-d)) // 半径 6.5px,边缘 1px 抗锯齿
-			if al > 0 {
-				c := col
-				c.A = uint8(al * 255)
-				img.SetNRGBA(x, y, c)
-			}
-		}
-	}
-	var buf bytes.Buffer
-	_ = png.Encode(&buf, img)
-	ic, err := mygo.NewMenuIcon(buf.Bytes(), false)
-	if err != nil {
-		ic = nil
-	}
-	trayDotCache[kind] = ic
-	return ic
+	return "🟢"
 }
 
 func (a *App) trayMenuFull() *mygo.Menu {
@@ -238,10 +211,8 @@ func (a *App) trayMenuFull() *mygo.Menu {
 	for _, s := range sess {
 		s := s
 		items = append(items, &mygo.MenuItem{
-			Label:    s.title,
-			Subtitle: s.project,
-			Icon:     trayDotIcon(s.kind),
-			Click:    func(*mygo.MenuItem, *mygo.Window) { a.OpenSession(s.id); mygo.App.Focus() },
+			Label: trayDot(s.kind) + "  " + trayClip(s.title, 26) + "  ·  " + s.project,
+			Click: func(*mygo.MenuItem, *mygo.Window) { a.OpenSession(s.id); mygo.App.Focus() },
 		})
 	}
 	if len(sess) == 0 {
@@ -410,4 +381,13 @@ func (a *App) maybeDockBounce() {
 		dockCancelAttention(a.brand.bounceID)
 	}
 	a.brand.bounceID = dockRequestAttention(critical)
+}
+
+// trayClip 把菜单里的会话标题截到 n 个字符(按字符,不按字节),过长加省略号,免得托盘菜单被长标题撑得很宽。
+func trayClip(s string, n int) string {
+	r := []rune(strings.TrimSpace(s))
+	if len(r) <= n {
+		return string(r)
+	}
+	return string(r[:n]) + "…"
 }
