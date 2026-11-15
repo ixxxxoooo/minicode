@@ -407,6 +407,8 @@ func (a *App) afterEvent(ev core.Event) {
 		}
 	}
 	if e, ok := ev.(core.EvTurnEnded); ok {
+		// 回合里 Claude 可能新建了被 .gitignore 忽略的文件(git 状态看不到),文件树缓存一并作废
+		a.ide.listCache, a.ide.filesCache = nil, nil
 		if a.q.preempt != "" {
 			a.qTurnEnded(e.Reason == core.StopEndTurn)
 			a.flushPreempt()

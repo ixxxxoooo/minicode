@@ -8,6 +8,8 @@ import (
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/vcs"
+	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
 
 // 项目根经过软链(macOS 的 /tmp、/var)时,claude 汇报的是真实路径,也要能换成相对路径。
@@ -161,5 +163,22 @@ func TestDeniedCommandCardNoExitCode(t *testing.T) {
 	}
 	if !tt.HasText("未执行") {
 		t.Fatal("被拒绝的命令卡应显示「未执行」")
+	}
+}
+
+// 改动里出现新文件(Claude 新建)时,文件树目录缓存要作废;实机发现 main_test.go 只出现在 SCM、树里要手点刷新。
+func TestSyncTreeGitInvalidatesTreeCache(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true})
+	a.ide.listCache = map[string][]workspace.Entry{"": nil}
+	a.ide.filesCache = []string{"a.go"}
+	a.sc.changes = []vcs.Change{{Path: "new_test.go", Status: 'U'}}
+	a.syncTreeGit()
+	if a.ide.listCache != nil || a.ide.filesCache != nil {
+		t.Fatal("出现新的改动文件后,树缓存应作废")
+	}
+	a.ide.listCache = map[string][]workspace.Entry{"": nil}
+	a.syncTreeGit() // 路径集合没变:缓存保留,避免每次轮询都重读磁盘
+	if a.ide.listCache == nil {
+		t.Fatal("路径集合不变时不该清缓存")
 	}
 }

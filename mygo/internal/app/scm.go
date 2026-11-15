@@ -150,7 +150,25 @@ func (a *App) syncTreeGit() {
 	} else {
 		add("", a.sc.changes)
 	}
+	// 改动里出现 / 消失了文件(Claude 或外部新建、删除):文件树的目录缓存已经过期,清掉才会重新读盘。
+	// 没有这一步,新建的文件只在「源代码管理」里有,文件树要手动点刷新才出现。
+	if treeKeysChanged(a.ide.git, m) {
+		a.ide.listCache, a.ide.filesCache = nil, nil
+	}
 	a.ide.git = m
+}
+
+// treeKeysChanged 两份改动表的路径集合是否不同(只比路径,不比状态字母)。
+func treeKeysChanged(old, cur map[string]string) bool {
+	if len(old) != len(cur) {
+		return true
+	}
+	for k := range cur {
+		if _, ok := old[k]; !ok {
+			return true
+		}
+	}
+	return false
 }
 
 // staged / unstaged 拆分。
