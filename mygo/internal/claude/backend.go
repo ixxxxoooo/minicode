@@ -81,6 +81,7 @@ const (
 	rkMcpStatus
 	rkMcpToggle
 	rkRewind
+	rkResumeAt
 )
 
 type req struct {
@@ -118,6 +119,7 @@ type Backend struct {
 	fork          bool
 	started       bool
 	models        []core.ModelInfo
+	pendingEdit   *pendingUserEdit
 }
 
 var idGen atomic.Int64
@@ -564,6 +566,10 @@ func (b *Backend) onCommand(c core.Command) {
 		b.emit(core.EvForkSession{ParentID: c.ParentID, NewID: c.NewID, Cwd: b.cfg.Cwd, AtUser: c.AtUser})
 	case core.CmdRetryTurn:
 		log.Info("重试回合(由界面发 CmdPrompt)", "user", c.UserID)
+	case core.CmdEditUser:
+		b.onEditUser(c)
+	case core.CmdCompact:
+		b.onCompact()
 	}
 }
 
@@ -731,6 +737,8 @@ func (b *Backend) onControlResponse(v obj) {
 		o := ParseRewind(r.uuid, r.dryRun, success, body, errText)
 		log.Info("回退文件", "dry", r.dryRun, "can", o.CanRewind, "files", len(o.Files), "err", o.Error)
 		b.emit(core.EvRewind{Outcome: o})
+	case rkResumeAt:
+		b.finishResumeAt(success, errText)
 	case rkUsage:
 		b.emit(b.tr.AccountUsage(body, success))
 	case rkOther:

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/egoist/mygo"
+	"github.com/ixxxxoooo/minicode/internal/demo"
 )
 
 const noticeCap = 100
@@ -104,4 +105,35 @@ func (a *App) appInForeground() bool {
 		return true
 	}
 	return mygo.App.IsActive()
+}
+
+// seedDemoNotices 演示模式:灌入各级别通知历史(约 120 条,截断到 noticeCap)。
+func (a *App) seedDemoNotices() {
+	a.noticeInit()
+	if len(a.nt.items) > 0 {
+		return
+	}
+	now := a.now()
+	for _, s := range demo.NoticeSeeds() {
+		it := noticeItem{
+			id: a.nt.nextID, level: s.Level, title: s.Title, body: s.Body,
+			at: now.Add(-s.Ago), read: s.Read,
+		}
+		a.nt.nextID++
+		if s.Actions {
+			switch s.Level {
+			case "err":
+				it.actions = []noticeAction{{"重试", func() { a.toast = "已加入重试队列(演示)" }}}
+			case "warn":
+				it.actions = []noticeAction{{"打开", func() { a.openSettings("advanced") }}, {"复制", func() { a.copyOut(s.Body, "通知") }}}
+			}
+		}
+		a.nt.items = append(a.nt.items, it)
+		if !s.Read {
+			a.nt.unread++
+		}
+	}
+	if len(a.nt.items) > noticeCap {
+		a.nt.items = a.nt.items[:noticeCap]
+	}
 }

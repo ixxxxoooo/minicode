@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui"
-	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
@@ -99,11 +98,7 @@ func (a *App) planView(c *ui.Context) {
 				})
 			}
 			if strings.TrimSpace(p.Markdown) != "" {
-				if p.Streaming {
-					markdown.Stream(c, p.Markdown, a.mdOptions())
-				} else {
-					markdown.View(c, p.Markdown, a.mdOptions())
-				}
+				a.planBody(c, p.ID, p.Markdown, p.Streaming)
 			}
 		})
 	})

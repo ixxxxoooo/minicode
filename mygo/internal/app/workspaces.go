@@ -92,8 +92,11 @@ func (a *App) seedDemoRegistry() {
 	for _, f := range demo.Discovered() {
 		known[projects.Clean(f.Path)] = true
 	}
-	r.Exists = func(p string) bool { return strings.HasPrefix(p, "/demo/") || known[p] } // 演示:只认样例路径,其余走「找不到」
+	r.Exists = func(p string) bool { return demo.ExistsDemoPath(p, known) }
 	_, _ = r.AddProject("/demo/design-assets")
+	for _, p := range demo.RegistryManualProjects() {
+		_, _ = r.AddProject(p)
+	}
 	_, _ = r.SaveWorkspace(projects.Workspace{ID: "ws-fullstack", Name: "全栈工作区", Folders: []projects.Folder{
 		{Path: "/demo/router-demo"}, {Path: "/demo/web-dashboard"}, {Path: "/demo/docs-site"},
 	}})
@@ -102,7 +105,9 @@ func (a *App) seedDemoRegistry() {
 	}})
 	a.reg = r
 	a.seedDemoSessMeta()
+	a.seedDemoNotices()
 	a.projOpen["ws-fullstack"] = true
+	a.projOpen["mega-sessions"] = false
 }
 
 // ───────── 侧栏数据 ─────────
@@ -141,6 +146,9 @@ func (a *App) projectByPath(path string) (core.ProjectInfo, bool) {
 // isRepoDir 这个文件夹是不是仓库(侧栏的「非仓库」标签)。演示按沙盒数据,真实看 .git。
 func (a *App) isRepoDir(path string) bool {
 	if a.demoWs() {
+		if demo.NonRepoPaths()[path] {
+			return false
+		}
 		for _, f := range demo.WorkspaceFolders() {
 			if f.Path == path {
 				return f.Repo != nil

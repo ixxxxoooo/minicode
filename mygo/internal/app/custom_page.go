@@ -65,7 +65,7 @@ type custDlg struct {
 func (a *App) cuStore() *customize.Store {
 	if a.cuDemo() {
 		if a.cust == nil {
-			a.cust = demo.Customize()
+			a.cust = demo.CustomizeFor(a.demoPgCustomize)
 		}
 		return a.cust
 	}

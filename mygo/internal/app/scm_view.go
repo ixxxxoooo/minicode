@@ -173,18 +173,9 @@ func (a *App) scmCommitBox(c *ui.Context, nStaged int) {
 			if nStaged > 0 {
 				label = "提交 " + itoa(nStaged) + " 个文件"
 			}
-			b := ui.ButtonBase(c).Key("scm-commit").Grow(1).Height(26).Radius(t.RSm()).Justify(ui.Center).AlignItems(ui.Center).Gap(5).
-				Background(t.Ac).TextColor(t.OnAc).FontWeight(500).Cursor(ui.CursorPointer)
-			if !ready {
-				b.Opacity(.55)
-			} else if b.Hovered() {
-				b.Background(t.Ac.Mix(t.Tx1, .10))
-			}
-			b.OnClick(func() { a.scmCommit(false) })
-			b.Children(func() {
-				kit.Ic(c, "check", kit.S12)
-				ui.Text(c, label).SingleLine()
-			})
+			busy := s.busy == "提交" || s.busy == "提交并同步"
+			btn := kit.Btn(c, label, kit.BtnOpt{Variant: kit.BtnPri, Icon: "check", Loading: busy, Disabled: !ready || busy})
+			btn.Key("scm-commit").Grow(1).OnClick(func() { a.scmCommit(false) })
 			dd := ui.ButtonBase(c).Key("scm-dd").Size(26, 26).Radius(t.RSm()).Justify(ui.Center).AlignItems(ui.Center).
 				Background(t.Ac).TextColor(t.OnAc).Cursor(ui.CursorPointer).Tooltip("更多提交方式")
 			if !ready {

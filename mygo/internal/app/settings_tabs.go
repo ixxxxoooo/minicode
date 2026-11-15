@@ -520,6 +520,7 @@ var settingsTabs = []setTabDef{
 			rTog("adv.liveOut", "前台命令实时输出", "命令运行期间每 0.7 秒读取任务输出文件,在工具卡里实时显示", true),
 			rTog("adv.watchdog", "主线程卡死看门狗", "停滞超过阈值时抓取调用栈,写入诊断记录", true),
 		}},
+		{title: "Claude 配置摘要(演示)", body: func(a *App, c *ui.Context) { a.claudeDiagBody(a, c) }},
 		{title: "重置", rows: []setRow{
 			rCustom("恢复默认客户端偏好", "主题、发送键、通知、代理等恢复默认;不影响 Claude 配置、栏宽与最近项目", func(a *App, c *ui.Context) {
 				kit.Btn(c, "恢复默认…", kit.BtnOpt{Small: true, Variant: kit.BtnDanger}).OnClick(func() {
@@ -653,10 +654,24 @@ func aboutCard(a *App, c *ui.Context) {
 		})
 		ui.Text(c, "MiniCode").FontSize(theme.FsHead).FontWeight(700).Margin(6, 0, 0, 0)
 		ui.Text(c, "版本 "+Version).TextColor(t.Tx3)
-		ui.Row(c).Gap(6).AlignItems(ui.Center).Height(16).Children(func() {
-			kit.Ic(c, "okc", kit.S12).TextColor(t.Ok)
-			ui.Text(c, "已是最新").FontSize(theme.FsCap).TextColor(t.Ok)
-		})
+		if hint, ok := a.updAboutHint(); ok {
+			col := t.Ok
+			ic := "okc"
+			if a.updSt.Phase == updFail || a.updSt.Phase == updNetErr {
+				col, ic = t.Err, "errc"
+			} else if a.updSt.Phase == updDownload || a.updSt.Phase == updVerify || a.updSt.Phase == updUnpack || a.updSt.Phase == updChecking {
+				col, ic = t.Ac, "download"
+			}
+			ui.Row(c).Gap(6).AlignItems(ui.Center).Height(16).Children(func() {
+				kit.Ic(c, ic, kit.S12).TextColor(col)
+				ui.Text(c, hint).FontSize(theme.FsCap).TextColor(col)
+			})
+		} else {
+			ui.Row(c).Gap(6).AlignItems(ui.Center).Height(16).Children(func() {
+				kit.Ic(c, "okc", kit.S12).TextColor(t.Ok)
+				ui.Text(c, "已是最新").FontSize(theme.FsCap).TextColor(t.Ok)
+			})
+		}
 		ui.Row(c).Gap(8).Margin(6, 0, 0, 0).Children(func() {
 			kit.Btn(c, "检查更新", kit.BtnOpt{Icon: "refresh"}).OnClick(func() { c.Toast("已是最新版本") })
 			kit.Btn(c, "复制版本信息", kit.BtnOpt{Variant: kit.BtnGhost, Icon: "copy"}).OnClick(func() {

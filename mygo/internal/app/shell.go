@@ -37,6 +37,11 @@ func (a *App) root(c *ui.Context) {
 		a.overlayLayer(c)
 		a.noticeToasts(c)
 		a.morphShield(c)
+		if a.delUndo.Active() {
+			ui.Row(c).Justify(ui.Center).Padding(0, 0, 8, 0).Children(func() {
+				kit.UndoBar(c, &a.delUndo)
+			})
+		}
 		if a.toast != "" {
 			c.Toast(a.toast)
 			a.toast = ""

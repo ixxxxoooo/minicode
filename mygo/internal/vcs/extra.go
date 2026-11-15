@@ -258,6 +258,13 @@ func (m *Mem) StageContent(p, content string) error {
 func (m *Mem) FileLog(p string, n int) ([]Commit, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if lg, ok := m.fileLog[p]; ok {
+		out := append([]Commit(nil), lg...)
+		if len(out) > n {
+			out = out[:n]
+		}
+		return out, nil
+	}
 	var out []Commit
 	for _, c := range m.log {
 		for _, f := range m.files[c.Hash] {
@@ -273,10 +280,30 @@ func (m *Mem) FileLog(p string, n int) ([]Commit, error) {
 	return out, nil
 }
 
-// Blame 演示:没有历史,按「提交里碰过它的最近提交」给前几行,其余行归最早的提交,有未提交改动的行归「你 · 未提交」。
+// SetBlameData 演示:按路径灌入逐行追溯(下标 = 行号 - 1)。
+func (m *Mem) SetBlameData(b map[string][]BlameLine) {
+	m.mu.Lock()
+	m.blame = b
+	m.mu.Unlock()
+}
+
+// SetFileLogFor 演示:某文件的提交历史覆盖(用于 30+ 条 FileLog)。
+func (m *Mem) SetFileLogFor(p string, log []Commit) {
+	m.mu.Lock()
+	if m.fileLog == nil {
+		m.fileLog = map[string][]Commit{}
+	}
+	m.fileLog[p] = append([]Commit(nil), log...)
+	m.mu.Unlock()
+}
+
+// Blame 演示:优先读 SetBlameData;否则返回错误(界面用 FileLog 兜底)。
 func (m *Mem) Blame(p string) ([]BlameLine, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if bl, ok := m.blame[p]; ok {
+		return append([]BlameLine(nil), bl...), nil
+	}
 	return nil, fmt.Errorf("演示仓库没有追溯数据")
 }
 

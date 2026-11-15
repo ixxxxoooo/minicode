@@ -1,9 +1,11 @@
 package app
 
 import (
+	"path"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -185,16 +187,16 @@ func (a *App) problems(c *ui.Context) {
 		return
 	}
 	type group struct {
-		file  string
-		items []problem
+		file, rel string
+		items     []problem
 	}
 	var data []group
-	for _, p := range demoProblems() {
-		if n := len(data); n == 0 || data[n-1].file != p.file {
-			data = append(data, group{file: p.file})
+	for _, p := range demo.Problems() {
+		if n := len(data); n == 0 || data[n-1].rel != p.Path {
+			data = append(data, group{file: path.Base(p.Path), rel: p.Path})
 		}
 		g := &data[len(data)-1]
-		g.items = append(g.items, problem{p.level, p.msg, p.src, p.line})
+		g.items = append(g.items, problem{p.Level, p.Msg, p.Source, p.Line})
 	}
 	ui.Scroll(c).Key("probs").Grow(1).Children(func() {
 		ui.Column(c).Padding(2, 6).Children(func() {
@@ -210,21 +212,18 @@ func (a *App) problems(c *ui.Context) {
 					if a.ide.probErr && p.level != "err" {
 						continue
 					}
-					file := g.file
-					row := kit.RowEl(c, false).Key("dp-" + file + itoa(p.line)).Gap(6)
+					row := kit.RowEl(c, false).Key("dp-" + g.rel + itoa(p.line)).Gap(6)
 					row.ContextMenu(func(m *ui.Menu) {
-						a.problemMenu(m, file, p.line, p.msg, func() string {
+						a.problemMenu(m, g.rel, p.line, p.msg, func() string {
 							var sb strings.Builder
-							for _, d := range demoProblems() {
-								sb.WriteString(d.file + ":" + itoa(d.line) + " " + d.msg + "\n")
+							for _, d := range demo.Problems() {
+								sb.WriteString(d.Path + ":" + itoa(d.Line) + " " + d.Msg + "\n")
 							}
 							return strings.TrimSpace(sb.String())
 						})
 					})
 					row.OnClick(func() {
-						if full := a.resolveFile(file); full != "" {
-							a.jumpTo(full, max(p.line-1, 0), 0, 0)
-						}
+						a.jumpTo(g.rel, max(p.line-1, 0), 0, 0)
 					})
 					row.Children(func() {
 						icon, col := "alert", t.Warn

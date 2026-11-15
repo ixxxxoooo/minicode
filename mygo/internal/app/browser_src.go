@@ -40,7 +40,7 @@ func (a *App) initBrowser() {
 	if a.br != nil {
 		return
 	}
-	src := comboSource{demo: demo.BrowserSource{}, http: browser.HTTPSource{Opts: a.browserOpts()}}
+	src := comboSource{demo: demo.BrowserSource{Set: a.demoPgBrowser}, http: browser.HTTPSource{Opts: a.browserOpts()}}
 	home := ""
 	if a.demoExtra {
 		home = demo.BrowserHome

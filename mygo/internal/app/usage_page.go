@@ -26,6 +26,8 @@ func (a *App) usage() core.UsageReport {
 	var u core.UsageReport
 	if a.usageSrc != nil {
 		u = a.usageSrc(a.use.rng)
+	} else if a.cuDemo() && a.demoPgUsage != 0 {
+		u = demo.UsageFor(a.demoPgUsage, a.use.rng)
 	} else {
 		u = demo.Usage(a.use.rng)
 	}
@@ -56,11 +58,25 @@ func (a *App) usagePage(c *ui.Context) {
 	}
 	u := a.usage()
 	if len(u.Days) == 0 {
+		msg := "正在统计会话记录…"
+		if a.cuDemo() && a.demoPgUsage == 1 {
+			msg = "新账户还没有可统计的会话费用(演示空数据)。"
+		}
 		a.pane(c).Grow(1).Children(func() {
 			a.pageHead(c, "用量与成本", "本机各会话的 token 与费用估算。", nil)
-			ui.Text(c, "正在统计会话记录…").TextColor(t.Tx3).Padding(16)
+			if msg == "正在统计会话记录…" {
+				ui.Row(c).Gap(10).Padding(16, 16, 8, 16).AlignItems(ui.Center).Children(func() {
+					kit.Ring(c, -1, t.Ac)
+					ui.Text(c, msg).TextColor(t.Tx3)
+				})
+				kit.SkelRows(c, 5)
+			} else {
+				ui.Text(c, msg).TextColor(t.Tx3).Padding(16)
+			}
 		})
-		a.redrawSoon()
+		if !(a.cuDemo() && a.demoPgUsage == 1) {
+			a.redrawSoon()
+		}
 		return
 	}
 	a.pane(c).Grow(1).Children(func() {
@@ -216,6 +232,7 @@ func (a *App) usageDrawer(c *ui.Context, u core.UsageReport) {
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 		ui.Text(c, "账户限额").FontWeight(600).Grow(1)
 		if a.use.limitsState == core.LimitsChecking {
+			kit.Ring(c, -1, t.Ac)
 			ui.Text(c, "更新中…").FontSize(theme.FsCap).TextColor(t.Tx4)
 		} else if u.LimitsUpdated != "" {
 			ui.Text(c, "更新于 "+u.LimitsUpdated).FontSize(theme.FsCap).TextColor(t.Tx4)

@@ -107,9 +107,7 @@ func (a *App) lspCard(c *ui.Context, s *lspSess) {
 				ui.Text(c, "未安装 "+s.spec.Name+"("+s.spec.Lang+" 语言服务)").FontWeight(500)
 				ui.Text(c, s.spec.Install+" · "+s.spec.Hint).Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 			})
-			if kit.Chip(c, "在终端安装", kit.ChipOpt{Icon: "terminal", On: true}).Clicked() {
-				a.lspInstall(s)
-			}
+			kit.Btn(c, "安装", kit.BtnOpt{Small: true, Variant: kit.BtnPri, Icon: "terminal"}).OnClick(func() { a.lspInstall(s) })
 			if kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制安装命令"}).Clicked() {
 				a.copyText = s.spec.Install
 				a.toast = "已复制安装命令"
@@ -123,9 +121,7 @@ func (a *App) lspCard(c *ui.Context, s *lspSess) {
 				ui.Text(c, s.spec.Name+" 没有运行").FontWeight(500)
 				ui.Text(c, s.err).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 			})
-			if kit.Chip(c, "重试", kit.ChipOpt{Icon: "refresh", On: true}).Clicked() {
-				a.lspRetry(s)
-			}
+			kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnSoft, Icon: "refresh"}).OnClick(func() { a.lspRetry(s) })
 		}
 	})
 }

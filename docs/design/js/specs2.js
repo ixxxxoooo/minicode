@@ -51,7 +51,7 @@
       ['多标签', '新建 / 关闭 / 重命名;来自会话的命令是只读标签(带锁);shell 退出后显示「按回车重开」', st('ok')],
       ['滚动与历史', '触控板平滑滚动;滚离底部时右下角出现「↓ 回到底部」;历史 10000 行(设置里可调)', st('ok')],
       ['鼠标上报(vim / htop / tmux 里用鼠标)', '应用请求鼠标模式时把点击 / 滚轮编码发给程序;按住 ⌥ 临时回到选择模式', st('ok')],
-      ['Nerd Font 图标', '无字体时可能显示成方框;设置 → 终端可开「无 Nerd Font 时回退系统等宽」', st('part')],
+      ['Nerd Font 图标', '运行时扫描私有区码点与缺字方框,顶部提示安装 Nerd Font(可关闭)', st('ok')],
       ['命令装饰(Shell 集成)', '命令前的成功 / 失败点、点击命令块复制输出;依赖 OSC 133(zsh / bash 自动注入)', st('part')]]))}
     ${sec('终端面板的头部', '一行放下:标签 · 新建 · 更多 · 搜索 · 齿轮 · 占满 · 收起。标签放不下时横向滚动,不折行。', box(IDE.bpanel('term'), 190))}
     ${sec('选择 / 搜索 / 链接的视觉', '', grid(
@@ -80,7 +80,7 @@
     ${sec('编辑器里能用到什么', '', tbl([['能力', 160], ['键位', 120], ['来源', 160], ['状态']], [
       ['诊断(波浪线 / 问题面板 / 状态栏计数)', '', 'publishDiagnostics', st('ok')], ['悬停', '', 'textDocument/hover', st('ok')], ['转到定义 / 类型定义 / 实现', 'F12 / 右键', 'definition / typeDefinition / implementation', st('ok')],
       ['查找引用 → 底部「引用」面板', '⇧F12', 'references', st('ok')], ['补全', '⌃Space', 'completion', st('ok')], ['重命名(跨文件)', 'F2', 'rename + 工作区编辑', st('ok')], ['格式化', '⇧⌥F', 'formatting', st('ok')],
-      ['大纲 / 转到符号', '⇧⌘O', 'documentSymbol(失败退回本地索引)', st('ok')], ['代码操作(快速修复)', '⌘.', 'codeAction', st('todo')], ['内联提示 / 语义高亮', '', 'inlayHint(编辑器 SetInlays);semanticTokens 库层暂不支持着色,未接', st('part')]]))}</div>`;
+      ['大纲 / 转到符号', '⇧⌘O', 'documentSymbol(失败退回本地索引)', st('ok')], ['代码操作(快速修复)', '⌘.', 'codeAction', st('ok')], ['内联提示 / 语义高亮', '', 'inlayHint 已接;semanticTokens 无 State 着色 API,未接(见 lsp_semantic.go)', st('part')]]))}</div>`;
 
   /* ───────── 画布 / 浏览器 / 自定义:业界做法 ───────── */
   P['artifact-spec'] = () => `<div class="ds" style="max-width:1240px">${head('画布 · 浏览器 · 自定义:业界做法与取舍', '依据:Claude Artifacts、ChatGPT Canvas、Cursor Canvases(React 画布,作为持久产物与终端 / 浏览器 / 源代码管理并列)、AX Patterns「侧栏与产物」、AI Patterns「Artifact Panel」。共同点比差异多,下面只落共同点。')}
@@ -124,7 +124,7 @@
       ['子 Agent 停滞', '超过阈值显示「疑似停滞 · 停止」;前台子 Agent 随取消变「已停止」,后台的继续', st('ok')],
       ['重开历史会话里遗留的后台任务', '统一收尾成「已停止」,不再显示运行中', st('ok')],
       ['前台命令的实时输出', '会话流里运行中命令展开并贴底;output_file 尾读 + 演示 EvTaskOutput', st('part')],
-      ['完成通知', '应用在后台时系统通知:回合结束 / 需要审批 / 任务完成;点击回到该会话', st('todo')]]))}
+      ['完成通知', '应用在后台时系统通知:回合结束 / 需要审批 / 任务完成;点击回到该会话(Darwin UserNotifications 已发通知,点击委托未接)', st('part')]]))}
     ${sec('不同形态下「点哪里打开」', '同一个入口在 Agent 与 IDE 形态里打开的位置不同,但永远是「工作区的标签」,不是新窗口也不是模态框。', tbl([['入口', 180], ['Agent 形态', 240], ['IDE 形态']], [
       ['计划卡 [查看]', '右侧工作区展开并开「计划」标签', '编辑区开「计划」标签,对话栏仍在右侧窄栏'],
       ['子 Agent 卡 / 任务坞项', '右侧工作区「子 Agent 记录」标签', '编辑区开同一标签'],

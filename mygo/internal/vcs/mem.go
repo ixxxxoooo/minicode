@@ -21,9 +21,11 @@ type Mem struct {
 	behind  int
 	index   map[string]string // 路径 → 暂存区里的内容(没有记录 = 与 HEAD 相同)
 	stash   []Stash
-	fail    map[string]string // 演示:操作名(Pull / Push)→ 失败原因,用来演示「某个仓库失败、其余照常」
-	once    bool              // 失败只发生一次(第二次「重试」成功)
-	delay   time.Duration     // 演示:拉取 / 推送耗时,界面才看得到转圈
+	blame   map[string][]BlameLine // 演示:按路径灌入追溯行
+	fileLog map[string][]Commit    // 演示:按路径覆盖 FileLog
+	fail    map[string]string      // 演示:操作名(Pull / Push)→ 失败原因,用来演示「某个仓库失败、其余照常」
+	once    bool                   // 失败只发生一次(第二次「重试」成功)
+	delay   time.Duration          // 演示:拉取 / 推送耗时,界面才看得到转圈
 }
 
 // NewMem 造一个带设计稿里那几个分支的演示仓库。
@@ -90,6 +92,39 @@ func (m *Mem) SetState(changes []Change, log []Commit, files map[string][]Change
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.changes, m.log, m.files, m.head, m.ahead = changes, log, files, head, ahead
+}
+
+// SetAheadBehind 演示:领先 / 落后提交数。
+func (m *Mem) SetAheadBehind(ahead, behind int) {
+	m.mu.Lock()
+	m.ahead, m.behind = ahead, behind
+	m.mu.Unlock()
+}
+
+// SetBranches 演示:替换分支列表。
+func (m *Mem) SetBranches(br []Branch) {
+	m.mu.Lock()
+	m.br = append([]Branch(nil), br...)
+	m.mu.Unlock()
+}
+
+// SetCurrent 演示:当前分支或游离 HEAD(短哈希)。
+func (m *Mem) SetCurrent(name string) {
+	m.mu.Lock()
+	m.cur = name
+	m.mu.Unlock()
+}
+
+// SetIndex 演示:暂存区内容;未列出的路径 Index 仍回落到 HEAD。
+func (m *Mem) SetIndex(idx map[string]string) {
+	m.mu.Lock()
+	if m.index == nil {
+		m.index = map[string]string{}
+	}
+	for k, v := range idx {
+		m.index[k] = v
+	}
+	m.mu.Unlock()
 }
 
 func (m *Mem) Status() ([]Change, error) {

@@ -6,6 +6,8 @@ import (
 	"unicode"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -160,6 +162,42 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 	}
 	if a.demoExtra {
 		add("fork", "演示:打开合并冲突", "", "写入一个带冲突标记的文件并打开三方合并标签。", a.demoConflict)
+		for i, name := range demo.CanvasSetNames() {
+			i, name := i, name
+			add("layers", name, "", "切换画布演示数据套并刷新列表。", func() { a.demoSwitchCanvas(i) })
+		}
+		for i, name := range demo.AutomationsSetNames() {
+			i, name := i, name
+			add("clock", name, "", "切换自动化演示数据套。", func() { a.demoSwitchAuto(i) })
+		}
+		add("clock", "演示:自动化·模拟运行中", "", "把第一条自动化标成运行中(界面态)。", a.demoAutoSimBusy)
+		for i, name := range demo.BrowserSetNames() {
+			i, name := i, name
+			add("globe", name, "", "切换浏览器演示数据并预置历史。", func() { a.demoSwitchBrowser(i) })
+		}
+		for i, name := range demo.CustomizeSetNames() {
+			i, name := i, name
+			add("plug", name, "", "切换自定义页演示数据套。", func() { a.demoSwitchCustomize(i) })
+		}
+		for i, name := range demo.UsageSetNames() {
+			i, name := i, name
+			add("chart", name, "", "切换用量页演示数据套。", func() { a.demoSwitchUsage(i) })
+		}
+		add("chart", "演示:用量·限额查询中", "", "右栏限额区显示「更新中…」。", func() {
+			a.use.limitsState = core.LimitsChecking
+			a.toast = "演示:限额查询中"
+		})
+		add("chart", "演示:用量·限额查询失败", "", "清空限额并模拟不可用。", func() {
+			a.use.limits = nil
+			a.use.limitsState = core.LimitsUnavailable
+			a.toast = "演示:限额查询失败"
+		})
+		for _, ph := range demo.UpdatePhases() {
+			ph := ph
+			add("download", "演示:更新 · "+ph.Label, "", "切换状态栏、关于与 upd 弹层的更新阶段。", func() {
+				a.SeedUpdateDemo(ph.ID, ph.Pct)
+			})
+		}
 	}
 	add("fork", "Git:打开提交图谱", "", "在工作区打开完整的 Git 图谱(搜索、详情、右键操作)。", a.openGraph)
 	add("chart", "用量与成本", "", "打开用量整页。", func() { a.screen = ScreenUsage })
@@ -207,7 +245,11 @@ func (a *App) palItems() []palItem {
 			it := palItem{group: "会话", icon: "chat", title: s.Title, right: p.Name, desc: p.Name + " · " + s.Label,
 				run: func() { a.openSession(p.ID, s.ID) }}
 			if q == "" {
-				if n < 3 {
+				capN := 3
+				if a.demoWs() {
+					capN = 5
+				}
+				if n < capN {
 					ss = append(ss, scored{it, 0, n})
 				}
 				n++
@@ -219,15 +261,27 @@ func (a *App) palItems() []palItem {
 	}
 	if q == "" {
 		seen := map[string]bool{}
+		paths := []string(nil)
 		for _, tb := range a.ide.tabs {
 			if tb.diff || seen[tb.path] {
 				continue
 			}
 			seen[tb.path] = true
-			fs = append(fs, scored{a.fileItem(tb.path), 0, len(fs)})
-			if len(fs) >= 3 {
+			paths = append(paths, tb.path)
+		}
+		if a.demoWs() {
+			for _, p := range demo.PaletteExtraFiles() {
+				if !seen[p] {
+					seen[p] = true
+					paths = append(paths, p)
+				}
+			}
+		}
+		for i, p := range paths {
+			if i >= 6 {
 				break
 			}
+			fs = append(fs, scored{a.fileItem(p), 0, i})
 		}
 	} else {
 		for i, p := range a.ide.allFiles() {

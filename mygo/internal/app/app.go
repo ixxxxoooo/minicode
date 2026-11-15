@@ -29,7 +29,9 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/projects"
 	"github.com/ixxxxoooo/minicode/internal/sessmeta"
 	"github.com/ixxxxoooo/minicode/internal/theme"
+	"github.com/ixxxxoooo/minicode/internal/update"
 	"github.com/ixxxxoooo/minicode/internal/vcs"
+	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
 
 var log = diag.L("app")
@@ -142,6 +144,7 @@ type App struct {
 	filesFocus bool                  // 文件树正在接键盘(F2 / ⌘⌫)
 	sg         *suggestSt            // 行内补全(ide_suggest.go)
 	inl        *inlinePatch          // 行内编辑预览(ide_inline.go)
+	claudeJob  context.CancelFunc    // 取消进行中的 Haiku 行内请求(ide_claude_edit.go)
 	codeActs   []lsp.CodeAction      // ⌘. 拉取的 LSP 代码操作
 	mmTip      string                // 迷你地图悬停源码摘要
 
@@ -167,16 +170,25 @@ type App struct {
 	sr              searchState                                                // 项目内搜索
 	gi              map[string]*gitInfo                                        // 文件的追溯 / 历史缓存
 	autoRun         func(it automation.Automation, dir string) (string, error) // 自动化运行器(nil = 演示:只记录)
-	autoSeen        time.Time                                                  // 上次检查定时的时间
-	autoBusy        map[int]bool                                               // 正在运行的自动化
-	autoLive        map[int]*autoLive                                          // 运行中输出的累积与取消
-	live            map[string]*liveSess                                       // 切走时还在跑的会话:后端继续保活,事件归约到自己的状态
-	framePending    bool                                                       // frameSoon 已排队
-	foldAt          map[string]time.Time                                       // 步骤行展开的时刻(入场动画)
-	dlgSeen         string                                                     // 已开始计时入场动画的居中浮层
+	autoRunCtx      func(ctx context.Context, it automation.Automation, dir string, onChunk func(string)) (string, error)
+	autoSeen        time.Time            // 上次检查定时的时间
+	autoBusy        map[int]bool         // 正在运行的自动化
+	autoLive        map[int]*autoLive    // 运行中输出的累积与取消
+	live            map[string]*liveSess // 切走时还在跑的会话:后端继续保活,事件归约到自己的状态
+	framePending    bool                 // frameSoon 已排队
+	foldAt          map[string]time.Time // 步骤行展开的时刻(入场动画)
+	dlgSeen         string               // 已开始计时入场动画的居中浮层
 	dlgAt           time.Time
-	popSeen         string                         // 已开始计时入场动画的弹层
-	popAt           time.Time                      // 该弹层打开的时刻
+	popSeen         string    // 已开始计时入场动画的弹层
+	popAt           time.Time // 该弹层打开的时刻
+	popClosing      string    // 正在播退场动画的弹层
+	popCloseAt      time.Time
+	dlgClosing      string
+	dlgCloseAt      time.Time
+	projScan        bool                           // 侧栏正在重扫会话索引(显示骨架)
+	delUndo         kit.UndoSlot                   // 全局删除撤销(会话 / 自定义等)
+	sessHide        map[string]time.Time           // 折叠删除中的会话行
+	sessDelWait     map[string]func()              // 延迟落盘的取消函数
 	redrawPending   bool                           // redrawSoon 已排了定时重画
 	pickOnReady     bool                           // 新会话握手后应用已记住的模型 / 思考强度
 	cf              map[string]*confState          // 合并冲突标签的状态(按文件)
@@ -190,6 +202,7 @@ type App struct {
 	cvView          cvViewer                       // 图表全屏查看
 	br              *browser.Browser               // 内置浏览器(首次打开页面时建立)
 	brs             browserState                   // 浏览器页状态
+	brSel           brSelect                       // 阅读模式框选引用
 	cust            *customize.Store               // 自定义页数据(首次打开页面时建立)
 	cu              custState                      // 自定义页状态
 	cuNoMem         bool                           // 自定义页:「加载 CLAUDE.md 记忆文件」被关掉(只是界面状态,尚未接入 env)
@@ -214,19 +227,26 @@ type App struct {
 	qa              map[string]*qaState // 提问向导的本地进度
 
 	// 测试 / 截图用:没有系统红绿灯时自己画
-	fakeLights    bool
-	devBadge      string
-	proj          string // 真实项目目录(演示模式为空)
-	demoExtra     bool   // 演示:工作区里还有一个本会话没碰过的未提交文件
-	update        string // 状态栏更新提示文案(空 = 不显示)
-	updSt         updState
-	nt            *noticeStore
-	mcpExp        map[string]bool // MCP 弹层里各服务器是否展开工具列表
-	ctxLoading    bool
-	ctxCompacting bool
-	sideBF        string // 方案 B 侧栏当前浏览的项目 id
-	sessFork      func(fromID string) (newID string, err error)
-	brand         brand // Dock / 托盘(brand.go)
+	fakeLights      bool
+	devBadge        string
+	proj            string // 真实项目目录(演示模式为空)
+	demoExtra       bool   // 演示:工作区里还有一个本会话没碰过的未提交文件
+	welcomeLine     string // 演示欢迎页状态行变体(clean / mcp-fail / review)
+	demoPgCanvas    int    // 演示画布数据套(见 demo.CanvasSetNames)
+	demoPgAuto      int
+	demoPgBrowser   int
+	demoPgCustomize int
+	demoPgUsage     int
+	update          string // 状态栏更新提示文案(空 = 不显示)
+	updSt           updState
+	upd             *update.Runner
+	nt              *noticeStore
+	mcpExp          map[string]bool // MCP 弹层里各服务器是否展开工具列表
+	ctxLoading      bool
+	ctxCompacting   bool
+	sideBF          string // 方案 B 侧栏当前浏览的项目 id
+	sessFork        func(fromID string) (newID string, err error)
+	brand           brand // Dock / 托盘(brand.go)
 }
 
 // Options 是创建应用的参数。
@@ -358,7 +378,13 @@ func (a *App) afterEvent(ev core.Event) {
 	if u, ok := ev.(core.EvUsage); ok {
 		a.onUsageEvent(u.Usage)
 	}
+	if n, ok := ev.(core.EvAppend); ok {
+		if no, y := n.Item.(*core.Notice); y {
+			a.ingestCompactNotice(no.Text)
+		}
+	}
 	a.afterEventNotify(ev)
+	a.afterEventCanvas(ev)
 }
 
 // SetRepo 设置当前项目的仓库;nil 表示不是 Git 仓库(分支显示为空)。
@@ -525,11 +551,15 @@ func (a *App) now() time.Time {
 // SeedDemoExtras 演示 / 截图用:补上设计稿里工作区的附加状态(额外未提交文件、更新提示)。
 func (a *App) SeedDemoExtras() {
 	a.demoExtra = true
-	a.auto = automation.NewStore(demo.Automations(a.now()))
+	if a.welcomeLine == "" {
+		a.welcomeLine = "review"
+	}
+	a.auto = automation.NewStore(demo.AutomationsFor(a.demoPgAuto, a.now()))
 	a.au.sel = 2 // 设计稿里选中的是第二张卡
 	a.ide.seedDemo()
 	a.seedDemoRegistry()
 	a.seedWorkspace()
+	demo.SeedOutput(a.outAppend)
 	a.SeedUpdateDemo("download", 42)
 }
 
@@ -556,14 +586,7 @@ func (a *App) shortcuts(c *ui.Context) {
 		return
 	}
 	if c.Shortcut(ui.Cmd, ui.KeyBackspace) && a.filesFocus && a.ide.sel != "" {
-		dir := false
-		for _, e := range a.ide.listing(parentDir(a.ide.sel)) {
-			if e.Path == a.ide.sel {
-				dir = e.Dir
-				break
-			}
-		}
-		a.askDelete(a.ide.sel, dir)
+		a.askDelete(a.ide.sel, workspace.IsDir(a.ide.fs, a.ide.sel))
 		return
 	}
 	switch {
@@ -601,6 +624,8 @@ func (a *App) shortcuts(c *ui.Context) {
 		a.togglePanelMax()
 	case c.Shortcut(ui.Cmd|ui.Shift, ui.KeyM):
 		a.toggleChatMax()
+	case a.editingUser() && c.Shortcut(0, ui.KeyEscape):
+		a.cancelUserEdit()
 	case a.chatMax && !a.paletteOn && a.qp == nil && a.popup == "" && c.Shortcut(0, ui.KeyEscape):
 		a.chatMax = false // Esc:退出「对话占满」
 	case c.Shortcut(ui.Ctrl, ui.KeyMinus):
@@ -761,8 +786,15 @@ func (a *App) runAutomation(it automation.Automation) {
 	a.autoBusy[it.ID] = true
 	a.toast = "已开始运行「" + it.Name + "」"
 	run := a.autoRun
+	runCtxFn := a.autoRunCtx
 	a.bg("automation", func() func() {
-		out, err := runCtx(ctx, it, dir, run, lv)
+		var out string
+		var err error
+		if runCtxFn != nil {
+			out, err = runCtxFn(ctx, it, dir, lv.appendChunk)
+		} else {
+			out, err = runCtxLegacy(ctx, it, dir, run, lv)
+		}
 		r := automation.Run{At: time.Now(), OK: err == nil}
 		if err != nil {
 			r.Err = err.Error()
@@ -771,7 +803,7 @@ func (a *App) runAutomation(it automation.Automation) {
 			}
 		}
 		if out == "" {
-			out = lv.buf.String()
+			out = lv.snapshot()
 		}
 		if rs := []rune(out); len(rs) > 8000 {
 			out = string(rs[len(rs)-8000:])
@@ -793,7 +825,7 @@ func (a *App) runAutomation(it automation.Automation) {
 
 type autoRunner func(it automation.Automation, dir string) (string, error)
 
-func runCtx(ctx context.Context, it automation.Automation, dir string, run autoRunner, lv *autoLive) (string, error) {
+func runCtxLegacy(ctx context.Context, it automation.Automation, dir string, run autoRunner, lv *autoLive) (string, error) {
 	type res struct {
 		out string
 		err error
@@ -805,10 +837,10 @@ func runCtx(ctx context.Context, it automation.Automation, dir string, run autoR
 	}()
 	select {
 	case <-ctx.Done():
-		return lv.buf.String(), ctx.Err()
+		return lv.snapshot(), ctx.Err()
 	case r := <-ch:
 		if r.out != "" {
-			lv.buf.WriteString(r.out)
+			lv.appendChunk(r.out)
 		}
 		return r.out, r.err
 	}

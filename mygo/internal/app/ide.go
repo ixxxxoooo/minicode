@@ -133,7 +133,7 @@ func newIDE() *ide {
 		sections:   map[string]bool{},
 	}
 	d.useFS(demo.Sandbox(), demo.GitStatus(), demo.HeadOf)
-	d.termLines = demoTerm()
+	d.termLines = demoTermLinesFrom(demo.TermDemoLines())
 	return d
 }
 
@@ -398,19 +398,16 @@ func (d *ide) dirGit(dir string) string {
 	return ""
 }
 
-// demoTerm 是设计稿里终端面板的内容。
-func demoTerm() []termLine {
-	prompt := func(cmd string) termLine {
-		return termLine{[]termSeg{{"➜ ", 'p'}, {"router-demo ", 'b'}, {"git:(", 'd'}, {"main", 'e'}, {") ", 'd'}, {cmd, 0}}}
+func demoTermLinesFrom(in []demo.TermLine) []termLine {
+	out := make([]termLine, len(in))
+	for i, ln := range in {
+		segs := make([]termSeg, len(ln.Segs))
+		for j, s := range ln.Segs {
+			segs[j] = termSeg{text: s.Text, kind: s.Kind}
+		}
+		out[i] = termLine{segs: segs}
 	}
-	return []termLine{
-		prompt("cargo test router"),
-		{[]termSeg{{"    Finished", 'd'}, {" test profile in 1.92s", 0}}},
-		{[]termSeg{{"test matches_ignoring_case ... ", 0}, {"ok", 'p'}}},
-		{[]termSeg{{"test matches_trailing_slash ... ", 0}, {"ok", 'p'}}},
-		{[]termSeg{{"test result: ", 0}, {"ok", 'p'}, {". 12 passed; 0 failed", 0}}},
-		prompt(""),
-	}
+	return out
 }
 
 // seedDemo 摆出设计稿里 IDE 的初始标签:router.rs(当前)、router_test.rs(有未保存修改)、

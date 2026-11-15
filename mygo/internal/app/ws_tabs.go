@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/demo"
 )
 
 // 虚拟标签的种类。它们是工作区(编辑器标签组)里的标签,但不对应磁盘文件:
@@ -186,6 +187,9 @@ func (a *App) latestPlan() *core.PlanApproval {
 func (a *App) seedWorkspace() {
 	// 终端面板里默认挂着 Claude 刚跑过的那条命令(只读标签,设计稿的 cargo test router)
 	a.ide.cmds = append(a.ide.cmds, cmdView{id: "cmd:cargo test router", title: "cargo test router", output: "   Compiling router-demo v0.3.1\n    Running tests/router_test.rs\ntest result: ok. 12 passed; 0 failed"})
+	for _, v := range demo.CmdViews() {
+		a.ide.cmds = append(a.ide.cmds, cmdView{id: v.ID, title: v.Title, output: v.Output, exit: v.Exit})
+	}
 	if n := len(a.ide.tabs); n > 0 {
 		a.ide.active = a.ide.tabs[n-1].id // 审查标签排在末尾(设计稿的默认顺序)
 	}

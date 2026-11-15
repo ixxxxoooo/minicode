@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/demo"
 
 	"github.com/ixxxxoooo/minicode/internal/vcs"
 	"github.com/ixxxxoooo/minicode/internal/workspace"
@@ -72,6 +73,9 @@ func (a *App) headOfRepo(p string) (string, bool) {
 // welcomeStatus 是欢迎页问候下面的状态行。演示模式保持设计稿里的文案,真实模式读仓库。
 func (a *App) welcomeStatus() string {
 	if a.proj == "" {
+		if a.demoWs() {
+			return demo.WelcomeStatusLine(a.welcomeLine)
+		}
 		return a.branch + " · 3 项未提交改动 · 上次会话 5 分钟前"
 	}
 	if a.repo == nil {

@@ -2,8 +2,10 @@ package app
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -54,6 +56,22 @@ func (a *App) welcome(c *ui.Context) {
 			a.composer(c)
 			a.welcomeFocus = false
 		})
+		if a.demoWs() && len(demo.WelcomeRecent()) > 0 {
+			ui.Column(c).Gap(4).WidthPercent(100).MaxWidth(600).PaddingX(20).Margin(4, 0, 0, 0).Children(func() {
+				ui.Text(c, "最近会话").FontSize(theme.FsCap).FontWeight(600).TextColor(t.Tx3)
+				for _, pair := range demo.WelcomeRecent() {
+					pair := pair
+					title, when := pair[0], pair[1]
+					r := kit.RowEl(c, false).Height(28).PaddingX(8).Gap(8).Key("wrec-" + title)
+					r.OnClick(func() { a.openWelcomeRecent(title) })
+					r.Children(func() {
+						kit.Ic(c, "chat", kit.S12).TextColor(t.Tx4)
+						ui.Text(c, title).Grow(1).SingleLine()
+						ui.Text(c, when).FontSize(theme.FsMicro).TextColor(t.Tx4)
+					})
+				}
+			})
+		}
 		if a.chatTier() == tierNarrow { // 窄档:起手卡单列,只留图标与标题
 			ui.Column(c).Gap(6).WidthPercent(100).PaddingX(20).Children(func() {
 				for _, s := range starters {
@@ -68,6 +86,17 @@ func (a *App) welcome(c *ui.Context) {
 			})
 		}
 	})
+}
+
+func (a *App) openWelcomeRecent(title string) {
+	for _, p := range a.projects {
+		for _, s := range p.Sessions {
+			if s.Title == title || strings.Contains(s.Title, title) {
+				a.OpenSession(s.ID)
+				return
+			}
+		}
+	}
 }
 
 func (a *App) starterCard(c *ui.Context, s starter) {

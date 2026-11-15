@@ -54,6 +54,10 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 				a.flowCol(c, func() { a.flow(c) })
 			})
 		})
+		if a.editingUser() {
+			ui.ButtonBase(c).Absolute().Left(0).Right(0).Top(0).Bottom(120).ZIndex(1).Cursor(ui.CursorDefault).
+				OnClick(a.cancelUserEdit)
+		}
 		a.flowScrollBtn(c)
 		ui.Column(c).Padding(4, 0, 10, 0).Shrink(0).AlignItems(ui.Center).Children(func() {
 			a.flowCol(c, func() {
