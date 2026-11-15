@@ -139,8 +139,10 @@ func TestRealTerminalSelectFind(t *testing.T) {
 	pump(func() bool { return len(a.ide.tpc().find.hits) >= 1 }, "查找命中")
 	tt.Key(0, ui.KeyEscape)
 	tt.Frame()
-	if a.ide.tpc().find.open {
-		t.Fatal("Esc 应关闭查找")
+	// 退场动画放完后状态要真的收尾:曾经搜索条画没了,open 仍为 true,命中高亮一直残留
+	pump(func() bool { return !a.ide.tpc().find.open }, "Esc 关闭查找(含退场动画收尾)")
+	if d := a.rowDeco(a.ide.tpc(), row, 80); len(d.hits) != 0 {
+		t.Fatalf("关闭查找后不该还有命中高亮:%v", d.hits)
 	}
 
 	before := a.prefs.Int(pTermFont, 12)
@@ -149,5 +151,64 @@ func TestRealTerminalSelectFind(t *testing.T) {
 	tt.Frame()
 	if a.prefs.Int(pTermFont, 12) != before+1 {
 		t.Fatalf("⌘+ 应把字号 %d 加到 %d,实际 %d", before, before+1, a.prefs.Int(pTermFont, 12))
+	}
+}
+
+// 终端选择与复制:真 shell 输出 → 鼠标拖选 → 「拷贝」命令(菜单 / ⌘C)把选中文字写进剪贴板。
+func TestTerminalSelectAndCopy(t *testing.T) {
+	t.Setenv("SHELL", "/bin/sh")
+	a, tt := newTestApp(t)
+	a.SetProject(t.TempDir())
+	a.SetMode(ModeIDE)
+	a.ide.bottomOpen, a.ide.bottomTab = true, "term"
+	t.Cleanup(a.CloseTerminals)
+	pump := func(until func() bool, what string) {
+		t.Helper()
+		for end := time.Now().Add(10 * time.Second); time.Now().Before(end); time.Sleep(30 * time.Millisecond) {
+			tt.Frame()
+			if until() {
+				return
+			}
+		}
+		t.Fatalf("等不到:%s;当前文字 %v", what, tt.Texts())
+	}
+	pump(func() bool { return a.ide.tpc().t != nil }, "终端启动")
+	pump(func() bool { return containsText(tt.Texts(), "$") }, "提示符")
+	tt.Type("printf 'copy-%s-me' target")
+	tt.Key(0, ui.KeyEnter)
+	pump(func() bool { return tt.HasText("copy-target-me") }, "输出 copy-target-me")
+
+	// 在画面快照里找到输出行,直接设选区(鼠标拖选的换算另有单测)
+	tp := a.ide.tpc()
+	row := -1
+	for i, ln := range tp.scr.Lines {
+		var sb strings.Builder
+		for _, r := range ln {
+			sb.WriteString(r.Text)
+		}
+		if strings.HasPrefix(sb.String(), "copy-target-me") {
+			row = i
+		}
+	}
+	if row < 0 {
+		t.Fatal("画面里没有输出行 copy-target-me")
+	}
+	tp.sel = termSel{on: true, a: cellPos{row, 0}, b: cellPos{row, len("copy-target-me") - 1}}
+	if got := tp.selectedText(); got != "copy-target-me" {
+		t.Fatalf("选中的文字 %q", got)
+	}
+
+	tt.Command("copy")
+	tt.Frame()
+	if got := tt.Clipboard(); got != "copy-target-me" {
+		t.Fatalf("「拷贝」命令后剪贴板 %q", got)
+	}
+
+	// ⌘C 按键本身(没有经过系统菜单时)也应复制,而不是被吞掉
+	tt.SetClipboard("")
+	tt.Key(ui.Super, ui.KeyC)
+	tt.Frame()
+	if got := tt.Clipboard(); got != "copy-target-me" {
+		t.Fatalf("⌘C 按键后剪贴板 %q", got)
 	}
 }

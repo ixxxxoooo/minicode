@@ -360,6 +360,15 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 			return true
 		}
 	case ui.InputKeyDown:
+		if ev.Mods&ui.Super != 0 && ev.Mods&^ui.Super == 0 && ev.Key == ui.KeyC && !tp.compose {
+			// ⌘C 兜底:正常由系统「拷贝」菜单变成 copy 命令;按键直接到达(合成按键、菜单没接管)时,
+			// 有选区也要复制。重复复制无副作用,所以不怕和菜单各触发一次;没选区不拦,留给窗口
+			if s := tp.selectedText(); s != "" {
+				a.copyText = s
+				a.toast = "已复制选中的终端文字"
+				return true
+			}
+		}
 		if ev.Mods&ui.Super != 0 || tp.compose {
 			return false // ⌘ 组合留给窗口快捷键;组字期间的按键(回车提交、退格、选词)留给输入法
 		}

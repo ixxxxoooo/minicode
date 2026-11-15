@@ -453,6 +453,13 @@ func (a *App) closeTermFind() {
 func (a *App) termFindBar(c *ui.Context, tp *termPanel) {
 	t := a.tk
 	f := &tp.find
+	// 退场动画放完要真正收尾(open=false):原先只在「再调一次 closeTermFind」时才收尾,
+	// 搜索条画没了,状态还是打开 → 命中高亮残留、Esc 仍被拦截
+	if f.open && !f.closingAt.IsZero() && time.Since(f.closingAt) >= kit.DurFast {
+		f.open = false
+		f.openedAt, f.closingAt = time.Time{}, time.Time{}
+		tp.focusIt = true
+	}
 	tp.refreshFind()
 	if !f.open && f.closingAt.IsZero() {
 		return
