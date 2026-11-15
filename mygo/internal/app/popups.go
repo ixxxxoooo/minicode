@@ -2,6 +2,7 @@ package app
 
 import (
 	"math"
+	"strings"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -76,7 +77,9 @@ func (a *App) mi(c *ui.Context, key, icon, text, right string, on bool) ui.Eleme
 		b.Background(t.Fill1)
 	}
 	return b.Children(func() {
-		if icon != "" {
+		if strings.HasPrefix(icon, "logo:") { // 模型品牌 logo;品牌为空 = 占位图标
+			kit.Logo(c, strings.TrimPrefix(icon, "logo:"), 14, t.Tx2)
+		} else if icon != "" {
 			kit.Ic(c, icon, kit.S12)
 		}
 		ui.Text(c, text).Grow(1).SingleLine()
@@ -109,10 +112,10 @@ func (a *App) cfgPopup(c *ui.Context, key string, anchor ui.Element, compact boo
 			}
 			kit.Sep(c)
 			kit.Cap(c, "模型")
-			for _, m := range a.st.Models {
-				if a.mi(c, "model-"+m.ID, "", m.Name, shortDesc(m), a.st.Model == m.ID).Clicked() {
-					a.pickModel(m.ID)
-				}
+			a.cfgModels(c)
+			if a.mi(c, "prov-manage", "sliders", "管理服务商…", "", false).Clicked() {
+				a.popup = ""
+				a.openSettings("models")
 			}
 			if compact {
 				return

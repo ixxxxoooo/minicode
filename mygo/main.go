@@ -18,6 +18,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/automation"
 	"github.com/ixxxxoooo/minicode/internal/backend"
 	"github.com/ixxxxoooo/minicode/internal/claude"
+	"github.com/ixxxxoooo/minicode/internal/claudecfg"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/diag"
@@ -117,6 +118,10 @@ func (r *realSetup) open(id string) backend.Backend {
 		if w.LoadMD {
 			cfg.Env = append(cfg.Env, core.EnvVar{Key: projects.LoadMDEnv, Value: "1"})
 		}
+	}
+	// 模型映射生效时,把服务商的地址、令牌与模型槽位注入新进程(不写日志:含密钥)
+	for _, e := range claudecfg.ProviderEnv() {
+		cfg.Env = append(cfg.Env, core.EnvVar{Key: e.Key, Value: e.Value})
 	}
 	log.Info("打开会话", "id", id, "cwd", cfg.Cwd)
 	if cb != nil {

@@ -146,6 +146,16 @@ func (a *App) cfgChip(c *ui.Context, wide bool) {
 		kit.Ic(c, modeIcon(a.st.Mode), kit.S12)
 		ui.Text(c, a.st.Mode.Label()).SingleLine().Shrink(0)
 		div()
+		if prov, model := a.pvModelLabel(); prov != "" {
+			_, pr := a.pvActive()
+			pb := ""
+			if pr != nil {
+				pb = provBrand(pr.Name, pr.BaseURL)
+			}
+			kit.Logo(c, modelBrand(model, pb), 13, t.Tx2)
+		} else {
+			kit.Logo(c, "claude", 13, t.Tx2)
+		}
 		ui.Text(c, a.modelName()).SingleLine().Shrink(1)
 		if wide {
 			div()
@@ -186,6 +196,12 @@ func effortLabel(e core.Effort) string {
 
 // modelName 当前模型的显示名。
 func (a *App) modelName() string {
+	if prov, m := a.pvModelLabel(); prov != "" { // 第三方服务商:显示映射的默认模型 ID
+		if m == "" {
+			return "未选模型"
+		}
+		return m
+	}
 	for _, m := range a.st.Models {
 		if m.ID == a.st.Model {
 			return m.Name

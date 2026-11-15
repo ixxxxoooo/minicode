@@ -69,7 +69,8 @@
   /* ───────── 供交互层增删行用的模板 ───────── */
   const ruleRow = (k, t) => `<div class="set-row a-rise" data-rm style="min-height:30px">${tag({ allow: '允许', ask: '询问', deny: '拒绝' }[k], { allow: 'ok', ask: 'warn', deny: 'err' }[k])}<span class="mono grow">${esc(t)}</span>${ib('trash', 'sm', '删除', 'data-act="del-row"')}</div>`;
   const envRow = (n, l) => `<div class="set-row a-rise" data-rm style="min-height:32px"><span class="mono m" style="width:230px">${esc(n)}</span><span class="mono t3 grow env-v" data-mask="1">••••••••</span>${tag(l)}${ib('eye', 'sm', '显示 / 遮盖', 'data-act="env-eye"')}${ib('trash', 'sm', '删除', 'data-act="del-row"')}</div>`;
-  const provRow = (n, u, on, s) => `<div class="set-row" data-prov data-rm><span class="si-box">${ic('server')}</span><div class="grow"><div class="m f ai g3">${n}<span class="prov-res">${s ? tag(s, s === '已连通' ? 'ok' : 'warn') : ''}</span></div><div class="d mono">${u}</div></div><span class="prov-st">${on ? tag('当前', 'ac') : btn('切换', 'sm', '', 'data-act="prov-use"')}</span>${btn('测试', 'sm ghost', 'activity', 'data-act="prov-test"')}${ib('trash', 'sm', '删除', 'data-act="del-row"')}</div>`;
+  const provRow = (n, u, on, s) => (typeof PV !== 'undefined' ? PV.provRow({ id: 'tmp', name: n, url: u, status: s === '已连通' ? 'ok' : s ? 'warn' : '', hasKey: 1, selected: ['m'], fixed: 0 })
+    : `<div class="set-row" data-prov data-rm><span class="si-box">${ic('server')}</span><div class="grow"><div class="m f ai g3">${n}<span class="prov-res">${s ? tag(s, s === '已连通' ? 'ok' : 'warn') : ''}</span></div><div class="d mono">${u}</div></div><span class="prov-st">${on ? tag('当前', 'ac') : btn('切换', 'sm', '', 'data-act="prov-use"')}</span>${btn('测试', 'sm ghost', 'activity', 'data-act="prov-test"')}${ib('trash', 'sm', '删除', 'data-act="del-row"')}</div>`);
 
   /* ───────── 各分类 ───────── */
   const TABS = {
@@ -103,12 +104,9 @@
       <div class="kb-warn" hidden></div>`; } },
 
     models: { t: '模型与服务商', d: '默认模型与思考强度、上下文压缩,以及第三方模型服务商。密钥单独存放在 0600 权限的文件里。', body: () => `
-      ${G('默认', R('默认模型', '新会话的起始模型;运行中可在输入框的运行配置里随时切换', `<span class="f g2">${['Fable 5.2', 'Opus 5.5', 'Sonnet 5.5', 'Haiku 5.5'].map((m, k) => chip(m, '', k === 2 ? 'on' : 'line', 'data-act="chip-one" tabindex="0"')).join('')}</span>`), R('默认思考强度', '', seg(['关', '低', '中', '高'], 2)), R('默认开启扩展思考', 'alwaysThinkingEnabled', tog(1)))}
+      ${G('默认', R('默认模型', '新会话的起始模型;运行中可在输入框运行配置或状态栏里按服务商选模型', `<span class="f g2">${['Fable 5.2', 'Opus 5.5', 'Sonnet 5.5', 'Haiku 5.5'].map((m, k) => chip(m, '', k === 2 ? 'on' : 'line', 'data-act="chip-one" tabindex="0"')).join('')}</span>`), R('默认思考强度', '', seg(['关', '低', '中', '高'], 2)), R('默认开启扩展思考', 'alwaysThinkingEnabled', tog(1)))}
       ${G('上下文', R('自动压缩', '接近上限时自动 /compact', tog(1)), R('压缩触发阈值', '占用达到该比例时压缩', stp(85, '%', { min: 50, max: 95, step: 5 })), R('输出风格', '', chip('默认', '', 'line')))}
-      ${G('服务商', provRow('Anthropic 官方', 'https://api.anthropic.com', 1, '已连通'), provRow('DeepSeek', 'https://api.deepseek.com/anthropic', 0, '已连通'), provRow('自建网关', 'https://llm.example.com', 0, '未验证'))}
-      <div class="f g3">${btn('添加服务商', '', 'plus', 'data-act="prov-add"')}<span class="t3 fs-cap">服务商需兼容 Anthropic 协议;Opus / Sonnet / Haiku 三个槽位映射到它的模型</span></div>
-      <div class="fold" id="prov-new"><div class="fold-in">${G('新服务商', R('名称', '', field('', 190, { id: 'prov-name', ph: '例如 DeepSeek' })), R('Base URL', 'Anthropic 协议兼容的地址', field('', 260, { mono: 1, id: 'prov-url', ph: 'https://…' })), R('API Key', '保存后不再显示,留空保持原值', field('', 220, { mono: 1, id: 'prov-key', ph: 'sk-…', attr: 'type="password"' })), R('鉴权方式', '', seg(['API Key', 'Auth Token'], 0)), `<div class="set-row" style="justify-content:flex-end">${btn('取消', 'ghost', '', 'data-act="prov-add"')}${btn('保存并测试', 'pri', '', 'data-act="prov-save"')}</div>`)}</div></div>
-      ${G('模型映射 · DeepSeek', R('Opus 槽位', '', field('deepseek-reasoner', 190, { mono: 1 })), R('Sonnet 槽位', '', field('deepseek-chat', 190, { mono: 1 })), R('Haiku 槽位', '', field('deepseek-chat', 190, { mono: 1 })))}` },
+      ${typeof PV !== 'undefined' ? PV.providersSection() + PV.mappingBlock() : ''}` },
 
     chat: { t: '对话与提示词', d: '会话流的显示与回合行为,以及追加到系统提示词的内容。', body: () => `
       ${G('显示', R('思考内容默认展开', '关闭时只显示「思考 · 4 秒」一行', tog(0)), R('回合结束后折叠过程', '把本回合的工具步骤折成「已处理 1 分 13 秒」', tog(1)), R('用户消息吸顶', '长会话里滚动时,当前这一轮的提问固定在会话顶部;下一轮顶上来时它被顶走,始终最多一张。点击提问卡可就地编辑', tog(1, 'data-live="stickyUser"')), R('显示回合用量', '回复下方的模型 · 用时 · token · 费用', tog(1)), R('工具组默认折叠', '连续的读取 / 搜索收进一行;失败时自动展开', tog(1)))}

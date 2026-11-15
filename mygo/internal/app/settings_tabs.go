@@ -355,11 +355,7 @@ var settingsTabs = []setTabDef{
 			rCustom("输出风格", "", func(a *App, c *ui.Context) { kit.Chip(c, "默认", kit.ChipOpt{Line: true, Car: true}) }),
 		}},
 		{title: "服务商", body: func(a *App, c *ui.Context) { a.providersBody(a, c) }},
-		{title: "模型映射 · DeepSeek", rows: []setRow{
-			rFld("models.mapOpus", "Opus 槽位", "", "deepseek-reasoner", 190, true, ""),
-			rFld("models.mapSonnet", "Sonnet 槽位", "", "deepseek-chat", 190, true, ""),
-			rFld("models.mapHaiku", "Haiku 槽位", "", "deepseek-chat", 190, true, ""),
-		}},
+		{title: "模型映射", body: func(a *App, c *ui.Context) { a.mappingBody(a, c) }},
 	}},
 
 	{id: "chat", title: "对话与提示词", icon: "chat", desc: "会话流的显示与回合行为,以及追加到系统提示词的内容。", groups: []setGroup{

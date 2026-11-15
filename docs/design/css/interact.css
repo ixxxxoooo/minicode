@@ -113,3 +113,11 @@ textarea.ta:hover { box-shadow: inset 0 0 0 1px var(--bd-3); } textarea.ta:focus
 .set-col .set-grp { animation: rise var(--dur-base) var(--ease-out) both; }
 .set-col .set-grp:nth-child(3) { animation-delay: 30ms; } .set-col .set-grp:nth-child(4) { animation-delay: 60ms; } .set-col .set-grp:nth-child(5) { animation-delay: 90ms; } .set-col .set-grp:nth-child(n+6) { animation-delay: 120ms; }
 .set-col { animation: none; }
+
+/* 通用下拉 .sel(设置页与其它表单复用) */
+.sel { display: inline-flex; align-items: center; gap: 6px; min-height: var(--h-row); padding: 0 8px 0 10px; border-radius: var(--r-md); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--bd-2); font: inherit; color: var(--tx-1); cursor: pointer; max-width: 100%; transition: background var(--dur-fast), box-shadow var(--dur-fast); vertical-align: middle; }
+.sel:hover { background: var(--fill-2); color: var(--tx-1); }
+.sel.on, .sel:focus-visible { outline: none; box-shadow: var(--ring), inset 0 0 0 1px var(--ac-line); }
+.sel .car { flex: none; color: var(--tx-3); }
+.sel-pop { transform-origin: top left; }
+.sel-pop .mi.dim { opacity: .5; pointer-events: none; }

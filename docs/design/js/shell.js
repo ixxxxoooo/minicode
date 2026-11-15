@@ -87,9 +87,10 @@
   W.chat = chat;
 
   /* ───────── 状态栏 ───────── */
+  const sbarModel = () => { if (typeof PV === 'undefined') return 'Sonnet 5.5'; const lab = PV.modelLabel(); return typeof lab === 'string' ? lab : `<span class="f ai g2">${PV.cfgChipHtml()}</span>`; };
   const sbar = () => `<div class="sbar"><span class="it">${ic('branch', 's12')}main</span><span class="it">${ic('refresh', 's12')}↑1</span><span class="it">${ic('errc', 's12')}0 ${ic('alert', 's12')}1</span>
     <span class="ide-items"><span class="it">行 17,列 58</span><span class="it">UTF-8</span><span class="it">Rust</span><span class="it">${ic('okc', 's12 c-ok')}rust-analyzer</span></span>
-    <span class="grow"></span><span class="it sb-btn" data-act="sbpop" data-pop="cfg" tabindex="0">${ic('shield', 's12')}逐项确认</span><span class="it sb-btn" data-act="sbpop" data-pop="cfg" tabindex="0">Sonnet 5.5</span><span class="it num sb-btn" data-act="sbpop" data-pop="ctx" tabindex="0">上下文 38%</span><span class="it sb-btn" data-act="sbpop" data-pop="upd" tabindex="0">${ic('download', 's12 c-ac')}<span class="c-ac">更新 42%</span></span></div>`;
+    <span class="grow"></span><span class="it sb-btn" data-act="sbpop" data-pop="cfg" tabindex="0">${ic('shield', 's12')}逐项确认</span><span class="it sb-btn sb-model" data-act="sbpop" data-pop="cfg" tabindex="0">${sbarModel()}</span><span class="it num sb-btn" data-act="sbpop" data-pop="ctx" tabindex="0">上下文 38%</span><span class="it sb-btn" data-act="sbpop" data-pop="upd" tabindex="0">${ic('download', 's12 c-ac')}<span class="c-ac">更新 42%</span></span></div>`;
 
   /* ───────── 页面:设置 / 命令面板 ───────── */
   W.themeCards = (cur) => `<div class="f g3 wrap">${THEMES.map(t => `<div class="th-card ${t.id === cur ? 'on' : ''}" data-act="theme" data-theme-id="${t.id}"><div class="th-prev" data-theme="${t.id}"><i class="s"></i><div class="m"><i></i><i style="width:90%"></i><i style="width:70%"></i></div></div><div class="f ai jb" style="padding:5px 3px 1px"><b>${t.name}</b><span class="t4 fs-micro">${t.dark ? '深' : '浅'}</span></div></div>`).join('')}</div>`;
@@ -126,7 +127,7 @@
   W.sbPop = (kind) => ({
     ctx: `<div class="sb-pop pop a-pop-up" data-state="ok">${F.ctxBody()}</div>`,
     upd: `<div class="sb-pop pop a-pop-up"><div class="f ai g3"><b class="grow">发现新版本 0.2.1</b>${tag('42%', 'ac')}</div><div class="meter"><i style="width:42%"></i></div><div class="t3 fs-cap">正在后台下载,完成后提示重启。</div></div>`,
-    cfg: `<div class="sb-pop pop a-pop-up" style="padding:4px;gap:0"><div class="cap">权限模式</div><div class="mi on">${ic('shield', 's12')}<span class="grow">逐项确认</span>${ic('check', 's12')}</div><div class="mi">${ic('edit', 's12')}<span class="grow">自动接受编辑</span></div><div class="mi">${ic('list', 's12')}<span class="grow">计划模式</span></div><div class="sep"></div><div class="cap">模型</div><div class="mi on"><span class="grow">Sonnet 5.5</span>${ic('check', 's12')}</div><div class="mi"><span class="grow">Opus 5.5</span></div><div class="mi"><span class="grow">Haiku 5.5</span></div></div>`,
+    cfg: typeof PV !== 'undefined' ? PV.cfgPopHtml({ shell: 1 }) : '',
   })[kind];
 
   window.W = W;

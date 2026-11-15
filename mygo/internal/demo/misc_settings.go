@@ -7,27 +7,79 @@
 package demo
 
 import (
+	"errors"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/ixxxxoooo/minicode/internal/claudecfg"
 )
 
-// DemoProviders 第三方服务商各种连通状态(密钥在界面只展示 sk-••••)。
+// DemoProviders 第三方服务商各种连通状态与模型清单(密钥在界面只展示 sk-••••)。
 func DemoProviders() []claudecfg.Provider {
-	return []claudecfg.Provider{
-		{ID: "anthropic", Name: "Anthropic 官方(默认)", BaseURL: "https://api.anthropic.com", Active: true, Status: claudecfg.FormatTestResult(true, 142)},
-		{ID: "deepseek", Name: "DeepSeek", BaseURL: "https://api.deepseek.com/anthropic", Active: false, Status: claudecfg.FormatTestResult(true, 89)},
-		{ID: "openai-compat", Name: "OpenAI 兼容", BaseURL: "https://api.openai.com/v1", Active: false, Status: claudecfg.ProvFail},
-		{ID: "corp", Name: "企业内网网关", BaseURL: "https://llm.corp.example.com", Active: false, Status: claudecfg.ProvTestIng},
-		{ID: "disabled", Name: "已禁用服务商", BaseURL: "https://legacy.example.com", Active: false, Status: "已禁用"},
-		{ID: "custom", Name: "自建网关", BaseURL: "https://llm.example.com", Status: claudecfg.ProvUnverified},
+	return DemoProviderStore().Providers
+}
+
+// DemoProviderStore 演示用的服务商与模型映射:覆盖「正常 / 清单为空 / 缺密钥 / 失败 / 不支持列表 / 测试中」。
+// 只在内存里用,不落盘。
+func DemoProviderStore() claudecfg.Store {
+	ds := []string{"deepseek-chat", "deepseek-reasoner", "deepseek-v3"}
+	kimi := []string{"kimi-k2-turbo-preview", "kimi-k2-0905-preview", "kimi-k2-thinking", "moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k",
+		"moonshot-v1-auto", "kimi-latest", "kimi-thinking-preview", "moonshot-v1-8k-vision-preview", "moonshot-v1-32k-vision-preview", "moonshot-v1-128k-vision-preview"}
+	return claudecfg.Store{
+		Providers: []claudecfg.Provider{
+			{ID: "deepseek", Name: "DeepSeek", BaseURL: "https://api.deepseek.com/anthropic", ModelsURL: "https://api.deepseek.com/models",
+				Models: []string{"deepseek-chat", "deepseek-reasoner"}, Available: ds, FetchedAt: time.Now().Unix(), Status: claudecfg.FormatTestResult(true, 89)},
+			{ID: "glm", Name: "智谱 GLM", BaseURL: "https://open.bigmodel.cn/api/anthropic", Status: claudecfg.ProvUnverified},
+			{ID: "kimi", Name: "Kimi", BaseURL: "https://api.moonshot.cn/anthropic", Models: []string{"kimi-k2-turbo-preview"}, Available: kimi,
+				FetchedAt: time.Now().Add(-3 * time.Hour).Unix(), Status: claudecfg.FormatTestResult(true, 142)},
+			{ID: "legacy", Name: "Legacy 网关", BaseURL: "https://api.legacy.local/anthropic", Models: []string{"custom-model-a"}, Manual: []string{"custom-model-a"},
+				Status: claudecfg.ProvUnverified},
+			{ID: "gateway", Name: "自建网关", BaseURL: "https://llm.example.com/v1", Status: claudecfg.ProvFail},
+			{ID: "corp", Name: "企业内网网关", BaseURL: "https://llm.corp.example.com", Auth: claudecfg.AuthXAPIKey, Models: []string{"corp-large"}, Manual: []string{"corp-large"},
+				Status: claudecfg.ProvTestIng},
+		},
+		Mapping: claudecfg.Mapping{Provider: "deepseek", Default: "deepseek-chat", Opus: "deepseek-reasoner", Sonnet: "deepseek-chat", Haiku: "deepseek-chat"},
 	}
 }
 
 // ProviderKeyMasks 只用于展示,不存真实密钥。
 func ProviderKeyMasks() map[string]string {
 	return map[string]string{
-		"anthropic": "sk-••••••••abcd", "deepseek": "sk-••••", "openai-compat": "sk-••••",
-		"corp": "sk-••••••", "custom": "",
+		"deepseek": "sk-••••••••abcd", "glm": "••••", "kimi": "sk-••••", "legacy": "sk-••••", "corp": "sk-••••••", "gateway": "",
 	}
+}
+
+// DemoProviderKeys 演示用的「密钥」:只有有没有的区别,值是占位,不会发往任何地方。
+func DemoProviderKeys() map[string]string {
+	m := map[string]string{}
+	for id, mask := range ProviderKeyMasks() {
+		if mask != "" {
+			m[id] = "demo-key"
+		}
+	}
+	return m
+}
+
+// DemoFetchModels 模拟「获取模型列表」:地址含 example.com 回 401,含 legacy 视为没有列表接口,其余按服务商返回一组模型。
+func DemoFetchModels(p claudecfg.Provider) ([]string, error) {
+	switch {
+	case strings.Contains(p.BaseURL, "example.com"):
+		return nil, errors.New("HTTP 401:invalid api key")
+	case strings.Contains(p.BaseURL, "legacy"):
+		return nil, claudecfg.ErrModelsUnsupported
+	case strings.Contains(p.BaseURL, "deepseek"):
+		return []string{"deepseek-chat", "deepseek-reasoner", "deepseek-v3"}, nil
+	case strings.Contains(p.BaseURL, "bigmodel"):
+		return []string{"glm-4.6", "glm-4.5", "glm-4.5-air", "glm-4.5-flash", "glm-4-plus", "glm-4-long"}, nil
+	case strings.Contains(p.BaseURL, "moonshot"):
+		return []string{"kimi-k2-turbo-preview", "kimi-k2-0905-preview", "kimi-k2-thinking", "moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"}, nil
+	}
+	ids := make([]string, 0, 28)
+	for i := 1; i <= 28; i++ {
+		ids = append(ids, "model-"+strconv.Itoa(i))
+	}
+	return ids, nil
 }
 
 // SettingDemoRules 权限规则:长规则、重复规则、空组以外俱全。

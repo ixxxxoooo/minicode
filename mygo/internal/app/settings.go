@@ -80,9 +80,13 @@ type settingsState struct {
 	// 快捷键录制
 	recID  string
 	kbWarn string
-	// 服务商 / 连通性
-	providers []claudecfg.Provider
+	// 服务商(数据与编辑区状态见 prov_state.go) / 连通性
+	pv        provState
+	providers []claudecfg.Provider // 设置页列表(演示与旧 CRUD 路径)
 	provBusy  map[string]int
+	provEdit  bool
+	provDraft claudecfg.Provider
+	provKey   string
 	net       map[string]int
 	netMs     map[string]int64
 	// 删除撤销(kit.UndoSlot)
@@ -97,10 +101,6 @@ type settingsState struct {
 	envName   string
 	envVal    string
 	envLayer  int
-	// 服务商编辑
-	provEdit  bool
-	provDraft claudecfg.Provider
-	provKey   string
 }
 
 func (a *App) setTabByID(id string) *setTabDef {

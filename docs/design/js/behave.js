@@ -96,6 +96,7 @@
   ACT.acct = (el, w) => openPop('acct', W.acctMenu(), w);
   ACT.sbpop = (el, w) => openPop(el.dataset.pop, W.sbPop(el.dataset.pop), w);
   document.addEventListener('mousedown', (e) => { if (!$('.acct, .sb-pop') || !e.target.closest || e.target.closest('.acct, .sb-pop, [data-act="acct"], [data-act="sbpop"]')) return; closePop(); });
+  document.addEventListener('mousedown', (e) => { if (!$('.prov-preset') || e.target.closest('.prov-preset, [data-act="prov-add-menu"]')) return; $('.prov-preset')?.remove(); });
 
   /* ═════════ 上下文弹层(输入框圆环;状态栏那份走 sbpop,内容同一份 F.ctxBody) ═════════ */
   const closeCtx = (root = win() || document) => { const p = $('.ctx-pop', root); if (!p) return false;
@@ -118,7 +119,7 @@
   document.addEventListener('mousedown', (e) => { if (!$('.ctx-pop') || !e.target.closest || e.target.closest('.ctx-pop, .ctx-chip')) return; closeCtx(); });
 
   /** Esc:按「模态 → 录制 → 弹层 → 搜索」的顺序,关掉最上面的一层 */
-  A.closeLayer = () => { if (M) { closeModal(); return true; } if (A.recording) { endRec(true); return true; } if (closeCtx()) return true; if (closePop()) return true;
+  A.closeLayer = () => { if (M) { closeModal(); return true; } if (A.recording) { endRec(true); return true; } if (closeCtx()) return true; if (typeof closeSel === 'function' && closeSel()) return true; if (closePop()) return true;
     if (st.setQ) { st.setQ = ''; refreshSettings(true); return true; } return false; };
 
   /* ═════════ 设置页:搜索 ═════════ */
@@ -137,6 +138,7 @@
     else if (k === 'cuq') { st.cuQ = t.value; refreshCu({ list: 1, drawer: 1 }); }
     else if (k === 'kbq') { const q = t.value.trim().toLowerCase(); $$('#set-col .set-row').forEach(r => { r.hidden = !!q && !r.textContent.toLowerCase().includes(q); }); $$('#set-col .set-grp').forEach(g => { g.hidden = !$$('.set-row', g).some(r => !r.hidden); }); }
     else if (k === 'sys') { const n = $('[data-count="sys"]'); if (n) n.textContent = t.value.length + ' 字'; }
+    else if (k === 'prov-mq' || k === 'prov-key') { if (typeof PV !== 'undefined' && $('#prov-edit')) { PV.ensure()._draft = draftFromForm(); provSaveState(); } }
     if (t.classList && (t.classList.contains('err') || t.closest('.inp.err'))) clearErr(t);
     const row = t.closest('#set-col .set-row[data-k]'); if (row) markDirty(row);
   });
@@ -185,24 +187,118 @@
   const PRESET = [['Read', 'Grep', 'Glob'], ['Read', 'Grep', 'Glob', 'Edit', 'Write', 'Bash'], null];
   ACT['agent-preset'] = (el) => { const g = el.closest('.fc').querySelector('.tgrid'), set = PRESET[+el.dataset.i]; $$('.tsel', g).forEach(c => cls(c, 'on', !set || set.includes(c.textContent))); };
 
-  /* ═════════ 设置页:服务商 ═════════ */
-  const provName = (row) => $('.m', row).childNodes[0].textContent.trim();
-  ACT['prov-use'] = (el) => { const row = el.closest('[data-prov]'); $$('[data-prov]').forEach(r => { $('.prov-st', r).innerHTML = r === row ? tag('当前', 'ac') : btn('切换', 'sm', '', 'data-act="prov-use"'); });
-    kick($('.prov-st .tag', row), 'a-ok'); toast('已切换到 ' + provName(row), { lvl: 'ok', sub: '新会话使用该服务商,正在运行的会话不受影响' }); };
-  ACT['prov-test'] = (el) => { const row = el.closest('[data-prov]'), res = $('.prov-res', row), bad = /example\.com/.test(row.textContent);
-    loading(el, true); res.innerHTML = '<span class="fs-cap t3 shimmer">测试中…</span>';
+  /* ═════════ 设置页:服务商与模型映射 ═════════ */
+  const provName = (row) => ($('.m', row)?.childNodes[0]?.textContent || row.textContent).trim();
+  const syncProvUi = () => { if (typeof PV === 'undefined') return; PV.ensure(); A.save();
+    const lab = PV.cfgChipHtml();
+    $$('.cfg-mod').forEach(n => { n.innerHTML = lab; });
+    $$('.sb-model').forEach(n => { n.innerHTML = `<span class="f ai g2">${lab}</span>`; });
+    const open = $('.cfg-pop, .sb-pop.cfg-pop'); if (open) { const shell = open.classList.contains('sb-pop'); open.outerHTML = PV.cfgPopHtml({ shell }); } };
+  const provSaveState = () => { syncProvUi(); if ($('.set') && W.settingsCur(st) === 'models') refreshSettings(); };
+  const draftFromForm = () => {
+    const P = PV.ensure();
+    const base = P.editId ? { ...PV.prov(P.editId) } : { models: [], selected: [], manual: [], hasKey: 0, auth: 0, modelsUrl: '' };
+    const authSeg = $('#prov-edit .seg');
+    return Object.assign(base, P._draft || {}, {
+      name: ($('#prov-name')?.value || base.name || '').trim(),
+      url: ($('#prov-url')?.value || base.url || '').trim(),
+      modelsUrl: ($('#prov-models-url')?.value || base.modelsUrl || '').trim(),
+      auth: authSeg ? segIdx(authSeg) : (base.auth || 0),
+      _keyDraft: $('#prov-key')?.value.trim() || '',
+      hasKey: base.hasKey || !!$('#prov-key')?.value.trim(),
+      _filter: $('#prov-mq')?.value || (P._draft && P._draft._filter) || '',
+    }); };
+  const openEdit = (draft, id, isNew) => { const P = PV.ensure(); P.editId = id || ''; P.editNew = isNew ? 1 : 0; P._draft = draft; provSaveState(); later(120, () => { $('#prov-name')?.focus(); $('#prov-edit')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }); };
+  ACT['prov-use'] = (el) => { const row = el.closest('[data-prov]'), id = row.dataset.id, P = PV.ensure();
+    P.active = id; if (id !== 'official') P.mappingProv = id;
+    provSaveState(); kick($('.prov-st .tag, .prov-st .btn', row), 'a-ok'); toast('已切换到 ' + provName(row), { lvl: 'ok', sub: '新会话使用该服务商,正在运行的会话不受影响' }); };
+  ACT['prov-test'] = (el) => { const row = el.closest('[data-prov]'), id = row.dataset.id, p = PV.prov(id), res = $('.prov-res', row);
+    p.status = 'testing'; res.innerHTML = tag('测试中', 'ac'); loading(el, true);
+    const bad = /example\.com/i.test(p.url);
     later(1000, () => { if (!row.isConnected) return; loading(el, false);
-      if (bad) { res.innerHTML = tag('连接失败 · 超时', 'err'); toast(provName(row) + ' 连接失败', { lvl: 'err', sub: '5 秒内没有响应,检查地址与网络', act: { label: '重试', fn: () => el.isConnected && el.click() } }); }
-      else { res.innerHTML = tag('已连通 · ' + (120 + provName(row).length * 17) + ' ms', 'ok'); kick(res, 'a-ok'); } }); };
-  ACT['prov-add'] = () => { const f = $('#prov-new'); if (!f) return; const open = !f.classList.contains('open'); f.classList.toggle('open', open); if (open) later(300, () => { $('#prov-name').focus(); f.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }); };
-  ACT['prov-save'] = (el) => { const n = $('#prov-name'), u = $('#prov-url'); let bad = 0;
-    [n, u].forEach(clearErr);
-    if (!u.value.trim()) { errField(u, '请填写 Base URL'); bad = 1; } else if (!/^https?:\/\/\S+$/.test(u.value.trim())) { errField(u, '地址需以 http:// 或 https:// 开头'); bad = 1; }
-    if (!n.value.trim()) { errField(n, '请填写名称'); bad = 1; }
-    if (bad) return shake($('#prov-new .card'));
-    const last = $$('[data-prov]').pop(); last.insertAdjacentHTML('afterend', API.provRow(esc(n.value.trim()), esc(u.value.trim()), 0, '')); const row = last.nextElementSibling; row.classList.add('a-rise');
-    ['prov-name', 'prov-url', 'prov-key'].forEach(i => { $('#' + i).value = ''; }); $('#prov-new').classList.remove('open');
-    toast('已添加 ' + n.value.trim(), { lvl: 'ok', sub: '正在测试连通性…' }); later(500, () => $('[data-act="prov-test"]', row) && $('[data-act="prov-test"]', row).click()); };
+      if (bad) { p.status = 'err'; res.innerHTML = tag('失败', 'err'); toast(p.name + ' 连接失败', { lvl: 'err', sub: 'HTTP 401 或超时,检查地址与密钥', act: { label: '重试', fn: () => el.isConnected && el.click() } }); }
+      else { p.status = 'ok'; res.innerHTML = tag('已连通', 'ok'); kick(res, 'a-ok'); toast(p.name + ' 已连通', { lvl: 'ok', sub: (110 + p.name.length * 13) + ' ms' }); }
+      A.save(); }); };
+  ACT['prov-add-menu'] = (el) => { const ex = $('.prov-preset'); if (ex) { ex.remove(); return; }
+    const r = el.getBoundingClientRect(), w = win() || document.body;
+    w.insertAdjacentHTML('beforeend', PV.presetPop()); const pop = $('.prov-preset', w);
+    pop.style.position = 'fixed'; pop.style.left = Math.min(r.left, innerWidth - 280) + 'px'; pop.style.top = (r.bottom + 6) + 'px'; pop.style.zIndex = '90'; };
+  ACT['prov-preset'] = (el) => { $('.prov-preset')?.remove();
+    if (el.dataset.custom) return openEdit({ name: '', url: '', models: [], selected: [], manual: [], hasKey: 0, auth: 0 }, '', 1);
+    const pr = PV.PRESETS.find(p => p.name === el.dataset.name); if (!pr) return;
+    openEdit({ name: pr.name, url: pr.url, auth: pr.auth, modelsUrl: pr.modelsUrl || '', models: [...pr.models], selected: [...pr.models], manual: [], hasKey: 0 }, '', 1); };
+  ACT['prov-edit'] = (el) => { const p = PV.prov(el.dataset.id); if (!p || p.fixed) return; openEdit({ ...p, _load: 0, _fetchErr: '', _unsupported: 0 }, p.id, 0); };
+  ACT['prov-cancel'] = () => { const P = PV.ensure(); P.editId = ''; P.editNew = 0; P._draft = null; provSaveState(); };
+  ACT['prov-delete'] = () => modal({ icon: 'trash', title: '删除服务商?', body: '映射与密钥记录会一并移除,此操作可撤销删除行。', ok: '删除', danger: 1, onOk: () => {
+    const P = PV.ensure(), id = P.editId; if (!id) return; const row = $(`[data-prov][data-id="${id}"]`); if (row) ACT['del-row']($('button[data-act="del-row"]', row) || row);
+    ACT['prov-cancel'](); } });
+  ACT['prov-key-eye'] = (el) => { const i = $('#prov-key'); if (!i) return; const show = i.type === 'password'; i.type = show ? 'text' : 'password'; el.innerHTML = ic(show ? 'eyeOff' : 'eye'); };
+  ACT['prov-auth'] = (el) => { const P = PV.ensure(); P._draft = draftFromForm(); P._draft.auth = segIdx(el.closest('.seg')); provSaveState(); };
+  ACT['prov-filter'] = () => { const P = PV.ensure(); P._draft = draftFromForm(); provSaveState(); };
+  const runFetch = () => { const P = PV.ensure(); const d = draftFromForm();
+    if (!d.hasKey && !d._keyDraft) return toast('先填写 API Key', { lvl: 'warn' });
+    d._load = 1; d._fetchErr = ''; d._unsupported = 0; P._draft = d; provSaveState();
+    later(1100, () => { const r = PV.fetchModels(d, d.url || d.modelsUrl);
+      d._load = 0;
+      if (r.err) { d._fetchErr = r.err; toast('获取失败', { lvl: 'err', sub: r.err }); }
+      else if (r.unsupported) { d._unsupported = 1; toast('该服务商没有模型列表接口', { lvl: 'warn' }); }
+      else { d.models = r.models; d.selected = [...new Set([...d.selected, ...r.models])]; d.fetchedAt = '刚刚获取'; toast('获取到 ' + r.models.length + ' 个模型', { lvl: 'ok' }); }
+      P._draft = d; provSaveState(); }); };
+  ACT['prov-fetch'] = () => runFetch();
+  ACT['prov-manual-focus'] = () => { $('#prov-add-m')?.focus(); };
+  ACT['prov-all'] = () => { const P = PV.ensure(), d = draftFromForm(); const q = (d._filter || '').trim().toLowerCase();
+    const all = [...new Set([...(d.models || []), ...(d.manual || [])])].filter(m => !q || m.toLowerCase().includes(q));
+    d.selected = [...new Set([...d.selected, ...all])]; P._draft = d; provSaveState(); };
+  ACT['prov-clear'] = () => { const P = PV.ensure(), d = draftFromForm(); const q = (d._filter || '').trim().toLowerCase();
+    const hit = new Set([...(d.models || []), ...(d.manual || [])].filter(m => !q || m.toLowerCase().includes(q)));
+    d.selected = d.selected.filter(m => !hit.has(m)); P._draft = d; provSaveState(); };
+  ACT['prov-toggle'] = (el) => { if (el.target.closest('[data-act="prov-rm-model"]')) return; const P = PV.ensure(), d = draftFromForm(), m = el.dataset.model;
+    d.selected = d.selected.includes(m) ? d.selected.filter(x => x !== m) : [...d.selected, m]; P._draft = d; provSaveState(); };
+  ACT['prov-rm-model'] = (el) => { el.stopPropagation(); const P = PV.ensure(), d = draftFromForm(), m = el.dataset.model;
+    d.manual = (d.manual || []).filter(x => x !== m); d.models = (d.models || []).filter(x => x !== m); d.selected = d.selected.filter(x => x !== m); P._draft = d; provSaveState(); };
+  ACT['prov-add-model'] = () => { const i = $('#prov-add-m'), v = i?.value.trim(); if (!v) return shake(i?.closest('.prov-inv-add'));
+    const P = PV.ensure(), d = draftFromForm(), all = [...new Set([...(d.models || []), ...(d.manual || [])])];
+    if (all.includes(v)) return toast('已在清单中', { lvl: 'warn' }); d.manual = [...(d.manual || []), v]; d.selected = [...d.selected, v]; if (i) i.value = ''; P._draft = d; provSaveState(); };
+  ACT['prov-save'] = (el) => { const P = PV.ensure(), d = draftFromForm(); let bad = 0;
+    const n = $('#prov-name'), u = $('#prov-url'); [n, u].forEach(clearErr);
+    if (!d.url) { errField(u, '请填写 Base URL'); bad = 1; } else if (!/^https?:\/\/\S+$/.test(d.url)) { errField(u, '地址需以 http:// 或 https:// 开头'); bad = 1; }
+    if (!d.name) { errField(n, '请填写名称'); bad = 1; }
+    if (bad) return shake($('#prov-edit .card'));
+    const id = P.editId || PV.idSlug(d.name) + '-' + Date.now().toString(36).slice(-4);
+    const rec = { id, name: d.name, url: d.url, status: 'warn', hasKey: d.hasKey || !!d._keyDraft, models: d.models || [], selected: d.selected || [], manual: d.manual || [], fetchedAt: d.fetchedAt || '', auth: d.auth || 0, modelsUrl: d.modelsUrl || '', abbr: d.abbr || d.name.slice(0, 2).toUpperCase() };
+    const ix = P.list.findIndex(p => p.id === id); if (ix >= 0) P.list[ix] = Object.assign(P.list[ix], rec); else P.list.push(rec);
+    P.editId = ''; P.editNew = 0; P._draft = null; provSaveState(); toast('已保存 ' + d.name, { lvl: 'ok' });
+    if (el.dataset.test) later(400, () => { const row = $(`[data-prov][data-id="${id}"]`); row && $('[data-act="prov-test"]', row)?.click(); }); };
+  let selPop = null;
+  const closeSel = () => { if (!selPop) return false; selPop.remove(); selPop = null; return true; };
+  const selItemsFor = (el) => { const P = PV.ensure(), kind = el.dataset.sel;
+    if (kind === 'map-prov') return { items: P.list.map(p => ({ label: p.name, value: p.id, disabled: !p.fixed && (!p.hasKey || !p.selected.length), hint: !p.hasKey ? '未填写 API Key' : '模型清单为空' })), idx: Math.max(0, P.list.findIndex(p => p.id === P.mappingProv)) };
+    if (kind === 'map-slot') { const slot = el.dataset.slot, mp = PV.prov(P.mappingProv), models = mp && !PV.isOfficial(P.mappingProv) ? mp.selected.map(m => ({ label: m, value: m, logo: 1, brand: PV.modelBrand(m, PV.provBrand(mp)) })) : [];
+      if (slot !== 'default') models.unshift({ label: '不设置(沿用默认)', value: '' });
+      return { items: models.length ? models : [{ label: '—', value: '', disabled: 1, hint: '请先勾选模型' }], idx: Math.max(0, models.findIndex(m => m.value === (P.slots[slot] || ''))), slot }; }
+    return { items: [], idx: 0 }; };
+  ACT.sel = (el) => { if (el.classList.contains('is-disabled') || el.dataset.official) return;
+    if (closeSel()) { el.classList.remove('on'); return; }
+    const { items, idx } = selItemsFor(el); if (!items.length) return;
+    const r = el.getBoundingClientRect(), w = win() || document.body;
+    const build = (q) => { const qq = q.trim().toLowerCase(); const rows = items.map((it, k) => ({ ...it, k })).filter(it => !qq || String(it.label).toLowerCase().includes(qq));
+      return rows.map(it => `<div class="mi ${it.k === idx ? 'on' : ''} ${it.disabled ? 'dim' : ''}" data-sel-pick="${it.k}" ${it.disabled ? '' : 'tabindex="0"'}">${it.logo && window.LOGOS ? LOGOS.logo(it.brand, 14) : ''}<span class="grow ell">${esc(it.label)}</span>${it.disabled ? `<span class="t3 fs-cap">${esc(it.hint || '')}</span>` : (it.k === idx ? ic('check', 's12') : '')}</div>`).join(''); };
+    w.insertAdjacentHTML('beforeend', `<div class="pop sel-pop a-pop-up" style="position:fixed;left:${Math.min(r.left, innerWidth - 260)}px;top:${r.bottom + 4}px;z-index:95;min-width:${Math.max(200, r.width)}px;padding:4px;max-height:280px;display:flex;flex-direction:column;gap:2px">${items.length > 8 ? `<label class="inp fill" style="margin:0 2px">${ic('search', 's12')}<input data-in="sel-q" placeholder="搜索…" spellcheck="false"></label>` : ''}<div class="scroll sel-pop-list" style="max-height:220px">${build('')}</div></div>`);
+    selPop = $('.sel-pop', w); el.classList.add('on');
+    const pick = (k) => { const it = items[k]; if (!it || it.disabled) return; const P = PV.ensure(), kind = el.dataset.sel;
+      if (kind === 'map-prov') { P.mappingProv = it.value; if (!PV.isOfficial(it.value)) P.active = it.value; }
+      else if (kind === 'map-slot') P.slots[el.dataset.slot] = it.value;
+      closeSel(); el.classList.remove('on'); $('.grow', el).textContent = it.label; el.dataset.idx = String(k); provSaveState(); };
+    $$('[data-sel-pick]', selPop).forEach(mi => mi.addEventListener('click', () => pick(+mi.dataset.selPick)));
+    const sq = $('[data-in="sel-q"]', selPop); if (sq) sq.addEventListener('input', () => { $('.sel-pop-list', selPop).innerHTML = build(sq.value); $$('[data-sel-pick]', selPop).forEach(mi => mi.addEventListener('click', () => pick(+mi.dataset.selPick))); }); };
+  document.addEventListener('mousedown', (e) => { if (selPop && !e.target.closest('.sel-pop, .sel')) { closeSel(); $$('.sel.on').forEach(s => s.classList.remove('on')); } });
+  ACT['cfg-model'] = (el) => { const pid = el.dataset.prov, model = el.dataset.model, P = PV.ensure(), p = PV.prov(pid);
+    if (p && !p.fixed && (!p.hasKey || !p.selected.length)) return;
+    const prev = P.active; P.active = pid; if (pid === 'official') P.picks.official = model; else { P.picks[pid] = model; P.mappingProv = pid; }
+    syncProvUi(); closePop(); $$('.cfg.on').forEach(c => c.classList.remove('on'));
+    const label = pid === 'official' ? (PV.OFFICIAL_MODELS.find(x => x[0] === model) || [])[1] : `${p?.name || ''} · ${model}`;
+    toast('已切换到 ' + label, { lvl: 'ok', sub: pid === 'official' ? '' : '新会话使用该服务商,正在运行的会话不受影响' }); };
+  ACT['cfg-fold'] = (el) => { const g = $(`.cfg-grp[data-grp="${el.dataset.prov}"]`), c = $('.fc-car', el); if (!g) return; g.classList.toggle('open'); c?.classList.toggle('open', g.classList.contains('open')); };
 
   /* ═════════ 设置页:权限规则、环境变量、删除(带撤销) ═════════ */
   const KINDS = ['allow', 'ask', 'deny'], KT = { allow: '始终允许', ask: '每次询问', deny: '始终拒绝' };
@@ -227,7 +323,10 @@
   const removeRow = (row, label, then) => { const p = row.parentElement, nx = row.nextElementSibling; row.style.maxHeight = row.offsetHeight + 'px'; void row.offsetHeight; row.classList.add('rm');
     later(330, () => { row.remove(); then && then(); });
     toast('已删除 ' + label, { lvl: 'info', act: { label: '撤销', fn: () => { row.classList.remove('rm'); row.style.maxHeight = ''; row.style.opacity = ''; (nx && nx.parentElement === p ? p.insertBefore(row, nx) : p.appendChild(row)); flash(row); then && then(); } } }); };
-  ACT['del-row'] = (el) => { const row = el.closest('.set-row'); removeRow(row, ($('.mono', row) || $('.m', row)).textContent.trim()); };
+  ACT['del-row'] = (el) => { const row = el.closest('.set-row'); if (row?.dataset.fixed) return toast('Claude 官方登录不能删除', { lvl: 'warn' });
+    const label = ($('.m', row)?.childNodes[0]?.textContent || $('.mono', row)?.textContent || row.textContent).trim();
+    const id = row.dataset.id;
+    removeRow(row, label, () => { if (id && typeof PV !== 'undefined') { const P = PV.ensure(); P.list = P.list.filter(p => p.id !== id); if (P.active === id) P.active = 'official'; if (P.mappingProv === id) P.mappingProv = 'deepseek'; if (P.editId === id) { P.editId = ''; P._draft = null; } syncProvUi(); A.save(); } }); };
 
   /* ═════════ 设置页:连通性、检测、诊断、更新 ═════════ */
   ACT['net-check'] = (el) => { const rows = $$('#net-grp [data-nc]'); loading(el, true);
@@ -417,10 +516,10 @@
 
   /* ═════════ 回车提交、渲染后的钩子 ═════════ */
   document.addEventListener('keydown', (e) => { if (e.key !== 'Enter' || e.isComposing || e.shiftKey) return; const t = e.target; if (!t.matches || !t.matches('input[data-in]')) return;
-    const box = t.closest('.dlg, .set-row, .cmp'); const b = box && box.querySelector('[data-act="modal-ok"], [data-act="rule-add"], [data-act="env-add"], [data-act="prov-save"], .send'); if (b && t.dataset.in !== 'setq' && t.dataset.in !== 'cuq' && t.dataset.in !== 'kbq') { e.preventDefault(); b.click(); } });
+    const box = t.closest('.dlg, .set-row, .cmp, .prov-inv-add'); const b = box && box.querySelector('[data-act="modal-ok"], [data-act="rule-add"], [data-act="env-add"], [data-act="prov-save"], [data-act="prov-add-model"], .send'); if (b && t.dataset.in !== 'setq' && t.dataset.in !== 'cuq' && t.dataset.in !== 'kbq' && t.dataset.in !== 'sel-q') { e.preventDefault(); b.click(); } });
   /** 画布大纲:正文滚动时高亮当前所在的标题 */
   const wireCanvas = () => { const sc = $('#cv-scroll'); if (!sc) return; let raf = 0;
     sc.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const hs = $$('#cv-doc [id^="h-"]'); let cur = hs[0]; hs.forEach(h => { if (h.offsetTop - 40 <= sc.scrollTop) cur = h; }); $$('.cv-side .row[data-id]').forEach(r => cls(r, 'on', r.dataset.id === cur.id)); }); }); };
-  A.hooks.push(() => { const w = win(); if (toastBox && w && !toastBox.isConnected) w.appendChild(toastBox); applyPrefs(); initRows(); wireCanvas(); });
+  A.hooks.push(() => { const w = win(); if (toastBox && w && !toastBox.isConnected) w.appendChild(toastBox); applyPrefs(); initRows(); wireCanvas(); if (typeof PV !== 'undefined') { PV.ensure(); syncProvUi(); } });
   A.renderMain();
 })();

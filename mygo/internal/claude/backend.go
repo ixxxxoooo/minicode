@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/backend"
+	"github.com/ixxxxoooo/minicode/internal/claudecfg"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 )
@@ -570,7 +571,7 @@ func (b *Backend) onCommand(c core.Command) {
 			b.request(req{kind: rkMcpToggle}, func(id string) obj { return McpToggleReq(id, c.Name, c.Enabled) })
 		}
 	case core.CmdSetEnv:
-		b.cfg.Env = c.Env
+		b.cfg.Env = mergeManagedEnv(b.cfg.Env, c.Env)
 		if b.p != nil { // 环境变量只能在启动时注入:结束当前进程,下一条提示用新环境恢复会话
 			b.shutdown("环境变量变化")
 			b.restartConfig()
@@ -859,4 +860,19 @@ func (b *Backend) onExit() {
 		b.emit(core.EvTurnEnded{Reason: core.StopError})
 	}
 	b.emit(notice(core.NoticeError, text))
+}
+
+// mergeManagedEnv 用 next 替换模型映射管理的那几个环境变量(见 claudecfg.ManagedEnvKeys),其余原样保留。
+func mergeManagedEnv(cur, next []core.EnvVar) []core.EnvVar {
+	managed := map[string]bool{}
+	for _, k := range claudecfg.ManagedEnvKeys() {
+		managed[k] = true
+	}
+	out := make([]core.EnvVar, 0, len(cur)+len(next))
+	for _, e := range cur {
+		if !managed[e.Key] {
+			out = append(out, e)
+		}
+	}
+	return append(out, next...)
 }

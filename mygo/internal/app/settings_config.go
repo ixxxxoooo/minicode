@@ -207,91 +207,6 @@ func (a *App) lspBody(a2 *App, c *ui.Context) {
 	}
 }
 
-func (a *App) providersBody(a2 *App, c *ui.Context) {
-	list, err := claudecfg.LoadProviders()
-	if err != nil {
-		list = nil
-	}
-	if a2.set.providers == nil {
-		a2.set.providers = list
-	}
-	masks := demo.ProviderKeyMasks()
-	for i, p := range a2.set.providers {
-		p := p
-		first := i == 0
-		rowBox(a2, c, first, 44).Children(func() {
-			iconBox(a2, c, "server")
-			ui.Column(c).Grow(1).MinWidth(0).Gap(1).Children(func() {
-				ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-					ui.Text(c, p.Name).FontWeight(500)
-					if p.Status != "" && p.Status != claudecfg.ProvTestNone {
-						kind := kit.KWarn
-						if p.Status == claudecfg.ProvOK || strings.HasPrefix(p.Status, claudecfg.ProvOK) {
-							kind = kit.KOk
-						}
-						if p.Status == claudecfg.ProvFail {
-							kind = kit.KErr
-						}
-						if p.Status == claudecfg.ProvTestIng {
-							kind = kit.KWarn
-						}
-						kit.Tag(c, p.Status, kind)
-					}
-				})
-				ui.Text(c, p.BaseURL).Font("monospace").FontSize(theme.FsCap).TextColor(a2.tk.Tx3).SingleLine()
-				if m := masks[p.ID]; a2.demoWs() && m != "" {
-					ui.Text(c, "密钥 "+m).Font("monospace").FontSize(theme.FsCap).TextColor(a2.tk.Tx4).SingleLine()
-				}
-			})
-			busy := a2.set.provBusy[p.ID]
-			st := kit.ConnIdle
-			if busy == 1 {
-				st = kit.ConnRun
-			} else if p.Status == claudecfg.ProvFail {
-				st = kit.ConnFail
-			} else if p.Status == claudecfg.ProvOK || strings.HasPrefix(p.Status, claudecfg.ProvOK) {
-				st = kit.ConnOK
-			}
-			kit.ConnTestRow(c, "prov-"+p.ID, st, "测试连接", p.Status, func() { a2.testProvider(p.ID) })
-			kit.Btn(c, "编辑", kit.BtnOpt{Small: true, Icon: "edit"}).OnClick(func() {
-				a2.set.provEdit = true
-				a2.set.provDraft = p
-				a2.set.provKey = ""
-			})
-		})
-	}
-	a2.providersToolbar(a2, c)
-}
-
-func (a *App) testProvider(id string) {
-	if a.set.provBusy == nil {
-		a.set.provBusy = map[string]int{}
-	}
-	a.set.provBusy[id] = 1
-	for i, p := range a.set.providers {
-		if p.ID != id {
-			continue
-		}
-		a.set.providers[i].Status = claudecfg.ProvTestIng
-		base := p.BaseURL
-		a.bg("连通性测试", func() func() {
-			ok, ms := claudecfg.TestProvider(base)
-			st := claudecfg.ProvFail
-			if ok {
-				st = claudecfg.FormatTestResult(true, ms)
-			}
-			return func() {
-				a.set.provBusy[id] = 0
-				if i < len(a.set.providers) {
-					a.set.providers[i].Status = st
-				}
-				_ = claudecfg.SaveProviders(a.set.providers)
-			}
-		})
-		break
-	}
-}
-
 func (a *App) netCheckBody(a2 *App, c *ui.Context) {
 	hosts := []string{"api.anthropic.com", "github.com"}
 	if a2.set.net == nil {
@@ -384,8 +299,7 @@ func (a *App) settingsUndoToast(c *ui.Context) {
 }
 
 func (a *App) initSettingsConfig() {
-	if a.demoWs() && len(a.set.providers) == 0 {
-		a.set.providers = demo.DemoProviders()
+	if a.demoWs() && len(a.set.net) == 0 {
 		a.set.net = map[string]int{"api.anthropic.com": 2, "github.com": 2}
 		a.set.netMs = map[string]int64{"api.anthropic.com": 142, "github.com": 96}
 		for k, v := range demo.ShortcutDemoPrefs() {
@@ -397,13 +311,7 @@ func (a *App) initSettingsConfig() {
 			a.set.kbWarn = "⌘ E 已被「切换 Agent / IDE」占用"
 		}
 	}
-	if a.set.providers == nil {
-		list, _ := claudecfg.LoadProviders()
-		a.set.providers = list
-	}
-	if a.set.provBusy == nil {
-		a.set.provBusy = map[string]int{}
-	}
+	a.pvLoad()
 	if a.set.net == nil {
 		a.set.net = map[string]int{}
 	}

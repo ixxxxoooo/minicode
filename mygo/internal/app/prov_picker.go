@@ -1,0 +1,127 @@
+package app
+
+import (
+	"strconv"
+	"unicode"
+
+	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/theme"
+)
+
+// 会话里的模型选择器(输入框运行配置与状态栏共用):按服务商分组,选别家的模型 = 同时切换服务商。
+// 设计稿:docs/design/js/providers.js 的 cfgPop。
+
+// provAbbr 是服务商的缩写徽标:英文取前两个字母大写,中文取前两个字。
+func provAbbr(name string) string {
+	var out []rune
+	for _, r := range name {
+		if unicode.IsSpace(r) {
+			continue
+		}
+		if r < 128 {
+			if unicode.IsLetter(r) || unicode.IsDigit(r) {
+				out = append(out, unicode.ToUpper(r))
+			}
+		} else {
+			out = append(out, r)
+		}
+		if len(out) == 2 {
+			break
+		}
+	}
+	if len(out) == 0 {
+		return "?"
+	}
+	return string(out)
+}
+
+// cfgModels 画「模型」区:Claude 官方一组 + 每个服务商一组,整体限高滚动。
+func (a *App) cfgModels(c *ui.Context) {
+	t := a.tk
+	p := a.pvLoad()
+	activeID := p.store.ActiveID()
+	ui.Scroll(c).Key("cfg-models").MaxHeight(280).Children(func() {
+		ui.Column(c).Children(func() {
+			// 官方组
+			a.cfgGroupHead(c, "official", "claude", "Claude 官方", strconv.Itoa(len(a.st.Models))+" 个模型", "", activeID == "")
+			if a.cfgGroupOpen("official", activeID == "") {
+				for _, m := range a.st.Models {
+					m := m
+					if a.mi(c, "model-"+m.ID, "logo:claude", m.Name, shortDesc(m), activeID == "" && a.st.Model == m.ID).Clicked() {
+						if activeID != "" {
+							a.pvActivate("", "")
+						}
+						a.pickModel(m.ID)
+					}
+				}
+			}
+			for _, g := range p.store.PickerGroups(p.keys) {
+				g := g
+				pb := provBrand(g.Name, g.BaseURL)
+				a.cfgGroupHead(c, g.ID, pb, g.Name, strconv.Itoa(len(g.Models))+" 个模型", g.Blocked, g.Active)
+				if g.Blocked != "" || !a.cfgGroupOpen(g.ID, g.Active) {
+					continue
+				}
+				for _, m := range g.Models {
+					m := m
+					row := a.mi(c, "pm-"+g.ID+"-"+m, "logo:"+modelBrand(m, pb), m, "", g.Active && p.store.Mapping.Default == m)
+					if row.Clicked() {
+						a.pvPickModel(g.ID, g.Name, m)
+					}
+				}
+			}
+			_ = t
+		})
+	})
+}
+
+// cfgGroupOpen 分组是否展开:默认只展开当前所在的组,点标题切换(存的是「相对默认翻转了没有」)。
+func (a *App) cfgGroupOpen(id string, active bool) bool {
+	return active != a.pvLoad().folded[id]
+}
+
+// cfgGroupHead 是分组标题行:箭头 + 名称 + 右侧说明;不可用的组置灰,右侧写原因并带「去设置」。
+func (a *App) cfgGroupHead(c *ui.Context, id, brand, name, count, blocked string, active bool) {
+	t := a.tk
+	p := a.pvLoad()
+	open := a.cfgGroupOpen(id, active) && blocked == ""
+	b := ui.ButtonBase(c).Key("cfg-grp-"+id).Height(24).PaddingX(8).Gap(4).Radius(t.RSm()).AlignItems(ui.Center).Justify(ui.Start).
+		Cursor(ui.CursorDefault).Transition(kit.Fade).Margin(2, 0, 0, 0)
+	if blocked != "" {
+		b.Opacity(.6)
+	} else if b.Hovered() {
+		b.Background(t.Fill1)
+	}
+	if blocked == "" {
+		b.OnClick(func() { p.folded[id] = !p.folded[id] })
+	}
+	b.Children(func() {
+		kit.Ic(c, map[bool]string{true: "chevD", false: "chevR"}[open], kit.S12).TextColor(t.Tx3)
+		kit.Logo(c, brand, 13, t.Tx2)
+		ui.Text(c, name).FontSize(10.5).FontWeight(600).LetterSpacing(.3).TextColor(t.Tx2).SingleLine()
+		if active {
+			kit.Tag(c, "当前", kit.KAc)
+		}
+		ui.Box(c).Grow(1)
+		if blocked != "" {
+			ui.Text(c, blocked).FontSize(theme.FsCap).TextColor(t.Warn).SingleLine()
+			if kit.Btn(c, "去设置", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).Key("cfg-go-" + id).Clicked() {
+				a.popup = ""
+				a.openSettings("models")
+			}
+		} else {
+			ui.Text(c, count).FontSize(theme.FsCap).TextColor(t.Tx4).SingleLine()
+		}
+	})
+}
+
+// pvPickModel 在选择器里点了某个服务商的模型:切到该服务商并把它设为默认槽位的模型。
+func (a *App) pvPickModel(providerID, providerName, model string) {
+	a.pvActivate(providerID, model)
+	a.send(core.CmdSetModel{Model: "default"}) // 用 ANTHROPIC_MODEL 映射出的默认模型
+	a.st.Model = "default"
+	a.popup = ""
+	a.toast = "已切换到 " + providerName + " · " + model + "。下一条消息起使用,正在进行的回合不受影响"
+}

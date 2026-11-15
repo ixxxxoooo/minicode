@@ -36,6 +36,16 @@
   const seg = (items, on, cls = '', act = 'seg') => `<div class="seg ${cls}" style="--n:${items.length};--i:${on}"><i class="thumb"></i>${items.map((t, k) => `<button class="${k === on ? 'on' : ''}" data-act="${act}" data-i="${k}">${t}</button>`).join('')}</div>`;
   /** 勾选圆。state:'' 未开始 / now 进行中 / done 已完成 */
   const chk = (state = '') => state === 'now' ? '<span class="chk now"><span class="spin"></span></span>' : `<span class="chk ${state}"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>`;
+  /** 下拉触发器。items: {label,value,disabled?,hint?}[];onIdx:选中下标;o.mono / o.w / o.attr */
+  const sel = (items, onIdx, o = {}) => {
+    const k = Math.max(0, Math.min(onIdx || 0, items.length - 1));
+    const it = items[k] || { label: '—', value: '' };
+    const dis = (it.disabled || o.disabled) ? ' is-disabled' : '';
+    const tip = it.hint ? ` data-tip="${it.hint}"` : '';
+    const w = o.w ? ` style="width:${o.w}px"` : '';
+    const mono = o.mono ? ' mono' : '';
+    return `<button type="button" class="sel${dis}" data-act="sel" data-idx="${k}"${w}${tip} ${o.attr || ''}>${it.logo && window.LOGOS ? LOGOS.logo(it.brand, 14) : ''}<span class="grow ell${mono}">${esc(String(it.label))}</span>${ic('chevD', 's12 car')}</button>`;
+  };
   const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
   const RX = /(\/\/.*$)|("(?:[^"\\]|\\.)*"|'.')|\b(use|pub|struct|impl|fn|let|mut|self|Self|return|if|else|match|for|in|assert_eq|mod)\b|\b([A-Z][A-Za-z0-9]*)\b|\b(\d+)\b|\b([a-z_]\w*)(?=\()/gm;
@@ -82,5 +92,5 @@
     plan: { icon: 'list', verb: '计划', fam: 'plan', cn: 'ExitPlanMode' },
   };
 
-  window.U = { ic, btn, ib, chip, tag, cnt, kbd, tog, seg, chk, esc, rust, inp, field, area, THEMES, SCHEMES, TOOLS };
+  window.U = { ic, btn, ib, chip, tag, cnt, kbd, tog, seg, chk, sel, esc, rust, inp, field, area, THEMES, SCHEMES, TOOLS };
 })();
