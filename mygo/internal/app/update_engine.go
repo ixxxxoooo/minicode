@@ -19,7 +19,11 @@ func (a *App) initUpdater(demo bool) {
 	if cur == "" {
 		cur = Version
 	}
-	var fetch update.Fetcher = update.GitHubAppcastFetcher{}
+	gh := update.GitHubAppcastFetcher{}
+	if a.prefs != nil && a.prefs.Int(pAboutChan, 0) == 1 {
+		gh.Channel = "beta"
+	}
+	var fetch update.Fetcher = gh
 	if demo || os.Getenv("MINI_UPDATE_DEMO") == "1" {
 		fetch = update.DemoFetcher{Version: "0.2.2"}
 	}

@@ -1,11 +1,13 @@
 package app
 
 import (
+	"os"
 	"path"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
+	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 	"github.com/ixxxxoooo/minicode/internal/vcs"
@@ -47,6 +49,24 @@ func (a *App) openDiffKind(kind, p string, pin bool) {
 		}
 		d.active, d.sel = id, p
 		return
+	}
+	// 设置 → 源代码管理 → Diff 大小上限:超过先确认,避免大文件计算 diff 卡界面
+	if !a.diffForce[id] {
+		if st, err := os.Stat(d.fs.Abs(p)); err == nil {
+			if n := st.Size(); vcs.ExceedsDiffLimit(n, a.DiffMaxPref()) {
+				diag.L("app").Info("差异超过大小上限", "path", p, "size", n, "limit", a.DiffMaxPref())
+				a.confirmDlg("文件较大,仍要显示差异?",
+					baseName(p)+" 约 "+itoa(int(n/1024))+" KB,超过设置里的 Diff 大小上限("+a.DiffMaxPref()+")。计算差异可能让界面短暂卡顿。",
+					"仍然显示", false, func() {
+						if a.diffForce == nil {
+							a.diffForce = map[string]bool{}
+						}
+						a.diffForce[id] = true
+						a.openDiffKind(kind, p, pin)
+					})
+				return
+			}
+		}
 	}
 	head := func() string { s, _ := d.headOf(p); return s }
 	work := func() string { s, _ := d.fs.Read(p); return s }

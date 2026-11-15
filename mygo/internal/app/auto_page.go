@@ -25,6 +25,8 @@ type autoState struct {
 	errMsg           string
 	focusName        bool
 	runView          string // 正在查看的运行记录键
+	savedPopAt       time.Time
+	kindFoldAt       time.Time
 
 	// 新建模态
 	newDlg                      bool
@@ -281,17 +283,24 @@ func (a *App) autoDrawer(c *ui.Context) {
 		cur := int(automation.KindOf(s.days))
 		if i := kit.Seg(c, []kit.SegItem{{Text: kinds[0]}, {Text: kinds[1]}, {Text: kinds[2]}, {Text: kinds[3]}}, cur, kit.SegOpt{Fill: true, Key: "au-kind"}); i >= 0 && i != cur {
 			s.days = []string{"每天", "周一", "每月 1 日", "0 9 * * 1"}[i]
+			s.kindFoldAt = time.Now()
 		}
-		if automation.KindOf(s.days) == automation.KCron {
+		cronOpen := automation.KindOf(s.days) == automation.KCron
+		cronBox := ui.Column(c)
+		kit.FoldHeight(cronBox, cronOpen, 54, s.kindFoldAt, a.frameSoon)
+		cronBox.Children(func() {
 			ui.TextInput(c.Key("au-cron"), &s.days).FontSize(theme.FsBody).Placeholder("分 时 日 月 周,如 0 9 * * 1")
 			ui.Text(c, "五段标准 cron;时间与 Asia/Shanghai 本地一致").FontSize(theme.FsCap).TextColor(t.Tx3)
-		} else {
+		})
+		timeBox := ui.Column(c)
+		kit.FoldHeight(timeBox, !cronOpen, 34, s.kindFoldAt, a.frameSoon)
+		timeBox.Children(func() {
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 				a.autoDayPicker(c)
 				field("au-time", &s.tm, 24).Width(70).Grow(0).Shrink(0)
 				ui.Text(c, "时区 Asia/Shanghai").FontSize(theme.FsCap).TextColor(t.Tx3)
 			})
-		}
+		})
 	})
 	ui.Column(c).Gap(4).Children(func() {
 		lbl("项目与权限")
@@ -318,7 +327,7 @@ func (a *App) autoDrawer(c *ui.Context) {
 					rk = fmt.Sprintf("auto:%d:%d", it.ID, r.At.Unix())
 				}
 				row := kit.RowEl(c, false).Key("run-" + itoa(it.ID) + "-" + itoa(i)).Height(28)
-				row.OnClick(func() { s.runView = rk })
+				row.OnClick(func() { a.openAutoRun(r, rk) })
 				row.Children(func() {
 					if r.OK {
 						kit.Ic(c, "okc", kit.S12).TextColor(t.Ok)
@@ -326,7 +335,11 @@ func (a *App) autoDrawer(c *ui.Context) {
 						kit.Ic(c, "errc", kit.S12).TextColor(t.Err)
 					}
 					ui.Text(c, automation.When(a.now(), r.At)).Grow(1)
-					ui.Text(c, map[bool]string{true: "成功", false: "失败"}[r.OK]).TextColor(t.Tx3)
+					if r.SessionID != "" {
+						ui.Text(c, "查看会话").FontSize(theme.FsCap).TextColor(t.Ac)
+					} else {
+						ui.Text(c, map[bool]string{true: "成功", false: "失败"}[r.OK]).TextColor(t.Tx3)
+					}
 					kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
 				})
 			}
@@ -338,12 +351,15 @@ func (a *App) autoDrawer(c *ui.Context) {
 	ui.Spacer(c).Grow(1)
 	busy := a.autoBusy != nil && a.autoBusy[it.ID]
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-		runBtn := kit.Btn(c, map[bool]string{true: "运行中…", false: "立即运行"}[busy], kit.BtnOpt{Variant: kit.BtnSoft, Icon: "play"})
+		if busy {
+			ui.Box(c).Grow(1).MaxWidth(120).Children(func() { kit.IndetMeter(c) })
+		}
+		runBtn := kit.Btn(c, map[bool]string{true: "运行中…", false: "立即运行"}[busy], kit.BtnOpt{Variant: kit.BtnSoft, Icon: "play", Loading: busy})
 		if busy {
 			runBtn.OnClick(func() { s.runView = liveKey(it.ID) })
 		} else {
 			runBtn.OnClick(func() {
-				a.runAutomation(it)
+				a.runAutomationNow(it)
 				log.Info("立即运行自动化", "id", it.ID, "name", it.Name)
 			})
 		}
@@ -356,7 +372,12 @@ func (a *App) autoDrawer(c *ui.Context) {
 			a.toast = "已删除「" + it.Name + "」"
 		})
 		ui.Spacer(c).Grow(1)
-		kit.Btn(c, "保存", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(func() { a.autoSave(it) })
+		save := kit.Btn(c, "保存", kit.BtnOpt{Variant: kit.BtnPri})
+		save.OnClick(func() { a.autoSave(it) })
+		if !s.savedPopAt.IsZero() {
+			ok := kit.Ic(c, "okc", kit.S12).TextColor(t.Ok)
+			kit.OkPop(ok, s.savedPopAt, a.frameSoon)
+		}
 	})
 }
 
@@ -370,6 +391,7 @@ func (a *App) autoSave(it automation.Automation) {
 	}
 	s.errMsg = ""
 	a.toast = "已保存「" + it.Name + "」"
+	a.au.savedPopAt = time.Now()
 	log.Info("保存自动化", "id", it.ID)
 }
 

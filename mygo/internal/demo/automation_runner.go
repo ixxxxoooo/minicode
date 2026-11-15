@@ -10,6 +10,9 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/automation"
 )
 
+// AutomationDemoSessionID 是演示自动化运行完成后可打开的回放会话。
+const AutomationDemoSessionID = "demo-fixbug"
+
 // RunAutomationDemo 在演示模式下跑一条自动化:分多段写出输出,ctx 取消则返回已取消。
 func RunAutomationDemo(ctx context.Context, it automation.Automation, _ string, onChunk func(string)) (string, error) {
 	lines := []string{
@@ -32,13 +35,14 @@ func RunAutomationDemo(ctx context.Context, it automation.Automation, _ string, 
 	for {
 		select {
 		case <-ctx.Done():
-			return buf.String(), ctx.Err()
+			return automation.EmbedSession(buf.String(), AutomationDemoSessionID), ctx.Err()
 		case <-tick.C:
 			if i >= len(lines) {
+				out := automation.EmbedSession(buf.String(), AutomationDemoSessionID)
 				if fail {
-					return buf.String(), fmt.Errorf("网络超时")
+					return out, fmt.Errorf("网络超时")
 				}
-				return buf.String(), nil
+				return out, nil
 			}
 			line := lines[i] + "\n"
 			i++

@@ -60,6 +60,8 @@ func (a *App) flowTail(c *ui.Context, items []core.Item, i int) {
 		a.assistant(c, v)
 	case *core.Notice:
 		a.notice(c, v)
+	case *core.TaskNote:
+		a.taskNoteLine(c, v)
 	case *core.PlanApproval:
 		a.planCard(c, v)
 	case *core.QuestionRequest:
@@ -77,6 +79,12 @@ func turnEndRound(rest []core.Item, i int, uid string) (string, bool) {
 }
 
 func (a *App) flowRound(c *ui.Context, u *core.User, rest []core.Item) {
+	foldTurn := a.shouldFoldTurn(u.ID, rest, a.roundComplete(u.ID))
+	var allSteps []core.Item
+	if foldTurn {
+		allSteps = turnStepItems(rest)
+	}
+	foldedSteps := false
 	round := ui.Column(c).Key("round-" + u.ID).Gap(8).AlignItems(ui.Stretch)
 	// 上一帧回合的顶边:提问卡的顶边比它低,说明正被吸顶(Bounds 是上一帧的矩形,第一帧为空)。
 	roundTop := round.Bounds()
@@ -85,12 +93,24 @@ func (a *App) flowRound(c *ui.Context, u *core.User, rest []core.Item) {
 		for i := 0; i < len(rest); {
 			last := i
 			if isStepItem(rest[i]) {
-				j := i
-				for j < len(rest) && isStepItem(rest[j]) {
-					j++
+				if foldTurn {
+					if !foldedSteps {
+						a.turnFoldGroup(c, u.ID, allSteps)
+						foldedSteps = true
+					}
+					j := i
+					for j < len(rest) && isStepItem(rest[j]) {
+						j++
+					}
+					last = j - 1
+				} else {
+					j := i
+					for j < len(rest) && isStepItem(rest[j]) {
+						j++
+					}
+					a.stepGroup(c, rest[i:j])
+					last = j - 1
 				}
-				a.stepGroup(c, rest[i:j])
-				last = j - 1
 			} else {
 				a.flowTail(c, rest, i)
 				last = i
@@ -188,6 +208,7 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 			card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
 	}
+	hov := card.Hovered()
 	card.OnClick(func() { a.beginUserEdit(u) }).Cursor(ui.CursorPointer)
 	card.Children(func() {
 		if stuck {
@@ -205,6 +226,10 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 				body = body.MaxHeight(float32(userFoldMax)*theme.FsRead*1.55 + 8).Clip()
 			}
 			body.Children(func() { a.userMsgBody(c, u) })
+		}
+		a.userMsgImages(c, u)
+		if hov {
+			a.userMsgHoverBar(c, u)
 		}
 		if clamp {
 			ui.Row(c).Gap(6).Margin(4, 0, 0, 0).Children(func() {

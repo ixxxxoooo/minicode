@@ -44,6 +44,9 @@ type Repo interface {
 	// AheadBehind 相对上游分支领先 / 落后的提交数(没有上游返回 0, 0)。
 	AheadBehind() (ahead, behind int)
 	Pull() error
+	PullRebase() error
+	PullMerge() error
+	RebaseAbort() error
 	Push() error
 	// PushForce 强制推送(带 lease);仅在用户明确确认后调用。
 	PushForce() error
@@ -59,6 +62,12 @@ type Repo interface {
 	StashPush(msg string) error
 	StashApply(i int, drop bool) error
 	StashDrop(i int) error
+	// StashFiles 储藏涉及的文件(name-status)。
+	StashFiles(i int) ([]Change, error)
+	// StashFileContent 储藏与工作区父提交之间某文件的内容(old=父提交,new=储藏侧)。
+	StashFileContent(i int, path string) (old, nw string, ok bool)
+	// CompareCommits 两提交之间的文件差异清单(a...b,按 git diff --name-status)。
+	CompareCommits(a, b string) ([]Change, error)
 	// 提交上的操作(图谱右键菜单)。
 	Checkout(hash string) error
 	CherryPick(hash string) error

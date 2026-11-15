@@ -8,6 +8,9 @@ import (
 
 // applyCheapPrefs 把零成本高收益的设置偏好套到运行时(applyBehavior 末尾调用)。
 func (a *App) applyCheapPrefs() {
+	kit.WaitSpinStyle.Store(int32(a.prefs.Int(pWaitAnim, 0)))
+	a.ApplyDiagPrefs()
+	a.ApplySystemAppearance()
 	// 终端回看行数等仅影响新终端,此处只记日志
 	if a.prefs.Has("term.scrollback") {
 		setLog.Debug("终端回看行数偏好已更新", "scrollback", a.prefs.Str("term.scrollback", ""))

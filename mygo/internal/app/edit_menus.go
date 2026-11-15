@@ -214,24 +214,25 @@ func (a *App) treeMenu(m *ui.Menu, rel string, dir bool) {
 		into = parentDir(rel)
 	}
 	top := !strings.Contains(rel, "/") && a.multiRoot() // 多根时顶层是工作区文件夹,只能在里面新建
-	if m.Item("新建文件…").Disabled(ro != "").Tooltip(ro).Chosen() {
+	if menuItem(m, "新建文件…").Disabled(ro != "").Tooltip(ro).Chosen() {
 		a.beginNew(into, false)
 	}
-	if m.Item("新建文件夹…").Disabled(ro != "").Tooltip(ro).Chosen() {
+	if menuItem(m, "新建文件夹…").Disabled(ro != "").Tooltip(ro).Chosen() {
 		a.beginNew(into, true)
 	}
 	m.Separator()
+	if top { // 多根顶层文件夹:先给「在源代码管理中查看 / 设为主文件夹」
+		a.rootFolderItems(m, rel)
+	}
 	if !dir {
-		if m.Item("打开").Trailing("⏎").Chosen() {
-			a.ide.openFile(rel, true)
-		}
+		a.treeFileActions(m, rel, false)
 	} else {
 		label := "在文件夹中搜索…"
 		top := !strings.Contains(rel, "/")
 		if a.multiRoot() && top {
 			label = "仅在此文件夹搜索"
 		}
-		if m.Item(label).Chosen() {
+		if menuItem(m, label).Chosen() {
 			if a.multiRoot() { // 多根:第一段是文件夹名,先限定范围;更深的文件夹再叠一个包含规则
 				first, _, _ := strings.Cut(rel, "/")
 				a.setSearchScope(first)
@@ -244,30 +245,31 @@ func (a *App) treeMenu(m *ui.Menu, rel string, dir bool) {
 			}
 			a.OpenSearch()
 		}
-		if m.Item("在此处打开终端").Disabled(a.proj == "").Tooltip(map[bool]string{true: "演示模式没有真实终端目录"}[a.proj == ""]).Chosen() {
+		if menuItem(m, "在此处打开终端").Disabled(a.proj == "").Tooltip(map[bool]string{true: "演示模式没有真实终端目录"}[a.proj == ""]).Chosen() {
 			a.openTermAt(rel)
 		}
 	}
 	m.Separator()
-	if m.Item("引用到对话").Chosen() {
+	if menuItem(m, "引用到对话").Chosen() {
 		a.dropRefs(refText(rel, dir))
 	}
-	if !dir && m.Item("显示文件历史").Chosen() {
-		a.ide.sel = rel
-		a.ide.sections["时间线"] = true
-		a.nav, a.sideOpen = "files", true
-	}
+	m.Separator()
+	a.treeClipMenu(m, rel, dir)
 	m.Separator()
 	if !top {
-		if m.Item("重命名…").Disabled(ro != "").Tooltip(ro).Chosen() {
+		if menuItem(m, "重命名…").Trailing("F2").Disabled(ro != "").Tooltip(ro).Chosen() {
 			a.beginRenameFile(rel)
 		}
-		if m.Item("移到废纸篓…").Disabled(ro != "").Tooltip(ro).Danger().Chosen() {
+		if menuItem(m, "移到废纸篓…").Trailing("⌘⌫").Disabled(ro != "").Tooltip(ro).Danger().Chosen() {
 			a.askDelete(rel, dir)
 		}
 		m.Separator()
 	}
 	a.pathMenu(m, rel)
+	if top { // 顶层文件夹没有「移到废纸篓」,最底部是危险项「从工作区移出」
+		m.Separator()
+		a.rootFolderRemove(m, rel)
+	}
 }
 
 // openTermAt 在项目里某个目录新开一个终端标签并显示底部终端面板。
@@ -312,52 +314,52 @@ func (a *App) sessionMenu(m *ui.Menu, id, title string, inHead bool) {
 	fresh := id == "" || strings.HasPrefix(id, "new:") // 新会话还没有 id,没有可整理的对象
 	meta := a.sessMeta().Get(id)
 	if !inHead {
-		if m.Item("打开").Trailing("⏎").Disabled(id == a.curSess).Chosen() {
-			a.OpenSession(id)
+		if mItem(m, "play", "打开").Trailing("⏎").Disabled(id == a.curSess).Chosen() {
+			a.OpenSessionChecked(id)
 		}
 		m.Separator()
 	}
 	noID := map[bool]string{true: "新会话还没有 ID,发出第一条消息后才有"}[fresh]
-	if m.Item("重命名…").Disabled(fresh).Tooltip(noID).Chosen() {
+	if menuItem(m, "重命名…").Disabled(fresh).Tooltip(noID).Chosen() {
 		a.beginRename(id)
 	}
-	if m.Item(map[bool]string{true: "取消置顶", false: "置顶"}[meta.Pinned]).Disabled(fresh).Tooltip(noID).Chosen() {
+	if menuItem(m, map[bool]string{true: "取消置顶", false: "置顶"}[meta.Pinned]).Disabled(fresh).Tooltip(noID).Chosen() {
 		a.pinSession(id, !meta.Pinned)
 	}
-	if m.Item(map[bool]string{true: "取消归档", false: "归档"}[meta.Archived]).Disabled(fresh).Tooltip(noID).Chosen() {
+	if menuItem(m, map[bool]string{true: "取消归档", false: "归档"}[meta.Archived]).Disabled(fresh).Tooltip(noID).Chosen() {
 		a.archiveSession(id, !meta.Archived)
 	}
 	m.Separator()
-	if m.Item("复制会话 ID").Disabled(fresh).Tooltip(noID).Chosen() {
+	if menuItem(m, "复制会话 ID").Disabled(fresh).Tooltip(noID).Chosen() {
 		a.copyOut(id, "会话 ID")
 	}
-	if m.Item("复制标题").Disabled(title == "").Chosen() {
+	if menuItem(m, "复制标题").Disabled(title == "").Chosen() {
 		a.copyOut(title, "标题")
 	}
 	mdOff := id != a.curSess
-	if m.Item("复制为 Markdown").Disabled(mdOff).Tooltip(map[bool]string{true: "只能复制已打开的会话,先点开它"}[mdOff]).Chosen() {
+	if menuItem(m, "复制为 Markdown").Disabled(mdOff).Tooltip(map[bool]string{true: "只能复制已打开的会话,先点开它"}[mdOff]).Chosen() {
 		a.copySessionMarkdown(id, title)
 	}
+	m.Separator()
+	run := a.sessionRunning(id)
+	if menuItem(m, "复制会话链接").Disabled(fresh).Tooltip(noID).Chosen() {
+		a.copySessionLink(id)
+	}
+	forkWhy := map[bool]string{true: noID}[fresh]
+	if forkWhy == "" && run {
+		forkWhy = "会话正在运行,先停止或等它结束再分叉"
+	}
+	if menuItem(m, "分叉会话…").Disabled(fresh || run).Tooltip(forkWhy).Chosen() {
+		a.forkSessionAsk(id)
+	}
 	if inHead {
-		if m.Item("复制会话链接").Disabled(fresh).Tooltip(noID).Chosen() {
-			a.copySessionLink(id)
-		}
-		run := a.sessionRunning(id)
-		forkWhy := map[bool]string{true: noID}[fresh]
-		if forkWhy == "" && run {
-			forkWhy = "会话正在运行,先停止或等它结束再分叉"
-		}
-		if m.Item("分叉会话…").Disabled(fresh || run).Tooltip(forkWhy).Chosen() {
-			a.forkSessionAsk(id)
-		}
-		if m.Item("历史会话").Trailing("⇧⌘H").Chosen() {
+		if menuItem(m, "历史会话").Trailing("⇧⌘H").Chosen() {
 			a.togglePop("hist")
 		}
 		return
 	}
 	m.Separator()
-	run := a.sessionRunning(id)
-	if m.Item("删除会话…").Danger().Disabled(fresh || run).Tooltip(map[bool]string{true: "会话正在运行,先停止或等它结束"}[run && !fresh]).Chosen() {
+	if menuItem(m, "删除会话…").Danger().Disabled(fresh || run).Tooltip(map[bool]string{true: "会话正在运行,先停止或等它结束"}[run && !fresh]).Chosen() {
 		a.deleteSessionAsk(id)
 	}
 }

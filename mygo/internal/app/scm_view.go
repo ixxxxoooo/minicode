@@ -22,8 +22,12 @@ func (a *App) scmView(c *ui.Context) {
 	if s.folded == nil {
 		s.folded = map[string]bool{}
 	}
-	if a.multiRoot() { // 工作区:顶部仓库总览 + 活动仓库的完整源代码管理
+	if a.multiRoot() { // 工作区:顶部仓库总览 + 活动仓库的完整源代码管理(或全部展开)
 		ui.Column(c).Grow(1).MinHeight(0).Children(func() {
+			if a.scmExpandAll() {
+				a.scmExpandAllView(c)
+				return
+			}
 			a.repoOverview(c)
 			if a.repo == nil {
 				ui.Column(c).Grow(1).Gap(8).Padding(24, 12).AlignItems(ui.Center).Children(func() {
@@ -488,10 +492,11 @@ func (a *App) scmStashes(c *ui.Context) {
 	}
 	for i, st := range s.stashes {
 		i, st := i, st
-		r := ui.Row(c).Key("stash-" + itoa(i)).Height(36).PaddingX(6).Gap(6).AlignItems(ui.Center).Radius(t.RSm())
+		r := ui.Row(c).Key("stash-" + itoa(i)).Height(36).PaddingX(6).Gap(6).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
 		if r.Hovered() {
 			r.Background(t.Fill1)
 		}
+		r.OnClick(func() { a.scmStashToggle(i) })
 		r.Children(func() {
 			kit.Ic(c, "layers", kit.S12).TextColor(t.Tx3)
 			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
@@ -503,7 +508,12 @@ func (a *App) scmStashes(c *ui.Context) {
 				kit.Ib(c, "download", kit.IbOpt{Small: true, Tip: "弹出(应用并删除)"}).OnClick(func() { a.scmStashApply(i, true) })
 				kit.Ib(c, "trash", kit.IbOpt{Small: true, Tip: "删除"}).OnClick(func() { a.scmStashDrop(i) })
 			}
+			open := s.stashOpen != nil && s.stashOpen[i]
+			kit.Ic(c, map[bool]string{true: "chevD", false: "chevR"}[open], kit.S12).TextColor(t.Tx4).Shrink(0)
 		})
+		if s.stashOpen != nil && s.stashOpen[i] {
+			a.scmStashFileRows(c, i)
+		}
 	}
 }
 

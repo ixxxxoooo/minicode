@@ -48,7 +48,7 @@
       ['超链接', '识别 URL 与 <span class="mono">path:line:col</span>;⌘ 悬停出下划线与手型,⌘点击:URL 用系统浏览器、路径在编辑器打开并定位', st('ok')],
       ['字体与光标设置', '面板右上齿轮弹出:字体大小(11–20)、字体族、行高、光标样式(块 / 竖线 / 下划线)与闪烁;完整项在 设置 → 终端', st('ok')],
       ['主题', '跟随全局主题;不提供单独的终端配色开关;「调整对比度」保证 ANSI 文字在底色上 ≥ 4.5:1', st('ok')],
-      ['多标签', '新建 / 关闭 / 重命名;来自会话的命令是只读标签(带锁);shell 退出后显示「按回车重开」', st('ok')],
+      ['多标签', '新建 / 关闭 / 重命名;来自会话的命令是只读标签(带锁);shell 退出后显示「按回车重开」。<b>重命名还没做</b>:标签名现在取 shell 名 + 序号,没有改名入口', st('part')],
       ['滚动与历史', '触控板平滑滚动;滚离底部时右下角出现「↓ 回到底部」;历史 10000 行(设置里可调)', st('ok')],
       ['鼠标上报(vim / htop / tmux 里用鼠标)', '应用请求鼠标模式时把点击 / 滚轮编码发给程序;按住 ⌥ 临时回到选择模式', st('ok')],
       ['Nerd Font 图标', '运行时扫描私有区码点与缺字方框,顶部提示安装 Nerd Font(可关闭)', st('ok')],
@@ -80,7 +80,8 @@
     ${sec('编辑器里能用到什么', '', tbl([['能力', 160], ['键位', 120], ['来源', 160], ['状态']], [
       ['诊断(波浪线 / 问题面板 / 状态栏计数)', '', 'publishDiagnostics', st('ok')], ['悬停', '', 'textDocument/hover', st('ok')], ['转到定义 / 类型定义 / 实现', 'F12 / 右键', 'definition / typeDefinition / implementation', st('ok')],
       ['查找引用 → 底部「引用」面板', '⇧F12', 'references', st('ok')], ['补全', '⌃Space', 'completion', st('ok')], ['重命名(跨文件)', 'F2', 'rename + 工作区编辑', st('ok')], ['格式化', '⇧⌥F', 'formatting', st('ok')],
-      ['大纲 / 转到符号', '⇧⌘O', 'documentSymbol(失败退回本地索引)', st('ok')], ['代码操作(快速修复)', '⌘.', 'codeAction', st('ok')], ['内联提示 / 语义高亮', '', 'inlayHint 已接;semanticTokens 无前景着色 API,已明确取舍(见 lsp_semantic.go)', st('ok')]]))}</div>`;
+      ['大纲 / 转到符号', '⇧⌘O', 'documentSymbol(失败退回本地索引)', st('ok')], ['代码操作(快速修复)', '⌘.', 'codeAction', st('ok')], ['内联提示(inlayHint)', '', 'inlayHint', st('ok')], ['语义高亮', '', 'semanticTokens:MyGo 没有前景着色 API,明确不做(见 lsp_semantic.go)', st('todo')],
+      ['索引进度「42%」', '', '$/progress:状态栏能显示 s.work,但没有稳定的百分比来源', st('part')]]))}</div>`;
 
   /* ───────── 画布 / 浏览器 / 自定义:业界做法 ───────── */
   P['artifact-spec'] = () => `<div class="ds" style="max-width:1240px">${head('画布 · 浏览器 · 自定义:业界做法与取舍', '依据:Claude Artifacts、ChatGPT Canvas、Cursor Canvases(React 画布,作为持久产物与终端 / 浏览器 / 源代码管理并列)、AX Patterns「侧栏与产物」、AI Patterns「Artifact Panel」。共同点比差异多,下面只落共同点。')}
@@ -126,7 +127,7 @@
       ['前台命令的实时输出', '会话流里运行中命令展开并贴底;output_file 尾读 + 演示 tools-bash-fg-out', st('part')],
       ['完成通知', '应用在后台时系统通知:回合结束 / 需要审批 / 任务完成;.app 内 UN 点击 sess 回会话', st('part')]]))}
     ${sec('实现状态', '', tbl([['范围', 220], ['说明', 440], ['状态']], [
-      ['待办 / 权限·提问·计划卡 / 任务坞', '与 task-spec 正文一致;演示场景覆盖空 / 多项 / 失败', st('ok')],
+      ['待办 / 权限·提问·计划卡 / 任务坞', '主体与正文一致,演示场景覆盖空 / 多项 / 失败。缺口:审批只处理第一张(没有「1 / 3」队列)、后台任务完成通知行(TaskNote)不渲染、排队卡没有「停止并发送」(逐项见「会话流与工具」页的状态表)', st('part')],
       ['前台命令 output_file 实时尾读', '真实 pollTaskOutputFiles;演示 tools-bash-fg-out 在 router-demo', st('part')],
       ['系统通知与点击回会话', 'macOS .app 内 UN 委托→OpenSessionFromNotify;非包 go run 降级', st('part')],
       ['回合操作条分叉', '演示 + 真实 CmdForkSession;对话栏「分叉会话…」与之同路径', st('ok')]]))}

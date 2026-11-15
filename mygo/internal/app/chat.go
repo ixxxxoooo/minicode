@@ -66,6 +66,7 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		a.flowScrollBtn(c)
 		ui.Column(c).Padding(4, 0, 10, 0).Shrink(0).AlignItems(ui.Center).Children(func() {
 			a.flowCol(c, func() {
+				a.syncDockComposer()
 				a.taskDock(c)
 				if !a.dockCard(c) {
 					a.queueCard(c)

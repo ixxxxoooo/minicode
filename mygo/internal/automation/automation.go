@@ -26,11 +26,12 @@ const (
 
 // Run 是一次运行记录。
 type Run struct {
-	At     time.Time
-	OK     bool
-	Err    string // 失败原因,如「网络超时」
-	Output string // 运行输出的末尾摘要(真实运行才有)
-	Key    string // 查看键:auto:<自动化id>:<unix>,空则按 At 生成
+	At        time.Time
+	OK        bool
+	Err       string // 失败原因,如「网络超时」
+	Output    string // 运行输出的末尾摘要(真实运行才有)
+	Key       string // 查看键:auto:<自动化id>:<unix>,空则按 At 生成
+	SessionID string // 关联的 claude 会话 id;旧 JSON 无此字段为空
 }
 
 // Automation 是一条自动化。

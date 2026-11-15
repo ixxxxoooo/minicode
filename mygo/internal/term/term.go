@@ -39,6 +39,7 @@ type Options struct {
 	Cols, Rows int      // 初始大小(字符数)
 	Env        []string // 额外环境变量(KEY=VALUE)
 	Scrollback int      // 历史行数;0 = ScrollbackLines
+	LoginShell bool     // 以登录 shell 启动(-l),默认 true
 	Notify     func()   // 画面变化 / 进程退出时调用(任意 goroutine,已合并节流)
 }
 
@@ -83,8 +84,14 @@ func Start(o Options) (*Term, error) {
 	if shell == "" {
 		shell = "/bin/zsh"
 	}
-	cmd := exec.Command(shell, "-l")
-	cmd.Dir = o.Cwd
+	args := []string{}
+	if o.LoginShell {
+		args = append(args, "-l")
+	}
+	cmd := exec.Command(shell, args...)
+	if o.Cwd != "" {
+		cmd.Dir = o.Cwd
+	}
 	cmd.Env = environ(o.Env)
 
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{Cols: uint16(o.Cols), Rows: uint16(o.Rows)})

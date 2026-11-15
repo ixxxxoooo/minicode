@@ -98,22 +98,25 @@ func (a *App) termMoreMenu(m *ui.Menu) {
 	tp := a.ide.tpc()
 	live := tp != nil && tp.t != nil
 	why := map[bool]string{true: "终端还没启动"}[!live]
-	if m.Item("清屏").Trailing("⌘K").Disabled(!live).Tooltip(why).Chosen() {
+	if menuItem(m, "清屏").Trailing("⌘K").Disabled(!live).Tooltip(why).Chosen() {
 		tp.t.ClearCmdBlocks()
 		tp.t.SendText("\x0c")
 	}
-	if m.Item("查找…").Trailing("⌘F").Disabled(!live).Tooltip(why).Chosen() {
+	if menuItem(m, "查找…").Trailing("⌘F").Disabled(!live).Tooltip(why).Chosen() {
 		a.openTermFind()
 	}
 	m.Separator()
-	if m.Item("新建终端").Disabled(a.proj == "").Tooltip(map[bool]string{true: "演示模式没有真实终端"}[a.proj == ""]).Chosen() {
+	if menuItem(m, "重命名…").Disabled(a.ide.tpSel < 0 || a.ide.tpSel >= len(a.ide.tps)).Chosen() {
+		a.beginTermRename(a.ide.tpSel)
+	}
+	if menuItem(m, "新建终端").Disabled(a.proj == "").Tooltip(map[bool]string{true: "演示模式没有真实终端"}[a.proj == ""]).Chosen() {
 		a.newTerm()
 	}
-	if m.Item("关闭终端").Disabled(len(a.ide.tps) < 2).Tooltip(map[bool]string{true: "至少保留一个终端"}[len(a.ide.tps) < 2]).Chosen() {
+	if menuItem(m, "关闭终端").Disabled(len(a.ide.tps) < 2).Tooltip(map[bool]string{true: "至少保留一个终端"}[len(a.ide.tps) < 2]).Chosen() {
 		a.askCloseTermTab(a.ide.tpSel)
 	}
 	m.Separator()
-	if m.Item("终端设置…").Chosen() {
+	if menuItem(m, "终端设置…").Chosen() {
 		a.popup = "termset"
 	}
 }

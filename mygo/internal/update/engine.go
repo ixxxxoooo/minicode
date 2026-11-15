@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/diag"
@@ -39,7 +40,8 @@ type Fetcher interface {
 }
 
 type GitHubAppcastFetcher struct {
-	URL string
+	URL     string
+	Channel string // 空 = 稳定;「beta」= 测试通道(追加查询参数,服务器忽略亦无害)
 }
 
 func (g GitHubAppcastFetcher) Check(ctx context.Context) (string, string, string, bool, error) {
@@ -48,6 +50,13 @@ func (g GitHubAppcastFetcher) Check(ctx context.Context) (string, string, string
 	url := g.URL
 	if url == "" {
 		url = "https://github.com/ixxxxoooo/minicode/releases/latest/download/appcast.json"
+	}
+	if g.Channel != "" {
+		if strings.Contains(url, "?") {
+			url += "&channel=" + g.Channel
+		} else {
+			url += "?channel=" + g.Channel
+		}
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

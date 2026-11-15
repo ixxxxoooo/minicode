@@ -31,6 +31,7 @@ var (
 // termPanel 是 IDE 底部终端的状态。
 type termPanel struct {
 	t       *term.Term
+	label   string // 用户重命名的标签名(空 = 默认 shell 名 + 序号)
 	err     string // 启动失败的原因
 	cellW   float32
 	st      ui.ScrollState
@@ -138,7 +139,7 @@ func (a *App) realTerminal(c *ui.Context) {
 
 	if tp.t == nil && tp.err == "" && cols >= 4 && rows >= 1 {
 		sb := a.termScrollback()
-		tm, err := term.Start(term.Options{Cwd: cmp.Or(tp.cwd, a.proj), Cols: cols, Rows: rows, Scrollback: sb, Notify: a.redraw})
+		tm, err := term.Start(a.TermStartOpts(cols, rows, sb, cmp.Or(tp.cwd, a.proj)))
 		if err != nil {
 			tp.err = err.Error()
 			log.Error("启动终端失败", "err", err)

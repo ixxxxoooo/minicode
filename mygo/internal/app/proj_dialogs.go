@@ -32,12 +32,13 @@ type projDlg struct {
 	hintDo  func()
 
 	// 工作区编辑
-	wsID    string
-	name    string
-	folders []projects.Folder
-	loadMD  bool
-	addPath string
-	pickLst bool // 展开「从已有项目添加」列表
+	wsID          string
+	name          string
+	folders       []projects.Folder
+	loadMD        bool
+	extraReadOnly bool
+	addPath       string
+	pickLst       bool // 展开「从已有项目添加」列表
 
 	// 确认框
 	title, body, okText string
@@ -59,6 +60,7 @@ func (a *App) openWsDialog(id, withFolder string) {
 	if id != "" {
 		if w, ok := a.registry().Workspace(id); ok {
 			d.wsID, d.name, d.folders, d.loadMD = w.ID, w.Name, w.Folders, w.LoadMD
+			d.extraReadOnly = w.ExtraReadOnly
 		}
 	} else if withFolder != "" {
 		d.folders = []projects.Folder{{Path: withFolder}}
@@ -186,19 +188,18 @@ func (a *App) submitWorkspace() {
 		d.err = "工作区至少要有 2 个文件夹(只有 1 个请直接添加为项目)"
 		return
 	}
-	w, err := a.registry().SaveWorkspace(projects.Workspace{ID: d.wsID, Name: d.name, Folders: d.folders, LoadMD: d.loadMD})
-	if err != nil {
-		d.err = err.Error()
+	needPerm := true
+	if d.wsID != "" {
+		if w, ok := a.registry().Workspace(d.wsID); ok && w.PermSaveAck {
+			needPerm = false
+		}
+	}
+	if needPerm {
+		a.wsPerm = wsPermPending{when: "save"}
+		a.pd.kind = "ws-perm"
 		return
 	}
-	a.closeProjDlg()
-	a.projOpen[w.ID] = true
-	if a.ws != nil && a.ws.ID == w.ID { // 正在用的工作区被改了:重新进入使文件树生效
-		id := w.ID
-		a.leaveWorkspace()
-		a.ActivateWorkspace(id)
-	}
-	a.toast = map[bool]string{true: "已更新工作区「" + w.Name + "」", false: "已创建工作区「" + w.Name + "」"}[d.wsID != ""]
+	a.submitWorkspaceAfterPerm()
 }
 
 func (a *App) addWsFolder(path string) {
@@ -236,10 +237,15 @@ func (a *App) projDialogs(c *ui.Context) {
 		a.workspaceDialog(c)
 	case "proj":
 		a.projectDialog(c)
+	case "ws-perm":
+		a.wsPermDialog(c)
 	case "confirm":
 		a.confirmDialog(c)
 	case "branch-dirty":
 		a.branchDirtyDialog(c)
+	}
+	if a.treeAsk.rel != "" {
+		a.treeClaudeDialog(c)
 	}
 }
 

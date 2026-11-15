@@ -7,6 +7,7 @@ import (
 	"unicode"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -262,6 +263,22 @@ func (a *App) palItems() []palItem {
 			}
 		}
 	}
+	if p, line, col, ok := parsePathLine(q); ok && p == "" {
+		fs = append(fs, scored{palItem{
+			group: "命令", icon: "hash", title: "转到第 " + itoa(line+1) + " 行",
+			right: "当前文件", desc: "在当前编辑器标签跳到该行并选中。",
+			run: func() {
+				a.gotoLineInCurrent(line)
+				if col > 0 {
+					if tb := a.ide.cur(); tb != nil && tb.st != nil && tb.buf != nil {
+						p0 := editor.Pos{Line: line, Col: col}
+						tb.st.GoTo(p0)
+						tb.st.Select(tb.buf.Offset(p0), tb.buf.Offset(p0))
+					}
+				}
+			},
+		}, 1000, 0})
+	}
 	if q == "" {
 		seen := map[string]bool{}
 		paths := []string(nil)
@@ -328,10 +345,10 @@ func (a *App) fileItem(p string) palItem {
 		dir = p[:i]
 	}
 	name := p[strings.LastIndex(p, "/")+1:]
+	q := a.pq.query
 	return palItem{group: "文件", icon: fileIcon(name), title: name, right: dir, path: p, desc: p,
 		run: func() {
-			a.ide.openFile(p, true)
-			a.SetMode(ModeIDE)
+			a.paletteOpenFile(p, q)
 		}}
 }
 
@@ -434,7 +451,13 @@ func (a *App) paletteView(c *ui.Context) {
 					kit.Ic(c, "search", kit.S16).TextColor(t.Tx3)
 					in := ui.TextInputBase(c.Key("pal-in"), &a.pq.query).Grow(1).FontSize(theme.FsTitle).AutoFocus().
 						Placeholder(map[bool]string{true: "筛选主题…", false: "搜索命令、会话与文件"}[a.pq.sub == "theme"]).PlaceholderColor(t.Tx4)
-					in.OnSubmit(func() { run(a.pq.sel) })
+					in.OnSubmit(func() {
+						if a.paletteGotoLine(strings.TrimSpace(a.pq.query)) {
+							a.closePalette()
+							return
+						}
+						run(a.pq.sel)
+					})
 					in.OnShortcut(0, ui.KeyEscape, func() { a.closePalette() })
 					// 单行输入框会自己吃 ↑↓(跳到行首 / 行尾),所以挂在输入框自己的快捷键上
 					in.OnShortcut(0, ui.KeyDown, func() { move(1) })

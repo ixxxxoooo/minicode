@@ -19,8 +19,12 @@ func (a *App) repoOverview(c *ui.Context) {
 		ui.Row(c).Height(24).PaddingX(4).Gap(2).AlignItems(ui.Center).Children(func() {
 			ui.Text(c, "仓库").Grow(1).FontSize(theme.FsMicro).FontWeight(700).TextColor(t.Tx3)
 			ui.Text(c, itoa(len(a.repos))).FontSize(theme.FsMicro).TextColor(t.Tx4).Margin(0, 4, 0, 0)
+			if a.scmExpandAll() {
+				kit.Tag(c, "全部展开", kit.KAc)
+			}
 			kit.Ib(c, "download", kit.IbOpt{Small: true, Tip: "全部拉取"}).OnClick(func() { a.syncAllRepos(true) })
 			kit.Ib(c, "sync", kit.IbOpt{Small: true, Tip: "全部同步(先拉取再推送)"}).OnClick(func() { a.syncAllRepos(false) })
+			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "仓库视图与批量操作"}).Menu(a.repoOverviewMenu)
 		})
 		for _, i := range a.repoOrder() { // 嵌套仓库紧跟在父文件夹后面,缩进显示
 			i, e := i, a.repos[i]

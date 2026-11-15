@@ -359,6 +359,88 @@ func (m *Mem) CreateAt(name, hash string) error {
 // SetStash 演示用:灌入储藏列表。
 func (m *Mem) SetStash(s []Stash) { m.mu.Lock(); m.stash = s; m.mu.Unlock() }
 
+// SetStashHeld 演示:为第 i 条储藏设置 held 文件与 diff 内容。
+func (m *Mem) SetStashHeld(i int, held []Change, diff map[string][2]string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if i < 0 || i >= len(m.stash) {
+		return
+	}
+	m.stash[i].held = append([]Change(nil), held...)
+	m.stash[i].Files = len(held)
+	if m.stashDt == nil {
+		m.stashDt = map[int]map[string][2]string{}
+	}
+	m.stashDt[i] = diff
+}
+
+// SetRebaseConflict 演示:下一次 PullRebase 失败并进入冲突状态。
+func (m *Mem) SetRebaseConflict(reason string) {
+	m.mu.Lock()
+	if m.fail == nil {
+		m.fail = map[string]string{}
+	}
+	m.fail["PullRebase"] = reason
+	m.mu.Unlock()
+}
+
+func (m *Mem) CompareCommits(a, b string) ([]Change, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	fa := m.files[a]
+	fb := m.files[b]
+	if fa == nil && fb == nil {
+		return nil, fmt.Errorf("找不到提交")
+	}
+	seen := map[string]bool{}
+	var out []Change
+	addFiles := func(fs []Change) {
+		for _, c := range fs {
+			if seen[c.Path] {
+				continue
+			}
+			seen[c.Path] = true
+			out = append(out, c)
+		}
+	}
+	addFiles(fa)
+	addFiles(fb)
+	return out, nil
+}
+
+func (m *Mem) StashFiles(i int) ([]Change, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if i < 0 || i >= len(m.stash) {
+		return nil, fmt.Errorf("没有这条储藏")
+	}
+	if len(m.stash[i].held) > 0 {
+		return append([]Change(nil), m.stash[i].held...), nil
+	}
+	// 无 held 时返回占位列表(仍可在演示中展开)
+	if m.stash[i].Files > 0 {
+		return []Change{{Path: "src/router.rs", Status: 'M'}}, nil
+	}
+	return nil, nil
+}
+
+func (m *Mem) StashFileContent(i int, path string) (old, nw string, ok bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if i < 0 || i >= len(m.stash) {
+		return "", "", false
+	}
+	if dt, ok2 := m.stashDt[i]; ok2 {
+		if pair, ok3 := dt[path]; ok3 {
+			return pair[0], pair[1], true
+		}
+	}
+	if h, ok := m.head[path]; ok {
+		return h, h + "\n// 储藏中的改动\n", true
+	}
+	return "", path + " (储藏)", true
+}
+
 func (m *Mem) UndoCommit() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()

@@ -118,7 +118,7 @@ func layCards(a *App, c *ui.Context) {
 	})
 }
 
-// layPreview 是方案卡里的微缩示意图:侧栏 / 主区(三条横线)/ 检查器。
+// layPreview 是方案卡里的微缩示意图:侧栏 / 主区(三条横线)/ 工作区。
 func layPreview(a *App, c *ui.Context, id string) {
 	t := a.tk
 	box := ui.Row(c).Height(70).Padding(4).Gap(1).Radius(t.RSm()).Background(t.Chrome).Border(1, t.Bd1).Clip().AlignItems(ui.Stretch)
@@ -291,7 +291,7 @@ var settingsTabs = []setTabDef{
 			rSeg("general.start", "启动时的形态", "Agent 与 IDE 是同一个窗口的两种形态;「上次」沿用关闭时的形态", 2, "Agent", "IDE", "上次"),
 			rTog("general.restore", "恢复上次的会话与布局", "项目、会话、右栏标签、面板开合、编辑器标签", true),
 			rSeg("general.close", "关闭窗口时", "红色按钮的行为;「隐藏」时运行中的会话与后台任务继续跑", 0, "隐藏", "退出"),
-			rTog("general.insp", "Agent 形态右侧检查器默认打开", "IDE 形态的对话栏与终端各自记忆开合,互不影响", true),
+			rTog("general.insp", "开标签时自动展开右侧工作区", "Agent 形态下在会话里点计划 / 文件 / 审查时展开工作区;各形态的面板开合各自记忆", true),
 		}},
 		{title: "输入", rows: []setRow{
 			rSeg("general.send", "发送键", "另一个键用于换行(Shift+Enter 始终换行)", 0, "Enter", "⌘ Enter"),
@@ -338,6 +338,8 @@ var settingsTabs = []setTabDef{
 			rTog("appearance.motion", "动效", "流光、滑入与布局变形;关闭后所有时长令牌归零(也跟随系统「减弱动态效果」)", true),
 			rSeg("appearance.morph", "形态切换动画", "Agent ⇄ IDE 的布局变形,约 0.44 秒;「简化」只淡入淡出", 0, "流畅", "简化", "无"),
 			rSeg("appearance.shimmer", "流光样式", "「正在进行」的文字扫光", 0, "流光", "呼吸", "无"),
+			rSeg(pWaitAnim, "等待动画", "转圈的样式", 0, "圆环", "点阵", "脉冲"),
+			rSeg(pScrollbar, "滚动条", "「跟随系统」沿用 macOS「显示滚动条」设置;MyGo 全局滚动条 API 有限,仅部分区域生效", 1, "跟随系统", "自动隐藏", "始终显示"),
 		}},
 	}},
 
@@ -345,8 +347,9 @@ var settingsTabs = []setTabDef{
 
 	{id: "models", title: "模型与服务商", icon: "cpu", desc: "默认模型与思考强度、上下文压缩,以及第三方模型服务商。密钥单独存放在 0600 权限的文件里。", groups: []setGroup{
 		{title: "默认", rows: []setRow{
-			{key: "models.model", title: "默认模型", desc: "新会话的起始模型;运行中可在输入框的运行配置里随时切换", kind: kChips, def: 2, opts: []string{"Fable 5.2", "Opus 5.5", "Sonnet 5.5", "Haiku 5.5"}},
-			rSeg("models.effort", "默认思考强度", "", 2, "关", "低", "中", "高"),
+			{key: prefModel, title: "默认模型", desc: "新会话的起始模型;运行中可在输入框的运行配置里随时切换", kind: kNone, def: "sonnet",
+				right: func(a *App, c *ui.Context) { a.defaultModelRow(c) }},
+			rSeg(prefEffort, "默认思考强度", "", 2, "关", "低", "中", "高"),
 			rTog("models.thinking", "默认开启扩展思考", "alwaysThinkingEnabled", true),
 		}},
 		{title: "上下文", rows: []setRow{
@@ -367,7 +370,7 @@ var settingsTabs = []setTabDef{
 			rTog("chat.groupFold", "工具组默认折叠", "连续的读取 / 搜索收进一行;失败时自动展开", true),
 		}},
 		{title: "新会话", rows: []setRow{
-			rSeg("chat.mode", "默认权限模式", "新会话的起始模式;运行中可随时在输入框切换", 0, "逐项确认", "自动接受编辑", "计划"),
+			rSeg(pPermMode, "默认权限模式", "新会话的起始模式;运行中可随时在输入框切换", 0, "逐项确认", "自动接受编辑", "计划"),
 			rTog("chat.ding", "回合结束提示音", "", false),
 		}},
 		{title: "排队与引导", rows: []setRow{
@@ -387,7 +390,10 @@ var settingsTabs = []setTabDef{
 			rSeg("perm.layer", "配置层", "规则写入哪一层", 1, "用户", "项目", "本地"),
 			rSeg("perm.mode", "默认权限模式", "permissions.defaultMode", 0, "逐项确认", "自动接受编辑", "计划"),
 			rTog("perm.noBypass", "禁止绕过权限模式", "permissions.disableBypassPermissionsMode", false),
-			restart(rTog("perm.sandbox", "Bash 沙盒", "sandbox.enabled:在受限环境里执行 Bash 命令", false)),
+			{key: "perm.sandbox", title: "Bash 沙盒", desc: "claude 暂不支持从外部开关,请在 claude 的 /sandbox 里设置", kind: kNone,
+				right: func(a *App, c *ui.Context) {
+					kit.Tog(c, false, "tog-perm.sandbox-disabled")
+				}},
 			rFld("perm.dirs", "额外可访问目录", "permissions.additionalDirectories", "~/Projects/shared", 200, true, ""),
 		}},
 		{title: "权限规则", body: func(a *App, c *ui.Context) { a.rulesBody(a, c) }},
@@ -395,10 +401,7 @@ var settingsTabs = []setTabDef{
 	}, note: "陌生项目带来的钩子与 MCP 默认不运行,信任后才生效。"},
 
 	{id: "runtime", title: "运行环境", icon: "cube", desc: "MiniCode 如何找到并启动 claude:可执行文件、代理与网络、环境变量。", groups: []setGroup{
-		{title: "claude 命令行", rows: []setRow{
-			{key: "runtime.bin", title: "可执行文件", desc: "MiniCode 直连本机的 claude(stream-json 协议),不经过 Node", kind: kField, def: "/opt/homebrew/bin/claude", w: 210, mono: true},
-			rCustom("版本", "", func(a *App, c *ui.Context) { kit.Tag(c, "2.1.318", kit.KOk) }),
-		}},
+		{title: "claude 命令行", body: func(a *App, c *ui.Context) { a.claudeCmdRow(c) }},
 		{title: "代理与网络", rows: []setRow{
 			rSeg("runtime.proxy", "代理模式", "跟随系统:沿用继承的 HTTP(S)_PROXY;直连:清空代理变量", 0, "跟随系统", "直连", "自定义"),
 			rFld("runtime.proxyUrl", "代理地址", "写入 HTTP_PROXY、HTTPS_PROXY、ALL_PROXY", "http://127.0.0.1:7890", 200, true, ""),
@@ -473,10 +476,11 @@ var settingsTabs = []setTabDef{
 			rFld("scm.diffMax", "Diff 大小上限", "超过这个大小的文件不计算 diff,避免卡顿", "512 KB", 100, false, ""),
 			rTog("scm.aiMsg", "AI 提交说明", "用 Haiku 根据改动生成", true),
 			rTog("scm.fetch", "自动获取远端", "每 5 分钟 git fetch", false),
+			rTog(pScmExpandAll, "多仓库:全部展开", "多根工作区里每个仓库各显示一整块更改与提交框(默认只显示活动仓库 + 总览)", false),
 		}},
 		{title: "Worktree", rows: []setRow{
-			rFld("scm.worktrees", "存放位置", "", "~/.minicode/worktrees", 200, true, ""),
-		}},
+			rFld("scm.worktrees", "存放位置", "用于新建 worktree 时的默认位置(新建入口尚未做)", "~/.minicode/worktrees", 200, true, ""),
+		}, body: func(a *App, c *ui.Context) { a.scmWorktreeBody(c) }},
 	}},
 
 	{id: "browser", title: "浏览器", icon: "globe", desc: "内置阅读模式浏览器的抓取参数。浏览器页右上角的齿轮会直接跳到这里。", groups: []setGroup{
@@ -490,16 +494,29 @@ var settingsTabs = []setTabDef{
 
 	{id: "privacy", title: "隐私与诊断", icon: "lock", desc: "默认不上报任何数据;性能、崩溃与卡顿记录都在本机。", groups: []setGroup{
 		{title: "数据上报", rows: []setRow{
-			rTog("privacy.crash", "崩溃报告", "崩溃时是否允许上传匿名堆栈", false),
-			rTog("privacy.usage", "使用统计", "匿名的功能使用次数", false),
+			rTog("privacy.crash", "崩溃报告", "本应用不上报任何数据;此开关仅为占位", false),
+			rTog("privacy.usage", "使用统计", "本应用不上报任何数据;此开关仅为占位", false),
 			rCustom("凭据", "MiniCode 不读取钥匙串;服务商 API Key 单独存放在 0600 权限的文件里", func(a *App, c *ui.Context) { kit.Tag(c, "本地", kit.KOk) }),
 		}},
 		{title: "性能(最近 5 分钟,来自本进程的实时采样)", body: perfBody},
 		{title: "日志与诊断包", rows: []setRow{
-			rSeg("privacy.level", "日志级别", "环境变量 MINI_LOG 优先", 2, "错误", "警告", "信息", "调试"),
+			rSeg(pPrivacyLvl, "日志级别", "环境变量 MINI_LOG 优先", 2, "错误", "警告", "信息", "调试"),
 			rCustom("记录目录", "panic、崩溃、卡死、异常退出的记录与日志文件", func(a *App, c *ui.Context) {
 				kit.Btn(c, "在访达中显示", kit.BtnOpt{Small: true, Icon: "folder"}).OnClick(func() { openPath(c, diag.Home()) })
 			}),
+			rCustom("诊断包", "家目录显示为 ~,只含配置概况与变量名,不含密钥和环境变量值", func(a *App, c *ui.Context) {
+				kit.Btn(c, "导出", kit.BtnOpt{Small: true, Icon: "download"}).OnClick(func() { a.exportDiagBundle() })
+			}),
+		}, body: func(a *App, c *ui.Context) {
+			ui.Column(c).Children(func() {
+				ui.Text(c, "崩溃与卡顿").FontSize(theme.FsCap).FontWeight(700).TextColor(a.tk.Tx3).Padding(8, 12, 4, 12)
+				a.privacyCrashesBody(c)
+				rowBox(a, c, false, 36).Children(func() {
+					ui.Text(c, "claude doctor").FontWeight(500).Grow(1)
+					kit.Btn(c, "运行", kit.BtnOpt{Small: true, Icon: "play"}).OnClick(func() { a.runClaudeDoctor() })
+				})
+				a.doctorFoldBody(c)
+			})
 		}},
 	}},
 
@@ -509,13 +526,20 @@ var settingsTabs = []setTabDef{
 				kit.Mono(c, "~/.minicode", a.tk.Tx2)
 				kit.Btn(c, "打开", kit.BtnOpt{Small: true, Icon: "folder"}).OnClick(func() { openPath(c, diag.Home()) })
 			}),
+			{key: "settings.io", title: "设置文件", desc: "导出 / 导入 settings.json(不含密钥)", kind: kNone, right: func(a *App, c *ui.Context) {
+				ui.Row(c).Gap(8).Children(func() {
+					kit.Btn(c, "导出", kit.BtnOpt{Small: true, Icon: "download"}).OnClick(func() { a.exportSettingsJSON() })
+					kit.Btn(c, "导入…", kit.BtnOpt{Small: true, Icon: "upload"}).OnClick(func() { a.askImportSettings() })
+				})
+			}},
 		}},
 		{title: "运行模式", rows: []setRow{
 			restart(rSeg("adv.runmode", "真实 / 演示", "演示用脚本化后端与沙盒项目,不连接 claude;切换后会重启", 0, "真实", "演示")),
 		}},
 		{title: "实验功能", rows: []setRow{
 			rTog("adv.liveOut", "前台命令实时输出", "命令运行期间每 0.7 秒读取任务输出文件,在工具卡里实时显示", true),
-			rTog("adv.watchdog", "主线程卡死看门狗", "停滞超过阈值时抓取调用栈,写入诊断记录", true),
+			rTog(pAdvWatchdog, "主线程卡死看门狗", "停滞超过阈值时抓取调用栈,写入诊断记录", true),
+			rTog(pAdvFlowMeas, "会话流一次测完行高", "载入长会话时先测量全部行,滚动更稳(首帧稍慢)", true),
 		}},
 		{title: "Claude 配置摘要(演示)", body: func(a *App, c *ui.Context) { a.claudeDiagBody(a, c) }},
 		{title: "重置", rows: []setRow{
@@ -538,7 +562,16 @@ var settingsTabs = []setTabDef{
 		}},
 		{rows: []setRow{
 			rCustom("许可", "", func(a *App, c *ui.Context) { ui.Text(c, "MIT").TextColor(a.tk.Tx3) }),
-			rCustom("开源致谢", "使用到的第三方库与许可", func(a *App, c *ui.Context) { kit.Ic(c, "chevR", kit.S12).TextColor(a.tk.Tx4) }),
+			rCustom("开源致谢", "使用到的第三方库与许可", func(a *App, c *ui.Context) {
+				ui.ButtonBase(c).Cursor(ui.CursorPointer).OnClick(func() { openURL("https://github.com/ixxxxoooo/minicode") }).Children(func() {
+					kit.Ic(c, "chevR", kit.S12).TextColor(a.tk.Tx4)
+				})
+			}),
+			rCustom("在 GitHub 上查看", "发行说明与问题反馈", func(a *App, c *ui.Context) {
+				ui.ButtonBase(c).Cursor(ui.CursorPointer).OnClick(func() { openURL("https://github.com/ixxxxoooo/minicode") }).Children(func() {
+					kit.Ic(c, "ext", kit.S12).TextColor(a.tk.Tx4)
+				})
+			}),
 		}},
 	}},
 }
@@ -555,7 +588,7 @@ func shortcutGroups() []setGroup {
 	}
 	return []setGroup{
 		mk("全局", [2]string{"命令面板", "⌘ K"}, [2]string{"新对话", "⌘ N"}, [2]string{"新窗口", "⇧ ⌘ N"}, [2]string{"设置", "⌘ ,"}, [2]string{"循环权限模式", "⇧ ⇥"}),
-		mk("形态与面板", [2]string{"切换 Agent / IDE", "⌘ E"}, [2]string{"显示 / 隐藏导航栏", "⌘ B"}, [2]string{"显示 / 隐藏检查器", "⌥ ⌘ B"}, [2]string{"底部面板", "⌘ J"}, [2]string{"源代码管理", "⌃ ⇧ G"}),
+		mk("形态与面板", [2]string{"切换 Agent / IDE", "⌘ E"}, [2]string{"显示 / 隐藏导航栏", "⌘ B"}, [2]string{"显示 / 隐藏右侧栏", "⌥ ⌘ B"}, [2]string{"底部面板", "⌘ J"}, [2]string{"源代码管理", "⌃ ⇧ G"}),
 		mk("编辑器", [2]string{"当前文件查找", "⌘ F"}, [2]string{"项目内搜索", "⇧ ⌘ F"}, [2]string{"转到符号", "⇧ ⌘ O"}, [2]string{"保存", "⌘ S"}, [2]string{"行注释", "⌘ /"}),
 		mk("对话", [2]string{"立即引导", "⌘ ⏎"}, [2]string{"中断回合", "esc"}, [2]string{"编辑上一条消息", "↑"}),
 	}

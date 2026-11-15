@@ -13,11 +13,14 @@ import (
 
 // IbOpt 是图标按钮的可选项。
 type IbOpt struct {
-	On      bool   // 选中态(fill-2)
-	Small   bool   // .sm:20×20
-	Tip     string // 悬停提示
-	Color   ui.Color
-	NoHover bool
+	On       bool   // 选中态(fill-2)
+	Small    bool   // .sm:20×20
+	Tip      string // 悬停提示
+	Color    ui.Color
+	NoHover  bool
+	Disabled bool // 40% 透明、不响应点击;Tip 可写原因
+	Loading  bool // 图标区换成 Spin
+	Error    bool // 错误色描边
 }
 
 // Ib 是 24×24 的图标按钮(设计稿 .ib):默认 tx-2,悬停 fill-1 + tx-1,选中 fill-2。
@@ -30,18 +33,30 @@ func Ib(c *ui.Context, icon string, o ...IbOpt) ui.Element {
 	if op.Small {
 		sz = 20
 	}
-	b := ui.ButtonBase(c).Size(sz, sz).Radius(T.RSm()).Justify(ui.Center).AlignItems(ui.Center).Cursor(ui.CursorPointer)
+	b := ui.ButtonBase(c).Size(sz, sz).Radius(T.RSm()).Justify(ui.Center).AlignItems(ui.Center)
 	col := T.Tx2
 	if op.Color != (ui.Color{}) {
 		col = op.Color
+	}
+	if op.Disabled || op.Loading {
+		b.Disabled(true).Opacity(.4).Cursor(ui.CursorDefault)
+	} else {
+		b.Cursor(ui.CursorPointer)
 	}
 	switch {
 	case op.On:
 		b.Background(T.Fill2)
 		col = T.Tx1
-	case b.Hovered() && !op.NoHover:
+	case b.Hovered() && !op.NoHover && !op.Disabled && !op.Loading:
 		b.Background(T.Fill1)
 		col = T.Tx1
+	}
+	if op.Error {
+		b.Border(1.5, T.Err)
+	}
+	clickFocusRing(b)
+	if !op.Disabled && !op.Loading {
+		clickPressScale(b)
 	}
 	b.TextColor(col).Transition(Fade)
 	if op.Tip != "" {
@@ -49,7 +64,13 @@ func Ib(c *ui.Context, icon string, o ...IbOpt) ui.Element {
 	} else {
 		b.Label(icon)
 	}
-	return b.Children(func() { Ic(c, icon, S14) })
+	return b.Children(func() {
+		if op.Loading {
+			Spin(c, T.Ac)
+		} else {
+			Ic(c, icon, S14)
+		}
+	})
 }
 
 // ───────── 按钮 .btn ─────────
@@ -87,10 +108,16 @@ func Btn(c *ui.Context, text string, o ...BtnOpt) ui.Element {
 		h, px, fs = 20, 7, 11.5
 	}
 	b := ui.ButtonBase(c).Height(h).PaddingX(px).Radius(T.RSm()).Gap(5).AlignItems(ui.Center).FontSize(fs).Shrink(0)
-	if op.Disabled || op.Loading {
+	if op.Disabled {
 		b.Disabled(true).Opacity(.42).Cursor(ui.CursorDefault)
+	} else if op.Loading {
+		b.Disabled(true).Cursor(ui.CursorDefault)
 	} else {
 		b.Cursor(ui.CursorPointer)
+	}
+	clickFocusRing(b)
+	if !op.Disabled && !op.Loading {
+		clickPressScale(b)
 	}
 	hov := b.Hovered() && !op.Disabled && !op.Loading
 	col := T.Tx1
@@ -130,8 +157,9 @@ func Btn(c *ui.Context, text string, o ...BtnOpt) ui.Element {
 	if op.Tip != "" {
 		b.Tooltip(op.Tip)
 	}
+	showSpin := op.Loading && btnLoadingSpin(b, col)
 	return b.Children(func() {
-		if op.Loading {
+		if showSpin {
 			spinCol := col
 			if op.Variant == BtnDefault || op.Variant == BtnDanger {
 				spinCol = T.Ac
@@ -162,6 +190,8 @@ func Chip(c *ui.Context, text string, o ...ChipOpt) ui.Element {
 		op = o[0]
 	}
 	b := ui.ButtonBase(c).Height(22).PaddingX(7).Radius(T.RSm()).Gap(4).AlignItems(ui.Center).FontSize(11.5).Cursor(ui.CursorPointer).Shrink(0)
+	clickFocusRing(b)
+	clickPressScale(b)
 	col := T.Tx2
 	if op.Line {
 		b.Background(T.Raised).Border(1, T.Bd2)

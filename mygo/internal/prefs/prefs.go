@@ -124,6 +124,43 @@ func (s *Store) ResetAll() {
 	s.save()
 }
 
+// Keys 返回已修改的全部键名(拷贝)。
+func (s *Store) Keys() []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make([]string, 0, len(s.vals))
+	for k := range s.vals {
+		out = append(out, k)
+	}
+	return out
+}
+
+// ExportJSON 导出当前偏好为 JSON(调用方应剔除密钥相关键)。
+func (s *Store) ExportJSON() ([]byte, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	cp := make(map[string]any, len(s.vals))
+	for k, v := range s.vals {
+		cp[k] = v
+	}
+	return json.MarshalIndent(cp, "", "  ")
+}
+
+// ImportPatch 用 JSON 对象合并进当前偏好(不覆盖路径时仍落盘)。
+func (s *Store) ImportPatch(b []byte) error {
+	var raw map[string]any
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	for k, v := range raw {
+		s.vals[k] = v
+	}
+	s.mu.Unlock()
+	s.save()
+	return nil
+}
+
 // Len 是被改过的项数。
 func (s *Store) Len() int {
 	s.mu.RLock()

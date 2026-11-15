@@ -208,11 +208,11 @@ func (a *App) wizardBar(c *ui.Context) {
 		a.frameSoon()
 		ui.Row(c).Shrink(0).Gap(6).AlignItems(ui.Center).Padding(7, 8).Margin(2, 2, 6, 2).Radius(t.RSm()).Background(t.OkSoft).Children(func() {
 			kit.Ic(c, "check", kit.S12).TextColor(t.Ok)
-			skipped := ""
-			if n := w.count("skip"); n > 0 {
-				skipped = " · " + itoa(n) + " 个跳过"
+			msg := "已提交 " + itoa(w.count("ok")) + " 个仓库"
+			if names := w.skippedNames(a); len(names) > 0 {
+				msg += " · 跳过 " + strings.Join(names, "、")
 			}
-			ui.Text(c, "已提交 "+itoa(w.count("ok"))+" 个仓库"+skipped).Grow(1).FontWeight(600).SingleLine()
+			ui.Text(c, msg).Grow(1).FontWeight(600).SingleLine()
 			kit.Btn(c, "查看图谱", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "fork"}).OnClick(a.openGraph)
 		})
 		return
@@ -235,18 +235,14 @@ func (a *App) wizardBar(c *ui.Context) {
 	}
 	name := a.repos[cur].name
 	sub := name + " · " + a.branch
-	if a.sc.commitErr != "" {
-		sub += " · " + a.sc.commitErr
-	} else if st, _ := a.sc.split(); a.sc.loaded && len(st) == 0 {
-		sub += " · 先在「更改」里暂存要提交的文件"
-	} else if strings.TrimSpace(a.sc.msg) != "" {
-		sub += " · 已预填说明,检查后 ⌘↩ 提交"
+	if a.sc.commitErr == "" {
+		if st, _ := a.sc.split(); a.sc.loaded && len(st) == 0 {
+			sub += " · 先在「更改」里暂存要提交的文件"
+		} else if strings.TrimSpace(a.sc.msg) != "" {
+			sub += " · 已预填说明,检查后 ⌘↩ 提交"
+		}
 	}
-	col := t.Tx3
-	if a.sc.commitErr != "" {
-		col = t.Err
-	}
-	// 窄栏(导航栏)里放得下:第一行 标题 + 进度 + 跳过 + 退出,第二行说明
+	// 窄栏(导航栏)里放得下:第一行 标题 + 进度 + 跳过 + 退出,第二行说明 / 失败行
 	ui.Column(c).Shrink(0).Gap(3).Padding(6, 8).Margin(2, 2, 6, 2).Radius(t.RSm()).Background(t.AcSoft).Border(1, t.Ac).Children(func() {
 		ui.Row(c).Gap(5).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "commit", kit.S12).TextColor(t.Ac)
@@ -265,11 +261,35 @@ func (a *App) wizardBar(c *ui.Context) {
 				}
 			})
 			ui.Spacer(c).Grow(1)
-			kit.Btn(c, "跳过", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(func() { a.wizardNext("skip") })
+			if a.sc.commitErr == "" {
+				kit.Btn(c, "跳过这个仓库", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(func() { a.wizardNext("skip") })
+			}
 			kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "退出向导"}).OnClick(func() { a.cw = nil })
 		})
-		ui.Text(c, sub).FontSize(theme.FsMicro).TextColor(col).MaxLines(2)
+		if a.sc.commitErr != "" {
+			ui.Row(c).Gap(6).AlignItems(ui.Center).Padding(4, 2).Radius(t.RSm()).Background(t.ErrSoft).Children(func() {
+				kit.Ic(c, "warn", kit.S12).TextColor(t.Err)
+				ui.Text(c, name+" · "+a.sc.commitErr).Grow(1).FontSize(theme.FsCap).TextColor(t.Err).MaxLines(2)
+				kit.Btn(c, "重试", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(func() { a.scmCommit(false) })
+				kit.Btn(c, "跳过这个仓库", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(func() {
+					a.sc.commitErr = ""
+					a.wizardNext("skip")
+				})
+			})
+		} else {
+			ui.Text(c, sub).FontSize(theme.FsMicro).TextColor(t.Tx3).MaxLines(2)
+		}
 	})
+}
+
+func (w *commitWizard) skippedNames(a *App) []string {
+	var out []string
+	for _, ri := range w.order {
+		if w.res[ri] == "skip" && ri < len(a.repos) {
+			out = append(out, a.repos[ri].name)
+		}
+	}
+	return out
 }
 
 // ───────── 审查标签的分组渲染 ─────────

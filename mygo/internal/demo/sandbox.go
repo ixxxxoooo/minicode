@@ -99,6 +99,9 @@ axum = "0.8"
 		"CLAUDE.md": "# router-demo\n\n- 用 `cargo test` 跑测试\n- 路径匹配统一走 `normalize`\n",
 		"README.md": "# router-demo\n\n一个很小的路由库,用来演示 MiniCode。\n",
 	}
+	for k, v := range B5EditorExtras() {
+		files[k] = v
+	}
 	var empty []string
 	if sandboxExtras {
 		for k, v := range gitSandboxExtraFiles() {

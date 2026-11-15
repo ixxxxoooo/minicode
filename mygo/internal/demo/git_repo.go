@@ -60,6 +60,7 @@ func buildRouterRepo() *vcs.Mem {
 	for p, lg := range gitRouterFileLog() {
 		m.SetFileLogFor(p, lg)
 	}
+	SeedGitB3(m)
 	return m
 }
 

@@ -83,7 +83,7 @@ func (a *App) loadLayMemFromPrefs() {
 	if a.prefs == nil {
 		return
 	}
-	// general.insp: Agent 形态工作区默认是否展开
+	// general.insp: Agent 形态开标签时是否自动展开右侧工作区
 	if a.prefs.Bool("general.insp", true) {
 		a.memBy[ModeAgent].right = true
 	}

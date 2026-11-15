@@ -243,6 +243,7 @@ func (a *App) autoRunView(c *ui.Context) {
 		t := a.tk
 		var body string
 		var live bool
+		var rec automation.Run
 		if lv := a.autoLive[id]; lv != nil && s.runView == liveKey(id) {
 			live = true
 			body = lv.snapshot()
@@ -250,7 +251,8 @@ func (a *App) autoRunView(c *ui.Context) {
 		if ok {
 			for _, r := range it.Runs {
 				if r.Key == s.runView || (r.Key == "" && fmt.Sprintf("auto:%d:%d", id, r.At.Unix()) == s.runView) {
-					body = r.Output
+					rec = r
+					body, _ = automation.SplitSession(r.Output)
 					if r.Err != "" && body == "" {
 						body = r.Err
 					}
@@ -259,11 +261,19 @@ func (a *App) autoRunView(c *ui.Context) {
 			}
 		}
 		if live {
-			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-				kit.Spin(c, t.Ac)
-				ui.Text(c, "运行中…").TextColor(t.Ac)
-				ui.Spacer(c).Grow(1)
-				kit.Btn(c, "取消运行", kit.BtnOpt{Small: true, Variant: kit.BtnDangerGhost}).OnClick(func() { a.cancelAutoRun(id) })
+			ui.Column(c).Gap(6).Children(func() {
+				kit.IndetMeter(c)
+				ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+					kit.Spin(c, t.Ac)
+					ui.Text(c, "运行中…").TextColor(t.Ac)
+					ui.Spacer(c).Grow(1)
+					kit.Btn(c, "取消运行", kit.BtnOpt{Small: true, Variant: kit.BtnDangerGhost}).OnClick(func() { a.cancelAutoRun(id) })
+				})
+			})
+		} else if rec.SessionID != "" {
+			kit.Btn(c, "查看会话", kit.BtnOpt{Variant: kit.BtnPri, Icon: "chat"}).OnClick(func() {
+				a.OpenSession(rec.SessionID)
+				s.runView = ""
 			})
 		}
 		box := ui.Column(c).Background(t.Sunken).Radius(t.RSm()).Padding(10, 12).MaxHeight(360)

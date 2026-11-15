@@ -26,14 +26,15 @@ var log = diag.L("claude")
 type Config struct {
 	Cwd string
 	// SessionID 非空 = 恢复这个已有会话(并回放 HistoryPath);空 = 新会话(自动分配 id)。
-	SessionID   string
-	HistoryPath string
-	ClaudePath  string
-	Model       string // 空 = default
-	Mode        *core.PermissionMode
-	Effort      *core.Effort
-	AddDirs     []string
-	Env         []core.EnvVar
+	SessionID          string
+	HistoryPath        string
+	ClaudePath         string
+	Model              string // 空 = default
+	Mode               *core.PermissionMode
+	Effort             *core.Effort
+	AddDirs            []string
+	AppendSystemPrompt string
+	Env                []core.EnvVar
 	// InitTimeout 握手超时,零值用 60 秒(测试里调短)。
 	InitTimeout time.Duration
 	// ProjectsDir 会话记录目录,空 = ~/.claude/projects(重启时判断会话是否已落盘)。
@@ -236,7 +237,10 @@ func newUUID() string {
 }
 
 func (b *Backend) options() Options {
-	o := Options{Cwd: b.cfg.Cwd, Model: b.cfg.Model, Mode: b.cfg.Mode, Effort: b.cfg.Effort, AddDirs: b.cfg.AddDirs, ExtraEnv: b.cfg.Env}
+	o := Options{
+		Cwd: b.cfg.Cwd, Model: b.cfg.Model, Mode: b.cfg.Mode, Effort: b.cfg.Effort, AddDirs: b.cfg.AddDirs,
+		AppendSystemPrompt: b.cfg.AppendSystemPrompt, ExtraEnv: b.cfg.Env,
+	}
 	if b.resume != "" {
 		o.Resume, o.Fork = b.resume, b.fork
 		if b.fork {

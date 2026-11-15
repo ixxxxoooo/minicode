@@ -9,7 +9,7 @@ import (
 )
 
 // EditorDemo 按「动作:参数」驱动编辑器进入某个状态(cmd/shot 截图用,多个动作用逗号隔开):
-// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签;review:empty 空态)、expand:路径、newfile|newdir:文件夹:名字、renamef:路径:名字、foerr、discardask:路径、cmpfiles:提交、resetask:序号、delask:路径、rename:会话id、archived:项目id、scm、syncall、repobusy:N、search:查询、scope:文件夹、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容。
+// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签;review:empty 空态)、expand:路径、newfile|newdir:文件夹:名字、renamef:路径:名字、foerr、discardask:路径、cmpfiles:提交、resetask:序号、delask:路径、rename:会话id、archived:项目id、scm、syncall、repobusy:N、search:查询、scope:文件夹、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容、goto:行、extmod[:auto]、crumb:路径、termrename。
 func (a *App) EditorDemo(spec string) {
 	for _, act := range strings.Split(spec, ",") {
 		name, arg, _ := strings.Cut(act, ":")
@@ -164,6 +164,34 @@ func (a *App) EditorDemo(spec string) {
 				}
 			}
 			continue
+		case "wizfail": // 演示:首个仓库提交失败(pre-commit)
+			a.ActivateWorkspace("ws-fullstack")
+			a.dbgSCM()
+			if len(a.repos) > 0 {
+				if mem, ok := a.repos[0].repo.(*vcs.Mem); ok {
+					mem.SetFail("Commit", "pre-commit 钩子未通过", true)
+				}
+			}
+			a.startCommitWizard()
+			continue
+		case "expandall": // 多仓「全部展开」SCM 模式
+			a.prefs.Set(pScmExpandAll, true)
+			a.OpenSCM()
+			continue
+		case "permcard": // 附加文件夹权限提示卡
+			a.openWsDialog("ws-fullstack", "")
+			a.wsPerm = wsPermPending{when: "save"}
+			a.pd.kind = "ws-perm" // 覆盖 openWsDialog 的 ws
+			continue
+		case "treemenu": // treemenu:<树路径>:选中并打开「让 Claude…」
+			a.SetMode(ModeIDE)
+			a.nav, a.sideOpen = "files", true
+			a.ide.sel = arg
+			a.treeClaudeAsk(arg)
+			continue
+		}
+		if a.gitDebug(name, arg) {
+			continue
 		}
 		if name == "conflict" {
 			a.demoConflict()
@@ -181,6 +209,39 @@ func (a *App) EditorDemo(spec string) {
 		}
 		if name == "open" {
 			a.ide.openFile(arg, true)
+			continue
+		}
+		if name == "goto" {
+			a.SetMode(ModeIDE)
+			if p, line, col, ok := parsePathLine(arg); ok {
+				if p == "" {
+					a.gotoLineInCurrent(line)
+					if col > 0 && tb != nil && tb.st != nil {
+						p0 := editor.Pos{Line: line, Col: col}
+						tb.st.GoTo(p0)
+						tb.st.Select(tb.buf.Offset(p0), tb.buf.Offset(p0))
+					}
+				} else {
+					a.openFileAtLine(p, line, col)
+				}
+			}
+			continue
+		}
+		if name == "extmod" {
+			a.dbgExtmod(arg)
+			continue
+		}
+		if name == "crumb" {
+			a.dbgCrumb(arg)
+			continue
+		}
+		if name == "termrename" {
+			a.SetMode(ModeIDE)
+			a.ide.bottomOpen, a.ide.bottomTab = true, "term"
+			if a.proj != "" && len(a.ide.tps) == 0 {
+				a.newTerm()
+			}
+			a.beginTermRename(a.ide.tpSel)
 			continue
 		}
 		switch name {

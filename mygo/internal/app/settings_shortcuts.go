@@ -22,7 +22,7 @@ var shortcutTable = []shortcutSpec{
 	{id: "modeCycle", title: "循环权限模式", group: "全局", def: "⇧ ⇥"},
 	{id: "toggleMode", title: "切换 Agent / IDE", group: "形态与面板", def: "⌘ E"},
 	{id: "nav", title: "显示 / 隐藏导航栏", group: "形态与面板", def: "⌘ B"},
-	{id: "right", title: "显示 / 隐藏检查器", group: "形态与面板", def: "⌥ ⌘ B"},
+	{id: "right", title: "显示 / 隐藏右侧栏", group: "形态与面板", def: "⌥ ⌘ B"},
 	{id: "panel", title: "底部面板", group: "形态与面板", def: "⌘ J"},
 	{id: "scm", title: "源代码管理", group: "形态与面板", def: "⌃ ⇧ G"},
 	{id: "find", title: "当前文件查找", group: "编辑器", def: "⌘ F"},

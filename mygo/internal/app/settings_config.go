@@ -208,7 +208,7 @@ func (a *App) lspBody(a2 *App, c *ui.Context) {
 }
 
 func (a *App) netCheckBody(a2 *App, c *ui.Context) {
-	hosts := []string{"api.anthropic.com", "github.com"}
+	hosts := []string{"api.anthropic.com", "api.deepseek.com", "github.com"}
 	if a2.set.net == nil {
 		a2.set.net = map[string]int{}
 	}
@@ -258,6 +258,14 @@ func (a *App) runNetCheck(hosts []string) {
 			ms int64
 		}{}
 		for _, h := range hosts {
+			if a.demoWs() {
+				ok, ms := demo.DemoNetLatency(h)
+				results[h] = struct {
+					ok bool
+					ms int64
+				}{ok, ms}
+				continue
+			}
 			u, _ := url.Parse("https://" + h)
 			ok, ms := claudecfg.PingHost(u.Host)
 			results[h] = struct {

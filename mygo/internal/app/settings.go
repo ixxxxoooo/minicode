@@ -101,6 +101,16 @@ type settingsState struct {
 	envName   string
 	envVal    string
 	envLayer  int
+	// claude 版本检测
+	claudeVer       string
+	claudeVerErr    string
+	claudeDetecting bool
+	// claude doctor
+	doctorOpen    bool
+	doctorRunning bool
+	doctorLines   []string
+	// settings 导出
+	settingsImport []byte
 }
 
 func (a *App) setTabByID(id string) *setTabDef {
@@ -201,6 +211,7 @@ func (a *App) applyPrefs() {
 	a.accent = accentOf(a.pal, a.prefs.Int(kAccent, 0))
 	a.density = a.prefs.Int(kDensity, 1)
 	a.radius = a.prefs.Int(kRadius, 1)
+	a.ApplySystemAppearance()
 	a.applyBehavior()
 	a.retheme()
 }

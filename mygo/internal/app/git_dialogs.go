@@ -26,24 +26,52 @@ func (a *App) clearPushGuide() { a.sc.pushGuide = "" }
 
 // scmPushGuide 推送被拒后的引导条。
 func (a *App) scmPushGuide(c *ui.Context) {
-	if a.sc.pushGuide == "" {
+	if a.sc.pushGuide == "" && !a.sc.rebase {
 		return
 	}
 	t := a.tk
-	ui.Row(c).Padding(4, 6).Gap(8).AlignItems(ui.Center).Background(t.WarnSoft).Radius(t.RSm()).Margin(0, 2, 4, 2).Children(func() {
-		kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
-		ui.Text(c, "推送被拒绝:远端有你本地没有的提交。先拉取,或确认后强制推送(带 lease)。").FontSize(theme.FsCap).TextColor(t.Tx1).Grow(1)
-		kit.Btn(c, "先拉取", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() {
-			a.clearPushGuide()
-			a.scmSync(true, false)
+	msg := a.sc.pushGuide
+	if msg == "" {
+		msg = "变基未完成:请解决冲突或中止变基。"
+	}
+	ui.Column(c).Padding(6, 8).Gap(6).Background(t.WarnSoft).Radius(t.RSm()).Margin(0, 2, 4, 2).Children(func() {
+		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+			kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
+			ui.Text(c, "推送被拒绝").FontWeight(600).TextColor(t.Tx1)
+			ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Tx2).Grow(1)
+			kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭"}).OnClick(a.clearPushGuide)
 		})
-		kit.Btn(c, "强制推送", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() {
-			a.confirmDlg("强制推送到远端?", "这会覆盖远端分支上你本地没有的提交。只有在你确认没有人基于那些提交工作时才这样做。", "强制推送", true, func() {
+		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+			kit.Btn(c, "拉取并变基", kit.BtnOpt{Small: true, Variant: kit.BtnPri, Icon: "download"}).OnClick(func() {
 				a.clearPushGuide()
-				a.scmAct("强制推送", func(r vcs.Repo) error { return r.PushForce() }, nil)
+				a.scmPullRebase()
+			})
+			kit.Btn(c, "拉取并合并", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() {
+				a.clearPushGuide()
+				a.scmPullMerge()
+			})
+			kit.Btn(c, "强制推送(带租约)", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() {
+				a.confirmDlg("强制推送到远端?", "使用 --force-with-lease,仅当你确认没有人在基于远端独有提交工作时才继续。", "强制推送", true, func() {
+					a.clearPushGuide()
+					a.scmAct("强制推送", func(r vcs.Repo) error { return r.PushForce() }, nil)
+				})
 			})
 		})
-		kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭"}).OnClick(a.clearPushGuide)
+		if a.pushGuideHasConflict() {
+			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+				ui.Text(c, "变基产生冲突:在源代码管理打开冲突文件,或中止变基。").FontSize(theme.FsCap).TextColor(t.Tx2).Grow(1)
+				kit.Btn(c, "打开合并冲突", kit.BtnOpt{Small: true, Icon: "merge"}).OnClick(func() {
+					a.OpenSCM()
+					for _, ch := range a.sc.changes {
+						if ch.Status == vcs.StatusConflict {
+							a.OpenWorkspaceTab(vConflict, a.treePath(ch.Path))
+							return
+						}
+					}
+				})
+				kit.Btn(c, "中止变基", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(a.scmRebaseAbort)
+			})
+		}
 	})
 }
 

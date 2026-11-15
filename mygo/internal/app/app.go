@@ -67,8 +67,9 @@ const (
 
 // App 是整个应用的状态。只在主线程读写(后端事件经 win.Update 切回主线程)。
 type App struct {
-	ide        *ide    // IDE 形态独有的状态(编辑器标签、文件树、底部面板)
-	ux         uxState // 拖拽引用 / Markdown 所见即所得等编辑体验的零散状态(edit_ux.go)
+	diffForce  map[string]bool // 已确认「仍然显示」的超大差异标签 id(会话内有效)
+	ide        *ide            // IDE 形态独有的状态(编辑器标签、文件树、底部面板)
+	ux         uxState         // 拖拽引用 / Markdown 所见即所得等编辑体验的零散状态(edit_ux.go)
 	edTheme    *editor.Theme
 	edThemeKey string
 	flowSt     ui.ScrollState // 会话流滚动状态(跟随底部)
@@ -135,12 +136,16 @@ type App struct {
 	repoAct    int                 // 活动仓库(源代码管理里正在操作的那个)
 	solo       *soloState          // 进入工作区前的单项目现场(退出时还原)
 	pd         projDlg             // 添加项目 / 工作区对话框状态
+	treeClip   fileTreeClip        // 文件树剪贴板(tree_menus.go)
+	treeAsk    treeClaudeDlg       // 文件树「让 Claude…」小浮层
+	wsPerm     wsPermPending       // 工作区附加目录权限卡
 	sessMore   map[string]bool
 	meta       *sessmeta.Store       // 会话的本机整理信息(置顶 / 归档 / 自定义标题)
 	rawProj    []core.ProjectInfo    // 未套用整理信息的项目与会话(a.projects 是套用后的)
 	sessDel    func(id string) error // 真实模式:删除会话的磁盘文件(演示为空)
 	ren        sessRename            // 侧栏正在行内重命名的会话
 	fo         fileOp                // 文件树正在进行的行内新建 / 重命名
+	termRen    termRen               // 终端标签行内重命名
 	filesFocus bool                  // 文件树正在接键盘(F2 / ⌘⌫)
 	sg         *suggestSt            // 行内补全(ide_suggest.go)
 	inl        *inlinePatch          // 行内编辑预览(ide_inline.go)
@@ -220,6 +225,7 @@ type App struct {
 	cardHov         bool                           // 当前这张工具卡是否被悬停(卡片内容里的悬停按钮用)
 	hist            histState                      // 历史会话弹层的搜索词
 	rv              reviewState                    // 审查标签状态
+	rvStageUndo     kit.UndoSlot                   // 审查「暂存已接受」撤销
 	reviewDemoEmpty bool                           // 演示:审查标签空态(-ed review:empty)
 	diffSelTab      *ideTab                        // 差异标签的行选区
 	diffSelRange    editor.DiffLineRange
@@ -229,6 +235,12 @@ type App struct {
 	subSt           ui.ScrollState      // 子 Agent 标签「过程」区滚动
 	q               promptQueue         // 排队的消息
 	qa              map[string]*qaState // 提问向导的本地进度
+	dockDraft       string              // 审批卡顶替输入框时保存的草稿
+	dockStash       bool
+	composerInAt    time.Time // 输入框淡入动画起点
+	slashSel        int       // 斜杠补全选中行
+	slashProj       string    // 已缓存斜杠命令的项目路径
+	slashDisk       *customize.DiskStore
 
 	// 测试 / 截图用:没有系统红绿灯时自己画
 	fakeLights      bool
@@ -307,6 +319,7 @@ func New(o Options) *App {
 	if a.prefs == nil {
 		a.prefs = prefs.Memory()
 	}
+	a.MigrateSettingsPrefs()
 	a.loadLayout()
 	if o.Mode == ModeAgent && a.setTab == "" {
 		a.setTab = "appearance"
@@ -314,6 +327,7 @@ func New(o Options) *App {
 	a.applyPrefs()
 	a.ide.onSaved = a.lspSaved
 	a.ide.beforeSave = a.beforeSave
+	a.ide.onDiskSnap = func(t *ideTab) { a.recordDiskSnap(t) }
 	return a
 }
 
@@ -358,14 +372,28 @@ func (a *App) Attach(be backend.Backend) {
 // afterEvent 归约之后的界面侧反应:回合结束时处理排队。
 func (a *App) afterEvent(ev core.Event) {
 	// 新会话的 id 在握手后才知道:记下来,侧栏就能高亮它(演示后端的占位 id 不记)
-	if _, ok := ev.(core.EvReady); ok && a.pickOnReady {
-		a.pickOnReady = false
-		a.applySavedPicks()
+	if e, ok := ev.(core.EvReady); ok {
+		if a.pickOnReady {
+			a.pickOnReady = false
+			a.applySavedPicks()
+		}
+		if a.st != nil && (a.curSess == "" || strings.HasPrefix(a.curSess, "new:")) {
+			want := a.DefaultPermMode()
+			if e.Mode != want {
+				a.send(core.CmdSetMode{Mode: want})
+				a.st.Mode = want
+			}
+		}
 	}
 	if e, ok := ev.(core.EvReady); ok && a.curSess == "" && e.SessionID != "" && !strings.HasPrefix(e.SessionID, "demo-") {
 		a.curSess = e.SessionID
 	}
 	if e, ok := ev.(core.EvTurnEnded); ok {
+		if a.q.preempt != "" {
+			a.q.turnEnded(e.Reason == core.StopEndTurn)
+			a.flushPreempt()
+			return
+		}
 		a.q.turnEnded(e.Reason == core.StopEndTurn)
 		a.drainQueue()
 	}
@@ -377,7 +405,9 @@ func (a *App) afterEvent(ev core.Event) {
 	}
 	switch ev.(type) {
 	case core.EvTaskStarted, core.EvTaskProgress, core.EvTaskUpdated:
-		a.pollTaskOutputFiles()
+		if a.LiveTaskOutput() {
+			a.pollTaskOutputFiles()
+		}
 	}
 	if u, ok := ev.(core.EvUsage); ok {
 		a.onUsageEvent(u.Usage)
@@ -423,7 +453,8 @@ func (a *App) OpenSession(id string) {
 		a.termLive = map[string]string{}
 		a.userEd = userEdit{}
 		a.flowNoFollow = false
-		a.draft = ""
+		a.draft, a.dockDraft = "", ""
+		a.dockStash = false
 		a.curSess = id
 		a.screen = ScreenWork
 		a.flowSt = ui.ScrollState{}
@@ -441,7 +472,8 @@ func (a *App) OpenSession(id string) {
 	a.planOpened = map[string]bool{}
 	a.userEd = userEdit{}
 	a.flowNoFollow = false
-	a.draft = ""
+	a.draft, a.dockDraft = "", ""
+	a.dockStash = false
 	a.curSess = id
 	a.screen = ScreenWork
 	a.flowSt = ui.ScrollState{}
@@ -457,7 +489,7 @@ func (a *App) OpenSession(id string) {
 // NewSessionIn 在某个项目里开新会话(侧栏项目行的「+」)。
 func (a *App) NewSessionIn(p core.ProjectInfo) {
 	a.projOpen[p.ID] = true
-	a.OpenSession("new:" + p.Path)
+	a.OpenSessionChecked("new:" + p.Path)
 }
 
 // QueuePrompts 直接排入若干条消息(截图 / 测试用)。
@@ -479,6 +511,10 @@ func (a *App) State() *core.State { return a.st }
 // send 把界面命令交给后端。
 func (a *App) send(cmd core.Command) {
 	if a.be == nil {
+		return
+	}
+	if c, ok := cmd.(core.CmdSetMode); ok && c.Mode == core.ModeBypassPermissions && a.NoBypassPermissions() {
+		a.toast = "已禁止绕过权限模式"
 		return
 	}
 	a.be.Send(cmd)
@@ -531,6 +567,7 @@ func (a *App) View(c *ui.Context) {
 		a.dlgSeen = ""
 	}
 	a.autosave()
+	a.extmodTick()
 	a.root(c)
 }
 
@@ -599,6 +636,11 @@ func (a *App) shortcuts(c *ui.Context) {
 	}
 	if c.Shortcut(ui.Cmd, ui.KeyBackspace) && a.filesFocus && a.ide.sel != "" {
 		a.askDelete(a.ide.sel, workspace.IsDir(a.ide.fs, a.ide.sel))
+		return
+	}
+	// ⌘⏎:文件树里选中的文件在侧边打开(与右键菜单「在侧边打开」同一动作)
+	if c.Shortcut(ui.Cmd, ui.KeyEnter) && a.filesFocus && a.ide.sel != "" && !workspace.IsDir(a.ide.fs, a.ide.sel) {
+		a.openSide(a.ide.sel, true)
 		return
 	}
 	switch {

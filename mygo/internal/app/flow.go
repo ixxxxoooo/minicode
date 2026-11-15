@@ -25,6 +25,7 @@ func (a *App) flowCol(c *ui.Context, inner func()) {
 func (a *App) flow(c *ui.Context) {
 	ui.Column(c).Gap(8).Padding(12, 0, 18, 0).Children(func() {
 		a.flowRounds(c)
+		a.flowRewindCard(c)
 	})
 }
 
@@ -53,6 +54,24 @@ func (a *App) stepGroup(c *ui.Context, items []core.Item) {
 			ui.Box(c).Absolute().Left(7.5).Top(10).Bottom(10).Width(1).Background(t.Bd2)
 		}
 		for i := 0; i < len(items); {
+			if sa, ok := items[i].(*core.SubagentCard); ok {
+				j := i
+				var grp []*core.SubagentCard
+				for j < len(items) {
+					sa2, ok2 := items[j].(*core.SubagentCard)
+					if !ok2 {
+						break
+					}
+					grp = append(grp, sa2)
+					j++
+				}
+				if len(grp) >= 2 {
+					a.parallelSubGroup(c, grp)
+					i = j
+					continue
+				}
+				_ = sa
+			}
 			if tc, ok := isExplore(items[i]); ok {
 				_ = tc
 				j := i
@@ -120,10 +139,14 @@ func (a *App) stepItem(c *ui.Context, it core.Item) {
 	case *core.PermissionRequest:
 		if v.Tool != nil {
 			sp := presentTool(v.Tool)
-			if strings.Contains(strings.ToLower(v.Resolved), "deny") || strings.Contains(v.Resolved, "reject") {
-				sp.state, sp.icon = "deny", "lock"
+			denied := strings.Contains(strings.ToLower(v.Resolved), "deny") || strings.Contains(v.Resolved, "reject") || strings.Contains(v.Resolved, "拒绝")
+			if denied {
+				sp.state, sp.icon, sp.right = "deny", "lock", "已拒绝"
 			}
 			a.stepRow(c, sp, func() { a.toolBody(c, v.Tool) })
+			if denied {
+				a.permissionDenyNote(c, v.Tool)
+			}
 		}
 	case *core.Todos:
 		done, total := 0, len(v.Items)
@@ -153,6 +176,9 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 	hov := row.Hovered()
 	if hov {
 		row.Background(t.Fill1)
+	}
+	if stepHasMenu(sp) { // 右键:复制路径 / 命令 / 输出 / 网址、在访达中显示、查看差异…(按这一行的类型)
+		row.ContextMenu(func(m *ui.Menu) { a.stepMenu(m, sp) })
 	}
 	switch {
 	case body != nil && sp.hasBody:
@@ -300,7 +326,10 @@ func (a *App) toolBody(c *ui.Context, tc *core.ToolCall) {
 }
 
 // card 是工具卡:凹槽底 + 描边 + 24 高的头。
-func (a *App) card(c *ui.Context, head func(), body func()) {
+func (a *App) card(c *ui.Context, head func(), body func()) { a.cardM(c, head, nil, body) }
+
+// cardM 是带头部右键菜单的卡片(差异卡 / 命令卡头部:复制、跳转;menu 为 nil 就没有右键菜单)。
+func (a *App) cardM(c *ui.Context, head func(), menu func(m *ui.Menu), body func()) {
 	t := a.tk
 	bg := t.Sunken
 	if t.Scheme.ID == "b" {
@@ -310,8 +339,12 @@ func (a *App) card(c *ui.Context, head func(), body func()) {
 	a.cardHov = box.Hovered()
 	box.Children(func() {
 		if head != nil {
-			ui.Row(c).Height(24).Padding(0, 4, 0, 9).Gap(6).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.FsCap).
-				BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(head)
+			hr := ui.Row(c).Height(24).Padding(0, 4, 0, 9).Gap(6).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.FsCap).
+				BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1)
+			if menu != nil {
+				hr.ContextMenu(menu)
+			}
+			hr.Children(head)
 		}
 		body()
 	})
@@ -335,7 +368,22 @@ func (a *App) diffCard(c *ui.Context, d *core.DiffBlock, head bool) {
 			kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制改动后的内容"}).OnClick(func() { a.copyOut(d.New, "改动后的内容") })
 		}
 	}
-	a.card(c, h, func() {
+	var hm func(m *ui.Menu)
+	if head { // 头部右键:在工作区查看差异 / 复制改动后的内容 / 复制路径
+		hm = func(m *ui.Menu) {
+			if menuItem(m, "查看差异").Chosen() {
+				a.OpenDiffTab(d.Path)
+			}
+			m.Separator()
+			if menuItem(m, "复制改动后的内容").Chosen() {
+				a.copyOut(d.New, "改动后的内容")
+			}
+			if menuItem(m, "复制路径").Chosen() {
+				a.copyOut(d.Path, "路径")
+			}
+		}
+	}
+	a.cardM(c, h, hm, func() {
 		hov := a.cardHov
 		ui.Column(c).Padding(3, 0).Children(func() {
 			for i, l := range ls {
@@ -442,7 +490,7 @@ func (a *App) termRest(s string, mk func(string, ui.Color) ui.Span) []ui.Span {
 func (a *App) termCard(c *ui.Context, tc *core.ToolCall, tb *core.TerminalBlock) {
 	t := a.tk
 	live := tb.ExitCode == nil
-	a.card(c, func() {
+	a.cardM(c, func() {
 		kit.Ic(c, "prompt", kit.S12)
 		ui.Text(c, tb.Command).Font("monospace").FontSize(11.5).Grow(1).SingleLine()
 		if !live {
@@ -456,6 +504,17 @@ func (a *App) termCard(c *ui.Context, tc *core.ToolCall, tb *core.TerminalBlock)
 		kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制命令与输出"}).OnClick(func() {
 			a.copyOut("$ "+tb.Command+"\n"+strings.TrimRight(tb.Output, "\n"), "命令与输出")
 		})
+	}, func(m *ui.Menu) { // 头部右键:在终端面板查看 / 复制命令 / 复制命令与输出
+		if menuItem(m, "在终端面板查看").Chosen() {
+			a.viewInPanel(tb)
+		}
+		m.Separator()
+		if menuItem(m, "复制命令").Chosen() {
+			a.copyOut(tb.Command, "命令")
+		}
+		if menuItem(m, "复制命令与输出").Chosen() {
+			a.copyOut("$ "+tb.Command+"\n"+strings.TrimRight(a.liveTermOut(tc.ID, tb), "\n"), "命令与输出")
+		}
 	}, func() {
 		out := a.liveTermOut(tc.ID, tb)
 		a.foldBody(c, foldKey("term", tc.ID), out, live, true, func() {
@@ -479,10 +538,7 @@ func (a *App) notice(c *ui.Context, n *core.Notice) {
 	t := a.tk
 	switch n.Level {
 	case core.NoticeInfo:
-		ui.Row(c).MinHeight(22).Gap(6).TextColor(t.Tx3).AlignItems(ui.Center).Children(func() {
-			ui.Row(c).Width(16).Justify(ui.Center).Children(func() { kit.Ic(c, "info", kit.S12) })
-			ui.Text(c, n.Text)
-		})
+		a.noteLine(c, "info", n.Text)
 	default:
 		bg, fg, icon := t.WarnSoft, t.Warn, "alert"
 		if n.Level == core.NoticeError {
@@ -491,6 +547,38 @@ func (a *App) notice(c *ui.Context, n *core.Notice) {
 		ui.Row(c).Gap(8).AlignItems(ui.Start).Padding(7, 10).Radius(t.RMd()).Background(bg).Border(1, fg.Alpha(.22)).Children(func() {
 			kit.Ic(c, icon, kit.S14).TextColor(fg).Margin(2, 0, 0, 0)
 			ui.Text(c, n.Text).Grow(1).LineHeight(1.5)
+			a.noticeActions(c, n)
 		})
+	}
+}
+
+func (a *App) noticeActions(c *ui.Context, n *core.Notice) {
+	low := strings.ToLower(n.Text)
+	switch n.Level {
+	case core.NoticeError:
+		ui.Column(c).Gap(4).Shrink(0).Children(func() {
+			if a.st.Phase == core.PhaseRunning {
+				kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "refresh"}).Opacity(0.4).Cursor(ui.CursorDefault)
+			} else if kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "refresh"}).Clicked() {
+				if uid := a.lastUserID(); uid != "" {
+					if txt := a.userText(uid); txt != "" {
+						a.send(core.CmdPrompt{Text: txt})
+						log.Info("错误提示重试", "user", uid)
+					}
+				} else {
+					a.toast = "没有可重试的提问"
+				}
+			}
+			if kit.Btn(c, "复制", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "copy"}).Clicked() {
+				a.copyOut(n.Text, "错误信息")
+			}
+		})
+	case core.NoticeWarning:
+		if strings.Contains(n.Text, "压缩") || strings.Contains(low, "context") || strings.Contains(n.Text, "%") {
+			kit.Btn(c, "压缩", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() {
+				a.send(core.CmdCompact{})
+				log.Info("提示卡压缩上下文")
+			})
+		}
 	}
 }

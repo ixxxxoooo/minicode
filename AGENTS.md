@@ -156,6 +156,14 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
  - B1 多仓:「全部展开」模式未做。B7:自动化运行不能「查看会话」(只有只读输出浮层)、会话流内 Mermaid 图表卡与排版引擎。B8:`kit.OkPop` / `IndetMeter` / `FoldHeight` 定义了但没有调用点,图标按钮 / 开关缺 disabled、统一按下态与键盘聚焦环未做。
  - 状态降级:多光标、工作区级诊断(`didOpen` 扫盘代替 pull)、终端标签重命名、task-spec 首行等原先标「已实现」的,已改为「部分 / 待做」。
  - 设计稿脚本:`providers.js` 的 `ensure()` 在 `APP` 就绪前返回 `null`,导致 `overlays.js` 加载期崩溃、「浮层与面板」页整页空白,已用临时状态兜底修复。
+- 注:上面 B3–B8 的旧条目里,第一波已写代码的项以下面一段为准(它们现在是「部分,未测试」,不再是「待做」)。
+- **第一波补缺口(代码已写、仅 `go build` 通过,**未测试**,等用户说「开始测」)**:缺口总表现为 344 点 / 已实现 218 / 部分 118 / 待做 8;下面各项在 `status.js` 里一律标「部分」并注明未测试。
+  - 会话流:`flow_note.go`(任务通知行)、`flow_parallel.go`(并行子 Agent 汇总)、`flow_turn_fold.go`(`chat.fold` 回合折叠)、`flow_user_actions.go`(悬停动作条)、`flow_rewind.go`(回退文件对话框)、`flow_user_img.go` + `img_cache.go`(用户图片;本地图片经 `a.localImage` 后台解码,界面线程只查表);输入框:`composer_attach.go`(「+」附件)、`composer_slash.go`(/ 命令补全)、`composer_queue.go`(停止并发送)、`dock_pending.go`(审批 1/N)。
+  - 编辑器 / 终端:`ide_goto.go`(转到行 ⌃G、⌘P `:行号`)、块注释 ⌥⇧A、`ide_extmod.go`(外部修改)、`ide_crumb.go`(面包屑同级下拉)、`term_rename.go`;`term.Start` 现在经 `App.TermStartOpts` 读 `term.login / cwd / shell / scrollback`。
+  - Git:`scm_compare.go` / `scm_graph_picks.go`(与 HEAD / 两提交比较)、`git_push_actions.go`(拉取并变基 / 合并,`vcs/sync.go`)、`review_stage.go`(一键暂存已接受改动)、`ide_blame_ui.go`(追溯栏 + 悬停卡)、`scm_stash_expand.go`(储藏展开,`vcs/stash_diff.go`)、`scm_expand_all.go`(多仓库全部展开,设置 → 源代码管理 `scm.expandAll`);Diff 大小上限在 `openDiffKind` 弹确认(「仍然显示」,会话内记住)。
+  - 设置:`settings_wire.go` 等接了运行环境 / 代理 / 隐私诊断 / 高级项;`scm.fetch` 节拍在 main.go 常开、由 `ScmFetchTick` 按偏好执行。`adv.flowMeasure`(一次测完行高)MyGo 没有对应 API,**只存偏好**。
+  - kit:`Btn / Ib / Tog` 的 Disabled / Loading / Error、按下缩放、聚焦环(近似)、加载 400 ms 延迟、`Card`、`SpinStyled`;`OkPop / IndetMeter / FoldHeight` 已在自动化页接线,`GrowY / Crossfade` 仍无调用点。自动化「查看会话」`auto_runner.go`。
+  - **仍未做**:Mermaid 图表卡与排版引擎、语义高亮(无库 API)、定时自动化回写会话 id、文件夹剪切 / 粘贴、图片排队、账号菜单真实数据(`popups.go` 在另一会话手里)等。
 
 - **服务商与模型映射(`prov_*.go`,`claudecfg/providers*.go`,设计稿 `js/providers.js`,未测试)**:`~/.minicode/providers.json` = `{providers, mapping}`(兼容旧数组格式),密钥在 0600 的 `provider-keys.json`;设置 → 服务商可新建自定义 / 预设、「获取模型列表」(`FetchModels` 依次试 `/v1/models` 等候选,全 404 = 不支持,可手动添加)、勾选要用的模型;模型映射 5 个槽位(默认 / Opus / Sonnet / Haiku / 子 Agent)只能从该服务商已勾选的模型里下拉选;输入框配置弹层(`cfgModels`)按「Claude 官方 + 各服务商」分组直接选模型,切换经 `core.CmdSetEnv`(后端只合并受管理的环境变量,回合进行中不推送),新会话启动时由 `claudecfg.ProviderEnv()` 注入。演示模式只改内存、不落盘。缺口:真实连通性只做 HEAD 探测;未做 go test。
 - 设置页:快捷键录制、规则 / 环境变量 / LSP 行是演示数据;「项目信任」只列项目,不读写信任状态;除上面列出的偏好外,其它控件只存偏好。

@@ -39,6 +39,8 @@ const (
 	pBlameInline   = "editor.blameInline"
 	pTermFont      = "term.fontSize"
 	pTermIntegrate = "term.shellIntegration"
+	pTermLogin     = "term.login"
+	pTermCwd       = "term.cwd"
 )
 
 // edScale 是编辑器字号相对 12px 的倍数(浮层定位用的字宽 / 行高按它缩放)。

@@ -16,11 +16,17 @@ func (a *App) mdTryPasteImage(c *ui.Context, tb *ideTab, md *mdState) bool {
 	if tb == nil || md == nil || md.doc == nil {
 		return false
 	}
-	raw, err := c.Services().ReadClipboardData(transfer.PNG).Read(transfer.PNG)
-	if err != nil || len(raw) == 0 {
-		return false
-	}
+	const jpegFmt = transfer.Format("image/jpeg")
+	svc := c.Services().ReadClipboardData(transfer.PNG, jpegFmt)
+	raw, err := svc.Read(transfer.PNG)
 	ext := ".png"
+	if err != nil || len(raw) == 0 {
+		raw, err = svc.Read(jpegFmt)
+		if err != nil || len(raw) == 0 {
+			return false
+		}
+		ext = ".jpg"
+	}
 	name := "paste-" + itoa(int(time.Now().Unix()%1e9)) + ext
 	dir := a.mdAssetDir()
 	outAbs := a.ide.fs.Abs(filepath.Join(dir, name))

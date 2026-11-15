@@ -3,6 +3,7 @@ package vcs
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 )
@@ -21,11 +22,13 @@ type Mem struct {
 	behind  int
 	index   map[string]string // 路径 → 暂存区里的内容(没有记录 = 与 HEAD 相同)
 	stash   []Stash
-	blame   map[string][]BlameLine // 演示:按路径灌入追溯行
-	fileLog map[string][]Commit    // 演示:按路径覆盖 FileLog
-	fail    map[string]string      // 演示:操作名(Pull / Push)→ 失败原因,用来演示「某个仓库失败、其余照常」
-	once    bool                   // 失败只发生一次(第二次「重试」成功)
-	delay   time.Duration          // 演示:拉取 / 推送耗时,界面才看得到转圈
+	blame   map[string][]BlameLine       // 演示:按路径灌入追溯行
+	fileLog map[string][]Commit          // 演示:按路径覆盖 FileLog
+	fail    map[string]string            // 演示:操作名(Pull / Push)→ 失败原因,用来演示「某个仓库失败、其余照常」
+	once    bool                         // 失败只发生一次(第二次「重试」成功)
+	delay   time.Duration                // 演示:拉取 / 推送耗时,界面才看得到转圈
+	rebase  bool                         // 演示:变基冲突中
+	stashDt map[int]map[string][2]string // 演示:储藏条目→路径→[旧,新] diff 内容
 }
 
 // NewMem 造一个带设计稿里那几个分支的演示仓库。
@@ -174,6 +177,9 @@ func (m *Mem) Discard(p string) error {
 }
 
 func (m *Mem) Commit(msg string, amend bool) error {
+	if err := m.slow("Commit"); err != nil {
+		return err
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if msg == "" {
@@ -288,6 +294,49 @@ func (m *Mem) Pull() error {
 	m.mu.Lock()
 	m.behind = 0
 	m.mu.Unlock()
+	return nil
+}
+
+func (m *Mem) PullRebase() error {
+	if err := m.slow("PullRebase"); err != nil {
+		if strings.Contains(err.Error(), "冲突") || strings.Contains(strings.ToLower(err.Error()), "conflict") {
+			m.mu.Lock()
+			m.rebase = true
+			m.changes = append(m.changes, Change{Path: "src/router.rs", Status: StatusConflict, Add: 2, Del: 2})
+			m.mu.Unlock()
+		}
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.behind = 0
+	m.rebase = false
+	return nil
+}
+
+func (m *Mem) PullMerge() error {
+	if err := m.slow("PullMerge"); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	m.behind = 0
+	m.mu.Unlock()
+	return nil
+}
+
+func (m *Mem) RebaseAbort() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if !m.rebase {
+		return fmt.Errorf("当前没有进行中的变基")
+	}
+	m.rebase = false
+	for i := range m.changes {
+		if m.changes[i].Status == StatusConflict {
+			m.changes = append(m.changes[:i], m.changes[i+1:]...)
+			break
+		}
+	}
 	return nil
 }
 

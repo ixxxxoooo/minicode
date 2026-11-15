@@ -20,10 +20,7 @@ func (a *App) crumbs(c *ui.Context, tb *ideTab) {
 				if i > 0 {
 					kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
 				}
-				x := ui.Text(c, p)
-				if i == len(parts)-1 {
-					x.TextColor(t.Tx1).FontWeight(500)
-				}
+				a.crumbSegment(c, tb, p, i, i == len(parts)-1)
 			}
 			// 光标所在的符号链:impl Router › match_path(点击打开符号选择器)
 			if tb.st != nil && tb.buf != nil {

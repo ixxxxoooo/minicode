@@ -80,6 +80,7 @@ type realSetup struct {
 	curCwd string       // 新会话的工作目录:最近打开的会话所在目录
 	onCwd  func(string) // 打开会话后目录变了(切到别的项目)的回调,在主线程调用
 	reg    *projects.Store
+	app    *app.App
 }
 
 func (r *realSetup) refresh() *claude.Index {
@@ -111,12 +112,19 @@ func (r *realSetup) open(id string) backend.Backend {
 		r.curCwd = loc.Cwd
 	}
 	cb := r.onCwd
+	ui := r.app
 	r.mu.Unlock()
+	if ui != nil {
+		ui.FillClaudeConfig(&cfg)
+	}
 	// 工作区的主文件夹启动会话时:其余文件夹用 --add-dir 授权,可选让 Claude 读取它们的 CLAUDE.md
 	if w, ok := r.reg.ByPrimary(cfg.Cwd); ok {
 		cfg.AddDirs = w.Extra()
 		if w.LoadMD {
 			cfg.Env = append(cfg.Env, core.EnvVar{Key: projects.LoadMDEnv, Value: "1"})
+		}
+		if note := w.ReadOnlySystemNote(); note != "" {
+			cfg.AppendSystemPrompt = note
 		}
 	}
 	// 模型映射生效时,把服务商的地址、令牌与模型槽位注入新进程(不写日志:含密钥)
@@ -241,7 +249,7 @@ func main() {
 			reg = projects.Open(regPath)
 		}
 		a.SetRegistry(reg)
-		rs = &realSetup{reg: reg}
+		rs = &realSetup{reg: reg, app: a}
 		a.SetSessMeta(sessmeta.Open(filepath.Join(diag.Home(), "session-meta.json")))
 		a.SetSessionDeleter(app.SessionDeleter(func(id string) (string, bool) {
 			rs.mu.Lock()
@@ -370,6 +378,13 @@ func main() {
 					a.RefreshProjects(ix.Projects)
 					a.SetProjScanning(false)
 				})
+			}
+		}()
+		// 自动拉取:节拍常开,是否执行由 ScmFetchTick 按偏好 scm.fetch 判断(运行中切换开关立即生效)
+		go func() {
+			defer diag.Recover("scm.auto-fetch")
+			for range time.Tick(5 * time.Minute) {
+				win.Update(func() { a.ScmFetchTick() })
 			}
 		}()
 	})

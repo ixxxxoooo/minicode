@@ -10,9 +10,10 @@ type queued struct {
 
 // promptQueue 是排队的消息:纯逻辑,不依赖界面。
 type promptQueue struct {
-	items  []queued
-	paused bool
-	seq    int
+	items   []queued
+	paused  bool
+	seq     int
+	preempt string // 停止并发送:中断结束后优先发出的那条
 }
 
 // add 排入一条;空白消息忽略。
@@ -57,7 +58,18 @@ func (q *promptQueue) turnEnded(normal bool) {
 	}
 }
 
-func (q *promptQueue) clear() { q.items, q.paused = nil, false }
+func (q *promptQueue) clear() { q.items, q.paused, q.preempt = nil, false, "" }
+
+// stopAndSend 取出第 i 条并在中断结束后发出。
+func (q *promptQueue) stopAndSend(i int) bool {
+	s, ok := q.take(i)
+	if !ok {
+		return false
+	}
+	q.preempt = s
+	q.paused = false
+	return true
+}
 
 func trim(s string) string {
 	i, j := 0, len(s)

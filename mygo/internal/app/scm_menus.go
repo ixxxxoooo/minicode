@@ -104,43 +104,50 @@ func (a *App) scmGroupMenu(m *ui.Menu, id string, cs []vcs.Change) {
 			disc = append(disc, c)
 		}
 	}
-	if m.Item("放弃全部更改…").Danger().Disabled(len(disc) == 0).Tooltip(none(len(disc))).Chosen() {
+	if menuItem(m, "放弃全部更改…").Danger().Disabled(len(disc) == 0).Tooltip(none(len(disc))).Chosen() {
 		a.scmDiscardAsk(disc)
 	}
 	m.Separator()
-	if m.Item("储藏所有更改").Disabled(len(a.sc.changes) == 0).Tooltip(none(len(a.sc.changes))).Chosen() {
+	if menuItem(m, "储藏所有更改").Disabled(len(a.sc.changes) == 0).Tooltip(none(len(a.sc.changes))).Chosen() {
 		a.scmStashPush()
 	}
-	if m.Item("刷新").Chosen() {
+	if menuItem(m, "刷新").Chosen() {
 		a.sc.last = time.Time{}
 	}
 }
 
 // commitMenu 是图谱 / SCM 里提交行的右键菜单。
 func (a *App) commitMenu(m *ui.Menu, cm vcs.Commit) {
-	if m.Item("检出此提交").Chosen() {
+	if menuItem(m, "检出此提交").Chosen() {
 		a.scmCommitOp(cm, "checkout")
 	}
-	if m.Item("从此提交创建分支…").Chosen() {
+	if menuItem(m, "从此提交创建分支…").Chosen() {
 		a.scmCommitOp(cm, "branch")
 	}
 	m.Separator()
-	if m.Item("拣选(cherry-pick)").Chosen() {
+	if menuItem(m, "拣选(cherry-pick)").Chosen() {
 		a.scmCommitOp(cm, "pick")
 	}
-	if m.Item("还原(revert)").Chosen() {
+	if menuItem(m, "还原(revert)").Chosen() {
 		a.scmCommitOp(cm, "revert")
 	}
 	m.Separator()
-	if m.Item("与工作区比较…").Chosen() {
+	if menuItem(m, "与工作区比较…").Chosen() {
 		a.scmCompareWork(cm)
 	}
-	if m.Item("复制哈希").Chosen() {
+	if menuItem(m, "与 HEAD 比较…").Chosen() {
+		a.scmCompareHead(cm)
+	}
+	picks := a.graphPicks()
+	if menuItem(m, "比较这两个提交…").Disabled(len(picks) != 2).Tooltip(map[bool]string{true: "按住 ⌘ 再点一条提交以多选", false: ""}[len(picks) != 2]).Chosen() {
+		a.scmCompareTwo(picks[0], picks[1])
+	}
+	if menuItem(m, "复制哈希").Chosen() {
 		a.scmCommitOp(cm, "copy")
 	}
 	m.Separator()
 	n, why := a.resetInfo(cm)
-	if m.Item("回退到这里…").Danger().Disabled(why != "").Tooltip(why).Chosen() {
+	if menuItem(m, "回退到这里…").Danger().Disabled(why != "").Tooltip(why).Chosen() {
 		a.askReset(cm, n)
 	}
 }
@@ -263,27 +270,29 @@ func (a *App) openCompareWork(cm vcs.Commit, p string) {
 // 搜索结果的右键菜单:匹配行 / 文件行各一份。
 func (a *App) searchMatchMenu(m *ui.Menu, mt searchMatch) {
 	s := &a.sr
-	if m.Item("打开").Chosen() {
+	if menuItem(m, "打开").Chosen() {
 		a.ide.navMark()
 		a.ide.openAt(mt.Path, mt.Line, mt.Col, mt.End, false)
 		a.ide.sel = mt.Path
 		a.ide.navPush(navPos{mt.Path, mt.Line, mt.Col})
 	}
-	m.Item("在侧边预览").Disabled(true).Tooltip("需要编辑器向右拆分,尚未实现")
+	if menuItem(m, "在侧边预览").Chosen() {
+		a.searchPreviewSide(mt)
+	}
 	label := "忽略此结果"
 	if s.ignored[mkey(mt)] {
 		label = "恢复此结果"
 	}
-	if m.Item(label).Chosen() {
+	if menuItem(m, label).Chosen() {
 		k := mkey(mt)
 		s.ignored[k] = !s.ignored[k]
 		s.rows = s.flatten()
 	}
 	m.Separator()
-	if m.Item("复制路径与行号").Chosen() {
+	if menuItem(m, "复制路径与行号").Chosen() {
 		a.copyOut(mt.Path+":"+itoa(mt.Line+1)+":"+itoa(mt.Col+1), "路径与行号")
 	}
-	if m.Item("复制匹配行").Chosen() {
+	if menuItem(m, "复制匹配行").Chosen() {
 		a.copyOut(strings.TrimSpace(mt.Text), "匹配行")
 	}
 }

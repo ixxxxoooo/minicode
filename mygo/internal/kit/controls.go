@@ -129,13 +129,28 @@ func Seg(c *ui.Context, items []SegItem, on int, o ...SegOpt) int {
 	return clicked
 }
 
+// TogOpt 是开关的可选项。
+type TogOpt struct {
+	Disabled bool // 半透明、保持当前开/关、不响应点击
+}
+
 // Tog 是开关(设计稿 .tog:26×15,圆点滑动带回弹)。返回是否被点击。
-func Tog(c *ui.Context, on bool, key string) bool {
+func Tog(c *ui.Context, on bool, key string, o ...TogOpt) bool {
+	var op TogOpt
+	if len(o) > 0 {
+		op = o[0]
+	}
 	bg := T.Fill3
 	if on {
 		bg = T.Ac
 	}
-	b := ui.ButtonBase(c).Key(key).Size(26, 15).Radius(8).Background(bg).Cursor(ui.CursorPointer).Shrink(0).Transition(ui.ElementTransition{Colors: true, Duration: DurBase, Ease: EaseIO})
+	b := ui.ButtonBase(c).Key(key).Size(26, 15).Radius(8).Background(bg).Shrink(0).Transition(ui.ElementTransition{Colors: true, Duration: DurBase, Ease: EaseIO})
+	if op.Disabled {
+		b.Disabled(true).Opacity(.42).Cursor(ui.CursorDefault)
+	} else {
+		b.Cursor(ui.CursorPointer)
+	}
+	clickFocusRing(b)
 	b.Label("开关")
 	x := float32(2)
 	if on {
@@ -145,6 +160,9 @@ func Tog(c *ui.Context, on bool, key string) bool {
 		k := ui.Box(c).Absolute().Top(2).Size(11, 11).Radius(6).Background(ui.Hex("#FFFFFF")).Shadow(0, 1, 2, 0, ui.RGBA(0, 0, 0, .25))
 		k.Left(k.AnimateTo("x", x, thumbSpring))
 	})
+	if op.Disabled {
+		return false
+	}
 	return b.Clicked()
 }
 

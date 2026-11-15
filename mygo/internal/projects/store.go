@@ -46,6 +46,31 @@ type Workspace struct {
 	Folders []Folder `json:"folders"`
 	// LoadMD 为真时让 Claude 同时读取附加文件夹里的 CLAUDE.md 与规则。
 	LoadMD bool `json:"loadMD,omitempty"`
+	// ExtraReadOnly 为真时附加文件夹以 --add-dir 加入,并在系统提示里声明只读(见 main 启动逻辑)。
+	ExtraReadOnly bool `json:"extraReadOnly,omitempty"`
+	// PermSaveAck 用户在创建 / 编辑工作区保存时确认过附加目录权限。
+	PermSaveAck bool `json:"permSaveAck,omitempty"`
+	// PermSessionAck 用户在本工作区首次启动会话时再次确认过附加目录权限。
+	PermSessionAck bool `json:"permSessionAck,omitempty"`
+}
+
+// ExtraDirLabels 返回附加文件夹的显示名(目录名),用于权限提示文案。
+func (w Workspace) ExtraDirLabels() []string {
+	var out []string
+	for i, f := range w.Folders {
+		if i > 0 {
+			out = append(out, f.Label())
+		}
+	}
+	return out
+}
+
+// ReadOnlySystemNote 只读附加目录时追加到 Claude 系统提示的文案。
+func (w Workspace) ReadOnlySystemNote() string {
+	if !w.ExtraReadOnly || len(w.Extra()) == 0 {
+		return ""
+	}
+	return "附加文件夹 " + strings.Join(w.ExtraDirLabels(), "、") + " 为只读,不要修改其中文件。"
 }
 
 // Primary 是主文件夹路径。

@@ -14,8 +14,9 @@ import (
 // 选中一行后底部是详情(元信息 + 涉及文件,点文件在工作区开该次提交的差异)。右键菜单与导航栏里一致。
 
 type graphTabState struct {
-	q   string // 搜索词
-	sel string // 选中的提交哈希
+	q     string   // 搜索词
+	sel   string   // 选中的提交哈希
+	picks []string // ⌘ 多选(至多 2 个,用于比较)
 }
 
 const graphBigRowH = graphRowH // 与泳道格同高,线条才连得上
@@ -123,10 +124,19 @@ func (a *App) graphBigRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow, 
 	t := a.tk
 	g := &a.graphTab
 	on := g.sel == cm.Hash
+	picked := false
+	for _, h := range g.picks {
+		if h == cm.Hash {
+			picked = true
+			break
+		}
+	}
 	r := ui.ButtonBase(c).Key("gr-" + cm.Hash).Height(graphBigRowH).PaddingX(10).Gap(8).AlignItems(ui.Center).Cursor(ui.CursorPointer).TextColor(t.Tx2)
 	switch {
 	case on:
 		r.Background(t.AcSoft)
+	case picked:
+		r.Background(t.InfoSoft)
 	case r.Hovered():
 		r.Background(t.Fill1)
 	}
@@ -135,7 +145,12 @@ func (a *App) graphBigRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow, 
 	}
 	r.ContextMenu(func(m *ui.Menu) { a.commitMenu(m, cm) })
 	r.OnClick(func() {
+		if r.ClickModifiers()&ui.Cmd != 0 {
+			a.graphTogglePick(cm.Hash)
+			return
+		}
 		g.sel = cm.Hash
+		g.picks = nil
 		a.scmCommitFiles(cm.Hash)
 	})
 	r.Children(func() {

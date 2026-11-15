@@ -33,6 +33,13 @@ func TestPromptQueue(t *testing.T) {
 	if q.paused || q.len() != 0 {
 		t.Fatal("取空后应清除暂停")
 	}
+	q.add("抢发")
+	if !q.stopAndSend(0) {
+		t.Fatal("stopAndSend 应成功")
+	}
+	if q.preempt != "抢发" || q.len() != 0 {
+		t.Fatalf("preempt=%q len=%d", q.preempt, q.len())
+	}
 	q.turnEnded(false)
 	if q.paused {
 		t.Fatal("没有排队时不需要暂停")

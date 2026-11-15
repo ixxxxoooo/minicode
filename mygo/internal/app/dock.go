@@ -13,35 +13,11 @@ import (
 // 待处理卡片(设计稿 .dockcard):权限 / 提问就地替换输入框,处理完恢复输入框;
 // 计划卡留在会话流里(.plan)。
 
-// qaState 是提问向导的本地进度:当前第几题、每题选中的下标。
+// qaState 是提问向导的本地进度:当前第几题、每题选中的下标与自由文本。
 type qaState struct {
-	cur int
-	sel [][]int
-}
-
-// pendingDock 返回正在等待用户处理的权限 / 提问(没有则 nil)。
-func (a *App) pendingDock() core.Item {
-	var find func(items []core.Item) core.Item
-	find = func(items []core.Item) core.Item {
-		for _, it := range items {
-			switch v := it.(type) {
-			case *core.PermissionRequest:
-				if v.Resolved == "" {
-					return v
-				}
-			case *core.QuestionRequest:
-				if !v.Answered {
-					return v
-				}
-			case *core.SubagentCard:
-				if r := find(v.Children); r != nil {
-					return r
-				}
-			}
-		}
-		return nil
-	}
-	return find(a.st.Items)
+	cur   int
+	sel   [][]int
+	freet []string // 每题「其它」或纯自由输入
 }
 
 // dockCard 画待处理卡;返回是否画了(画了就不再画输入框)。
@@ -127,6 +103,7 @@ func (a *App) permCard(c *ui.Context, r *core.PermissionRequest) {
 			kit.Ic(c, "shield", kit.S12).TextColor(t.AcTx)
 			ui.Text(c, permTitle(r)).FontWeight(700).SingleLine().Shrink(1)
 			ui.Spacer(c).Grow(1)
+			a.dockBadge(c)
 			if r.Tool != nil {
 				kit.Tag(c, r.Tool.Name, kit.KAc)
 			}
@@ -169,10 +146,27 @@ func (a *App) qaOf(q *core.QuestionRequest) *qaState {
 	}
 	s := a.qa[q.ID]
 	if s == nil {
-		s = &qaState{sel: make([][]int, len(q.Questions))}
+		s = &qaState{sel: make([][]int, len(q.Questions)), freet: make([]string, len(q.Questions))}
 		a.qa[q.ID] = s
 	}
 	return s
+}
+
+func isOtherLabel(label string) bool {
+	label = strings.TrimSpace(label)
+	return label == "其他" || label == "其它" || strings.HasPrefix(label, "其它")
+}
+
+func (s *qaState) wantsFreeInput(qu core.Question) bool {
+	if len(qu.Options) == 0 {
+		return true
+	}
+	for _, k := range s.sel[s.cur] {
+		if k >= 0 && k < len(qu.Options) && isOtherLabel(qu.Options[k].Label) {
+			return true
+		}
+	}
+	return false
 }
 
 func hasInt(l []int, v int) bool {
@@ -200,13 +194,32 @@ func (s *qaState) toggleOption(q core.Question, i int) {
 	s.sel[s.cur] = []int{i}
 }
 
-// answers 把选中的下标换成选项文本。
+// answers 把选中的下标换成选项文本;自由输入题或「其它」附带说明。
 func (s *qaState) answers(q *core.QuestionRequest) [][]string {
 	out := make([][]string, len(q.Questions))
 	for i, qu := range q.Questions {
+		if len(qu.Options) == 0 {
+			if t := strings.TrimSpace(s.freet[i]); t != "" {
+				out[i] = []string{t}
+			}
+			continue
+		}
+		other := false
 		for _, k := range s.sel[i] {
 			if k < len(qu.Options) {
-				out[i] = append(out[i], qu.Options[k].Label)
+				lb := qu.Options[k].Label
+				if isOtherLabel(lb) {
+					other = true
+					continue
+				}
+				out[i] = append(out[i], lb)
+			}
+		}
+		if other {
+			if t := strings.TrimSpace(s.freet[i]); t != "" {
+				out[i] = append(out[i], t)
+			} else {
+				out[i] = append(out[i], "其他")
 			}
 		}
 	}
@@ -222,6 +235,14 @@ func (a *App) askCard(c *ui.Context, q *core.QuestionRequest) {
 	qu := q.Questions[s.cur]
 	last := s.cur == len(q.Questions)-1
 	advance := func() {
+		if len(qu.Options) == 0 {
+			if strings.TrimSpace(s.freet[s.cur]) == "" {
+				return
+			}
+		} else if s.wantsFreeInput(qu) && strings.TrimSpace(s.freet[s.cur]) == "" {
+			// 选了「其它」须填写说明
+			return
+		}
 		if len(s.sel[s.cur]) == 0 && len(qu.Options) > 0 && !qu.MultiSelect {
 			return // 单选必须先选;多选可以一个都不选
 		}
@@ -249,10 +270,14 @@ func (a *App) askCard(c *ui.Context, q *core.QuestionRequest) {
 			kit.Ic(c, "info", kit.S12).TextColor(t.AcTx)
 			ui.Text(c, qu.Question).FontWeight(700).Shrink(1)
 			ui.Spacer(c).Grow(1)
+			a.dockBadge(c)
 			if n := len(q.Questions); n > 1 {
 				ui.Text(c, itoa(s.cur+1)+" / "+itoa(n)).FontSize(theme.FsCap).TextColor(t.Tx3).FontFeatures("tnum")
 			}
 		})
+		if len(qu.Options) == 0 {
+			ui.TextInputBase(c.Key("ask-free"), &s.freet[s.cur]).Height(28).PaddingX(9).Radius(t.RSm()).Border(1, t.Bd2).Placeholder("输入你的回答…").PlaceholderColor(t.Tx4)
+		}
 		ui.Column(c).Gap(4).Children(func() {
 			for i, o := range qu.Options {
 				on := hasInt(s.sel[s.cur], i)
@@ -281,6 +306,9 @@ func (a *App) askCard(c *ui.Context, q *core.QuestionRequest) {
 				})
 			}
 		})
+		if s.wantsFreeInput(qu) && len(qu.Options) > 0 {
+			ui.TextInputBase(c.Key("ask-other"), &s.freet[s.cur]).Height(28).PaddingX(9).Radius(t.RSm()).Border(1, t.Bd2).Placeholder("其它说明…").PlaceholderColor(t.Tx4)
+		}
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 			ui.Spacer(c).Grow(1)
 			kit.Btn(c, "跳过", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(skip)
@@ -417,11 +445,12 @@ func (a *App) queueCard(c *ui.Context) {
 					}
 				})
 				if row.Hovered() {
-					kit.Ib(c, "bolt", kit.IbOpt{Small: true, Tip: "立即引导"}).OnClick(func() {
+					kit.Ib(c, "bolt", kit.IbOpt{Small: true, Tip: "引导"}).OnClick(func() {
 						if s, ok := a.q.take(i); ok {
 							a.send(core.CmdPrompt{Text: s, Steer: true})
 						}
 					})
+					kit.Ib(c, "stop", kit.IbOpt{Small: true, Tip: "停止并发送"}).OnClick(func() { a.qStopAndSend(i) })
 					kit.Ib(c, "trash", kit.IbOpt{Small: true, Tip: "删除"}).OnClick(func() { a.q.take(i) })
 				}
 			})

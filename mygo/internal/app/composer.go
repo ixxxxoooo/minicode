@@ -19,6 +19,9 @@ func (a *App) composer(c *ui.Context) {
 		r = t.RMd()
 	}
 	box := ui.Column(c).Key("composer").Background(t.Raised).Radius(r).Border(1, t.Bd2).Transition(ui.ElementTransition{Colors: true, Shadows: true, Duration: kit.DurBase, Ease: kit.EaseOut})
+	if !a.composerInAt.IsZero() {
+		box = kit.PopIn(box, a.composerInAt)
+	}
 	focus := box.FocusWithin() || box.Hovered()
 	if focus {
 		box.BorderColor(t.AcLine)
@@ -28,7 +31,9 @@ func (a *App) composer(c *ui.Context) {
 		box.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
 	_ = a.chatDrop(box)
+	anchor := box
 	box.Children(func() {
+		a.composerAttachRow(c)
 		in := ui.TextArea(c.Key("draft"), &a.draft).Lines(1, 8).Placeholder("描述任务,@ 引用文件,/ 调用命令").
 			PlaceholderColor(t.Tx3).Background(ui.Transparent).BorderWidth(0).Padding(9, 12, 3, 12).FontSize(theme.FsRead).LineHeight(1.55).
 			MinHeight(36).TextColor(t.Tx1).FocusRing(false)
@@ -40,6 +45,9 @@ func (a *App) composer(c *ui.Context) {
 			a.ux.focusDraft = false
 		}
 		in.OnTextKey(func(k ui.TextKey) bool {
+			if a.slashTextKey(k) {
+				return true
+			}
 			if k.Key != ui.KeyEnter || (k.Mods != 0 && k.Mods != ui.Cmd) {
 				return false
 			}
@@ -59,40 +67,39 @@ func (a *App) composer(c *ui.Context) {
 		})
 		a.composerBar(c)
 	})
+	if a.slashOpen() {
+		a.slashPopup(c, anchor)
+	}
 	a.cfgPopup(c, "cfg", box, false)
 }
 
 // submitKey 回车发送:回合进行中 Enter 排队、⌘Enter 立即引导;空闲时都是直接发送。
 func (a *App) submitKey(text string, steer bool) {
-	if trim(text) == "" {
+	if trim(text) == "" && len(parseDraftAttaches(text)) == 0 {
 		return
 	}
 	if a.st.Phase == core.PhaseRunning {
 		if steer {
 			log.Info("引导", "len", len(text))
-			a.send(core.CmdPrompt{Text: text, Steer: true})
+			a.submitPrompt(text, true)
 		} else if a.q.add(text) {
 			log.Info("排队", "len", len(text), "队列", a.q.len())
 		}
 		return
 	}
-	a.submit(text)
+	a.submitPrompt(text, false)
 }
 
 // submit 发送一条消息。
-func (a *App) submit(text string) {
-	if text == "" {
-		return
-	}
-	log.Info("发送提示", "len", len(text))
-	a.send(core.CmdPrompt{Text: text})
-}
+func (a *App) submit(text string) { a.submitPrompt(text, false) }
 
 func (a *App) composerBar(c *ui.Context) {
 	t := a.tk
 	wide := a.chatTier() != tierNarrow // 窄档:省略「思考」、百分比与 MCP 字样
 	ui.Row(c).Padding(3, 5, 5, 5).Gap(2).AlignItems(ui.Center).Children(func() {
-		kit.Ib(c, "plus", kit.IbOpt{Tip: "添加附件"})
+		plus := kit.Ib(c, "plus", kit.IbOpt{Tip: "添加附件", On: a.popup == "cmp-attach"})
+		plus.OnClick(func() { a.togglePop("cmp-attach") })
+		a.plusAttachMenu(c, plus)
 		a.cfgChip(c, wide)
 		mcpAnchor := a.mcpChip(c, wide)
 		a.mcpPopup(c, mcpAnchor)
@@ -127,7 +134,10 @@ func (a *App) composerBar(c *ui.Context) {
 			if b.Hovered() {
 				b.Background(t.Ac.Mix(t.Tx1, .10))
 			}
-			b.OnClick(func() { a.submitKey(a.draft, false); a.draft = "" })
+			b.OnClick(func() {
+				txt := a.draft
+				a.submitKey(txt, false)
+			})
 		}
 	})
 }

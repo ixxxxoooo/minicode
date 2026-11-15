@@ -242,7 +242,6 @@ func (a *App) reviewView(c *ui.Context) {
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Margin(4, 0, 0, 0).TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
 				kit.Ic(c, "info", kit.S12)
 				ui.Text(c, "还没有提交。接受 = 保留(不写入 Git);撤销 = 把这一块还原成改动前。").Grow(1)
-				kit.Btn(c, "在源代码管理里暂存", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "branch"}).OnClick(a.OpenSCM)
 			})
 		})
 	})
@@ -253,10 +252,16 @@ func (a *App) reviewView(c *ui.Context) {
 			viewed++
 		}
 	}
-	ui.Row(c).Height(28).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).
-		TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
-		ui.Text(c, a.reviewFooterText(files)).Grow(1).SingleLine()
-		kit.Btn(c, "回退到这一回合之前", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "rewind"}).OnClick(a.reviewRewind)
+	ui.Column(c).Shrink(0).Children(func() {
+		a.reviewStageUndoBar(c)
+		ui.Row(c).Height(28).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).
+			TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
+			ui.Text(c, a.reviewFooterText(files)).Grow(1).SingleLine()
+			n, why := a.reviewStageAcceptedReason(files)
+			kit.Btn(c, "暂存已接受的改动", kit.BtnOpt{Variant: kit.BtnSoft, Small: true, Icon: "plus", Disabled: n == 0, Tip: why}).OnClick(a.reviewStageAccepted)
+			kit.Btn(c, "回退到这一回合之前", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "rewind"}).OnClick(a.reviewRewind)
+			kit.Btn(c, "在源代码管理里暂存", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "branch"}).OnClick(a.OpenSCM)
+		})
 	})
 }
 

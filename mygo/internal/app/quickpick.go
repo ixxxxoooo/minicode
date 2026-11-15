@@ -25,6 +25,8 @@ type qpState struct {
 	loadErr  string
 	symFile  string       // 符号选择器:要列符号的文件
 	cmpC     vcs.Commit   // 「与工作区比较」:被比较的提交
+	cmpA     vcs.Commit   // 两个提交比较:较早侧
+	cmpB     vcs.Commit   // 两个提交比较:较晚侧
 	cmpFiles []vcs.Change // 及它涉及的文件
 }
 
@@ -108,6 +110,22 @@ func (a *App) qpRows() []qpRow {
 			}
 			p := f.Path
 			rows = append(rows, qpRow{group: " ", icon: fileIcon(path.Base(p)), title: p, right: statusLetter(f.Status), run: func() { a.openCompareWork(s.cmpC, p) }})
+		}
+	case "cmphead":
+		for _, f := range s.cmpFiles {
+			if q != "" && fuzzy(q, f.Path) < 0 {
+				continue
+			}
+			p := f.Path
+			rows = append(rows, qpRow{group: " ", icon: fileIcon(path.Base(p)), title: p, right: statusLetter(f.Status), run: func() { a.openCompareHead(s.cmpC, p) }})
+		}
+	case "cmp2":
+		for _, f := range s.cmpFiles {
+			if q != "" && fuzzy(q, f.Path) < 0 {
+				continue
+			}
+			p, ah, bh := f.Path, s.cmpA.Hash, s.cmpB.Hash
+			rows = append(rows, qpRow{group: " ", icon: fileIcon(path.Base(p)), title: p, right: statusLetter(f.Status), run: func() { a.openCompareTwo(ah, bh, p) }})
 		}
 	case "branch":
 		exact := false
@@ -219,6 +237,10 @@ func (a *App) quickView(c *ui.Context) {
 		ph, ic = "转到符号", "cube"
 	case "cmpfiles":
 		ph, ic = "选择要与工作区比较的文件("+s.cmpC.Short()+")", "diff"
+	case "cmphead":
+		ph, ic = "选择与 HEAD 比较的文件("+s.cmpC.Short()+")", "diff"
+	case "cmp2":
+		ph, ic = "选择要比较的文件("+shortenHash(s.cmpA.Hash)+" ↔ "+shortenHash(s.cmpB.Hash)+")", "diff"
 	}
 	ui.DialogBase(c, &open, func(backdrop, panel ui.Element) {
 		backdrop.Background(t.Scrim).Justify(ui.Start).AlignItems(ui.Center).Padding(96, 0, 0, 0)

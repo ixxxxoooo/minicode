@@ -48,6 +48,8 @@ type ideTab struct {
 
 	md     *mdState // Markdown 所见即所得的状态(edit_md.go)
 	mdMode int8     // Markdown 视图:0 跟随偏好,mdWysiwyg / mdSource = 在标签上手动选的
+
+	extBanner bool // 磁盘上文件已变且本地有未保存修改
 }
 
 func (t *ideTab) dirty() bool { return !t.diff && t.buf != nil && t.buf.String() != t.saved }
@@ -87,6 +89,7 @@ type ide struct {
 	bottomOpen bool
 	onSaved    func(path string) // 保存成功后(语言服务 didSave)
 	beforeSave func(*ideTab)     // 保存前(设置:保存时格式化 / 去行尾空白)
+	onDiskSnap func(*ideTab)     // 打开 / 保存后记录磁盘快照(外部修改检测)
 	closed     []string          // 最近关闭的文件标签(⇧⌘T 重新打开,最多 20 个)
 	panelTop   float32           // 底部面板上缘(上一帧)
 	bottomTab  string            // term / problems / output
@@ -101,18 +104,23 @@ type ide struct {
 
 	sections map[string]bool // 资源管理器区块折叠(大纲 / 时间线)
 
-	tabSt     ui.ScrollState      // 标签条的横向滚动
-	tabSeen   string              // 已滚动到可见的标签
-	tabW      map[string]float32  // 各标签上一帧的宽度
-	nav       []navPos            // 导航历史(位置栈)
-	ni        int                 // 历史里当前项的下标
-	refs      *refsState          // 底部「引用」分段的内容
-	ov        ideOv               // 代码区浮层
-	textCache map[string]string   // 读盘缓存(引用 / 定义索引用)
-	symCache  map[string]symEntry // 符号缓存
+	tabSt      ui.ScrollState     // 标签条的横向滚动
+	tabSeen    string             // 已滚动到可见的标签
+	tabW       map[string]float32 // 各标签上一帧的宽度
+	nav        []navPos           // 导航历史(位置栈)
+	ni         int                // 历史里当前项的下标
+	refs       *refsState         // 底部「引用」分段的内容
+	ov         ideOv              // 代码区浮层
+	blameHover bool
+	blameLine  int
+	textCache  map[string]string   // 读盘缓存(引用 / 定义索引用)
+	symCache   map[string]symEntry // 符号缓存
 
 	filesCache []string                     // allFiles 的缓存
 	listCache  map[string][]workspace.Entry // 目录列表缓存
+
+	diskSnaps  map[string]diskSnap // 已打开文件的磁盘快照(外部修改检测)
+	extmodLast time.Time
 }
 
 // termLine 是终端面板里的一行(带色段)。
@@ -199,6 +207,9 @@ func (d *ide) openFile(p string, pin bool) {
 			t.preview = false
 		}
 		d.active, d.sel = p, p
+		if d.onDiskSnap != nil && t.buf != nil {
+			d.onDiskSnap(t)
+		}
 		return
 	}
 	end := diag.SpanSlow("ide", "打开文件", 50*time.Millisecond, "path", p)
@@ -220,6 +231,9 @@ func (d *ide) openFile(p string, pin bool) {
 		}
 	}
 	d.addTab(t)
+	if d.onDiskSnap != nil && t.buf != nil {
+		d.onDiskSnap(t)
+	}
 }
 
 // reloadOpen 把已打开且没有未保存修改的文件标签读回磁盘内容(批量替换之后用)。
@@ -381,6 +395,10 @@ func (d *ide) save() error {
 		d.onSaved(t.path)
 	}
 	d.invalidate()
+	if d.onDiskSnap != nil {
+		d.onDiskSnap(t)
+	}
+	t.extBanner = false
 	ideLog.Info("已保存", "path", t.path, "bytes", len(s))
 	return nil
 }

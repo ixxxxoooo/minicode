@@ -73,19 +73,7 @@ func (a *App) bottomPanel(c *ui.Context) {
 							n = 1
 						}
 						for i := 0; i < n; i++ {
-							i := i
-							name := shellName()
-							if i > 0 {
-								name += " " + itoa(i+1)
-							}
-							on := a.ide.termSel == "" && a.ide.tpSel == i
-							kit.Chip(c, name, kit.ChipOpt{Icon: "terminal", On: on}).OnClick(func() {
-								a.ide.termSel, a.ide.tpSel = "", i
-								a.ide.tpc().focusIt = true
-							})
-							if on && n > 1 {
-								kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭这个终端"}).OnClick(func() { a.askCloseTermTab(i) })
-							}
+							a.termChip(c, i)
 						}
 					} else {
 						kit.Chip(c, shellName(), kit.ChipOpt{Icon: "terminal", On: a.ide.termSel == ""}).OnClick(func() { a.ide.termSel = "" })

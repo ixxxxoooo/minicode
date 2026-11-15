@@ -270,6 +270,9 @@ func Watchdog(ping func(done func()), warn, dump time.Duration) {
 		defer Recover("diag.watchdog")
 		for {
 			time.Sleep(500 * time.Millisecond)
+			if !watchdogEnabled.Load() {
+				continue
+			}
 			ch := make(chan struct{})
 			sent := time.Now()
 			go ping(func() { close(ch) })
