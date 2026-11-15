@@ -495,6 +495,10 @@ func (a *App) editorShortcuts(c *ui.Context) bool {
 		a.openRename()
 	case c.Shortcut(ui.Shift|ui.Alt, ui.KeyF):
 		a.formatDoc()
+	case c.Shortcut(ui.Cmd|ui.Shift, ui.KeyT):
+		a.reopenClosed()
+	case c.Shortcut(ui.Alt, ui.KeyZ):
+		a.toggleWrap()
 	case c.Shortcut(ui.Cmd, ui.KeyPeriod):
 		a.openActs()
 	case c.Shortcut(ui.Cmd, ui.KeyL):

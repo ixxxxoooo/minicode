@@ -61,7 +61,8 @@ const (
 
 // App 是整个应用的状态。只在主线程读写(后端事件经 win.Update 切回主线程)。
 type App struct {
-	ide        *ide // IDE 形态独有的状态(编辑器标签、文件树、底部面板)
+	ide        *ide    // IDE 形态独有的状态(编辑器标签、文件树、底部面板)
+	ux         uxState // 拖拽引用 / Markdown 所见即所得等编辑体验的零散状态(edit_ux.go)
 	edTheme    *editor.Theme
 	edThemeKey string
 	flowSt     ui.ScrollState // 会话流滚动状态(跟随底部)
@@ -233,6 +234,7 @@ func New(o Options) *App {
 	}
 	a.applyPrefs()
 	a.ide.onSaved = a.lspSaved
+	a.ide.beforeSave = a.beforeSave
 	return a
 }
 
@@ -244,6 +246,7 @@ func (a *App) retheme() {
 	a.tk = theme.Resolve(a.pal, sch, a.accent)
 	kit.Use(a.tk)
 	a.md = nil
+	a.ux.rt = nil
 	log.Debug("主题", "palette", a.pal.ID, "scheme", a.sch.ID)
 }
 

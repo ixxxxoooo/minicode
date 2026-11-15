@@ -193,6 +193,7 @@ func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 	dv := tb.dv
 	dv.Theme = a.editorTheme()
 	dv.Font = ui.Font{Family: "monospace", Size: 12}
+	dv.Wrap = a.prefs.Bool(pEdWrap, false) // 与编辑器同一个「自动换行」偏好
 	narrow := a.wsNarrow()
 	dv.Layout = a.diffLayout(tb, narrow)
 	adds, dels := dv.Stats()
@@ -230,6 +231,13 @@ func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 				a.diffPref = i
 				log.Info("切换差异视图", "统一", i == 1)
 			}
+		}
+		wrapTip := "自动换行 ⌥Z"
+		if dv.Wrap {
+			wrapTip = "关闭自动换行 ⌥Z"
+		}
+		if kit.Ib(c, "wrap", kit.IbOpt{Small: true, On: dv.Wrap, Tip: wrapTip}).Clicked() {
+			a.toggleWrap()
 		}
 		kit.Btn(c, "打开文件", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "ext"}).OnClick(func() {
 			a.jumpTo(tb.path, 0, 0, 0)

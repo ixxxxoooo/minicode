@@ -43,6 +43,9 @@ type ideTab struct {
 	asAt       time.Time // 自动保存:版本变化的时间
 	blameKey   string    // 行内追溯当前显示的内容(去重,避免每帧 SetInlays)
 	blameShown bool
+
+	md     *mdState // Markdown 所见即所得的状态(edit_md.go)
+	mdMode int8     // Markdown 视图:0 跟随偏好,mdWysiwyg / mdSource = 在标签上手动选的
 }
 
 func (t *ideTab) dirty() bool { return !t.diff && t.buf != nil && t.buf.String() != t.saved }
@@ -76,6 +79,8 @@ type ide struct {
 
 	bottomOpen bool
 	onSaved    func(path string) // 保存成功后(语言服务 didSave)
+	beforeSave func(*ideTab)     // 保存前(设置:保存时格式化 / 去行尾空白)
+	closed     []string          // 最近关闭的文件标签(⇧⌘T 重新打开,最多 20 个)
 	panelTop   float32           // 底部面板上缘(上一帧)
 	bottomTab  string            // term / problems / output
 	termLines  []termLine
@@ -269,6 +274,12 @@ func (d *ide) closeTab(id string) {
 			continue
 		}
 		d.tabs = append(d.tabs[:i], d.tabs[i+1:]...)
+		if isFileTab(t) && !t.diff {
+			d.closed = append(d.closed, t.path)
+			if len(d.closed) > 20 {
+				d.closed = d.closed[len(d.closed)-20:]
+			}
+		}
 		if d.active == id {
 			switch {
 			case len(d.tabs) == 0:
@@ -300,6 +311,9 @@ func (d *ide) save() error {
 	}
 	end := diag.SpanSlow("ide", "保存文件", 100*time.Millisecond, "path", t.path)
 	defer end()
+	if d.beforeSave != nil {
+		d.beforeSave(t)
+	}
 	s := t.buf.String()
 	if err := d.fs.Write(t.path, s); err != nil {
 		ideLog.Error("保存失败", "path", t.path, "err", err)

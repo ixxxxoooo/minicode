@@ -13,36 +13,39 @@ import (
 
 func (a *App) crumbs(c *ui.Context, tb *ideTab) {
 	t := a.tk
-	ui.Row(c).Height(24).Shrink(0).PaddingX(14).Gap(3).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(11.5).Children(func() {
-		parts := strings.Split(tb.path, "/")
-		for i, p := range parts {
-			if i > 0 {
-				kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
-			}
-			x := ui.Text(c, p)
-			if i == len(parts)-1 {
-				x.TextColor(t.Tx1).FontWeight(500)
-			}
-		}
-		// 光标所在的符号链:impl Router › match_path(点击打开符号选择器)
-		if tb.st != nil && tb.buf != nil {
-			syms := a.ide.fileSyms(tb.path)
-			for _, k := range enclosing(syms, tb.st.CursorPos().Line) {
-				kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
-				b := ui.ButtonBase(c).Key("crumb-sym-" + itoa(k)).Height(18).PaddingX(3).Gap(3).Radius(t.RXs()).AlignItems(ui.Center).Cursor(ui.CursorPointer)
-				if b.Hovered() {
-					b.Background(t.Fill1)
+	ui.Row(c).Height(24).Shrink(0).PaddingX(14).Gap(8).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(11.5).Children(func() {
+		ui.Row(c).Grow(1).MinWidth(0).Gap(3).AlignItems(ui.Center).Clip().Children(func() {
+			parts := strings.Split(tb.path, "/")
+			for i, p := range parts {
+				if i > 0 {
+					kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
 				}
-				if b.Clicked() {
-					a.OpenQuick("symbols", "")
+				x := ui.Text(c, p)
+				if i == len(parts)-1 {
+					x.TextColor(t.Tx1).FontWeight(500)
 				}
-				sy := syms[k]
-				b.Children(func() {
-					kit.Ic(c, "cube", kit.S12).TextColor(t.AcTx)
-					ui.Text(c, sy.Name)
-				})
 			}
-		}
+			// 光标所在的符号链:impl Router › match_path(点击打开符号选择器)
+			if tb.st != nil && tb.buf != nil {
+				syms := a.ide.fileSyms(tb.path)
+				for _, k := range enclosing(syms, tb.st.CursorPos().Line) {
+					kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
+					b := ui.ButtonBase(c).Key("crumb-sym-" + itoa(k)).Height(18).PaddingX(3).Gap(3).Radius(t.RXs()).AlignItems(ui.Center).Cursor(ui.CursorPointer)
+					if b.Hovered() {
+						b.Background(t.Fill1)
+					}
+					if b.Clicked() {
+						a.OpenQuick("symbols", "")
+					}
+					sy := syms[k]
+					b.Children(func() {
+						kit.Ic(c, "cube", kit.S12).TextColor(t.AcTx)
+						ui.Text(c, sy.Name)
+					})
+				}
+			}
+		})
+		a.crumbTools(c, tb)
 	})
 }
 

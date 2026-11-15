@@ -112,6 +112,8 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 - **调试**:`MINI_WS=1` 启动即进入演示工作区;`cmd/shot -ws [-repo N]`、`-dlg add|ws|wsedit|confirm|add:<路径>`。演示数据 `internal/demo/wsdemo.go`(`WorkspaceFolders` / `Discovered`)。
 - **未做**:审查页按仓库分组与「逐个提交」向导、图谱仓库下拉、嵌套仓库 / 子模块、搜索「仅某文件夹」范围、拖拽排序、会话行右键菜单。
 
+- **拖拽引用 / Markdown 所见即所得 / 换行与格式化 / 「···」菜单**(`edit_ux.go` / `edit_md.go` / `edit_format.go` / `edit_tools.go` / `edit_menus.go`,设计稿 `ide-md`、`drag-more` 两页):文件树行、编辑器标签(含差异)、SCM 文件行用 `dragRef` 成为拖拽源(`fileRef{Path,Dir}`),对话栏 `chatPane` 里 `chatDrop` 接住站内拖拽与访达拖入(`DroppedFiles`),落下 = 输入框末尾插入 `@路径`(`appendRefs` 去重)并聚焦输入框,可放态 `dropOverlay`(`-ed drag:@路径` 可直接截图);Markdown 标签默认用 `ui/richtext` 所见即所得(`mdView`):文档与缓冲区两向同步(每次修改 `mdWrite` 序列化回缓冲区,缓冲区版本变了 `mdEnsure` 重新读入),YAML 头单独保留并显示只读属性条,含表格 / HTML / 脚注(`mdUnsafe`)只读预览,写法规范化只提示(`mdNormalized`);标签上的分段 `tb.mdMode` 优先于偏好 `editor.mdView`,要定位到行(`tb.reveal`)自动切源码;格式化 `formatDoc` 先试语言服务器,没有就走内置(`builtinFormat`:Go / JSON / Markdown / 文本),偏好 `editor.formatOnSave` / `editor.trimOnSave` 经 `ide.beforeSave` 在保存前整理;自动换行 `toggleWrap`(⌥Z)与差异视图共用 `editor.wrap`;菜单:标签条 ··· / 标签右键 / 文件树右键 / 树标题 ··· / 会话 ···(`edit_menus.go`),后端没有的动作置灰并写明原因。调试 `-ed md:src|wysiwyg`、`wrap`、`format`、`drag:@路径`、`mdedit:内容`;演示沙盒新增 `docs/guide.md`(正常)、`docs/api.md`(含表格)、`.cursor/rules/style.mdc`(带 YAML 头)。已知缺口:所见即所得往返会丢代码块语言标注、并掉段内换行;图片 / 附件、按标题滚动、向右拆分 / 固定标签、会话重命名 / 置顶 / 归档 / 删除 / 分叉(后端未接)、文件新建 / 重命名 / 删除菜单、差异 / SCM / 终端 / 自定义页的 ··· 菜单未做。
+
 ### 已知缺口(真实模式)
 
 - 设置页:快捷键录制、服务商 / 规则 / 环境变量 / LSP 行是演示数据;「项目信任」只列项目,不读写信任状态;除上面列出的偏好外,其它控件只存偏好。

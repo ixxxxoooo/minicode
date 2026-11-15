@@ -1,6 +1,7 @@
 package app
 
 import (
+	"cmp"
 	"math"
 	"os"
 	"path/filepath"
@@ -40,6 +41,7 @@ type termPanel struct {
 	preedit string // 组字中的文字(显示在光标处,提交时由 InputText 送入)
 	focusIt bool   // 下一帧把键盘焦点给终端(刚启动 / 刚重启)
 	initCmd string // shell 起来后自动输入的一条命令(安装语言服务器用)
+	cwd     string // 起始目录(空 = 项目根;文件树「在此处打开终端」用)
 
 	scr       *term.Screen // 最近一帧的画面快照(选择 / 搜索 / 链接按它换算)
 	viewH     float32      // 可视高度(搜索命中滚到中间用)
@@ -125,7 +127,7 @@ func (a *App) realTerminal(c *ui.Context) {
 	rows := int((b.H - 2*padY) / termLineH)
 
 	if tp.t == nil && tp.err == "" && cols >= 4 && rows >= 1 {
-		tm, err := term.Start(term.Options{Cwd: a.proj, Cols: cols, Rows: rows, Notify: a.redraw})
+		tm, err := term.Start(term.Options{Cwd: cmp.Or(tp.cwd, a.proj), Cols: cols, Rows: rows, Notify: a.redraw})
 		if err != nil {
 			tp.err = err.Error()
 			log.Error("启动终端失败", "err", err)

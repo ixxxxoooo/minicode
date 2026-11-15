@@ -85,7 +85,7 @@ func (a *App) formatDoc() {
 	}
 	s := a.lspReadyFor(tb.path)
 	if s == nil {
-		a.toast = "格式化需要语言服务器:这个文件没有可用的服务器"
+		a.formatBuiltin(tb) // 没有可用的语言服务器:用内置格式化兜底
 		return
 	}
 	uri := lsp.PathToURI(filepath.Join(a.proj, tb.path))

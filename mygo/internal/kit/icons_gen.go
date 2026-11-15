@@ -5,6 +5,7 @@ package kit
 var iconPaths = map[string]string{
 	"activity": "<path d=\"M3 12h4l3-7 4 14 3-7h4\"/>",
 	"alert":    "<path d=\"M12 4 3 19.5h18zM12 10v4.5M12 17h.01\"/>",
+	"align":    "<path d=\"M4 6h16M4 10.5h10M4 15h16M4 19.5h10\"/>",
 	"archive":  "<path d=\"M4 6h16v4H4zM6 10v8h12v-8M10 14h4\"/>",
 	"arrow":    "<path d=\"M5 12h14M13 6l6 6-6 6\"/>",
 	"arrowL":   "<path d=\"M19 12H5M11 6l-6 6 6 6\"/>",
@@ -118,6 +119,7 @@ var iconPaths = map[string]string{
 	"user":     "<circle cx=\"12\" cy=\"8.5\" r=\"3.5\"/><path d=\"M5 19.5c.8-3.5 3.6-5.5 7-5.5s6.2 2 7 5.5\"/>",
 	"users":    "<circle cx=\"9\" cy=\"9\" r=\"3\"/><path d=\"M3.5 19a5.5 5.5 0 0 1 11 0M16 6.5a3 3 0 0 1 0 5.5M17 14.5a5.5 5.5 0 0 1 3.5 4.5\"/>",
 	"wand":     "<path d=\"m5 19 9-9M13 5v3M16.5 6.5 14.5 8.5M18 10h3M7 5v2M6 6h2\"/>",
+	"wrap":     "<path d=\"M4 6h16M4 12h12.5a3 3 0 0 1 0 6H12M14.5 15.5 12 18l2.5 2.5M4 18h4\"/>",
 	"wrench":   "<path d=\"M15 5a4 4 0 0 0-3.5 5.5L5 17a2 2 0 0 0 3 3l6.5-6.5A4 4 0 0 0 20 9l-2.5 2.5-2.5-.5-.5-2.5z\"/>",
 	"x":        "<path d=\"M6 6l12 12M18 6 6 18\"/>",
 }

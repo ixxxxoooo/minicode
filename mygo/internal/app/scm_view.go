@@ -271,6 +271,7 @@ func statusLetter(st byte) string {
 func (a *App) scmFile(c *ui.Context, grp string, ch vcs.Change) {
 	t := a.tk
 	r := ui.ButtonBase(c).Key("scm-f-" + grp + "-" + ch.Path).Height(22).PaddingX(4).PaddingStart(14).Gap(5).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
+	dragRef(r, ch.Path, false) // 拖到对话栏 = 引用这个文件
 	hov := r.Hovered()
 	if hov {
 		r.Background(t.Fill1)

@@ -34,6 +34,10 @@ func (a *App) composer(c *ui.Context) {
 		if a.welcomeFocus {
 			in.AutoFocus()
 		}
+		if a.ux.focusDraft { // 拖入引用之后接着写
+			in.Focus()
+			a.ux.focusDraft = false
+		}
 		in.OnTextKey(func(k ui.TextKey) bool {
 			if k.Key != ui.KeyEnter || (k.Mods != 0 && k.Mods != ui.Cmd) {
 				return false

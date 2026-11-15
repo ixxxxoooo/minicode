@@ -195,6 +195,7 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 	}
 	hov := r.Hovered()
 	r.OnClick(func() { a.OpenSession(s.ID) })
+	r.ContextMenu(func(m *ui.Menu) { a.sessionMenu(m, s.ID, s.Title, false) })
 	r.Children(func() {
 		if on && t.Scheme.ID == "a" {
 			// 方案 A:选中行左侧一道强调色竖线
@@ -202,7 +203,7 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 		}
 		ui.Text(c, s.Title).Grow(1).SingleLine()
 		if hov {
-			kit.Ib(c, "more", kit.IbOpt{Small: true}).Margin(0, -4, 0, 0)
+			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Margin(0, -4, 0, 0).Menu(func(m *ui.Menu) { a.sessionMenu(m, s.ID, s.Title, false) })
 		} else {
 			ui.Text(c, s.Label).FontSize(theme.FsMicro).TextColor(t.Tx4).FontFeatures("tnum").SingleLine()
 		}

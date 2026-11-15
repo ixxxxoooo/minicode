@@ -4,10 +4,11 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui/editor"
+	"github.com/egoist/mygo/ui/richtext"
 )
 
 // EditorDemo 按「动作:参数」驱动编辑器进入某个状态(cmd/shot 截图用,多个动作用逗号隔开):
-// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)。
+// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、md:src|wysiwyg(Markdown 视图)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容。
 func (a *App) EditorDemo(spec string) {
 	for _, act := range strings.Split(spec, ",") {
 		name, arg, _ := strings.Cut(act, ":")
@@ -60,6 +61,31 @@ func (a *App) EditorDemo(spec string) {
 		}
 		if name == "open" {
 			a.ide.openFile(arg, true)
+			continue
+		}
+		switch name {
+		case "md": // md:src / md:wysiwyg:当前 Markdown 标签的视图
+			if tb != nil && tb.buf != nil {
+				a.setMdMode(tb, arg == "src")
+			}
+			continue
+		case "wrap": // 切换自动换行
+			a.toggleWrap()
+			continue
+		case "format": // 格式化当前文档
+			a.formatDoc()
+			continue
+		case "drag": // drag:@路径:对话栏显示「松手引用」可放态
+			a.ux.demoHint = arg
+			continue
+		case "mdedit": // mdedit:在所见即所得里把整篇换成给定 Markdown(用 \n 表示换行),演示「改过」状态
+			if tb != nil && tb.buf != nil && isMarkdownFile(tb.path) {
+				md := a.mdEnsure(tb)
+				if md.doc != nil {
+					md.doc.SetText(richtext.ParseMarkdown(strings.ReplaceAll(arg, `\n`, "\n")))
+					a.mdWrite(tb, md)
+				}
+			}
 			continue
 		}
 		if tb == nil || tb.st == nil {

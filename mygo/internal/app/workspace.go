@@ -118,7 +118,16 @@ func (a *App) workspace(c *ui.Context) {
 		a.diffTab(c, cur)
 	default:
 		a.crumbs(c, cur)
-		a.codeView(c, cur)
+		if cur.buf != nil && isMarkdownFile(cur.path) && !a.mdSource(cur) {
+			if cur.reveal != nil { // 要跳到某一行 / 某段:只有源码能定位
+				cur.mdMode = mdSource
+				a.codeView(c, cur)
+			} else {
+				a.mdView(c, cur)
+			}
+		} else {
+			a.codeView(c, cur)
+		}
 	}
 	if a.ide.bottomOpen {
 		a.bottomPanel(c)
@@ -168,7 +177,7 @@ func (a *App) etabs(c *ui.Context) {
 		})
 		ui.Row(c).Gap(1).PaddingX(6).AlignItems(ui.Center).Shrink(0).Children(func() {
 			kit.Ib(c, "cols", kit.IbOpt{Small: true, Tip: "向右拆分 ⌘\\"})
-			kit.Ib(c, "more", kit.IbOpt{Small: true})
+			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.tabStripMenu)
 		})
 	})
 }
@@ -178,6 +187,10 @@ func (a *App) etab(c *ui.Context, tb *ideTab) {
 	on := tb.id == a.ide.active
 	el := ui.ButtonBase(c).Key("etab-" + tb.id).PaddingX(10).Gap(6).AlignItems(ui.Center).Shrink(0).
 		TextColor(t.Tx3).Cursor(ui.CursorDefault).Transition(kit.Fade)
+	if isFileTab(tb) {
+		dragRef(el, tb.path, false) // 拖到对话栏 = 引用这个文件
+	}
+	el.ContextMenu(func(m *ui.Menu) { a.tabMenu(m, tb) })
 	hov := el.Hovered()
 	if on || hov {
 		el.TextColor(t.Tx1)

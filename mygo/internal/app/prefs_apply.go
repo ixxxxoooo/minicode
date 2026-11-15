@@ -27,6 +27,9 @@ const (
 	pEdNumbers   = "editor.lineNumbers"
 	pEdFolding   = "editor.folding"
 	pEdWrap      = "editor.wrap"
+	pMdView      = "editor.mdView"       // Markdown 默认视图:0 所见即所得,1 源码
+	pFmtSave     = "editor.formatOnSave" // 保存时格式化
+	pTrimSave    = "editor.trimOnSave"   // 保存时去掉行尾空白
 	pBlameInline = "editor.blameInline"
 	pTermFont    = "term.fontSize"
 )

@@ -97,6 +97,10 @@ pub fn build() -> Server {
 		"tests/router_test.rs":  testAdded + "\n",
 		"tests/case_test.rs":    "#[test]\nfn upper_and_lower_match() {\n    assert!(true);\n}\n",
 		"docs/routing.md":       "# 路由匹配\n\n路径匹配忽略大小写与末尾斜杠。\n",
+		// 以下三份给 Markdown 所见即所得的各种状态用(正常 / 含表格只读预览 / 带 YAML 头的规则文件)
+		"docs/guide.md":           "# 快速上手\n\n路由库只做一件事:**把路径匹配到处理函数**,忽略大小写与末尾斜杠。\n\n## 安装\n\n- 在 `Cargo.toml` 里加入依赖\n- 运行 `cargo build`\n\n```rust\nlet r = Router::default();\n```\n\n## 待办\n\n- [x] 大小写不敏感\n- [ ] 通配符路径\n\n> 提示:详见 [路由匹配](routing.md)。\n",
+		"docs/api.md":             "# 接口\n\n| 方法 | 路径 | 说明 |\n| --- | --- | --- |\n| GET | /users | 用户列表 |\n| POST | /users | 新建用户 |\n\n以上接口都返回 JSON。\n",
+		".cursor/rules/style.mdc": "---\ndescription: 代码风格\nglobs: src/**/*.rs\nalwaysApply: false\n---\n\n# 风格\n\n- 公开函数写文档注释\n- 不用 `unwrap()`\n",
 		"Cargo.toml": `[package]
 name = "router-demo"
 version = "0.3.1"

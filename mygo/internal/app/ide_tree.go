@@ -34,6 +34,7 @@ func (a *App) filesView(c *ui.Context) {
 				}
 				kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建文件"})
 				kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache, d.filesCache = nil, nil })
+				kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.treeHeadMenu)
 			})
 			a.treeDir(c, "", 0)
 			ui.Box(c).Height(1).Margin(8, 2).Background(t.Bd1)
@@ -94,6 +95,8 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 	d := a.ide
 	on := !e.Dir && d.sel == e.Path
 	r := kit.RowEl(c, on).Key("tr-" + e.Path).PaddingStart(6 + float32(depth)*12).Gap(5)
+	dragRef(r, e.Path, e.Dir) // 拖到对话栏 = 引用
+	r.ContextMenu(func(m *ui.Menu) { a.treeMenu(m, e.Path, e.Dir) })
 	g := d.fileGit(e.Path)
 	if e.Dir {
 		g = ""
