@@ -84,17 +84,32 @@ func (a *App) welcome(c *ui.Context) {
 			a.composer(c)
 			a.welcomeFocus = false
 		})
-		a.welcomeRecentBlock(c, t)
-		if a.chatTier() == tierNarrow { // 窄档:起手卡单列,只留图标与标题
-			ui.Column(c).Gap(6).WidthPercent(100).PaddingX(20).Children(func() {
-				for _, s := range a.starterList() {
-					a.starterCard(c, s)
-				}
-			})
-		} else {
-			// 放不下四张时折行居中,不要横向溢出被裁掉
-			ui.Row(c).Gap(6).Wrap().Justify(ui.Center).WidthPercent(100).MaxWidth(640).PaddingX(20).Children(func() {
-				for _, s := range a.starterList() {
+		a.welcomeStarters(c)
+		a.welcomeRecentBlock(c, t) // 设计稿顺序:输入框 → 起手卡 → 最近会话
+	})
+}
+
+// welcomeStarters 起手卡:宽档一排四张等宽,中档 2×2 等宽(原先固定 150 宽,放不下就 3+1 折行,
+// 「审查改动」孤零零掉到第二行),窄档单列只留图标与标题。
+func (a *App) welcomeStarters(c *ui.Context) {
+	list := a.starterList()
+	per := 4
+	switch a.chatTier() {
+	case tierNarrow:
+		ui.Column(c).Gap(6).WidthPercent(100).PaddingX(20).Children(func() {
+			for _, s := range list {
+				a.starterCard(c, s)
+			}
+		})
+		return
+	case tierMid:
+		per = 2
+	}
+	ui.Column(c).Gap(8).WidthPercent(100).MaxWidth(640).PaddingX(20).Children(func() {
+		for i := 0; i < len(list); i += per {
+			end := min(i+per, len(list))
+			ui.Row(c).Gap(8).Children(func() {
+				for _, s := range list[i:end] {
 					a.starterCard(c, s)
 				}
 			})
@@ -114,7 +129,7 @@ func (a *App) welcomeRecentBlock(c *ui.Context, t *theme.Tokens) {
 	if len(rows) == 0 {
 		return
 	}
-	ui.Column(c).Gap(4).WidthPercent(100).MaxWidth(600).PaddingX(20).Margin(4, 0, 0, 0).Children(func() {
+	ui.Column(c).Gap(4).WidthPercent(100).MaxWidth(600).PaddingX(20).Margin(10, 0, 0, 0).Children(func() {
 		ui.Text(c, "最近会话").FontSize(theme.FsCap).FontWeight(600).TextColor(t.Tx3)
 		for _, r := range rows {
 			r := r
@@ -156,7 +171,7 @@ func (a *App) starterCard(c *ui.Context, s starter) {
 	if narrow {
 		b.WidthPercent(100).Height(32).PaddingX(10).Gap(8).AlignItems(ui.Center).Justify(ui.Start)
 	} else {
-		b.Width(150).Padding(9, 10).Gap(3)
+		b.Grow(1).Basis(0).MinWidth(0).Padding(10, 12).Gap(3).AlignItems(ui.Start)
 	}
 	sh := t.Shadow1()
 	if b.Hovered() {
@@ -175,9 +190,9 @@ func (a *App) starterCard(c *ui.Context, s starter) {
 			ui.Text(c, s.title).FontWeight(700)
 			return
 		}
-		ui.Column(c).Gap(3).Grow(1).Children(func() {
+		ui.Column(c).Gap(3).Grow(1).MinWidth(0).Children(func() {
 			kit.Ic(c, s.icon, 14).TextColor(t.AcTx)
-			ui.Text(c, s.title).FontWeight(700)
+			ui.Text(c, s.title).FontWeight(700).SingleLine()
 			ui.Text(c, s.desc).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.35)
 		})
 	})
