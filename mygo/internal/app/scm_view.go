@@ -222,6 +222,7 @@ func (a *App) scmGroup(c *ui.Context, id, title string, cs []vcs.Change, actIcon
 		h.Background(t.Fill1)
 	}
 	h.OnClick(func() { s.folded[id] = !s.folded[id] })
+	h.ContextMenu(func(m *ui.Menu) { a.scmGroupMenu(m, id, cs) })
 	h.Children(func() {
 		kit.Ic(c, map[bool]string{true: "chevR", false: "chevD"}[s.folded[id]], kit.S12)
 		ui.Text(c, title).FontSize(10.5).FontWeight(700).LetterSpacing(.3)
@@ -273,6 +274,7 @@ func (a *App) scmFile(c *ui.Context, grp string, ch vcs.Change) {
 	t := a.tk
 	r := ui.ButtonBase(c).Key("scm-f-" + grp + "-" + ch.Path).Height(22).PaddingX(4).PaddingStart(14).Gap(5).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
 	dragRef(r, ch.Path, false) // 拖到对话栏 = 引用这个文件
+	r.ContextMenu(func(m *ui.Menu) { a.scmFileMenu(m, grp, ch) })
 	hov := r.Hovered()
 	if hov {
 		r.Background(t.Fill1)
@@ -300,7 +302,7 @@ func (a *App) scmFile(c *ui.Context, grp string, ch vcs.Change) {
 		if hov {
 			kit.Ib(c, "file", kit.IbOpt{Small: true, Tip: "打开文件"}).OnClick(func() { a.ide.openFile(a.treePath(ch.Path), true) })
 			if grp == "changes" {
-				kit.Ib(c, "undo", kit.IbOpt{Small: true, Tip: "放弃更改"}).OnClick(func() { a.scmDiscard(ch.Path) })
+				kit.Ib(c, "undo", kit.IbOpt{Small: true, Tip: "放弃更改"}).OnClick(func() { a.scmDiscardAsk([]vcs.Change{ch}) })
 				kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "暂存"}).OnClick(func() { a.scmStage(ch.Path) })
 			} else {
 				kit.Ib(c, "minus", kit.IbOpt{Small: true, Tip: "取消暂存"}).OnClick(func() { a.scmUnstage(ch.Path) })
@@ -372,25 +374,7 @@ func (a *App) scmCommitRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow,
 	} else if r.Hovered() {
 		r.Background(t.Fill1)
 	}
-	r.ContextMenu(func(m *ui.Menu) {
-		if m.Item("检出此提交").Chosen() {
-			a.scmCommitOp(cm, "checkout")
-		}
-		if m.Item("从此提交创建分支…").Chosen() {
-			a.scmCommitOp(cm, "branch")
-		}
-		m.Separator()
-		if m.Item("拣选(cherry-pick)").Chosen() {
-			a.scmCommitOp(cm, "pick")
-		}
-		if m.Item("还原(revert)").Chosen() {
-			a.scmCommitOp(cm, "revert")
-		}
-		m.Separator()
-		if m.Item("复制哈希").Chosen() {
-			a.scmCommitOp(cm, "copy")
-		}
-	})
+	r.ContextMenu(func(m *ui.Menu) { a.commitMenu(m, cm) })
 	r.OnClick(func() {
 		if open {
 			s.expanded = ""

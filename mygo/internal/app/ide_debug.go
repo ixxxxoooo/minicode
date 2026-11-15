@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/ixxxxoooo/minicode/internal/vcs"
 	"strings"
 
 	"github.com/egoist/mygo/ui/editor"
@@ -8,7 +9,7 @@ import (
 )
 
 // EditorDemo 按「动作:参数」驱动编辑器进入某个状态(cmd/shot 截图用,多个动作用逗号隔开):
-// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签)、expand:路径、newfile|newdir:文件夹:名字、renamef:路径:名字、foerr、delask:路径、rename:会话id、archived:项目id、scm、syncall、repobusy:N、search:查询、scope:文件夹、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容。
+// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签)、expand:路径、newfile|newdir:文件夹:名字、renamef:路径:名字、foerr、discardask:路径、cmpfiles:提交、resetask:序号、delask:路径、rename:会话id、archived:项目id、scm、syncall、repobusy:N、search:查询、scope:文件夹、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容。
 func (a *App) EditorDemo(spec string) {
 	for _, act := range strings.Split(spec, ",") {
 		name, arg, _ := strings.Cut(act, ":")
@@ -73,6 +74,35 @@ func (a *App) EditorDemo(spec string) {
 			a.beginRenameFile(p)
 			if buf != "" {
 				a.fo.buf = buf
+			}
+			continue
+		case "discardask": // discardask:<路径> 放弃更改确认(路径留空 = 全部更改)
+			a.dbgSCM()
+			_, wk := a.sc.split()
+			if arg != "" {
+				var one []vcs.Change
+				for _, c := range wk {
+					if c.Path == arg {
+						one = append(one, c)
+					}
+				}
+				wk = one
+			}
+			a.scmDiscardAsk(wk)
+			continue
+		case "cmpfiles": // cmpfiles:<提交> 「与工作区比较」的文件选择
+			a.dbgSCM()
+			for _, cm := range a.sc.log {
+				if cm.Hash == arg {
+					a.scmCompareWork(cm)
+				}
+			}
+			continue
+		case "resetask": // resetask:<第几个提交,0 起> 回退到这里的确认
+			a.dbgSCM()
+			if i := atoi(arg); i < len(a.sc.log) {
+				n, _ := a.resetInfo(a.sc.log[i])
+				a.askReset(a.sc.log[i], n)
 			}
 			continue
 		case "foerr": // 提交当前行内输入(用来到达「已存在同名」的错误态)
@@ -204,4 +234,12 @@ func atoi(s string) int {
 		n = n*10 + int(r-'0')
 	}
 	return n
+}
+
+// dbgSCM 调试:打开源代码管理并立刻读完仓库状态(截图要在第一帧就有数据)。
+func (a *App) dbgSCM() {
+	a.OpenSCM()
+	if !a.sc.loaded {
+		a.scmRefresh()
+	}
 }

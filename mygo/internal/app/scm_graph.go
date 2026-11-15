@@ -133,18 +133,7 @@ func (a *App) graphBigRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow, 
 	if !hit {
 		r.Opacity(.35)
 	}
-	r.ContextMenu(func(m *ui.Menu) {
-		for _, it := range []struct{ label, op string }{
-			{"检出此提交", "checkout"}, {"从此提交创建分支…", "branch"}, {"-", ""},
-			{"拣选(cherry-pick)", "pick"}, {"还原(revert)", "revert"}, {"-", ""}, {"复制哈希", "copy"},
-		} {
-			if it.label == "-" {
-				m.Separator()
-			} else if m.Item(it.label).Chosen() {
-				a.scmCommitOp(cm, it.op)
-			}
-		}
-	})
+	r.ContextMenu(func(m *ui.Menu) { a.commitMenu(m, cm) })
 	r.OnClick(func() {
 		g.sel = cm.Hash
 		a.scmCommitFiles(cm.Hash)

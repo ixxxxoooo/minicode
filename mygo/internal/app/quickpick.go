@@ -23,7 +23,9 @@ type qpState struct {
 	lastSel  int
 	branches []vcs.Branch // 分支选择器打开时读一次
 	loadErr  string
-	symFile  string // 符号选择器:要列符号的文件
+	symFile  string       // 符号选择器:要列符号的文件
+	cmpC     vcs.Commit   // 「与工作区比较」:被比较的提交
+	cmpFiles []vcs.Change // 及它涉及的文件
 }
 
 type qpRow struct {
@@ -98,6 +100,14 @@ func (a *App) qpRows() []qpRow {
 			}
 			rows = append(rows, qpRow{group: path.Base(s.symFile) + " 中的符号", icon: icon, title: strings.Repeat("  ", depth) + name, right: itoa(line + 1),
 				run: func() { a.jumpTo(s.symFile, line, col, col+len(name)) }})
+		}
+	case "cmpfiles":
+		for _, f := range s.cmpFiles {
+			if q != "" && fuzzy(q, f.Path) < 0 {
+				continue
+			}
+			p := f.Path
+			rows = append(rows, qpRow{group: " ", icon: fileIcon(path.Base(p)), title: p, right: statusLetter(f.Status), run: func() { a.openCompareWork(s.cmpC, p) }})
 		}
 	case "branch":
 		exact := false
@@ -217,6 +227,8 @@ func (a *App) quickView(c *ui.Context) {
 		}
 	case "symbols":
 		ph, ic = "转到符号", "cube"
+	case "cmpfiles":
+		ph, ic = "选择要与工作区比较的文件("+s.cmpC.Short()+")", "diff"
 	}
 	ui.DialogBase(c, &open, func(backdrop, panel ui.Element) {
 		backdrop.Background(t.Scrim).Justify(ui.Start).AlignItems(ui.Center).Padding(96, 0, 0, 0)

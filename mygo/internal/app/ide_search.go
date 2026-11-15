@@ -44,6 +44,8 @@ type srow struct {
 	n     int // 文件行:显示的匹配数
 }
 
+type searchMatch = search.Match
+
 func mkey(m search.Match) string { return m.Path + ":" + itoa(m.Line) + ":" + itoa(m.Col) }
 
 func (s *searchState) q() search.Query {
@@ -297,7 +299,11 @@ func (a *App) searchView(c *ui.Context) {
 			ui.Text(c, s.err).FontSize(theme.FsCap).TextColor(t.Err).Padding(0, 8).Shrink(0)
 		}
 		if len(s.rows) > 0 {
-			ui.List(c, &s.list, len(s.rows), func(i int) { a.searchRow(c, s.rows[i], i) }).Grow(1).MinHeight(0)
+			ui.List(c, &s.list, len(s.rows), func(i int) {
+				if i < len(s.rows) { // 菜单里「折叠 / 忽略」会在本帧中途重排 rows
+					a.searchRow(c, s.rows[i], i)
+				}
+			}).Grow(1).MinHeight(0)
 		} else {
 			ui.Spacer(c).Grow(1)
 		}
@@ -369,6 +375,7 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 			row.Background(t.Fill1)
 		}
 		row.OnClick(func() { s.folded[f.Path] = !s.folded[f.Path] })
+		row.ContextMenu(func(m *ui.Menu) { a.searchFileMenu(m, f.Path) })
 		row.Children(func() {
 			kit.Ic(c, map[bool]string{true: "chevR", false: "chevD"}[s.folded[f.Path]], kit.S12).TextColor(t.Tx3)
 			a.fileIc(c, path.Base(f.Path))
@@ -387,6 +394,7 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 	if row.Hovered() {
 		row.Background(t.Fill1)
 	}
+	row.ContextMenu(func(menu *ui.Menu) { a.searchMatchMenu(menu, m) })
 	row.OnClick(func() {
 		a.ide.navMark()
 		a.ide.openAt(m.Path, m.Line, m.Col, m.End, false)

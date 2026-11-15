@@ -84,3 +84,89 @@ func TestCLIStageContentAndStash(t *testing.T) {
 		t.Fatalf("弹出后储藏应为空:%+v", ss)
 	}
 }
+
+// 回退到某个提交:之后的提交被移除,未提交改动保留;哈希不合法被拒。
+func TestCLIResetKeep(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("没有 git")
+	}
+	dir := t.TempDir()
+	run := func(args ...string) string {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		cmd.Env = append(os.Environ(), "GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t", "GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t")
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	run("init", "-q", "-b", "main")
+	file := filepath.Join(dir, "a.txt")
+	other := filepath.Join(dir, "b.txt")
+	os.WriteFile(file, []byte("1\n"), 0o644)
+	os.WriteFile(other, []byte("x\n"), 0o644)
+	run("add", ".")
+	run("commit", "-q", "-m", "c1")
+	first := run("rev-parse", "HEAD")
+	os.WriteFile(file, []byte("1\n2\n"), 0o644)
+	run("commit", "-qam", "c2")
+	os.WriteFile(other, []byte("local edit\n"), 0o644) // 未提交的改动应保留
+
+	r := &CLI{Dir: dir}
+	if err := r.ResetKeep("zz; rm -rf"); err != ErrInvalidHash {
+		t.Fatalf("非法哈希应被拒:%v", err)
+	}
+	if err := r.ResetKeep(first); err != nil {
+		t.Fatal(err)
+	}
+	if got := run("rev-parse", "HEAD"); got != first {
+		t.Fatalf("HEAD 应回到第一个提交:%s", got)
+	}
+	if b, _ := os.ReadFile(file); string(b) != "1\n" {
+		t.Fatalf("已提交的内容应回到当时的样子:%q", b)
+	}
+	if b, _ := os.ReadFile(other); string(b) != "local edit\n" {
+		t.Fatalf("未提交改动应保留:%q", b)
+	}
+	// 与回退内容冲突:改动 a.txt 后再回退到更早的,应中止
+	os.WriteFile(file, []byte("1\n2\n"), 0o644)
+	run("commit", "-qam", "c3")
+	os.WriteFile(file, []byte("dirty\n"), 0o644)
+	if err := r.ResetKeep(first); err == nil {
+		t.Fatal("本地改动与回退内容冲突时应中止")
+	}
+}
+
+func TestMemResetKeep(t *testing.T) {
+	m := NewMem()
+	for _, msg := range []string{"c1", "c2", "c3"} {
+		cur, _ := m.Log(10)
+		m.SetState([]Change{{Path: msg + ".txt", Status: 'A', Staged: true}}, cur, nil, nil, 0)
+		if err := m.Commit(msg, false); err != nil {
+			t.Fatal(err)
+		}
+	}
+	log, _ := m.Log(10)
+	if len(log) != 3 {
+		t.Fatalf("应有 3 个提交:%d", len(log))
+	}
+	target := log[2].Hash
+	if err := m.ResetKeep(target); err != nil {
+		t.Fatal(err)
+	}
+	after, _ := m.Log(10)
+	if len(after) != 1 || after[0].Hash != target {
+		t.Fatalf("回退后顶端应是目标提交:%+v", after)
+	}
+	hasHead := false
+	for _, r := range after[0].Refs {
+		hasHead = hasHead || r == "HEAD"
+	}
+	if !hasHead {
+		t.Fatalf("HEAD 应搬到目标提交:%v", after[0].Refs)
+	}
+	if err := m.ResetKeep("nope"); err == nil {
+		t.Fatal("找不到的提交应报错")
+	}
+}

@@ -180,6 +180,14 @@
       cell('删除会话 · 确认与限制', '', box(`<div style="padding:12px 14px" class="fc g3"><div class="f ai g3"><span class="dlg-i err">${ic('trash')}</span><b class="fs-title">删除这个会话?</b></div><div class="t3" style="line-height:1.55">「梳理路由表的内存占用」的会话记录会从磁盘移除,无法恢复。</div><div class="f g2" style="justify-content:flex-end">${btn('取消', 'ghost')}${btn('删除', 'danger')}</div>
         <div class="sep"></div><div class="t3 fs-cap" style="line-height:1.7">· 正在运行的会话「删除会话…」置灰,提示「会话正在运行,先停止或等它结束」<br>· 当前打开的会话可删除:删除后切到该项目的下一个会话,没有就进入新会话<br>· 置顶 / 归档 / 自定义标题的记录随会话一起清掉<br>· 演示模式只从内存列表里移除</div></div>`, 250, 330), '真实模式走 claude.DeleteSession(只认字母 / 数字 / - / _ 的 id,不会越出会话目录);失败给出原因的提示条。'),
       cell('复制为 Markdown', '', box(`<div style="padding:12px 14px" class="t2"><div class="mono fs-cap" style="line-height:1.7;white-space:pre">## 完整修复一个 Bug:路由大小写匹配\n\n**你**\n路由匹配对大小写敏感……\n\n**Claude**\n问题出在路由表直接用原始路径做键……\n\n&gt; 编辑 src/router.rs(+2 −1)\n&gt; 运行 cargo test router · 通过</div><div class="t3 fs-cap" style="margin-top:8px;line-height:1.7">· 用户消息与助手正文原样输出;思考省略;工具调用折成一行引用<br>· 只对「已打开的会话」可用(其它会话先点开);菜单项置灰时提示原因</div></div>`, 250, 330), '对话栏头部 ··· 与会话行 ··· 共用;复制后提示「已复制为 Markdown · 12 条」。')))}
+    ${sec('SCM · 图谱 · 搜索 · 菜单的具体行为', '菜单项背后的对话与流程。凡是会丢东西的动作都先确认,并写明「丢什么、能不能找回」。', grid(
+      cell('放弃更改 · 确认', '', box(`<div style="padding:12px 14px" class="fc g3"><div class="f ai g3"><span class="dlg-i err">${ic('undo')}</span><b class="fs-title">放弃 router.rs 的更改?</b></div><div class="t3" style="line-height:1.55">工作区里的修改会恢复成暂存区 / HEAD 的样子,无法撤销。</div><div class="f g2" style="justify-content:flex-end">${btn('取消', 'ghost')}${btn('放弃更改', 'danger')}</div>
+        <div class="sep"></div><div class="t3 fs-cap" style="line-height:1.7">· 悬停按钮与右键菜单走同一个确认框<br>· 「放弃全部更改」写明文件数:放弃 3 个文件的更改?<br>· 未跟踪文件写明「会被删除」<br>· 只放弃「更改」分组,暂存区的不动</div></div>`, 250, 330), '原先悬停按钮会直接丢改动,现在统一加确认。'),
+      cell('SCM 分组菜单', '', box(menu(220, [['plus', '全部暂存'], ['minus', '全部取消暂存'], ['undo', '放弃全部更改…', '', 'danger'], ['-'], ['layers', '储藏所有更改'], ['refresh', '刷新']]) + `<div class="t3 fs-cap" style="padding:8px 4px;line-height:1.7">「更改」分组与「暂存的更改」分组、仓库行共用;当前组为空的动作置灰。右键分组标题或在多仓库总览右键仓库行。</div>`, 250, 330), '仓库行菜单(拉取 / 推送 / 同步 / 切换分支 / 图谱 / 储藏 / 访达 / 终端)已有,不重复。'),
+      cell('图谱 · 与工作区比较', '', box(`<div class="pop" style="width:380px;margin:12px auto"><div class="inp fill" style="margin:3px;height:28px"><span class="t4">选择要与工作区比较的文件(a3f9c21)</span></div>${mi('file', 'src/router.rs', 'M', 'on')}${mi('file', 'tests/router_test.rs', 'M')}${mi('file', 'Cargo.toml', 'A')}</div><div class="t3 fs-cap" style="padding:8px 14px;line-height:1.7">· 提交只涉及几个文件,所以先选文件;选中后在编辑区开「a3f9c21 ↔ 工作区」的差异标签<br>· 该提交里没有改动文件(合并提交)时提示「这个提交没有文件改动」</div>`, 250, 330), '差异标签只读(对比的不是暂存区,不开放块级操作)。'),
+      cell('图谱 · 回退到这里', '', box(`<div style="padding:12px 14px" class="fc g3"><div class="f ai g3"><span class="dlg-i err">${ic('rewind')}</span><b class="fs-title">把 main 回退到 a3f9c21?</b></div><div class="t3" style="line-height:1.55">a3f9c21 之后的 3 个提交会从 main 上移除(仍可从 reflog 找回)。未提交的改动保留;如果与回退的内容冲突,操作会中止并告诉你原因。</div><div class="f g2" style="justify-content:flex-end">${btn('取消', 'ghost')}${btn('回退', 'danger')}</div>
+        <div class="sep"></div><div class="t3 fs-cap" style="line-height:1.7">· 等价于 <span class="mono">git reset --keep</span>,不用 --hard,不丢工作区<br>· 游离 HEAD 时置灰:先切到分支<br>· 已推送的提交:提示「回退后需要强制推送」,本应用不提供强制推送</div></div>`, 250, 330), '回退是本页里唯一会改分支历史的动作,所以放在菜单最底部、红色。'),
+      cell('搜索结果 · 右键', '', box(menu(230, [['code', '打开'], ['eye', '在侧边预览', '', 'dis'], ['x', '忽略此结果'], ['-'], ['copy', '复制路径与行号'], ['copy', '复制匹配行']]) + `<div class="t3 fs-cap" style="padding:8px 4px;line-height:1.7">· 匹配行与文件行各有一份:文件行 = 展开 / 折叠、在文件树中定位、复制路径<br>· 「在侧边预览」依赖编辑器拆分,暂置灰并提示原因<br>· 复制路径与行号 = <span class="mono">src/router.rs:42:9</span></div>`, 250, 330), '忽略 / 恢复与悬停按钮是同一个动作。')))}
     ${sec('会话流里的动作', '步骤行悬停时右侧出现小按钮(只列这一行真的能做的);点图标 / 文件名 / 整行(没有可展开内容时)也能跳。目标不存在时给出提示,不静默失败。', tbl([['对象', 150], ['悬停按钮', 220], ['点击行 / 对象', 180], ['右键']], [
       ['读取文件', '打开文件 · 复制路径', '在工作区打开(定位到起始行)', '复制路径 · 在访达中显示'],
       ['编辑 / 写入文件', '打开文件 · 查看差异 · 复制路径', '展开 / 收起差异预览', '同上 + 在审查标签中查看'],
@@ -192,7 +200,8 @@
       ['会话流步骤行 / 命令卡 / 差异卡 / 链接动作', '本页「会话流里的动作」整张表', st('ok')],
       ['文件 / 文件夹 / 标签 / 编辑器 / SCM / 图谱 / 终端菜单', '已有的菜单,按本页顺序与命名对齐;缺的项逐个补', st('part')],
       ['会话行 / 项目行 / 工作区行菜单', '会话行的置顶 / 归档(含「已归档 N」折叠行)/ 行内重命名 / 删除确认 / 复制为 Markdown 已做;项目行 / 工作区行菜单已做;「分叉会话」未做', st('ok')],
-      ['搜索结果 / 问题 / 输出 / 虚拟标签菜单', '', st('todo')]]))}</div>`;
+      ['SCM 文件行 / 分组 / 图谱提交 / 搜索结果菜单', '本页「具体行为」一节已实现:放弃更改确认(悬停按钮同走)、分组菜单、与工作区比较(先选文件,只读差异)、回退到这里(reset --keep,含已推送提示)、搜索结果菜单(匹配行 / 文件行);「在侧边预览」依赖编辑器拆分,置灰', st('ok')],
+      ['问题 / 输出 / 虚拟标签菜单', '', st('todo')]]))}</div>`;
 
   /* ───────── 缺口总表 ───────── */
   P['gaps'] = () => `<div class="ds" style="max-width:1240px">${head('缺口总表 · 设计稿 ↔ Go 实现', '这一页是「现在还差什么」的唯一清单,每做完一项就把状态改成已实现。按优先级分组:P0 影响主流程,P1 完整度,P2 打磨。')}

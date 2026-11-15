@@ -64,6 +64,9 @@ type Repo interface {
 	CreateAt(name, hash string) error
 	// UndoCommit 撤销上一次提交,改动留在暂存区(git reset --soft HEAD~1)。
 	UndoCommit() error
+	// ResetKeep 把当前分支回退到某个提交(git reset --keep):之后的提交从分支上移除,
+	// 未提交的改动保留;与回退内容冲突时中止并返回原因。不用 --hard,不丢工作区。
+	ResetKeep(hash string) error
 }
 
 // StatusConflict 是合并冲突文件的状态字母。
@@ -91,6 +94,11 @@ func (c Commit) Short() string {
 	}
 	return c.Hash
 }
+
+// ErrInvalidHash 提交哈希不合法。
+var ErrInvalidHash = errors.New("提交哈希不合法")
+
+var hashRe = regexp.MustCompile(`^[0-9a-f]{7,40}$`)
 
 // ErrInvalidName 分支名不合法。
 var ErrInvalidName = errors.New("分支名不合法")

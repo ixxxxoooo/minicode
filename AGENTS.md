@@ -120,6 +120,8 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 
 - **文件新建 / 重命名 / 删除**(`file_ops.go`,`workspace/mutate.go`,设计稿 `drag-more`「文件操作」一节):`workspace.Mutable`(`Mem` / `OS` / `Multi` 实现;`OS` 拒绝 `..`、不删根,删除经 `TrashFunc` = Finder 移到废纸篓,失败不退回永久删除)。树里行内输入 `a.fo`(`fileOp`):新建插在文件夹子项最前、重命名换掉该行,⏎ 提交,失败留着并红字提示,Esc / 点别处取消;重命名后 `renameTabs` 让标签改路径(保留未保存修改,差异标签关闭);删除走 `confirmDlg`(文件夹写明文件数、有未保存标签提示)。多根时顶层文件夹行只有「新建…」。调试 `-ed newfile|newdir:文件夹:名字`、`renamef:路径:名字`、`foerr`、`delask:路径`。缺口:F2 / ⌘⌫ 快捷键、只选不含扩展名的部分、拖动移动文件。
 
+- **SCM / 图谱 / 搜索菜单**(`scm_menus.go`,设计稿 `menus`「具体行为」一节):`scmDiscardAsk`(放弃更改统一确认,悬停按钮同走)、`scmFileMenu` / `scmGroupMenu`、`commitMenu`(图谱与 SCM 共用:与工作区比较 = 快速选择 `cmpfiles` 列文件 → `openCompareWork` 只读差异标签 `diff:cmp-<短哈希>:<路径>`;回退到这里 = `vcs.Repo.ResetKeep`(`git reset --keep`,不丢工作区,与回退内容冲突则中止;游离 HEAD / 当前提交 / 不在当前分支上置灰,`resetInfo` 数被移除的提交数)、`searchMatchMenu` / `searchFileMenu`。搜索列表行回调要防越界(菜单里折叠 / 忽略会在本帧中途重排 `rows`)。调试 `-ed discardask:路径`、`cmpfiles:提交`、`resetask:序号`。
+
 ### 已知缺口(真实模式)
 
 - 设置页:快捷键录制、服务商 / 规则 / 环境变量 / LSP 行是演示数据;「项目信任」只列项目,不读写信任状态;除上面列出的偏好外,其它控件只存偏好。

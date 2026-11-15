@@ -218,6 +218,14 @@ func (r *CLI) UndoCommit() error {
 	return err
 }
 
+func (r *CLI) ResetKeep(hash string) error {
+	if !hashRe.MatchString(hash) {
+		return ErrInvalidHash
+	}
+	_, err := r.git(30*time.Second, "reset", "--keep", hash)
+	return err
+}
+
 // ───────── Mem ─────────
 
 func (m *Mem) Index(p string) (string, bool) {
@@ -348,5 +356,34 @@ next:
 	if m.ahead > 0 {
 		m.ahead--
 	}
+	return nil
+}
+
+func (m *Mem) ResetKeep(hash string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	at := -1
+	for i, c := range m.log {
+		if c.Hash == hash {
+			at = i
+			break
+		}
+	}
+	if at < 0 {
+		return fmt.Errorf("当前分支上找不到这个提交")
+	}
+	if at == 0 {
+		return nil
+	}
+	old := m.log[0].Refs
+	m.log = m.log[at:]
+	var keep []string
+	for _, r := range old { // 旧 HEAD 上的引用(HEAD / 当前分支)搬到新 HEAD,其余随旧提交消失
+		if r == "HEAD" || r == m.cur {
+			keep = append(keep, r)
+		}
+	}
+	m.log[0].Refs = append(keep, m.log[0].Refs...)
+	m.ahead = max(m.ahead-at, 0)
 	return nil
 }
