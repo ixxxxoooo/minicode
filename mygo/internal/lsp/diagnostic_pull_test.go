@@ -26,15 +26,18 @@ func TestParseDiagnosticCaps(t *testing.T) {
 }
 
 func TestParseWorkspacePull(t *testing.T) {
-	raw := `{"items":[{"kind":"full","items":[{"uri":"file:///a.go","items":[{"kind":"full","items":[{"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":1}},"severity":1,"message":"e"}]}]}]}]}`
+	// 规范形状:items 里每项是一个文件的报告
+	raw := `{"items":[{"kind":"full","uri":"file:///a.go","version":1,"items":[{"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":1}},"severity":1,"message":"e"}]},{"kind":"unchanged","uri":"file:///b.go","resultId":"r1"}]}`
 	res := parseWorkspacePull(json.RawMessage(raw))
 	if len(res.ByURI) != 1 || res.ByURI["file:///a.go"][0].Message != "e" {
 		t.Fatalf("解析 workspace pull:%+v", res)
 	}
-	raw2 := `{"kind":"full","items":[{"uri":"file:///b.rs","items":[{"kind":"full","items":[{"severity":2,"message":"w","range":{"start":{"line":1,"character":0},"end":{"line":1,"character":1}}}]}]}`
-	res2 := parseWorkspacePull(json.RawMessage(raw2))
-	if res2.ByURI["file:///b.rs"][0].Message != "w" {
-		t.Fatalf("单块 full:%+v", res2)
+	if res.FilesChecked != 1 {
+		t.Fatalf("unchanged 不计入已检查文件数:%d", res.FilesChecked)
+	}
+	// 空 / null
+	if r := parseWorkspacePull(json.RawMessage("null")); len(r.ByURI) != 0 {
+		t.Fatalf("null 应为空结果:%+v", r)
 	}
 }
 

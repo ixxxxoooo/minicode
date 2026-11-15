@@ -54,32 +54,6 @@ type DocumentPullResult struct {
 	Kind     string
 }
 
-type wsDiagItem struct {
-	URI   string `json:"uri"`
-	Items []struct {
-		Kind          string       `json:"kind"`
-		ResultID      string       `json:"resultId"`
-		ResultIDSnake string       `json:"result_id"`
-		Items         []Diagnostic `json:"items"`
-	} `json:"items"`
-}
-
-func diagnosticsFromDocReports(reports []struct {
-	Kind          string       `json:"kind"`
-	ResultID      string       `json:"resultId"`
-	ResultIDSnake string       `json:"result_id"`
-	Items         []Diagnostic `json:"items"`
-}) []Diagnostic {
-	var out []Diagnostic
-	for _, r := range reports {
-		if r.Kind == "unchanged" {
-			continue
-		}
-		out = append(out, r.Items...)
-	}
-	return out
-}
-
 func mergeWorkspacePull(acc, chunk json.RawMessage) json.RawMessage {
 	if len(acc) == 0 {
 		return chunk
@@ -96,56 +70,34 @@ func mergeWorkspacePull(acc, chunk json.RawMessage) json.RawMessage {
 	return out
 }
 
+// parseWorkspacePull 解析 workspace/diagnostic 的结果。
+// LSP 规范:{ items: WorkspaceDocumentDiagnosticReport[] },每一项自带 kind(full / unchanged)、uri、
+// resultId,full 时 items 是该文件的 Diagnostic[];partialResultToken 的增量片段是同样的形状。
 func parseWorkspacePull(raw json.RawMessage) WorkspacePullResult {
 	res := WorkspacePullResult{ByURI: map[string][]Diagnostic{}}
 	if len(raw) == 0 || string(raw) == "null" {
 		return res
 	}
-	// 可能是 {items:[{kind:full,items:[...]}]} 或直接是数组
 	var top struct {
 		Items []struct {
-			Kind  string          `json:"kind"`
-			Items json.RawMessage `json:"items"`
+			Kind  string       `json:"kind"`
+			URI   string       `json:"uri"`
+			Items []Diagnostic `json:"items"`
 		} `json:"items"`
 		ResultID string `json:"resultId"`
 	}
-	if json.Unmarshal(raw, &top) == nil && len(top.Items) > 0 {
-		res.ResultID = top.ResultID
-		for _, block := range top.Items {
-			if block.Kind == "unchanged" {
-				continue
-			}
-			var docs []wsDiagItem
-			if json.Unmarshal(block.Items, &docs) != nil {
-				var one wsDiagItem
-				if json.Unmarshal(block.Items, &one) == nil && one.URI != "" {
-					docs = []wsDiagItem{one}
-				}
-			}
-			for _, d := range docs {
-				if d.URI == "" {
-					continue
-				}
-				ds := diagnosticsFromDocReports(d.Items)
-				if len(ds) > 0 {
-					res.ByURI[d.URI] = append(res.ByURI[d.URI], ds...)
-				}
-				res.FilesChecked++
-			}
-		}
+	if json.Unmarshal(raw, &top) != nil {
 		return res
 	}
-	// 单块 full
-	var docs []wsDiagItem
-	if json.Unmarshal(raw, &docs) == nil {
-		for _, d := range docs {
-			if d.URI == "" {
-				continue
-			}
-			ds := diagnosticsFromDocReports(d.Items)
-			res.ByURI[d.URI] = ds
-			res.FilesChecked++
+	res.ResultID = top.ResultID
+	for _, d := range top.Items {
+		if d.URI == "" || d.Kind == "unchanged" {
+			continue
 		}
+		if len(d.Items) > 0 {
+			res.ByURI[d.URI] = append(res.ByURI[d.URI], d.Items...)
+		}
+		res.FilesChecked++
 	}
 	return res
 }
