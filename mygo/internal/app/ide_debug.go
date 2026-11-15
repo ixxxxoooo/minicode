@@ -159,6 +159,10 @@ func (a *App) EditorDemo(spec string) {
 		case "upd":
 			a.SeedUpdateDemo(arg, 42)
 			continue
+		case "autonew": // 自动化页的「新建自动化」对话框
+			a.screen = ScreenAutomation
+			a.openAutoNewDlg()
+			continue
 		case "review": // 打开审查标签;review:empty = 空态
 			if arg == "empty" {
 				a.reviewDemoEmpty = true

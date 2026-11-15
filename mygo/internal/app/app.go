@@ -586,7 +586,10 @@ func (a *App) View(c *ui.Context) {
 	if a.popup == "" {
 		a.popSeen = ""
 	}
-	if !a.paletteOn && a.qp == nil && a.pd.kind == "" {
+	// 只有快速选择没走 dialogOpen,关了要手动清;其它浮层(命令面板、自动化 / 自定义新建、
+	// 文件树「让 Claude」、项目对话框)由 dialogOpen 自己管。这里不能无条件清空 dlgSeen,
+	// 否则入场计时每帧被重置,浮层永远停在透明(却照常拦截点击)。
+	if a.qp == nil && a.dlgSeen == "quick" {
 		a.dlgSeen = ""
 	}
 	a.autosave()

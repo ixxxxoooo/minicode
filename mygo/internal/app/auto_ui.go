@@ -39,6 +39,7 @@ func (lv *autoLive) snapshot() string {
 func (a *App) openAutoNewDlg() {
 	s := &a.au
 	s.newDlg = true
+	log.Info("打开新建自动化对话框")
 	s.newName, s.newPrompt, s.newTime = "新的自动化", "", "09:00"
 	s.newDays, s.newPerm = "每天", autoPerms[0]
 	if n := a.currentProjectName(); n != "" {
@@ -46,7 +47,10 @@ func (a *App) openAutoNewDlg() {
 	}
 }
 
-func (a *App) closeAutoNewDlg() { a.au.newDlg = false }
+func (a *App) closeAutoNewDlg() {
+	log.Info("关闭新建自动化对话框")
+	a.au.newDlg = false
+}
 
 func (a *App) submitAutoNew() {
 	s := &a.au
