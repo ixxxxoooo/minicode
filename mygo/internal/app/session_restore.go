@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/diag"
 )
@@ -71,7 +72,7 @@ func (a *App) SaveRuntimeState() {
 		st.ActiveTab = t.path
 	}
 	sessRestoreLog.Info("保存运行状态", "session", st.Session, "project", st.Project, "tabs", len(st.EditorTabs))
-	end := diag.SpanSlow("session", "保存运行状态", 0, nil)
+	end := diag.SpanSlow("session", "保存运行状态", 100*time.Millisecond)
 	defer end()
 	b, err := json.MarshalIndent(st, "", "  ")
 	if err != nil {

@@ -2,6 +2,7 @@ package app
 
 import (
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/ixxxxoooo/minicode/internal/claudecfg"
@@ -51,7 +52,7 @@ func (a *App) acctRefresh(force bool) {
 	}
 	a.acct.loading = true
 	a.bg("acct-profile", func() func() {
-		defer diag.SpanSlow("app", "读账号信息", 0, nil)()
+		defer diag.SpanSlow("app", "读账号信息", 300*time.Millisecond)()
 		p, err := claudecfg.ReadOAuthProfile()
 		return func() {
 			a.acct.loading = false

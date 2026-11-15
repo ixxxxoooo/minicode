@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
@@ -98,7 +99,7 @@ func (a *App) pickAttachImages() {
 		return
 	}
 	a.bg("pick-attach-img", func() func() {
-		defer diag.SpanSlow("composer", "选择图片", 0, nil)()
+		defer diag.SpanSlow("composer", "选择图片", time.Minute)()
 		paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{
 			Title: "选择图片", Multiple: true, ButtonLabel: "添加", Parent: a.win,
 		})
@@ -120,7 +121,7 @@ func (a *App) pickAttachRefs() {
 		return
 	}
 	a.bg("pick-attach-ref", func() func() {
-		defer diag.SpanSlow("composer", "选择文件引用", 0, nil)()
+		defer diag.SpanSlow("composer", "选择文件引用", time.Minute)()
 		paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{
 			Title: "选择文件", Multiple: true, ButtonLabel: "引用", Parent: a.win,
 		})
