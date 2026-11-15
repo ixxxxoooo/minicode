@@ -99,6 +99,7 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 - **输出面板**(`ide_output.go`):`outApp / outGit / outLSP` 三个通道,语言服务与 Git 操作写入。
 - **彩色文件图标**:`ide_tree.go` 的 `fileTint` / `fileIc`,偏好 `appearance.fileIcons`(默认开)。
 - 设计稿 `docs/design` v3.2 新增五页(`js/specs2.js`):布局 · 拖拽与面板停靠、终端 · 能力与主题、语言服务 · 识别与安装、画布 / 浏览器 / 自定义 · 业界做法、会话流 · 待办 / 审批 / 后台任务;每页都有「实现状态」列,与代码保持一致。
+- 设计稿 `docs/design` v3.3 新增「图标与品牌 · 应用 / 托盘」页(`js/brand-spec.js`,规范组首项):图标生成器 `js/brand.js`(`U.brand`:六种应用图标样式 × 浅 / 深 / 透明 / 着色外观 × 六套主题配色,五种菜单栏模板图标 × 八种状态 × 彩色徽标,织纹按「压 / 穿」切段、不靠背景色挖洞,≤ 28px 自动换 2×2「经纬」)、样式 `css/brand.css`、交互 `js/brand-act.js`;设置 → 外观新增「应用图标 / 菜单栏图标」两组(`settings.js::brandGroups`),选择实时刷新全稿里的图标(Dock、⌘Tab、通知、关于、查看器标题栏等)。Go 分支尚未实现 Dock 图标换装与托盘,实现状态表如实标注;`assets/icon/` 目前只有浅 / 深两套 `.icns` 与四张托盘 PNG。
 
 ### 已知缺口(真实模式)
 

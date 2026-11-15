@@ -11,7 +11,7 @@
     ['工作区标签', [['ide-review', 'eye', '审查 · Claude 本轮改动'], ['ws-plan', 'list', '计划'], ['ws-sub', 'bot', '子 Agent 记录'], ['ws-task', 'activity', '任务输出']]],
     ['IDE 细节', [['ide-editor', 'code', '编辑器 · 迷你地图与标尺'], ['ide-nav', 'arrow', '编辑器能力 · 跳转与浮层'], ['ide-search', 'search', '搜索与替换'], ['ide-scm', 'branch', '源代码管理 · 图谱'], ['ide-diff', 'diff', '差异标签 · 块级暂存'], ['ide-merge', 'swap', '合并冲突(三方)'], ['ide-git', 'fork', 'Git 工作流清单'], ['ide-problems', 'alert', '问题面板']]],
     ['架构', [['forms', 'swap', '窗口形态(单窗口)'], ['flows', 'link', '交互串联 · 入口矩阵'], ['resp', 'cols', '响应式 · 三档对话栏'], ['ia', 'list', '信息架构 · 功能归位'], ['layout-dock', 'cols', '布局 · 拖拽与面板停靠'], ['term-spec', 'terminal', '终端 · 能力与主题'], ['lsp-spec', 'code', '语言服务 · 识别与安装'], ['artifact-spec', 'canvas', '画布 / 浏览器 / 自定义 · 业界做法'], ['task-spec', 'activity', '会话流 · 待办 / 审批 / 后台任务'], ['proj-ws', 'layers', '项目与工作区 · 添加与组织'], ['multi-git', 'branch', '多仓库 Git'], ['menus', 'cmd', '右键菜单与动作矩阵'], ['gaps', 'alert', '缺口总表']]],
-    ['规范', [['flow', 'chat', '会话流与工具'], ['overlays', 'layers', '浮层与面板'], ['comps', 'cube', '组件'], ['states', 'hand', '交互状态'], ['tokens', 'palette', '设计令牌'], ['motion', 'activity', '动效']]],
+    ['规范', [['brand-spec', 'palette', '图标与品牌 · 应用 / 托盘'], ['flow', 'chat', '会话流与工具'], ['overlays', 'layers', '浮层与面板'], ['comps', 'cube', '组件'], ['states', 'hand', '交互状态'], ['tokens', 'palette', '设计令牌'], ['motion', 'activity', '动效']]],
   ];
   const HINTS = {
     work: ['⌘E 或点标题栏 Agent / IDE:对话栏与工作区交换主位', '会话流里点「审查 / 计划 / 子代理卡 / 文件」:都在工作区开标签', '⌘J 底部面板,⌥⌘B 右侧栏(Agent = 工作区,IDE = 对话)', '点步骤行:展开 / 收起', '点「逐项确认 · Sonnet」:运行配置', '点导航图标:会话 / 文件 / 搜索 / 源代码管理', '点左下齿轮:账号菜单', '右上角「重播回合」:看工具调用的全过程'],
@@ -28,7 +28,7 @@
 
   /** 读取上次的选择(存不了就用默认值) */
   const load = () => {
-    const d = { page: 'overview', scheme: 'a', theme: 'paper', mode: 'agent', setTab: 'appearance', cust: 'mcp', cuSel: 0, cuScope: 'all', cuTab: '', auSel: 1, auF: 0, wkOff: 0, useR: 1, bare: 0, ws: '', ov: '', right: '', panel: '', panelKind: '', unified: '', staged: '', sel: '', scroll: '', sticky: '', cmenu: '' };
+    const d = { page: 'overview', scheme: 'a', theme: 'paper', mode: 'agent', setTab: 'appearance', cust: 'mcp', cuSel: 0, cuScope: 'all', cuTab: '', auSel: 1, auF: 0, wkOff: 0, useR: 1, bare: 0, ws: '', ov: '', right: '', panel: '', panelKind: '', unified: '', staged: '', sel: '', scroll: '', sticky: '', cmenu: '', icoStyle: 'weave', icoMode: 'auto', icoTint: 'follow', trayStyle: 'weave' };
     try { Object.assign(d, JSON.parse(localStorage.getItem('mc-design-v3c') || '{}')); } catch (e) { /* 读不到就用默认值 */ }
     // 地址栏 #page=work&scheme=b&theme=ink&mode=ide 可直达某个状态,方便分享与截图
     new URLSearchParams(location.hash.slice(1)).forEach((v, k) => { if (k in d) d[k] = v; });
@@ -46,7 +46,7 @@
       <div class="f ai g4"><span class="ov-k">${s.id.toUpperCase()}</span><div><div class="fs-head b">${s.name} <span class="t3" style="font-weight:400">${s.en}</span></div><div class="t3">${s.tagline}</div></div></div>
       <ul>${s.points.map(p => `<li>${p}</li>`).join('')}</ul><div class="t2" style="line-height:1.6">${s.fit}</div>
       <div class="f g3">${btn('Agent ⇄ IDE', '', 'swap', 'data-act="ov-mode"')}${btn('用这套看全部页面', 'pri', 'arrow', `data-act="pick" data-id="${s.id}"`)}</div></div></div>`).join('')}</div>`;
-  const renderBar = () => { $('#vbar').innerHTML = `<span class="logo">${ic('mark')}</span><span class="ttl">MiniCode 设计稿 v3</span><span class="vsep"></span>
+  const renderBar = () => { $('#vbar').innerHTML = `${U.brand.logo(18)}<span class="ttl">MiniCode 设计稿 v3</span><span class="vsep"></span>
     <span class="lbl">方案</span>${seg(SCHEMES.map(s => `${s.id.toUpperCase()} ${s.name}`), SCHEMES.findIndex(s => s.id === st.scheme), 'lg', 'scheme')}
     <span class="lbl">主题</span><span class="f g3 ai">${THEMES.map(t => `<button class="swt tip ${t.id === st.theme ? 'on' : ''}" data-theme="${t.id}" data-act="theme" data-theme-id="${t.id}" data-tip="${t.name} · ${t.sub}"></button>`).join('')}</span>
     <span class="grow"></span>${btn('重播回合', 'soft', 'play', 'data-act="replay"')}<a href="v2/index.html">旧稿 v2 →</a>`; };

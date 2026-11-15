@@ -37,6 +37,30 @@
   const accents = ['--ac-theme', '--c-info', '--c-ok', '--c-cyan', '--c-vio', '--c-pink', '--c-err', '--c-warn'];
   const goto = (label, screen, cust = '') => btn(label, 'sm', 'arrow', `data-act="screen" data-screen="${screen}" ${cust ? `data-cust="${cust}"` : ''}`);
 
+  /** 外观 → 应用图标 / 菜单栏图标:样式卡、外观、配色、Dock 与菜单栏行为(控件与预览在 brand.js,改动即时生效) */
+  const brandGroups = () => { const B = U.brand;
+    return `${G('应用图标',
+      `<div style="padding:10px 12px 2px">${B.previewDocks()}</div>`,
+      R('图标样式', '六选一,共用同一套线宽、配色与光影;小尺寸(≤ 28px)的织纹会自动换成更粗的「经纬」', `<b class="t2" data-bi-name="app">${B.styleName('app')}</b>`),
+      `<div style="padding:0 12px 12px">${B.pickApp()}</div>`,
+      R('图标外观', '对应 macOS 26 的默认 / 深色 / 透明 / 着色;「自动」随系统深浅在浅色与深色之间选', B.segOpt('icoMode', ['自动', '浅色', '深色', '透明', '着色'])),
+      R('配色', '跟随当前主题,或固定为某一套主题的色板(图标不再随主题变)', B.tintPick()),
+      R('Dock 角标', '图标右上角的红色数字', B.segOpt('dockBadge', ['关', '待处理数', '运行中数'])),
+      R('需要确认时 Dock 弹跳', '权限请求或提问到达、而 MiniCode 不在前台时', B.segOpt('dockBounce', ['不弹', '一次', '直到处理'])),
+      R('Dock 图标显示进度', '下载更新、导出诊断包等超过 2 秒的操作', B.togOpt('dockProgress')),
+      R('同时更换访达里的图标', '默认只改 Dock、⌘Tab 与应用内;打开后把所选图标写进 MiniCode.app 的自定义图标(应用更新后需重新套用)', B.togOpt('fileIcon')))}
+      ${note('运行时换的图标只在 MiniCode 运行期间有效;通知中心、启动台与「保留在 Dock」的那一格仍是包内默认图标。')}
+      ${G('菜单栏图标',
+      R('在菜单栏显示图标', '关闭后可在 设置 里重新打开;⌘ 拖出菜单栏也等于关闭', B.togOpt('trayOn')),
+      R('图标样式', '与应用图标同源的单色版;系统按菜单栏明暗自动着色,点开时自动反白', `<b class="t2" data-bi-name="tray">${B.styleName('tray')}</b>`),
+      `<div style="padding:0 12px 12px">${B.pickTray()}</div>`,
+      R('随会话状态变化', '运行中动画,以及待确认(!)/ 已完成 / 出错(×)/ 有更新的徽标;关闭后始终是静态图标', B.togOpt('trayDyn')),
+      R('运行中动画', '三根纬线依次明暗,或整体呼吸;开启「减弱动态效果」时静止', B.segOpt('trayAnim', ['织线流动', '呼吸', '无'])),
+      R('彩色徽标', '徽标改用系统语义色(橙 / 绿 / 红 / 蓝),形状不变;关闭则保持纯单色模板', B.togOpt('trayColor')),
+      R('在图标旁显示数字', '待处理数(权限 + 提问),为 0 时隐藏', B.togOpt('trayCount')),
+      R('单击图标', '⌥ 单击执行另一个', B.segOpt('trayClick', ['弹出菜单', '打开窗口'])))}
+      ${note('完整的状态、动画与各场景(Dock、⌘Tab、通知、安装盘……)见规范页「图标与品牌」。')}`; };
+
   /** 界面布局三选一:点击立即切换整个查看器的方案(data-act="layout") */
   const layCards = (cur) => `<div class="f g3">${SCHEMES.map(s => `<div class="lay-card ${s.id === cur ? 'on' : ''}" data-act="layout" data-id="${s.id}" tabindex="0">
     <div class="lay-prev" data-lay="${s.id}"><i class="rl"></i><i class="sd"></i><i class="mn"><b></b><b></b><b></b></i><i class="rt"></i></div>
@@ -57,13 +81,14 @@
         R('开标签时自动展开右侧工作区', 'Agent 形态下在会话里点计划 / 文件 / 审查时展开工作区;各形态的面板开合各自记忆', tog(1)))}
       ${note('想同时看另一个项目?⇧⌘N 新开一个完整窗口,它同样可以在 Agent / IDE 之间切换。不再有单独的「IDE 窗口」。')}
       ${G('输入', R('发送键', '另一个键用于换行(Shift+Enter 始终换行)', seg(['Enter', '⌘ Enter'], 0)), R('回合进行中再发消息', 'Enter = 排队;⌘Enter = 立即引导', seg(['排队', '立即引导'], 0)), R('粘贴长文本时折叠为附件', '超过 2000 字时作为文本附件加入,不撑开输入框', tog(1)))}
-      ${G('通知与菜单栏', R('任务完成时通知', '回合结束且 MiniCode 不在前台时发送系统通知', tog(1)), R('需要确认时提醒', '权限请求、提问在后台出现时弹通知', tog(1)), R('通知声音', '', seg(['静音', '轻提示'], 1)), R('菜单栏图标', '在系统菜单栏显示 MiniCode 图标', tog(1)))}
+      ${G('通知与菜单栏', R('任务完成时通知', '回合结束且 MiniCode 不在前台时发送系统通知', tog(1)), R('需要确认时提醒', '权限请求、提问在后台出现时弹通知', tog(1)), R('通知声音', '', seg(['静音', '轻提示'], 1)), R('菜单栏图标', '是否显示、样式、状态徽标与动画都在「外观 → 菜单栏图标」里设置', btn('前往', 'sm', 'arrow', 'data-act="settab" data-tab="appearance"')))}
       ${G('语言', R('界面语言', '目前仅提供简体中文', chip('简体中文', '', 'line')))}` },
 
     appearance: { t: '外观', d: '布局、主题、密度与动效。所有选项都落在设计令牌上,即改即生效。', body: (st) => `
       ${G('界面布局', `<div style="padding:10px 12px 12px"><div class="d t3 fs-cap" style="margin-bottom:8px">三种布局共用同一份令牌与组件,只在「面板怎么分隔、导航放在哪、步骤怎么串」上不同。点一下立即切换,Agent 与 IDE 形态同步变化。</div>${layCards(st.scheme)}</div>`)}
       ${G('主题', `<div style="padding:10px 12px">${W.themeCards(st.theme)}</div>`, R('跟随系统深浅色', '浅色用「宣纸」,深色用「墨夜」', tog(0)))}
       ${G('强调色', R('强调色', '按钮、选中态、焦点环、选区、链接等使用的主题色;每个主题单独记忆,并按明暗自动调整明度', `<span class="f g2">${accents.map((a, k) => `<span class="swatch ${k ? '' : 'on'}" data-act="accent" data-v="${k ? a : ''}" tabindex="0" style="background:var(${a})"></span>`).join('')}</span>`))}
+      ${brandGroups()}
       ${G('密度与形状', R('界面密度', '行高令牌 --h-row:紧凑 −2 / 标准 / 宽松 +2(在当前布局的基础上)', segL(['紧凑', '标准', '宽松'], 1, 'density')), R('圆角', '圆角倍率 --r-k:利落 ×0.55 / 适中 / 圆润 ×1.35', segL(['利落', '适中', '圆润'], 1, 'radius')))}
       ${G('Agent 会话', R('内容宽度', '会话时间线与输入框的最大宽度;窄屏或分屏时会自动收窄', seg(['窄', '标准', '宽'], 1)), R('工具调用详细程度', '精简只显示动词与对象;详细默认展开输出', seg(['精简', '标准', '详细'], 1)), R('时间线字号', '会话里 Claude 回复正文的字号(85%–150%)', stp(100, '%', { min: 85, max: 150, step: 5 })))}
       ${G('动效', R('动效', '流光、滑入与布局变形;关闭后所有时长令牌归零(也跟随系统「减弱动态效果」)', tog(1, 'data-live="motion"')), R('形态切换动画', 'Agent ⇄ IDE 的布局变形,约 0.44 秒;「简化」只淡入淡出', seg(['流畅', '简化', '无'], 0)), R('流光样式', '「正在进行」的文字扫光', seg(['流光', '呼吸', '无'], 0)), R('等待动画', '转圈的样式', seg(['圆环', '点阵', '脉冲'], 0)), R('滚动条', '「跟随系统」沿用 macOS「显示滚动条」设置', seg(['跟随系统', '自动隐藏', '始终显示'], 1)))}` },
@@ -115,6 +140,7 @@
       return `${G('字体与缩进', R('字号', '', stp(12, 'px', { min: 9, max: 24 })), R('缩进', '', seg(['2 空格', '4 空格', 'Tab'], 1)), R('自动保存', '', seg(['关', '延时', '失焦'], 1)))}
       ${G('迷你地图', R('显示迷你地图', '', tog(1)), R('滑块', '视口滑块何时显示', seg(['悬停', '常驻'], 0)), R('宽度', '宽一点能看清更多列', seg(['窄', '中', '宽'], 1)), R('Git 改动刻度', '', tog(1)))}
       ${G('显示', R('行号', '', tog(1)), R('代码折叠', '', tog(1)), R('自动换行', '', tog(0)), R('括号配对高亮', '', tog(1)), R('括号配对着色', '', tog(1)), R('括号配对竖线', '', tog(1)), R('语法高亮', '', tog(1)))}
+      ${G('Markdown 与格式化', R('Markdown 默认视图', '打开 .md / .markdown / .mdc 时的样子;标签右上角可随时切换,每个文件记住自己的选择', seg(['所见即所得', '源码'], 0)), R('保存时格式化', '语言服务器或内置格式化器能处理的文件,保存前先整理一遍', tog(0)), R('保存时去掉行尾空白', '没有格式化器的文件也生效', tog(0)))}
       ${G('Git 追溯', R('行内追溯', '光标行末尾显示作者与时间', tog(1)), R('追溯栏', '行号左侧逐行显示提交', tog(0)))}
       ${G('语言服务', R('启用语言服务', '悬停、补全、转到定义、诊断', tog(1)))}
       ${G('语言服务器', S('rust-analyzer', '已就绪 · 索引完成', 1), S('Pyright', '未安装', 0), S('gopls', '未安装', 0), S('typescript-language-server', '未安装', 0))}
@@ -145,7 +171,7 @@
       ${G('重置', R('恢复默认客户端偏好', '主题、发送键、通知、代理等恢复默认;不影响 Claude 配置、栏宽与最近项目', btn('恢复默认…', 'sm danger', '', 'data-act="reset-all"')))}` },
 
     about: { t: '关于', d: '', body: () => `
-      <div class="card" style="padding:22px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center"><span class="logo" style="width:52px;height:52px;border-radius:var(--r-xl)">${ic('mark', 's20')}</span><div class="fs-head b" style="margin-top:6px">MiniCode</div><div class="t3">版本 0.2.0 · 构建 4f2a91c · 3 天前</div>
+      <div class="card" style="padding:22px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center">${U.brand.logo(52)}<div class="fs-head b" style="margin-top:6px">MiniCode</div><div class="t3">版本 0.2.0 · 构建 4f2a91c · 3 天前</div>
         <div id="upd-st" class="fs-cap t3" style="min-height:16px;display:flex;align-items:center;gap:6px"><span class="c-ok f ai g2">${ic('okc', 's12')}已是最新</span></div>
         <div id="upd-bar" class="meter" style="width:220px;display:none"><i style="width:0"></i></div>
         <div class="f g3" style="margin-top:6px">${btn('检查更新', '', 'refresh', 'id="upd-btn" data-act="upd-check"')}${btn('复制版本信息', 'ghost', 'copy', 'data-act="toast" data-msg="已复制版本信息"')}</div></div>
