@@ -77,7 +77,7 @@ test result: <span class="p">ok</span>. 12 passed; 0 failed
   /** 底部面板:终端 / 问题 / 输出。which:term(默认)/ problems */
   IDE.bpanel = (which = 'term') => `<div class="bpanel ${which === 'problems' ? 'tall' : ''}">
     <div class="tabs"><span class="tab ${which === 'term' ? 'on' : ''}" data-act="tab">${ic('terminal', 's12')}终端</span><span class="tab ${which === 'problems' ? 'on' : ''}" data-act="tab">问题${cnt(3, which === 'problems' ? 'ac' : '')}</span><span class="tab" data-act="tab">输出</span><span class="grow"></span>
-      <span class="f ai g1">${which === 'problems' ? `${chip('全部', 'filter', 'on')}${ib('refresh', 'sm', '重新检查')}` : chip('zsh', 'prompt', 'on') + ib('plus', 'sm', '新建终端') + ib('cols', 'sm')}${ib('x', 'sm')}</span></div>
+      <span class="f ai g1">${which === 'problems' ? `${chip('全部', 'filter', 'on')}${ib('refresh', 'sm', '重新检查')}` : chip('zsh', 'prompt', 'on') + ib('plus', 'sm', '新建终端') + ib('cols', 'sm') + ib('gear', 'sm', '终端设置', 'data-act="settab" data-tab="terminal" data-goto="settings"')}${ib('x', 'sm')}</span></div>
     ${which === 'problems' ? `<div class="grow scroll" style="padding:2px 6px"><div class="grp-h">${ic('chevD', 's12')}${ic('code', 's12')}<span class="grow">router.rs</span>${cnt(2)}</div>${prob('warn', '`fallback` 字段从未被读取', 'rust-analyzer', '行 5')}${prob('warn', '未使用的变量:`h`', 'rust-analyzer', '行 11')}
       <div class="grp-h">${ic('chevD', 's12')}${ic('code', 's12')}<span class="grow">router_test.rs</span>${cnt(1)}</div>${prob('err', '找不到函数 `normalize`,需要 `use crate::router::normalize`', 'rust-analyzer', '行 8')}</div>`
       : `<div class="term grow">${IDE.termLines()}</div>`}</div>`;

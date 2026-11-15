@@ -4,6 +4,13 @@
   Object.assign(ICONS, {
     chat: '<path d="M5 5.5h14A1.5 1.5 0 0 1 20.5 7v8.5A1.5 1.5 0 0 1 19 17h-6.5L8 20.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5z"/>',
     thumbUp: '<path d="M8 10.5 11.5 4a2 2 0 0 1 2 2.4L13 10h5a2 2 0 0 1 2 2.4l-1 5A2 2 0 0 1 17 19H8zM4 10.5h4V19H4z"/>',
+    chat: '<path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4.5 3.5V16H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/>',
+    upload: '<path d="M12 16V4M7.5 8.5 12 4l4.5 4.5M5 16v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3"/>',
+    user: '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c.8-3.5 3.6-5.5 7-5.5s6.2 2 7 5.5"/>',
+    pause: '<path d="M8 5v14M16 5v14"/>',
+    power: '<path d="M12 4v8M7 7.2a7 7 0 1 0 10 0"/>',
+    eyeOff: '<path d="M4 4l16 16M9.9 5.2A9 9 0 0 1 12 5c4.5 0 8 4 9 7a12 12 0 0 1-2.6 3.6M6.3 6.8A12 12 0 0 0 3 12c1 3 4.5 7 9 7 1.4 0 2.7-.4 3.8-1M10 10a3 3 0 0 0 4 4"/>',
+    gift: '<path d="M4 9h16v4H4zM6 13v7h12v-7M12 9v11M12 9c-2 0-4-1-4-2.5S9.5 4 12 9zM12 9c2 0 4-1 4-2.5S14.5 4 12 9z"/>',
   });
 
   /** 图标。n:图标名;c:附加类(s12 / s16 / s20、颜色类) */
@@ -18,7 +25,13 @@
   const tag = (t, c = '') => `<span class="tag ${c}">${t}</span>`;
   const cnt = (n, c = '') => `<span class="cnt ${c}">${n}</span>`;
   const kbd = (...k) => `<span class="kbds">${k.map(x => `<kbd>${x}</kbd>`).join('')}</span>`;
-  const tog = (on) => `<span class="tog ${on ? 'on' : ''}" data-act="tog"></span>`;
+  const tog = (on, extra = '') => `<span class="tog ${on ? 'on' : ''}" data-act="tog" role="switch" tabindex="0" aria-checked="${on ? 'true' : 'false'}" ${extra}></span>`;
+  /** 真实输入框:带图标、占位符;data-in 用来告诉交互层「这是哪个输入」 */
+  const inp = (ph, o = {}) => `<label class="inp ${o.cls || ''}" ${o.style ? `style="${o.style}"` : ''}>${o.icon ? ic(o.icon, 's12') : ''}<input ${o.id ? `id="${o.id}"` : ''} data-in="${o.id || ''}" placeholder="${ph}" value="${o.v || ''}" spellcheck="false" ${o.attr || ''}></label>`;
+  /** 可编辑的行内字段(设置里的路径、地址、数字等) */
+  const field = (v, w = 180, o = {}) => `<input class="fld ${o.mono ? 'mono' : ''}" ${w ? `style="width:${w}px"` : ''} value="${esc(String(v))}" ${o.id ? `id="${o.id}"` : ''} data-in="${o.id || ''}" ${o.ph ? `placeholder="${o.ph}"` : ''} spellcheck="false" ${o.attr || ''}>`;
+  /** 多行输入 */
+  const area = (v, o = {}) => `<textarea class="ta ${o.mono ? 'mono' : ''}" ${o.id ? `id="${o.id}"` : ''} data-in="${o.id || ''}" rows="${o.rows || 4}" spellcheck="false" ${o.ph ? `placeholder="${o.ph}"` : ''}>${esc(String(v))}</textarea>`;
   /** 分段控件。items:各段 HTML;on:选中下标;act:点击后派发的动作名 */
   const seg = (items, on, cls = '', act = 'seg') => `<div class="seg ${cls}" style="--n:${items.length};--i:${on}"><i class="thumb"></i>${items.map((t, k) => `<button class="${k === on ? 'on' : ''}" data-act="${act}" data-i="${k}">${t}</button>`).join('')}</div>`;
   /** 勾选圆。state:'' 未开始 / now 进行中 / done 已完成 */
@@ -69,5 +82,5 @@
     plan: { icon: 'list', verb: '计划', fam: 'plan', cn: 'ExitPlanMode' },
   };
 
-  window.U = { ic, btn, ib, chip, tag, cnt, kbd, tog, seg, chk, esc, rust, THEMES, SCHEMES, TOOLS };
+  window.U = { ic, btn, ib, chip, tag, cnt, kbd, tog, seg, chk, esc, rust, inp, field, area, THEMES, SCHEMES, TOOLS };
 })();

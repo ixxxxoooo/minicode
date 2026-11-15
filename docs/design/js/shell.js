@@ -8,13 +8,13 @@
   /** 整页功能:图标、名称、屏幕 id(与查看器页面 id 同名) */
   const PAGES = [['timer', '自动化', 'automation'], ['canvas', '画布', 'canvas'], ['globe', '浏览器', 'browser'], ['plug', '自定义', 'customize']];
   /** 整页屏幕:替换工作台的编辑区 / 对话栏 / 检查器 */
-  const PG = PAGES.map(p => p[2]);
+  const PG = PAGES.map(p => p[2]).concat(['usage']);
   /** IDE 细节屏幕:固定为 IDE 模式,并带上该屏幕要展示的导航与编辑区状态 */
   const IDE_SCREENS = { 'ide-search': { nav: 'search', hl: 1, rep: 1 }, 'ide-scm': { nav: 'scm', graph: 1 }, 'ide-diff': { nav: 'scm', diff: 1 }, 'ide-problems': { nav: 'files', panel: 'problems' } };
-  const CRUMB = { automation: '自动化', canvas: '画布', browser: '浏览器', customize: '自定义' };
+  const CRUMB = { automation: '自动化', canvas: '画布', browser: '浏览器', customize: '自定义', usage: '用量与成本' };
 
   /* ───────── 标题栏 ───────── */
-  const modeSeg = (st) => seg([`${ic('bot', 's12')}Agent`, `${ic('code', 's12')}IDE`], st.mode === 'ide' ? 1 : 0, 'lg', 'mode');
+  const modeSeg = (st) => seg([`<span data-tip="⌘E" class="f ai g2">${ic('bot', 's12')}Agent</span>`, `<span data-tip="⌘E" class="f ai g2">${ic('code', 's12')}IDE</span>`], st.mode === 'ide' ? 1 : 0, 'lg', 'mode');
   const cmdk = `<div class="cmdk" data-act="palette">${ic('search', 's12')}<span class="grow">搜索会话、文件与命令</span>${kbd('⌘', 'K')}</div>`;
   const crumb = (st) => `<div class="crumb">${ic('folder', 's12')}<span>router-demo</span>${ic('chevR', 's12')}<b class="ell">${CRUMB[st.screen] || '路由大小写匹配'}</b></div>`;
   const titlebar = (st) => {
@@ -22,7 +22,7 @@
     const tools = `${ib('panelB', 'only-ide', '终端 ⌃`')}${ib('panelR', 'only-agent', '检查器 ⌥⌘B', 'data-act="insp"')}${ib('bell', '', '通知')}`;
     const parts = {
       a: [lead + crumb(st), modeSeg(st), cmdk + tools],
-      b: [lead + modeSeg(st), cmdk, tools + '<span class="avatar" style="margin-left:4px">L</span>'],
+      b: [lead + modeSeg(st), cmdk, tools + '<button class="avatar acct-btn" style="margin-left:4px" data-act="acct" data-tip="账号与设置">L</button>'],
       c: [lead + crumb(st), modeSeg(st) + cmdk, tools],
     }[st.scheme];
     return `<div class="tbar"><div class="l">${parts[0]}</div><div class="c">${parts[1]}</div><div class="r">${parts[2]}</div></div>`;
@@ -33,7 +33,7 @@
     ${NAVS.map(([id, n, t]) => `<button class="ri tip-r ${W.navOf(st) === id ? 'on' : ''}" data-act="nav" data-nav="${id}" data-tip="${t}">${ic(n, 's16')}${id === 'scm' ? cnt(3, 'ac') : ''}</button>`).join('')}
     <span class="sep" style="width:20px;margin:6px 0"></span>
     ${PAGES.map(([n, t, id]) => `<button class="ri tip-r ${st.screen === id ? 'on' : ''}" data-act="screen" data-screen="${id}" data-tip="${t}">${ic(n, 's16')}</button>`).join('')}
-    <span class="grow"></span><button class="ri tip-r" data-act="screen" data-screen="settings" data-tip="设置 ⌘,">${ic('gear', 's16')}</button><span class="avatar" style="margin-top:4px">L</span></div>`;
+    <span class="grow"></span><button class="ri tip-r acct-btn" data-act="acct" data-tip="账号与设置">${ic('gear', 's16')}</button><button class="avatar acct-btn" style="margin-top:4px" data-act="acct">L</button></div>`;
 
   /* ───────── 导航栏 ───────── */
   const sess = (t, time, on, flat) => `<div class="row ${flat ? '' : 'sess'} ${on ? 'on' : ''}"><span class="grow ell">${t}</span><span class="aux swap">${time}</span><span class="acts">${ib('more', 'sm')}</span></div>`;
@@ -56,7 +56,7 @@
       <div class="side-top"><div class="navseg grow">${seg(NAVS.map(n => ic(n[1])), k, 'icons', 'nav')}</div>
         <span class="side-title grow">${NAVS[k][2]}</span><span class="only-c">${ib('plus', 'sm', '新建')}</span></div>
       <div class="side-body">${W.panel(nav, st.scheme, st.io)}</div>
-      <div class="side-foot">${PAGES.map(([n, t, id]) => ib(n, 'tip-u ' + (st.screen === id ? 'on' : ''), t, `data-act="screen" data-screen="${id}"`)).join('')}<span class="grow"></span>${ib('gear', 'tip-u', '设置 ⌘,', 'data-act="screen" data-screen="settings"')}</div>
+      <div class="side-foot">${PAGES.map(([n, t, id]) => ib(n, 'tip-u ' + (st.screen === id ? 'on' : ''), t, `data-act="screen" data-screen="${id}"`)).join('')}<span class="grow"></span>${ib('gear', 'tip-u acct-btn', '账号与设置', 'data-act="acct"')}</div>
     </div></aside>`;
   };
 
@@ -89,7 +89,7 @@
   /* ───────── 状态栏 ───────── */
   const sbar = () => `<div class="sbar"><span class="it">${ic('branch', 's12')}main</span><span class="it">${ic('refresh', 's12')}↑1</span><span class="it">${ic('errc', 's12')}0 ${ic('alert', 's12')}1</span>
     <span class="ide-items"><span class="it">行 17,列 58</span><span class="it">UTF-8</span><span class="it">Rust</span><span class="it">${ic('okc', 's12 c-ok')}rust-analyzer</span></span>
-    <span class="grow"></span><span class="it">${ic('shield', 's12')}逐项确认</span><span class="it">Sonnet 5.5</span><span class="it num">上下文 38%</span><span class="it">${ic('download', 's12 c-ac')}<span class="c-ac">更新 42%</span></span></div>`;
+    <span class="grow"></span><span class="it sb-btn" data-act="sbpop" data-pop="cfg" tabindex="0">${ic('shield', 's12')}逐项确认</span><span class="it sb-btn" data-act="sbpop" data-pop="cfg" tabindex="0">Sonnet 5.5</span><span class="it num sb-btn" data-act="sbpop" data-pop="ctx" tabindex="0">上下文 38%</span><span class="it sb-btn" data-act="sbpop" data-pop="upd" tabindex="0">${ic('download', 's12 c-ac')}<span class="c-ac">更新 42%</span></span></div>`;
 
   /* ───────── 页面:设置 / 命令面板 ───────── */
   W.themeCards = (cur) => `<div class="f g3 wrap">${THEMES.map(t => `<div class="th-card ${t.id === cur ? 'on' : ''}" data-act="theme" data-theme-id="${t.id}"><div class="th-prev" data-theme="${t.id}"><i class="s"></i><div class="m"><i></i><i style="width:90%"></i><i style="width:70%"></i></div></div><div class="f ai jb" style="padding:5px 3px 1px"><b>${t.name}</b><span class="t4 fs-micro">${t.dark ? '深' : '浅'}</span></div></div>`).join('')}</div>`;
@@ -111,6 +111,20 @@
     ${st.screen === 'settings' ? W.settings(st) : `<div class="body">${rail(st)}${side(st)}<div class="stage">${stage}</div></div>`}
     ${sbar()}${st.screen === 'palette' ? palette() : ''}</div>`;
   };
+
+  /* ───────── 账号菜单(设置 / 用量 / 快捷键 / 更新 / 关于的统一入口) ───────── */
+  const ami = (n, t, r, attr) => `<div class="mi" tabindex="0" ${attr}>${ic(n, 's12')}<span class="grow">${t}</span>${r ? `<span class="t3 fs-cap">${r}</span>` : ''}</div>`;
+  W.acctMenu = () => `<div class="acct pop a-pop-up"><div class="who"><span class="avatar">L</span><div class="grow"><div class="m">demo</div><div class="t3 fs-cap">Claude Max · 官方账号</div></div></div>
+    <div class="quota"><div class="q"><span style="width:62px" class="t3">本月费用</span><b class="num grow">$12.40</b></div><div class="q"><span style="width:62px" class="t3">5 小时</span><div class="meter"><i style="width:38%"></i></div><span class="num t3">38%</span></div></div>
+    <div class="menu">${ami('sliders', '设置', kbd('⌘', ','), 'data-act="screen" data-screen="settings"')}${ami('chart', '用量与成本', '', 'data-act="screen" data-screen="usage"')}${ami('kbd', '快捷键', '', 'data-act="settab" data-tab="shortcuts" data-goto="settings"')}<div class="sep"></div>${ami('refresh', '检查更新', '', 'data-act="settab" data-tab="about" data-goto="settings"')}${ami('info', '关于 MiniCode', '0.2.0', 'data-act="settab" data-tab="about" data-goto="settings"')}</div></div>`;
+  /** 状态栏弹层:ctx 上下文 / upd 更新 / cfg 运行配置 */
+  W.sbPop = (kind) => ({
+    ctx: `<div class="sb-pop pop a-pop-up"><div class="f ai g4"><span class="ring big" style="--p:38"></span><div class="grow"><b class="num">76k / 200k</b> <span class="t3">· 38%</span><div class="t3 fs-cap">Sonnet 5.5 · 自动压缩阈值 85%</div></div>${btn('压缩', 'sm')}</div>
+      <div class="ctxbar"><i style="width:14%;background:var(--info)"></i><i style="width:11%;background:var(--ok)"></i><i style="width:9%;background:var(--warn)"></i><i style="width:4%;background:var(--c-vio)"></i></div>
+      <div class="f ai fs-cap t3"><span class="grow">5 小时限额 38%</span>${btn('用量与成本', 'sm ghost', 'arrow', 'data-act="screen" data-screen="usage"')}</div></div>`,
+    upd: `<div class="sb-pop pop a-pop-up"><div class="f ai g3"><b class="grow">发现新版本 0.2.1</b>${tag('42%', 'ac')}</div><div class="meter"><i style="width:42%"></i></div><div class="t3 fs-cap">正在后台下载,完成后提示重启。</div></div>`,
+    cfg: `<div class="sb-pop pop a-pop-up" style="padding:4px;gap:0"><div class="cap">权限模式</div><div class="mi on">${ic('shield', 's12')}<span class="grow">逐项确认</span>${ic('check', 's12')}</div><div class="mi">${ic('edit', 's12')}<span class="grow">自动接受编辑</span></div><div class="mi">${ic('list', 's12')}<span class="grow">计划模式</span></div><div class="sep"></div><div class="cap">模型</div><div class="mi on"><span class="grow">Sonnet 5.5</span>${ic('check', 's12')}</div><div class="mi"><span class="grow">Opus 5.5</span></div><div class="mi"><span class="grow">Haiku 5.5</span></div></div>`,
+  })[kind];
 
   window.W = W;
 })();
