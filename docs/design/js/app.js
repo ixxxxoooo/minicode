@@ -1,160 +1,137 @@
-/* 设计稿查看器:导航、方案切换、主题 / 强调色、并排对比、全屏、决策清单 */
+/* 设计稿 v3 · 查看器:页面路由、方案 / 主题切换、原型里的交互(模式变形、导航、折叠、弹层)与回合重播
+   @author ixxxxoooo */
 (function () {
-  const ORDER = ['overview', 'agent', 'ide', 'settings', 'pages', 'global'];
-  const GROUP_TITLE = { overview: '总览与规范', agent: 'Agent 会话', ide: 'IDE 模式', settings: '设置', pages: '其他页面', global: '全局浮层' };
-  const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
-  const st = Object.assign({ screen: 'home', variant: 'A', theme: 'light', accent: 'orange', compare: false, zoom: 'fit' }, load('mc-design-state', {}));
-  const choices = load('mc-design-choices', {});
-  const save = () => { localStorage.setItem('mc-design-state', JSON.stringify(st)); localStorage.setItem('mc-design-choices', JSON.stringify(choices)); };
-  const $ = (s, r = document) => r.querySelector(s);
-  const app = $('#app');
-  const ACCENTS = { orange: '#E8541A', blue: '#3B6FD8', green: '#2F9E5B', violet: '#7A5AE0' };
-
-  const screensIn = (g) => S.list.filter(s => s.group === g);
-  const totalVariants = S.list.reduce((a, s) => a + s.variants.length, 0);
-
-  /* ───── 渲染一个 frame ───── */
-  const frame = (v, extra = '') => {
-    let html;
-    try { html = v.render(); } catch (e) { html = `<div style="padding:30px;color:#c00;font:13px monospace">渲染出错:${K.esc(String(e && e.stack || e))}</div>`; console.error(e); }
-    return `<div class="frame" data-theme="${st.theme}" data-accent="${st.accent}" ${extra}>${html}</div>`;
-  };
-  const stageWidth = () => Math.max(600, (document.querySelector('main') || document.body).clientWidth - 56);
-  const scaleNow = () => st.zoom === 'fit' ? Math.min(1, stageWidth() / 1280) : 1;
-  const fbox = (v) => { const s = scaleNow(); return `<div class="fbox" style="width:${1280 * s}px;height:${800 * s}px"><div class="scaler" style="transform:scale(${s})">${frame(v)}</div></div>`; };
-
-  /* ───── 页头与导航 ───── */
-  const renderChrome = () => {
-    const nav = ORDER.map(g => `<div class="g">${GROUP_TITLE[g]}</div>${g === 'overview' ? `<a data-go="home" class="${st.screen === 'home' ? 'on' : ''}"><span class="t">总览墙</span></a><a data-go="decide" class="${st.screen === 'decide' ? 'on' : ''}"><span class="t">问题清单与方案选择</span><span class="n">${Object.keys(choices).length}</span></a>` : ''}${screensIn(g).map(s => `<a data-go="${s.id}" class="${st.screen === s.id ? 'on' : ''}"><span class="t">${s.title.replace(/\s*\(.*\)$/, '')}</span>${s.variants.length > 1 ? `<span class="n">${s.variants.length}</span>` : ''}</a>`).join('')}`).join('');
-    app.innerHTML = `
-      <header>
-        <div class="brand"><i>&lt;/&gt;</i>MiniCode <small>UI 设计稿 v2 · 紧凑版</small></div>
-        <span class="sp"></span>
-        <span class="vseg" data-k="theme">${[['light', '浅色'], ['dark', '深色']].map(([k, t]) => `<button data-v="${k}" class="${st.theme === k ? 'on' : ''}">${t}</button>`).join('')}</span>
-        <span class="swatches" data-k="accent">${Object.entries(ACCENTS).map(([k, c]) => `<button data-v="${k}" title="${k}" style="background:${c};color:${c}" class="${st.accent === k ? 'on' : ''}"></button>`).join('')}</span>
-        <span class="vseg" data-k="zoom">${[['fit', '适应'], ['100', '100%']].map(([k, t]) => `<button data-v="${k}" class="${st.zoom === k ? 'on' : ''}">${t}</button>`).join('')}</span>
-        <button class="vbtn ${st.compare ? 'on' : ''}" id="b-cmp">并排对比</button>
-        <button class="vbtn" id="b-fs">全屏 <kbd>F</kbd></button>
-      </header>
-      <nav>${nav}</nav>
-      <main id="main"></main>`;
-    document.body.dataset.theme = st.theme;
+  const { ic, btn, seg, THEMES, SCHEMES } = U;
+  const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const NAV_IDS = ['chat', 'files', 'search', 'scm'], NAV_NAMES = ['会话', '文件', '搜索', '源代码管理'];
+  const PAGES = [
+    ['选型', [['overview', 'grid', '三套方案总览']]],
+    ['原型', [['work', 'cols', '工作台 · Agent ⇄ IDE'], ['welcome', 'spark', '新会话欢迎页'], ['palette', 'cmd', '命令面板'], ['settings', 'sliders', '设置 · 外观']]],
+    ['规范', [['flow', 'chat', '会话流与工具'], ['comps', 'cube', '组件'], ['tokens', 'palette', '设计令牌'], ['motion', 'activity', '动效']]],
+  ];
+  const HINTS = {
+    work: ['点标题栏 Agent / IDE:布局变形', '点步骤行:展开 / 收起', '点「逐项确认 · Sonnet」:运行配置', '点导航图标:会话 / 文件 / 搜索 / 源代码管理', '右上角「重播回合」:看工具调用的全过程'],
+    welcome: ['新会话没有内容时的第一屏', '起手卡悬停上浮'], palette: ['⌘K 命令面板:左列表右预览', '点遮罩关闭'], settings: ['点主题卡片即时换肤', '分段与开关都可点'],
   };
 
-  /* ───── 总览墙 ───── */
-  const pickV = (s) => s.variants.find(v => v.rec) || s.variants[0];
-  const renderHome = () => {
-    const wall = ORDER.map(g => { const ss = screensIn(g); if (!ss.length) return ''; return `<div class="wall-g">${GROUP_TITLE[g]}</div><div class="wall">${ss.map(s => { const v = pickV(s); return `<div class="thumb" data-go="${s.id}"><div class="tb2"><div class="sc">${frame(v)}</div></div><div class="cap2">${s.title.replace(/\s*\(.*\)$/, '')}<small>${s.variants.length > 1 ? s.variants.length + ' 套方案' : '1 套'}</small></div></div>`; }).join('')}</div>`; }).join('');
-    return `<div class="hero"><h1>MiniCode 整体 UI 重设计</h1>
-      <div class="desc" style="margin:4px 0 0">基于现有界面逐页复盘后重做:保留「Claude Code 工作台」的紧凑气质与全部功能,统一视觉语言(暖灰中性 + 橙色强调、平面分层、12px 为主)、整理信息架构,并对有争议的交互给出多套方案供你选择。</div>
-      <div class="stats"><div><b>${S.list.length}</b><span>个页面 / 板块</span></div><div><b>${totalVariants}</b><span>套设计方案</span></div><div><b>2</b><span>种主题 × 4 种强调色</span></div><div><b>${window.PROBLEMS.length}</b><span>处现状问题已梳理</span></div></div>
-      <div style="margin-top:14px;color:var(--v-tx2)">怎么看:左侧选页面 → 顶部切换方案 A / B / C(带「推荐」标记的是我的建议) → 右上角切浅 / 深色与强调色;<kbd>←</kbd><kbd>→</kbd> 切方案、<kbd>↑</kbd><kbd>↓</kbd> 切页面、<kbd>T</kbd> 主题、<kbd>C</kbd> 并排对比、<kbd>F</kbd> 全屏。看完去「问题清单与方案选择」把你的选择点一下,我再按它落地。</div></div>${wall}`;
+  /** 读取上次的选择(存不了就用默认值) */
+  const load = () => {
+    const d = { page: 'overview', scheme: 'a', theme: 'paper', mode: 'agent' };
+    try { Object.assign(d, JSON.parse(localStorage.getItem('mc-design-v3') || '{}')); } catch (e) { /* 读不到就用默认值 */ }
+    // 地址栏 #page=work&scheme=b&theme=ink&mode=ide 可直达某个状态,方便分享与截图
+    new URLSearchParams(location.hash.slice(1)).forEach((v, k) => { if (k in d) d[k] = v; });
+    return d;
   };
+  const save = () => { try { localStorage.setItem('mc-design-v3', JSON.stringify(st)); } catch (e) { /* 隐私模式下忽略 */ } };
+  const st = load();
 
-  /* ───── 单个页面 ───── */
-  const renderScreen = (s) => {
-    if (!s.variants.some(v => v.key === st.variant)) st.variant = s.variants[0].key;
-    const cur = s.variants.find(v => v.key === st.variant);
-    const tabs = s.variants.length > 1 || s.variants[0].tag ? `<div class="vtabs">${s.variants.map(v => `<div class="vtab ${v.key === st.variant && !st.compare ? 'on' : ''}" data-variant="${v.key}"><b>${v.key}</b>${v.label}${v.rec ? '<span class="tag rec">推荐</span>' : v.tag ? `<span class="tag">${v.tag}</span>` : ''}</div>`).join('')}</div>` : '';
-    const head = `<h1>${s.title}</h1><p class="desc">${s.desc}</p>${tabs}`;
-    if (st.compare) {
-      return head + `<div class="cmpwrap">${s.variants.map(v => `<div><div class="cmphead"><span class="vtab on" style="cursor:default"><b>${v.key}</b>${v.label}</span>${v.rec ? '<span class="tag rec">推荐</span>' : ''}<small>${v.note || ''}</small></div>${fbox(v)}</div>`).join('')}</div>${notes(s, null)}`;
-    }
-    return head + fbox(cur) + notes(s, cur);
+  /* ───────── 渲染 ───────── */
+  const frame = (scheme, screen, mode) => `<div class="fit"><div class="frame" data-scheme="${scheme}">${W.win({ scheme, mode, screen, theme: st.theme })}</div></div>`;
+  const overview = () => `<div class="ov"><div class="ds" style="padding:0;margin:0"><h1>三套方案</h1><div class="lede">三套方案共用同一份令牌、同一批组件、同一套动效,区别只在「面板怎么分隔、导航放在哪、步骤行怎么串」。每个画框都是活的:可以直接点里面的 Agent / IDE 开关。选定后其余页面都按这一套展开。</div></div>
+    ${SCHEMES.map(s => `<div class="ov-row ${s.id === st.scheme ? 'cur' : ''}" data-scheme="${s.id}">${frame(s.id, 'work', 'agent')}<div class="ov-txt">
+      <div class="f ai g4"><span class="ov-k">${s.id.toUpperCase()}</span><div><div class="fs-head b">${s.name} <span class="t3" style="font-weight:400">${s.en}</span></div><div class="t3">${s.tagline}</div></div></div>
+      <ul>${s.points.map(p => `<li>${p}</li>`).join('')}</ul><div class="t2" style="line-height:1.6">${s.fit}</div>
+      <div class="f g3">${btn('Agent ⇄ IDE', '', 'swap', 'data-act="ov-mode"')}${btn('用这套看全部页面', 'pri', 'arrow', `data-act="pick" data-id="${s.id}"`)}</div></div></div>`).join('')}</div>`;
+  const renderBar = () => { $('#vbar').innerHTML = `<span class="logo">${ic('mark')}</span><span class="ttl">MiniCode 设计稿 v3</span><span class="vsep"></span>
+    <span class="lbl">方案</span>${seg(SCHEMES.map(s => `${s.id.toUpperCase()} ${s.name}`), SCHEMES.findIndex(s => s.id === st.scheme), 'lg', 'scheme')}
+    <span class="lbl">主题</span><span class="f g3 ai">${THEMES.map(t => `<button class="swt tip ${t.id === st.theme ? 'on' : ''}" data-theme="${t.id}" data-act="theme" data-theme-id="${t.id}" data-tip="${t.name} · ${t.sub}"></button>`).join('')}</span>
+    <span class="grow"></span>${btn('重播回合', 'soft', 'play', 'data-act="replay"')}<a href="v2/index.html">旧稿 v2 →</a>`; };
+  const renderNav = () => { $('#vnav').innerHTML = PAGES.map(([g, items]) => `<div class="grp-h">${g}</div>${items.map(([id, n, t]) => `<div class="row ${id === st.page ? 'on' : ''}" data-act="page" data-page="${id}">${ic(n, 's12')}<span class="ell">${t}</span></div>`).join('')}`).join('')
+    + '<div class="foot">画框 1280 × 800,按窗口等比缩放。<br>所有颜色、尺寸、动效都来自 css/tokens.css。</div>'; };
+  const renderMain = () => {
+    const m = $('#vmain'), p = st.page;
+    m.innerHTML = p === 'overview' ? overview() : P[p] ? P[p](st) : `<div class="stage-wrap">${frame(st.scheme, p, st.mode)}<div class="hint">${(HINTS[p] || []).map(h => `<span>${h}</span>`).join('')}</div></div>`;
+    m.scrollTop = 0; fit(); tick(); $$('.tracks', m).forEach(t => t.classList.add('play'));
   };
-  const notes = (s, cur) => {
-    const chosen = choices[s.id];
-    return `<div class="below"><div class="vcard"><h3>设计说明</h3><ul>${s.notes.map(n => `<li>${n}</li>`).join('')}</ul></div>
-      <div class="vcard">${cur ? `<h3>方案 ${cur.key} · ${cur.label}</h3><p style="margin:0 0 10px;color:var(--v-tx2)">${cur.note || '该页只有一套设计。'}</p>` : '<h3>选择</h3>'}
-        ${s.variants.length > 1 ? `<div style="display:flex;gap:6px;flex-wrap:wrap">${s.variants.map(v => `<button class="vbtn ${chosen === v.key ? 'pri' : ''}" data-choose="${s.id}:${v.key}">${chosen === v.key ? '✓ ' : ''}选方案 ${v.key}</button>`).join('')}</div><div style="margin-top:8px;color:var(--v-tx3);font-size:12px">${chosen ? `你当前选的是方案 ${chosen}。` : '还没选择,可以在这里或「问题清单」页里选。'}</div>` : ''}</div></div>`;
-  };
+  /** 按主区可用空间给每个画框算缩放比 */
+  const fit = () => { const m = $('#vmain'), w = m.clientWidth, h = m.clientHeight;
+    $$('.fit', m).forEach(f => f.style.setProperty('--s', Math.max(.3, f.closest('.ov-row') ? Math.min(.68, (w - 64 - 328) / 1280) : Math.min(1, (w - 48) / 1280, (h - 96) / 800)))); };
+  const apply = () => { document.body.dataset.theme = st.theme; document.body.dataset.scheme = st.scheme; };
+  const renderAll = () => { apply(); renderBar(); renderNav(); renderMain(); save(); };
+  const go = (page) => { st.page = page; renderNav(); renderMain(); save(); };
 
-  /* ───── 问题清单与方案选择 ───── */
-  const renderDecide = () => {
-    const probs = `<table class="ptable"><tr><th>现状问题</th><th>具体表现</th><th>改进方向</th><th>相关页面</th></tr>${window.PROBLEMS.map(([a, b, c, d]) => `<tr><td>${a}</td><td>${b}</td><td>${c}</td><td>${d.split(' / ').map(x => `<a data-go="${x}">${x}</a>`).join(' · ')}</td></tr>`).join('')}</table>`;
-    const decs = S.list.filter(s => s.variants.length > 1).map(s => `<div class="dec"><h3>${s.title.replace(/\s*\(.*\)$/, '')}${choices[s.id] ? '<span class="tag rec">已选 ' + choices[s.id] + '</span>' : ''}</h3><div class="dd">${s.desc}</div><div class="opts">${s.variants.map(v => `<div class="opt ${choices[s.id] === v.key ? 'on' : ''}" data-choose="${s.id}:${v.key}"><div class="oh"><i>${v.key}</i>${v.label}${v.rec ? '<span class="tag rec">推荐</span>' : ''}</div><p>${v.note || ''}</p><a data-open="${s.id}:${v.key}">查看设计 →</a></div>`).join('')}</div></div>`).join('');
-    return `<h1>问题清单与方案选择</h1><p class="desc">先看我从现有界面里梳理出的问题和改进方向;再在下面逐项挑选你喜欢的方案(点卡片即选中,可随时改)。选完点「复制我的选择」发给我即可。</p>
-      <div style="display:flex;gap:8px;margin-bottom:16px"><button class="vbtn pri" id="b-rec">全部按推荐选择</button><button class="vbtn" id="b-copy">复制我的选择</button><button class="vbtn" id="b-clear">清空选择</button></div>
-      <div class="h2" style="margin-top:0">一、现状问题与改进方向</div>${probs}<div class="h2">二、需要你拍板的方案(${S.list.filter(s => s.variants.length > 1).length} 项)</div>${decs}`;
+  /* ───────── 原型内的状态切换(只改属性,让 CSS 过渡自己跑) ───────── */
+  /** 切换导航栏内容。win:窗口元素;nav:chat / files / search / scm */
+  const setNav = (win, nav) => {
+    const body = $('.side-body', win), k = NAV_IDS.indexOf(nav); if (!body) return;
+    body.innerHTML = W.panel(nav, win.closest('.frame').dataset.scheme);
+    $$('.ri[data-nav]', win).forEach(r => r.classList.toggle('on', r.dataset.nav === nav));
+    const sg = $('.navseg .seg', win); sg.style.setProperty('--i', k); $$('button', sg).forEach((b, j) => b.classList.toggle('on', j === k));
+    $('.side-title', win).textContent = NAV_NAMES[k]; win.dataset.side = 'on';
   };
-
-  /* ───── 总渲染 ───── */
-  const render = () => {
-    renderChrome();
-    const main = $('#main');
-    if (st.screen === 'home') main.innerHTML = renderHome();
-    else if (st.screen === 'decide') main.innerHTML = renderDecide();
-    else { const s = S.find(st.screen); if (!s) { st.screen = 'home'; return render(); } main.innerHTML = renderScreen(s); }
-    history.replaceState(null, '', `#${st.screen}${S.find(st.screen) ? '/' + st.variant : ''}`);
-    save();
+  /** 切换 Agent / IDE:改 data-mode,面板宽度由 shell.css 的过渡完成变形 */
+  const setMode = (win, mode) => {
+    win.dataset.mode = mode;
+    $$('button[data-act="mode"]', win).forEach(b => { const on = (b.dataset.i === '1') === (mode === 'ide'); b.classList.toggle('on', on); if (on) b.parentElement.style.setProperty('--i', b.dataset.i); });
+    setNav(win, mode === 'ide' ? 'files' : 'chat');
   };
-  const go = (id, variant) => { st.screen = id; if (variant) st.variant = variant; render(); $('#main').scrollTop = 0; };
-  const toast = (t) => { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1800); };
-
-  /* ───── 全屏 ───── */
-  let fsEl = null;
-  const closeFs = () => { if (fsEl) { fsEl.remove(); fsEl = null; } };
-  const openFs = () => {
-    const s = S.find(st.screen); if (!s) return;
-    const draw = () => {
-      const cur = s.variants.find(v => v.key === st.variant);
-      const sc = Math.min(innerWidth / 1280, (innerHeight - 52) / 800);
-      fsEl.innerHTML = `<div class="bar"><b>${s.title}</b><div class="vtabs" style="margin:0">${s.variants.map(v => `<div class="vtab ${v.key === st.variant ? 'on' : ''}" data-fsv="${v.key}"><b>${v.key}</b>${v.label}</div>`).join('')}</div><span class="sp"></span><button class="vbtn" data-fsc>关闭 Esc</button></div><div class="stage"><div style="width:${1280 * sc}px;height:${800 * sc}px"><div class="scaler" style="transform:scale(${sc})">${frame(cur)}</div></div></div>`;
-    };
-    fsEl = document.createElement('div'); fsEl.className = 'fs'; document.body.appendChild(fsEl); draw();
-    fsEl.addEventListener('click', (e) => { const v = e.target.closest('[data-fsv]'); if (v) { st.variant = v.dataset.fsv; draw(); } if (e.target.closest('[data-fsc]')) closeFs(); });
-    fsEl.draw = draw;
-  };
-
-  /* ───── 事件 ───── */
-  document.addEventListener('click', (e) => {
-    const t = e.target;
-    const go_ = t.closest('[data-go]'); if (go_) { e.preventDefault(); const id = go_.dataset.go; if (id === 'home' || id === 'decide' || S.find(id)) { go(id); return; } }
-    const op = t.closest('[data-open]'); if (op) { const [id, v] = op.dataset.open.split(':'); e.stopPropagation(); go(id, v); return; }
-    const ch = t.closest('[data-choose]'); if (ch) { const [id, v] = ch.dataset.choose.split(':'); choices[id] = v; save(); const sc = $('#main').scrollTop; render(); $('#main').scrollTop = sc; return; }
-    const vt = t.closest('[data-variant]'); if (vt) { st.variant = vt.dataset.variant; st.compare = false; render(); return; }
-    const sg = t.closest('.vseg button, .swatches button'); if (sg) { const k = sg.parentElement.dataset.k; st[k] = sg.dataset.v; const sc = $('#main').scrollTop; render(); $('#main').scrollTop = sc; return; }
-    if (t.closest('#b-cmp')) { st.compare = !st.compare; render(); return; }
-    if (t.closest('#b-fs')) { openFs(); return; }
-    if (t.closest('#b-rec')) { S.list.filter(s => s.variants.length > 1).forEach(s => { const v = s.variants.find(v => v.rec); if (v) choices[s.id] = v.key; }); render(); toast('已按推荐方案选择'); return; }
-    if (t.closest('#b-clear')) { Object.keys(choices).forEach(k => delete choices[k]); render(); return; }
-    if (t.closest('#b-copy')) {
-      const lines = S.list.filter(s => s.variants.length > 1).map(s => { const k = choices[s.id]; const v = s.variants.find(v => v.key === k); return `- ${s.title.replace(/\s*\(.*\)$/, '')}:${v ? `方案 ${v.key}「${v.label}」` : '(未选,按你的推荐)'}`; });
-      const text = `我对 MiniCode UI 设计稿的选择:\n${lines.join('\n')}`;
-      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast('已复制到剪贴板'), () => { prompt('复制下面的文字:', text); });
-      return;
-    }
+  /** 推进所有「最新一步」:旧行上移淡出,新行自下滑入 */
+  const tick = () => $$('.ticker[data-ticks]').forEach(t => {
+    const list = t.dataset.ticks.split(';').map(x => x.split('|')), k = ((+t.dataset.k || 0) + 1) % list.length, old = t.lastElementChild;
+    t.dataset.k = k; t.innerHTML = (old ? old.outerHTML.replace(/class="[^"]*"/, 'class="out"') : '') + F.tick(list[k][0], list[k][1], 'in');
   });
-  document.addEventListener('keydown', (e) => {
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
-    const s = S.find(st.screen);
-    if (e.key === 'Escape') return closeFs();
-    if (e.key === 't' || e.key === 'T') { st.theme = st.theme === 'light' ? 'dark' : 'light'; render(); if (fsEl) fsEl.draw(); return; }
-    if (e.key === 'f' || e.key === 'F') return fsEl ? closeFs() : openFs();
-    if (e.key === 'c' || e.key === 'C') { st.compare = !st.compare; return render(); }
-    if (s && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
-      const ix = s.variants.findIndex(v => v.key === st.variant); const n = (ix + (e.key === 'ArrowRight' ? 1 : -1) + s.variants.length) % s.variants.length;
-      st.variant = s.variants[n].key; st.compare = false; render(); if (fsEl) fsEl.draw(); return;
-    }
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      const ids = ['home', 'decide', ...ORDER.flatMap(g => screensIn(g).map(x => x.id))]; const ix = ids.indexOf(st.screen);
-      const n = Math.min(ids.length - 1, Math.max(0, ix + (e.key === 'ArrowDown' ? 1 : -1))); e.preventDefault(); go(ids[n]);
-    }
-  });
-  addEventListener('resize', () => { if (new URLSearchParams(location.search).get('shot')) return; if (st.zoom === 'fit' && !fsEl) { const sc = $('#main') && $('#main').scrollTop; render(); if (sc) $('#main').scrollTop = sc; } if (fsEl) fsEl.draw(); });
 
-  // 截图模式:?shot=页面:方案[:dark][:accent] 只渲染一个 1280×800 的画面(用于校对与出图)
-  const q = new URLSearchParams(location.search).get('shot');
-  if (q) {
-    const [id, key, th, ac] = q.split(':');
-    const s = S.find(id); const v = s && (s.variants.find(v => v.key === (key || 'A')) || s.variants[0]);
-    if (th) st.theme = th; if (ac) st.accent = ac;
-    document.body.dataset.theme = st.theme; document.body.style.overflow = 'hidden'; document.body.style.background = '#888';
-    app.style.display = 'block'; app.innerHTML = v ? frame(v) : '未找到页面 ' + id;
-    return;
+  /* ───────── 回合重播 ───────── */
+  let playId = 0, permDone = null;
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+  /** 按脚本把一个回合重新演一遍。win:工作台窗口元素 */
+  async function play(win) {
+    const id = ++playId, flow = $('.flow', win), wrap = $('.flow-wrap', win), slotC = $('.slot-cmp', win), slotK = $('.slot-card', win);
+    const alive = () => id === playId && flow.isConnected;
+    const down = () => wrap.scrollTo({ top: wrap.scrollHeight, behavior: 'smooth' });
+    const add = (parent, html) => { const d = document.createElement('div'); d.className = 'it a-rise'; d.innerHTML = html; parent.appendChild(d); down(); return d; };
+    flow.innerHTML = ''; let grp = null;
+    for (const s of F.script) {
+      if (!alive()) return;
+      if (s.kind === 'step') {
+        if (!grp) { grp = document.createElement('div'); grp.className = 'acts-g'; flow.appendChild(grp); }
+        const el = add(grp, s.html('run')); tick(); await wait(s.run); if (!alive()) return;
+        el.innerHTML = s.html(''); const op = $('.step.open', el);
+        if (op) { op.classList.remove('open'); void op.offsetWidth; op.classList.add('open'); }
+        setTimeout(down, 280);
+      } else if (s.kind === 'perm') {
+        slotK.innerHTML = F.perm(); slotK.classList.remove('hide'); slotC.classList.add('hide');
+        await Promise.race([wait(s.wait + 1600), new Promise(r => { permDone = r; })]);
+        slotK.classList.add('hide'); slotC.classList.remove('hide'); slotC.firstElementChild.classList.add('a-pop-up');
+      } else if (s.kind === 'stream') {
+        grp = null; const md = add(flow, '<div class="md"><p class="caret"></p></div>').firstElementChild, p = md.firstElementChild;
+        for (let k = 0; k <= s.lead.length; k += 2) { if (!alive()) return; p.textContent = s.lead.slice(0, k); await wait(18); }
+        p.textContent = s.lead; p.classList.remove('caret');
+        for (const b of s.blocks) { if (!alive()) return; md.insertAdjacentHTML('beforeend', b); md.lastElementChild.classList.add('a-rise'); down(); await wait(280); }
+      } else { grp = null; add(flow, s.html('')); await wait(s.wait); }
+    }
   }
-  // 初始路由:#id/变体
-  const h = location.hash.replace('#', '').split('/');
-  if (h[0] && (h[0] === 'home' || h[0] === 'decide' || S.find(h[0]))) { st.screen = h[0]; if (h[1]) st.variant = h[1]; }
-  render();
+
+  /* ───────── 事件 ───────── */
+  const ACT = {
+    page: (el) => go(el.dataset.page),
+    scheme: (el) => { st.scheme = SCHEMES[+el.dataset.i].id; apply(); renderMain(); save(); },
+    theme: (el) => { st.theme = el.dataset.themeId; apply(); save(); $$('[data-act="theme"]').forEach(b => b.classList.toggle('on', b.dataset.themeId === st.theme)); },
+    pick: (el) => { st.scheme = el.dataset.id; st.page = 'work'; renderAll(); },
+    mode: (el, win) => { const mode = el.dataset.i === '1' ? 'ide' : 'agent'; setMode(win, mode); if (!el.closest('.ov-row')) { st.mode = mode; save(); } },
+    'ov-mode': (el) => { const w = $('.win', el.closest('.ov-row')); setMode(w, w.dataset.mode === 'ide' ? 'agent' : 'ide'); },
+    nav: (el, win) => setNav(win, el.dataset.nav || NAV_IDS[+el.dataset.i]),
+    side: (el, win) => { win.dataset.side = win.dataset.side === 'off' ? 'on' : 'off'; },
+    insp: (el, win) => { win.dataset.insp = win.dataset.insp === 'off' ? 'on' : 'off'; },
+    fold: (el) => el.classList.toggle('open'),
+    tog: (el) => el.classList.toggle('on'),
+    tab: (el) => $$('.tab', el.parentElement).forEach(t => t.classList.toggle('on', t === el)),
+    'insp-tab': (el, win) => { ACT.tab(el); $('.insp-body', win).innerHTML = W.inspBody(el.dataset.tab); },
+    cfg: (el) => { const cmp = el.closest('.cmp'), pop = $('.cfg-pop', cmp); pop ? pop.remove() : cmp.insertAdjacentHTML('afterbegin', F.cfgPop()); el.classList.toggle('on', !pop); },
+    palette: (el) => { if (!el.closest('.ov-row')) go('palette'); },
+    screen: (el) => { if (!el.closest('.ov-row')) go(el.dataset.screen); },
+    replay: () => { if (st.page !== 'work') go('work'); play($('#vmain .win')); },
+    'perm-ok': () => permDone && permDone(),
+    demo: (el) => { $('.demo-st', el).innerHTML = P.demos[+el.dataset.i][2](); tick(); },
+    tracks: () => $$('.tracks').forEach(t => { t.classList.remove('play'); void t.offsetWidth; t.classList.add('play'); }),
+    mini: (el) => { el.dataset.mode = el.dataset.mode === 'ide' ? 'agent' : 'ide'; },
+  };
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-act]'); if (!el) return;
+    if (el.parentElement.classList.contains('seg')) { el.parentElement.style.setProperty('--i', el.dataset.i); $$('button', el.parentElement).forEach(b => b.classList.toggle('on', b === el)); }
+    const fn = ACT[el.dataset.act]; if (fn) fn(el, el.closest('.win'), e);
+  });
+  window.addEventListener('resize', fit);
+  setInterval(tick, 1150);
+  renderAll();
 })();

@@ -1,0 +1,57 @@
+/* MiniCode 设计稿 v3 · 动效:关键帧与动效类(时长 / 曲线一律取 tokens.css 里的令牌)
+   命名:a-<模式>。每个模式在「动效」规范页有可重放的演示。
+   @author ixxxxoooo */
+
+@keyframes spin { to { rotate: 360deg; } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes tip { from { opacity: 0; transform: translateY(-2px); } }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+@keyframes pop { from { opacity: 0; transform: scale(.96) translateY(-4px); } }
+@keyframes pop-up { from { opacity: 0; transform: scale(.97) translateY(8px); } }
+@keyframes swap { from { opacity: 0; transform: translateX(-8px); } }
+@keyframes toast { from { opacity: 0; transform: translateX(18px); } }
+@keyframes shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes breathe { 50% { opacity: .4; } }
+@keyframes tick-in { from { transform: translateY(100%); opacity: 0; } }
+@keyframes tick-out { to { transform: translateY(-100%); opacity: 0; } }
+@keyframes glow { 0%, 100% { box-shadow: 0 0 0 1px var(--ac-line), 0 0 0 3px color-mix(in srgb, var(--ac) 10%, transparent), var(--sh-1); } 50% { box-shadow: 0 0 0 1px var(--ac), 0 0 0 5px color-mix(in srgb, var(--ac) 20%, transparent), var(--sh-1); } }
+@keyframes draw { from { stroke-dashoffset: 24; } }
+@keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+@keyframes race { from { left: 0; } to { left: calc(100% - 12px); } }
+
+/* 进入类 */
+.a-rise { animation: rise var(--dur-base) var(--ease-out) both; }          /* 会话流新行、列表项 */
+.a-pop { animation: pop var(--dur-base) var(--ease-out) both; transform-origin: top center; }       /* 向下的弹层、菜单、命令面板 */
+.a-pop-up { animation: pop-up var(--dur-base) var(--ease-out) both; transform-origin: bottom center; } /* 向上的弹层、权限卡就地变形 */
+.a-swap { animation: swap var(--dur-base) var(--ease-out) both; }          /* 侧栏面板切换 */
+.a-toast { animation: toast var(--dur-slow) var(--ease-out) both; }        /* 右下角通知 */
+.a-fade { animation: fade var(--dur-base) var(--ease-out) both; }
+.stagger > * { animation: rise var(--dur-base) var(--ease-out) both; }
+.stagger > :nth-child(2) { animation-delay: 30ms; } .stagger > :nth-child(3) { animation-delay: 60ms; } .stagger > :nth-child(4) { animation-delay: 90ms; }
+.stagger > :nth-child(5) { animation-delay: 120ms; } .stagger > :nth-child(6) { animation-delay: 150ms; } .stagger > :nth-child(n+7) { animation-delay: 180ms; }
+
+/* 循环类 */
+.shimmer { background: linear-gradient(90deg, var(--tx-3) 0 38%, var(--tx-1) 50%, var(--tx-3) 62% 100%) 0 0 / 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; -webkit-text-fill-color: transparent; animation: shimmer var(--dur-loop) linear infinite; }
+.breathe { animation: breathe var(--dur-loop) ease-in-out infinite; }
+.caret::after { content: ""; display: inline-block; width: 2px; height: 1.05em; vertical-align: -2px; margin-left: 2px; border-radius: 1px; background: var(--ac); animation: blink 1s steps(1) infinite; }
+.a-glow { animation: glow 2.2s ease-in-out infinite; }
+.sweep { position: relative; overflow: hidden; }
+.sweep::after { content: ""; position: absolute; inset: 0 auto 0 0; width: 40%; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ac) 16%, transparent), transparent); animation: sweep 1.8s var(--ease-io) infinite; }
+
+/* 折叠展开:网格行 0fr → 1fr,内容高度不用量 */
+.fold { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--dur-slow) var(--ease-io); }
+.open + .fold, .fold.open { grid-template-rows: 1fr; }
+.fold-in { overflow: hidden; min-height: 0; }
+
+/* 最新一步:新行自下滑入,旧行向上顶出 */
+.ticker { height: 22px; position: relative; overflow: hidden; }
+.ticker > * { position: absolute; inset: 0; display: flex; align-items: center; gap: 6px; }
+.ticker > .in { animation: tick-in 200ms var(--ease-out) both; }
+.ticker > .out { animation: tick-out 200ms var(--ease-out) both; }
+
+/* 勾选:对勾描边画出 */
+.chk { width: 14px; height: 14px; border-radius: 50%; display: grid; place-items: center; flex: none; box-shadow: inset 0 0 0 1.4px var(--tx-4); transition: background var(--dur-base) var(--ease-spring), box-shadow var(--dur-base); }
+.chk svg { width: 9px; height: 9px; stroke: var(--on-ac); stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 24; stroke-dashoffset: 24; }
+.chk.done { background: var(--ok); box-shadow: none; } .chk.done svg { animation: draw var(--dur-slow) var(--ease-out) .06s both; }
+.chk.now { box-shadow: none; }

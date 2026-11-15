@@ -1,0 +1,146 @@
+/* MiniCode 设计稿 v3 · 设计令牌
+   三层:① 原始令牌(每套主题一份色板)→ ② 语义令牌(由原始令牌推导,组件只用这一层)→ ③ 方案令牌(圆角 / 间隙 / 行高的倍率)。
+   换主题只改 data-theme,换方案只改 data-scheme,组件样式一行都不用动。
+   @author ixxxxoooo */
+
+/* ───────── 与主题无关的刻度 ───────── */
+:root {
+  /* 字体 */
+  --font-ui: -apple-system, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
+  --fs-micro: 10px; --fs-cap: 11px; --fs-body: 12px; --fs-read: 13px; --fs-title: 14px; --fs-head: 18px; --fs-display: 26px;
+  --lh-tight: 1.3; --lh-body: 1.5; --lh-read: 1.65;
+  --fw-regular: 400; --fw-medium: 500; --fw-bold: 600;
+
+  /* 间距(4pt 栅格,含两个半步) */
+  --sp-1: 2px; --sp-2: 4px; --sp-3: 6px; --sp-4: 8px; --sp-5: 12px; --sp-6: 16px; --sp-7: 24px; --sp-8: 32px;
+
+  /* 固定尺寸 */
+  --h-ctl: 24px; --h-ctl-sm: 20px; --h-bar: 36px; --h-tab: 30px; --h-status: 22px;
+  --w-rail: 44px; --w-side: 228px; --w-insp: 304px; --w-dock: 352px; --w-col: 712px;
+  --ic: 14px; --flow-inset: 22px;
+
+  /* 动效:时长 */
+  --dur-instant: 80ms;   /* 按压、勾选 */
+  --dur-fast: 120ms;     /* 悬停、弹层收起 */
+  --dur-base: 180ms;     /* 弹层出现、行进入、滑块 */
+  --dur-slow: 260ms;     /* 折叠展开、抽屉 */
+  --dur-morph: 440ms;    /* Agent ⇄ IDE 布局变形 */
+  --dur-loop: 1600ms;    /* 流光、呼吸等循环 */
+  /* 动效:曲线 */
+  --ease-out: cubic-bezier(.16, 1, .3, 1);      /* 进入:快起慢收 */
+  --ease-in: cubic-bezier(.5, 0, .9, .3);       /* 离开:慢起快走 */
+  --ease-io: cubic-bezier(.65, 0, .35, 1);      /* 位移:两端都缓 */
+  --ease-spring: cubic-bezier(.34, 1.4, .64, 1); /* 滑块 / 勾选:轻微回弹 */
+  --ease-morph: cubic-bezier(.3, 0, .1, 1);     /* 大面积布局变形 */
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-instant: 1ms; --dur-fast: 1ms; --dur-base: 1ms; --dur-slow: 1ms; --dur-morph: 1ms; }
+}
+
+/* ───────── ① 原始令牌:六套主题 ───────── */
+[data-theme="paper"] {   /* 宣纸 · 暖白 */
+  color-scheme: light;
+  --c-base: #EFEDE8; --c-surface: #FAF9F6; --c-raised: #FFFFFF; --c-sunken: #F3F1EC; --c-ink: #1F1D1A;
+  --c-accent: #D9531E; --c-on-accent: #FFFFFF;
+  --c-ok: #2E9A5A; --c-err: #D2453D; --c-warn: #B5781C; --c-info: #3A6DD6; --c-vio: #7656DC; --c-cyan: #0E8C99; --c-pink: #C13F8E;
+  --c-shade: 40 28 10; --k-shade: 1;
+}
+[data-theme="mist"] {    /* 雾霭 · 冷灰 */
+  color-scheme: light;
+  --c-base: #ECEEF2; --c-surface: #F8F9FB; --c-raised: #FFFFFF; --c-sunken: #F0F2F6; --c-ink: #1A1D24;
+  --c-accent: #4662E8; --c-on-accent: #FFFFFF;
+  --c-ok: #1F9D62; --c-err: #D8434B; --c-warn: #B47A14; --c-info: #2F7DD8; --c-vio: #7B58E0; --c-cyan: #0B8FA0; --c-pink: #C2418F;
+  --c-shade: 16 24 48; --k-shade: 1;
+}
+[data-theme="celadon"] { /* 青瓷 · 灰绿 */
+  color-scheme: light;
+  --c-base: #E9EDE9; --c-surface: #F7F9F6; --c-raised: #FFFFFF; --c-sunken: #EEF2EE; --c-ink: #18201C;
+  --c-accent: #0E8674; --c-on-accent: #FFFFFF;
+  --c-ok: #2F9A55; --c-err: #CF4A40; --c-warn: #A97B16; --c-info: #3573C9; --c-vio: #7460D0; --c-cyan: #0C8C9C; --c-pink: #B8478A;
+  --c-shade: 14 36 26; --k-shade: 1;
+}
+[data-theme="ink"] {     /* 墨夜 · 暖黑 */
+  color-scheme: dark;
+  --c-base: #161513; --c-surface: #1C1B19; --c-raised: #262522; --c-sunken: #181715; --c-ink: #EDEAE4;
+  --c-accent: #FF7A3D; --c-on-accent: #1A0E06;
+  --c-ok: #4FC283; --c-err: #F0665D; --c-warn: #E2A942; --c-info: #709AF5; --c-vio: #A590F7; --c-cyan: #4CC3CF; --c-pink: #EE7FBF;
+  --c-shade: 0 0 0; --k-shade: 3.2;
+}
+[data-theme="graphite"] { /* 石墨 · 中性黑 */
+  color-scheme: dark;
+  --c-base: #121316; --c-surface: #17181C; --c-raised: #212328; --c-sunken: #131418; --c-ink: #E8EAEE;
+  --c-accent: #6F8CFF; --c-on-accent: #0A1030;
+  --c-ok: #45C08A; --c-err: #F2676B; --c-warn: #E0AC4A; --c-info: #5FA8F5; --c-vio: #A48CF8; --c-cyan: #45C4D4; --c-pink: #EC7DC0;
+  --c-shade: 0 0 0; --k-shade: 3.2;
+}
+[data-theme="aurora"] {  /* 极光 · 深蓝紫 */
+  color-scheme: dark;
+  --c-base: #0E1020; --c-surface: #13162A; --c-raised: #1C2039; --c-sunken: #0F1224; --c-ink: #E6E8F7;
+  --c-accent: #A78BFA; --c-on-accent: #160F33;
+  --c-ok: #5AD1A0; --c-err: #FF6F8B; --c-warn: #F0B657; --c-info: #62B4FF; --c-vio: #C29BFF; --c-cyan: #5CD6E6; --c-pink: #FF86C8;
+  --c-shade: 2 3 14; --k-shade: 3.6;
+}
+
+/* ───────── ③ 方案令牌:只调倍率,不碰颜色 ───────── */
+[data-scheme="a"] { --r-k: .8; --gap-pane: 0px; --h-row: 24px; }   /* 墨线:细线分隔,最平、最克制 */
+[data-scheme="b"] { --r-k: 1.4; --gap-pane: 6px; --h-row: 26px; }  /* 浮岛:面板浮在底色上,圆润柔和 */
+[data-scheme="c"] { --r-k: 1; --gap-pane: 0px; --h-row: 22px; }    /* 轨道:图标轨 + 时间轴,最紧凑 */
+
+/* ───────── ② 语义令牌:在主题与方案两个作用域各算一遍 ───────── */
+[data-theme], [data-scheme] {
+  /* 表面 */
+  --bg-chrome: var(--c-base);      /* 窗口底、侧栏、状态栏 */
+  --bg: var(--c-surface);          /* 内容区 */
+  --bg-raised: var(--c-raised);    /* 卡片、弹层、输入框 */
+  --bg-sunken: var(--c-sunken);    /* 代码块、终端、凹槽 */
+  /* 文字四级 */
+  --tx-1: var(--c-ink);
+  --tx-2: color-mix(in srgb, var(--c-ink) 68%, var(--c-surface));
+  --tx-3: color-mix(in srgb, var(--c-ink) 46%, var(--c-surface));
+  --tx-4: color-mix(in srgb, var(--c-ink) 30%, var(--c-surface));
+  /* 描边三级 */
+  --bd-1: color-mix(in srgb, var(--c-ink) 7%, transparent);
+  --bd-2: color-mix(in srgb, var(--c-ink) 12%, transparent);
+  --bd-3: color-mix(in srgb, var(--c-ink) 20%, transparent);
+  /* 交互填充:悬停 / 选中 / 按下 */
+  --fill-1: color-mix(in srgb, var(--c-ink) 5%, transparent);
+  --fill-2: color-mix(in srgb, var(--c-ink) 8.5%, transparent);
+  --fill-3: color-mix(in srgb, var(--c-ink) 13%, transparent);
+  /* 强调色 */
+  --ac: var(--c-accent);
+  --on-ac: var(--c-on-accent);
+  --ac-soft: color-mix(in srgb, var(--c-accent) 13%, var(--c-raised));
+  --ac-line: color-mix(in srgb, var(--c-accent) 45%, var(--c-surface));
+  --ac-tx: color-mix(in srgb, var(--c-accent) 84%, var(--c-ink));
+  /* 状态色 */
+  --ok: var(--c-ok); --err: var(--c-err); --warn: var(--c-warn); --info: var(--c-info);
+  --ok-soft: color-mix(in srgb, var(--c-ok) 14%, var(--c-raised));
+  --err-soft: color-mix(in srgb, var(--c-err) 12%, var(--c-raised));
+  --warn-soft: color-mix(in srgb, var(--c-warn) 15%, var(--c-raised));
+  --info-soft: color-mix(in srgb, var(--c-info) 13%, var(--c-raised));
+  /* 工具族:会话流里每类工具一个色相,只染图标 */
+  --tool-explore: var(--c-info);   /* 读取 / 搜索 / 列目录 */
+  --tool-edit: var(--c-ok);        /* 编辑 / 写入 */
+  --tool-exec: var(--c-vio);       /* 命令 / 后台任务 */
+  --tool-web: var(--c-cyan);       /* 抓取 / 联网搜索 */
+  --tool-mcp: var(--c-pink);       /* MCP 与扩展工具 */
+  --tool-agent: var(--c-accent);   /* 子 Agent */
+  --tool-plan: var(--c-warn);      /* 待办 / 计划 */
+  --tool-think: var(--tx-3);       /* 思考 */
+  /* 语法色 */
+  --syn-kw: var(--c-vio); --syn-str: var(--c-ok); --syn-fn: var(--c-info); --syn-type: var(--c-warn);
+  --syn-num: color-mix(in srgb, var(--c-accent) 60%, var(--c-err)); --syn-mac: var(--c-cyan); --syn-com: var(--tx-3);
+  /* 差异 */
+  --diff-add: color-mix(in srgb, var(--c-ok) 14%, transparent);
+  --diff-del: color-mix(in srgb, var(--c-err) 13%, transparent);
+  /* 圆角(乘方案倍率) */
+  --r-xs: calc(3px * var(--r-k, 1)); --r-sm: calc(5px * var(--r-k, 1)); --r-md: calc(7px * var(--r-k, 1));
+  --r-lg: calc(10px * var(--r-k, 1)); --r-xl: calc(14px * var(--r-k, 1)); --r-full: 999px;
+  /* 层级阴影 */
+  --sh-1: 0 1px 2px rgb(var(--c-shade) / calc(.06 * var(--k-shade))), 0 0 0 1px var(--bd-1);
+  --sh-2: 0 10px 30px -6px rgb(var(--c-shade) / calc(.18 * var(--k-shade))), 0 2px 6px rgb(var(--c-shade) / calc(.07 * var(--k-shade))), 0 0 0 1px var(--bd-2);
+  --sh-3: 0 28px 70px -12px rgb(var(--c-shade) / calc(.3 * var(--k-shade))), 0 0 0 1px var(--bd-2);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--c-accent) 18%, transparent);
+  --scrim: rgb(var(--c-shade) / calc(.2 * var(--k-shade) + .06));
+}
