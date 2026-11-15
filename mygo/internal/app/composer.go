@@ -93,20 +93,30 @@ func (a *App) composerBar(c *ui.Context) {
 	ui.Row(c).Padding(3, 5, 5, 5).Gap(2).AlignItems(ui.Center).Children(func() {
 		kit.Ib(c, "plus", kit.IbOpt{Tip: "添加附件"})
 		a.cfgChip(c, wide)
-		mcp := itoa(len(a.st.Mcp) + 3)
-		if wide {
-			mcp = "MCP " + mcp
-		}
-		kit.Chip(c, mcp, kit.ChipOpt{Icon: "plug", Tip: "MCP 服务器"})
+		mcpAnchor := a.mcpChip(c, wide)
+		a.mcpPopup(c, mcpAnchor)
 		ui.Spacer(c).Grow(1)
-		// 上下文环
-		pct := int(a.st.Usage.ContextRatio()*100 + .5)
-		ui.Row(c).Height(22).PaddingX(7).Gap(4).AlignItems(ui.Center).Children(func() {
+		// 上下文环(点击展开与状态栏同内容的弹层)
+		pct := a.st.Usage.ContextRatio()
+		ctxBtn := ui.ButtonBase(c).Key("ctx-chip").Height(22).PaddingX(7).Gap(4).Radius(t.RSm()).AlignItems(ui.Center).Cursor(ui.CursorPointer).Transition(kit.Fade)
+		if ctxBtn.Hovered() || a.popup == "ctx-cmp" {
+			ctxBtn.Background(t.Fill2)
+		}
+		ctxBtn.OnClick(func() { a.togglePop("ctx-cmp") })
+		ctxBtn.Children(func() {
 			if wide {
-				ui.Text(c, itoa(pct)+"%").FontSize(11.5).TextColor(t.Tx2).FontFeatures("tnum")
+				col := t.Tx2
+				if pct >= ctxCompressThr {
+					col = t.Warn
+				}
+				if pct >= 0.95 {
+					col = t.Err
+				}
+				ui.Text(c, itoa(int(pct*100+.5))+"%").FontSize(11.5).TextColor(col).FontFeatures("tnum")
 			}
-			a.ring(c, float32(pct)/100)
+			a.ringColored(c, pct)
 		})
+		a.ctxAnchorPopup(c, "ctx-cmp", ctxBtn, ui.AnchorTopRight)
 		// 发送 / 停止是 24×24 的圆形按钮(半径 12)
 		if a.st.Phase == core.PhaseRunning {
 			b := kit.Ib(c, "stop", kit.IbOpt{Tip: "停止", NoHover: true}).Background(t.Tx1).Radius(12).TextColor(t.BG)
@@ -183,25 +193,26 @@ func (a *App) modelName() string {
 	return core.TurnStats{Model: a.st.Model}.ModelLabel() // 认不出的原样显示
 }
 
-// ring 是 16px 的圆环进度(上下文占用):底圈 fill-3,进度弧强调色,从 12 点钟起顺时针。
-func (a *App) ring(c *ui.Context, p float32) {
+// ringColored 是 16px 的圆环进度(上下文占用)。
+func (a *App) ringColored(c *ui.Context, p float32) {
 	t := a.tk
+	col := a.ctxRingColor(p)
 	e := ui.Box(c).Size(16, 16).Shrink(0)
 	e.Draw(func(pt *ui.Painter, r ui.Rect) {
 		cx, cy := r.X+r.W/2, r.Y+r.H/2
 		const rad = 6.4
-		arc := func(frac float32, col ui.Color) {
+		arc := func(frac float32, c ui.Color) {
 			n := max(2, int(frac*40))
 			pts := make([][2]float32, 0, n+1)
 			for i := 0; i <= n; i++ {
 				ang := -math.Pi/2 + float64(i)/float64(n)*float64(frac)*2*math.Pi
 				pts = append(pts, [2]float32{cx + rad*float32(math.Cos(ang)), cy + rad*float32(math.Sin(ang))})
 			}
-			pt.StrokePolyline(pts, 3, col)
+			pt.StrokePolyline(pts, 3, c)
 		}
 		arc(1, t.Fill3)
 		if p > 0 {
-			arc(min(p, .999), t.Ac)
+			arc(min(p, .999), col)
 		}
 	})
 }

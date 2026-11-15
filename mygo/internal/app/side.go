@@ -55,6 +55,10 @@ func (a *App) sideWidth() float32 {
 
 // side 是导航栏:顶部分段 + 内容 + 底部页面入口。宽度变化带 260 ms 过渡,内容宽度固定所以只是被裁切。
 func (a *App) side(c *ui.Context) {
+	if a.useSideDrawer() {
+		// 导航内容在 overlayLayer 抽屉里画
+		return
+	}
 	t := a.tk
 	w := a.sideW()
 	target := w
@@ -231,12 +235,15 @@ func (a *App) sessionsB(c *ui.Context) {
 	ui.Scroll(c).Key("sessb").Grow(1).Children(func() {
 		ui.Column(c).Children(func() {
 			ui.Row(c).Gap(4).Padding(0, 0, 6, 0).Children(func() {
-				kit.Chip(c, a.projLabel(), kit.ChipOpt{Icon: "folder", Line: true, Car: true}).Height(26).Grow(1)
+				chip := kit.Chip(c, a.sideBProject().Name, kit.ChipOpt{Icon: "folder", Line: true, Car: true, On: a.popup == "projpick"}).Height(26).Grow(1)
+				chip.OnClick(func() { a.togglePop("projpick") })
+				a.projPickPopup(c, chip)
 				kit.Ib(c, "edit", kit.IbOpt{Tip: "新对话 ⌘N"}).Size(26, 26).OnClick(a.NewSession)
 			})
 			cur := ""
+			proj := a.sideBProject()
 			for _, p := range a.projects {
-				if !a.isCurProject(p) {
+				if p.ID != proj.ID {
 					continue
 				}
 				for _, ss := range p.Sessions {

@@ -145,47 +145,7 @@ func shortDesc(m core.ModelInfo) string {
 // ───────── 状态栏弹层:上下文 / 更新 ─────────
 
 func (a *App) ctxPopup(c *ui.Context, anchor ui.Element) {
-	t := a.tk
-	a.popOpen("ctx", func(open *bool) {
-		ui.PopoverBase(c, anchor, open, func(panel ui.Element) {
-			a.popPanel(panel, 280).Padding(10, 12).Gap(9).AttachTo(anchor, ui.AnchorTopRight, ui.AnchorBottomRight).Margin(0, 0, 6, 0)
-			u := a.st.Usage
-			ui.Row(c).Gap(12).AlignItems(ui.Center).Children(func() {
-				a.bigRing(c, u.ContextRatio())
-				ui.Column(c).Grow(1).Children(func() {
-					ui.Row(c).Gap(4).Children(func() {
-						ui.Text(c, fmtTok(u.ContextUsed)+" / "+fmtTok(u.ContextSize)).FontWeight(600).FontFeatures("tnum")
-						ui.Text(c, "· "+itoa(int(u.ContextRatio()*100+.5))+"%").TextColor(t.Tx3)
-					})
-					ui.Text(c, a.modelName()+" · 自动压缩阈值 85%").FontSize(theme.FsCap).TextColor(t.Tx3)
-				})
-				kit.Btn(c, "压缩", kit.BtnOpt{Small: true})
-			})
-			a.ctxBar(c)
-			ui.Row(c).AlignItems(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx3).Children(func() {
-				ui.Text(c, "5 小时限额 "+limitText(u.FiveHourPct)).Grow(1)
-				kit.Btn(c, "用量与成本", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "arrow"}).OnClick(func() {
-					a.popup = ""
-					a.screen = ScreenUsage
-				})
-			})
-		})
-	})
-}
-
-func (a *App) updPopup(c *ui.Context, anchor ui.Element) {
-	t := a.tk
-	a.popOpen("upd", func(open *bool) {
-		ui.PopoverBase(c, anchor, open, func(panel ui.Element) {
-			a.popPanel(panel, 260).Padding(10, 12).Gap(8).AttachTo(anchor, ui.AnchorTopRight, ui.AnchorBottomRight).Margin(0, 0, 6, 0)
-			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, "发现新版本 0.2.1").FontWeight(600).Grow(1)
-				kit.Tag(c, "42%", kit.KAc)
-			})
-			kit.Meter(c, 42)
-			ui.Text(c, "正在后台下载,完成后提示重启。").FontSize(theme.FsCap).TextColor(t.Tx3)
-		})
-	})
+	a.ctxAnchorPopup(c, "ctx", anchor, ui.AnchorTopRight)
 }
 
 // ctxBar 是上下文分类条:系统提示 / 消息 / 工具定义 / MCP 各占一段,下面是图例。

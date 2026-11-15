@@ -107,7 +107,8 @@ func (a *App) histPopup(c *ui.Context, anchor ui.Element) {
 			kit.Cap(c, "本项目")
 			q := strings.ToLower(strings.TrimSpace(a.hist.q))
 			n := 0
-			for _, s := range proj.Sessions {
+			live, archived := sessionsSplit(proj)
+			for _, s := range live {
 				if q != "" && !strings.Contains(strings.ToLower(s.Title), q) {
 					continue
 				}
@@ -130,6 +131,25 @@ func (a *App) histPopup(c *ui.Context, anchor ui.Element) {
 			}
 			if n == 0 {
 				ui.Text(c, "没有匹配的会话").TextColor(t.Tx3).Padding(8, 10)
+			}
+			if len(archived) > 0 {
+				kit.Sep(c)
+				kit.Cap(c, "已归档")
+				na := 0
+				for _, s := range archived {
+					if q != "" && !strings.Contains(strings.ToLower(s.Title), q) {
+						continue
+					}
+					if na >= 4 {
+						break
+					}
+					na++
+					r := kit.RowEl(c, false).Key("hist-arch-" + s.ID).Gap(6)
+					r.OnClick(func() { a.popup = ""; a.OpenSession(s.ID) })
+					r.Children(func() {
+						ui.Text(c, s.Title).Grow(1).SingleLine().TextColor(t.Tx3)
+					})
+				}
 			}
 			kit.Sep(c)
 			if a.mi(c, "hist-all", "history", "全部历史…", "⌘⇧H", false).Clicked() {
@@ -157,97 +177,6 @@ func (a *App) curProject() core.ProjectInfo {
 		return a.projects[0]
 	}
 	return core.ProjectInfo{Name: "项目"}
-}
-
-// ───────── 任务坞 ─────────
-
-// taskDock 是输入框上方的任务坞:宽 / 中档每类一个胶囊;窄档合成一个「任务 N」。
-// 点胶囊在上方展开该类的列表,列表项点击 = 在工作区开子 Agent / 任务输出标签。
-func (a *App) taskDock(c *ui.Context) {
-	agents, shells := a.dockTasks()
-	if len(agents)+len(shells) == 0 {
-		return
-	}
-	narrow := a.chatTier() == tierNarrow
-	ui.Row(c).Gap(4).Margin(0, 0, 6, 0).Children(func() {
-		chip := func(key, text, icon string) {
-			ch := kit.Chip(c, text, kit.ChipOpt{Icon: icon, Line: true, On: a.popup == "tpop:"+key})
-			ch.OnClick(func() { a.togglePop("tpop:" + key) })
-			a.taskPopup(c, key, ch, agents, shells)
-		}
-		if narrow {
-			chip("all", "任务 "+itoa(len(agents)+len(shells)), "activity")
-			return
-		}
-		if len(agents) > 0 {
-			chip("agent", "子代理 "+itoa(len(agents)), "bot")
-		}
-		if len(shells) > 0 {
-			chip("cmd", "后台命令 "+itoa(len(shells)), "terminal")
-		}
-	})
-}
-
-// dockTasks 任务坞里的子代理与后台命令(可见且在跑 / 刚结束的)。
-func (a *App) dockTasks() (agents, shells []*core.BackgroundTask) {
-	for _, tk := range a.st.Tasks {
-		if !tk.Visible() {
-			continue
-		}
-		switch tk.Kind {
-		case core.TaskAgent:
-			agents = append(agents, tk)
-		case core.TaskShell:
-			if tk.Status == core.TaskRunning {
-				shells = append(shells, tk)
-			}
-		}
-	}
-	return
-}
-
-func (a *App) taskPopup(c *ui.Context, key string, anchor ui.Element, agents, shells []*core.BackgroundTask) {
-	t := a.tk
-	a.popOpen("tpop:"+key, func(open *bool) {
-		ui.PopoverBase(c, anchor, open, func(panel ui.Element) {
-			a.popPanel(panel, 300).AttachTo(anchor, ui.AnchorTopLeft, ui.AnchorBottomLeft).Margin(0, 0, 6, 0)
-			row := func(tk *core.BackgroundTask, icon string) {
-				r := kit.RowEl(c, false).Key("tp-"+tk.TaskID).Height(0).MinHeight(36).Padding(5, 8).Gap(8).AlignItems(ui.Start)
-				r.OnClick(func() {
-					a.popup = ""
-					a.openTaskTarget(tk)
-				})
-				r.Children(func() {
-					ui.Row(c).Margin(2, 0, 0, 0).Shrink(0).Children(func() {
-						if tk.Status == core.TaskRunning {
-							kit.Spin(c, t.ToolAgent)
-						} else {
-							kit.Ic(c, icon, kit.S12).TextColor(t.Tx3)
-						}
-					})
-					ui.Column(c).Grow(1).MinWidth(0).Children(func() {
-						ui.Text(c, tk.Description).TextColor(t.Tx1).SingleLine()
-						if tk.Summary != "" {
-							ui.Text(c, tk.Summary).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
-						}
-					})
-					ui.Text(c, core.FormatElapsed(a.st.Now()-tk.StartedMs)).FontSize(theme.FsMicro).TextColor(t.Tx4).FontFeatures("tnum")
-				})
-			}
-			if key != "cmd" && len(agents) > 0 {
-				kit.Cap(c, "子代理")
-				for _, tk := range agents {
-					row(tk, "bot")
-				}
-			}
-			if key != "agent" && len(shells) > 0 {
-				kit.Cap(c, "后台命令")
-				for _, tk := range shells {
-					row(tk, "terminal")
-				}
-			}
-		})
-	})
 }
 
 // openTaskTarget 打开任务对应的工作区标签:子 Agent 开它的记录,其它开任务输出。

@@ -130,16 +130,31 @@ func lines(n int) string {
 	return string(b)
 }
 
-// ReplayTasks 给静态截图补上设计稿右栏「任务」标签里的三个后台任务(两个子代理、一个后台命令)。
+// ReplayTasks 给静态截图补上设计稿任务坞各类胶囊(子代理 / 后台命令 / 监听 / 工作流 / 已结束)。
 func ReplayTasks(st *core.State) {
 	now := st.Now()
 	a1 := core.NewBackgroundTask(now-48_000, "ag1", core.TaskAgent, "审查 handlers 的错误处理")
 	a1.Summary = `搜索 "unwrap()"`
 	sh := core.NewBackgroundTask(now-6*60_000, "sh1", core.TaskShell, "cargo watch -x test")
 	sh.Summary = "等待文件变化…"
+	sh.LastActivityMs = now - 3*60_000 // 演示停滞
+	mon := core.NewBackgroundTask(now-120_000, "mon1", core.TaskMonitor, "监听 target/dev.log")
+	mon.Summary = "已触发 2 次"
+	wf := core.NewBackgroundTask(now-30_000, "wf1", core.TaskWorkflow, "发布流水线")
+	wf.Summary = "构建 · 测试"
 	a2 := core.NewBackgroundTask(now-80_000, "ag2", core.TaskAgent, "调研 axum 的路由匹配")
-	for _, t := range []*core.BackgroundTask{a1, sh, a2} {
+	a2.Status = core.TaskCompleted
+	a2.EndedMs = now - 20_000
+	a2.Summary = "总结:建议在中间件里归一化路径"
+	done := core.NewBackgroundTask(now-200_000, "sh0", core.TaskShell, "npm run dev")
+	done.Status = core.TaskStopped
+	done.EndedMs = now - 90_000
+	done.Summary = "用户停止"
+	for _, t := range []*core.BackgroundTask{a1, sh, mon, wf, a2, done} {
 		st.Apply(core.EvTaskStarted{Task: t})
 	}
-	st.Apply(core.EvTaskNotification{TaskID: "ag2", Status: core.TaskCompleted, Summary: "完成"})
+	st.Apply(core.EvTaskNotification{TaskID: "ag2", Status: core.TaskCompleted, Summary: a2.Summary})
+	st.Apply(core.EvTaskNotification{TaskID: "sh0", Status: core.TaskStopped, Summary: done.Summary})
+	st.Apply(core.EvMcpServers{Servers: demoMcpServers()})
+	st.Apply(core.EvUsage{Usage: demoContextUsage()})
 }

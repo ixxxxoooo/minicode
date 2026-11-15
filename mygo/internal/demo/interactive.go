@@ -37,6 +37,25 @@ func (b *Backend) Send(cmd core.Command) {
 			}
 		}
 		b.resume(c.ID, core.EvPlanResolved{ID: c.ID, Approved: c.Approve})
+	case core.CmdRefreshMcp:
+		b.mu.Lock()
+		sink := b.sink
+		b.mu.Unlock()
+		if sink != nil {
+			sink(core.EvMcpServers{Servers: demoMcpServers()})
+			sink(core.EvUsage{Usage: demoContextUsage()})
+		}
+	case core.CmdRefreshUsage:
+		u := demoContextUsage()
+		b.mu.Lock()
+		sink := b.sink
+		b.mu.Unlock()
+		if sink != nil {
+			sink(core.EvUsage{Usage: u})
+		}
+	case core.CmdMcpToggle:
+		// 演示:只记日志,状态在下次 Refresh 时仍来自脚本
+		log.Info("演示 MCP 切换", "name", c.Name, "on", c.Enabled)
 	}
 }
 

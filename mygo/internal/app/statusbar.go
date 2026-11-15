@@ -83,13 +83,17 @@ func (a *App) statusbar(c *ui.Context) {
 		})
 		ctx.OnClick(func() { a.togglePop("ctx") })
 		a.ctxPopup(c, ctx)
-		if a.update != "" {
+		if lbl := a.updLabel(); lbl != "" {
 			upd := a.sbItem(c, "upd", func() {
 				kit.Ic(c, "download", kit.S12).TextColor(t.Ac)
-				ui.Text(c, a.update).TextColor(t.Ac)
+				ui.Text(c, lbl).TextColor(t.Ac)
 			})
 			upd.OnClick(func() { a.togglePop("upd") })
 			a.updPopup(c, upd)
+		}
+		if a.mode == ModeIDE {
+			bell := a.noticeBell(c)
+			a.noticePanel(c, bell)
 		}
 		if a.devBadge != "" && t.Scheme.ID != "x" {
 			kit.Tag(c, a.devBadge, kit.KAc)
