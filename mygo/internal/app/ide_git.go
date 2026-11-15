@@ -82,7 +82,7 @@ func (a *App) blameInlay(tb *ideTab) {
 	if tb.st == nil || tb.buf == nil || tb.diff || tb.virt != "" {
 		return
 	}
-	if !a.blameOn {
+	if !a.prefs.Bool(pBlameInline, true) {
 		if tb.blameShown {
 			tb.st.SetInlays(nil)
 			tb.blameShown = false

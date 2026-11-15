@@ -13,6 +13,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/app"
+	"github.com/ixxxxoooo/minicode/internal/automation"
 	"github.com/ixxxxoooo/minicode/internal/backend"
 	"github.com/ixxxxoooo/minicode/internal/claude"
 	"github.com/ixxxxoooo/minicode/internal/core"
@@ -248,6 +249,22 @@ func main() {
 		a.SetSessionOpener(rs.open)
 		a.Attach(rs.open(""))
 		a.SetUsageSource(startUsage(rs, win))
+		// 自动化:持久化到 ~/.minicode/automations.json,每半分钟检查一次到点的并用 claude -p 运行
+		if home, err := os.UserHomeDir(); err == nil {
+			a.SetAutomations(automation.OpenStore(filepath.Join(home, ".minicode", "automations.json")))
+		}
+		a.SetAutomationRunner(func(it automation.Automation, dir string) (string, error) {
+			defer diag.Recover("自动化运行")
+			end := diag.SpanSlow("app", "运行自动化", 30*time.Second, "name", it.Name)
+			defer end()
+			return claude.RunPrompt(dir, it.Prompt, claude.PermModeOf(it.Perm), 15*time.Minute)
+		})
+		go func() {
+			defer diag.Recover("自动化定时")
+			for range time.Tick(30 * time.Second) {
+				win.Update(func() { a.AutomationTick(time.Now()) })
+			}
+		}()
 		// 侧栏定时重扫:别处(终端里的 claude、本应用刚写盘的新会话)产生的会话也能出现
 		go func() {
 			defer diag.Recover("会话索引刷新")

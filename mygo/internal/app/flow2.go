@@ -47,10 +47,14 @@ func (a *App) turnFooter(c *ui.Context, uid string) {
 	if !ok {
 		return
 	}
+	showStats := a.prefs.Bool(pStats, true)
 	ui.Row(c).Key("foot-"+uid).Height(22).Margin(0, 0, 0, -4).Gap(2).AlignItems(ui.Center).TextColor(t.Tx4).FontSize(theme.FsCap).Children(func() {
 		kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制"})
 		kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "重试"})
 		kit.Ib(c, "fork", kit.IbOpt{Small: true, Tip: "从这里分叉"})
+		if !showStats {
+			return
+		}
 		var parts []string
 		if l := stats.ModelLabel(); l != "" {
 			parts = append(parts, l)

@@ -113,39 +113,41 @@ type App struct {
 
 	// 输入框
 	draft         string
-	sr            searchState                    // 项目内搜索
-	gi            map[string]*gitInfo            // 文件的追溯 / 历史缓存
-	live          map[string]*liveSess           // 切走时还在跑的会话:后端继续保活,事件归约到自己的状态
-	redrawPending bool                           // redrawSoon 已排了定时重画
-	pickOnReady   bool                           // 新会话握手后应用已记住的模型 / 思考强度
-	blameOn       bool                           // 行内追溯(光标行末尾的作者 · 时间 · 摘要)
-	cf            map[string]*confState          // 合并冲突标签的状态(按文件)
-	sc            scmState                       // 源代码管理
-	auto          *automation.Store              // 自动化清单
-	au            autoState                      // 自动化页状态
-	clock         func() time.Time               // 当前时间(测试 / 截图注入固定时间)
-	canv          *canvas.Store                  // 画布文档(首次打开页面时建立)
-	cv            canvasState                    // 画布页状态
-	br            *browser.Browser               // 内置浏览器(首次打开页面时建立)
-	brs           browserState                   // 浏览器页状态
-	cust          *customize.Store               // 自定义页数据(首次打开页面时建立)
-	cu            custState                      // 自定义页状态
-	cuNoMem       bool                           // 自定义页:「加载 CLAUDE.md 记忆文件」被关掉(只是界面状态,尚未接入 env)
-	use           usageState                     // 用量页
-	usageSrc      func(rng int) core.UsageReport // 用量数据源(nil = 演示数据)
-	qp            *qpState                       // 快速选择浮层(历史会话 / 分支),nil = 关闭
-	repo          vcs.Repo                       // 当前项目的仓库(演示为内存实现)
-	branch        string                         // 当前分支名(缓存,避免每帧查 git)
-	copyText      string                         // 待写入剪贴板的文字(需要 ui.Context 才能写,下一帧消费)
-	toast         string                         // 待显示的一条轻提示(渲染时消费)
-	welcomeFocus  bool                           // 欢迎页的输入框自动聚焦
-	cardHov       bool                           // 当前这张工具卡是否被悬停(卡片内容里的悬停按钮用)
-	hist          histState                      // 历史会话弹层的搜索词
-	rv            reviewState                    // 审查标签状态
-	taskSt        ui.ScrollState                 // 任务输出标签的滚动
-	taskNoFollow  bool                           // 任务输出:关闭「跟随输出」
-	q             promptQueue                    // 排队的消息
-	qa            map[string]*qaState            // 提问向导的本地进度
+	sr            searchState                                                // 项目内搜索
+	gi            map[string]*gitInfo                                        // 文件的追溯 / 历史缓存
+	autoRun       func(it automation.Automation, dir string) (string, error) // 自动化运行器(nil = 演示:只记录)
+	autoSeen      time.Time                                                  // 上次检查定时的时间
+	autoBusy      map[int]bool                                               // 正在运行的自动化
+	live          map[string]*liveSess                                       // 切走时还在跑的会话:后端继续保活,事件归约到自己的状态
+	redrawPending bool                                                       // redrawSoon 已排了定时重画
+	pickOnReady   bool                                                       // 新会话握手后应用已记住的模型 / 思考强度
+	cf            map[string]*confState                                      // 合并冲突标签的状态(按文件)
+	sc            scmState                                                   // 源代码管理
+	auto          *automation.Store                                          // 自动化清单
+	au            autoState                                                  // 自动化页状态
+	clock         func() time.Time                                           // 当前时间(测试 / 截图注入固定时间)
+	canv          *canvas.Store                                              // 画布文档(首次打开页面时建立)
+	cv            canvasState                                                // 画布页状态
+	br            *browser.Browser                                           // 内置浏览器(首次打开页面时建立)
+	brs           browserState                                               // 浏览器页状态
+	cust          *customize.Store                                           // 自定义页数据(首次打开页面时建立)
+	cu            custState                                                  // 自定义页状态
+	cuNoMem       bool                                                       // 自定义页:「加载 CLAUDE.md 记忆文件」被关掉(只是界面状态,尚未接入 env)
+	use           usageState                                                 // 用量页
+	usageSrc      func(rng int) core.UsageReport                             // 用量数据源(nil = 演示数据)
+	qp            *qpState                                                   // 快速选择浮层(历史会话 / 分支),nil = 关闭
+	repo          vcs.Repo                                                   // 当前项目的仓库(演示为内存实现)
+	branch        string                                                     // 当前分支名(缓存,避免每帧查 git)
+	copyText      string                                                     // 待写入剪贴板的文字(需要 ui.Context 才能写,下一帧消费)
+	toast         string                                                     // 待显示的一条轻提示(渲染时消费)
+	welcomeFocus  bool                                                       // 欢迎页的输入框自动聚焦
+	cardHov       bool                                                       // 当前这张工具卡是否被悬停(卡片内容里的悬停按钮用)
+	hist          histState                                                  // 历史会话弹层的搜索词
+	rv            reviewState                                                // 审查标签状态
+	taskSt        ui.ScrollState                                             // 任务输出标签的滚动
+	taskNoFollow  bool                                                       // 任务输出:关闭「跟随输出」
+	q             promptQueue                                                // 排队的消息
+	qa            map[string]*qaState                                        // 提问向导的本地进度
 
 	// 测试 / 截图用:没有系统红绿灯时自己画
 	fakeLights bool
@@ -186,7 +188,6 @@ func New(o Options) *App {
 		radius:     1,
 		fakeLights: o.FakeLights,
 		devBadge:   o.DevBadge,
-		blameOn:    true,
 	}
 	if a.screen == "" {
 		a.screen = ScreenWork
@@ -366,6 +367,7 @@ func (a *App) View(c *ui.Context) {
 	defer diag.SpanSlow("app", "构建界面", 33*time.Millisecond)()
 	c.SetTheme(a.tk.UITheme())
 	a.shortcuts(c)
+	a.autosave()
 	a.root(c)
 }
 
@@ -562,4 +564,80 @@ func (a *App) closeBackends() {
 		lv.be.Close()
 	}
 	a.live = nil
+}
+
+// SetAutomationRunner 注入自动化运行器:在项目目录里跑提示,返回输出摘要或错误。
+func (a *App) SetAutomationRunner(f func(it automation.Automation, dir string) (string, error)) {
+	a.autoRun = f
+}
+
+// SetAutomations 换上持久化的自动化存储。
+func (a *App) SetAutomations(s *automation.Store) { a.auto = s }
+
+// runAutomation 立即运行一条自动化(「立即运行」按钮与定时到点都走这里);没有运行器时只记一条演示记录。
+func (a *App) runAutomation(it automation.Automation) {
+	if a.autoRun == nil {
+		a.auto.RunNow(it.ID, a.now())
+		a.toast = "已开始运行「" + it.Name + "」"
+		return
+	}
+	if a.autoBusy == nil {
+		a.autoBusy = map[int]bool{}
+	}
+	if a.autoBusy[it.ID] {
+		a.toast = "「" + it.Name + "」正在运行"
+		return
+	}
+	dir := a.projectDir(it.Project)
+	if dir == "" {
+		a.auto.Record(it.ID, automation.Run{At: a.now(), Err: "找不到项目「" + it.Project + "」的目录"})
+		a.toast = "运行失败:找不到项目目录"
+		return
+	}
+	a.autoBusy[it.ID] = true
+	a.toast = "已开始运行「" + it.Name + "」"
+	run := a.autoRun
+	a.bg("automation", func() func() {
+		out, err := run(it, dir)
+		r := automation.Run{At: time.Now(), OK: err == nil}
+		if err != nil {
+			r.Err = err.Error()
+		}
+		if rs := []rune(out); len(rs) > 600 {
+			out = string(rs[len(rs)-600:])
+		}
+		r.Output = out
+		return func() {
+			delete(a.autoBusy, it.ID)
+			a.auto.Record(it.ID, r)
+			if r.OK {
+				a.toast = "「" + it.Name + "」运行完成"
+			} else {
+				a.toast = "「" + it.Name + "」运行失败:" + r.Err
+			}
+		}
+	})
+}
+
+// projectDir 按项目名找目录(侧栏项目列表里的路径;找不到返回空)。
+func (a *App) projectDir(name string) string {
+	for _, p := range a.projects {
+		if p.Name == name {
+			return p.Path
+		}
+	}
+	return ""
+}
+
+// AutomationTick 检查有没有到点的自动化并运行(主线程调用;main 里每半分钟一次)。
+func (a *App) AutomationTick(now time.Time) {
+	from := a.autoSeen
+	a.autoSeen = now
+	if from.IsZero() || a.autoRun == nil {
+		return
+	}
+	for _, it := range a.auto.Due(from, now) {
+		log.Info("自动化到点", "id", it.ID, "name", it.Name)
+		a.runAutomation(it)
+	}
 }

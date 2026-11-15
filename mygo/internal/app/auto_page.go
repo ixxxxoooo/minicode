@@ -321,8 +321,7 @@ func (a *App) autoDrawer(c *ui.Context) {
 	ui.Spacer(c).Grow(1)
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 		kit.Btn(c, "立即运行", kit.BtnOpt{Variant: kit.BtnSoft, Icon: "play"}).OnClick(func() {
-			a.auto.RunNow(it.ID, a.now())
-			a.toast = "已开始运行「" + it.Name + "」"
+			a.runAutomation(it)
 			log.Info("立即运行自动化", "id", it.ID, "name", it.Name)
 		})
 		kit.Btn(c, "删除", kit.BtnOpt{Variant: kit.BtnDangerGhost, Icon: "trash"}).OnClick(func() {

@@ -17,10 +17,12 @@ import (
 // 真实终端面板:界面只做三件事——量出能放下多少列 / 行并通知内核改大小、把内核的画面快照画成
 // 带色文字、把按键翻译成仿真器的按键事件。shell 的启动、输出解析都在 internal/term。
 
-const (
-	termFont    = 11.5
-	termLineH   = 18.4
-	termHistory = 200 // 面板里最多带的历史行数
+const termHistory = 200 // 面板里最多带的历史行数
+
+// 终端字号与行高(设置「终端 → 字号」改它;行高 = 字号 × 1.6)。
+var (
+	termFont  float32 = 11.5
+	termLineH float32 = 18.4
 )
 
 // termPanel 是 IDE 底部终端的状态。

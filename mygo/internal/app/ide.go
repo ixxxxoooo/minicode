@@ -37,7 +37,9 @@ type ideTab struct {
 	fcs     *bool   // 查找是否区分大小写
 	mm      *mmInfo // 迷你地图叠加数据缓存
 
-	blameKey   string // 行内追溯当前显示的内容(去重,避免每帧 SetInlays)
+	asVer      uint64    // 自动保存:上次看到的缓冲区版本
+	asAt       time.Time // 自动保存:版本变化的时间
+	blameKey   string    // 行内追溯当前显示的内容(去重,避免每帧 SetInlays)
 	blameShown bool
 }
 
@@ -78,6 +80,7 @@ type ide struct {
 	termSel    string       // 当前终端分段选中的标签(空 = shell)
 	tps        []*termPanel // 真实终端标签(真实模式),每个一个独立的 shell
 	tpSel      int          // 当前终端标签
+	lastActive string       // 自动保存(失焦):上一帧的活动标签
 
 	sections map[string]bool // 资源管理器区块折叠(大纲 / 时间线)
 

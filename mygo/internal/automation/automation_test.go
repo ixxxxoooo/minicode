@@ -111,3 +111,39 @@ func TestStore(t *testing.T) {
 }
 
 func mustGet(s *Store, id int) Automation { a, _ := s.Get(id); return a }
+
+func TestStorePersistAndDue(t *testing.T) {
+	path := t.TempDir() + "/a.json"
+	s := OpenStore(path)
+	a := s.Add("demo")
+	a.Time, a.Days, a.Prompt = "09:00", "每天", "检查依赖"
+	if err := s.Update(a); err != nil {
+		t.Fatal(err)
+	}
+	// 重新打开能读回来
+	if got := OpenStore(path).List(); len(got) != 1 || got[0].Prompt != "检查依赖" {
+		t.Fatalf("应持久化:%+v", got)
+	}
+	day := time.Date(2026, 11, 16, 0, 0, 0, 0, time.Local)
+	// 8:59 → 9:00:30 之间到点
+	if due := s.Due(day.Add(8*time.Hour+59*time.Minute), day.Add(9*time.Hour+30*time.Second)); len(due) != 1 {
+		t.Fatalf("应到点:%d", len(due))
+	}
+	// 已在时间点之前检查过 → 不触发
+	if due := s.Due(day.Add(9*time.Hour+time.Minute), day.Add(9*time.Hour+2*time.Minute)); len(due) != 0 {
+		t.Fatal("错过的时间点不该补跑")
+	}
+	// 今天已经跑过 → 不重复
+	s.Record(a.ID, Run{At: day.Add(9*time.Hour + 5*time.Second), OK: true, Output: "ok"})
+	if due := s.Due(day.Add(8*time.Hour+59*time.Minute), day.Add(9*time.Hour+30*time.Second)); len(due) != 0 {
+		t.Fatal("今天跑过就不该再触发")
+	}
+	if got := OpenStore(path).List(); len(got[0].Runs) != 1 || got[0].Runs[0].Output != "ok" {
+		t.Fatal("运行记录应落盘")
+	}
+	// 暂停的不触发
+	s.Toggle(a.ID)
+	if due := s.Due(day.Add(8*time.Hour), day.Add(10*time.Hour)); len(due) != 0 {
+		t.Fatal("暂停的不该触发")
+	}
+}

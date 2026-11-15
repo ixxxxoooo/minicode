@@ -325,6 +325,9 @@ func Caret(c *ui.Context) ui.Element {
 
 // Pulse 让运行中的文字呼吸(透明度在 55%~100% 间往返,约 1.4 秒一轮),代替设计稿里的文字流光。
 func Pulse(e ui.Element) ui.Element {
+	if !motionOn || !pulseOn {
+		return e
+	}
 	x := e.Loop("pulse", 1400*time.Millisecond, ui.Linear)
 	tri := 1 - float32(math.Abs(float64(2*x-1))) // 0 → 1 → 0
 	return e.Opacity(1 - .45*tri)

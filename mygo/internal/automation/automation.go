@@ -4,7 +4,10 @@
 package automation
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,9 +26,10 @@ const (
 
 // Run 是一次运行记录。
 type Run struct {
-	At  time.Time
-	OK  bool
-	Err string // 失败原因,如「网络超时」
+	At     time.Time
+	OK     bool
+	Err    string // 失败原因,如「网络超时」
+	Output string // 运行输出的末尾摘要(真实运行才有)
 }
 
 // Automation 是一条自动化。
@@ -196,6 +200,68 @@ type Store struct {
 	mu    sync.Mutex
 	items []Automation
 	next  int
+	path  string // 非空:每次修改都原子写盘
+}
+
+// OpenStore 读取 path 里的自动化清单(不存在 = 空),之后的每次修改自动落盘。
+func OpenStore(path string) *Store {
+	s := &Store{path: path}
+	if b, err := os.ReadFile(path); err == nil {
+		_ = json.Unmarshal(b, &s.items)
+	}
+	for _, a := range s.items {
+		s.next = max(s.next, a.ID)
+	}
+	return s
+}
+
+// save 在持锁状态下写盘(临时文件 + 改名);失败只丢掉这次持久化,不影响内存里的数据。
+func (s *Store) save() {
+	if s.path == "" {
+		return
+	}
+	b, err := json.MarshalIndent(s.items, "", "  ")
+	if err != nil {
+		return
+	}
+	_ = os.MkdirAll(filepath.Dir(s.path), 0o755)
+	tmp := s.path + ".tmp"
+	if os.WriteFile(tmp, b, 0o644) == nil {
+		_ = os.Rename(tmp, s.path)
+	}
+}
+
+// Record 给某条自动化追加一条运行记录(新的在前,最多留 20 条)。
+func (s *Store) Record(id int, r Run) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.items {
+		if s.items[i].ID == id {
+			runs := append([]Run{r}, s.items[i].Runs...)
+			if len(runs) > 20 {
+				runs = runs[:20]
+			}
+			s.items[i].Runs = runs
+		}
+	}
+	s.save()
+}
+
+// Due 返回在 (from, now] 这段时间里到点、且今天还没跑过的自动化。
+func (s *Store) Due(from, now time.Time) []Automation {
+	var out []Automation
+	for _, a := range s.List() {
+		if !a.On || !a.FiresOn(now) || !ValidTime(a.Time) {
+			continue
+		}
+		h, _ := strconv.Atoi(a.Time[:2])
+		m, _ := strconv.Atoi(a.Time[3:])
+		at := time.Date(now.Year(), now.Month(), now.Day(), h, m, 0, 0, now.Location())
+		if at.After(from) && !at.After(now) && !(len(a.Runs) > 0 && sameDay(a.Runs[0].At, now)) {
+			out = append(out, a)
+		}
+	}
+	return out
 }
 
 // NewStore 用给定清单建一个存储。
@@ -236,6 +302,7 @@ func (s *Store) Add(project string) Automation {
 	s.next++
 	a := Automation{ID: s.next, Name: "新的自动化", Days: "每天", Time: "09:00", Project: project, Perm: "只读 · 计划模式", On: true}
 	s.items = append(s.items, a)
+	s.save()
 	return a
 }
 
@@ -253,6 +320,7 @@ func (s *Store) Update(a Automation) error {
 		if s.items[i].ID == a.ID {
 			a.Runs = s.items[i].Runs // 运行记录不随编辑改动
 			s.items[i] = a
+			s.save()
 			return nil
 		}
 	}
@@ -266,6 +334,7 @@ func (s *Store) Delete(id int) {
 	for i := range s.items {
 		if s.items[i].ID == id {
 			s.items = append(s.items[:i:i], s.items[i+1:]...)
+			s.save()
 			return
 		}
 	}
@@ -280,6 +349,7 @@ func (s *Store) Toggle(id int) {
 			s.items[i].On = !s.items[i].On
 		}
 	}
+	s.save()
 }
 
 // RunNow 立即运行一次:现在只记一条成功的运行记录(运行器接上后换成真正的会话)。
@@ -291,4 +361,5 @@ func (s *Store) RunNow(id int, now time.Time) {
 			s.items[i].Runs = append([]Run{{At: now, OK: true}}, s.items[i].Runs...)
 		}
 	}
+	s.save()
 }

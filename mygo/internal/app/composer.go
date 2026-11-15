@@ -35,13 +35,22 @@ func (a *App) composer(c *ui.Context) {
 			in.AutoFocus()
 		}
 		in.OnTextKey(func(k ui.TextKey) bool {
-			if k.Key == ui.KeyEnter && (k.Mods == 0 || k.Mods == ui.Cmd) {
-				txt := k.Text()
-				k.SetText("")
-				a.submitKey(txt, k.Mods == ui.Cmd)
-				return true
+			if k.Key != ui.KeyEnter || (k.Mods != 0 && k.Mods != ui.Cmd) {
+				return false
 			}
-			return false
+			cmdSend := a.prefs.Int(pSend, 0) == 1 // 「⌘ Enter 发送」:Enter 只换行
+			if cmdSend && k.Mods == 0 {
+				return false
+			}
+			// 回合进行中:发送键按「再发消息」偏好排队或引导;另一个修饰键(Enter 发送模式下的 ⌘Enter)取相反
+			steer := a.prefs.Int(pBusy, 0) == 1
+			if !cmdSend && k.Mods == ui.Cmd {
+				steer = !steer
+			}
+			txt := k.Text()
+			k.SetText("")
+			a.submitKey(txt, steer)
+			return true
 		})
 		a.composerBar(c)
 	})

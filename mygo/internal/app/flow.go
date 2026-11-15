@@ -17,7 +17,7 @@ func (a *App) flowCol(c *ui.Context, inner func()) {
 	if a.mode == ModeIDE {
 		pad = 12
 	}
-	ui.Column(c).WidthPercent(100).MaxWidth(theme.WCol).PaddingX(pad).Children(inner)
+	ui.Column(c).WidthPercent(100).MaxWidth([]float32{640, theme.WCol, 860}[a.prefs.Int("appearance.width", 1)%3]).PaddingX(pad).Children(inner)
 }
 
 // flow 渲染整条时间线:用户消息、步骤组(思考 / 工具 / 待办 / 子 Agent)、助手正文、回合尾部。
@@ -118,7 +118,7 @@ func (a *App) exploreGroup(c *ui.Context, g []*core.ToolCall) {
 	if running {
 		verb, obj, state = "正在探索", "项目代码", "run"
 	}
-	sp := step{id: id, icon: "layers", verb: verb, obj: obj, fam: famExplore, state: state, hasBody: true}
+	sp := step{id: id, icon: "layers", verb: verb, obj: obj, fam: famExplore, state: state, hasBody: true, open: !a.prefs.Bool(pGroupFold, true)}
 	a.stepRow(c, sp, func() {
 		a.nest(c, func() {
 			for _, tc := range g {
@@ -131,7 +131,7 @@ func (a *App) exploreGroup(c *ui.Context, g []*core.ToolCall) {
 func (a *App) stepItem(c *ui.Context, it core.Item) {
 	switch v := it.(type) {
 	case *core.Thinking:
-		sp := step{id: v.ID, icon: "brain", verb: "思考", obj: thinkTitle(v.Text), fam: famThink, hasBody: strings.TrimSpace(v.Text) != ""}
+		sp := step{id: v.ID, icon: "brain", verb: "思考", obj: thinkTitle(v.Text), fam: famThink, hasBody: strings.TrimSpace(v.Text) != "", open: a.prefs.Bool(pThinkOpen, false)}
 		if v.Streaming {
 			sp.state = "run"
 		} else if d, ok := a.st.Durations[v.ID]; ok && d > 0 {

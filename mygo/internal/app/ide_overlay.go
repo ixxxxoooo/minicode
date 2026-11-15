@@ -61,8 +61,8 @@ func (t *ideTab) findQuery() (string, bool) {
 
 // cursorXY 是光标行左下在代码区里的位置(用于定位浮层)。
 func cursorXY(tb *ideTab, line, col int) (x, y float32) {
-	y = float32(tb.st.LineTop(line)-tb.st.ScrollY()) + edLineH
-	x = edGutter + float32(col)*edChar
+	y = float32(tb.st.LineTop(line)-tb.st.ScrollY()) + edLineH*edScale
+	x = edGutter + float32(col)*edChar*edScale
 	return
 }
 
@@ -92,7 +92,7 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
 		ui.Row(c).Grow(1).MinHeight(0).Children(func() {
 			editor.View(c.Key("ed-"+tb.id), st).Grow(1).MinWidth(0).FillHeight()
-			if !a.wsNarrowMM() {
+			if !a.wsNarrowMM() && a.prefs.Bool(pMinimap, true) {
 				a.minimap(c, tb)
 			}
 		})
@@ -152,6 +152,7 @@ func (a *App) decorate(tb *ideTab) {
 		}
 		st.SetDiagnostics(tb.buf.Version(), ds)
 	}
+	a.applyEditorPrefs(tb)
 	a.blameInlay(tb)
 }
 
@@ -212,9 +213,9 @@ func (a *App) askBar(c *ui.Context, tb *ideTab) {
 	}
 	p := tb.buf.Pos(lo)
 	x, y := cursorXY(tb, p.Line, p.Col)
-	y -= edLineH + 32
+	y -= edLineH*edScale + 32
 	if y < 24 {
-		y += edLineH + 32 + 26
+		y += edLineH*edScale + 32 + 26
 	}
 	if x > 260 {
 		x = 260

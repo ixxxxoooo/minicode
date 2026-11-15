@@ -19,13 +19,37 @@ var T = theme.Resolve(theme.Palettes[0], theme.Schemes[0], "")
 func Use(t *theme.Tokens) { T = t }
 
 // 动效时长(设计稿 tokens.css 的 --dur-*)。
-const (
+var (
 	DurInstant = 80 * time.Millisecond
 	DurFast    = 120 * time.Millisecond
 	DurBase    = 180 * time.Millisecond
 	DurSlow    = 260 * time.Millisecond
 	DurMorph   = 440 * time.Millisecond
 )
+
+// 呼吸 / 旋转之类的循环动效是否播放(设置里「动效」关闭或系统减弱动态时为 false)。
+var motionOn = true
+
+// pulseOn 控制运行中文字的呼吸(设置「流光样式」选「无」时关闭)。
+var pulseOn = true
+
+// SetMotion 打开 / 关闭动效:关闭时所有时长令牌归零(过渡立即完成)、呼吸不再播放。
+func SetMotion(on bool) {
+	motionOn = on
+	if on {
+		DurInstant, DurFast, DurBase, DurSlow, DurMorph = 80*time.Millisecond, 120*time.Millisecond, 180*time.Millisecond, 260*time.Millisecond, 440*time.Millisecond
+	} else {
+		DurInstant, DurFast, DurBase, DurSlow, DurMorph = 0, 0, 0, 0, 0
+	}
+	Fade = ui.ElementTransition{Colors: true, Duration: DurFast}
+	thumbSpring = ui.Animation{Duration: DurBase, Ease: EaseSpring}
+}
+
+// MotionOn 报告动效是否开着。
+func MotionOn() bool { return motionOn }
+
+// SetPulse 设置运行中文字的呼吸开关。
+func SetPulse(on bool) { pulseOn = on }
 
 // 缓动曲线(--ease-*):cubic-bezier 的四个控制点。
 var (

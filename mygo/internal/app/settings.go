@@ -168,6 +168,7 @@ func (a *App) applyPrefs() {
 	a.accent = accentOf(a.pal, a.prefs.Int(kAccent, 0))
 	a.density = a.prefs.Int(kDensity, 1)
 	a.radius = a.prefs.Int(kRadius, 1)
+	a.applyBehavior()
 	a.retheme()
 }
 
