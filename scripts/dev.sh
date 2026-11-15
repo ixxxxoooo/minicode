@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # 重启开发版(MyGo 原生界面):先编译,成功后杀掉旧实例,再在最小 .app 包里启动唯一的新实例。
 # 用法:scripts/dev.sh [环境变量…]   例:MINI_THEME=ink MINI_SCHEME=b scripts/dev.sh
 # 日志:应用日志 ~/.minicode/logs/minicode.log;标准错误 / 帧统计 target/dev.log(上一个实例在 dev.log.prev)。
@@ -100,10 +100,12 @@ codesign --force --sign - "$APP" >/dev/null 2>&1 || true
 [ -f target/dev.log ] && mv -f target/dev.log target/dev.log.prev
 : >target/dev.log
 # 经 launchd 的 open 启动:进程不挂在当前终端会话下,脚本结束 / 终端关闭也不会连带被杀
-ENVS="--env MINI_DEV=1"
-for kv in $(env | grep '^MINI_' | grep -v '^MINI_DEV='); do ENVS="$ENVS --env $kv"; done
-# shellcheck disable=SC2086
-open -n "$APP" --stdout "$PWD/target/dev.log" --stderr "$PWD/target/dev.log" $ENVS --args "$@"
+# 用数组传 --env,值里带空格也完整(例:MINI_TERM_CMD='clear; ls -la')
+ENVS=(--env MINI_DEV=1)
+while IFS= read -r kv; do
+  case "$kv" in MINI_DEV=*) ;; MINI_*=*) ENVS+=(--env "$kv") ;; esac
+done < <(env)
+open -n "$APP" --stdout "$PWD/target/dev.log" --stderr "$PWD/target/dev.log" "${ENVS[@]}" --args "$@"
 sleep 1
 pgrep -if "MiniCode Dev.app/Contents/MacOS/minicode( |\$)" | head -1 >"$PID_FILE"
 echo "开发版已启动(pid $(cat "$PID_FILE"))"
