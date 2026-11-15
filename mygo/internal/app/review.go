@@ -566,8 +566,13 @@ func (a *App) diffSplitLines(c *ui.Context, ls []diff.Line) {
 
 // reviewHintText 审查页底部的说明:仓库里还有未提交改动时写「还没有提交」,
 // 已经全部提交(工作区干净)时如实写明,避免和图谱里刚出现的提交矛盾。
+// changesCommitted 工作区已干净且有提交历史:本轮的改动已经进了 Git
+func (a *App) changesCommitted() bool {
+	return a.repo != nil && !a.sc.loading && len(a.sc.changes) == 0 && len(a.sc.log) > 0
+}
+
 func (a *App) reviewHintText() string {
-	if a.repo != nil && !a.sc.loading && len(a.sc.changes) == 0 && len(a.sc.log) > 0 {
+	if a.changesCommitted() {
 		return "这些改动已经提交到 Git。接受 = 只标记已审阅;撤销 = 在工作区把这一块还原成改动前(需要再提交一次)。"
 	}
 	return "还没有提交。接受 = 保留(不写入 Git);撤销 = 把这一块还原成改动前。"

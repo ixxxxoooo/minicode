@@ -84,7 +84,11 @@ func (a *App) wsEmpty(c *ui.Context) {
 
 	var turn []wsRow
 	if n := len(files); n > 0 {
-		turn = append(turn, wsRow{key: "review", icon: "eye", title: "审查本轮改动", sub: itoa(n) + " 个文件待审查", chev: true, run: a.OpenReview})
+		sub := itoa(n) + " 个文件待审查"
+		if a.changesCommitted() {
+			sub = itoa(n) + " 个文件 · 已提交到 Git,可回看"
+		}
+		turn = append(turn, wsRow{key: "review", icon: "eye", title: "审查本轮改动", sub: sub, chev: true, run: a.OpenReview})
 	}
 	if plan != nil {
 		turn = append(turn, wsRow{key: "plan", icon: "list", title: "计划", sub: "最新一份计划", chev: true, run: func() { a.OpenWorkspaceTab(vPlan, plan.ID) }})

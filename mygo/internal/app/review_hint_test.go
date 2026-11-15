@@ -31,4 +31,11 @@ func TestReviewDispDirAndHint(t *testing.T) {
 	if got := a.reviewHintText(); !strings.Contains(got, "已经提交") {
 		t.Errorf("工作区干净时应写已提交:%q", got)
 	}
+	if !a.changesCommitted() {
+		t.Error("工作区干净且有提交历史时 changesCommitted 应为真")
+	}
+	a.sc.changes = []vcs.Change{{Path: "main.go"}}
+	if a.changesCommitted() {
+		t.Error("有未提交改动时 changesCommitted 应为假")
+	}
 }
