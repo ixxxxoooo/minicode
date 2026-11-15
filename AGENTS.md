@@ -65,7 +65,7 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 ```
 
 - 运行模式优先级:`--demo` / `--real` / `MINI_DEMO=1|0` > 开发版记住的上次选择(`~/.minicode/dev-mode`)> 真实。开发版左下角徽章:演示模式显示「演示模式」,真实模式显示「开发版」。
-- 调试环境变量:`MINI_MODE=ide`(启动进 IDE)、`MINI_PROJECT=<目录>`(真实模式的初始项目)、`MINI_THEME` / `MINI_SCHEME`、`MINI_SCREEN`、`MINI_WIN_W/H`、`MINI_DEMO_SLOW`、`MINI_CLAUDE_PATH`;真实 claude 集成测试用 `MINI_REAL_CLAUDE=1 go test ./internal/claude -run Real`。
+- 调试环境变量:`MINI_SHORTCUT_DEMO=1`(演示模式预置「快捷键冲突」假数据;默认不写,因为演示与真实共用 `~/.minicode/settings.json`,会污染真实偏好)、`MINI_MODE=ide`(启动进 IDE)、`MINI_PROJECT=<目录>`(真实模式的初始项目)、`MINI_THEME` / `MINI_SCHEME`、`MINI_SCREEN`、`MINI_WIN_W/H`、`MINI_DEMO_SLOW`、`MINI_CLAUDE_PATH`;真实 claude 集成测试用 `MINI_REAL_CLAUDE=1 go test ./internal/claude -run Real`。
 - **真实场景测试用 DeepSeek**:`scripts/with-deepseek.sh <命令…>` 运行时从 `~/.minicode/provider-keys.json`(0600,仓库之外)读取 DeepSeek 密钥,注入 `ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic` 等环境变量后执行命令(默认模型 `deepseek-chat`,`DEEPSEEK_MODEL=deepseek-flash|deepseek-v4-pro` 带思考)。例:`scripts/with-deepseek.sh scripts/dev.sh --real`、`cd mygo && MINI_REAL_CLAUDE=1 ../scripts/with-deepseek.sh go test ./internal/claude -run Real`。**密钥只存在那份本机文件里,不进仓库 / 日志 / 文档 / 提交;脚本与文档里不出现密钥值。**
 - 提交:中文 Conventional Commits,一个功能一个提交,**改完立刻提交并 `git push origin HEAD`**(本分支推到 `feat/mygo`),不等 `go vet` / `go test`;测试出问题再修、再提交 `fix:`。不提交 `target` / `dist`;不读取、不输出密钥,环境变量只展示名称。
 - 日志一律用 `diag.L("包名")`,不用 `fmt.Println` / `log`;新增耗时操作用 `diag.SpanSlow` 包起来。

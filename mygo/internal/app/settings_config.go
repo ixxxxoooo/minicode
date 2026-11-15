@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -266,12 +267,16 @@ func (a *App) initSettingsConfig() {
 	if a.demoWs() && len(a.set.net) == 0 {
 		a.set.net = map[string]int{"api.anthropic.com": 2, "github.com": 2}
 		a.set.netMs = map[string]int64{"api.anthropic.com": 142, "github.com": 96}
-		for k, v := range demo.ShortcutDemoPrefs() {
-			if !a.prefs.Has(k) {
-				a.prefs.Set(k, v)
+		// 演示用的「假冲突」快捷键会写进共用的 settings.json,污染真实模式,
+		// 所以只在显式设置 MINI_SHORTCUT_DEMO=1(截图 / 调试)时才预置。
+		if os.Getenv("MINI_SHORTCUT_DEMO") == "1" {
+			for k, v := range demo.ShortcutDemoPrefs() {
+				if !a.prefs.Has(k) {
+					a.prefs.Set(k, v)
+				}
 			}
 		}
-		if a.set.kbWarn == "" {
+		if a.set.kbWarn == "" && os.Getenv("MINI_SHORTCUT_DEMO") == "1" {
 			a.set.kbWarn = "⌘ E 已被「切换 Agent / IDE」占用"
 		}
 	}
