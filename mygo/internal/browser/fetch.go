@@ -101,6 +101,7 @@ func (h HTTPSource) Fetch(raw string) (Page, error) {
 	if err != nil {
 		return Page{}, err
 	}
+	pg.Insecure = strings.HasPrefix(full, "http://")
 	blog.Info("抓取完成", "host", RedactURL(full), "sections", len(pg.Sections), "ms", time.Since(start).Milliseconds())
 	return pg, nil
 }
@@ -351,6 +352,9 @@ func collectMeta(root *html.Node, base string) ([]string, []Link) {
 				goto kids
 			}
 			u := resolveURL(base, href)
+			if u == "" {
+				goto kids
+			}
 			h := hostOnly(u)
 			if !seen[u] && len(links) < 40 {
 				seen[u] = true
@@ -372,15 +376,29 @@ func collectMeta(root *html.Node, base string) ([]string, []Link) {
 	return sum, links
 }
 
+// resolveURL 按标准规则把 href 解析成绝对地址。base 是不带协议的页面地址(如 "localhost:8765/docs/a.html"),
+// 协议在后面的 Normalize 里会被丢掉,这里统一用 https 占位。
+// 相对路径按页面所在目录解析(b.html、../x、?q 都对);mailto: / javascript: / 纯锚点返回空串,调用方跳过。
 func resolveURL(base, href string) string {
-	if strings.HasPrefix(href, "http") {
-		return href
+	href = strings.TrimSpace(href)
+	if href == "" || strings.HasPrefix(href, "#") {
+		return ""
 	}
-	if strings.HasPrefix(href, "//") {
-		return "https:" + href
+	low := strings.ToLower(href)
+	for _, p := range []string{"javascript:", "mailto:", "tel:", "data:", "about:"} {
+		if strings.HasPrefix(low, p) {
+			return ""
+		}
 	}
-	if strings.HasPrefix(href, "/") {
-		return "https://" + base + href
+	b, err := url.Parse("https://" + base)
+	if err != nil {
+		return ""
 	}
-	return "https://" + base + "/" + href
+	r, err := url.Parse(href)
+	if err != nil {
+		return ""
+	}
+	u := b.ResolveReference(r)
+	u.Fragment = ""
+	return u.String()
 }

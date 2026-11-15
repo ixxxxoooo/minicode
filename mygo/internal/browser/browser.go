@@ -25,6 +25,7 @@ type Page struct {
 	Sections []Section
 	Summary  []string
 	Links    []Link
+	Insecure bool // 实际是用明文 http 抓取的(地址栏不能显示「安全」锁)
 }
 
 // Title 返回文章标题。

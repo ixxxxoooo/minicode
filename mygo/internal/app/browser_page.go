@@ -75,7 +75,15 @@ func (a *App) browserPage(c *ui.Context) {
 				box.BorderColor(t.Ac)
 			}
 			box.Children(func() {
-				kit.Ic(c, "lock", kit.S12).TextColor(t.Ok)
+				// 只有真的是 https 抓来的页面才显示绿色锁;明文 http(含本机开发服务器)用黄色警示,还没打开页面用中性地球
+				switch {
+				case pg.URL == "":
+					kit.Ic(c, "globe", kit.S12).TextColor(t.Tx4)
+				case pg.Insecure:
+					kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
+				default:
+					kit.Ic(c, "lock", kit.S12).TextColor(t.Ok)
+				}
 				in := ui.TextInput(c.Key("br-url"), &v.url).Grow(1).MinWidth(0).Background(ui.Transparent).BorderWidth(0).Padding(0).FontSize(theme.FsBody).Placeholder("输入网址").PlaceholderColor(t.Tx4).FocusRing(false)
 				in.OnTextKey(func(k ui.TextKey) bool {
 					if k.Key == ui.KeyEnter && k.Mods == 0 {

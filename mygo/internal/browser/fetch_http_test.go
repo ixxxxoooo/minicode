@@ -26,6 +26,9 @@ func TestFetchPlainHTTPFallback(t *testing.T) {
 		if len(pg.Sections) == 0 {
 			t.Errorf("%q 应有正文", in)
 		}
+		if !pg.Insecure {
+			t.Errorf("%q 是明文 http 抓取的,Page.Insecure 应为 true(地址栏不能显示安全锁)", in)
+		}
 	}
 }
 
