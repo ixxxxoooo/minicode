@@ -40,12 +40,9 @@ func (h HTTPSource) Fetch(raw string) (Page, error) {
 	if u == "" {
 		return Page{}, fmt.Errorf("请输入网址")
 	}
-	if !strings.Contains(u, ".") {
+	full, ok := fullURL(u)
+	if !ok {
 		return Page{}, fmt.Errorf("网址格式不正确")
-	}
-	full := u
-	if !strings.HasPrefix(u, "http") {
-		full = "https://" + u
 	}
 	sec := h.Opts.TimeoutSec
 	if sec <= 0 {
@@ -70,7 +67,7 @@ func (h HTTPSource) Fetch(raw string) (Page, error) {
 	resp, err := client.Do(req)
 	if err != nil {
 		blog.Warn("抓取失败", "host", RedactURL(full), "err", err, "ms", time.Since(start).Milliseconds())
-		return Page{}, fmt.Errorf("无法连接:%v;可检查网络或在系统浏览器中打开", err)
+		return Page{}, fmt.Errorf("%s", friendlyNetErr(err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
@@ -90,6 +87,45 @@ func (h HTTPSource) Fetch(raw string) (Page, error) {
 	}
 	blog.Info("抓取完成", "host", RedactURL(full), "sections", len(pg.Sections), "ms", time.Since(start).Milliseconds())
 	return pg, nil
+}
+
+// fullURL 把规整后的地址(已去掉协议)补成可请求的完整网址;主机名不合法返回 false。
+// 本机地址(localhost / 127.x / ::1 / *.local / 带端口的内网 IP)默认走 http,方便预览本地开发服务器,其余走 https。
+func fullURL(u string) (string, bool) {
+	if strings.HasPrefix(u, "http://") || strings.HasPrefix(u, "https://") {
+		u = Normalize(u)
+	}
+	p, err := url.Parse("//" + u)
+	if err != nil || p.Hostname() == "" {
+		return "", false
+	}
+	host := strings.ToLower(p.Hostname())
+	local := host == "localhost" || host == "::1" || strings.HasSuffix(host, ".local") ||
+		strings.HasPrefix(host, "127.") || strings.HasPrefix(host, "192.168.") || strings.HasPrefix(host, "10.")
+	// 既不是本机、也不含「.」(如 foo)基本是敲错了,不去请求
+	if !local && !strings.Contains(host, ".") && !strings.Contains(host, ":") {
+		return "", false
+	}
+	if local {
+		return "http://" + u, true
+	}
+	return "https://" + u, true
+}
+
+// friendlyNetErr 把网络错误翻成一句中文加下一步,原文只进日志。
+func friendlyNetErr(err error) string {
+	m := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(m, "connection refused"):
+		return "连接被拒绝:这个地址上没有服务在监听(本地开发服务器是否已启动?)"
+	case strings.Contains(m, "no such host"):
+		return "找不到这个域名,请检查拼写或网络"
+	case strings.Contains(m, "timeout") || strings.Contains(m, "deadline exceeded"):
+		return "连接超时,可检查网络,或在 设置 → 浏览器 调大超时"
+	case strings.Contains(m, "certificate") || strings.Contains(m, "tls"):
+		return "证书校验失败,这个站点的 HTTPS 不可信;可在系统浏览器中打开"
+	}
+	return "无法连接,可检查网络或在系统浏览器中打开"
 }
 
 func hostOnly(u string) string {
