@@ -20,7 +20,7 @@ type custMeta struct {
 
 var custCats = map[customize.Cat]custMeta{
 	customize.Plugins:  {"plug", "插件", "插件把 Skills、命令、子 Agent 与钩子打包在一起,可在市场里浏览、安装与启停。", "从市场安装"},
-	customize.MCP:      {"server", "MCP 服务器", "给 Claude 接入外部工具与数据。状态来自 claude 的 mcp_status;开关只对当前项目生效。", "添加服务器"},
+	customize.MCP:      {"server", "MCP 服务器", "给 Claude 接入外部工具与数据。连接状态由 Claude 实时报告;开关只对当前项目生效。", "添加服务器"},
 	customize.Skills:   {"spark", "Skills", "Claude 按场景自动调用的能力包:一个目录加一份 SKILL.md。", "新建 Skill"},
 	customize.Commands: {"slash", "斜杠命令", "在输入框里用 / 调用的提示词模板,支持 $ARGUMENTS 参数。", "新建命令"},
 	customize.Agents:   {"bot", "子 Agent", "带独立上下文与工具权限的专用助手,由主 Agent 委派任务。", "新建子 Agent"},
