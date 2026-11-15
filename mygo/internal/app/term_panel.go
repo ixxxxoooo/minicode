@@ -19,6 +19,9 @@ import (
 // 真实终端面板:界面只做三件事——量出能放下多少列 / 行并通知内核改大小、把内核的画面快照画成
 // 带色文字、把按键翻译成仿真器的按键事件。shell 的启动、输出解析都在 internal/term。
 
+// termDebugDone:MINI_TERM_CMD 只对进程里第一个启动的终端生效。
+var termDebugDone bool
+
 const termHistory = 200 // 面板里最多带的历史行数
 
 // 终端字号与行高(设置「终端 → 字号」改它;行高 = 字号 × 1.6)。
@@ -148,8 +151,13 @@ func (a *App) realTerminal(c *ui.Context) {
 			if a.prefs.Bool(pTermIntegrate, true) {
 				tm.SendText(term.IntegrationCmd(shellName()))
 			}
+			if tp.initCmd == "" && !termDebugDone {
+				// 调试开关 MINI_TERM_CMD:第一个终端起来后自动输入一条命令,便于复现 / 实测(只此一次)
+				tp.initCmd, termDebugDone = os.Getenv("MINI_TERM_CMD"), true
+			}
 			if tp.initCmd != "" {
 				tm.SendText(tp.initCmd + "\n")
+				log.Info("终端自动输入命令", "len", len(tp.initCmd))
 				tp.initCmd = ""
 			}
 		}
@@ -576,7 +584,22 @@ func (a *App) termRow(c *ui.Context, ln term.Line, cx int, focused bool, cellW f
 		if deco.link[1] > deco.link[0] {
 			ui.Box(c).Absolute().Left(float32(deco.link[0])*cellW).Top(termLineH-3).Size(float32(deco.link[1]-deco.link[0])*cellW, 1).Background(t.Ac)
 		}
-		ui.RichText(c, termSpans(t, ln)...).NoWrap()
+		// 文字也放进绝对层:库里绝对定位元素画在同级流内元素之上,不放进来的话
+		// 不透明的背景块(反色、带背景色的输出)会把字整个盖住
+		if !lineHasWide(ln) {
+			ui.Row(c).Absolute().Left(0).Top(0).Height(termLineH).AlignItems(ui.Center).Children(func() {
+				ui.RichText(c, termSpans(t, ln)...).NoWrap()
+			})
+		} else {
+			// 含宽字符(中日韩 / 全角):字体里 CJK 的步进是 1em,而格子里占 2 格(1.2em),
+			// 整行流式排版会越排越偏,光标 / 选区 / 背景都对不上。所以按格子逐段定位:
+			// 窄字符连成一段,每个宽字符单独一段,都落在 列 × 格宽 上。
+			for _, sg := range termSegments(t, ln) {
+				ui.Row(c).Absolute().Left(float32(sg.col) * cellW).Top(0).Height(termLineH).AlignItems(ui.Center).Children(func() {
+					ui.RichText(c, sg.span).NoWrap()
+				})
+			}
+		}
 		if cx >= 0 && preedit != "" { // 输入法组字:盖在光标处,带下划线
 			ui.RichText(c, ui.Span{Text: preedit, Font: termFamily, Size: termFont, Color: t.Tx1, Underline: true}).NoWrap().
 				Absolute().Left(float32(cx) * cellW).Top(0).Height(termLineH).Background(t.Raised)
@@ -616,23 +639,82 @@ func runBackground(t *theme.Tokens, r term.Run) (ui.Color, bool) {
 	return termColor(t, r.Bg, ui.Color{}), true
 }
 
+// runSpan 是一段样式对应的富文本片段(只管文字与前景色)。text 可以是这一段的一部分。
+func runSpan(t *theme.Tokens, r term.Run, text string) ui.Span {
+	fg := termColor(t, r.Fg, t.Tx1)
+	if r.Reverse { // 反色:前景取原背景(默认背景用面板底色)
+		fg = termColor(t, r.Bg, t.BG)
+	}
+	if r.Dim {
+		fg.A = uint8(float32(fg.A) * 0.6)
+	}
+	sp := ui.Span{Text: text, Font: termFamily, Size: termFont, Color: fg,
+		Italic: r.Italic, Underline: r.Underline, Strikethrough: r.Strike}
+	if r.Bold {
+		sp.Weight = 700
+	}
+	return sp
+}
+
+// lineHasWide 这一行有没有占 2 格的字符。
+func lineHasWide(ln term.Line) bool {
+	for _, r := range ln {
+		for _, ch := range r.Text {
+			if ch >= 0x1100 && ansi.StringWidth(string(ch)) == 2 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// rowSeg 是落在固定列上的一小段文字。
+type rowSeg struct {
+	col  int
+	span ui.Span
+}
+
+// termSegments 把一行切成「窄字符连续段 + 单个宽字符」,每段带起始列。零宽字符(组合符)并进前一段。
+func termSegments(t *theme.Tokens, ln term.Line) []rowSeg {
+	var out []rowSeg
+	col := 0
+	for _, r := range ln {
+		var cur []rune
+		curCol := col
+		flush := func() {
+			if len(cur) > 0 {
+				out = append(out, rowSeg{col: curCol, span: runSpan(t, r, string(cur))})
+				cur = cur[:0]
+			}
+		}
+		for _, ch := range r.Text {
+			w := ansi.StringWidth(string(ch))
+			switch {
+			case w == 0: // 组合符 / 变体选择符:跟着前一个字
+				cur = append(cur, ch)
+			case w >= 2:
+				flush()
+				out = append(out, rowSeg{col: col, span: runSpan(t, r, string(ch))})
+				col += w
+				curCol = col
+			default:
+				if len(cur) == 0 {
+					curCol = col
+				}
+				cur = append(cur, ch)
+				col += w
+			}
+		}
+		flush()
+	}
+	return out
+}
+
 // termSpans 把一行的样式段变成富文本片段(只管文字与前景色)。
 func termSpans(t *theme.Tokens, ln term.Line) []ui.Span {
 	out := make([]ui.Span, 0, len(ln)+1)
 	for _, r := range ln {
-		fg := termColor(t, r.Fg, t.Tx1)
-		if r.Reverse { // 反色:前景取原背景(默认背景用面板底色)
-			fg = termColor(t, r.Bg, t.BG)
-		}
-		if r.Dim {
-			fg.A = uint8(float32(fg.A) * 0.6)
-		}
-		sp := ui.Span{Text: r.Text, Font: termFamily, Size: termFont, Color: fg,
-			Italic: r.Italic, Underline: r.Underline, Strikethrough: r.Strike}
-		if r.Bold {
-			sp.Weight = 700
-		}
-		out = append(out, sp)
+		out = append(out, runSpan(t, r, r.Text))
 	}
 	if len(out) == 0 {
 		out = append(out, ui.Span{Text: " ", Font: termFamily, Size: termFont})

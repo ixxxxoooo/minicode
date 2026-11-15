@@ -137,3 +137,26 @@ func TestSnapshotCached(t *testing.T) {
 		t.Fatal("画面没变,快照应复用")
 	}
 }
+
+// 反色(SGR 7)要带 Reverse 标记,渲染按「前景↔背景」交换,不能被模拟器吞掉。
+func TestReverseVideoRuns(t *testing.T) {
+	tm := start(t)
+	tm.SendText("printf 'a\\033[7mREV\\033[0mb ok%s' x")
+	tm.SendKey(uv.KeyEnter, "", 0)
+	s := waitFor(t, tm, "okx")
+	found := false
+	for _, l := range s.Lines {
+		for _, r := range l {
+			t.Logf("run %q fg=%+v bg=%+v rev=%v", r.Text, r.Fg, r.Bg, r.Reverse)
+			if r.Text == "REV" {
+				found = true
+				if !r.Reverse {
+					t.Fatalf("REV 段没有 Reverse 标记:%+v", r)
+				}
+			}
+		}
+	}
+	if !found {
+		t.Fatal("没有独立的 REV 样式段")
+	}
+}
