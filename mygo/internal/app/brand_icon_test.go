@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/prefs"
 	"github.com/ixxxxoooo/minicode/internal/projects"
 )
@@ -160,5 +161,20 @@ func TestTrayDot(t *testing.T) {
 	}
 	if len(seen) != 3 {
 		t.Fatalf("三种状态应各用不同的状态点,得到 %v", seen)
+	}
+}
+
+// 品牌小标跟随所选样式;织纹在小尺寸自动换「经纬」;空状态小标取托盘空闲图。
+func TestBrandLogoSource(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true, Prefs: prefs.Memory()})
+	if a.brandLogoSource(64) == nil || a.brandLogoSource(20) == nil {
+		t.Fatal("默认样式应能取到品牌小标")
+	}
+	a.prefs.Set(pAppStyle, 3)
+	if a.brandLogoSource(64) == nil {
+		t.Fatal("选了其它样式也应取到品牌小标")
+	}
+	if brandInkImage("tray-idle.png", ui.Color{R: 0, G: 0, B: 0, A: 64}) == nil {
+		t.Fatal("空状态小标应能由托盘图染色得到")
 	}
 }

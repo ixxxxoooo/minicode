@@ -46,7 +46,7 @@ func brandImage(name string, whiteInk bool) ui.ImageSource {
 	return src
 }
 
-// recolorInk 保持透明度不变,把所有像素的颜色换成 c(模板图在深色底上显示成白色)。
+// recolorInk 把所有像素的颜色换成 c,透明度按原图乘以 c.A(模板图在深色底上显示成白色)。
 func recolorInk(data []byte, c color.NRGBA) []byte {
 	src, err := png.Decode(bytes.NewReader(data))
 	if err != nil {
@@ -57,7 +57,8 @@ func recolorInk(data []byte, c color.NRGBA) []byte {
 	for y := b.Min.Y; y < b.Max.Y; y++ {
 		for x := b.Min.X; x < b.Max.X; x++ {
 			a := color.NRGBAModel.Convert(src.At(x, y)).(color.NRGBA).A
-			out.SetNRGBA(x, y, color.NRGBA{c.R, c.G, c.B, a})
+			a = uint8(uint32(a) * uint32(c.A) / 255) // c.A 作整体不透明度(空状态的 25% 单色图形)
+			out.SetNRGBA(x, y, color.NRGBA{R: c.R, G: c.G, B: c.B, A: a})
 		}
 	}
 	var buf bytes.Buffer
@@ -212,4 +213,37 @@ func (a *App) brandTrayStates(c *ui.Context) {
 		})
 	}
 	_ = kit.S12
+}
+
+// brandInkImage 把托盘模板图染成 col(含不透明度)后缓存;空状态用它画「25% 的单色图形」。
+func brandInkImage(name string, col ui.Color) ui.ImageSource {
+	key := name + "|ink|" + itoa(int(col.R)) + "," + itoa(int(col.G)) + "," + itoa(int(col.B)) + "," + itoa(int(col.A))
+	brandImgCache.Lock()
+	defer brandImgCache.Unlock()
+	if s, ok := brandImgCache.m[key]; ok {
+		return s
+	}
+	var src ui.ImageSource
+	if data, ok := embeddedIcon(name); ok {
+		if img, err := ui.DecodeImage(recolorInk(data, color.NRGBA{R: col.R, G: col.G, B: col.B, A: col.A})); err == nil {
+			src = img
+		}
+	}
+	brandImgCache.m[key] = src
+	return src
+}
+
+// brandEmptyMark 空状态的品牌小标:当前菜单栏图标样式的空闲图,单色 25%,不抢内容。
+func (a *App) brandEmptyMark(c *ui.Context, px float32) {
+	t := a.tk
+	name := "tray-idle.png"
+	if i := a.trayStyleIndex(); i > 0 {
+		name = "tray-s" + itoa(i) + "-idle.png"
+	}
+	ink := ui.Color{R: t.Tx1.R, G: t.Tx1.G, B: t.Tx1.B, A: 64}
+	if src := brandInkImage(name, ink); src != nil {
+		ui.Image(c, src).Size(px, px).Fit(ui.Contain)
+		return
+	}
+	kit.Ic(c, "mark", px*0.65).TextColor(t.Tx4)
 }
