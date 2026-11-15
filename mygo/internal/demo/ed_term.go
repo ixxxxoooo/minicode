@@ -27,6 +27,11 @@ func TermDemoLines() []TermLine {
 		TermLine{Segs: []TermSeg{{"test matches_trailing_slash ... ", 0}, {"ok", 'p'}}},
 		TermLine{Segs: []TermSeg{{"test result: ", 0}, {"ok", 'p'}, {". 12 passed; 0 failed", 0}}},
 	)
+	if !sandboxExtras { // 默认只留设计稿里的一次测试输出 + 光标行;颜色 / 宽字符 / 长输出压力数据随压力开关
+		last := prompt("")
+		last.Segs[len(last.Segs)-1].Text = ""
+		return append(lines, last)
+	}
 	lines = append(lines, prompt("echo $'ANSI 颜色演示'"))
 	lines = append(lines, TermLine{Segs: []TermSeg{{"ANSI 绿", 'p'}, {" ", 0}, {"黄", 'd'}}})
 	lines = append(lines, TermLine{Segs: []TermSeg{{"进度 ", 'd'}, {"[", 0}, {"████████░░░░░░░░", 'p'}, {"] 52%", 0}}})
@@ -53,6 +58,9 @@ type CmdView struct {
 
 // CmdViews 额外只读命令标签(退出码、长输出、失败命令)。
 func CmdViews() []CmdView {
+	if !sandboxExtras { // 默认不额外开命令标签(设计稿只有 zsh + 工具卡里查看的那一个)
+		return nil
+	}
 	fail := 101
 	ok := 0
 	long := strings.Builder{}

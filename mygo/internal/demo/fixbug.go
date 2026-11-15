@@ -62,6 +62,15 @@ func FixBug(withPermission bool) []Step {
 	add(ms(300), core.EvItemDone{ID: "t1"})
 	add(0, core.EvDuration{ID: "t1", Secs: 4})
 
+	// 计划卡(已批准)与一个仍在后台运行的子 Agent(设计稿 work 页的两张卡)
+	approved := true
+	add(ms(200), core.EvAppend{Item: &core.PlanApproval{ID: "fix-plan", Markdown: "## 路由大小写修复计划\n\n" + PlanMarkdown, Approved: &approved}})
+	sub := core.NewSubagent("fix-sub", "src/handlers", "审查 handlers 的错误处理", core.SubBackground)
+	sub.Summary = "搜索 to_lowercase"
+	sub.TaskID, sub.Tokens, sub.ToolCount, sub.LastTool = "ag1", 6200, 12, "Grep"
+	stampSub(sub, 48*time.Second)
+	add(ms(150), core.EvAppend{Item: sub})
+
 	// 探索:读、搜、读
 	add(ms(200), core.EvAppend{Item: core.NewToolCall("r1", "Read", "读取 src/router.rs").WithInput(map[string]any{"file_path": "src/router.rs"}).WithLocation("src/router.rs")})
 	add(ms(500), core.EvToolUpdate{ID: "r1", Patch: core.ToolPatch{Status: core.Status(core.ToolCompleted), AppendContent: []core.ToolContent{&core.TextBlock{Text: lines(86)}}}})

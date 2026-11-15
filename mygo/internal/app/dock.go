@@ -322,6 +322,21 @@ func planTitle(md string) string {
 	return "实施计划"
 }
 
+// planCardBody 去掉计划开头的标题行(标题已在卡片头部显示),卡片里只留摘要。
+func planCardBody(md string) string {
+	lines := strings.Split(md, "\n")
+	for i, ln := range lines {
+		if strings.TrimSpace(ln) == "" {
+			continue
+		}
+		if strings.HasPrefix(strings.TrimSpace(ln), "#") {
+			return strings.TrimLeft(strings.Join(lines[i+1:], "\n"), "\n")
+		}
+		break
+	}
+	return md
+}
+
 func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 	t := a.tk
 	box := ui.Column(c).Key("plan-"+p.ID).Background(t.Raised).Radius(t.RMd()).Padding(8, 11).Gap(5)
@@ -345,11 +360,11 @@ func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 			ui.Spacer(c).Grow(1)
 			kit.Btn(c, "查看", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "ext", Tip: "在工作区打开计划"}).OnClick(func() { a.OpenWorkspaceTab(vPlan, p.ID) })
 		})
-		if strings.TrimSpace(p.Markdown) != "" {
+		if body := planCardBody(p.Markdown); strings.TrimSpace(body) != "" {
 			if p.Streaming {
-				markdown.Stream(c, p.Markdown, a.mdOptions())
+				markdown.Stream(c, body, a.mdOptions())
 			} else {
-				markdown.View(c, p.Markdown, a.mdOptions())
+				markdown.View(c, body, a.mdOptions())
 			}
 		}
 		if !p.Streaming && p.Approved == nil {

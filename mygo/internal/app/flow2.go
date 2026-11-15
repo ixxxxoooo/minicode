@@ -44,35 +44,54 @@ func turnEnd(items []core.Item, i int) (string, bool) {
 func (a *App) subagentCard(c *ui.Context, s *core.SubagentCard) {
 	t := a.tk
 	run := s.Active()
-	card := ui.ButtonBase(c).Key("sub-"+s.ID).Background(t.Raised).Radius(t.RMd()).Padding(7, 10).Gap(3).Margin(2, 0).
-		Vertical().AlignItems(ui.Stretch).Cursor(ui.CursorPointer).Transition(kit.Fade)
+	card := ui.ButtonBase(c).Key("sub-"+s.ID).Background(t.Raised).Radius(t.RMd()).Padding(7, 10).Margin(2, 0).
+		Cursor(ui.CursorPointer).Transition(kit.Fade)
 	for _, sh := range t.Shadow1() {
 		card.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
 	}
 	card.OnClick(func() { a.OpenWorkspaceTab(vSub, s.ID) })
 	card.Children(func() {
-		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-			if run {
-				kit.Spin(c, t.ToolAgent)
-			} else {
-				kit.Ic(c, "bot", kit.S12).TextColor(t.ToolAgent)
+		ui.Column(c).Gap(3).WidthPercent(100).Children(func() {
+			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+				if run {
+					kit.Spin(c, t.ToolAgent)
+				} else {
+					kit.Ic(c, "bot", kit.S12).TextColor(t.ToolAgent)
+				}
+				ui.Text(c, s.Description).FontWeight(600).SingleLine().Shrink(1)
+				ui.Text(c, s.AgentType).TextColor(t.Tx3).SingleLine().Grow(1)
+				if run {
+					kit.Ib(c, "stop", kit.IbOpt{Small: true, Tip: "停止"}).OnClick(func() {
+						if s.TaskID != "" {
+							a.send(core.CmdStopTask{TaskID: s.TaskID})
+							log.Info("停止子 Agent", "task", s.TaskID)
+						}
+					})
+				} else {
+					kit.Ic(c, "check", kit.S12).TextColor(t.Ok)
+				}
+			})
+			// 统计行:用时 · 工具数 · token(设计稿 .sub 的第二行);疑似停滞时追加提示
+			var meta []string
+			if el, ok := s.ElapsedMs(a.st.Now()); ok {
+				meta = append(meta, core.FormatElapsed(el))
 			}
-			ui.Text(c, s.AgentType).FontWeight(600).SingleLine()
-			ui.Text(c, s.Description).TextColor(t.Tx3).SingleLine().Grow(1)
-			if run {
-				kit.Ib(c, "stop", kit.IbOpt{Small: true, Tip: "停止"}).OnClick(func() {
-					if s.TaskID != "" {
-						a.send(core.CmdStopTask{TaskID: s.TaskID})
-						log.Info("停止子 Agent", "task", s.TaskID)
-					}
-				})
-			} else {
-				kit.Ic(c, "check", kit.S12).TextColor(t.Ok)
+			if n := s.Tools(); n > 0 {
+				meta = append(meta, itoa(n)+" 个工具")
+			}
+			if s.Tokens > 0 {
+				meta = append(meta, core.FormatTokens(s.Tokens))
+			}
+			if s.Stalled(a.st.Now()) {
+				meta = append(meta, "疑似停滞")
+			}
+			if len(meta) > 0 {
+				ui.Text(c, strings.Join(meta, "  ")).PaddingStart(22).FontSize(theme.FsCap).TextColor(t.Tx3).FontFeatures("tnum").SingleLine()
+			}
+			if s.Summary != "" {
+				ui.Text(c, s.Summary).PaddingStart(22).FontSize(theme.FsCap).TextColor(t.Tx3)
 			}
 		})
-		if s.Summary != "" {
-			ui.Text(c, s.Summary).PaddingStart(22).FontSize(theme.FsCap).TextColor(t.Tx3)
-		}
 	})
 }
 
