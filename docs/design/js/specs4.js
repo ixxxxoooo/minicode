@@ -42,11 +42,11 @@
   const fmtCase = (label, result, why) => `<div class="fc g2"><div class="f ai g2"><b>${label}</b></div>${result}<div class="t3 fs-cap" style="line-height:1.6">${why}</div></div>`;
 
   P['ide-md'] = () => `<div class="ds" style="max-width:1240px">${head('Markdown · 所见即所得与格式化', '规则:① Markdown 文件(.md / .markdown / .mdc)默认以「所见即所得」打开——直接在渲染后的文档里改,不是左源码右预览;② 标签右上角的分段「所见即所得 | 源码」随时切换,两边读写的是同一份文本,切换不丢光标之外的任何状态;③ 无法在所见即所得里无损表示的内容(表格、HTML、脚注)不冒险改写:这类文件以只读预览打开并提示「用源码编辑」;④ 自动换行与格式化是所有文本编辑器共有的能力,放在顶部条右侧,不藏进菜单。')}
-    ${sec('Markdown 标签', '默认视图 = 所见即所得;设置 → 编辑器与语言服务 → 「Markdown 默认视图」可改成源码,每个文件另外记住自己最近一次的选择。', grid(
+    ${sec('Markdown 标签', '默认视图 = 所见即所得;设置 → 编辑器与语言服务 → 「Markdown 默认视图」可改成源码,标签上手动切换的选择优先于偏好(只在该标签开着时记住,关掉即忘)。', grid(
       cell('所见即所得(默认)', [], box(tabsMd('README.md') + bar(tools()) + fbar + mdbody, 370, 560), '格式条随光标所在块高亮当前格式;⌘B / ⌘I / ⌘K 与 Markdown 快捷输入(# 空格、- 空格、``` )都生效;选中文字时再次点格式钮取消。'),
       cell('源码', [], box(tabsMd('README.md') + bar(tools({ src: 1, wrap: 1 })) + srcBody, 370, 560), '源码视图就是普通代码编辑器:行号、查找替换、迷你地图、自动换行、格式化、Git 竖条全有。'),
       cell('含表格 / HTML:只读预览', [], box(tabsMd('README.md') + bar(tools()) + notice('warn', '这个文件含表格,所见即所得会把它压成普通段落,所以只读显示。', btn('用源码编辑', 'sm', 'code')) + `<div class="md" style="padding:12px 34px;flex:1;overflow:hidden"><div style="font-size:15px;font-weight:650;margin:0 0 6px">接口</div><table style="border-collapse:collapse;font-size:12px;width:100%"><tr style="background:var(--fill-1)"><th style="text-align:left;padding:4px 8px;border:1px solid var(--bd-1)">方法</th><th style="text-align:left;padding:4px 8px;border:1px solid var(--bd-1)">路径</th></tr><tr><td style="padding:4px 8px;border:1px solid var(--bd-1)">GET</td><td style="padding:4px 8px;border:1px solid var(--bd-1)">/users</td></tr><tr><td style="padding:4px 8px;border:1px solid var(--bd-1)">POST</td><td style="padding:4px 8px;border:1px solid var(--bd-1)">/users</td></tr></table></div>`, 300, 560), '只读预览走会话流同一套渲染(表格、代码块、链接都完整);点链接 / 路径照常跳转。想改就切到源码。'),
-      cell('写法会被规范化:提示条', [], box(tabsMd('README.md') + bar(tools()) + notice('info', '有 3 行的写法(如 * 列表符号)在所见即所得里会统一成 -。只在你开始编辑后才会改写文件。', btn('用源码编辑', 'sm', 'code') + btn('知道了', 'sm ghost')) + `<div class="md" style="padding:12px 34px;flex:1;overflow:hidden;opacity:.7"><p>正文……</p></div>`, 190, 560), '浏览不改文件;第一次输入才把缓冲区换成规范化后的文本,⌘Z 可以撤回。')))}
+      cell('写法会被规范化:提示条', [], box(tabsMd('README.md') + bar(tools()) + notice('info', '有 3 行的写法(如代码块语言标注、段内换行)在所见即所得里会被规范化。只有你开始编辑后才会改写文件。', btn('用源码编辑', 'sm', 'code') + btn('知道了', 'sm ghost')) + `<div class="md" style="padding:12px 34px;flex:1;overflow:hidden;opacity:.7"><p>正文……</p></div>`, 190, 560), '浏览不改文件;第一次输入才把缓冲区换成规范化后的文本;所见即所得里的 ⌘Z 用富文本自带的历史。')))}
     ${sec('行为规则', '', tbl([['项', 200], ['规则', 520], ['状态']], [
       ['默认视图', 'Markdown 文件 → 所见即所得;偏好 editor.mdView(0 所见即所得 / 1 源码);每个标签的手动切换优先于偏好', st('ok')],
       ['切换', '分段控件 + 命令面板「Markdown:切换所见即所得 / 源码」;切换时把文本从缓冲区重新读入,所以两边永远一致', st('ok')],
@@ -57,7 +57,7 @@
       ['写法规范化提示', '粗略比对「解析再序列化」与原文,差异行数 ≥ 1 时提示;仍可编辑', st('ok')],
       ['撤销 / 重做', '所见即所得里 ⌘Z 撤销最近的格式 / 输入(富文本自带历史);切到源码后用缓冲区的历史', st('part')],
       ['图片 / 附件', '所见即所得里图片显示为替代文字占位;粘贴图片、拖入图片成附件', st('todo')],
-      ['大纲', '左栏「大纲」对 Markdown 取标题,点击跳转(源码里滚动定位;所见即所得里暂不滚动)', st('part')]]))}
+      ['大纲', '左栏「大纲」对 Markdown 取标题;点击跳转会先切到源码再定位(所见即所得里还不能按标题滚动)', st('part')]]))}
     ${sec('自动换行与格式化', '两个动作都在顶部条右侧(换行钮有「已开」高亮态),也在右键菜单与命令面板里;快捷键 ⌥Z / ⇧⌥F。', grid(
       cell('顶部条', [], `<div class="snip" style="height:78px;width:560px">${bar(tools({ wrap: 1 }))}${bar(`${seg(['左右', '统一'], 0, 'sm')}${ib('wrap', 'sm', '自动换行  ⌥Z')}<span class="t4">差异</span>`)}</div>`, '上:文本标签(换行已开);下:差异标签的右侧同样有换行钮。换行是全局偏好 editor.wrap,开关即时作用于所有编辑器与差异标签。'),
       cell('格式化的三种结果', ['⇧', '⌥', 'F'], `<div class="fc g3">${fmtCase('有语言服务器', toast('okc', '已格式化(rust-analyzer)', 'c-ok'), '整篇交给服务器返回编辑,期间文件被改动则取消。')}${fmtCase('没有服务器,但有内置格式化器', toast('okc', '已格式化(内置 · Go)', 'c-ok'), 'Go(gofmt)、JSON(缩进整理)、Markdown(规范化)、其余文本:去行尾空白 + 末尾恰好一个换行。')}${fmtCase('已经是整齐的', toast('info', '已经是格式化好的', 'c-info'), '不产生改动,也不弄脏文件。')}</div>`, '一律先试服务器,再退内置;都不行才提示。「保存时格式化」打开后保存前自动走同一条路径。'),
@@ -68,9 +68,9 @@
       ['可编辑一侧 / 块级暂存 / 词级高亮', '见「差异标签 · 块级暂存」', st('ok')],
       ['忽略空白差异', '库没有这个选项;待做', st('todo')]]))}
     ${sec('实现状态', '', tbl([['范围', 220], ['说明', 440], ['状态']], [
-      ['Markdown 所见即所得 / 源码切换', '库自带富文本编辑器(Markdown 往返);表格 / HTML 只读预览;含图片占位', st('part')],
+      ['Markdown 所见即所得 / 源码切换', '库自带富文本编辑器(Markdown 往返),格式条、YAML 头只读属性条、表格 / HTML / 脚注只读预览、写法规范化提示条都已实现;往返会丢掉代码块语言标注、并掉段内换行(提示条如实说明);图片 / 附件未做', st('part')],
       ['自动换行 / 格式化(顶部条 · 菜单 · 快捷键)', '服务器优先,内置格式化器兜底', st('ok')],
-      ['保存时格式化 / 去行尾空白', '保存时走内置格式化器;语言服务器的异步格式化暂不参与(避免保存被网络拖慢)', st('part')]]))}</div>`;
+      ['保存时格式化 / 去行尾空白', '保存前走内置格式化器;语言服务器的异步格式化暂不参与(避免保存被拖慢);所见即所得里的 Markdown 保存前不整理(以文档为准,免得冲掉正在输入的光标)', st('part')]]))}</div>`;
 
   /* ───────── 拖拽引用与「···」菜单 ───────── */
   const chatDrop = `<div style="position:relative;height:100%;background:var(--bg);display:flex;flex-direction:column"><div style="padding:10px 14px;font-weight:700;border-bottom:1px solid var(--bd-1)">完整修复一个 Bug:路由大小写</div><div style="flex:1;padding:12px 14px;color:var(--tx-3)">……上一条回复……</div>
@@ -109,8 +109,8 @@
     </div>`)}
     ${sec('实现状态', '', tbl([['范围', 240], ['说明', 440], ['状态']], [
       ['拖拽到对话(文件树 / 标签 / SCM / 访达)', '落点高亮 + 插入 @ 引用 + 聚焦输入框', st('ok')],
-      ['编辑器标签条 ··· 与标签右键菜单', '标签右键菜单与「···」同一组动作', st('ok')],
-      ['文件 / 文件夹右键菜单、文件树标题 ···', '新建文件 / 文件夹、重命名、删除等会改磁盘的项,待补确认对话框,先不放进菜单', st('part')],
-      ['对话栏头部 ··· 与会话行 ···(右键同)', '重命名 / 置顶 / 归档 / 复制 / 删除;「分叉会话」「复制会话链接」后端未接,置灰并说明', st('part')],
+      ['编辑器标签条 ··· 与标签右键菜单', '关闭 / 其他 / 右侧 / 已保存 / 全部、引用到对话、复制路径、在访达中显示、在文件树中定位、Markdown 默认视图、自动换行、⇧⌘T 重开(最近 20 个);向右拆分、固定标签、在新窗口中打开 没有实现,菜单里暂不放', st('part')],
+      ['文件 / 文件夹右键菜单、文件树标题 ···', '文件:打开 / 引用到对话 / 显示文件历史 / 复制路径 / 访达;文件夹:在文件夹中搜索 / 在此处打开终端 / 引用;标题 ···:刷新 / 全部折叠 / 在访达中显示项目。新建 / 重命名 / 删除等会改磁盘的项待补确认对话框,没放;「在侧边打开」没有实现', st('part')],
+      ['对话栏头部 ··· 与会话行 ···(右键同)', '打开 / 复制会话 ID / 复制标题 / 历史会话 可用;重命名 / 置顶 / 归档 / 删除 / 分叉 / 复制会话链接 后端没有对应命令,置灰并写明原因;「复制为 Markdown」未做', st('part')],
       ['差异标签 ···、SCM 标题 ···、终端标签条 ···、自定义详情 ···', '本页已定稿,实现排在后面', st('todo')]]))}</div>`;
 })();
