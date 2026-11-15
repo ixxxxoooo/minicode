@@ -82,6 +82,10 @@ func TestOptionsArgs(t *testing.T) {
 	if strings.Contains(strings.Join(Options{Model: "default"}.Args(), " "), "--model") {
 		t.Error("default 不应传 --model")
 	}
+	env := Options{ExtraEnv: []core.EnvVar{{Key: "MINICODE_LAUNCH_AUTOCOMPACT", Value: "auto"}}}
+	if !strings.Contains(strings.Join(env.Args(), " "), "--autocompact auto") {
+		t.Error("MINICODE_LAUNCH_AUTOCOMPACT 应生成 --autocompact")
+	}
 }
 
 func TestUserMessageAndResponses(t *testing.T) {

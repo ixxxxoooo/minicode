@@ -14,7 +14,11 @@ func (a *App) notifyOSAScriptSilent(title, body string) {
 }
 
 func (a *App) notifyOSAScript(title, body string) {
-	script := `display notification "` + escOSA(body) + `" with title "` + escOSA(title) + `" subtitle "MiniCode"`
+	snd := ""
+	if a != nil && a.notifySoundOn() {
+		snd = ` sound name "Submarine"`
+	}
+	script := `display notification "` + escOSA(body) + `" with title "` + escOSA(title) + `" subtitle "MiniCode"` + snd
 	a.runOSA(script)
 }
 

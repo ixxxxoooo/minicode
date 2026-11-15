@@ -84,6 +84,15 @@ func (o Options) Args() []string {
 	if strings.TrimSpace(o.AppendSystemPrompt) != "" {
 		push("--append-system-prompt", o.AppendSystemPrompt)
 	}
+	launch := map[string]string{}
+	for _, e := range o.ExtraEnv {
+		if strings.HasPrefix(e.Key, "MINICODE_LAUNCH_") {
+			launch[strings.TrimPrefix(e.Key, "MINICODE_LAUNCH_")] = e.Value
+		}
+	}
+	if v := strings.TrimSpace(launch["AUTOCOMPACT"]); v != "" {
+		push("--autocompact", v)
+	}
 	if len(o.AllowedTools) > 0 {
 		push("--allowedTools", strings.Join(o.AllowedTools, ","))
 	}

@@ -122,8 +122,9 @@ func (a *App) FillClaudeConfig(cfg *claude.Config) {
 		return
 	}
 	a.MigrateSettingsPrefs()
+	a.SyncClaudeSettingsFromPrefs()
 	cfg.ClaudePath = strings.TrimSpace(a.prefs.Str(pRuntimeBin, ""))
-	cfg.AppendSystemPrompt = a.prefs.Str(pChatSys, "")
+	cfg.AppendSystemPrompt = a.ChatSystemPrompt()
 	if m := strings.TrimSpace(a.prefs.Str(prefModel, "")); m != "" {
 		cfg.Model = m
 	}
@@ -145,6 +146,10 @@ func (a *App) FillClaudeConfig(cfg *claude.Config) {
 			seen[d] = true
 		}
 	}
+	if a.prefs.Bool(pModelCmp, true) {
+		cfg.Env = append(cfg.Env, core.EnvVar{Key: "MINICODE_LAUNCH_AUTOCOMPACT", Value: "auto"})
+	}
+	cfg.Env = append(cfg.Env, a.RuntimeExtraEnv()...)
 }
 
 // RuntimeBinValid 检查设置里的 claude 可执行文件是否存在(空 = 自动查找,视为有效)。
