@@ -34,6 +34,11 @@ func (a *App) codeLens(c *ui.Context, tb *ideTab) {
 		// 库没有行间小部件,胶囊画在声明行右端(不盖住上一行的注释)。
 		lineH := edLineH * edScale
 		y := float32(tb.st.LineTop(s.Line)-tb.st.ScrollY()) + (lineH-14*edScale)/2
+		// 光标行正显示行内追溯(作者 · 时间 · 提交说明,接在行尾、会一路延伸到右侧),
+		// 和靠右的胶囊画在同一位置会叠成乱码:追溯优先,光标离开这一行胶囊就回来。
+		if tb.blameShown && s.Line == tb.st.CursorPos().Line {
+			continue
+		}
 		// 声明行太长会和胶囊相撞:按字符数估算,放不下就不画(宁缺勿叠)。
 		avail := float32(420)
 		if a.wsW > 0 {

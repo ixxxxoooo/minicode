@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -134,7 +135,12 @@ func tailFrames(path string) {
 				line := string(pending[:i])
 				pending = pending[i+1:]
 				if line != "" && !ParseFrameLine(line) {
-					write(LevelWarn, "stderr", line, nil)
+					lv := LevelWarn
+					// macOS 输入法框架在键盘事件(含自动化输入)时打的无害提示,不当警告
+					if strings.Contains(line, "TSM AdjustCapsLockLEDForKeyTransitionHandling") {
+						lv = LevelDebug
+					}
+					write(lv, "stderr", line, nil)
 				}
 			}
 		}
