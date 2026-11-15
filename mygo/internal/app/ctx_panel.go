@@ -240,11 +240,26 @@ func (a *App) ctxLimitsBlock(c *ui.Context, st string, u core.Usage) {
 	})
 }
 
+// resetIn 把「距重置还有多久」写成中文(relTime 只管过去,用在未来时间上会得到「刚刚后重置」)。
+func resetIn(d time.Duration) string {
+	switch {
+	case d <= 0:
+		return "已重置"
+	case d < time.Minute:
+		return "不到 1 分钟后重置"
+	case d < time.Hour:
+		return itoa(int(d.Minutes()+.5)) + " 分钟后重置"
+	case d < 48*time.Hour:
+		return itoa(int(d.Hours())) + " 小时 " + itoa(int(d.Minutes())%60) + " 分后重置"
+	}
+	return itoa(int(d.Hours()/24)) + " 天后重置"
+}
+
 func (a *App) ctxLimitRow(c *ui.Context, name string, pct int, resetUnix int64) {
 	t := a.tk
 	sub := "—"
 	if resetUnix > 0 {
-		sub = relTime(a.now(), time.Unix(resetUnix, 0)) + "后重置"
+		sub = resetIn(time.Unix(resetUnix, 0).Sub(a.now()))
 	}
 	ui.Column(c).Gap(4).Children(func() {
 		ui.Row(c).Children(func() {
