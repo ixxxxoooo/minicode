@@ -84,7 +84,7 @@ func openPath(c *ui.Context, p string) {
 func layCards(a *App, c *ui.Context) {
 	t := a.tk
 	ui.Column(c).Padding(10, 12, 12, 12).Gap(8).Children(func() {
-		ui.Text(c, "三种布局共用同一份令牌与组件,只在「面板怎么分隔、导航放在哪、步骤怎么串」上不同。点一下立即切换,Agent 与 IDE 形态同步变化。").
+		ui.Text(c, "三种布局共用同一套样式与组件,只在「面板怎么分隔、导航放在哪、步骤怎么串」上不同。点一下立即切换,Agent 与 IDE 形态同步变化。").
 			FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.5)
 		info := map[string][2]string{
 			"a": {"Ink", "同一平面,细线分隔"},
@@ -309,7 +309,7 @@ var settingsTabs = []setTabDef{
 		}},
 	}, note: ""},
 
-	{id: "appearance", title: "外观", icon: "palette", desc: "布局、主题、密度与动效。所有选项都落在设计令牌上,即改即生效。", groups: []setGroup{
+	{id: "appearance", title: "外观", icon: "palette", desc: "布局、主题、密度与动效。改动即时生效。", groups: []setGroup{
 		{title: "界面布局", body: func(a *App, c *ui.Context) { layCards(a, c) }},
 		{title: "主题", body: func(a *App, c *ui.Context) {
 			ui.Column(c).Padding(10, 12).Children(func() { themeCards(a, c) })
@@ -320,8 +320,8 @@ var settingsTabs = []setTabDef{
 				right: func(a *App, c *ui.Context) { accentSwatches(a, c) }},
 		}},
 		{title: "密度与形状", rows: []setRow{
-			{key: kDensity, title: "界面密度", desc: "行高令牌 --h-row:紧凑 −2 / 标准 / 宽松 +2(在当前布局的基础上)", kind: kSeg, def: 1, opts: []string{"紧凑", "标准", "宽松"}},
-			{key: kRadius, title: "圆角", desc: "圆角倍率 --r-k:利落 ×0.55 / 适中 / 圆润 ×1.35", kind: kSeg, def: 1, opts: []string{"利落", "适中", "圆润"}},
+			{key: kDensity, title: "界面密度", desc: "行高:紧凑 −2 / 标准 / 宽松 +2(在当前布局的基础上)", kind: kSeg, def: 1, opts: []string{"紧凑", "标准", "宽松"}},
+			{key: kRadius, title: "圆角", desc: "圆角大小:利落 ×0.55 / 适中 / 圆润 ×1.35", kind: kSeg, def: 1, opts: []string{"利落", "适中", "圆润"}},
 		}},
 		{title: "Agent 会话", rows: []setRow{
 			rSeg("appearance.flowStyle", "会话样式", "对话:你的消息靠右成气泡;通栏:与正文同宽的整行卡片", 0, "跟随布局", "对话", "通栏"),
@@ -335,7 +335,7 @@ var settingsTabs = []setTabDef{
 		brandAppGroup(),
 		brandTrayGroup(),
 		{title: "动效", rows: []setRow{
-			rTog("appearance.motion", "动效", "流光、滑入与布局变形;关闭后所有时长令牌归零(也跟随系统「减弱动态效果」)", true),
+			rTog("appearance.motion", "动效", "流光、滑入与布局变形;关闭后所有动画直接到位(也跟随系统「减弱动态效果」)", true),
 			rSeg("appearance.morph", "形态切换动画", "Agent ⇄ IDE 的布局变形,约 0.44 秒;「简化」只淡入淡出", 0, "流畅", "简化", "无"),
 			rSeg("appearance.shimmer", "流光样式", "「正在进行」的文字扫光", 0, "流光", "呼吸", "无"),
 			rSeg(pWaitAnim, "等待动画", "转圈的样式", 0, "圆环", "点阵", "脉冲"),
