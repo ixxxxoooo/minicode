@@ -181,6 +181,11 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 - **文件树缓存**:Claude 新建文件后树里不出现(要手点刷新)。`syncTreeGit` 发现改动路径集合变化(`treeKeysChanged`)就清 `listCache / filesCache`,回合结束(`EvTurnEnded`)也清一次。
 - **CodeLens 与行内追溯同在光标行右端会叠成乱码**:光标行正显示追溯(`tb.blameShown`)时不画该行的 CodeLens(追溯优先)。
 - **SIGTERM / SIGINT / SIGHUP 要当正常退出**(`diag.WatchSignals`):系统关机 / 登出 / `pkill` 重启开发版都发这些信号,不处理会让「崩溃与卡顿」列表被「未正常退出」淹没;SIGKILL 与真崩溃仍留运行标记。macOS 输入法框架的 `TSM AdjustCapsLockLED…` stderr 提示是无害噪音,已降为调试级。
+- **`kit.Ib(...).ContextMenu(fn)` 只响应右键**:要「左键点 ··· 弹菜单」必须用 `.Menu(fn)`(画布列表行 ··· 曾因此点了没反应)。`ui.Tester.AccessAll` 里一行的可访问项会把子按钮并进行名(如「第二张 刚刚 更多」),子按钮不能单独按名字找,测试按位置点。
+- **`update.Runner.Start` 是异步 goroutine,`Run` 才是同步**:在 `a.bg` 里要用 `Run`(用 `Start` + `defer cancel()` 会让请求立刻 `context canceled`,界面永远「下载失败」)。`Run` 开头只能发 `PhaseNone`(检查中);发下载进度会被界面当成「发现新版本」(版本号还是当前版本)。失败按阶段(`ErrStage`:check / download / verify / unpack / install)翻成人话,「重试」走 `retryUpdate`。版本号唯一来源是 `main.go` 的 `version`,启动时写进 `app.Version`。
+- **`diag.SpanSlow` 的阈值不能写 0,也不要多传 `nil`**:0 阈值每次调用都记 WARN,多出的 `nil` 让 slog 打出 `!BADKEY=<nil>`。
+- **方案 B 的会话列表(`sessionsB`)与方案 A / C 的 `sessionRows` 是两条渲染路径**:置顶 / 归档逻辑都经 `sessionsSplit`,「已归档 N」折叠行共用 `archiveFold`;新增会话列表变体不要漏掉归档入口(否则归档后无处找回)。点导航「搜索」分段(侧栏分段与图标条两处)经 `focusSearchOnEnter` 让输入框自动聚焦。
+- **浏览器页**:没有可读正文(`pageHasNoText`)时显示空态卡 +「在系统浏览器打开」,不留空白;相对链接用 `resolveURL` 对当前页解析(`#锚点` / `javascript:` / `mailto:` 丢弃);地址栏图标:http 与本机地址为警示、https 为锁、空页为地球。开发验证用本地 `python3 -m http.server`,Shell 工具结束时会连带结束后台进程,要 `start_new_session=True` 脱离。
 - Computer Use 实机边界:悬停才出现的按钮(差异块「暂存 / 还原此块」)与弹出菜单项 AX 点不到、编辑器里放不下光标、不能打字进编辑器;这些只靠单测,实机用「搜索结果跳行」之类的入口间接到达。
 
 ### 已知缺口(真实模式)
