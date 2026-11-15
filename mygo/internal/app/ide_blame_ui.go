@@ -40,7 +40,7 @@ func authorAbbr(name string) string {
 		return "?"
 	}
 	r := []rune(name)
-	if len(r) <= 2 {
+	if len(r) <= 3 { // 三个字以内的短名原样显示
 		return string(r)
 	}
 	return string(r[:2])
