@@ -539,7 +539,7 @@ var settingsTabs = []setTabDef{
 		{title: "实验功能", rows: []setRow{
 			rTog("adv.liveOut", "前台命令实时输出", "命令运行期间每 0.7 秒读取任务输出文件,在工具卡里实时显示", true),
 			rTog(pAdvWatchdog, "主线程卡死看门狗", "停滞超过阈值时抓取调用栈,写入诊断记录", true),
-			rTog(pAdvFlowMeas, "会话流一次测完行高", "载入长会话时先测量全部行,滚动更稳(首帧稍慢)", true),
+			rTog(pAdvFlowMeas, "会话流一次测完行高", "载入长会话时先测量全部行,滚动更稳(首帧稍慢)(Go 版暂不生效:列表由库自行测量)", true),
 		}},
 		{title: "Claude 配置摘要(演示)", body: func(a *App, c *ui.Context) { a.claudeDiagBody(a, c) }},
 		{title: "重置", rows: []setRow{
