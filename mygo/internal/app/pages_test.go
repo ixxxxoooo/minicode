@@ -216,6 +216,8 @@ func TestBrowserPage(t *testing.T) {
 	}
 	// 快捷提示 → 回对话并带上页面
 	a.screen = ScreenBrowser
+	tt.SetSize(1024, 640)
+	tt.Frame()
 	tt.Frame()
 	if err := tt.Click("总结要点"); err != nil {
 		t.Fatal(err)

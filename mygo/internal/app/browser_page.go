@@ -1,7 +1,6 @@
 package app
 
 import (
-
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/browser"
@@ -195,7 +194,7 @@ func (a *App) browserDrawer(c *ui.Context, b *browser.Browser, pg browser.Page) 
 	case "lnk":
 		ui.Column(c).Margin(0, -6).Children(func() {
 			for i, l := range pg.Links {
-				r := kit.RowEl(c, false).Key("bl-" + itoa(i)).Justify(ui.Start).Padding(5, 8).Height(40)
+				r := kit.RowEl(c, false).Key("bl-"+itoa(i)).Justify(ui.Start).Padding(5, 8).Height(40)
 				r.OnClick(func() {
 					if l.URL == "" {
 						a.toast = "此链接(" + l.Host + ")暂不能在内置浏览器里打开"
@@ -230,7 +229,6 @@ func (a *App) browserDrawer(c *ui.Context, b *browser.Browser, pg browser.Page) 
 		}
 	})
 }
-
 
 // dim 给不可用的图标按钮淡色(可用返回零值 = 默认色)。
 func dim(ok bool, t *theme.Tokens) ui.Color {
