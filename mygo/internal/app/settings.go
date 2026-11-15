@@ -415,8 +415,13 @@ func (a *App) settingsRow(c *ui.Context, r setRow, first bool) {
 			}
 		})
 		a.settingsControl(c, r)
-		if changed && hov {
-			kit.Ib(c, "undo", kit.IbOpt{Small: true, Tip: "恢复默认"}).OnClick(func() { a.resetPref(r) })
+		if changed {
+			if hov {
+				kit.Ib(c, "undo", kit.IbOpt{Small: true, Tip: "恢复默认"}).OnClick(func() { a.resetPref(r) })
+			} else {
+				// 同尺寸占位:否则悬停时按钮一出现,右侧控件被整体左推,正要点的选项会跑掉
+				ui.Box(c.Key("undo-slot-"+r.key+r.title)).Size(20, 20).Shrink(0)
+			}
 		}
 	})
 }
