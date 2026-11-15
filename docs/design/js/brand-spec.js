@@ -162,8 +162,9 @@
       ['运行时 Dock 图标随主题 / 系统深浅', 'retheme→syncBrand;appIconMode 自动=0 跟系统', stt('ok')],
       ['图标样式 / 外观 / 配色偏好', 'app-style{0-5}[-dark|-clear|-tint].icns', stt('ok')],
       ['Dock 角标 / 弹跳 / 进度', '角标偏好·requestUserAttention·dockTile 进度条', stt('part')],
-      ['菜单栏图标(<span class="kcode">general.tray</span> 开关)', '八态 PNG + running 帧 + 彩色徽标回退', stt('part')],
-      ['托盘状态 / 动画 / 菜单 / 数字', '会话列表菜单·织线三帧·Title 数字·单击偏好', stt('part')],
+      ['菜单栏图标(<span class="kcode">general.tray</span> 开关)', '五样式 × 八态 PNG 内嵌进二进制(不依赖工作目录)+ running 三帧 + 彩色徽标(随菜单栏深浅重绘);设置里有真实预览与八态条', stt('ok')],
+      ['托盘状态 / 动画 / 菜单 / 数字', '优先级 待确认 > 出错 > 已完成 > 运行中 > 有更新 > 暂停 > 空闲;出错 / 已完成只记「不在前台时发生」,回前台清除;菜单头总览 + 最多 5 个会话(状态点,待确认在前)+ 新对话 / 打开 / 暂停通知(勾选)/ 设置 / 检查更新 / 退出;织线流动 / 呼吸 / 无;数字与单击偏好。「暂停通知」是勾选项,未做「1 小时 / 到明天」二级', stt('part')],
+      ['应用菜单栏(MiniCode / 文件 / 编辑 / 视图 / 窗口 / 帮助)', '标准项走系统角色(关于 / 服务 / 隐藏 / 退出 / 编辑 / 窗口 / 全屏);自定义项不挂快捷键,快捷键仍由应用内按用户设置分发;新建窗口 ⇧⌘N', stt('ok')],
       ['文件类型图标与关联', 'dev.sh Info.plist UTType + 文档 .icns;双击打开行为未接', stt('part')],
       ['应用内小标统一用应用图标', '欢迎 64px / 关于 96px brandLogo;IDE 空态仍 mark', stt('part')]]))}
     </div>`;

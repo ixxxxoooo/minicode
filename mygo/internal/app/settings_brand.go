@@ -23,59 +23,9 @@ const (
 	pTrayClick = "appearance.trayClick"
 )
 
-var appStyles = []string{"经线", "纬线", "织纹", "格点", "斜纹", "经纬"}
-var trayStyles = []string{"经线", "纬线", "格点", "斜纹", "织纹"}
-
-// brandPreviewDock 是应用图标组的 Dock 预览条(即时反映偏好,不换真实 Dock 图标)。
-func (a *App) brandPreviewDock(c *ui.Context) {
-	t := a.tk
-	style := a.prefs.Int(pAppStyle, 0)
-	mode := a.prefs.Int(pAppMode, 0)
-	ui.Row(c).Gap(10).Padding(4, 0).Children(func() {
-		for i := 0; i < 3; i++ {
-			col := []ui.Color{t.Ac, t.Info, t.Ok}[i%3]
-			if mode == 2 { // 深色外观预览
-				col = t.Tx1
-			}
-			ui.Column(c).Gap(4).AlignItems(ui.Center).Children(func() {
-				ui.Row(c).Size(44, 44).Radius(10).Background(col).Border(1, t.Bd2).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
-					ui.Text(c, appStyles[style%len(appStyles)][:1]).FontWeight(700).TextColor(t.OnAc)
-				})
-				ui.Text(c, []string{"Dock", "⌘Tab", "关于"}[i]).FontSize(theme.FsMicro).TextColor(t.Tx4)
-			})
-		}
-	})
-}
-
-func (a *App) brandAppStylePick(c *ui.Context) {
-	t := a.tk
-	cur := a.prefs.Int(pAppStyle, 0)
-	ui.Row(c).Gap(6).Wrap().Children(func() {
-		for i, name := range appStyles {
-			ch := kit.Chip(c, name, kit.ChipOpt{On: cur == i, Line: cur != i}).Key("appsty-" + itoa(i))
-			if ch.Clicked() {
-				a.prefs.Set(pAppStyle, i)
-				setLog.Info("选择应用图标样式", "style", name)
-				a.syncBrand()
-			}
-			_ = t
-		}
-	})
-}
-
-func (a *App) brandTrayStylePick(c *ui.Context) {
-	cur := a.prefs.Int(pTrayStyle, 0)
-	ui.Row(c).Gap(6).Wrap().Children(func() {
-		for i, name := range trayStyles {
-			ch := kit.Chip(c, name, kit.ChipOpt{On: cur == i, Line: cur != i}).Key("trsty-" + itoa(i))
-			if ch.Clicked() {
-				a.prefs.Set(pTrayStyle, i)
-				setLog.Info("选择菜单栏图标样式", "style", name)
-				a.syncBrand()
-			}
-		}
-	})
-}
+// 样式名与顺序以设计稿 brand.js::STYLES 为准(下标 = 偏好值,也是素材文件名里的编号)。
+var appStyles = []string{"织纹", "经纬", "提示符", "棋盘", "行", "花括号"}
+var trayStyles = []string{"织纹", "提示符", "棋盘", "行", "花括号"}
 
 func (a *App) brandTintPick(c *ui.Context) {
 	t := a.tk
@@ -114,7 +64,7 @@ func brandAppBody(a *App, c *ui.Context) {
 	ui.Column(c).Padding(10, 12).Gap(6).Children(func() {
 		a.brandPreviewDock(c)
 	})
-	a.settingsRow(c, setRow{key: pAppStyle, title: "图标样式", desc: "六选一;有对应 icns 时换 Dock,否则保持包内默认织纹", kind: kNone, right: func(a *App, c *ui.Context) {
+	a.settingsRow(c, setRow{key: pAppStyle, title: "图标样式", desc: "六选一;立即换 Dock 图标", kind: kNone, right: func(a *App, c *ui.Context) {
 		ui.Column(c).Gap(6).Children(func() {
 			ui.Text(c, appStyles[a.prefs.Int(pAppStyle, 0)]).FontWeight(600).TextColor(a.tk.Tx2)
 			a.brandAppStylePick(c)
@@ -135,16 +85,20 @@ func brandAppBody(a *App, c *ui.Context) {
 
 func brandTrayBody(a *App, c *ui.Context) {
 	a.settingsRow(c, rTog("general.tray", "在菜单栏显示图标", "关闭后可在本页重新打开", true), true)
-	a.settingsRow(c, setRow{key: pTrayStyle, title: "图标样式", desc: "与应用图标同源的单色版", kind: kNone, right: func(a *App, c *ui.Context) {
+	a.settingsRow(c, setRow{key: pTrayStyle, title: "图标样式", desc: "五选一,单色模板图,随菜单栏深浅自动变色", kind: kNone, right: func(a *App, c *ui.Context) {
 		ui.Column(c).Gap(4).Children(func() {
 			ui.Text(c, trayStyles[a.prefs.Int(pTrayStyle, 0)]).FontWeight(600)
 			a.brandTrayStylePick(c)
 		})
 	}}, false)
+	ui.Column(c).Padding(4, 12, 8, 12).Gap(6).Children(func() {
+		ui.Text(c, "各状态预览(上浅色菜单栏 / 下深色菜单栏)").FontSize(theme.FsCap).TextColor(a.tk.Tx3)
+		a.brandTrayStates(c)
+	})
 	rows := []setRow{
 		rTog(pTrayDyn, "随会话状态变化", "", true),
-		rSeg(pTrayAnim, "运行中动画", "减弱动态时静止", 0, "织线流动", "呼吸", "无"),
-		rTog(pTrayColor, "彩色徽标", "", true),
+		rSeg(pTrayAnim, "运行中动画", "系统「减弱动态」时静止", 0, "织线流动", "呼吸", "无"),
+		rTog(pTrayColor, "彩色徽标", "待确认 / 出错 / 有更新 / 已完成用彩色圆点;「增强对比度」下自动关闭", true),
 		rTog(pTrayCount, "在图标旁显示数字", "", true),
 		rSeg(pTrayClick, "单击图标", "⌥ 单击执行另一个", 0, "弹出菜单", "打开窗口"),
 	}

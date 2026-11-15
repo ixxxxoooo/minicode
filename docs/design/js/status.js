@@ -52,7 +52,7 @@
       R('设置内搜索', '命中后跳进分类并滚动高亮目标行(约 1.4s)', 'ok', 'B6'),
       R('需重启条', '「立即重启」自启动进程并退出(开发版 .app 路径)', 'ok', 'B6'),
       R('外观 → 时间线字号', 'FlowFontSize / FlowCapFont / FlowMonoSize 统一缩放;助手 Markdown 走 mdOptions;工具卡 ToolDetailLevel 控制默认展开;任务通知 / 子 Agent / 用户卡 / 输入框已接;未测试', 'part', 'B6'),
-      R('外观 → 应用图标 / 菜单栏图标两组', '六样式×四外观 assets、Dock 弹跳/进度/角标、托盘动画/菜单/数字/VoiceOver;访达换装与 .icon 打包未接', 'part', 'B6'),
+      R('外观 → 应用图标 / 菜单栏图标两组', '六样式×四外观 assets(内嵌)、Dock 弹跳/进度/角标、托盘五样式×八态/动画/菜单/数字/VoiceOver、应用菜单栏;访达换装与 .icon 打包未接;未做「暂停通知」二级时长', 'part', 'B6'),
       R('快捷键:点键录制、冲突当场提示', '全局 / 编辑器 / 终端快捷键读偏好', 'ok', 'B6'),
       R('其余偏好', '启动形态、忽略规则、编辑器 / 终端 / 浏览器等大半已接线;还没接线的逐类列在下面四行(设置行存在,但改了不影响任何行为)', 'part', 'B6'),
       R('偏好未接线 · 模型 / 对话', '模型:默认模型 / 默认思考强度(键 models.* 与 claude.model / claude.effort 不是同一个键)。对话:回合结束后折叠过程(chat.fold)、默认权限模式、追加系统提示词(chat.sys 只写偏好,没有下发给 claude)。◆ 已接未测:general.*、general.paste(@ 引用+发送展开)、models.thinking/compact/compactAt、perm.sandbox 仍只存偏好(无 Claude 外部键)', 'part', 'B6'),
