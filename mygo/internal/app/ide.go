@@ -19,6 +19,8 @@ type ideTab struct {
 	id      string // 文件 = 相对路径;对比 = "diff:" + 相对路径
 	path    string // 相对项目根的路径
 	diff    bool
+	dvOld   string // 差异标签上次载入的旧侧 / 新侧(refreshDiffTabs 用来判断工作区一侧有没有被用户改过)
+	dvNew   string
 	label   string // 对比标签的说明,如「HEAD ↔ 工作区」「a3f9c21 的改动」
 	preview bool   // 预览标签(斜体,下一次单击会被替换)
 	buf     *editor.Buffer

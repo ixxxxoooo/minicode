@@ -115,6 +115,7 @@ func (a *App) scmRefresh() {
 				s.lanes = max(s.lanes, r.Width)
 			}
 			a.syncTreeGit()
+			a.refreshDiffTabs()
 		}
 	})
 }

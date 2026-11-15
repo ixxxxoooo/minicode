@@ -68,6 +68,21 @@ func (a *App) openDiffKind(kind, p string, pin bool) {
 			}
 		}
 	}
+	old, nw, label := a.diffSources(kind, p)
+	d.addDiffTab(id, p, label, old, nw, pin)
+	if t := d.tab(id); t != nil {
+		t.dk, t.dvOld, t.dvNew = kind, old, nw
+		t.dv.Editable = kind != dkStaged
+		a.configureDiff(t)
+		if a.diffIgnoreWS() {
+			a.rebuildDiff(t)
+		}
+	}
+}
+
+// diffSources 取某种差异两侧的最新内容(旧侧 / 新侧)与标题。
+func (a *App) diffSources(kind, p string) (old, nw, label string) {
+	d := a.ide
 	head := func() string { s, _ := d.headOf(p); return s }
 	work := func() string { s, _ := d.fs.Read(p); return s }
 	index := func() string {
@@ -78,30 +93,61 @@ func (a *App) openDiffKind(kind, p string, pin bool) {
 		}
 		return head()
 	}
-	var old, nw, label string
 	switch kind {
 	case dkWork:
-		old, nw, label = index(), work(), "暂存区 ↔ 工作区"
+		return index(), work(), "暂存区 ↔ 工作区"
 	case dkStaged:
-		old, nw, label = head(), index(), "HEAD ↔ 暂存区"
+		old, nw = head(), index()
 		if nw == old { // 演示仓库没有真正的暂存区内容:用工作区的版本代替(真实 git 里暂存的改动不会与 HEAD 相同)
 			nw = work()
 		}
-	default:
-		old, nw, label = head(), work(), "HEAD ↔ 工作区"
+		return old, nw, "HEAD ↔ 暂存区"
 	}
-	d.addDiffTab(id, p, label, old, nw, pin)
-	if t := d.tab(id); t != nil {
-		t.dk = kind
-		t.dv.Editable = kind != dkStaged
-		a.configureDiff(t)
-		if a.diffIgnoreWS() {
-			a.rebuildDiff(t)
+	return head(), work(), "HEAD ↔ 工作区"
+}
+
+// refreshDiffTabs 在 SCM 重读完成后刷新已打开的差异标签:暂存 / 取消暂存 / 提交 / 外部修改之后,
+// 标签里的内容不再是打开时的旧快照。工作区一侧用户正在编辑(与上次载入的不同)时不覆盖。
+func (a *App) refreshDiffTabs() {
+	d := a.ide
+	if d == nil {
+		return
+	}
+	for _, t := range append(append([]*ideTab{}, d.tabs...), d.tabs2...) {
+		if !t.diff || t.dv == nil {
+			continue
+		}
+		kind := ""
+		for _, k := range []string{dkWork, dkStaged, dkHead} { // 只处理 HEAD / 暂存区 / 工作区三种标签,提交与比较的差异是固定快照
+			if t.id == diffID(k, t.path) {
+				kind = k
+			}
+		}
+		if kind == "" {
+			continue
+		}
+		old, nw, _ := a.diffSources(kind, t.path)
+		changed := false
+		if t.dv.Old.String() != old {
+			t.dv.Old.Reset(old)
+			changed = true
+		}
+		edited := kind != dkStaged && t.dv.New.String() != t.dvNew // 用户在工作区一侧有未写回的修改
+		if !edited && t.dv.New.String() != nw {
+			t.dv.New.Reset(nw)
+			changed = true
+		}
+		if !edited {
+			t.dvNew = nw
+		}
+		t.dvOld = old
+		if changed {
+			a.syncDiffAnns(t)
 		}
 	}
 }
 
-// configureDiff 给差异状态接上块头动作与词级高亮(每个差异标签一次)。
+// configureDiff 给差异标签状态接上块头动作与词级高亮(每个差异标签一次)。
 func (a *App) configureDiff(t *ideTab) {
 	dv := t.dv
 	dv.Inline = editor.DiffInlineWord
@@ -171,6 +217,7 @@ func (a *App) writeWork(t *ideTab) {
 		return
 	}
 	d.invalidate()
+	t.dvNew = src
 	if ft := d.tab(t.path); ft != nil && ft.buf != nil && !ft.dirty() {
 		ft.buf.Reset(src)
 		ft.saved = src

@@ -111,3 +111,29 @@ func TestDiffLayoutSurvivesNarrow(t *testing.T) {
 		t.Fatal("没点过的标签应跟随偏好(统一)")
 	}
 }
+
+// 在别处暂存 / 取消暂存之后,已打开的差异标签要跟着刷新;工作区一侧正在编辑的内容不被覆盖。
+func TestRefreshDiffTabsAfterStage(t *testing.T) {
+	a, tt := demoIDE(t)
+	tt.Frame()
+	a.openDiffKind(dkWork, "src/router.rs", true)
+	tb := a.ide.tab(diffID(dkWork, "src/router.rs"))
+	if tb == nil {
+		t.Fatal("差异标签没打开")
+	}
+	work := tb.dv.New.String()
+	// 在标签之外把整份工作区内容暂存(等价于 SCM 里点「暂存」)
+	if err := a.repo.StageContent("src/router.rs", work); err != nil {
+		t.Fatal(err)
+	}
+	a.refreshDiffTabs()
+	if len(tb.dv.Hunks()) != 0 {
+		t.Fatalf("暂存全部后,暂存区 ↔ 工作区应没有差异块,实际 %d 块", len(tb.dv.Hunks()))
+	}
+	// 用户在工作区一侧改了内容:再刷新不能把它冲掉
+	tb.dv.New.Reset(work + "// 我的修改\n")
+	a.refreshDiffTabs()
+	if !strings.HasSuffix(tb.dv.New.String(), "// 我的修改\n") {
+		t.Fatal("正在编辑的工作区一侧被刷新覆盖了")
+	}
+}
