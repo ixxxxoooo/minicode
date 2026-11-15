@@ -8,7 +8,7 @@
 # @author ixxxxoooo
 set -eu
 cd "$(dirname "$0")"
-python3 gen.py
+python3 gen.py legacy
 for v in light dark; do
   python3 render.py "app-$v.svg" "app-$v.png" 1024
   SET=$(mktemp -d)/icon.iconset

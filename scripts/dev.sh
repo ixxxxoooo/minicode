@@ -22,6 +22,9 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 rm -f "$BIN"
 mv target/dev/minicode-new "$BIN"
 cp assets/icon/MiniCode.icns "$APP/Contents/Resources/MiniCode.icns"
+for ic in doc-mcworkspace doc-mccanvas doc-mcsettings; do
+  [ -f "assets/icon/${ic}.icns" ] && cp "assets/icon/${ic}.icns" "$APP/Contents/Resources/${ic}.icns"
+done
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -38,6 +41,57 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>LSMinimumSystemVersion</key><string>13.0</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>CFBundleDevelopmentRegion</key><string>zh_CN</string>
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeName</key><string>MiniCode 工作区</string>
+      <key>CFBundleTypeRole</key><string>Editor</string>
+      <key>LSItemContentTypes</key>
+      <array><string>io.minicode.workspace</string></array>
+      <key>CFBundleTypeIconFile</key><string>doc-mcworkspace</string>
+      <key>LSHandlerRank</key><string>Owner</string>
+    </dict>
+    <dict>
+      <key>CFBundleTypeName</key><string>MiniCode 画布</string>
+      <key>CFBundleTypeRole</key><string>Editor</string>
+      <key>LSItemContentTypes</key>
+      <array><string>io.minicode.canvas</string></array>
+      <key>CFBundleTypeIconFile</key><string>doc-mccanvas</string>
+      <key>LSHandlerRank</key><string>Owner</string>
+    </dict>
+    <dict>
+      <key>CFBundleTypeName</key><string>MiniCode 设置备份</string>
+      <key>CFBundleTypeRole</key><string>Viewer</string>
+      <key>LSItemContentTypes</key>
+      <array><string>io.minicode.settings-backup</string></array>
+      <key>CFBundleTypeIconFile</key><string>doc-mcsettings</string>
+      <key>LSHandlerRank</key><string>Owner</string>
+    </dict>
+  </array>
+  <key>UTExportedTypeDeclarations</key>
+  <array>
+    <dict>
+      <key>UTTypeIdentifier</key><string>io.minicode.workspace</string>
+      <key>UTTypeDescription</key><string>MiniCode 工作区</string>
+      <key>UTTypeConformsTo</key><array><string>public.data</string><string>public.content</string></array>
+      <key>UTTypeTagSpecification</key>
+      <dict><key>public.filename-extension</key><array><string>mcworkspace</string></array></dict>
+    </dict>
+    <dict>
+      <key>UTTypeIdentifier</key><string>io.minicode.canvas</string>
+      <key>UTTypeDescription</key><string>MiniCode 画布</string>
+      <key>UTTypeConformsTo</key><array><string>public.data</string></array>
+      <key>UTTypeTagSpecification</key>
+      <dict><key>public.filename-extension</key><array><string>mccanvas</string></array></dict>
+    </dict>
+    <dict>
+      <key>UTTypeIdentifier</key><string>io.minicode.settings-backup</string>
+      <key>UTTypeDescription</key><string>MiniCode 设置备份</string>
+      <key>UTTypeConformsTo</key><array><string>public.data</string></array>
+      <key>UTTypeTagSpecification</key>
+      <dict><key>public.filename-extension</key><array><string>mcsettings</string></array></dict>
+    </dict>
+  </array>
 </dict>
 </plist>
 PLIST
