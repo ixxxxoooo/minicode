@@ -285,8 +285,13 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 		}
 		tp.focusIt = true
 		p := a.termCell(tp, ev.X, ev.Y)
-		if a.termCmdClick(tp, p) {
-			return true
+		// 点在左侧留白里的命令成败点 = 复制这条命令的输出(正文的指针处理在子控件之前,
+		// 所以这里直接判断,不依赖圆点按钮自己的点击)
+		if ev.X < padXTerm && tp.scr != nil {
+			if d := a.rowDeco(tp, p.row, tp.scr.Cols); d.cmdCopy != nil {
+				d.cmdCopy()
+				return true
+			}
 		}
 		if ev.Mods&ui.Super != 0 {
 			if l := a.linkAt(tp, p); l != nil {
