@@ -68,10 +68,12 @@ const (
 
 // BtnOpt 是按钮的可选项。
 type BtnOpt struct {
-	Variant BtnVariant
-	Small   bool   // .sm:高 20,字 11.5
-	Icon    string // 前置图标(12px)
-	Tip     string
+	Variant  BtnVariant
+	Small    bool   // .sm:高 20,字 11.5
+	Icon     string // 前置图标(12px)
+	Tip      string
+	Disabled bool // 42% 透明且不响应点击
+	Loading  bool // 显示旋转圈并禁点
 }
 
 // Btn 是文字按钮(设计稿 .btn)。
@@ -84,8 +86,13 @@ func Btn(c *ui.Context, text string, o ...BtnOpt) ui.Element {
 	if op.Small {
 		h, px, fs = 20, 7, 11.5
 	}
-	b := ui.ButtonBase(c).Height(h).PaddingX(px).Radius(T.RSm()).Gap(5).Cursor(ui.CursorPointer).AlignItems(ui.Center).FontSize(fs).Shrink(0)
-	hov := b.Hovered()
+	b := ui.ButtonBase(c).Height(h).PaddingX(px).Radius(T.RSm()).Gap(5).AlignItems(ui.Center).FontSize(fs).Shrink(0)
+	if op.Disabled || op.Loading {
+		b.Disabled(true).Opacity(.42).Cursor(ui.CursorDefault)
+	} else {
+		b.Cursor(ui.CursorPointer)
+	}
+	hov := b.Hovered() && !op.Disabled && !op.Loading
 	col := T.Tx1
 	switch op.Variant {
 	case BtnPri:
@@ -124,7 +131,13 @@ func Btn(c *ui.Context, text string, o ...BtnOpt) ui.Element {
 		b.Tooltip(op.Tip)
 	}
 	return b.Children(func() {
-		if op.Icon != "" {
+		if op.Loading {
+			spinCol := col
+			if op.Variant == BtnDefault || op.Variant == BtnDanger {
+				spinCol = T.Ac
+			}
+			Spin(c, spinCol)
+		} else if op.Icon != "" {
 			Ic(c, op.Icon, S12)
 		}
 		ui.Text(c, text).SingleLine()
@@ -295,7 +308,7 @@ func Spin(c *ui.Context, col ui.Color) ui.Element {
 		}
 		p.StrokePolyline(pts, 1.5, col)
 	})
-	e.Rotate(e.Loop("spin", 800*time.Millisecond, ui.Linear) * 360)
+	e.Rotate(e.Loop("spin", DurLoop/2, ui.Linear) * 360)
 	return e
 }
 
@@ -328,7 +341,7 @@ func Pulse(e ui.Element) ui.Element {
 	if !motionOn || !pulseOn {
 		return e
 	}
-	x := e.Loop("pulse", 1400*time.Millisecond, ui.Linear)
+	x := e.Loop("pulse", DurLoop, ui.Linear)
 	tri := 1 - float32(math.Abs(float64(2*x-1))) // 0 → 1 → 0
 	return e.Opacity(1 - .45*tri)
 }

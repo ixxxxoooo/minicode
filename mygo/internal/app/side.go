@@ -199,6 +199,9 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 	t := a.tk
 	on := s.ID == a.curSess
 	r := kit.RowEl(c, on).Key("sess-" + s.ID)
+	if t0, hide := a.sessHide[s.ID]; hide {
+		kit.CollapseHide(r, t0, t.Scheme.RowH, a.frameSoon)
+	}
 	if indent {
 		r.PaddingStart(25)
 	}

@@ -7,7 +7,10 @@ import (
 	"github.com/egoist/mygo/ui"
 )
 
-const undoToastDur = 6 * time.Second
+// UndoDuration 是删除撤销窗口时长。
+const UndoDuration = 6 * time.Second
+
+const undoToastDur = UndoDuration
 
 // UndoSlot 保存一条可撤销的删除提示(6 秒内点「撤销」)。
 type UndoSlot struct {
@@ -37,6 +40,9 @@ func (u *UndoSlot) Clear() {
 	u.Label, u.Undo = "", nil
 }
 
+// ShakeDuration 是错误抖动的时长。
+const ShakeDuration = 320 * time.Millisecond
+
 // ShakeInput 给输入控件加错误抖动(约 320 ms,依赖动效开关)。
 func ShakeInput(el ui.Element, at *time.Time) {
 	if !MotionOn() {
@@ -48,7 +54,7 @@ func ShakeInput(el ui.Element, at *time.Time) {
 	if at.IsZero() {
 		*at = time.Now()
 	}
-	p := float32(time.Since(*at)) / 320
+	p := float32(time.Since(*at)) / float32(ShakeDuration)
 	if p >= 1 {
 		*at = time.Time{}
 		return
@@ -64,4 +70,24 @@ func FieldErr(el ui.Element, bad bool, shakeAt *time.Time, errCol ui.Color) {
 		el.Border(1.5, errCol)
 		ShakeInput(el, shakeAt)
 	}
+}
+
+// UndoBar 绘制「已删除 · 撤销 · 倒计时」条。
+func UndoBar(c *ui.Context, u *UndoSlot) {
+	if u == nil || !u.Active() {
+		return
+	}
+	t := T
+	ui.Row(c).Gap(10).Padding(8, 10).Radius(t.RMd()).Background(t.Fill1).Border(1, t.Bd2).Children(func() {
+		ui.Text(c, u.Label).Grow(1).FontSize(12)
+		Btn(c, "撤销", BtnOpt{Small: true}).OnClick(func() {
+			fn := u.Undo
+			u.Clear()
+			if fn != nil {
+				fn()
+			}
+		})
+		rem := time.Until(u.Until).Seconds()
+		Txt(c, itoa(int(rem+.5))+"s", 10, t.Tx4)
+	})
 }

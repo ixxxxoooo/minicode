@@ -87,6 +87,14 @@ const (
 	FsDisplay = 26
 )
 
+// 行高令牌(设计稿 --lh-*)。
+const (
+	LhTight = 1.3
+	LhBody  = 1.5
+	LhRead  = 1.65
+	LhCap   = 1.45 // 说明文字常用
+)
+
 // 间距刻度 --sp-1 … --sp-8。
 const (
 	Sp1 = 2

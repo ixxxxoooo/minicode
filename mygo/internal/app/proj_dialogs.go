@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
@@ -22,6 +23,7 @@ type projDlg struct {
 	// 添加项目
 	path    string
 	err     string // 红色错误
+	shakeAt time.Time
 	hint    string // 黄色提示(带一个动作)
 	hintBtn string
 	hintDo  func()
@@ -113,6 +115,7 @@ func (a *App) submitAddProject() {
 		d.hintDo = func() { a.pd.path, a.pd.hint = dir, "" }
 	case projects.ErrEmpty:
 		d.err = "请输入文件夹路径,或点「浏览…」选择"
+		d.shakeAt = time.Now()
 	default:
 		d.err = err.Error() + "。检查一下路径拼写(~ 代表你的家目录)"
 		if sug := a.suggestPath(d.path); sug != "" {
@@ -262,8 +265,12 @@ func (a *App) dlgFrame(c *ui.Context, key string, w float32, title string, body 
 // dlgInput 是单行输入框(带描边,聚焦时强调色)。
 func (a *App) dlgInput(c *ui.Context, key string, v *string, ph string, autoFocus bool, submit func()) {
 	t := a.tk
+	d := &a.pd
 	box := ui.Row(c).Key(key+"-box").Grow(1).MinWidth(0).Height(28).PaddingX(8).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Border(1, t.Bd2)
-	if box.FocusWithin() {
+	if d.err != "" {
+		box.BorderColor(t.Err)
+		kit.ShakeInput(box, &d.shakeAt)
+	} else if box.FocusWithin() {
 		box.BorderColor(t.Ac)
 	}
 	box.Children(func() {
@@ -535,7 +542,7 @@ func (a *App) confirmDialog(c *ui.Context) {
 	t := a.tk
 	d := &a.pd
 	a.dlgFrame(c, "confirm", 400, d.title, func() {
-		ui.Text(c, d.body).FontSize(theme.FsBody).TextColor(t.Tx2).LineHeight(1.5)
+		ui.Text(c, d.body).FontSize(theme.FsBody).TextColor(t.Tx2).LineHeight(theme.LhBody)
 		ui.Row(c).Gap(8).Justify(ui.End).Margin(10, 0, 0, 0).Children(func() {
 			kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(a.closeProjDlg)
 			v := kit.BtnPri

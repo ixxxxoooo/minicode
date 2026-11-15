@@ -47,6 +47,10 @@ func (a *App) addMenuButton(c *ui.Context) {
 
 // projectsList 画工作区行(置顶)与项目行;成员文件夹折进它所在的工作区,不再单独列出。
 func (a *App) projectsList(c *ui.Context) {
+	if a.projScan && len(a.sideProjects()) > 0 {
+		kit.SkelRows(c, 4)
+		return
+	}
 	for _, w := range a.registry().Workspaces() {
 		a.wsRow(c, w)
 	}
@@ -373,3 +377,6 @@ func (a *App) memberMoveItems(m *ui.Menu, w projects.Workspace, i int) {
 		a.moveFolder(w.ID, i, i+2)
 	}
 }
+
+// SetProjScanning 供 main 的定时重扫调用:重扫期间侧栏显示骨架。
+func (a *App) SetProjScanning(on bool) { a.projScan = on }

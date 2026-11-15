@@ -18,13 +18,14 @@ var T = theme.Resolve(theme.Palettes[0], theme.Schemes[0], "")
 // Use 设置当前令牌。
 func Use(t *theme.Tokens) { T = t }
 
-// 动效时长(设计稿 tokens.css 的 --dur-*)。
+// 动效时长(设计稿 tokens.css 的 --dur-* 与 --dur-loop)。
 var (
 	DurInstant = 80 * time.Millisecond
 	DurFast    = 120 * time.Millisecond
 	DurBase    = 180 * time.Millisecond
 	DurSlow    = 260 * time.Millisecond
 	DurMorph   = 440 * time.Millisecond
+	DurLoop    = 1600 * time.Millisecond // 呼吸 / 旋转等循环动画一档
 )
 
 // 呼吸 / 旋转之类的循环动效是否播放(设置里「动效」关闭或系统减弱动态时为 false)。
@@ -38,8 +39,10 @@ func SetMotion(on bool) {
 	motionOn = on
 	if on {
 		DurInstant, DurFast, DurBase, DurSlow, DurMorph = 80*time.Millisecond, 120*time.Millisecond, 180*time.Millisecond, 260*time.Millisecond, 440*time.Millisecond
+		DurLoop = 1600 * time.Millisecond
 	} else {
 		DurInstant, DurFast, DurBase, DurSlow, DurMorph = 0, 0, 0, 0, 0
+		DurLoop = 0
 	}
 	Fade = ui.ElementTransition{Colors: true, Duration: DurFast}
 	thumbSpring = ui.Animation{Duration: DurBase, Ease: EaseSpring}

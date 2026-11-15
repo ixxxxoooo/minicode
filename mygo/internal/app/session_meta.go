@@ -2,10 +2,12 @@ package app
 
 import (
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/claude"
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/sessmeta"
@@ -253,24 +255,79 @@ func (a *App) deleteSession(id string) {
 	if !ok {
 		return
 	}
+	if a.sessHide == nil {
+		a.sessHide = map[string]time.Time{}
+	}
+	a.sessHide[id] = time.Now()
+	a.frameSoon()
 	del := a.sessDel
+	snap := s
 	log.Info("删除会话", "id", id, "title", s.Title, "persistent", del != nil)
+	done := make(chan struct{})
+	if a.sessDelWait == nil {
+		a.sessDelWait = map[string]func(){}
+	}
+	a.sessDelWait[id] = func() { close(done) }
+	a.delUndo.Begin("已删除「"+s.Title+"」", func() {
+		delete(a.sessHide, id)
+		if cancel := a.sessDelWait[id]; cancel != nil {
+			cancel()
+		}
+		delete(a.sessDelWait, id)
+	})
 	a.bg("delete-session", func() func() {
 		defer diag.SpanSlow("app", "删除会话", 300*1e6)()
+		time.Sleep(kit.DurSlow)
+		return func() {
+			if _, folding := a.sessHide[id]; !folding {
+				return
+			}
+			a.dropSession(id, p)
+			delete(a.sessHide, id)
+		}
+	})
+	a.bg("delete-session-disk", func() func() {
+		select {
+		case <-time.After(kit.UndoDuration):
+		case <-done:
+			return func() {
+				delete(a.sessDelWait, id)
+			}
+		}
 		var err error
 		if del != nil {
 			err = del(id)
 		}
 		return func() {
+			delete(a.sessDelWait, id)
 			if err != nil {
+				a.insertSession(snap, p)
+				a.delUndo.Clear()
 				a.toast = "删除失败:" + err.Error()
 				log.Warn("删除会话失败", "id", id, "err", err)
-				return
 			}
-			a.dropSession(id, p)
-			a.toast = "已删除会话"
 		}
 	})
+}
+
+// insertSession 把一条会话插回项目的侧栏列表(撤销删除用)。
+func (a *App) insertSession(s core.SessionInfo, p core.ProjectInfo) {
+	for i, pr := range a.rawProj {
+		if pr.ID != p.ID {
+			continue
+		}
+		for _, ex := range pr.Sessions {
+			if ex.ID == s.ID {
+				a.reapplyMeta()
+				return
+			}
+		}
+		a.rawProj[i].Sessions = append(a.rawProj[i].Sessions, s)
+		a.rawProj[i].Count++
+		a.reapplyMeta()
+		a.OpenSession(s.ID)
+		return
+	}
 }
 
 // dropSession 从列表里移除一个已删除的会话;删的是当前会话就切到同项目的下一个,没有就开新会话。
@@ -318,12 +375,10 @@ func SessionDeleter(locate func(id string) (cwd string, ok bool)) func(id string
 	}
 }
 
-// seedDemoSessMeta 演示 / 截图:router-demo 里置顶一个会话、归档两个,侧栏三种状态齐全。
+// seedDemoSessMeta 演示 / 截图:置顶 3、归档 5、自定义标题 2(数据见 demo.SessMetaPresets)。
 func (a *App) seedDemoSessMeta() {
 	m := sessmeta.NewMem()
-	_ = m.SetPinned("files", true)
-	_ = m.SetArchived("axum", true)
-	_ = m.SetArchived("long", true)
+	demo.ApplySessMeta(m)
 	a.meta = m
 	a.reapplyMeta()
 }

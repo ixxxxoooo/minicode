@@ -11,15 +11,25 @@ import (
 )
 
 // popOpen 把「当前打开的弹层名」与 ui.Popover 的 *bool 对接:
-// 返回 open 指针给 Popover,Popover 因点外部 / Esc 关闭时回写成空。
+// 返回 open 指针给 Popover,Popover 因点外部 / Esc 关闭时回写成空;关闭时先播 kit.PopOut。
 func (a *App) popOpen(key string, fn func(open *bool)) {
-	open := a.popup == key
-	if open && a.popSeen != key {
-		a.popSeen, a.popAt = key, time.Now() // 刚打开:从此刻起算弹出动画
+	if a.popClosing == key && time.Since(a.popCloseAt) >= kit.DurFast {
+		a.popClosing, a.popSeen = "", ""
 	}
-	fn(&open)
-	if !open && a.popup == key {
-		a.popup = ""
+	if a.popClosing == key && time.Since(a.popCloseAt) >= kit.DurFast {
+		a.popClosing, a.popSeen = "", ""
+	}
+	hold := a.popup == key
+	if a.popClosing == key && time.Since(a.popCloseAt) < kit.DurFast {
+		hold = true
+	}
+	if a.popup == key && a.popSeen != key {
+		a.popSeen, a.popAt = key, time.Now()
+	}
+	fn(&hold)
+	if !hold && a.popup == key {
+		a.popClosing, a.popCloseAt, a.popup = key, time.Now(), ""
+		a.frameSoon()
 	}
 }
 
@@ -42,18 +52,16 @@ func (a *App) popPanel(panel ui.Element, w float32) ui.Element {
 	return a.popIn(panel)
 }
 
-// popIn 是弹层的入场动画(设计稿 pop:透明度 0→1 并从 4px 下方升起,约 120 ms);动效关闭时直接到位。
+// popIn 是弹层的入场 / 退场动画。
 func (a *App) popIn(panel ui.Element) ui.Element {
-	if !kit.MotionOn() || a.popAt.IsZero() {
-		return panel
+	if a.popClosing != "" && time.Since(a.popCloseAt) < kit.DurFast {
+		a.frameSoon()
+		return kit.PopOut(panel, a.popCloseAt)
 	}
-	p := float32(time.Since(a.popAt)) / float32(kit.DurFast)
-	if p >= 1 {
-		return panel
+	if time.Since(a.popAt) < kit.DurFast {
+		a.frameSoon()
 	}
-	a.frameSoon()
-	p = 1 - (1-p)*(1-p) // 缓出
-	return panel.Opacity(p).Translate(0, (1-p)*4)
+	return kit.PopIn(panel, a.popAt)
 }
 
 // mi 是菜单项(.mi:26 高,选中 ac-soft 底 + ac-tx 字 + 对勾)。
@@ -285,21 +293,14 @@ func (a *App) openSettings(tab string) {
 	a.set.query = ""
 }
 
-// dialogIn 是居中浮层(命令面板、快速选择)的入场动画(设计稿 modal:遮罩淡入,卡片从上方 8px 落下并轻微放大,约 180 ms)。
-// key 区分不同浮层;浮层关闭后下次再开重新计时。
+// dialogIn 是居中浮层(命令面板、快速选择)的入场 / 退场动画。
 func (a *App) dialogIn(key string, backdrop, panel ui.Element) {
+	if a.dlgClosing == key && time.Since(a.dlgCloseAt) < kit.DurFast {
+		kit.DialogOut(backdrop, panel, a.dlgCloseAt, a.frameSoon)
+		return
+	}
 	if a.dlgSeen != key {
 		a.dlgSeen, a.dlgAt = key, time.Now()
 	}
-	if !kit.MotionOn() {
-		return
-	}
-	p := float32(time.Since(a.dlgAt)) / float32(kit.DurBase)
-	if p >= 1 {
-		return
-	}
-	a.frameSoon()
-	p = 1 - (1-p)*(1-p)*(1-p)
-	backdrop.Opacity(p)
-	panel.Translate(0, (p-1)*8).Scale(.97+.03*p, .97+.03*p)
+	kit.DialogIn(backdrop, panel, a.dlgAt, a.frameSoon)
 }
