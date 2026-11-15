@@ -12,6 +12,9 @@ import (
 // ───────── 面包屑 ─────────
 
 func (a *App) crumbs(c *ui.Context, tb *ideTab) {
+	if a.wsNarrow() {
+		return
+	}
 	t := a.tk
 	ui.Row(c).Height(24).Shrink(0).PaddingX(14).Gap(8).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(11.5).Children(func() {
 		ui.Row(c).Grow(1).MinWidth(0).Gap(3).AlignItems(ui.Center).Clip().Children(func() {
@@ -27,18 +30,7 @@ func (a *App) crumbs(c *ui.Context, tb *ideTab) {
 				syms := a.ide.fileSyms(tb.path)
 				for _, k := range enclosing(syms, tb.st.CursorPos().Line) {
 					kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
-					b := ui.ButtonBase(c).Key("crumb-sym-" + itoa(k)).Height(18).PaddingX(3).Gap(3).Radius(t.RXs()).AlignItems(ui.Center).Cursor(ui.CursorPointer)
-					if b.Hovered() {
-						b.Background(t.Fill1)
-					}
-					if b.Clicked() {
-						a.OpenQuick("symbols", "")
-					}
-					sy := syms[k]
-					b.Children(func() {
-						kit.Ic(c, "cube", kit.S12).TextColor(t.AcTx)
-						ui.Text(c, sy.Name)
-					})
+					a.crumbSymSegment(c, tb, syms, k)
 				}
 			}
 		})
