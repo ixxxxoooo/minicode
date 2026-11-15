@@ -501,7 +501,7 @@ func (a *App) settingsField(c *ui.Context, r setRow) {
 	}
 	shake := a.set.fieldShake[r.key]
 	kit.Field(c, r.key, kit.FieldOpt{ShakeAt: &shake}, func(box ui.Element) {
-		box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(24).Width(w).Shrink(0)
+		box.Height(26).Width(w).Shrink(0).Grow(0) // 保留 kit.Field 自带的描边 / 聚焦环,一眼看出可编辑
 		in := ui.TextInputBase(c.Key("fld-"+r.key), buf).Grow(1).FontSize(theme.FsCap + .5).Placeholder(r.ph).PlaceholderColor(a.tk.Tx4)
 		if r.mono {
 			in.Font("monospace")

@@ -16,7 +16,7 @@ import (
 
 // claudeCmdRow 是运行环境里的「可执行文件 + 检测」与版本 tag。
 func (a *App) claudeCmdRow(c *ui.Context) {
-	row := setRow{key: pRuntimeBin, title: "可执行文件", desc: "MiniCode 直连本机的 claude(stream-json 协议),不经过 Node;对新会话生效", kind: kField, def: "", w: 210, mono: true}
+	row := setRow{key: pRuntimeBin, title: "可执行文件", desc: "MiniCode 直连本机的 claude(stream-json 协议),不经过 Node;对新会话生效", kind: kField, def: "", w: 210, mono: true, ph: "自动查找(PATH)"}
 	ok, _ := a.RuntimeBinValid()
 	if !ok {
 		a.settingsFieldErr(c, row, "找不到可执行文件")
