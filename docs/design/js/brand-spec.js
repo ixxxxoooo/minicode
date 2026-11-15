@@ -168,7 +168,7 @@
       ['菜单栏图标(<span class="kcode">general.tray</span> 开关)', '五样式 × 八态 PNG 内嵌进二进制(不依赖工作目录)+ running 三帧 + 彩色徽标(随菜单栏深浅重绘);设置里有真实预览与八态条', stt('ok')],
       ['托盘状态 / 动画 / 菜单 / 数字', 'brandSummarize 优先级与八态内嵌素材(样式 0–4)已接;出错/已完成 notice_sys+前台清除;MINI_TRAY 八种图标已 Computer Use 截图核对;菜单/暂停/数字/单击偏好已接;缺口:非织纹样式无设计稿专属运行动效(仍用 running 三帧/静态图);应用内无品牌加载动画;未测菜单项图标库不渲染(用 emoji 状态点)', stt('part')],
       ['应用菜单栏(MiniCode / 文件 / 编辑 / 视图 / 窗口 / 帮助)', '标准项走系统角色(关于 / 服务 / 隐藏 / 退出 / 编辑 / 窗口 / 全屏);自定义项不挂快捷键,快捷键仍由应用内按用户设置分发;新建窗口 ⇧⌘N', stt('ok')],
-      ['文件类型图标与关联', 'dev.sh Info.plist UTType + 文档 .icns;OnOpenFile 接 open_external.go:.mcworkspace 导入并进入 / .mccanvas 导入成新画布 / .mcsettings 弹确认后合并(剔除密钥键);冷启动先排队;出口:画布行 ··· / 工作区右键 / 设置 → 高级导出;go test 覆盖,真实双击待 Computer Use 实测', stt('part')],
+      ['文件类型图标与关联', 'dev.sh Info.plist UTType + 文档 .icns;OnOpenFile 接 open_external.go:.mcworkspace 导入并进入 / .mccanvas 导入成新画布 / .mcsettings 弹确认后合并(剔除密钥键);冷启动先排队;出口:画布行 ··· / 工作区右键 / 设置 → 高级导出;go test 覆盖;已用 Computer Use + `open -a` 在开发版实测:画布双击导入、设置备份确认 → 导入(密钥键被忽略)、工作区导入并进入(缺失文件夹跳过并提示);Finder 双击图标与冷启动排队未实测', stt('part')],
       ['应用内小标统一用应用图标', '欢迎 64px / 关于 96px brandLogo、IDE 空态 brandEmptyMark(托盘样式·25% 单色)已接;标题栏/侧栏 18px 小标未接(titlebar 仍无 brandLogo);未测试', stt('part')]]))}
     </div>`;
 })();

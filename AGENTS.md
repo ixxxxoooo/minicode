@@ -150,6 +150,12 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
   - 动效 / 控件:`kit/motion_ui.go`(DrawerSlide / DragLift / ToastSlide / TextShimmer)、`kit/connectivity.go`(ConnTestRow)、`chat_fade.go`(流底部渐隐)、`dialogOpen`(对话框退场);Markdown 大纲定位 / 粘贴图片 / 往返保留(`edit_md_nav|paste|preserve.go`);OSC 133 注入 bash / zsh(`term/integration.go`);`--virt` 虚拟标签新窗口(`newwindow_virt.go`);MCP 编辑配置、Skill 重命名、服务商编辑、画布全屏坐标 / 适应、演示自动化运行器、用量重试。
 - **三期仍未做**:语义高亮(MyGo 无 API,文档已写明取舍)、`resume_session_at` 分叉的真实后端核验、Mermaid 完整引擎、fish 的 OSC 133、JPEG 剪贴板、工作区 / 诊断 pull、`.icon` 打包与 Finder 图标换装、托盘按样式分图、规则 / 环境变量行与 quickpick 接 `Field` / `dialogOpen`、ok-pop / 折叠高度插值、侧栏会话行错峰入场、插件表单回写、会话内画布版本步进。**以上全部未做过截图 / `go test` 验证,等用户通知再进入阶段三。**
 
+### 合并中止 / 追溯卡延迟 / 文件类型关联(已提交;单测 + 部分开发版实测)
+
+- **合并中止**:`vcs.Repo` 新增 `MergeAbort()` 与 `OpState()`(`""` / `merge` / `rebase`,CLI 读 `rev-parse --absolute-git-dir` 下的 `rebase-merge` / `rebase-apply` / `MERGE_HEAD`);`scmRefresh` 据此置 `sc.rebase / sc.merging`,推送引导条(`scmPushGuide`)写「正在合并 / 变基」并给「中止合并 / 中止变基」,不再露出推送按钮。调试 `-ed mergeconflict`。仅单测(真实 git + Mem),未用 Computer Use 走过。
+- **追溯悬停卡**:离开文字与卡片 250 ms 后才收(`blameCloseDelay` / `blameKeepOpen`,需 `frameSoon()` 续帧)。仅单测。
+- **文件类型关联**(`open_external.go`,`settings_backup.go`):`mygo.App.OnOpenFile(a.OpenExternalFile)` 必须在 `Run` 前注册(Dock 拖放 / 最近打开 / 命令行同入口),`main.go` 先 `HoldExternalOpen(true)` 冷启动排队、`InitBrand()` 后放行;`.mccanvas`(= 画布库文件 JSON,`canvas.Library.Import/Export`)/ `.mcworkspace`(`projects.MarshalWorkspaceFile` / `ParseWorkspaceFile`,清掉 ID 与权限确认,缺失文件夹跳过并提示,全缺则拒绝,演示模式拒绝)/ `.mcsettings`(弹确认再合并,`isSecretPrefKey` 剔除密钥类键,导出同样剔除);出口:画布行 ··· 「导出为 .mccanvas」、工作区右键「导出为工作区文件…」、设置 → 高级。**实机踩坑**:`open -a` 必须用 `.app` 的绝对路径;Computer Use 的 app 目标点击需要最新截图的 `coordinate_token`,没有时可用 System Events 坐标点击(会卡住要及时 kill)。已用 `open -a` 在开发版实测画布 / 设置 / 工作区三种导入;Finder 里真双击图标与冷启动排队未实测。
+
 ### 排队引导 / 问答卡 / 回到最新(设计稿 `flow-queue` 页,`js/specs5.js`,仅 `go build` 通过,**未测试**)
 
 - **待发送区**(`dock.go::queueCard`、`queue.go`、`composer_queue.go`):排队(⏎,偏好 `general.busy` 可对调)与引导(⌘⏎)都先落在输入框正上方。引导 = `steerSend`:立刻 `CmdPrompt{Steer}` 发给 Claude,但登记成 `promptQueue.steers`,行内显示「引导 · 等 Claude 接收」,会话流里用 `visibleItems()` 藏起后端回显的那条用户消息;`syncSteers` 每帧启发式判定接收(其后出现新的非用户条目且停留 ≥ 700 ms,或回合结束)后才放进会话流(后端没有显式确认信号)。排队行悬停:改为引导 / 停止并发送 / 删除,点文字退回编辑。输入框占位随回合状态写明 ⏎ / ⌘⏎。
