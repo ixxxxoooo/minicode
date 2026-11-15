@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -59,6 +60,16 @@ func (a *App) statusbar(c *ui.Context) {
 			if tab := a.ide.cur(); tab != nil && !tab.diff && tab.st != nil {
 				p := tab.st.CursorPos()
 				a.sbItem(c, "pos", func() { ui.Text(c, "行 "+itoa(p.Line+1)+",列 "+itoa(p.Col+1)).FontFeatures("tnum") })
+				indent := tab.st.TabSize
+				if indent < 1 {
+					indent = 4
+				}
+				if tab.st.Indent == editor.IndentTabs {
+					a.sbItem(c, "indent", func() { ui.Text(c, "Tab") })
+				} else {
+					a.sbItem(c, "indent", func() { ui.Text(c, "空格:"+itoa(indent)) })
+				}
+				a.mcStatusChip(c, tab)
 				a.sbItem(c, "enc", func() { ui.Text(c, "UTF-8") })
 				lang := "纯文本"
 				if l := tab.buf.Language(); l != nil {
