@@ -251,7 +251,9 @@ func (a *App) mdView(c *ui.Context, tb *ideTab) {
 			})
 		}
 		a.mdFront(c, md.front)
-		a.mdFormatBar(c, md.doc)
+		if mdShowFormatBar { // 预览不再显示格式条(设计稿 ide-md),快捷键照常生效
+			a.mdFormatBar(c, md.doc)
+		}
 		a.mdApplyReveal(tb, md)
 		ui.Row(c).Grow(1).MinHeight(0).Justify(ui.Center).AlignItems(ui.Stretch).Children(func() {
 			ui.Column(c).Grow(1).MinWidth(0).MaxWidth(900).Padding(10, 30, 6, 30).Children(func() {
@@ -295,6 +297,9 @@ func (a *App) mdBanner(c *ui.Context, tb *ideTab, warn bool, text string, extra 
 		}
 	})
 }
+
+// mdShowFormatBar 控制预览顶部的格式条是否显示(默认隐藏,函数保留以便日后恢复)。
+const mdShowFormatBar = false
 
 // mdFormatBar 是所见即所得的格式条:行内格式 | 标题 | 列表 / 引用 / 代码块;按钮高亮取自光标所在处的格式。
 func (a *App) mdFormatBar(c *ui.Context, doc *richtext.Document) {
