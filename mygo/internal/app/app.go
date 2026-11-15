@@ -92,6 +92,7 @@ type App struct {
 	chatMax      bool                                     // IDE 形态:对话栏占满主区(工作区让位)
 	memBy        [2]layMem                                // 各形态各自记住的右侧栏 / 底栏 / 导航栏 / 对话占满
 	secondary    bool                                     // 从属新窗口进程:不写偏好与工作区存储
+	runDemo      bool                                     // 演示模式(不切换真实磁盘项目)
 	morphUntil   time.Time                                // 形态切换期间锁定指针(设计稿 .morphing)
 	wsFloat      bool                                     // Agent 窄窗:工作区浮层打开
 	dockFloat    bool                                     // IDE 窄窗:对话栏浮层打开
@@ -514,6 +515,9 @@ func (a *App) NewSession() { a.OpenSession("") }
 // SetWindow 记下窗口(用于 Update 与窗口控制)。
 func (a *App) SetWindow(w *mygo.Window) { a.win = w }
 
+// SetRunDemo 标记为演示模式(恢复布局时不切真实项目目录)。
+func (a *App) SetRunDemo(v bool) { a.runDemo = v }
+
 // State 返回当前会话状态(测试用)。
 func (a *App) State() *core.State { return a.st }
 
@@ -705,6 +709,8 @@ func (a *App) shortcuts(c *ui.Context) {
 		}
 	case a.shortcutHit(c, "settings", ui.Cmd, ui.KeyComma):
 		a.openSettings(a.setTab)
+	case a.shortcutHit(c, "modeCycle", ui.Shift, ui.KeyTab):
+		a.cyclePermissionMode()
 	case a.screen == ScreenSettings && !a.paletteOn && a.set.query == "" && c.Shortcut(0, ui.KeyEscape):
 		a.closeSettings()
 	}

@@ -34,15 +34,17 @@ type palState struct {
 
 // palItem 是列表里的一项。
 type palItem struct {
-	group string // 命令 / 会话 / 文件 / 主题
-	icon  string
-	title string
-	right string // 右侧文字(快捷键 / 项目名 / 目录)
-	desc  string // 预览里的说明
-	path  string // 文件项的相对路径
-	theme string // 主题项的主题 id
-	run   func() // 执行(返回后面板关闭,除非 keep)
-	keep  bool   // 执行后不关闭(进入二级列表)
+	group  string // 命令 / 会话 / 文件 / 主题
+	icon   string
+	title  string
+	right  string // 右侧文字(快捷键 / 项目名 / 目录)
+	desc   string // 预览里的说明
+	path   string // 文件项的相对路径
+	theme  string // 主题项的主题 id
+	run    func() // 执行(返回后面板关闭,除非 keep)
+	keep   bool   // 执行后不关闭(进入二级列表)
+	off    bool   // 置灰:不能执行
+	offWhy string
 }
 
 // 主题的副标题(设计稿 U.THEMES)。
@@ -149,8 +151,37 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 	common[add("branch", "源代码管理", "⌃⇧G", "查看改动、暂存与提交,浏览提交图谱。", func() { a.OpenSCM() })] = true
 	common[add("branch", "Git:切换分支…", "", "搜索本地与远程分支并切换;输入新名字可创建并切换。", func() { a.OpenQuick("branch", "") })] = true
 	common[add("history", "历史会话…", "", "按标题搜索并打开历史会话。", func() { a.OpenQuick("history", "") })] = true
-	common[add("sliders", "设置:外观", "⌘,", "打开设置的「外观」:主题、布局方案、强调色。", func() { a.openSettings("appearance") })] = true
-	add("gear", "设置:通用", "", "打开设置的「通用」。", func() { a.openSettings("general") })
+	common[add("sliders", "设置:外观", a.shortcutLabel("settings"), "打开设置的「外观」:主题、布局方案、强调色。", func() { a.openSettings("appearance") })] = true
+	common[add("gear", "设置:通用", "", "打开设置的「通用」。", func() { a.openSettings("general") })] = true
+	for _, tab := range settingsTabs {
+		if tab.id == "appearance" || tab.id == "general" {
+			continue
+		}
+		tab := tab
+		desc := "打开设置的「" + tab.title + "」。"
+		if tab.desc != "" {
+			desc = tab.desc
+		}
+		common[add(tab.icon, "设置:"+tab.title, "", desc, func() { a.openSettings(tab.id) })] = true
+	}
+	common[add("shield", "切换权限模式", a.shortcutLabel("modeCycle"), "循环切换逐项确认 / 自动接受编辑 / 计划等权限模式。", a.cyclePermissionMode)] = true
+	addPal := func(icon, title, right, desc string, ok bool, why string, run func()) {
+		i := add(icon, title, right, desc, run)
+		if !ok {
+			cmds[i].off, cmds[i].offWhy = true, why
+		} else {
+			common[i] = true
+		}
+	}
+	okSess := a.hasActiveSession()
+	addPal("compress", "压缩上下文", "", "发送 /compact,整理当前会话的上下文。", okSess, "还没有活动会话", func() { a.send(core.CmdCompact{}) })
+	addPal("fork", "分叉当前会话", "", "以当前会话为起点复制出一条新会话。", okSess, "还没有活动会话", func() { a.forkSessionAsk(a.curSess) })
+	common[add("chat", "新会话", a.shortcutLabel("newChat"), "开始新会话并回到欢迎页。", a.NewSession)] = true
+	addPal("list", "打开计划", "", "在工作区打开最新一份计划。", okSess && a.latestPlan() != nil, map[bool]string{true: "本轮还没有计划", false: "还没有活动会话"}[okSess], a.paletteOpenPlan)
+	addPal("eye", "打开审查", "", "在工作区打开「审查 · 本轮改动」标签。", okSess, "还没有活动会话", a.OpenReview)
+	addPal("terminal", "打开任务输出", "", "在工作区打开后台任务输出标签。", okSess && a.st != nil && len(a.st.Tasks) > 0, map[bool]string{true: "没有可查看的任务", false: "还没有活动会话"}[okSess], a.paletteOpenTask)
+	lbl := map[bool]string{true: "演示", false: "真实"}[!a.runDemo]
+	common[add("swap", "切换到"+lbl+"模式(重启)", "", "切换真实 / 演示后端并重启本应用(开发版会记住选择)。", a.askSwitchRunMode)] = true
 	common[add("panelL", "显示 / 隐藏导航栏", "⌘B", "收起或展开左侧导航栏。", func() { a.sideOpen = !a.sideOpen })] = true
 	if !a.secondary {
 		add("win", "新建窗口", "⇧⌘N", "再起一个本应用进程,会话与布局各自独立。", func() { a.SpawnNewWindow(a.proj) })
@@ -519,12 +550,22 @@ func (a *App) palList(c *ui.Context, items []palItem, run func(int)) {
 				row := ui.ButtonBase(c).Key("pal-" + itoa(i)).Height(palRowH).PaddingX(8).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).Cursor(ui.CursorDefault)
 				kit.StaggerRise(row, i, a.pq.palAt, a.frameSoon)
 				switch {
+				case it.off:
+					row.TextColor(t.Tx4)
 				case i == a.pq.sel:
 					row.Background(t.AcSoft).TextColor(t.AcTx)
 				case row.Hovered():
 					row.Background(t.Fill1)
 				}
-				row.OnClick(func() { run(i) })
+				row.OnClick(func() {
+					if it.off {
+						if it.offWhy != "" {
+							a.toast = it.offWhy
+						}
+						return
+					}
+					run(i)
+				})
 				row.Children(func() {
 					if it.theme != "" {
 						p := theme.Find(it.theme)
