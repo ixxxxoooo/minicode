@@ -1,6 +1,7 @@
 package app
 
 import (
+	"path/filepath"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
@@ -169,9 +170,38 @@ func (a *App) wsRel(p string) string {
 		return r
 	}
 	if a.proj != "" {
-		return strings.TrimPrefix(strings.TrimPrefix(p, a.proj), "/")
+		return a.relToProj(p)
 	}
 	return p
+}
+
+// relToProj 把绝对路径换成相对项目根的路径。claude 汇报的是解开软链后的真实路径
+// (macOS 上 /tmp → /private/tmp),所以项目根的原样写法与真实写法都要试。
+func (a *App) relToProj(p string) string {
+	for _, root := range []string{a.proj, a.projRealPath()} {
+		if root == "" {
+			continue
+		}
+		if p == root {
+			return ""
+		}
+		if strings.HasPrefix(p, root+"/") {
+			return strings.TrimPrefix(p, root+"/")
+		}
+	}
+	return strings.TrimPrefix(p, "/")
+}
+
+// projRealPath 项目根解开软链后的路径(按项目缓存,失败返回空)。
+func (a *App) projRealPath() string {
+	if a.projRealOf != a.proj {
+		a.projRealOf = a.proj
+		a.projReal = ""
+		if r, err := filepath.EvalSymlinks(a.proj); err == nil && r != a.proj {
+			a.projReal = r
+		}
+	}
+	return a.projReal
 }
 
 // reviewView 是审查标签的内容。

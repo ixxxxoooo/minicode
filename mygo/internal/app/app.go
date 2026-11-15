@@ -167,6 +167,8 @@ type App struct {
 	userEd       userEdit             // 正在就地编辑的用户消息
 	flowNoFollow bool                 // 会话流:用户上滑后停止贴底
 	flowAwayLen  int                  // 离开底部时的末尾标记(flowTailMark),变了 = 回到最新按钮出现「有新内容」圆点
+	projRealOf   string               // projReal 对应的项目根
+	projReal     string               // 项目根解开软链后的路径(与 proj 相同则为空)
 	dockH        float32              // 输入框区域(任务坞 + 排队卡 + 输入框)上一帧高度,「回到最新」按钮据此抬高
 
 	// Markdown 选项(随主题重建)
