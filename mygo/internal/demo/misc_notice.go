@@ -39,7 +39,11 @@ func NoticeSeeds() []NoticeSeed {
 		{"warn", "合并冲突", "docs-site/config.yaml 需要手动处理。"},
 		{"err", "拉取失败", "non-fast-forward,先拉取再推送。"},
 	}
-	for i := 0; i < 120; i++ {
+	bulk := 0
+	if sandboxExtras { // 溢出压力:默认演示不灌几十条未读,铃铛数字才与设计稿同量级
+		bulk = 120
+	}
+	for i := 0; i < bulk; i++ {
 		x := levels[i%len(levels)]
 		read := i%3 == 0
 		act := i%5 == 0
