@@ -41,6 +41,8 @@ type scmState struct {
 	rebase        bool   // 变基冲突中(可中止)
 	stashOpen     map[int]bool
 	stashFiles    map[int][]vcs.Change
+	stashBusy     map[int]bool // 正在读取储藏文件列表
+	stashFilesAll map[int]bool // true = 展开全部文件(默认只显示前几条)
 }
 
 // scmRefreshEvery 是面板可见时自动重读状态的间隔(git status 很轻,另外文件监视接上后可去掉)。
@@ -193,10 +195,13 @@ func (a *App) scmAct(what string, f func(r vcs.Repo) error, onOK ...func()) {
 				if what == "推送" || what == "同步" || what == "提交并同步" {
 					a.notePushFail(err)
 				}
-				if what == "拉取并变基" {
+				if what == "拉取并变基" || what == "拉取并合并" {
 					a.notePushFail(err)
 					if strings.Contains(err.Error(), "冲突") || strings.Contains(strings.ToLower(err.Error()), "conflict") {
 						a.sc.rebase = true
+						if what == "拉取并合并" {
+							a.sc.pushGuide = "拉取并合并产生冲突:请解决后提交,或放弃合并。"
+						}
 					}
 				}
 			} else {
