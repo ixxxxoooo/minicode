@@ -36,6 +36,9 @@ func (a *App) SetProjects(p []core.ProjectInfo, current string) {
 	}
 }
 
+// RefreshProjects 只更新项目与会话列表(定时重扫用),不动当前会话与展开状态。
+func (a *App) RefreshProjects(p []core.ProjectInfo) { a.projects = p }
+
 func (a *App) sideWidth() float32 {
 	if a.tk.Scheme.ID == "c" {
 		return 212

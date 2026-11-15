@@ -3,8 +3,10 @@
 package app
 
 import (
-	"github.com/egoist/mygo/ui/editor"
+	"strings"
 	"time"
+
+	"github.com/egoist/mygo/ui/editor"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
@@ -217,6 +219,10 @@ func (a *App) Attach(be backend.Backend) {
 
 // afterEvent 归约之后的界面侧反应:回合结束时处理排队。
 func (a *App) afterEvent(ev core.Event) {
+	// 新会话的 id 在握手后才知道:记下来,侧栏就能高亮它(演示后端的占位 id 不记)
+	if e, ok := ev.(core.EvReady); ok && a.curSess == "" && e.SessionID != "" && !strings.HasPrefix(e.SessionID, "demo-") {
+		a.curSess = e.SessionID
+	}
 	if e, ok := ev.(core.EvTurnEnded); ok {
 		a.q.turnEnded(e.Reason == core.StopEndTurn)
 		a.drainQueue()
