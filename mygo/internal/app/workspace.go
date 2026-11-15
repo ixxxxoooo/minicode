@@ -72,7 +72,7 @@ func (a *App) wsPane(c *ui.Context, gap float32, left bool) {
 			inner.Width(a.wsRW())
 			a.resizeHandle(c, lyWs, "l", a.wsRW(), theme.WWs, 360, max(360, a.winW-a.sideW()-360), func(v float32) { a.ly.ws = v })
 		}
-		inner.Children(func() { a.workspace(c) })
+		inner.Children(func() { a.morphWrap(c, "ws", func() { a.workspace(c) }) })
 		a.flashOverlay(c)
 	})
 }

@@ -77,18 +77,20 @@ func (a *App) side(c *ui.Context) {
 		ui.Column(c).Width(w).Grow(1).MinHeight(0).Children(func() {
 			a.sideTop(c)
 			ui.Column(c).Grow(1).MinHeight(0).PaddingX(6).Clip().Children(func() {
-				switch a.NavID() {
-				case "chat":
-					a.sessions(c)
-				case "files":
-					a.filesView(c)
-				case "search":
-					a.searchView(c)
-				case "scm":
-					a.scmView(c)
-				default:
-					ui.Text(c, navTitle(a.NavID())).TextColor(t.Tx3).Margin(8)
-				}
+				a.morphWrap(c, "nav", func() {
+					switch a.NavID() {
+					case "chat":
+						a.sessions(c)
+					case "files":
+						a.filesView(c)
+					case "search":
+						a.searchView(c)
+					case "scm":
+						a.scmView(c)
+					default:
+						ui.Text(c, navTitle(a.NavID())).TextColor(t.Tx3).Margin(8)
+					}
+				})
 			})
 			if t.Scheme.ID != "c" {
 				a.sideFoot(c)

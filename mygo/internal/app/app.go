@@ -94,6 +94,8 @@ type App struct {
 	secondary    bool                                     // 从属新窗口进程:不写偏好与工作区存储
 	runDemo      bool                                     // 演示模式(不切换真实磁盘项目)
 	morphUntil   time.Time                                // 形态切换期间锁定指针(设计稿 .morphing)
+	morphAt      time.Time                                // 形态切换起点(内容分轨淡入 / 淡出)
+	morphFrom    Mode                                     // 切换前的形态
 	wsFloat      bool                                     // Agent 窄窗:工作区浮层打开
 	dockFloat    bool                                     // IDE 窄窗:对话栏浮层打开
 	sideDrawer   bool                                     // <720:导航栏以抽屉展示
@@ -549,8 +551,10 @@ func (a *App) SetMode(m Mode) {
 	if a.mode == m {
 		return
 	}
-	log.Info("切换形态", "from", a.mode, "to", m)
+	from := a.mode
+	log.Info("切换形态", "from", from, "to", m)
 	a.rememberLayout()
+	a.morphFrom, a.morphAt = from, time.Now()
 	a.mode = m
 	a.restoreLayoutFor(m)
 	a.beginMorph()

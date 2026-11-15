@@ -59,8 +59,10 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 			a.flowSt.Y = math.MaxFloat32
 		}
 		ui.Scroll(c).Key("flow").TrackScroll(&a.flowSt).Grow(1).MinHeight(0).Children(func() {
-			ui.Column(c).AlignItems(ui.Center).Children(func() {
-				a.flowCol(c, func() { a.flow(c) })
+			a.morphWrap(c, "chat", func() {
+				ui.Column(c).AlignItems(ui.Center).Children(func() {
+					a.flowCol(c, func() { a.flow(c) })
+				})
 			})
 		})
 		if a.editingUser() {
