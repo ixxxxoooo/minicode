@@ -124,6 +124,9 @@ type settingsState struct {
 	wt          []worktreeRow // worktree 列表缓存(后台刷新,渲染里不跑 git)
 	wtAt        time.Time
 	wtBusy      bool
+	cr          []crashBrief // 崩溃记录缓存(后台刷新)
+	crAt        time.Time
+	crBusy      bool
 	envErr      string
 }
 

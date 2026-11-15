@@ -22,11 +22,15 @@ import (
 
 func (a *App) privacyCrashesBody(c *ui.Context) {
 	t := a.tk
-	recs := recentCrashes(30)
+	recs := a.crashesCached()
 	if len(recs) == 0 {
 		rowBox(a, c, true, 36).Children(func() {
 			kit.Ic(c, "okc", kit.S12).TextColor(t.Ok)
-			ui.Text(c, "最近 30 天没有崩溃记录").Grow(1)
+			if a.set.crAt.IsZero() {
+				ui.Text(c, "正在读取…").TextColor(t.Tx3).Grow(1)
+			} else {
+				ui.Text(c, "最近 30 天没有崩溃记录").Grow(1)
+			}
 		})
 		return
 	}
@@ -35,8 +39,14 @@ func (a *App) privacyCrashesBody(c *ui.Context) {
 		rowBox(a, c, i == 0, 40).Children(func() {
 			kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
 			ui.Column(c).Gap(2).Grow(1).Children(func() {
-				ui.Text(c, r.Kind+" · "+r.Message).SingleLine()
-				ui.Text(c, r.When.Format("2006-01-02 15:04")).FontSize(theme.FsCap).TextColor(t.Tx3)
+				title, sub := crashKindLabel(r.Kind), r.When.Format("2006-01-02 15:04")
+				if r.NoMsg {
+					sub += " · " + r.File // 没有摘要的旧记录:文件名放副标题
+				} else {
+					title += " · " + r.Message
+				}
+				ui.Text(c, title).SingleLine()
+				ui.Text(c, sub).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 			})
 		})
 	}
@@ -44,7 +54,48 @@ func (a *App) privacyCrashesBody(c *ui.Context) {
 
 type crashBrief struct {
 	Kind, Message string
+	File          string // 记录文件名
+	NoMsg         bool   // 记录里没有摘要
 	When          time.Time
+}
+
+// crashKindLabel 把记录类别翻成界面用语;不认识的原样显示。
+func crashKindLabel(kind string) string {
+	switch kind {
+	case "panic":
+		return "程序崩溃"
+	case "hang":
+		return "界面卡死"
+	case "unclean-exit":
+		return "未正常退出"
+	case "abnormal-exit":
+		return "异常退出"
+	case "fatal":
+		return "致命错误"
+	case "ips":
+		return "系统崩溃报告"
+	case "native":
+		return "原生崩溃"
+	case "":
+		return "记录"
+	}
+	return kind
+}
+
+// crashesCached 返回缓存的崩溃记录(5 秒过期,后台读盘,渲染线程不碰磁盘)。
+func (a *App) crashesCached() []crashBrief {
+	if !a.set.crBusy && time.Since(a.set.crAt) > 5*time.Second {
+		a.set.crBusy = true
+		a.bg("crash-list", func() func() {
+			recs := recentCrashes(30)
+			return func() {
+				a.set.cr = recs
+				a.set.crAt = time.Now()
+				a.set.crBusy = false
+			}
+		})
+	}
+	return a.set.cr
 }
 
 func recentCrashes(days int) []crashBrief {
@@ -79,11 +130,7 @@ func recentCrashes(days int) []crashBrief {
 		if when.Before(cut) {
 			continue
 		}
-		msg := rec.Message
-		if msg == "" {
-			msg = e.Name()
-		}
-		out = append(out, crashBrief{Kind: rec.Kind, Message: msg, When: when})
+		out = append(out, crashBrief{Kind: rec.Kind, Message: rec.Message, File: e.Name(), NoMsg: rec.Message == "", When: when})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].When.After(out[j].When) })
 	if len(out) > 8 {
