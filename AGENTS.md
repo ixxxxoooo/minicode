@@ -16,6 +16,7 @@ Go 1.27、`github.com/egoist/mygo` v0.9.0,模块名 `github.com/ixxxxoooo/minico
 | `internal/demo` | 演示后端:脚本化场景、沙盒项目(`sandbox.go`)、演示仓库 |
 | `internal/vcs` | Git 访问(`CLI` 走 git 命令行、`Mem` 供测试 / 演示),所有读命令带 `--no-optional-locks` |
 | `internal/workspace` | 文件系统抽象(`OS` / `Mem`),IDE 文件树与搜索读它 |
+| `internal/lsp` | 语言服务器客户端内核(不依赖界面):Content-Length 帧、JSON-RPC 配对、服务端请求自动应答、UTF-16 ↔ 字节列换算(`position.go`)、按扩展名选服务器与查找安装(`servers.go`,rust-analyzer 跳过 rustup 代理)、Hover / Definition / References / Completion / Rename / Formatting、`ApplyEdits` |
 | `internal/term` | 终端内核:`creack/pty` 起登录 shell + `charmbracelet/x/vt` 仿真器,输出画面快照(样式段、光标、历史),不依赖界面 |
 | `internal/app` | 全部界面:`app.go` 状态与事件、`shell.go` 外壳、`chat/flow/composer/dock` 会话、`ide*.go` IDE、`term_panel.go` 终端面板、`project.go` 真实项目上下文、`scm*.go` 源代码管理、`settings*.go` 设置、`palette.go` 命令面板等 |
 | `internal/kit`、`internal/theme` | 控件与设计令牌(6 套主题 × 3 种布局) |
@@ -71,11 +72,21 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 - **动效**:弹层入场(`popIn`:透明度 + 4px 升起,120 ms)、居中浮层(`dialogIn`:遮罩淡入 + 卡片落下放大,180 ms)、步骤行展开(淡入 + 下落)、工作区 / 对话栏宽度过渡(440 ms)、边框闪、旋转 / 呼吸 / 光标闪烁、开关滑块与标签下划线弹簧、悬停颜色过渡;`appearance.motion` 关闭或系统「减弱动态」时全部直达终态。需要持续帧的入场动画用 `frameSoon()`。
 - **本地化**:`main.go` 与 `cmd/shot` 都 `import _ ".../locales/zh-Hans"` 并 `SetLocale("zh-Hans")`,控件自带文案(差异折叠条、菜单)才是中文。
 
+### 新增模块与约定(v3.2 补充)
+
+- **语言服务**(`lsp_app.go` / `lsp_problems.go` / `lsp_actions.go`):每个「项目根 + 服务器」一个会话,串行队列 + `barrier()`,编辑后去抖发整篇 `didChange`;诊断进编辑器波浪线、问题面板、状态栏;未安装时发一条带安装命令的提示,「安装」在可见终端里预填命令(`termPanel.initCmd`);失败退回本地符号索引。测试里 `a.win == nil` 走 `onUI` 队列 + `drainUI()`。真实 gopls 的端到端测试在 `lsp_app_test.go`(没装 gopls 自动跳过)。
+- **终端**(`term_sel.go`):鼠标选择 / 复制、⌘F 搜索条、⌘点击超链接(URL 与 `path:line:col`)、字体 / 光标设置弹层;颜色一律取当前主题令牌,不单独切换。无鼠标上报。
+- **Git**:`scm_ai.go` AI 提交说明(`claude -p` Haiku,失败退回启发式 `draftCommitMsg`);`scm_graph.go` 图谱(整页虚拟标签 `vGraph`,`-ed graph[:hash]` 调试);`ide_git.go` 时间线(顶部「本地更改」条目 + 提交行右键菜单)。
+- **布局**(`layout.go`):左 / 右栏与底部面板分隔线可拖,双击还原;面板拖到顶部吸附成「占满」,拖离还原;对话栏「占满」有明确出口。
+- **输出面板**(`ide_output.go`):`outApp / outGit / outLSP` 三个通道,语言服务与 Git 操作写入。
+- **彩色文件图标**:`ide_tree.go` 的 `fileTint` / `fileIc`,偏好 `appearance.fileIcons`(默认开)。
+- 设计稿 `docs/design` v3.2 新增五页(`js/specs2.js`):布局 · 拖拽与面板停靠、终端 · 能力与主题、语言服务 · 识别与安装、画布 / 浏览器 / 自定义 · 业界做法、会话流 · 待办 / 审批 / 后台任务;每页都有「实现状态」列,与代码保持一致。
+
 ### 已知缺口(真实模式)
 
 - 设置页:快捷键录制、服务商 / 规则 / 环境变量 / LSP 行是演示数据;「项目信任」只列项目,不读写信任状态;除上面列出的偏好外,其它控件只存偏好。
-- 语言服务器(LSP)未接入:问题面板与状态栏诊断计数在真实模式下恒为 0;悬停 / 补全 / 跳转 / 引用用的是本地符号索引,不理解语义。
-- 终端:有多标签,但没有鼠标选择复制、鼠标上报、超链接、搜索;Nerd Font 图标字形无字体时显示成方框;改项目会结束旧终端。
+- 语言服务器(LSP)已接入诊断 / 悬停 / 定义 / 引用 / 补全 / 重命名 / 格式化;大纲、代码操作、内联提示、语义高亮仍未接,诊断只覆盖已打开的文档,没装服务器时退回本地符号索引。
+- 终端:有多标签、选择复制、搜索、超链接、字体设置,但没有鼠标上报与命令装饰;Nerd Font 图标字形无字体时显示成方框;改项目会结束旧终端。
 - 用量页:没有账户限额与上下文分类明细(后端未接 `get_usage` / 分类);前台命令的实时输出尾读未接入;右栏「改动」仍由会话 diff 推导。
 - Diff / 合并:块头动作只在悬停时出现(库的行为,设计稿是常驻);冲突视图把所有冲突按卡片列出,没有设计稿里「冲突 1/2」的逐个切换与三方「结果」可编辑区(diff3 的 base 被丢弃);审查页的行内评论串只有演示。
 - 画布「让 Claude 修改」只把提示填进输入框,没有图表全屏查看器;浏览器页只有演示源,没有真实抓取;自定义页只在内存里。
