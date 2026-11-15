@@ -146,11 +146,11 @@
         ['菜单栏:彩色徽标', '待确认 / 完成 / 出错 / 更新', '合成非模板图,<span class="kcode">NSApp.effectiveAppearance</span> 变化时重绘', '「减弱透明度 / 增强对比度」时回退为纯模板']])}`)}
 
     ${sec('无障碍与系统设置', '', tbl([['场景', 190], ['行为'], ['状态']], [
-      ['减弱动态效果', '托盘动画停在静态图;Dock 弹跳改为只加角标;应用内加载器改为静态「织纹」+ 文字', stt('part')],
-      ['减弱透明度 / 增强对比度', '透明外观自动回退为浅色或深色实心;彩色徽标回退纯模板', stt('part')],
-      ['VoiceOver', 'ToolTip + NSAccessibilityAnnouncement;原生 accessibilityLabel 待 MyGo 暴露 NSStatusItem', stt('part')],
+      ['减弱动态效果', '托盘:trayAnimStatic→静止帧;Dock:减弱动态时 maybeDockBounce 直接跳过(角标仍 syncDockBadge,不会「只弹角标」替代);应用内加载仍 kit.Spin,未接静态织纹', stt('part')],
+      ['减弱透明度 / 增强对比度', 'dockIconSuffix 透明/着色在 a11y 降低透明度或增强对比度时退回实色;trayWantsColor 同期关彩色徽标;未测试', stt('ok')],
+      ['VoiceOver', '托盘 ToolTip + postA11yAnnouncement(mac_a11y_darwin)已有;NSStatusItem 的 accessibilityLabel 仍待 MyGo 暴露', stt('part')],
       ['色弱', '所有状态靠形状区分(! / × / ↓ / 圆点 / 圆环 / 暂停符),颜色只是第二通道', stt('ok')],
-      ['系统深浅切换', 'appearance.appIconMode=自动 时 syncBrand 读系统深浅;换主题时同步 Dock', stt('part')]]))}
+      ['系统深浅切换', 'appIconMode=自动 时 syncBrand→systemIsDark→setDockIconFromPrefs;retheme 也会 syncBrand;未测试', stt('ok')]]))}
 
     ${sec('资源与导出', '设计稿里的图标是 SVG 现场生成的;落到产品里要导出成系统认的格式。仓库里 assets/icon/ 已有第一版流水线,按下表扩展。', tbl([['产物', 190], ['规格', 210], ['来源'], ['状态']], [
       ['MiniCode.icns / MiniCode-dark.icns', '16–512 @1x/@2x(含 1024)', '<span class="kcode">gen.py</span> → <span class="kcode">render.py</span> → <span class="kcode">iconutil</span>(现有)', stt('ok')],
@@ -161,14 +161,14 @@
       ['MiniCode.icon(Icon Composer)', '背景 / 经线 / 纬线三层', 'assets/icon/layers/*.svg;未打包 .icon(需 Icon Composer)', stt('part')]]))}
 
     ${sec('实现状态', '如实标出 Go 版(feat/mygo 分支)现在做到哪一步,避免设计稿与代码对不上。', tbl([['能力', 240], ['现状'], ['状态']], [
-      ['应用图标:织纹 浅 / 深 + .icns', 'assets/icon 随包;dockIconPath 读 MiniCode.icns / MiniCode-dark.icns', stt('ok')],
+      ['应用图标:织纹 浅 / 深 + .icns', 'brandassets 内嵌 + dockIconData 兜底磁盘/.icns;默认 MiniCode.icns / MiniCode-dark.icns', stt('ok')],
       ['运行时 Dock 图标随主题 / 系统深浅', 'retheme→syncBrand;appIconMode 自动=0 跟系统', stt('ok')],
       ['图标样式 / 外观 / 配色偏好', 'app-style{0-5}[-dark|-clear|-tint].icns', stt('ok')],
-      ['Dock 角标 / 弹跳 / 进度', '角标偏好·requestUserAttention·dockTile 进度条', stt('part')],
+      ['Dock 角标 / 弹跳 / 进度', 'syncDockBadge(SetBadge)·maybeDockBounce(仅 EvPromoteToPermission)·dockSetProgress(下载/偏好开时回合 0.35);问答待确认不弹跳;进度偏好默认关', stt('part')],
       ['菜单栏图标(<span class="kcode">general.tray</span> 开关)', '五样式 × 八态 PNG 内嵌进二进制(不依赖工作目录)+ running 三帧 + 彩色徽标(随菜单栏深浅重绘);设置里有真实预览与八态条', stt('ok')],
-      ['托盘状态 / 动画 / 菜单 / 数字', '优先级 待确认 > 出错 > 已完成 > 运行中 > 有更新 > 暂停 > 空闲;出错 / 已完成只记「不在前台时发生」,回前台清除;已用 MINI_TRAY 在真实菜单栏逐态核对 8 种图标(出错 / 已完成 / 有更新 / 暂停 / 运行中 / 演示 / 待确认 / 空闲,Computer Use + 截图);菜单头总览 + 最多 5 个会话(状态点,待确认在前)+ 新对话 / 打开 / 暂停通知 ▸(暂停 1 小时 · 到明天 9:00 · 一直暂停;暂停中标题写「通知已暂停 · 到 HH:MM」,二级只剩「恢复通知」,到点自动恢复)/ 设置 / 检查更新 / 退出;织线流动 / 呼吸 / 无;数字与单击偏好', stt('part')],
+      ['托盘状态 / 动画 / 菜单 / 数字', 'brandSummarize 优先级与八态内嵌素材(样式 0–4)已接;出错/已完成 notice_sys+前台清除;MINI_TRAY 八种图标已 Computer Use 截图核对;菜单/暂停/数字/单击偏好已接;缺口:非织纹样式无设计稿专属运行动效(仍用 running 三帧/静态图);应用内无品牌加载动画;未测菜单项图标库不渲染(用 emoji 状态点)', stt('part')],
       ['应用菜单栏(MiniCode / 文件 / 编辑 / 视图 / 窗口 / 帮助)', '标准项走系统角色(关于 / 服务 / 隐藏 / 退出 / 编辑 / 窗口 / 全屏);自定义项不挂快捷键,快捷键仍由应用内按用户设置分发;新建窗口 ⇧⌘N', stt('ok')],
       ['文件类型图标与关联', 'dev.sh Info.plist UTType + 文档 .icns;OnOpenFile 接 open_external.go:.mcworkspace 导入并进入 / .mccanvas 导入成新画布 / .mcsettings 弹确认后合并(剔除密钥键);冷启动先排队;出口:画布行 ··· / 工作区右键 / 设置 → 高级导出;go test 覆盖,真实双击待 Computer Use 实测', stt('part')],
-      ['应用内小标统一用应用图标', '欢迎 64px / 关于 96px brandLogo 跟随所选样式与外观(≤ 28px 的织纹换「经纬」);IDE 空态用当前菜单栏样式的空闲图、25% 单色(brandEmptyMark)', stt('ok')]]))}
+      ['应用内小标统一用应用图标', '欢迎 64px / 关于 96px brandLogo、IDE 空态 brandEmptyMark(托盘样式·25% 单色)已接;标题栏/侧栏 18px 小标未接(titlebar 仍无 brandLogo);未测试', stt('part')]]))}
     </div>`;
 })();

@@ -86,12 +86,12 @@
   /* ───────── 画布 / 浏览器 / 自定义:业界做法 ───────── */
   P['artifact-spec'] = () => `<div class="ds" style="max-width:1240px">${head('画布 · 浏览器 · 自定义:业界做法与取舍', '依据:Claude Artifacts、ChatGPT Canvas、Cursor Canvases(React 画布,作为持久产物与终端 / 浏览器 / 源代码管理并列)、AX Patterns「侧栏与产物」、AI Patterns「Artifact Panel」。共同点比差异多,下面只落共同点。')}
     ${sec('共同的七条做法', '', tbl([['做法', 220], ['含义', 360], ['MiniCode 的落点', 280], ['状态']], [
-      ['对话是方向盘,产物有自己的家', '较长(> ~10 行)、会反复修改的东西提到侧栏,短答留在对话里;消息里只留一张紧凑卡片,点卡片打开', '画布 / 图表 / 计划 = 工作区标签(虚拟标签),对话里一张卡', st('part')],
-      ['自动打开,按需打开', '模型开始写产物时面板自动出现;之后从任何卡片按需打开;打开旧消息的卡片显示那一版', '计划已有;画布带块引用与粘贴写回', st('part')],
-      ['版本不覆盖', '追问产生新版本;步进器切换 v1 / v2;写新版本时旧版本变暗但仍可见,不让用户面对空面板', '画布顶栏步进器+历史只读预览', st('part')],
+      ['对话是方向盘,产物有自己的家', '计划/Mermaid/审查等=虚拟标签(ws_tabs);画布整页 canvas_page;缺口:会话自动拉起画布整页', st('part')],
+      ['自动打开,按需打开', 'EvPlanUpdated 流式自动开计划标签;Mermaid 卡「查看」;缺口:旧消息卡片按版本回放', st('part')],
+      ['版本不覆盖', 'canvas_page verIx 版本步进+ApplyClaudeReply;缺口:生成中旧版变暗', st('part')],
       ['预览 / 代码双视图', 'Preview 与 Code 是 tablist,可复制当前版本源码', '编辑/预览/源码三分段+复制 Markdown', st('ok')],
       ['按容器宽度决定并排还是盖住', '约 672px 以上并排;更窄覆盖对话,Close 返回并还原滚动与焦点', '工作区三档 + 窄档强制统一布局', st('ok')],
-      ['可关闭、可返回、焦点归位', '关闭按钮在面板头部;Esc 关闭并把焦点还给触发它的卡片', '图表全屏关闭还焦点到原块;虚拟标签 Esc', st('part')],
+      ['可关闭、可返回、焦点归位', 'mermaid_viewer Esc/遮罩关闭;虚拟标签 Esc;缺口:关闭后焦点未统一回到触发卡片', st('part')],
       ['人与 AI 共享同一份状态', '用户改的和 AI 改的在同一对象上,有撤销;AI 改动逐块接受 / 撤销', '审查标签 + 编辑器行内审查', st('ok')]]))}
     ${sec('画布页(整页)的信息架构', '画布 = 「Claude 为你生成的、可交互的持久页面」:仪表盘、PR 审查板、学习笔记。不是白板。', grid(
       cell('布局', '', box(`<div class="reg-win" style="height:150px;margin:12px"><div class="rn" style="width:90px">画布列表<br>最近 / 项目</div><div class="rc" style="flex:1">画布正文<br>(Preview / Source)</div><div class="rw" style="width:130px"><b>大纲</b>版本<br>让 Claude 修改</div></div>`, 180), '左:列表;中:正文;右:大纲、版本、修改提示。窄窗口右栏收成底部分段抽屉。'),
@@ -99,14 +99,14 @@
       cell('让 Claude 修改', '', box(`<div style="padding:14px 16px" class="fc g3"><div class="inp"><span class="grow t3">把图表改成按周聚合…</span>${ib('send', 'send')}</div><div class="f g2">${chip('v3', 'clock', 'on')}${tag('写入中…', 'ac')}</div><div class="t3 fs-cap">旧版本保持可见并变暗;完成后自动切到 v4,「1 处改动 · 查看改动」。</div></div>`, 140), '修改 = 在同一画布上产生新版本;生成期间禁用编辑,避免被覆盖。')))}
     ${sec('浏览器页(阅读模式 + 与页面对话)', '参考 Cursor 内置浏览器与阅读器:这个页面不是通用浏览器,是「让 Claude 读网页」的工作面。', tbl([['能力', 160], ['说明', 420], ['状态']], [
       ['地址栏 + 阅读模式正文', '抓取后抽取正文(标题、段落、代码、图片说明),离线可读;「在系统浏览器打开」始终在', st('ok')],
-      ['摘要 / 大纲 / 链接', '右栏三个分段;链接可点击在同一页继续抓取,有前进后退。演示源+HTTP 抽取', st('part')],
+      ['摘要 / 大纲 / 链接', 'browser_page 右栏分段+internal/browser 抓取。未测试', st('ok')],
       ['与此页面对话', '右栏输入框 + 快捷提示;页面正文作为引用附进对话,不另开会话', st('ok')],
-      ['选取元素发给 Claude', '阅读正文上框选段落 →「引用选中内容」填入对话(演示 / 真实页)', st('part')],
+      ['选取元素发给 Claude', 'browser_select 框选+「发给 Claude」;browser_page 接线。未测试', st('ok')],
       ['隐私', '抓取只发生在本机,不经第三方;设置 → 浏览器可关', st('ok')]]))}
     ${sec('自定义页(7 类)', '参考 VS Code 扩展视图 + Claude Code 的 /plugin /mcp /skills:左侧分类,中间列表,右侧详情;「来源作用域」(用户 / 项目 / 本地)是每一行的一等属性。', tbl([['分类', 110], ['要点', 520], ['状态']], [
-      ['插件', '市场 list JSON/文本+安装四态;卸载 CLI', st('part')], ['MCP', '编辑配置表单+SaveMCP;list/login;disabledMcpServers/工具 deny', st('part')], ['Skills', '读盘+重命名目录+编辑器打开', st('part')],
-      ['命令 / 子 Agent / 钩子', '保存写 .md / settings.json;试运行(claude -p / shell)', st('part')], ['规则与记忆', 'CLAUDE.md / rules 读盘 + 编辑器打开;保存原子写', st('part')]]))}
-    <div class="t3" style="margin-top:14px;line-height:1.7">说明:浏览器 HTTP 抓取与画布版本步进器已部分接入;会话流 Mermaid 已接专用排版引擎(流程 / 时序 / 饼 / 状态图),全屏矢量缩放;Go 分支未测。</div></div>`;
+      ['插件', 'custom_wire/custom_detail 市场 JSON+安装四态+CLI;演示内存/真实 OpenDisk。未测试', st('ok')], ['MCP', 'custom_mcp_edit+SaveMCP;composer_mcp 工具 deny。未测试', st('ok')], ['Skills', 'custom_skill_save 重命名目录+编辑器打开。未测试', st('ok')],
+      ['命令 / 子 Agent / 钩子', 'custom_wire 读写盘+试运行。未测试', st('ok')], ['规则与记忆', 'custom_wire CLAUDE.md/rules 原子写+编辑器。未测试', st('ok')]]))}
+    <div class="t3" style="margin-top:14px;line-height:1.7">说明:浏览器 HTTP/框选已接线;画布版本步进在 canvas_page;会话流 Mermaid(flow_mermaid)全屏查看;均未做开发版实测。</div></div>`;
 
   /* ───────── 会话流任务追踪 ───────── */
   P['task-spec'] = () => `<div class="ds" style="max-width:1240px">${head('会话流 · 待办、审批、后台任务', '三类「需要你注意的东西」各有一个固定的家:正在做的事在会话流里(步骤行),需要你拍板的事就地替换输入框(交互卡),脱离回合继续跑的事在输入框上方的任务坞。互不抢位置,不弹模态框。')}
@@ -124,12 +124,12 @@
       ['会话切走时回合还在跑', '后端进程保活,回合结束后才关闭;侧栏会话行显示运行状态点;切回来接上,不重放', st('ok')],
       ['子 Agent 停滞', '超过阈值显示「疑似停滞 · 停止」;前台子 Agent 随取消变「已停止」,后台的继续', st('ok')],
       ['重开历史会话里遗留的后台任务', '统一收尾成「已停止」,不再显示运行中', st('ok')],
-      ['前台命令的实时输出', '会话流里运行中命令展开并贴底;output_file 尾读 + 演示 tools-bash-fg-out', st('part')],
-      ['完成通知', '应用在后台时系统通知:回合结束 / 需要审批 / 任务完成;.app 内 UN 点击 sess 回会话', st('part')]]))}
+      ['前台命令的实时输出', 'flow_tail+pollTaskOutputFiles 尾读 output_file;演示 tools-bash-fg-out。未测试', st('ok')],
+      ['完成通知', 'notice_sys.afterEventNotify:后台时 maybeSystemNotify(回合/审批/任务);偏好 general.notify*。未测试', st('ok')]]))}
     ${sec('实现状态', '', tbl([['范围', 220], ['说明', 440], ['状态']], [
-      ['待办 / 权限·提问·计划卡 / 任务坞', '主体与正文一致,演示场景覆盖空 / 多项 / 失败。缺口:审批只处理第一张(没有「1 / 3」队列)、后台任务完成通知行(TaskNote)不渲染、排队卡没有「停止并发送」(逐项见「会话流与工具」页的状态表)', st('part')],
-      ['前台命令 output_file 实时尾读', '真实 pollTaskOutputFiles;演示 tools-bash-fg-out 在 router-demo', st('part')],
-      ['系统通知与点击回会话', 'macOS .app 内 UN 委托→OpenSessionFromNotify;非包 go run 降级', st('part')],
+      ['待办 / 权限·提问·计划卡 / 任务坞', 'dock_pending+dockBadge 审批 1/N;flow_note+flow_user TaskNote;dock 排队含停止并发送;演示 scn_flow_gaps。未测试', st('ok')],
+      ['前台命令 output_file 实时尾读', '同上一节 flow_tail.go。未测试', st('ok')],
+      ['系统通知与点击回会话', 'mac_notify_darwin→OpenSessionFromNotify;非 .app 包走 osascript 无点击回调。未测试', st('ok')],
       ['回合操作条分叉', '演示 + 真实 CmdForkSession;对话栏「分叉会话…」与之同路径', st('ok')]]))}
     ${sec('不同形态下「点哪里打开」', '同一个入口在 Agent 与 IDE 形态里打开的位置不同,但永远是「工作区的标签」,不是新窗口也不是模态框。', tbl([['入口', 180], ['Agent 形态', 240], ['IDE 形态']], [
       ['计划卡 [查看]', '右侧工作区展开并开「计划」标签', '编辑区开「计划」标签,对话栏仍在右侧窄栏'],

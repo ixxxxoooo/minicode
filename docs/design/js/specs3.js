@@ -89,13 +89,13 @@
     ${sec('实现状态', '', tbl([['能力', 220], ['说明', 440], ['状态']], [
       ['侧栏「+」入口与添加项目对话框', '路径输入 + 最近 / 发现 + 校验;真实模式浏览按钮走系统文件夹选择器;路径不存在时给出相近路径建议', st('ok')],
       ['工作区存储', '~/.minicode/workspaces.json 一个文件同时存手动添加的项目与工作区,原子落盘;损坏时改名留底不丢数据', st('ok')],
-      ['侧栏的工作区行与项目行', '工作区展开只列主文件夹的会话(不列成员文件夹);工作区行右键 = 编辑工作区…(合并原重命名 / 编辑文件夹)、项目行右键 = 编辑项目…;工作区行拖拽与上移 / 下移已做;编辑工作区对话框内文件夹可上移 / 下移 / 设为主(未测试)', st('part')],
-      ['编辑项目对话框', '显示名(存 workspaces.json 的 names,sideProjects 套用)、位置 / 仓库 / 所属工作区只读、访达 / 复制路径 / 从列表移除;未测试', st('part')],
-      ['窗口内自绘右键菜单', 'App.View 里 SetMenuPresentation(PopoverMenus),全应用右键菜单与输入框编辑菜单跟随主题;工作区 / 项目菜单带图标(kit.MenuIcon),其余菜单还没补图标;面板底色用库的窗口底色而不是 raised,未对照截图', st('part')],
+      ['侧栏的工作区行与项目行', 'side_ws+proj_dialogs:展开只列主文件夹会话;编辑工作区对话框内上移/下移/设为主。未测试', st('ok')],
+      ['编辑项目对话框', 'proj_edit.go+workspaces.names/sideProjects。未测试', st('ok')],
+      ['窗口内自绘右键菜单', 'app.go PopoverMenus;menu_item.go 统一 MenuIcon;视觉未对照截图。未测试', st('ok')],
       ['多根文件树 / 多根搜索', '虚拟顶层目录 = 文件夹名(workspace.Multi),路径加文件夹前缀,顶层行带「主 / 改动数 / 非仓库」;搜索按前缀路径工作,搜索条有「范围」chip 与文件夹右键「仅在此文件夹搜索」', st('ok')],
       ['Claude 附加目录', '主文件夹启动会话时追加 --add-dir(附加文件夹),开关打开时设置 CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1', st('ok')],
       ['演示数据', '演示模式内置「全栈工作区」(router-demo / web-dashboard / docs-site 各有自己的分支与改动)+ 一个手动添加的非仓库项目 design-assets', st('ok')],
-      ['附加文件夹权限提示卡(我知道了 / 只读授权)', '设计稿「权限提示」:创建与启动会话时各提示一次,可选只读授权。第一波:ws_perm.go 补了这张卡与「只读授权」分支(ExtraReadOnly,启动时在系统提示声明只读);未测试,「只读」只是提示词约束、不是系统级隔离', st('part')]]))}</div>`;
+      ['附加文件夹权限提示卡(我知道了 / 只读授权)', 'ws_perm.go+projects.ExtraReadOnly;「只读」仅为启动提示词约束、非系统级隔离。未测试', st('part')]]))}</div>`;
 
   /* ───────── 多仓库 Git ───────── */
   const repoRow = (n, br, sync, changes, on, extra = '') => `<div class="row ${on ? 'on' : ''}" style="height:32px">${ic('branch', 's12')}<div class="grow" style="min-width:0"><div class="ell"><b>${n}</b> <span class="t3">${br}</span></div></div><span class="t3 fs-cap mono">${sync}</span>${changes ? cnt(changes, on ? 'ac' : '') : '<span class="t4 fs-cap">干净</span>'}${extra}</div>`;
@@ -152,9 +152,9 @@
       ['文件树状态色', '所有仓库的改动一起上色(M 橙 / A 绿 / U 灰),按文件路径前缀归属;文件夹节点右侧显示仓库改动数', st('ok')],
       ['嵌套仓库(子模块 / 仓库里的仓库)', '按文件夹最近的 .git 归属;子模块作为独立行显示「子模块」标签;总览缩进 + 文件树目录行带标签和改动数;SCM 提示行「子模块有未提交改动」+ 父仓库指针变更(M)条目', st('ok')],
       ['非仓库文件夹', '总览里灰行 + 「初始化仓库」;初始化走 git init 并在输出面板记录', st('ok')],
-      ['「全部展开」模式(设置项:每个仓库一个区块都铺开)', '设计稿正文写了这个设置项;第一波:设置 → 源代码管理 scm.expandAll + scm_expand_all.go 每仓一块;未测试,每块内的图谱 / 储藏沿用活动仓库', st('part')],
-      ['逐个提交向导的单仓失败行(如 pre-commit 钩子失败)', '设计稿有失败样例;Go 靠提交框 commitErr 提示,向导条上没有专用的失败行与「重试 / 跳过」', st('part')],
-      ['真实多仓工作区的嵌套发现', 'discoverNested / findNested 只有单测,没有对真实多仓库工作区做过端到端验证', st('part')]]))}
+      ['「全部展开」模式(设置项:每个仓库一个区块都铺开)', 'scm.expandAll+scm_expand_all.go;图谱/储藏仍随活动仓库。未测试', st('ok')],
+      ['逐个提交向导的单仓失败行(如 pre-commit 钩子失败)', 'review_repos.go 向导条显示 commitErr+「重试」/「跳过这个仓库」。未测试', st('ok')],
+      ['真实多仓工作区的嵌套发现', 'repo_nested discoverNested 仅单测;静态核对未发现矛盾,需实机验证', st('part')]]))}
     ${sec('状态栏与标题栏', '', grid(
       cell('状态栏', '', box(`<div class="f ai g4" style="padding:12px 14px">${chip('router-demo · main', 'branch')}<span class="t3">↑1</span><span class="t3">⚠ 1</span><span class="grow"></span><span class="t3">全栈工作区 · 3 个文件夹</span></div><div class="t3" style="padding:0 14px;line-height:1.7">分支胶囊写「仓库名 · 分支」;点开分支选择器,顶部一行显示作用的仓库,可切换;窄窗口只留分支名。</div>`, 130, 560), '仓库名在多仓库时才出现;单仓库保持现在的「分支」。'),
       cell('分支选择器(带仓库)', '', box(`<div class="pop" style="width:380px;margin:12px auto"><div class="f ai g2" style="padding:6px 8px">${chip('router-demo', 'folder', 'on')}${chip('web-dashboard', 'folder', 'line')}${chip('docs-site', 'folder', 'line')}</div><div class="inp fill" style="margin:3px;height:28px"><span class="t4">切换或新建分支…</span></div>${mi('branch', 'main', '', 'on')}${mi('branch', 'feat/auth')}${mi('plus', '创建并切换到 “fix/case”')}</div>`, 200, 560), '顶部 chip 选仓库,下面是该仓库的分支;输入不存在的名字出现「创建并切换」。')))}
