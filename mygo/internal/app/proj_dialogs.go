@@ -17,7 +17,7 @@ import (
 
 // projDlg 是这几个对话框共用的状态;kind 为空表示没有打开。
 type projDlg struct {
-	kind string // addProj / ws / confirm
+	kind string // addProj / ws / confirm / branch-dirty
 
 	// 添加项目
 	path    string
@@ -38,6 +38,9 @@ type projDlg struct {
 	title, body, okText string
 	danger              bool
 	ok                  func()
+
+	branchName string
+	branchFn   func()
 }
 
 func (a *App) closeProjDlg() { a.pd = projDlg{} }
@@ -227,6 +230,8 @@ func (a *App) projDialogs(c *ui.Context) {
 		a.workspaceDialog(c)
 	case "confirm":
 		a.confirmDialog(c)
+	case "branch-dirty":
+		a.branchDirtyDialog(c)
 	}
 }
 

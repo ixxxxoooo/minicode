@@ -64,6 +64,7 @@ func (a *App) scmBody(c *ui.Context) {
 	}
 	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
 		a.scmHead(c)
+		a.scmPushGuide(c)
 		if e := a.activeRepo(); e != nil { // 多仓库:提交前再确认一眼作用在哪个仓库
 			ui.Row(c).Height(18).PaddingX(4).Gap(4).AlignItems(ui.Center).Shrink(0).FontSize(theme.FsMicro).TextColor(t.Tx3).Children(func() {
 				ui.Text(c, "提交到").Shrink(0)
@@ -76,6 +77,7 @@ func (a *App) scmBody(c *ui.Context) {
 		a.scmReviewRow(c)
 		ui.Scroll(c).Key("scm").Grow(1).MinHeight(0).Children(func() {
 			ui.Column(c).Padding(0, 0, 8, 0).Children(func() {
+				a.scmNestedHints(c)
 				if len(conf) > 0 {
 					a.scmGroup(c, "merge", "合并冲突", conf, "", "")
 				}
@@ -197,6 +199,10 @@ func (a *App) scmCommitBox(c *ui.Context, nStaged int) {
 						a.popup = ""
 						a.scmCommit(true)
 					}
+					if a.mi(c, "scm-sync", "refresh", "提交并同步", "", false).Clicked() {
+						a.popup = ""
+						a.scmCommitSync()
+					}
 					if a.mi(c, "scm-undo", "rewind", "撤销上次提交(保留改动)", "", false).Clicked() {
 						a.popup = ""
 						a.scmUndoCommit()
@@ -246,9 +252,7 @@ func (a *App) scmGroup(c *ui.Context, id, title string, cs []vcs.Change, actIcon
 	if s.folded[id] {
 		return
 	}
-	for _, ch := range cs {
-		a.scmFile(c, id, ch)
-	}
+	a.scmGroupFiles(c, id, cs)
 }
 
 func statusColor(t *theme.Tokens, st byte) ui.Color {
@@ -272,46 +276,9 @@ func statusLetter(st byte) string {
 
 // scmFile 是一个文件行:图标 + 名 + 目录;悬停显示 打开 / 放弃 / 暂存 操作,否则显示 +N −N 与状态字母。
 func (a *App) scmFile(c *ui.Context, grp string, ch vcs.Change) {
-	t := a.tk
-	r := ui.ButtonBase(c).Key("scm-f-" + grp + "-" + ch.Path).Height(22).PaddingX(4).PaddingStart(14).Gap(5).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
-	dragRef(r, ch.Path, false) // 拖到对话栏 = 引用这个文件
-	r.ContextMenu(func(m *ui.Menu) { a.scmFileMenu(m, grp, ch) })
-	hov := r.Hovered()
-	if hov {
-		r.Background(t.Fill1)
-	}
-	if r.Clicked() {
-		a.scmOpenFile(grp, ch, false)
-	}
-	if r.DoubleClicked() {
-		a.scmOpenFile(grp, ch, true)
-	}
-	col := t.Tx2
-	if ch.Status == 'D' {
-		col = t.Tx4
-	}
-	r.TextColor(col).Children(func() {
-		a.fileIc(c, path.Base(ch.Path))
-		nm := ui.Text(c, path.Base(ch.Path)).SingleLine().Shrink(0)
-		if ch.Status == 'D' {
-			nm.Strikethrough()
-		}
-		if d := path.Dir(ch.Path); d != "." {
-			ui.Text(c, d).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().Shrink(1).MinWidth(0)
-		}
-		ui.Spacer(c).Grow(1)
-		if hov {
-			kit.Ib(c, "file", kit.IbOpt{Small: true, Tip: "打开文件"}).OnClick(func() { a.ide.openFile(a.treePath(ch.Path), true) })
-			if grp == "changes" {
-				kit.Ib(c, "undo", kit.IbOpt{Small: true, Tip: "放弃更改"}).OnClick(func() { a.scmDiscardAsk([]vcs.Change{ch}) })
-				kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "暂存"}).OnClick(func() { a.scmStage(ch.Path) })
-			} else {
-				kit.Ib(c, "minus", kit.IbOpt{Small: true, Tip: "取消暂存"}).OnClick(func() { a.scmUnstage(ch.Path) })
-			}
-			return
-		}
-		a.scmStat(c, ch)
-	})
+	r := ui.ButtonBase(c).Key("scm-f-" + grp + "-" + ch.Path).Height(22).PaddingX(4).PaddingStart(14).Gap(5).AlignItems(ui.Center).Radius(a.tk.RSm()).Cursor(ui.CursorPointer)
+	dragRef(r, ch.Path, false)
+	a.scmFileInner(c, grp, ch, r)
 }
 
 // scmStat 是行尾的 +N −N 与状态字母。

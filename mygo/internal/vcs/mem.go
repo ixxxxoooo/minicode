@@ -266,6 +266,16 @@ func (m *Mem) Push() error {
 	return nil
 }
 
+func (m *Mem) PushForce() error {
+	if err := m.slow("Push"); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.ahead = 0
+	return nil
+}
+
 // SetBranch 演示用:把当前分支设成 name(不存在就加一个),并设定落后数。
 func (m *Mem) SetBranch(name string, behind int) {
 	m.mu.Lock()

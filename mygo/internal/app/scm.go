@@ -15,6 +15,8 @@ import (
 
 type scmState struct {
 	msg           string
+	viewMode      string // list / tree(偏好 scm.viewMode)
+	dirFold       map[string]bool
 	changes       []vcs.Change
 	log           []vcs.Commit
 	rows          []vcs.GraphRow
@@ -35,6 +37,7 @@ type scmState struct {
 	genning       bool // 正在让模型生成提交说明
 	genGen        int
 	createAt      string // 非空:分支选择器里「创建并切换」从这个提交起
+	pushGuide     string // 推送被拒时的引导文案(空 = 不显示)
 }
 
 // scmRefreshEvery 是面板可见时自动重读状态的间隔(git status 很轻,另外文件监视接上后可去掉)。
@@ -184,11 +187,17 @@ func (a *App) scmAct(what string, f func(r vcs.Repo) error, onOK ...func()) {
 				a.outAppend(outGit, what+"失败:"+err.Error())
 				log.Warn(what+"失败", "err", err)
 				a.toast = what + "失败:" + err.Error()
+				if what == "推送" || what == "同步" || what == "提交并同步" {
+					a.notePushFail(err)
+				}
 			} else {
 				a.outAppend(outGit, what+"完成")
 				log.Info(what)
 				for _, f := range onOK {
 					f()
+				}
+				if what == "推送" || what == "同步" || what == "提交并同步" || what == "强制推送" {
+					a.clearPushGuide()
 				}
 			}
 			a.branch = repo.Current()
@@ -210,6 +219,34 @@ func (a *App) scmDiscard(p string) {
 }
 
 // scmCommit 提交暂存区;push 为真时提交后接着推送。
+// scmCommitSync 提交后拉取再推送(提交并同步)。
+func (a *App) scmCommitSync() {
+	s := &a.sc
+	staged, _ := s.split()
+	msg := strings.TrimSpace(s.msg)
+	if msg == "" && !s.amend {
+		a.toast = "请先填写提交说明"
+		return
+	}
+	if len(staged) == 0 && !s.amend {
+		a.toast = "没有暂存的更改"
+		return
+	}
+	amend := s.amend
+	a.scmAct("提交并同步", func(r vcs.Repo) error {
+		if err := r.Commit(msg, amend); err != nil {
+			return err
+		}
+		if err := r.Pull(); err != nil {
+			return err
+		}
+		return r.Push()
+	}, func() {
+		a.sc.msg, a.sc.amend, a.sc.commitErr = "", false, ""
+		a.wizardAfterCommit()
+	})
+}
+
 func (a *App) scmCommit(push bool) {
 	s := &a.sc
 	staged, _ := s.split()

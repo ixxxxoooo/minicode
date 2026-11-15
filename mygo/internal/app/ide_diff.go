@@ -75,18 +75,18 @@ func (a *App) openDiffKind(kind, p string, pin bool) {
 		t.dk = kind
 		t.dv.Editable = kind != dkStaged
 		a.configureDiff(t)
+		if a.diffIgnoreWS() {
+			a.rebuildDiff(t)
+		}
 	}
 }
 
 // configureDiff 给差异状态接上块头动作与词级高亮(每个差异标签一次)。
 func (a *App) configureDiff(t *ideTab) {
 	dv := t.dv
-	dv.HunkActions = true
 	dv.Inline = editor.DiffInlineWord
 	dv.Indicators = editor.DiffBars
-	dv.RenderHunkActions = func(c *ui.Context, bar ui.Element, act *editor.DiffHunkActions) {
-		a.hunkBar(c, bar, act, t)
-	}
+	a.setupDiffView(t)
 }
 
 // hunkBar 是改动块头上的动作:暂存此块 · 还原此块 · 复制补丁(暂存区视图是:取消暂存此块)。
@@ -191,6 +191,7 @@ func (a *App) diffLayout(tb *ideTab, narrow bool) editor.DiffLayout {
 func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 	t := a.tk
 	dv := tb.dv
+	a.syncDiffAnns(tb)
 	dv.Theme = a.editorTheme()
 	dv.Font = ui.Font{Family: "monospace", Size: 12}
 	dv.Wrap = a.prefs.Bool(pEdWrap, false) // 与编辑器同一个「自动换行」偏好
@@ -239,10 +240,18 @@ func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 		if kit.Ib(c, "wrap", kit.IbOpt{Small: true, On: dv.Wrap, Tip: wrapTip}).Clicked() {
 			a.toggleWrap()
 		}
+		ignTip := "忽略空白差异"
+		if a.diffIgnoreWS() {
+			ignTip = "显示空白差异"
+		}
+		if kit.Ib(c, "filter", kit.IbOpt{Small: true, On: a.diffIgnoreWS(), Tip: ignTip}).Clicked() {
+			a.toggleDiffIgnoreWS(tb)
+		}
 		kit.Btn(c, "打开文件", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "ext"}).OnClick(func() {
 			a.jumpTo(tb.path, 0, 0, 0)
 		})
 		kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(func(m *ui.Menu) { a.diffMoreMenu(m, tb) })
 	})
+	a.diffLineBar(c, tb)
 	editor.DiffView(c.Key("dv-"+tb.id), dv).Grow(1).MinHeight(0).FillWidth()
 }

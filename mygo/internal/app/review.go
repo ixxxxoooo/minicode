@@ -50,6 +50,9 @@ func hunkKey(path string, i int) string { return path + "#" + itoa(i) }
 
 // changedFiles 汇总会话里 Claude 改过的文件(按首次出现顺序)。
 func (a *App) changedFiles() []chFile {
+	if a.reviewDemoEmpty {
+		return nil
+	}
 	idx := map[string]int{}
 	var out []chFile
 	var visit func(items []core.Item)
@@ -210,7 +213,7 @@ func (a *App) reviewView(c *ui.Context) {
 		ui.Column(c).Gap(8).Padding(10, 12, 12, 12).Children(func() {
 			if len(files) == 0 {
 				ui.Column(c).Padding(40, 0).AlignItems(ui.Center).Gap(4).Children(func() {
-					ui.Text(c, "这一轮还没有改动文件").TextColor(t.Tx2).FontWeight(500)
+					ui.Text(c, "本轮还没有改动").TextColor(t.Tx2).FontWeight(500)
 					ui.Text(c, "Claude 改了文件之后,会在这里逐块给你审查。").TextColor(t.Tx3).FontSize(theme.FsCap)
 				})
 				return
@@ -252,8 +255,8 @@ func (a *App) reviewView(c *ui.Context) {
 	}
 	ui.Row(c).Height(28).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).
 		TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
-		ui.Text(c, "已查看 "+itoa(viewed)+" / "+itoa(len(files))+" · 来自第 3 回合 · 11 月 15 日 18:20").Grow(1).SingleLine()
-		kit.Btn(c, "回退到这一回合之前", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "rewind"})
+		ui.Text(c, a.reviewFooterText(files)).Grow(1).SingleLine()
+		kit.Btn(c, "回退到这一回合之前", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "rewind"}).OnClick(a.reviewRewind)
 	})
 }
 
@@ -369,7 +372,12 @@ func (a *App) reviewHunk(c *ui.Context, f chFile, i int, d *core.DiffBlock) {
 	if cm := a.rv.comments[k]; cm != "" && a.rv.commenting != k {
 		ui.Row(c).Key("rvc-"+k).Margin(0, 10, 8, 10).Padding(6, 10).Gap(6).Background(t.AcSoft).Radius(t.RSm()).Children(func() {
 			kit.Ic(c, "chat", kit.S12).TextColor(t.AcTx)
-			ui.Text(c, cm).Grow(1).TextColor(t.Tx1)
+			ui.Column(c).Grow(1).Children(func() {
+				ui.Text(c, cm).TextColor(t.Tx1)
+				kit.Btn(c, "回复", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "reply"}).OnClick(func() {
+					a.rv.commenting, a.rv.draft = k, cm+"\n"
+				})
+			})
 		})
 	}
 	if a.rv.commenting == k {

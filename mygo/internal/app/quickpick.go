@@ -74,7 +74,7 @@ func (a *App) qpRows() []qpRow {
 		for _, g := range []string{"今天", "昨天", "更早"} {
 			for _, p := range a.projects {
 				for _, se := range p.Sessions {
-					if se.Group != g || (q != "" && fuzzy(q, se.Title) < 0) {
+					if se.Archived || se.Group != g || (q != "" && fuzzy(q, se.Title) < 0) {
 						continue
 					}
 					id := se.ID
@@ -84,7 +84,7 @@ func (a *App) qpRows() []qpRow {
 			}
 		}
 	case "symbols":
-		syms := a.ide.fileSyms(s.symFile)
+		syms := a.symbolsForFile(s.symFile)
 		for _, sy := range syms {
 			if q != "" && fuzzy(q, sy.Name) < 0 {
 				continue
@@ -119,7 +119,7 @@ func (a *App) qpRows() []qpRow {
 				exact = true
 			}
 			name := b.Name
-			r := qpRow{group: group, icon: "branch", title: name, right: b.When, current: b.Current, run: func() { a.switchBranch(name) }}
+			r := qpRow{group: group, icon: "branch", title: name, right: b.When, current: b.Current, run: func() { a.switchBranchNamed(name) }}
 			if b.Current {
 				r.icon, r.right = "check", "当前"
 			}
@@ -139,23 +139,10 @@ func (a *App) qpRows() []qpRow {
 			}
 		}
 		if q != "" && !exact && vcs.ValidName(q) {
-			rows = append(rows, qpRow{group: " ", icon: "plus", title: "创建并切换到 “" + q + "”", right: "⏎", run: func() { a.createBranch(q) }})
+			rows = append(rows, qpRow{group: " ", icon: "plus", title: "创建并切换到 “" + q + "”", right: "⏎", run: func() { a.createBranchNamed(q) }})
 		}
 	}
 	return rows
-}
-
-// switchBranch / createBranch 在后台执行(真实 git 可能要几秒),完成后切回主线程更新分支名并提示。
-func (a *App) switchBranch(name string) {
-	a.gitOp("切换分支", "已切换到 "+name, func() error { return a.repo.Switch(name) })
-}
-func (a *App) createBranch(name string) {
-	if h := a.sc.createAt; h != "" { // 从某个提交起
-		a.sc.createAt = ""
-		a.scmAct("创建分支", func(r vcs.Repo) error { return r.CreateAt(name, h) }, func() { a.toast = "已从该提交创建并切换到 " + name })
-		return
-	}
-	a.gitOp("创建分支", "已创建并切换到 "+name, func() error { return a.repo.Create(name) })
 }
 
 func (a *App) gitOp(what, okMsg string, f func() error) {

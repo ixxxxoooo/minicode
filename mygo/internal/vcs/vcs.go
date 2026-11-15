@@ -45,6 +45,8 @@ type Repo interface {
 	AheadBehind() (ahead, behind int)
 	Pull() error
 	Push() error
+	// PushForce 强制推送(带 lease);仅在用户明确确认后调用。
+	PushForce() error
 
 	// Index 暂存区里文件的内容(没有暂存过就是 HEAD 的);StageContent 把内容写成暂存区里的版本(块级暂存的落点)。
 	Index(path string) (string, bool)

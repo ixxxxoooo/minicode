@@ -238,3 +238,8 @@ func (r *CLI) Push() error {
 	_, err := r.git(60*time.Second, "push", "-q")
 	return err
 }
+
+func (r *CLI) PushForce() error {
+	_, err := r.git(60*time.Second, "push", "--force-with-lease", "-q")
+	return err
+}

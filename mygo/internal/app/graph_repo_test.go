@@ -45,7 +45,7 @@ func TestBranchPickerRepoChips(t *testing.T) {
 	if !tt.HasText("feat/charts") {
 		t.Fatal("分支列表应换成 web-dashboard 的")
 	}
-	a.switchBranch("main")
+	a.switchBranchNamed("main")
 	tt.Frame()
 	if a.branch != "main" || a.repos[0].branch != "main" {
 		t.Fatalf("切分支只作用于 web-dashboard:%s", a.branch)

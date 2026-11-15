@@ -24,12 +24,12 @@ const (
 type confSeg struct {
 	plain          []string
 	conflict       bool
-	cur, inc       []string
+	cur, base, inc []string
 	curTag, incTag string
 	line           int // 冲突起始行(1 起)
 }
 
-// parseConflicts 把带冲突标记的文件拆成段;diff3 的 ||||||| 基底部分会被丢弃。
+// parseConflicts 把带冲突标记的文件拆成段;保留 diff3 的 ||||||| 基底(只读展示)。
 func parseConflicts(src string) []confSeg {
 	lines := strings.Split(src, "\n")
 	var segs []confSeg
@@ -64,18 +64,20 @@ func parseConflicts(src string) []confSeg {
 			continue
 		}
 		flush()
-		curEnd := mid
+		baseStart := -1
 		for j := i + 1; j < mid; j++ {
 			if strings.HasPrefix(lines[j], "|||||||") {
-				curEnd = j
+				baseStart = j
 				break
 			}
 		}
-		if curEnd == mid {
-			curEnd = mid
+		var cur, base, inc []string
+		if baseStart >= 0 {
+			cur, base, inc = lines[i+1:baseStart], lines[baseStart+1:mid], lines[mid+1:end]
+		} else {
+			cur, inc = lines[i+1:mid], lines[mid+1:end]
 		}
-		seg := confSeg{conflict: true, line: i + 1,
-			cur: lines[i+1 : minInt(curEnd, mid)], inc: lines[mid+1 : end],
+		seg := confSeg{conflict: true, line: i + 1, cur: cur, base: base, inc: inc,
 			curTag: strings.TrimSpace(strings.TrimPrefix(l, "<<<<<<<")), incTag: strings.TrimSpace(strings.TrimPrefix(lines[end], ">>>>>>>"))}
 		segs = append(segs, seg)
 		i = end
@@ -122,9 +124,12 @@ func composeConflicts(segs []confSeg, choice map[int]int) string {
 
 // confState 是一个冲突文件的界面状态。
 type confState struct {
-	src    string // 解析时的原文(检测磁盘是否变过)
-	segs   []confSeg
-	choice map[int]int // 第几处冲突 → 选择
+	src        string // 解析时的原文(检测磁盘是否变过)
+	segs       []confSeg
+	choice     map[int]int // 第几处冲突 → 选择
+	at         int         // 当前显示的冲突下标
+	result     string      // 合并结果(可编辑)
+	resultEdit bool        // 用户手动改过结果
 }
 
 func (s *confState) count() (total, done int) {
@@ -154,8 +159,25 @@ func (a *App) conflictOf(p string) *confState {
 		return s
 	}
 	s := &confState{src: src, segs: parseConflicts(src), choice: map[int]int{}}
+	s.refreshResult()
 	a.cf[p] = s
 	return s
+}
+
+func (s *confState) refreshResult() {
+	if !s.resultEdit {
+		s.result = composeConflicts(s.segs, s.choice)
+	}
+}
+
+func (s *confState) conflictSegs() []confSeg {
+	var out []confSeg
+	for _, g := range s.segs {
+		if g.conflict {
+			out = append(out, g)
+		}
+	}
+	return out
 }
 
 // resolveAll 把所有未处理的冲突按同一种方式处理。
@@ -167,12 +189,23 @@ func (s *confState) resolveAll(ch int) {
 			k++
 		}
 	}
+	s.resultEdit = false
+	s.refreshResult()
+}
+
+func (s *confState) pickChoice(k, ch int) {
+	s.choice[k] = ch
+	s.resultEdit = false
+	s.refreshResult()
 }
 
 // finishConflict 把结果写回文件、暂存并关闭标签。
 func (a *App) finishConflict(tb *ideTab, s *confState) {
 	p := tb.ref
-	text := composeConflicts(s.segs, s.choice)
+	text := s.result
+	if text == "" {
+		text = composeConflicts(s.segs, s.choice)
+	}
 	if err := a.ide.fs.Write(p, text); err != nil {
 		a.toast = "写入失败:" + err.Error()
 		return
@@ -226,16 +259,25 @@ func (a *App) conflictView(c *ui.Context, tb *ideTab) {
 	})
 	ui.Scroll(c).Key("conf-" + tb.ref).Grow(1).MinHeight(0).Children(func() {
 		ui.Column(c).Padding(12).Gap(12).Children(func() {
-			k := 0
-			for _, g := range s.segs {
-				if !g.conflict {
-					continue
-				}
-				a.conflictCard(c, s, g, k, narrow)
-				k++
-			}
 			if total == 0 {
 				ui.Text(c, "这个文件里没有冲突标记。").TextColor(t.Tx3)
+			} else {
+				if s.at < 0 || s.at >= total {
+					s.at = 0
+				}
+				ui.Row(c).Height(32).Gap(6).AlignItems(ui.Center).Children(func() {
+					if kit.Ib(c, "chevL", kit.IbOpt{Small: true, Tip: "上一处冲突"}).Clicked() {
+						s.at = (s.at - 1 + total) % total
+					}
+					if kit.Ib(c, "chevR", kit.IbOpt{Small: true, Tip: "下一处冲突"}).Clicked() {
+						s.at = (s.at + 1) % total
+					}
+					g := s.conflictSegs()[s.at]
+					lo, hi := g.line, g.line+max(len(g.cur), len(g.inc), len(g.base))
+					ui.Text(c, "冲突 "+itoa(s.at+1)+" / "+itoa(total)+" · 第 "+itoa(lo)+"–"+itoa(hi)+" 行").FontSize(theme.FsCap).TextColor(t.Tx3).Grow(1).SingleLine()
+				})
+				g := s.conflictSegs()[s.at]
+				a.conflictCard(c, s, g, s.at, narrow)
 			}
 			a.conflictResult(c, s)
 		})
@@ -287,6 +329,9 @@ func (a *App) conflictCard(c *ui.Context, s *confState, g confSeg, k int, narrow
 		}
 		layout.Children(func() {
 			side("当前", g.curTag, g.cur, t.Info, ch == chCur || ch == chBoth, "cf-c"+itoa(k))
+			if len(g.base) > 0 && !narrow {
+				side("基底", "共同祖先", g.base, t.Tx3, false, "cf-b"+itoa(k))
+			}
 			side("传入", g.incTag, g.inc, t.Ok, ch == chInc || ch == chBoth, "cf-i"+itoa(k))
 		})
 		ui.Row(c).Height(34).PaddingX(8).Gap(6).AlignItems(ui.Center).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
@@ -299,44 +344,35 @@ func (a *App) conflictCard(c *ui.Context, s *confState, g confSeg, k int, narrow
 					v = kit.BtnSoft
 				}
 				if kit.Btn(c, o.label, kit.BtnOpt{Small: true, Variant: v}).Key("cfa-" + itoa(k) + "-" + itoa(o.ch)).Clicked() {
-					s.choice[k] = o.ch
+					s.pickChoice(k, o.ch)
 				}
 			}
 			if ch != chNone {
 				ui.Spacer(c).Grow(1)
 				if kit.Btn(c, "撤销选择", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).Clicked() {
-					s.choice[k] = chNone
+					s.pickChoice(k, chNone)
 				}
 			}
 		})
 	})
 }
 
-// conflictResult 是合并结果预览(未处理的冲突仍显示标记,行号随之变化)。
+// conflictResult 是合并结果(可编辑;接受操作后会自动重算)。
 func (a *App) conflictResult(c *ui.Context, s *confState) {
 	t := a.tk
-	text := composeConflicts(s.segs, s.choice)
+	s.refreshResult()
 	ui.Column(c).Radius(t.RMd()).Border(1, t.Bd2).Children(func() {
-		ui.Row(c).Height(26).PaddingX(10).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+		ui.Row(c).Height(26).PaddingX(10).Gap(6).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+			kit.Ic(c, "merge", kit.S12).TextColor(t.Tx3)
 			ui.Text(c, "结果").FontSize(theme.FsCap).FontWeight(600).TextColor(t.Tx3)
+			ui.Text(c, "选择上面的操作,或直接在这里编辑").FontSize(theme.FsMicro).TextColor(t.Tx4).Grow(1).SingleLine()
 		})
-		ui.Column(c).Padding(6, 10).Children(func() {
-			for i, l := range strings.Split(text, "\n") {
-				col := t.Tx1
-				bg := ui.Transparent
-				if strings.HasPrefix(l, "<<<<<<<") || strings.HasPrefix(l, "=======") || strings.HasPrefix(l, ">>>>>>>") {
-					col, bg = t.Warn, t.Warn.Alpha(.10)
-				}
-				ui.Row(c).Key("cr-" + itoa(i)).Background(bg).Gap(10).Children(func() {
-					ui.Text(c, itoa(i+1)).Font("monospace").FontSize(11).TextColor(t.Tx4).Width(28).Justify(ui.End)
-					txt := l
-					if txt == "" {
-						txt = " "
-					}
-					ui.Text(c, txt).Font("monospace").FontSize(12).LineHeight(1.6).TextColor(col)
-				})
-			}
-		})
+		auto := composeConflicts(s.segs, s.choice)
+		if s.result != auto {
+			s.resultEdit = true
+		}
+		ui.TextArea(c.Key("cf-res"), &s.result).Lines(8, 24).Font("monospace").FontSize(12).LineHeight(1.6).
+			Background(t.Fill1).BorderWidth(0).Padding(8, 10)
 	})
 }
 
@@ -350,6 +386,9 @@ pub fn build() -> Router {
 <<<<<<< HEAD (当前:main)
     let app = app.route("/health", get(health));
     let limit = 64 * 1024;
+||||||| base
+    let app = app.route("/health", get(health));
+    let limit = 128 * 1024;
 =======
     let app = app.route("/healthz", get(health));
     let limit = 256 * 1024;

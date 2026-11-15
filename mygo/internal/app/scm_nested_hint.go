@@ -1,0 +1,62 @@
+package app
+
+import (
+	"strings"
+
+	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/theme"
+	"github.com/ixxxxoooo/minicode/internal/vcs"
+)
+
+// scmNestedHints 子模块脏工作区提示与父仓库的指针变更说明。
+func (a *App) scmNestedHints(c *ui.Context) {
+	if !a.multiRoot() && len(a.repos) <= 1 {
+		return
+	}
+	t := a.tk
+	for i, e := range a.repos {
+		if e.kind != "子模块" || e.repo == nil {
+			continue
+		}
+		ch, err := e.repo.Status()
+		if err != nil || len(ch) == 0 {
+			continue
+		}
+		ui.Row(c).Key("scm-sub-"+itoa(i)).Padding(4, 8).Gap(6).AlignItems(ui.Center).Background(t.WarnSoft).Radius(t.RSm()).Margin(0, 2, 4, 2).Children(func() {
+			kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
+			ui.Text(c, e.name+" 子模块有未提交的改动("+itoa(len(ch))+" 项)").FontSize(theme.FsCap).TextColor(t.Tx1).Grow(1)
+			kit.Btn(c, "查看", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() {
+				a.setActiveRepo(i)
+			})
+		})
+	}
+	for _, ch := range a.sc.changes {
+		if a.isSubmodulePath(ch.Path) {
+			a.scmSubmoduleRow(c, ch)
+		}
+	}
+}
+
+func (a *App) isSubmodulePath(p string) bool {
+	for _, e := range a.repos {
+		if e.kind != "子模块" {
+			continue
+		}
+		if p == e.name || strings.HasPrefix(p, e.pre()+"/") || strings.HasPrefix(p, e.name+"/") {
+			return true
+		}
+	}
+	return false
+}
+
+// scmSubmoduleRow 父仓库中子模块指针变更条目。
+func (a *App) scmSubmoduleRow(c *ui.Context, ch vcs.Change) {
+	t := a.tk
+	ui.Row(c).Key("scm-submod-"+ch.Path).Height(24).PaddingX(8).Gap(6).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Margin(0, 2, 2, 2).Children(func() {
+		kit.Ic(c, "link", kit.S12).TextColor(t.Info)
+		ui.Text(c, ch.Path).FontWeight(600).SingleLine().Grow(1)
+		ui.Text(c, "子模块指针变更").FontSize(theme.FsMicro).TextColor(t.Tx3)
+		kit.Tag(c, "M", kit.KWarn)
+	})
+}
