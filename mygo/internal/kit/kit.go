@@ -5,6 +5,7 @@
 package kit
 
 import (
+	"sort"
 	"sync"
 	"time"
 
@@ -74,6 +75,21 @@ var (
 )
 
 // svgOf 取得(并缓存)某个图标的 SVG。设计稿的图标是 24 格线性图标,描边 1.7。
+// unknownIcons 被请求过却不在图标表里的名字(iconMu 保护)。
+var unknownIcons = map[string]bool{}
+
+// UnknownIcons 返回迄今请求过但图标表里没有的图标名(排序后),供测试检查。
+func UnknownIcons() []string {
+	iconMu.Lock()
+	defer iconMu.Unlock()
+	out := make([]string, 0, len(unknownIcons))
+	for n := range unknownIcons {
+		out = append(out, n)
+	}
+	sort.Strings(out)
+	return out
+}
+
 func svgOf(name string) *ui.SVG {
 	iconMu.Lock()
 	defer iconMu.Unlock()
@@ -82,7 +98,8 @@ func svgOf(name string) *ui.SVG {
 	}
 	body, ok := iconPaths[name]
 	if !ok {
-		body = iconPaths["x"]
+		body = iconPaths["x"] // 不存在的名字画成 ✕:记下来,单测会据此报出,不让它悄悄变成「图标显示异常」
+		unknownIcons[name] = true
 	}
 	src := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">` + body + `</svg>`
 	s := ui.MustParseSVG([]byte(src))

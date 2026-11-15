@@ -40,7 +40,7 @@ func (a *App) planPara(c *ui.Context, planID string, ix int, text string, stream
 			ui.Text(c, text).FontSize(13).LineHeight(1.55).TextColor(t.Tx1)
 		})
 		if !streaming {
-			kit.Ib(c, "msg", kit.IbOpt{Small: true, Tip: "批注并继续规划"}).OnClick(func() {
+			kit.Ib(c, "chat", kit.IbOpt{Small: true, Tip: "批注并继续规划"}).OnClick(func() {
 				a.annotatePlan(planID, text)
 			})
 		}

@@ -50,7 +50,7 @@ func (a *App) blockCmtBanner(c *ui.Context, tb *ideTab) {
 		Background(t.InfoSoft).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		kit.Ic(c, "info", kit.S12).TextColor(t.Info)
 		ui.Text(c, a.ux.blockCmtHint).Grow(1).SingleLine().TextColor(t.Tx2)
-		if kit.Ib(c, "block-cmt-x", kit.IbOpt{Small: true, Tip: "关闭"}).Clicked() {
+		if kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭"}).Clicked() {
 			a.ux.blockCmtHint = ""
 		}
 	})

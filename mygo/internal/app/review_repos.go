@@ -268,7 +268,7 @@ func (a *App) wizardBar(c *ui.Context) {
 		})
 		if a.sc.commitErr != "" {
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Padding(4, 2).Radius(t.RSm()).Background(t.ErrSoft).Children(func() {
-				kit.Ic(c, "warn", kit.S12).TextColor(t.Err)
+				kit.Ic(c, "alert", kit.S12).TextColor(t.Err)
 				ui.Text(c, name+" · "+a.sc.commitErr).Grow(1).FontSize(theme.FsCap).TextColor(t.Err).MaxLines(2)
 				kit.Btn(c, "重试", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(func() { a.scmCommit(false) })
 				kit.Btn(c, "跳过这个仓库", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(func() {

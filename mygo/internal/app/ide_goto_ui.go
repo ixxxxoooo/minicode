@@ -143,7 +143,7 @@ func (a *App) gotoLineStrip(c *ui.Context, tb *ideTab) {
 				hint := map[bool]string{true: "空文件 · 共 0 行", false: "行 1–" + itoa(n) + " · 当前 " + itoa(cur)}[n < 1]
 				ui.Text(c, hint).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 				ui.Spacer(c).Grow(1)
-				kit.Ib(c, "goto-x", kit.IbOpt{Small: true, Tip: "Esc 取消"}).OnClick(a.closeGotoLine)
+				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "Esc 取消"}).OnClick(a.closeGotoLine)
 			})
 			if g.err != "" {
 				ui.Row(c).Padding(4, 12, 8, 12).Gap(6).AlignItems(ui.Center).Children(func() {
