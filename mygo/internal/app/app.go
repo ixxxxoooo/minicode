@@ -71,6 +71,7 @@ type App struct {
 	sideOpen  bool
 	inspOpen  bool
 	nav       string // chat / files / search / scm
+	navBy     [2]string // 各形态各自记住的左栏分段(切回来还停在原处)
 	inspTab   string // changes / files / term / plan / tasks
 	popup     string // 状态栏 / 输入框弹层:cfg / ctx / upd / acct
 	paletteOn bool
@@ -191,8 +192,9 @@ func (a *App) SetMode(m Mode) {
 		return
 	}
 	log.Info("切换形态", "from", a.mode, "to", m)
+	a.navBy[a.mode] = a.nav
 	a.mode = m
-	a.nav = ""
+	a.nav = a.navBy[m]
 }
 
 // View 是窗口的根视图。

@@ -37,10 +37,20 @@ func (a *App) statusbar(c *ui.Context) {
 			ui.Text(c, "1")
 		})
 		if a.mode == ModeIDE {
-			a.sbItem(c, "pos", func() { ui.Text(c, "行 17,列 58") })
-			a.sbItem(c, "enc", func() { ui.Text(c, "UTF-8") })
-			a.sbItem(c, "lang", func() { ui.Text(c, "Rust") })
-			a.sbItem(c, "lsp", func() { kit.Ic(c, "okc", kit.S12).TextColor(t.Ok); ui.Text(c, "rust-analyzer") })
+			if tab := a.ide.cur(); tab != nil && !tab.diff && tab.st != nil {
+				p := tab.st.CursorPos()
+				a.sbItem(c, "pos", func() { ui.Text(c, "行 "+itoa(p.Line+1)+",列 "+itoa(p.Col+1)).FontFeatures("tnum") })
+				a.sbItem(c, "enc", func() { ui.Text(c, "UTF-8") })
+				lang := "纯文本"
+				if l := tab.buf.Language(); l != nil {
+					lang = l.Name
+				}
+				a.sbItem(c, "lang", func() { ui.Text(c, lang) })
+				// 语言服务器尚未接入:只在演示数据里展示设计稿的状态项,真实模式不假装有连接
+				if srv := lspName(lang); srv != "" && a.demoExtra {
+					a.sbItem(c, "lsp", func() { kit.Ic(c, "okc", kit.S12).TextColor(t.Ok); ui.Text(c, srv) })
+				}
+			}
 		}
 		ui.Spacer(c).Grow(1)
 		mode := a.sbItem(c, "mode", func() { kit.Ic(c, modeIcon(a.st.Mode), kit.S12); ui.Text(c, a.st.Mode.Label()) })
@@ -65,4 +75,19 @@ func (a *App) statusbar(c *ui.Context) {
 			kit.Tag(c, a.devBadge, kit.KAc)
 		}
 	})
+}
+
+// lspName 返回某语言默认使用的语言服务器名(没有则为空)。
+func lspName(lang string) string {
+	switch lang {
+	case "Rust":
+		return "rust-analyzer"
+	case "Go":
+		return "gopls"
+	case "Python":
+		return "Pyright"
+	case "TypeScript", "JavaScript":
+		return "typescript-language-server"
+	}
+	return ""
 }

@@ -259,6 +259,6 @@ func (d *ide) seedDemo() {
 	d.active = "src/router.rs"
 	d.sel = "src/router.rs"
 	if t := d.tab("src/router.rs"); t != nil && t.st != nil {
-		t.st.GoTo(editor.Pos{Line: 16, Col: 4})
+		t.st.GoTo(editor.Pos{Line: 16, Col: 57})
 	}
 }
