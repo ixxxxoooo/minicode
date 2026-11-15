@@ -62,7 +62,7 @@ func (a *App) canvasListRow(c *ui.Context, l *canvas.Library, id string, s *canv
 			ui.Text(c, canvas.Ago(a.now(), at)).FontSize(theme.FsMicro).TextColor(t.Tx4)
 		})
 		more := kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多"})
-		more.ContextMenu(func(m *ui.Menu) { a.canvasListMenu(m, l, id, title) })
+		more.Menu(func(m *ui.Menu) { a.canvasListMenu(m, l, id, title) }) // 左键点「···」弹出(行本身右键同一份菜单)
 	})
 }
 
