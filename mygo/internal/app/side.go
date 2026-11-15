@@ -130,6 +130,7 @@ func (a *App) sideTop(c *ui.Context) {
 		}
 		if i := kit.Seg(c, items, on, kit.SegOpt{Icons: true, Fill: true, Key: "navseg"}); i >= 0 {
 			a.nav = navs[i].id
+			a.leavePage()
 		}
 	})
 }
@@ -137,7 +138,7 @@ func (a *App) sideTop(c *ui.Context) {
 func (a *App) sideFoot(c *ui.Context) {
 	ui.Row(c).Gap(2).Padding(6, 8).Shrink(0).Children(func() {
 		for _, p := range pages {
-			kit.Ib(c, p.icon, kit.IbOpt{Tip: p.name, On: a.screen == p.screen}).OnClick(func() { a.screen = p.screen })
+			kit.Ib(c, p.icon, kit.IbOpt{Tip: p.name, On: a.screen == p.screen}).OnClick(func() { a.togglePage(p.screen) })
 		}
 		ui.Spacer(c).Grow(1)
 		g := kit.Ib(c, "gear", kit.IbOpt{Tip: "账号与设置", On: a.popup == "acct@gear"})
@@ -291,4 +292,27 @@ func (a *App) sideTransition() ui.ElementTransition {
 		return ui.ElementTransition{}
 	}
 	return ui.ElementTransition{Size: true, Duration: kit.DurSlow, Ease: kit.EaseIO}
+}
+
+// leavePage 离开整页功能(自动化 / 画布 / 浏览器 / 自定义 / 用量)回到工作台;设置页与已在工作台时不动。
+// 点导航分段(会话 / 文件 / 搜索 / 源代码管理)是「去看那一块」,所以也要先出整页,否则点了没反应。
+func (a *App) leavePage() {
+	for _, p := range pages {
+		if a.screen == p.screen {
+			a.screen = ScreenWork
+			return
+		}
+	}
+	if a.screen == ScreenUsage {
+		a.screen = ScreenWork
+	}
+}
+
+// togglePage 点整页入口图标:已在该页再点一次 = 回到工作台(给整页一个出口),否则进入。
+func (a *App) togglePage(s Screen) {
+	if a.screen == s {
+		a.screen = ScreenWork
+		return
+	}
+	a.screen = s
 }

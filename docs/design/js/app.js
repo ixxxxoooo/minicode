@@ -147,7 +147,7 @@
     tab: (el) => $$('.tab', el.parentElement).forEach(t => t.classList.toggle('on', t === el)),
     cfg: (el) => { const cmp = el.closest('.cmp'), pop = $('.cfg-pop', cmp); if (pop) { pop.remove(); el.classList.remove('on'); } else { cmp.insertAdjacentHTML('afterbegin', F.cfgPop()); el.classList.add('on'); } },
     palette: (el) => { if (!el.closest('.ov-row')) go('palette'); },
-    screen: (el) => { if (el.closest('.ov-row')) return; if (el.dataset.cust) { st.cust = el.dataset.cust; st.cuSel = 0; st.cuQ = ''; st.cuScope = 'all'; st.cuTab = ''; } go(el.dataset.screen); },
+    screen: (el) => { if (el.closest('.ov-row')) return; if (el.dataset.cust) { st.cust = el.dataset.cust; st.cuSel = 0; st.cuQ = ''; st.cuScope = 'all'; st.cuTab = ''; } go(el.dataset.screen === st.page && el.closest('.side-foot, .rail') ? 'work' : el.dataset.screen); },
     /** 设置分类:data-goto="settings" 时从别处跳进设置并落到该分类 */
     settab: (el) => { st.setTab = el.dataset.tab; st.setQ = ''; if (el.dataset.goto) return go(el.dataset.goto); renderMain(); save(); },
     cust: (el) => { st.cust = el.dataset.cust; st.cuSel = 0; st.cuQ = ''; st.cuScope = 'all'; st.cuTab = ''; renderMain(); save(); },

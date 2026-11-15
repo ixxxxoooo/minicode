@@ -39,14 +39,15 @@ func (a *App) rail(c *ui.Context) {
 			if n.id == "scm" {
 				badge = 3
 			}
-			if ri(n.icon, n.name, a.NavID() == n.id, badge).Clicked() {
+			if ri(n.icon, n.name, a.NavID() == n.id && a.screen == ScreenWork, badge).Clicked() {
 				a.nav = n.id
+				a.leavePage()
 			}
 		}
 		ui.Box(c).Size(20, 1).Background(t.Bd1).Margin(6, 0)
 		for _, p := range pages {
 			if ri(p.icon, p.name, a.screen == p.screen, 0).Clicked() {
-				a.screen = p.screen
+				a.togglePage(p.screen)
 			}
 		}
 		ui.Spacer(c).Grow(1)
