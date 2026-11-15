@@ -1,3 +1,7 @@
 target
 .DS_Store
 dist
+
+# MyGo 构建产物
+mygo/build/
+mygo/.mygo/
