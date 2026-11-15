@@ -361,9 +361,13 @@ func (a *App) queueCard(c *ui.Context) {
 		}
 		for k, sp := range a.q.steers { // 引导靠前:已经发给 Claude
 			sp := sp
+			steerImg := sp.Show == "(图片)"
 			ui.Row(c).Key("steer" + itoa(k)).Height(26).PaddingX(6).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Children(func() {
 				a.queueKind(c, true, 0)
 				ui.Text(c, sp.Show).SingleLine().Grow(1).MinWidth(0)
+				if steerImg {
+					a.queueImgBadge(c, 1)
+				}
 				ui.Row(c).Gap(5).AlignItems(ui.Center).Shrink(0).Children(func() {
 					kit.Spin(c, t.Tx3)
 					ui.Text(c, "等 Claude 接收").FontSize(theme.FsCap).TextColor(t.Tx3)
@@ -376,17 +380,20 @@ func (a *App) queueCard(c *ui.Context) {
 			if row.Hovered() {
 				row.Background(t.Fill1)
 			}
+			_, imgs := splitDraftImages(it.Text)
+			disp := queueShowText(it.Text)
+			imgN := len(imgs)
 			row.Children(func() {
 				a.queueKind(c, false, i+1)
-				ui.Row(c).Gap(6).Grow(1).MinWidth(0).AlignItems(ui.Center).Cursor(ui.CursorPointer).Tooltip("点击退回输入框编辑").OnClick(func() {
+				ui.Text(c, disp).SingleLine().Grow(1).MinWidth(0).Cursor(ui.CursorPointer).Tooltip("点击退回输入框编辑").OnClick(func() {
 					if s, ok := a.q.take(i); ok {
 						a.draft = s
 						a.ux.focusDraft = true
 					}
-				}).Children(func() {
-					a.queueAttachChips(c, it.Text)
-					ui.Text(c, queueShowText(it.Text)).SingleLine().Grow(1).MinWidth(0)
 				})
+				if imgN > 0 {
+					a.queueImgBadge(c, imgN)
+				}
 				if row.Hovered() {
 					kit.Ib(c, "bolt", kit.IbOpt{Small: true, Tip: "改为引导:现在就插进当前回合"}).OnClick(func() {
 						if s, ok := a.q.take(i); ok {
@@ -398,6 +405,18 @@ func (a *App) queueCard(c *ui.Context) {
 				}
 			})
 		}
+	})
+}
+
+// queueImgBadge 行尾「N 张图」小标(设计稿 flow-queue)。
+func (a *App) queueImgBadge(c *ui.Context, n int) {
+	if n <= 0 {
+		return
+	}
+	t := a.tk
+	ui.Row(c).Gap(3).AlignItems(ui.Center).Shrink(0).Children(func() {
+		kit.Ic(c, "image", kit.S12).TextColor(t.Tx3)
+		ui.Text(c, itoa(n)+" 张图").FontSize(theme.FsCap).TextColor(t.Tx3).FontFeatures("tnum")
 	})
 }
 
