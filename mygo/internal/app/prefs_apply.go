@@ -52,8 +52,14 @@ func (a *App) applyBehavior() {
 	}
 	morph = ui.ElementTransition{Size: true, Position: true, Duration: d, Ease: kit.EaseMorph}
 	// 终端字号:改了之后各终端标签重新量字宽
-	if f := float32(a.prefs.Int(pTermFont, 12)) - .5; f != termFont {
-		termFont, termLineH = f, f*1.6
+	fam := a.prefs.Str("term.font", "")
+	if fam == "" {
+		fam = "monospace"
+	}
+	lh := []float32{1.4, 1.6, 1.8}[min(max(a.prefs.Int("term.lineHeight", 1), 0), 2)]
+	f := float32(a.prefs.Int(pTermFont, 12)) - .5
+	if f != termFont || fam != termFamily || f*lh != termLineH {
+		termFont, termLineH, termFamily = f, f*lh, fam
 		for _, tp := range a.ide.tps {
 			tp.cellW = 0
 		}

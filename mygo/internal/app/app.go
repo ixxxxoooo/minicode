@@ -76,30 +76,31 @@ type App struct {
 	tk     *theme.Tokens
 
 	// 窗口形态与布局
-	mode        Mode
-	screen      Screen
-	sideOpen    bool
-	rightOn     bool      // 右侧栏开合:Agent 形态 = 工作区,IDE 形态 = 对话栏
-	chatMax     bool      // IDE 形态:对话栏占满主区(工作区让位)
-	memBy       [2]layMem // 各形态各自记住的右侧栏 / 底部面板开合(切回来还是原样)
-	flashAt     time.Time // 工作区被「打开标签」唤起的时刻(边框闪一下)
-	sessNav     []string  // Agent 形态的「后退 / 前进」:打开过的会话序列
-	sessI       int
-	sessWalking bool
-	ly          layoutSizes // 拖出来的栏宽 / 面板高度
-	winW, winH  float32     // 窗口内容区尺寸(夹栏宽用)
-	chatW       float32     // 对话栏上一帧的宽度(响应式三档按它判断)
-	wsW         float32     // 工作区上一帧的宽度
-	nav         string      // chat / files / search / scm
-	navBy       [2]string   // 各形态各自记住的左栏分段(切回来还停在原处)
-	popup       string      // 状态栏 / 输入框弹层:cfg / ctx / upd / acct
-	paletteOn   bool
-	pq          palState // 命令面板状态
-	setTab      string   // 设置页当前分类
-	set         settingsState
-	prefs       *prefs.Store // 用户偏好(~/.minicode/settings.json)
-	density     int          // 界面密度:0 紧凑 / 1 标准 / 2 宽松
-	radius      int          // 圆角:0 利落 / 1 适中 / 2 圆润
+	mode         Mode
+	screen       Screen
+	sideOpen     bool
+	rightOn      bool      // 右侧栏开合:Agent 形态 = 工作区,IDE 形态 = 对话栏
+	chatMax      bool      // IDE 形态:对话栏占满主区(工作区让位)
+	memBy        [2]layMem // 各形态各自记住的右侧栏 / 底部面板开合(切回来还是原样)
+	flashAt      time.Time // 工作区被「打开标签」唤起的时刻(边框闪一下)
+	termHasFocus bool      // 终端面板此刻有键盘焦点(⌘F 查找走终端)
+	sessNav      []string  // Agent 形态的「后退 / 前进」:打开过的会话序列
+	sessI        int
+	sessWalking  bool
+	ly           layoutSizes // 拖出来的栏宽 / 面板高度
+	winW, winH   float32     // 窗口内容区尺寸(夹栏宽用)
+	chatW        float32     // 对话栏上一帧的宽度(响应式三档按它判断)
+	wsW          float32     // 工作区上一帧的宽度
+	nav          string      // chat / files / search / scm
+	navBy        [2]string   // 各形态各自记住的左栏分段(切回来还停在原处)
+	popup        string      // 状态栏 / 输入框弹层:cfg / ctx / upd / acct
+	paletteOn    bool
+	pq           palState // 命令面板状态
+	setTab       string   // 设置页当前分类
+	set          settingsState
+	prefs        *prefs.Store // 用户偏好(~/.minicode/settings.json)
+	density      int          // 界面密度:0 紧凑 / 1 标准 / 2 宽松
+	radius       int          // 圆角:0 利落 / 1 适中 / 2 圆润
 
 	// 侧栏数据
 	projects []core.ProjectInfo
@@ -439,6 +440,9 @@ func (a *App) shortcuts(c *ui.Context) {
 	if a.copyText != "" {
 		c.WriteClipboard(a.copyText)
 		a.copyText = ""
+	}
+	if a.termShortcuts(c) {
+		return
 	}
 	if a.editorShortcuts(c) {
 		return

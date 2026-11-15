@@ -79,7 +79,9 @@ func (a *App) bottomPanel(c *ui.Context) {
 						}
 					})
 					kit.Ib(c, "cols", kit.IbOpt{Small: true})
-					kit.Ib(c, "gear", kit.IbOpt{Small: true, Tip: "终端设置"})
+					gear := kit.Ib(c, "gear", kit.IbOpt{Small: true, Tip: "终端设置", On: a.popup == "termset"})
+					gear.OnClick(func() { a.togglePop("termset") })
+					a.termSettings(c, gear)
 				}
 				mi, mt := "max", "最大化面板 ⌘⇧J"
 				if a.ly.panelMax {

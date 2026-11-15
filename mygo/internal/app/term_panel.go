@@ -21,8 +21,9 @@ const termHistory = 200 // 面板里最多带的历史行数
 
 // 终端字号与行高(设置「终端 → 字号」改它;行高 = 字号 × 1.6)。
 var (
-	termFont  float32 = 11.5
-	termLineH float32 = 18.4
+	termFont   float32 = 11.5
+	termLineH  float32 = 18.4
+	termFamily         = "monospace" // 终端字体(设置 → 终端 → 字体;空 = 系统等宽)
 )
 
 // termPanel 是 IDE 底部终端的状态。
@@ -38,6 +39,15 @@ type termPanel struct {
 	compose bool   // 输入法正在组字
 	preedit string // 组字中的文字(显示在光标处,提交时由 InputText 送入)
 	focusIt bool   // 下一帧把键盘焦点给终端(刚启动 / 刚重启)
+
+	scr       *term.Screen // 最近一帧的画面快照(选择 / 搜索 / 链接按它换算)
+	viewH     float32      // 可视高度(搜索命中滚到中间用)
+	sel       termSel
+	find      termFind
+	hover     cellPos // 鼠标悬停的格
+	hoverOn   bool
+	hoverMods ui.Modifiers
+	link      *termLink // 当前悬停的链接(⌘ 按住时才有)
 }
 
 // redraw 让窗口重画一帧(终端输出到达时由内核的通知调用,任意 goroutine)。
@@ -101,7 +111,7 @@ func (a *App) realTerminal(c *ui.Context) {
 	tp := a.ide.tpc()
 	t := a.tk
 	if tp.cellW == 0 {
-		w, _ := c.MeasureText(10000, ui.Span{Text: "MMMMMMMMMM", Font: "monospace", Size: termFont})
+		w, _ := c.MeasureText(10000, ui.Span{Text: "MMMMMMMMMM", Font: termFamily, Size: termFont})
 		tp.cellW = w / 10
 		if tp.cellW < 4 {
 			tp.cellW = 6.9
@@ -132,8 +142,10 @@ func (a *App) realTerminal(c *ui.Context) {
 	focused := body.Focused()
 
 	var scr *term.Screen
+	tp.viewH = b.H
 	if tp.t != nil {
 		scr = tp.t.Snapshot(termHistory)
+		tp.scr = scr
 		// 输入法的候选框跟着光标走
 		body.TextCaret(ui.Rect{
 			X: b.X + padX + float32(scr.CursorX)*tp.cellW,
@@ -142,6 +154,13 @@ func (a *App) realTerminal(c *ui.Context) {
 		})
 	}
 	body.HandleInput(func(ev ui.InputEvent) bool { return a.termInput(c, ev) })
+	a.termHasFocus = focused
+	if tp.link != nil && tp.hoverMods&ui.Super != 0 {
+		body.Cursor(ui.CursorPointer)
+	} else {
+		body.Cursor(ui.CursorText)
+	}
+	a.termMenu(c, body, tp)
 	body.Children(func() {
 		switch {
 		case tp.err != "":
@@ -166,7 +185,7 @@ func (a *App) realTerminal(c *ui.Context) {
 					if y == scr.CursorY && !scr.CursorHidden && !exited {
 						cx = scr.CursorX
 					}
-					a.termRow(c, ln, cx, focused, tp.cellW, tp.preedit)
+					a.termRow(c, ln, cx, focused, tp.cellW, tp.preedit, a.rowDeco(tp, y, scr.Cols))
 				}
 				if exited {
 					ui.Row(c).Height(termLineH).Margin(4, 0, 0, 0).Gap(8).AlignItems(ui.Center).TextColor(t.Tx3).Children(func() {
@@ -175,6 +194,9 @@ func (a *App) realTerminal(c *ui.Context) {
 				}
 			})
 		})
+		if tp.find.open {
+			a.termFindBar(c, tp)
+		}
 	})
 }
 
@@ -202,9 +224,50 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 		return false
 	}
 	switch ev.Kind {
+	case ui.InputPointerDown:
+		if ev.Button != 0 {
+			return false // 右键交给上下文菜单
+		}
+		tp.focusIt = true
+		p := a.termCell(tp, ev.X, ev.Y)
+		if ev.Mods&ui.Super != 0 {
+			if l := a.linkAt(tp, p); l != nil {
+				a.openLink(l)
+				return true
+			}
+		}
+		switch {
+		case ev.Clicks >= 3:
+			tp.selectLine(p)
+		case ev.Clicks == 2:
+			tp.wordAt(p)
+		default:
+			tp.sel = termSel{a: p, b: p, drag: true}
+		}
+		return true
+	case ui.InputPointerMove:
+		p := a.termCell(tp, ev.X, ev.Y)
+		tp.hover, tp.hoverOn, tp.hoverMods = p, true, ev.Mods
+		tp.link = nil
+		if ev.Mods&ui.Super != 0 {
+			tp.link = a.linkAt(tp, p)
+		}
+		if tp.sel.drag && ev.Button == 0 {
+			tp.sel.b = p
+			tp.sel.on = tp.sel.a != p
+			return true
+		}
+		return false
+	case ui.InputPointerUp:
+		if tp.sel.drag {
+			tp.sel.drag = false
+			return true
+		}
+		return false
 	case ui.InputText:
 		tp.pend, tp.compose, tp.preedit = ui.KeyUnknown, false, ""
 		if s := printable(ev.Text); s != "" {
+			tp.sel.on = false
 			tp.t.SendText(s)
 			return true
 		}
@@ -213,6 +276,18 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 		tp.pend = ui.KeyUnknown
 		return true
 	case ui.InputCommand:
+		switch ev.Text {
+		case "copy":
+			if s := tp.selectedText(); s != "" {
+				a.copyText = s
+				a.toast = "已复制选中的终端文字"
+				return true
+			}
+			return false
+		case "selectAll":
+			tp.selectAll()
+			return true
+		}
 		if ev.Text == "paste" {
 			if s := c.ReadClipboard(); s != "" {
 				tp.t.Paste(s)
@@ -224,6 +299,7 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 			return false // ⌘ 组合留给窗口快捷键;组字期间的按键(回车提交、退格、选词)留给输入法
 		}
 		if code, text, ok := termKey(ev.Key, ev.Mods); ok {
+			tp.sel.on = false
 			tp.t.SendKey(code, text, termMods(ev.Mods))
 			return true
 		}
@@ -412,7 +488,7 @@ func termColor(t *theme.Tokens, c term.Color, def ui.Color) ui.Color {
 
 // termRow 画一行:先是每段的背景色块(绝对定位,按列对齐,整行高度),再是文字,最后是光标块。
 // 背景不用文字片段自带的 Background(它只贴着字形,上下有缝,反色整行的状态栏会很难看)。
-func (a *App) termRow(c *ui.Context, ln term.Line, cx int, focused bool, cellW float32, preedit string) {
+func (a *App) termRow(c *ui.Context, ln term.Line, cx int, focused bool, cellW float32, preedit string, deco rowDeco) {
 	t := a.tk
 	ui.Row(c).Height(termLineH).Shrink(0).AlignItems(ui.Center).Children(func() {
 		col := 0
@@ -423,9 +499,23 @@ func (a *App) termRow(c *ui.Context, ln term.Line, cx int, focused bool, cellW f
 			}
 			col += w
 		}
+		// 选区 / 搜索命中 / 链接下划线盖在背景之上、文字之下
+		if deco.sel[1] > deco.sel[0] {
+			ui.Box(c).Absolute().Left(float32(deco.sel[0])*cellW).Top(0).Size(float32(deco.sel[1]-deco.sel[0])*cellW, termLineH).Background(t.Ac.Alpha(.32))
+		}
+		for _, h := range deco.hits {
+			col := t.Warn.Alpha(.38)
+			if h.cur {
+				col = t.Ac.Alpha(.62)
+			}
+			ui.Box(c).Absolute().Left(float32(h.c0)*cellW).Top(1).Size(float32(h.c1-h.c0)*cellW, termLineH-2).Radius(2).Background(col)
+		}
+		if deco.link[1] > deco.link[0] {
+			ui.Box(c).Absolute().Left(float32(deco.link[0])*cellW).Top(termLineH-3).Size(float32(deco.link[1]-deco.link[0])*cellW, 1).Background(t.Ac)
+		}
 		ui.RichText(c, termSpans(t, ln)...).NoWrap()
 		if cx >= 0 && preedit != "" { // 输入法组字:盖在光标处,带下划线
-			ui.RichText(c, ui.Span{Text: preedit, Font: "monospace", Size: termFont, Color: t.Tx1, Underline: true}).NoWrap().
+			ui.RichText(c, ui.Span{Text: preedit, Font: termFamily, Size: termFont, Color: t.Tx1, Underline: true}).NoWrap().
 				Absolute().Left(float32(cx) * cellW).Top(0).Height(termLineH).Background(t.Raised)
 		} else if cx >= 0 {
 			bg := t.Tx1
@@ -434,7 +524,20 @@ func (a *App) termRow(c *ui.Context, ln term.Line, cx int, focused bool, cellW f
 			} else {
 				bg = ui.RGBA(t.Tx1.R, t.Tx1.G, t.Tx1.B, 0.55)
 			}
-			ui.Box(c).Absolute().Left(float32(cx)*cellW).Top(0).Size(cellW, termLineH).Background(bg)
+			blink := a.prefs.Bool("term.blink", true) && focused
+			cur := ui.Box(c).Absolute().Left(float32(cx) * cellW)
+			switch a.prefs.Int("term.cursor", 0) {
+			case 1: // 竖线
+				cur.Top(1).Size(2, termLineH-2)
+			case 2: // 下划线
+				cur.Top(termLineH-3).Size(cellW, 2)
+			default: // 块
+				cur.Top(0).Size(cellW, termLineH)
+			}
+			cur.Background(bg)
+			if blink && cur.Loop("tcur", 1100*time.Millisecond, ui.Linear) > .55 { // 闪烁:前半周期亮,后半周期暗
+				cur.Opacity(.12)
+			}
 		}
 	})
 }
@@ -461,7 +564,7 @@ func termSpans(t *theme.Tokens, ln term.Line) []ui.Span {
 		if r.Dim {
 			fg.A = uint8(float32(fg.A) * 0.6)
 		}
-		sp := ui.Span{Text: r.Text, Font: "monospace", Size: termFont, Color: fg,
+		sp := ui.Span{Text: r.Text, Font: termFamily, Size: termFont, Color: fg,
 			Italic: r.Italic, Underline: r.Underline, Strikethrough: r.Strike}
 		if r.Bold {
 			sp.Weight = 700
@@ -469,7 +572,7 @@ func termSpans(t *theme.Tokens, ln term.Line) []ui.Span {
 		out = append(out, sp)
 	}
 	if len(out) == 0 {
-		out = append(out, ui.Span{Text: " ", Font: "monospace", Size: termFont})
+		out = append(out, ui.Span{Text: " ", Font: termFamily, Size: termFont})
 	}
 	return out
 }

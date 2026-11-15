@@ -503,7 +503,10 @@ var settingsTabs = []setTabDef{
 	{id: "terminal", title: "终端", icon: "terminal", desc: "内置终端的外观与 Shell。", groups: []setGroup{
 		{title: "外观", rows: []setRow{
 			rStp("term.fontSize", "字号", "终端文字大小,行高自动按比例换算", 12, 9, 24, 1, "px"),
+			rFld("term.font", "字体", "终端使用的等宽字体;留空 = 系统等宽字体", "", 150, true, "SF Mono"),
+			rSeg("term.lineHeight", "行高", "", 1, "紧凑", "标准", "宽松"),
 			rSeg("term.cursor", "光标形状", "", 0, "块", "竖线", "下划线"),
+			rTog("term.blink", "光标闪烁", "", true),
 			rFld("term.scrollback", "回看行数", "滚轮可回看的历史输出行数;对之后新开的终端生效", "10000", 90, false, ""),
 		}},
 		{title: "Shell", rows: []setRow{
