@@ -384,6 +384,16 @@ func (m *Mem) SetRebaseConflict(reason string) {
 	m.mu.Unlock()
 }
 
+// SetMergeConflict 演示:下一次 PullMerge 失败并进入冲突状态。
+func (m *Mem) SetMergeConflict(reason string) {
+	m.mu.Lock()
+	if m.fail == nil {
+		m.fail = map[string]string{}
+	}
+	m.fail["PullMerge"] = reason
+	m.mu.Unlock()
+}
+
 func (m *Mem) CompareCommits(a, b string) ([]Change, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

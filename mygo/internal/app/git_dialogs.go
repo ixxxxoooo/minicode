@@ -41,16 +41,23 @@ func (a *App) scmPushGuide(c *ui.Context) {
 			ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Tx2).Grow(1)
 			kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭"}).OnClick(a.clearPushGuide)
 		})
+		busy := a.sc.busy != ""
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-			kit.Btn(c, "拉取并变基", kit.BtnOpt{Small: true, Variant: kit.BtnPri, Icon: "download"}).OnClick(func() {
+			kit.Btn(c, "拉取并变基", kit.BtnOpt{
+				Small: true, Variant: kit.BtnPri, Icon: "download",
+				Disabled: busy, Loading: busy && a.sc.busy == "拉取并变基",
+			}).OnClick(func() {
 				a.clearPushGuide()
 				a.scmPullRebase()
 			})
-			kit.Btn(c, "拉取并合并", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() {
+			kit.Btn(c, "拉取并合并", kit.BtnOpt{
+				Small: true, Variant: kit.BtnSoft,
+				Disabled: busy, Loading: busy && a.sc.busy == "拉取并合并",
+			}).OnClick(func() {
 				a.clearPushGuide()
 				a.scmPullMerge()
 			})
-			kit.Btn(c, "强制推送(带租约)", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() {
+			kit.Btn(c, "强制推送(带租约)", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Disabled: busy}).OnClick(func() {
 				a.confirmDlg("强制推送到远端?", "使用 --force-with-lease,仅当你确认没有人在基于远端独有提交工作时才继续。", "强制推送", true, func() {
 					a.clearPushGuide()
 					a.scmAct("强制推送", func(r vcs.Repo) error { return r.PushForce() }, nil)

@@ -13,12 +13,14 @@ func (a *App) scmPullRebase() {
 	a.scmAct("拉取并变基", func(r vcs.Repo) error { return r.PullRebase() }, func() {
 		a.sc.rebase = false
 		a.toast = "已拉取并变基"
+		pushLog.Info("拉取并变基完成")
 	})
 }
 
 func (a *App) scmPullMerge() {
 	a.scmAct("拉取并合并", func(r vcs.Repo) error { return r.PullMerge() }, func() {
 		a.toast = "已拉取并合并"
+		pushLog.Info("拉取并合并完成")
 	})
 }
 

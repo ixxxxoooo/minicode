@@ -195,13 +195,10 @@ func (a *App) scmAct(what string, f func(r vcs.Repo) error, onOK ...func()) {
 				if what == "推送" || what == "同步" || what == "提交并同步" {
 					a.notePushFail(err)
 				}
-				if what == "拉取并变基" || what == "拉取并合并" {
+				if what == "拉取并变基" {
 					a.notePushFail(err)
 					if strings.Contains(err.Error(), "冲突") || strings.Contains(strings.ToLower(err.Error()), "conflict") {
 						a.sc.rebase = true
-						if what == "拉取并合并" {
-							a.sc.pushGuide = "拉取并合并产生冲突:请解决后提交,或放弃合并。"
-						}
 					}
 				}
 			} else {

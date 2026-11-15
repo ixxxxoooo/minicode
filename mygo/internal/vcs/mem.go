@@ -316,6 +316,11 @@ func (m *Mem) PullRebase() error {
 
 func (m *Mem) PullMerge() error {
 	if err := m.slow("PullMerge"); err != nil {
+		if strings.Contains(err.Error(), "冲突") || strings.Contains(strings.ToLower(err.Error()), "conflict") {
+			m.mu.Lock()
+			m.changes = append(m.changes, Change{Path: "src/router.rs", Status: StatusConflict, Add: 2, Del: 2})
+			m.mu.Unlock()
+		}
 		return err
 	}
 	m.mu.Lock()
