@@ -64,9 +64,10 @@ type Term struct {
 	cacheVer uint64
 	cacheSB  int
 
-	mouseModes atomic.Uint32 // 鼠标上报模式是否开启(见 mouse.go)
-	cmdRunning atomic.Bool   // OSC 133:命令是否在运行
-	cmdBlocks  []CmdBlock    // 命令块装饰(行号 + 成败)
+	mouseModes  atomic.Uint32 // 鼠标上报模式是否开启(见 mouse.go)
+	cmdRunning  atomic.Bool   // OSC 133:命令是否在运行
+	cmdBlocks   []CmdBlock    // 命令块装饰(行号 + 成败)
+	blockScroll int           // 上次记块时的回看行数,变小说明被清掉了
 }
 
 // Start 起 shell。登录 shell(-l)才有完整的 PATH(从访达启动的应用只继承很短的环境)。

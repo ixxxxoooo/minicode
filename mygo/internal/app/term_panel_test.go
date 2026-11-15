@@ -212,3 +212,57 @@ func TestTerminalSelectAndCopy(t *testing.T) {
 		t.Fatalf("⌘C 按键后剪贴板 %q", got)
 	}
 }
+
+// OSC 133:命令块在命令行上出成败点,点击复制这条命令的输出。
+// 直接让 shell 打印 OSC 序列(B = 命令开始,C;2 = 以退出码 2 结束),不依赖用户的 shell 配置。
+func TestTermCommandBlockDecoration(t *testing.T) {
+	t.Setenv("SHELL", "/bin/sh")
+	a, tt := newTestApp(t)
+	a.SetProject(t.TempDir())
+	a.SetMode(ModeIDE)
+	a.ide.bottomOpen, a.ide.bottomTab = true, "term"
+	t.Cleanup(a.CloseTerminals)
+	pump := func(until func() bool, what string) {
+		t.Helper()
+		deadline := time.Now().Add(10 * time.Second)
+		for time.Now().Before(deadline) {
+			tt.Frame()
+			if until() {
+				return
+			}
+			time.Sleep(30 * time.Millisecond)
+		}
+		t.Fatalf("等不到:%s;当前文字 %v", what, tt.Texts())
+	}
+	pump(func() bool { return containsText(tt.Texts(), "$") }, "提示符")
+	tt.Type(`printf '\033]133;B\007blk-out-1\nblk-out-2\n\033]133;C;2\007'`)
+	tt.Key(0, ui.KeyEnter)
+	pump(func() bool { return tt.HasText("blk-out-2") }, "输出")
+	tp := a.ide.tpc()
+	pump(func() bool {
+		for _, b := range tp.t.CommandBlocks() {
+			if b.Done {
+				return true
+			}
+		}
+		return false
+	}, "命令块收尾")
+	bl := tp.t.CommandBlocks()
+	if len(bl) != 1 || bl[0].ExitOK || bl[0].Exit != 2 {
+		t.Fatalf("命令块应为一个失败(退出码 2)的块:%+v", bl)
+	}
+	tt.Frame()
+	cmdRow := bl[0].StartRow - tp.scr.LineBase - 1
+	d := a.rowDeco(tp, cmdRow, tp.scr.Cols)
+	if d.cmd != -1 || d.cmdExit != 2 || d.cmdCopy == nil {
+		t.Fatalf("命令行应有失败装饰:%+v", d)
+	}
+	// 输出行本身不该再有圆点
+	if d2 := a.rowDeco(tp, cmdRow+1, tp.scr.Cols); d2.cmd != 0 {
+		t.Fatalf("输出行不该有装饰:%+v", d2)
+	}
+	d.cmdCopy()
+	if a.copyText != "blk-out-1\nblk-out-2" {
+		t.Fatalf("复制到的输出 %q", a.copyText)
+	}
+}

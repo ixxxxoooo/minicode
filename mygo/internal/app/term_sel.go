@@ -140,6 +140,31 @@ func (tp *termPanel) selectedText() string {
 	return strings.Join(rows, "\n")
 }
 
+// rowsText 取 [from, to) 行的文字:每行去尾部空白,首尾空行去掉。
+func (tp *termPanel) rowsText(from, to int) string {
+	if tp.scr == nil {
+		return ""
+	}
+	from, to = max(from, 0), min(to, len(tp.scr.Lines))
+	var rows []string
+	for y := from; y < to; y++ {
+		rows = append(rows, strings.TrimRight(strings.Join(lineCells(tp.scr.Lines[y]), ""), " "))
+	}
+	return strings.Trim(strings.Join(rows, "\n"), "\n")
+}
+
+// copyCmdOutput 复制一条命令的输出(命令装饰圆点的点击动作)。
+func (a *App) copyCmdOutput(tp *termPanel, from, to int) {
+	txt := tp.rowsText(from, to)
+	if txt == "" {
+		a.toast = "这条命令没有输出"
+		return
+	}
+	a.copyText = txt
+	a.toast = "已复制命令输出(" + itoa(strings.Count(txt, "\n")+1) + " 行)"
+	log.Info("复制命令输出", "lines", strings.Count(txt, "\n")+1)
+}
+
 func (tp *termPanel) selectAll() {
 	if tp.scr == nil || len(tp.scr.Lines) == 0 {
 		return
@@ -508,6 +533,9 @@ type rowDeco struct {
 	hits []rowHit
 	link [2]int
 	cmd  int8 // 命令装饰:0 无 / 1 成功 / -1 失败
+	// 命令装饰的详情:悬停提示的退出码、点击复制该命令输出
+	cmdExit int
+	cmdCopy func()
 }
 
 type rowHit struct {
@@ -533,14 +561,21 @@ func (a *App) rowDeco(tp *termPanel, row, cols int) rowDeco {
 	if tp.t != nil && tp.scr != nil {
 		abs := tp.scr.LineBase + row
 		for _, b := range tp.t.CommandBlocks() {
-			if b.StartRow == abs {
-				if b.ExitOK {
-					d.cmd = 1
-				} else {
-					d.cmd = -1
-				}
+			// 圆点落在命令行(输出第一行的上一行)上;命令还在跑的块先不画
+			if !b.Done || b.StartRow-1 != abs {
+				continue
+			}
+			// 清屏(⌃L)后旧块指向的行已经是空白,不画
+			if row < len(tp.scr.Lines) && strings.TrimSpace(strings.Join(lineCells(tp.scr.Lines[row]), "")) == "" {
 				break
 			}
+			d.cmd, d.cmdExit = 1, b.Exit
+			if !b.ExitOK {
+				d.cmd = -1
+			}
+			from, to := b.StartRow-tp.scr.LineBase, b.EndRow-tp.scr.LineBase
+			d.cmdCopy = func() { a.copyCmdOutput(tp, from, to) }
+			break
 		}
 	}
 	return d

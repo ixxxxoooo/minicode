@@ -9,9 +9,11 @@ import (
 
 // CmdBlock 是一个命令输出块(由 OSC 133 标出),用于终端里的装饰与复制。
 type CmdBlock struct {
-	StartRow int  // 命令起始行(Screen.Lines 下标)
-	EndRow   int  // 结束行(不含)
+	StartRow int  // 输出的第一行(Screen.Lines 下标,即命令行的下一行)
+	EndRow   int  // 输出的结束行(不含);命令还在跑时为 0
 	ExitOK   bool // 退出码是否为 0
+	Exit     int  // 退出码
+	Done     bool // 命令已结束(收到 C)
 }
 
 // installShellIntegration 注册 OSC 133 处理并在合适时写入集成脚本路径到环境。
@@ -26,50 +28,59 @@ func (t *Term) installShellIntegration(shell string) {
 }
 
 func (t *Term) handleOsc133(payload string) {
-	// VS Code / iTerm 约定:133;X 或 133;X;code
+	// vt 交给处理器的是整段载荷,带命令号前缀:"133;B"、"133;C;1"
+	// (早先把 "133" 当成动作,所有动作都匹配不上,命令装饰从来没生效过)
+	payload = strings.TrimPrefix(payload, "133;")
 	parts := strings.Split(payload, ";")
-	if len(parts) == 0 {
-		return
-	}
-	kind := parts[0]
-	switch kind {
-	case "A", "D": // Prompt / prompt end
+	switch parts[0] {
+	case "A", "D": // 提示符开始 / 结束
 		t.cmdRunning.Store(false)
 		t.pruneCmdBlocks()
-	case "B": // Command start
+	case "B": // 命令开始(preexec,光标已在输出的第一行)
 		t.cmdRunning.Store(true)
 		row := t.currentRow()
 		t.mu.Lock()
+		// 回看被清掉(clear / ⌘K 带 \e[3J)后,旧块的行号已经对不上,整体丢弃
+		if n := t.em.Emulator.ScrollbackLen(); n < t.blockScroll {
+			t.cmdBlocks = nil
+		} else {
+			t.blockScroll = n
+		}
 		t.cmdBlocks = append(t.cmdBlocks, CmdBlock{StartRow: row, ExitOK: true})
 		t.mu.Unlock()
-	case "C": // Command finished
+	case "C": // 命令结束,可带退出码
 		t.cmdRunning.Store(false)
-		ok := true
+		code := 0
 		if len(parts) > 1 {
-			if c, err := strconv.Atoi(parts[1]); err == nil {
-				ok = c == 0
-			}
+			code, _ = strconv.Atoi(parts[1])
 		}
 		row := t.currentRow()
 		t.mu.Lock()
-		if n := len(t.cmdBlocks); n > 0 {
-			t.cmdBlocks[n-1].EndRow = row
-			t.cmdBlocks[n-1].ExitOK = ok
+		// 只收尾「打开中」的块:空回车也会触发 precmd,不能改写上一个已结束的块
+		if n := len(t.cmdBlocks); n > 0 && !t.cmdBlocks[n-1].Done {
+			b := &t.cmdBlocks[n-1]
+			if row < b.StartRow { // 命令把屏幕清了(clear):这块已无意义
+				t.cmdBlocks = t.cmdBlocks[:n-1]
+			} else {
+				b.EndRow, b.ExitOK, b.Exit, b.Done = row, code == 0, code, true
+			}
 		}
 		t.mu.Unlock()
 	}
 }
 
+// currentRow 只能在 OSC 处理器里调:此时仿真器的 Write 正持有写锁,
+// 所以直接用内嵌的无锁 Emulator,绝不能走 SafeEmulator 的加锁版本(会死锁)。
 func (t *Term) currentRow() int {
-	pos := t.em.CursorPosition()
-	return pos.Y + t.em.ScrollbackLen()
+	pos := t.em.Emulator.CursorPosition()
+	return pos.Y + t.em.Emulator.ScrollbackLen()
 }
 
 // pruneCmdBlocks 丢掉已滚出可视回看区的命令块(清屏 / 大段输出后装饰不错位)。
 func (t *Term) pruneCmdBlocks() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	n := t.em.ScrollbackLen()
+	n := t.em.Emulator.ScrollbackLen()
 	keep := t.cmdBlocks[:0]
 	for _, b := range t.cmdBlocks {
 		if b.EndRow == 0 || b.EndRow >= n-200 {
@@ -132,6 +143,7 @@ __mc_precmd() {
   __mc_osc "C;$ec"
 }
 __mc_preexec() { __mc_osc B; }
+autoload -Uz add-zsh-hook 2>/dev/null
 if typeset -f add-zsh-hook >/dev/null 2>&1; then
   add-zsh-hook precmd __mc_precmd
   add-zsh-hook preexec __mc_preexec

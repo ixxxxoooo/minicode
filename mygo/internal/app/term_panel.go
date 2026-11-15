@@ -134,7 +134,7 @@ func (a *App) realTerminal(c *ui.Context) {
 			tp.cellW = 6.9
 		}
 	}
-	const padX, padY = 10, 6
+	const padX, padY = padXTerm, 6
 	body := ui.Column(c).Key("termbody").Grow(1).MinHeight(0).Focusable()
 	b := body.Bounds()
 	cols := int((b.W - 2*padX) / tp.cellW)
@@ -238,6 +238,9 @@ func (a *App) realTerminal(c *ui.Context) {
 		}
 	})
 }
+
+// padXTerm 是终端正文左右留白;命令成败点就画在左边这条留白里。
+const padXTerm = 10
 
 // restartTerm 在同一目录重开一个 shell。
 func (a *App) restartTerm() {
@@ -577,11 +580,20 @@ func (a *App) termRow(c *ui.Context, ln term.Line, cx int, focused bool, cellW f
 		if deco.sel[1] > deco.sel[0] {
 			ui.Box(c).Absolute().Left(float32(deco.sel[0])*cellW).Top(0).Size(float32(deco.sel[1]-deco.sel[0])*cellW, termLineH).Background(t.Ac.Alpha(.32))
 		}
-		switch deco.cmd {
-		case 1:
-			ui.Box(c).Absolute().Left(0).Top(termLineH/2-3).Size(6, 6).Radius(3).Background(t.Ok)
-		case -1:
-			ui.Box(c).Absolute().Left(0).Top(termLineH/2-3).Size(6, 6).Radius(3).Background(t.Err)
+		if deco.cmd != 0 {
+			// 命令成败点:画在行首留白处(不压提示符),悬停写退出码,点击复制这条命令的输出
+			col, tip := t.Ok, "命令成功 · 点击复制输出"
+			if deco.cmd < 0 {
+				col, tip = t.Err, "命令失败(退出码 "+itoa(deco.cmdExit)+")· 点击复制输出"
+			}
+			ui.ButtonBase(c.Key("cmdmark")).Absolute().Left(-padXTerm).Top(0).Size(padXTerm, termLineH).Padding(0).
+				Tooltip(tip).OnClick(func() {
+				if deco.cmdCopy != nil {
+					deco.cmdCopy()
+				}
+			}).Children(func() {
+				ui.Box(c).Size(6, 6).Radius(3).Background(col)
+			})
 		}
 		for _, h := range deco.hits {
 			col := t.Warn.Alpha(.38)
