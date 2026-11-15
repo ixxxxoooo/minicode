@@ -260,8 +260,7 @@ func (a *App) fileItem(p string) palItem {
 // openSession 切到某个会话(真实后端接入前只记日志并更新选中)。
 func (a *App) openSession(project, id string) {
 	log.Info("命令面板打开会话", "project", project, "session", id)
-	a.curSess = id
-	a.screen = ScreenWork
+	a.OpenSession(id)
 }
 
 // palRowY 返回第 i 项的顶边(含前面的分组标题),与渲染保持同一套尺寸。

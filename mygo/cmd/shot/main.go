@@ -35,6 +35,7 @@ func main() {
 	palette := flag.String("palette", "", "打开命令面板并预填查询(用 _ 表示空查询)")
 	tab := flag.String("tab", "", "设置页分类(配合 -screen settings)")
 	squery := flag.String("squery", "", "设置页搜索词")
+	state := flag.String("state", "", "会话状态:welcome(空会话)/ perm / ask / plan / queue(权限·提问·计划·排队)")
 	flag.Parse()
 
 	home := "/tmp/minicode-shot-home"
@@ -48,8 +49,21 @@ func main() {
 	a := app.New(app.Options{Palette: *pal, Scheme: *scheme, Mode: m, Screen: app.Screen(*screen), FakeLights: true})
 	a.SetProjects(demo.Projects(), "fixbug")
 	a.SeedDemoExtras()
-	demo.Replay(a.State(), demo.FixBug(false)) // 静态回放:不等待、同步归约
-	demo.ReplayTasks(a.State())
+	switch *state {
+	case "welcome":
+	case "perm":
+		demo.Replay(a.State(), demo.PendingPermission())
+	case "ask":
+		demo.Replay(a.State(), demo.PendingQuestion())
+	case "plan":
+		demo.Replay(a.State(), demo.PendingPlan())
+	default:
+		demo.Replay(a.State(), demo.FixBug(false)) // 静态回放:不等待、同步归约
+		demo.ReplayTasks(a.State())
+		if *state == "queue" {
+			a.QueuePrompts("顺便把 README 里的路由示例也更新一下", "再跑一遍完整测试")
+		}
+	}
 
 	tt := ui.NewTester(a.View, *w, *h)
 	tt.SetScale(float32(*scale))

@@ -20,6 +20,10 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		p.Grow(1).Basis(0)
 	}
 	p.Children(func() {
+		if len(a.st.Items) == 0 {
+			a.welcome(c)
+			return
+		}
 		a.chatHead(c)
 		// 会话流:停在底部时随新内容跟随,用户上滑后不再抢滚动位置
 		if a.flowSt.Y >= a.flowSt.MaxY {
@@ -33,7 +37,10 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		ui.Column(c).Padding(4, 0, 10, 0).Shrink(0).AlignItems(ui.Center).Children(func() {
 			a.flowCol(c, func() {
 				a.taskDock(c)
-				a.composer(c)
+				if !a.dockCard(c) {
+					a.queueCard(c)
+					a.composer(c)
+				}
 			})
 		})
 		_ = t

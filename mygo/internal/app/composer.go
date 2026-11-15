@@ -31,11 +31,14 @@ func (a *App) composer(c *ui.Context) {
 		in := ui.TextArea(c.Key("draft"), &a.draft).Lines(1, 8).Placeholder("描述任务,@ 引用文件,/ 调用命令").
 			PlaceholderColor(t.Tx3).Background(ui.Transparent).BorderWidth(0).Padding(9, 12, 3, 12).FontSize(theme.FsRead).LineHeight(1.55).
 			MinHeight(36).TextColor(t.Tx1).FocusRing(false)
+		if a.welcomeFocus {
+			in.AutoFocus()
+		}
 		in.OnTextKey(func(k ui.TextKey) bool {
-			if k.Key == ui.KeyEnter && k.Mods == 0 {
+			if k.Key == ui.KeyEnter && (k.Mods == 0 || k.Mods == ui.Cmd) {
 				txt := k.Text()
 				k.SetText("")
-				a.submit(txt)
+				a.submitKey(txt, k.Mods == ui.Cmd)
 				return true
 			}
 			return false
@@ -43,6 +46,23 @@ func (a *App) composer(c *ui.Context) {
 		a.composerBar(c)
 	})
 	a.cfgPopup(c, "cfg", box, false)
+}
+
+// submitKey 回车发送:回合进行中 Enter 排队、⌘Enter 立即引导;空闲时都是直接发送。
+func (a *App) submitKey(text string, steer bool) {
+	if trim(text) == "" {
+		return
+	}
+	if a.st.Phase == core.PhaseRunning {
+		if steer {
+			log.Info("引导", "len", len(text))
+			a.send(core.CmdPrompt{Text: text, Steer: true})
+		} else if a.q.add(text) {
+			log.Info("排队", "len", len(text), "队列", a.q.len())
+		}
+		return
+	}
+	a.submit(text)
 }
 
 // submit 发送一条消息。
@@ -78,7 +98,7 @@ func (a *App) composerBar(c *ui.Context) {
 			if b.Hovered() {
 				b.Background(t.Ac.Mix(t.Tx1, .10))
 			}
-			b.OnClick(func() { a.submit(a.draft); a.draft = "" })
+			b.OnClick(func() { a.submitKey(a.draft, false); a.draft = "" })
 		}
 	})
 }

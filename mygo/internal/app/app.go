@@ -95,8 +95,14 @@ type App struct {
 	// Markdown 选项(随主题重建)
 	md *markdown.Options
 
+	// 会话切换:由入口注入,按 id 造后端(空串 = 新会话)
+	opener func(id string) backend.Backend
+
 	// 输入框
-	draft string
+	draft        string
+	welcomeFocus bool                // 欢迎页的输入框自动聚焦
+	q            promptQueue         // 排队的消息
+	qa           map[string]*qaState // 提问向导的本地进度
 
 	// 测试 / 截图用:没有系统红绿灯时自己画
 	fakeLights bool
@@ -168,8 +174,12 @@ func (a *App) Attach(be backend.Backend) {
 	a.be = be
 	be.Start(func(ev core.Event) {
 		apply := func() {
+			if a.be != be { // 已切到别的会话:旧后端的迟到事件丢弃
+				return
+			}
 			end := diag.SpanSlow("app", "归约事件", 8*time.Millisecond, "ev", evName(ev))
 			a.st.Apply(ev)
+			a.afterEvent(ev)
 			end()
 		}
 		if a.win != nil {
@@ -179,6 +189,47 @@ func (a *App) Attach(be backend.Backend) {
 		}
 	})
 }
+
+// afterEvent 归约之后的界面侧反应:回合结束时处理排队。
+func (a *App) afterEvent(ev core.Event) {
+	if e, ok := ev.(core.EvTurnEnded); ok {
+		a.q.turnEnded(e.Reason == core.StopEndTurn)
+		a.drainQueue()
+	}
+}
+
+// SetSessionOpener 注入「按会话 id 造后端」的工厂(演示 / 真实各一个)。
+func (a *App) SetSessionOpener(f func(id string) backend.Backend) { a.opener = f }
+
+// OpenSession 切到某个会话:关掉旧后端、清空状态与排队、接上新后端(空 id = 新会话)。
+func (a *App) OpenSession(id string) {
+	log.Info("切换会话", "from", a.curSess, "to", id)
+	if a.be != nil {
+		a.be.Close()
+		a.be = nil
+	}
+	a.st = core.NewState()
+	a.q.clear()
+	a.qa = nil
+	a.folds = map[string]bool{}
+	a.draft = ""
+	a.curSess = id
+	a.screen = ScreenWork
+	a.flowSt = ui.ScrollState{}
+	if a.opener != nil {
+		a.Attach(a.opener(id))
+	}
+}
+
+// QueuePrompts 直接排入若干条消息(截图 / 测试用)。
+func (a *App) QueuePrompts(texts ...string) {
+	for _, t := range texts {
+		a.q.add(t)
+	}
+}
+
+// NewSession 开始新会话并回到欢迎页。
+func (a *App) NewSession() { a.OpenSession("") }
 
 // SetWindow 记下窗口(用于 Update 与窗口控制)。
 func (a *App) SetWindow(w *mygo.Window) { a.win = w }
@@ -272,6 +323,8 @@ func (a *App) shortcuts(c *ui.Context) {
 		} else {
 			a.openPalette()
 		}
+	case c.Shortcut(ui.Cmd, ui.KeyN):
+		a.NewSession()
 	case c.Shortcut(ui.Cmd, ui.KeyJ):
 		a.ide.bottomOpen = !a.ide.bottomOpen
 	case c.Shortcut(ui.Cmd, ui.KeyS):

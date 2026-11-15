@@ -18,10 +18,15 @@ type Backend struct {
 	script func() []Step
 	speed  float64
 
-	mu     sync.Mutex
-	sink   backend.Sink
-	stop   chan struct{}
-	closed bool
+	mu      sync.Mutex
+	sink    backend.Sink
+	stop    chan struct{}
+	closed  bool
+	gen     int                      // 播放代数:取消 / 新回合时加一,旧的播放协程见到变化就退出
+	pending map[string]func() []Step // 等待用户处理的权限 / 提问 / 计划 → 处理后接着播放的剧情
+	seq     int                      // 互动回合的条目编号
+	Instant bool                     // 历史会话:Start 时同步一次性归约,不按节奏播放
+	Auto    string                   // 启动后自动发出的提示(演示「权限请求」这类会话)
 }
 
 // New 新建演示后端。script 在 Start 时调用一次。
@@ -38,7 +43,27 @@ func (b *Backend) Start(sink backend.Sink) {
 	b.mu.Lock()
 	b.sink = sink
 	b.mu.Unlock()
-	steps := b.script()
+	if b.Instant {
+		for _, st := range b.script() {
+			sink(st.Ev)
+		}
+	} else {
+		b.play(b.script())
+	}
+	if b.Auto != "" {
+		b.prompt(core.CmdPrompt{Text: b.Auto})
+	}
+}
+
+// play 异步按节奏播放一段剧情;新的 play 或 Cancel 会让旧的播放停下。
+func (b *Backend) play(steps []Step) {
+	b.mu.Lock()
+	b.gen++
+	gen, sink := b.gen, b.sink
+	b.mu.Unlock()
+	if sink == nil {
+		return
+	}
 	go func() {
 		defer diag.Recover("demo.play")
 		started := time.Now()
@@ -53,13 +78,15 @@ func (b *Backend) Start(sink backend.Sink) {
 					return
 				}
 			}
+			b.mu.Lock()
+			alive := b.gen == gen
+			b.mu.Unlock()
+			if !alive {
+				return
+			}
 			sink(st.Ev)
 		}
 	}()
-}
-
-func (b *Backend) Send(cmd core.Command) {
-	log.Debug("命令", "cmd", cmd)
 }
 
 func (b *Backend) Close() {

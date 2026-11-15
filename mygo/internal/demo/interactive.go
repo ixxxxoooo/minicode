@@ -1,0 +1,221 @@
+package demo
+
+import (
+	"strings"
+	"time"
+
+	"github.com/ixxxxoooo/minicode/internal/core"
+)
+
+// Send 处理界面命令:演示后端也能「真的」互动——发消息会得到回复,
+// 含「权限 / 提问 / 计划」字样的提示会停在对应的待处理卡片上,处理后接着播放。
+func (b *Backend) Send(cmd core.Command) {
+	log.Debug("命令", "cmd", cmd)
+	switch c := cmd.(type) {
+	case core.CmdPrompt:
+		b.prompt(c)
+	case core.CmdCancel:
+		b.mu.Lock()
+		b.gen++ // 让正在播放的协程退出
+		sink := b.sink
+		b.pending = nil
+		b.mu.Unlock()
+		if sink != nil {
+			sink(core.EvTurnEnded{Reason: core.StopCancelled})
+		}
+	case core.CmdResolvePermission:
+		b.resume(c.ID, core.EvPermissionResolved{ID: c.ID, Option: c.Option})
+	case core.CmdAnswerQuestion:
+		b.resume(c.ID, core.EvQuestionAnswered{ID: c.ID, Answers: c.Answers})
+	case core.CmdResolvePlan:
+		if c.Mode != nil && c.Approve {
+			b.mu.Lock()
+			sink := b.sink
+			b.mu.Unlock()
+			if sink != nil {
+				sink(core.EvModeChanged{Mode: *c.Mode})
+			}
+		}
+		b.resume(c.ID, core.EvPlanResolved{ID: c.ID, Approved: c.Approve})
+	}
+}
+
+// resume 用户处理了待办卡片:先送出处理结果,再播放挂起的后续剧情。
+func (b *Backend) resume(id string, ev core.Event) {
+	b.mu.Lock()
+	next := b.pending[id]
+	delete(b.pending, id)
+	sink := b.sink
+	b.mu.Unlock()
+	if sink == nil {
+		return
+	}
+	sink(ev)
+	if next != nil {
+		b.play(next())
+	}
+}
+
+func (b *Backend) later(id string, f func() []Step) {
+	b.mu.Lock()
+	if b.pending == nil {
+		b.pending = map[string]func() []Step{}
+	}
+	b.pending[id] = f
+	b.mu.Unlock()
+}
+
+func (b *Backend) nextID(prefix string) string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.seq++
+	return prefix + string(rune('0'+b.seq%10)) + string(rune('a'+b.seq/10%26))
+}
+
+func (b *Backend) prompt(p core.CmdPrompt) {
+	uid := b.nextID("iu")
+	user := core.EvAppend{Item: &core.User{ID: uid, Text: p.Text, Images: p.Images, Files: p.Files}}
+	if p.Steer { // 引导:塞进正在进行的回合,不重开回合
+		b.mu.Lock()
+		sink := b.sink
+		b.mu.Unlock()
+		if sink != nil {
+			sink(user)
+		}
+		return
+	}
+	ms := func(n int) time.Duration { return time.Duration(n) * time.Millisecond }
+	head := []Step{{0, user}, {ms(250), core.EvTurnStarted{}}}
+	text := strings.ToLower(p.Text)
+	switch {
+	case strings.Contains(text, "权限"):
+		head = append(head, b.permissionScene(uid)...)
+	case strings.Contains(text, "提问"):
+		head = append(head, b.questionScene(uid)...)
+	case strings.Contains(text, "计划"):
+		head = append(head, b.planScene(uid)...)
+	default:
+		head = append(head, b.replyScene(uid, "收到。这是演示后端的回复:真实模式下这里会是 Claude 的回答。")...)
+	}
+	b.play(head)
+}
+
+// 收尾:一段正文 + 回合结束。
+func (b *Backend) replyScene(uid, text string) []Step {
+	ms := func(n int) time.Duration { return time.Duration(n) * time.Millisecond }
+	aid := b.nextID("ia")
+	s := []Step{{ms(300), core.EvAppend{Item: &core.Assistant{ID: aid, Streaming: true}}}}
+	for _, r := range chunks(text, 6) {
+		s = append(s, Step{ms(40), core.EvTextDelta{ID: aid, Delta: r}})
+	}
+	s = append(s, Step{ms(80), core.EvItemDone{ID: aid}},
+		Step{0, core.EvDuration{ID: uid, Secs: 3}},
+		Step{0, core.EvTurnEnded{Reason: core.StopEndTurn}})
+	return s
+}
+
+func (b *Backend) permissionScene(uid string) []Step {
+	ms := func(n int) time.Duration { return time.Duration(n) * time.Millisecond }
+	id := b.nextID("ib")
+	bash := core.NewToolCall(id, "Bash", "运行 cargo test router").WithInput(map[string]any{"command": "cargo test router"})
+	b.later(id, func() []Step {
+		s := []Step{
+			{ms(300), core.EvToolUpdate{ID: id, Patch: core.ToolPatch{LiveOutput: core.Str(cargoLive)}}},
+			{ms(600), core.EvToolUpdate{ID: id, Patch: core.ToolPatch{Status: core.Status(core.ToolCompleted), DurationMs: 1200,
+				AppendContent: []core.ToolContent{&core.TerminalBlock{Command: "cargo test router", Output: cargoDone, ExitCode: core.Int(0)}}}}},
+		}
+		return append(s, b.replyScene(uid, "测试全部通过。")...)
+	})
+	return []Step{{ms(200), core.EvPromoteToPermission{Request: &core.PermissionRequest{ID: id, Tool: bash, Options: PermissionOptions()}}}}
+}
+
+// PermissionOptions 是 Bash 权限卡的标准三个选项。
+func PermissionOptions() []core.PermissionOption {
+	return []core.PermissionOption{
+		{ID: "allow", Label: "允许一次", Kind: core.AllowOnce},
+		{ID: "always", Label: "本会话始终允许", Kind: core.AllowAlways},
+		{ID: "deny", Label: "拒绝", Kind: core.RejectOnce},
+	}
+}
+
+// Questions 是演示用的两题向导(设计稿 F.ask 的内容)。
+func Questions() []core.Question {
+	return []core.Question{
+		{Header: "斜杠", Question: "末尾斜杠要怎么处理?", Options: []core.QuestionOption{
+			{Label: "忽略末尾斜杠", Description: "/users/ 与 /users 等价(推荐)"},
+			{Label: "严格区分", Description: "保持现状"},
+		}},
+		{Header: "大小写", Question: "需要保留大小写敏感的开关吗?", MultiSelect: true, Options: []core.QuestionOption{
+			{Label: "加一个开关", Description: "Router::case_sensitive(bool)"},
+			{Label: "写进文档", Description: "只在 README 里说明"},
+			{Label: "都不要", Description: ""},
+		}},
+	}
+}
+
+func (b *Backend) questionScene(uid string) []Step {
+	ms := func(n int) time.Duration { return time.Duration(n) * time.Millisecond }
+	id := b.nextID("iq")
+	b.later(id, func() []Step { return b.replyScene(uid, "好的,按你的选择来改。") })
+	return []Step{{ms(200), core.EvAppend{Item: &core.QuestionRequest{ID: id, Questions: Questions()}}}}
+}
+
+// PlanMarkdown 是演示计划正文。
+const PlanMarkdown = "1. 抽出 `normalize`,注册与匹配共用\n2. 匹配失败时回退到 fallback\n3. 补 2 条测试并跑通"
+
+func (b *Backend) planScene(uid string) []Step {
+	ms := func(n int) time.Duration { return time.Duration(n) * time.Millisecond }
+	id := b.nextID("ip")
+	b.later(id, func() []Step { return b.replyScene(uid, "开始按计划实施。") })
+	s := []Step{{ms(200), core.EvAppend{Item: &core.PlanApproval{ID: id, Streaming: true}}}}
+	acc := ""
+	for _, r := range chunks(PlanMarkdown, 10) {
+		acc += r
+		s = append(s, Step{ms(60), core.EvPlanUpdated{ID: id, Markdown: acc, Streaming: true}})
+	}
+	return append(s, Step{ms(100), core.EvPlanUpdated{ID: id, Markdown: PlanMarkdown, Streaming: false}})
+}
+
+// chunks 按字符(不切断 UTF-8)把文本切成每块 n 个字符。
+func chunks(s string, n int) []string {
+	var out []string
+	r := []rune(s)
+	for i := 0; i < len(r); i += n {
+		out = append(out, string(r[i:min(len(r), i+n)]))
+	}
+	return out
+}
+
+// 静态回放用的待处理场景(截图与测试):每个都停在等待用户的卡片上。
+
+// PendingPermission 停在 Bash 权限卡上。
+func PendingPermission() []Step {
+	var s []Step
+	for _, st := range FixBug(true) {
+		if _, ok := st.Ev.(core.EvPermissionResolved); ok {
+			break
+		}
+		s = append(s, st)
+	}
+	return s
+}
+
+func pendingBase(item core.Item) []Step {
+	return []Step{
+		{0, core.EvReady{SessionID: "demo-pending", Models: core.DefaultModels(), Model: "sonnet", Mode: core.ModeDefault}},
+		{0, core.EvTitleChanged{Title: "完整修复一个 Bug:路由大小写匹配"}},
+		{0, core.EvAppend{Item: &core.User{ID: "u1", Text: fixUser, Files: []string{"src/router.rs"}}}},
+		{0, core.EvTurnStarted{}},
+		{0, core.EvAppend{Item: item}},
+	}
+}
+
+// PendingQuestion 停在两题向导上。
+func PendingQuestion() []Step {
+	return pendingBase(&core.QuestionRequest{ID: "q1", Questions: Questions()})
+}
+
+// PendingPlan 停在待批准的计划上。
+func PendingPlan() []Step {
+	return pendingBase(&core.PlanApproval{ID: "p1", Markdown: PlanMarkdown})
+}

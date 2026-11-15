@@ -41,6 +41,12 @@ func (a *App) flow(c *ui.Context) {
 					a.assistant(c, v)
 				case *core.Notice:
 					a.notice(c, v)
+				case *core.PlanApproval:
+					a.planCard(c, v)
+				case *core.QuestionRequest:
+					if v.Answered {
+						a.askEcho(c, v)
+					}
 				}
 			}
 			// 回合尾部操作条:每个已结束回合的最后一项之后(进行中的回合还没有统计,自然不显示)

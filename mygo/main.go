@@ -10,6 +10,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/app"
+	"github.com/ixxxxoooo/minicode/internal/backend"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/prefs"
@@ -80,6 +81,7 @@ func main() {
 		if v, err := strconv.ParseFloat(os.Getenv("MINI_DEMO_SLOW"), 64); err == nil && v > 0 {
 			speed = v
 		}
+		a.SetSessionOpener(func(id string) backend.Backend { return demo.Session(id, speed) })
 		a.Attach(demo.New(func() []demo.Step { return demo.FixBug(true) }, speed))
 	})
 	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) { diag.CleanExit("退出") })

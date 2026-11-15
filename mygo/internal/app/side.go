@@ -135,6 +135,7 @@ func (a *App) sessions(c *ui.Context) {
 		ui.Column(c).Children(func() {
 			if t.Scheme.ID != "c" {
 				r := kit.RowEl(c, false).Margin(0, 0, 4, 0).Gap(6)
+				r.OnClick(a.NewSession)
 				r.Children(func() {
 					kit.Ic(c, "plus", kit.S14).TextColor(t.Ac)
 					ui.Text(c, "新对话").Grow(1).FontWeight(500).TextColor(t.Tx1)
@@ -187,7 +188,7 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 		r.PaddingStart(25)
 	}
 	hov := r.Hovered()
-	r.OnClick(func() { a.curSess = s.ID })
+	r.OnClick(func() { a.OpenSession(s.ID) })
 	r.Children(func() {
 		if on && t.Scheme.ID == "a" {
 			// 方案 A:选中行左侧一道强调色竖线
@@ -209,7 +210,7 @@ func (a *App) sessionsB(c *ui.Context) {
 		ui.Column(c).Children(func() {
 			ui.Row(c).Gap(4).Padding(0, 0, 6, 0).Children(func() {
 				kit.Chip(c, "router-demo", kit.ChipOpt{Icon: "folder", Line: true, Car: true}).Height(26).Grow(1)
-				kit.Ib(c, "edit", kit.IbOpt{Tip: "新对话 ⌘N"}).Size(26, 26)
+				kit.Ib(c, "edit", kit.IbOpt{Tip: "新对话 ⌘N"}).Size(26, 26).OnClick(a.NewSession)
 			})
 			cur := ""
 			for _, p := range a.projects {
