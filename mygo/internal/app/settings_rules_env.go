@@ -2,6 +2,7 @@ package app
 
 import (
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/claudecfg"
@@ -11,9 +12,6 @@ import (
 
 func (a *App) rulesAddRow(a2 *App, c *ui.Context) {
 	t := a2.tk
-	if a2.set.ruleDraft == "" {
-		a2.set.ruleDraft = "Bash(git status)"
-	}
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Padding(8, 12).Children(func() {
 		ui.Row(c).Grow(1).MinWidth(0).Gap(6).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "plus", kit.S12).TextColor(t.Ac)
@@ -28,10 +26,19 @@ func (a *App) rulesAddRow(a2 *App, c *ui.Context) {
 	})
 }
 
+// shakeField 让设置页某个输入框抖一下(错误反馈);map 懒初始化,不依赖是否已渲染过该行。
+func (a *App) shakeField(key string) {
+	if a.set.fieldShake == nil {
+		a.set.fieldShake = map[string]time.Time{}
+	}
+	a.set.fieldShake[key] = a.now().Add(kit.ShakeDuration)
+}
+
 func (a *App) submitRuleAdd() {
 	rule := strings.TrimSpace(a.set.ruleDraft)
 	if rule == "" {
-		a.set.fieldShake["rule"] = a.now().Add(kit.ShakeDuration)
+		a.shakeField("rule")
+		a.toast = "先写一条规则,例如 Bash(git status) 或 Read(src/**)"
 		return
 	}
 	kind := []string{"allow", "ask", "deny"}[a.set.ruleKind]
@@ -65,7 +72,7 @@ func (a *App) envAddRow(a2 *App, c *ui.Context) {
 func (a *App) submitEnvAdd() {
 	name := strings.TrimSpace(a.set.envName)
 	if name == "" {
-		a.set.fieldShake["env-name"] = a.now().Add(kit.ShakeDuration)
+		a.shakeField("env-name")
 		return
 	}
 	layer := claudecfg.LayerUser
