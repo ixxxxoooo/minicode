@@ -240,6 +240,7 @@ func trimZero(f float64) string {
 func (a *App) acctPopup(c *ui.Context, which string, anchor ui.Element) {
 	t := a.tk
 	a.acctRefresh(false)
+	a.acctApplyUsage() // 用量扫描比资料读取晚完成,每次打开都按最新扫描结果取本月费用(有缓存,开销小)
 	a.popOpen("acct@"+which, func(open *bool) {
 		ui.PopoverBase(c, anchor, open, func(panel ui.Element) {
 			a.popPanel(panel, 252).Padding(0).Clip().AttachTo(anchor, ui.AnchorTopLeft, ui.AnchorBottomLeft).Margin(0, 0, 6, 0)

@@ -129,10 +129,16 @@ func (a *App) usageBody(c *ui.Context, u core.UsageReport) {
 		kit.Btn(c, "导出 CSV", kit.BtnOpt{Icon: "download"}).OnClick(func() { a.exportUsage(u) })
 	})
 	main := func() {
-		delta := "↓ " + itoa(int(abs(u.DeltaPercent)+.5)) + "% 较上一段"
+		pct := func(f float64) string { // 极端涨幅(上一段几乎为 0)写成「>999%」,免得读起来像 bug
+			if f > 999 {
+				return ">999"
+			}
+			return itoa(int(f + .5))
+		}
+		delta := "↓ " + pct(abs(u.DeltaPercent)) + "% 较上一段"
 		col := t.Ok
 		if u.DeltaPercent >= 0 {
-			delta = "↑ " + itoa(int(u.DeltaPercent+.5)) + "% 较上一段"
+			delta = "↑ " + pct(u.DeltaPercent) + "% 较上一段"
 			col = t.Warn
 		}
 		stats := func() {
