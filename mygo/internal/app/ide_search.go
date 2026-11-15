@@ -472,7 +472,11 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 			sp = append(sp, mk(hit, hc, true, ign))
 		}
 		sp = append(sp, mk(post, col, false, false))
-		ui.RichText(c, sp...).Font("monospace").FontSize(11.5).NoWrap().Clip().Grow(1).Shrink(1).MinWidth(0)
+		// 外层容器负责限宽 + 裁剪:RichText 自身的 Shrink 对超长单行不生效,
+		// 会把行号挤出面板。
+		ui.Box(c).Grow(1).Shrink(1).MinWidth(0).Clip().Children(func() {
+			ui.RichText(c, sp...).Font("monospace").FontSize(11.5).NoWrap()
+		})
 		if !row.Hovered() {
 			ui.Text(c, itoa(m.Line+1)).FontSize(theme.FsMicro).TextColor(t.Tx4).FontFeatures("tnum").Shrink(0)
 		} else {
