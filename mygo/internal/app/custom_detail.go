@@ -20,7 +20,13 @@ func (a *App) cuDrawer(c *ui.Context, st *customize.Store) {
 	if cat == customize.Commands || cat == customize.Agents || cat == customize.Rules || cat == customize.Hooks {
 		w = 360
 	}
-	ui.Column(c).Key("cu-drawer").Width(w).Shrink(0).BorderWidth(0, 0, 0, 1).BorderColor(t.Bd1).Children(func() {
+	col := ui.Column(c).Key("cu-drawer").Shrink(0)
+	if a.pageNarrowMid() {
+		col.Grow(1).MinWidth(0)
+	} else {
+		col.Width(w).BorderWidth(0, 0, 0, 1).BorderColor(t.Bd1)
+	}
+	col.Children(func() {
 		if cat == customize.Plugins && s.market {
 			a.cuMarketDetail(c, st)
 			return

@@ -33,6 +33,7 @@ type custState struct {
 	scope   customize.Scope
 	q       string
 	market  bool // 插件:浏览市场
+	detail  bool // <900px:列表 / 详情两级
 	sel     *customize.Item
 	mk      *customize.Market // 市场里选中的
 	draft   customize.Item    // 选中项的草稿副本(文本框绑它,保存才写回)
@@ -122,36 +123,80 @@ func (a *App) customizePage(c *ui.Context) {
 	st := a.cuStore()
 	cat := a.cuCat()
 	meta := custCats[cat]
+	narrow := a.pageNarrowMid()
+	if !narrow {
+		s.detail = false
+	}
+	head := func() {
+		ui.Row(c).Padding(16, 20, 10, 20).Gap(12).AlignItems(ui.Start).Shrink(0).Children(func() {
+			ui.Column(c).Grow(1).MinWidth(0).Gap(2).Children(func() {
+				ui.Text(c, meta.title).FontSize(theme.FsHead).FontWeight(700)
+				ui.Text(c, meta.desc).TextColor(t.Tx3).LineHeight(1.5)
+			})
+			ui.Row(c).Gap(8).Shrink(0).Children(func() {
+				if cat == customize.Plugins {
+					kit.Btn(c, "浏览市场", kit.BtnOpt{Icon: "search"}).OnClick(func() { s.market = true; s.mk = nil })
+					kit.Btn(c, "从本地目录安装", kit.BtnOpt{Variant: kit.BtnPri, Icon: "plus"}).OnClick(func() {
+						a.toast = "从本地目录安装:尚未接入目录选择器"
+					})
+					return
+				}
+				kit.Btn(c, meta.add, kit.BtnOpt{Variant: kit.BtnPri, Icon: "plus"}).OnClick(func() { s.dlg = &custDlg{scope: customize.User} })
+			})
+		})
+	}
 	a.pane(c).Grow(1).Children(func() {
-		ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
-			a.cuRail(c, st)
-			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
-				// 页头
-				ui.Row(c).Padding(16, 20, 10, 20).Gap(12).AlignItems(ui.Start).Shrink(0).Children(func() {
-					ui.Column(c).Grow(1).MinWidth(0).Gap(2).Children(func() {
-						ui.Text(c, meta.title).FontSize(theme.FsHead).FontWeight(700)
-						ui.Text(c, meta.desc).TextColor(t.Tx3).LineHeight(1.5)
-					})
-					ui.Row(c).Gap(8).Shrink(0).Children(func() {
-						if cat == customize.Plugins {
-							kit.Btn(c, "浏览市场", kit.BtnOpt{Icon: "search"}).OnClick(func() { s.market = true; s.mk = nil })
-							kit.Btn(c, "从本地目录安装", kit.BtnOpt{Variant: kit.BtnPri, Icon: "plus"}).OnClick(func() {
-								a.toast = "从本地目录安装:尚未接入目录选择器"
-							})
-							return
-						}
-						kit.Btn(c, meta.add, kit.BtnOpt{Variant: kit.BtnPri, Icon: "plus"}).OnClick(func() { s.dlg = &custDlg{scope: customize.User} })
-					})
+		switch {
+		case narrow && s.detail && s.sel != nil:
+			ui.Column(c).Grow(1).MinHeight(0).Children(func() {
+				ui.Row(c).Padding(12, 16, 6, 16).Gap(8).AlignItems(ui.Center).Shrink(0).Children(func() {
+					kit.Btn(c, "返回列表", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "chevL"}).OnClick(func() { s.detail = false })
+					ui.Text(c, s.sel.Name).FontWeight(600).SingleLine().Grow(1).MinWidth(0)
 				})
-				ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
-					a.cuMain(c, st)
+				a.cuCatsBar(c, st)
+				ui.Row(c).Grow(1).MinHeight(0).Children(func() {
 					a.cuDrawer(c, st)
 				})
 			})
-		})
+		case narrow:
+			ui.Column(c).Grow(1).MinHeight(0).Children(func() {
+				head()
+				a.cuCatsBar(c, st)
+				a.cuMain(c, st)
+			})
+		default:
+			ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
+				a.cuRail(c, st)
+				ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+					head()
+					ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
+						a.cuMain(c, st)
+						a.cuDrawer(c, st)
+					})
+				})
+			})
+		}
 	})
 	a.cuDialog(c, st)
 	a.cuMCPEditDlg(c, st)
+}
+
+// cuCatsBar 窄窗顶部横向分类(设计稿 resp · 自定义 <900)。
+func (a *App) cuCatsBar(c *ui.Context, st *customize.Store) {
+	s := &a.cu
+	items := make([]kit.SegItem, len(customize.Cats))
+	cur := 0
+	for i, cat := range customize.Cats {
+		items[i] = kit.SegItem{Text: custCats[cat].title}
+		if cat == a.cuCat() {
+			cur = i
+		}
+	}
+	if i := kit.Seg(c, items, cur, kit.SegOpt{Key: "cu-cats", Fill: true}); i >= 0 && customize.Cats[i] != s.cat {
+		s.cat = customize.Cats[i]
+		s.q, s.scope, s.market, s.sel, s.mk, s.err, s.detail = "", customize.All, false, nil, nil, "", false
+	}
+	ui.Box(c).Height(6)
 }
 
 func (a *App) cuRail(c *ui.Context, st *customize.Store) {
@@ -231,7 +276,11 @@ func (a *App) cuMain(c *ui.Context, st *customize.Store) {
 					a.cuRow(c, st, it, it == cur, i < len(vis)-1)
 				}
 			})
-			ui.Text(c, itoa(len(vis))+" / "+itoa(st.Count(cat))+" 个 · 点一行在右侧查看与编辑").FontSize(theme.FsCap).TextColor(t.Tx4).Padding(4, 2)
+			hint := "点一行在右侧查看与编辑"
+			if a.pageNarrowMid() {
+				hint = "点一行进入详情"
+			}
+			ui.Text(c, itoa(len(vis))+" / "+itoa(st.Count(cat))+" 个 · "+hint).FontSize(theme.FsCap).TextColor(t.Tx4).Padding(4, 2)
 		})
 	})
 }
@@ -263,7 +312,12 @@ func (a *App) cuRow(c *ui.Context, st *customize.Store, it *customize.Item, on, 
 	if sep {
 		r.BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1)
 	}
-	r.OnClick(func() { a.cuSelect(it) })
+	r.OnClick(func() {
+		a.cuSelect(it)
+		if a.pageNarrowMid() {
+			a.cu.detail = true
+		}
+	})
 	r.Children(func() {
 		ui.Box(c).Size(24, 24).Radius(t.RSm()).Background(t.Fill2).Shrink(0).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, custCats[a.cuCat()].icon, kit.S12).TextColor(t.Tx2)

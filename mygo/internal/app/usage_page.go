@@ -128,29 +128,63 @@ func (a *App) usageBody(c *ui.Context, u core.UsageReport) {
 		}
 		kit.Btn(c, "导出 CSV", kit.BtnOpt{Icon: "download"}).OnClick(func() { a.exportUsage(u) })
 	})
-	a.pageSplit(c, "use", func() {
-		ui.Row(c).Gap(10).AlignItems(ui.Stretch).Children(func() {
-			delta := "↓ " + itoa(int(abs(u.DeltaPercent)+.5)) + "% 较上一段"
-			col := t.Ok
-			if u.DeltaPercent >= 0 {
-				delta = "↑ " + itoa(int(u.DeltaPercent+.5)) + "% 较上一段"
-				col = t.Warn
+	main := func() {
+		delta := "↓ " + itoa(int(abs(u.DeltaPercent)+.5)) + "% 较上一段"
+		col := t.Ok
+		if u.DeltaPercent >= 0 {
+			delta = "↑ " + itoa(int(u.DeltaPercent+.5)) + "% 较上一段"
+			col = t.Warn
+		}
+		stats := func() {
+			if a.pageNarrowMid() {
+				ui.Column(c).Gap(10).Children(func() {
+					ui.Row(c).Gap(10).AlignItems(ui.Stretch).Children(func() {
+						a.stat(c, core.FormatMoney(u.Total), u.RangeName+"费用", delta, col)
+						a.stat(c, u.InputTokens, "输入 token", "", col)
+					})
+					ui.Row(c).Gap(10).AlignItems(ui.Stretch).Children(func() {
+						a.stat(c, u.OutputTokens, "输出 token", "", col)
+						a.stat(c, itoa(u.Sessions), "会话", "缓存命中 "+itoa(u.CacheHit)+"%", t.Ok)
+					})
+				})
+				return
 			}
-			a.stat(c, core.FormatMoney(u.Total), u.RangeName+"费用", delta, col)
-			a.stat(c, u.InputTokens, "输入 token", "", col)
-			a.stat(c, u.OutputTokens, "输出 token", "", col)
-			a.stat(c, itoa(u.Sessions), "会话", "缓存命中 "+itoa(u.CacheHit)+"%", t.Ok)
-		})
+			ui.Row(c).Gap(10).AlignItems(ui.Stretch).Children(func() {
+				a.stat(c, core.FormatMoney(u.Total), u.RangeName+"费用", delta, col)
+				a.stat(c, u.InputTokens, "输入 token", "", col)
+				a.stat(c, u.OutputTokens, "输出 token", "", col)
+				a.stat(c, itoa(u.Sessions), "会话", "缓存命中 "+itoa(u.CacheHit)+"%", t.Ok)
+			})
+		}
+		stats()
 		ui.Box(c).Height(10)
 		a.usageChart(c, u)
 		ui.Box(c).Height(10)
-		ui.Row(c).Gap(10).AlignItems(ui.Stretch).Children(func() {
-			a.usageModels(c, u)
-			a.usageProjects(c, u)
-		})
+		if a.pageNarrowMid() {
+			ui.Column(c).Gap(10).Children(func() {
+				a.usageModels(c, u)
+				a.usageProjects(c, u)
+			})
+		} else {
+			ui.Row(c).Gap(10).AlignItems(ui.Stretch).Children(func() {
+				a.usageModels(c, u)
+				a.usageProjects(c, u)
+			})
+		}
 		ui.Box(c).Height(10)
 		a.usageTop(c, u)
-	}, func() { a.usageDrawer(c, u) })
+		if a.pageNarrowMid() {
+			ui.Box(c).Height(12)
+			a.usageDrawer(c, u)
+		}
+	}
+	if a.pageNarrowMid() {
+		ui.Scroll(c).Key("use-main-n").Grow(1).MinHeight(0).Children(func() {
+			ui.Column(c).Padding(4, 20, 24, 20).Children(main)
+		})
+	} else {
+		a.pageSplit(c, "use", main, func() { a.usageDrawer(c, u) })
+	}
 }
 
 func abs(f float64) float64 {
