@@ -239,26 +239,52 @@ func trimZero(f float64) string {
 
 func (a *App) acctPopup(c *ui.Context, which string, anchor ui.Element) {
 	t := a.tk
+	a.acctRefresh(false)
 	a.popOpen("acct@"+which, func(open *bool) {
 		ui.PopoverBase(c, anchor, open, func(panel ui.Element) {
 			a.popPanel(panel, 252).Padding(0).Clip().AttachTo(anchor, ui.AnchorTopLeft, ui.AnchorBottomLeft).Margin(0, 0, 6, 0)
+			d := a.acctMenuData()
 			ui.Row(c).Gap(9).Padding(10, 12).AlignItems(ui.Center).Children(func() {
-				a.avatarSized(c, 30, 13)
+				a.avatarSized(c, 30, 13, d.initial)
 				ui.Column(c).Grow(1).Children(func() {
-					ui.Text(c, "demo").FontWeight(500)
-					ui.Text(c, "Claude Max · 官方账号").FontSize(theme.FsCap).TextColor(t.Tx3)
+					if d.loading && !a.cuDemo() {
+						ui.Column(c).Gap(4).Grow(1).Children(func() {
+							kit.SkelLine(c, .55, 12)
+							kit.SkelLine(c, .85, 10)
+						})
+					} else {
+						ui.Text(c, d.name).FontWeight(500)
+						ui.Text(c, d.subtitle).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
+					}
 				})
 			})
 			ui.Column(c).Gap(7).Padding(2, 12, 10, 12).FontSize(theme.FsCap).Children(func() {
 				ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 					ui.Text(c, "本月费用").Width(62).TextColor(t.Tx3)
-					ui.Text(c, "$12.40").FontWeight(600).FontFeatures("tnum")
+					if d.loading && !a.cuDemo() {
+						kit.Spin(c, t.Tx3)
+					} else if d.monthCost != "" {
+						ui.Text(c, d.monthCost).FontWeight(600).FontFeatures("tnum")
+					} else {
+						ui.Text(c, "暂无数据").TextColor(t.Tx3)
+					}
 				})
-				ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-					ui.Text(c, "5 小时").Width(62).TextColor(t.Tx3)
-					kit.Meter(c, 38).Grow(1)
-					ui.Text(c, "38%").TextColor(t.Tx3).FontFeatures("tnum")
-				})
+				if d.fivePct >= 0 {
+					ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+						lbl := d.fiveLabel
+						if lbl == "" {
+							lbl = "5 小时"
+						}
+						ui.Text(c, lbl).Width(62).TextColor(t.Tx3)
+						kit.Meter(c, float32(d.fivePct)).Grow(1)
+						ui.Text(c, itoa(d.fivePct)+"%").TextColor(t.Tx3).FontFeatures("tnum")
+					})
+				} else if !d.loading || a.cuDemo() {
+					ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+						ui.Text(c, "账户限额").Width(62).TextColor(t.Tx3)
+						ui.Text(c, "暂无数据").TextColor(t.Tx3)
+					})
+				}
 			})
 			ui.Column(c).Padding(4).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
 				item := func(key, icon, text, right string, fn func()) {
@@ -280,10 +306,13 @@ func (a *App) acctPopup(c *ui.Context, which string, anchor ui.Element) {
 }
 
 // avatarSized 是圆形头像(账号菜单头部用 30px)。
-func (a *App) avatarSized(c *ui.Context, size, font float32) ui.Element {
+func (a *App) avatarSized(c *ui.Context, size, font float32, initial string) ui.Element {
 	t := a.tk
+	if initial == "" {
+		initial = "?"
+	}
 	return ui.Row(c).Size(size, size).Radius(size / 2).Background(t.AcSoft).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).Children(func() {
-		ui.Text(c, "L").FontSize(font).FontWeight(600).TextColor(t.AcTx)
+		ui.Text(c, initial).FontSize(font).FontWeight(600).TextColor(t.AcTx)
 	})
 }
 

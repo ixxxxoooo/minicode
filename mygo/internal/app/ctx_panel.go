@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -343,4 +344,7 @@ func (a *App) onUsageEvent(u core.Usage) {
 		a.ctxCompacting = false
 	}
 	a.usageLimitsFromSession()
+	if a.acct.profileReady || a.popup != "" && strings.HasPrefix(a.popup, "acct@") {
+		a.acctApplyUsage()
+	}
 }

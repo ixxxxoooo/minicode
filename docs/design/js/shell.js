@@ -120,9 +120,19 @@
 
   /* ───────── 账号菜单(设置 / 用量 / 快捷键 / 更新 / 关于的统一入口) ───────── */
   const ami = (n, t, r, attr) => `<div class="mi" tabindex="0" ${attr}>${ic(n, 's12')}<span class="grow">${t}</span>${r ? `<span class="t3 fs-cap">${r}</span>` : ''}</div>`;
-  W.acctMenu = () => `<div class="acct pop a-pop-up"><div class="who"><span class="avatar">L</span><div class="grow"><div class="m">demo</div><div class="t3 fs-cap">Claude Max · 官方账号</div></div></div>
-    <div class="quota"><div class="q"><span style="width:62px" class="t3">本月费用</span><b class="num grow">$12.40</b></div><div class="q"><span style="width:62px" class="t3">5 小时</span><div class="meter"><i style="width:38%"></i></div><span class="num t3">38%</span></div></div>
+  W.acctMenu = (o = {}) => {
+    const who = o.loading
+      ? `<div class="who"><span class="avatar skel" style="opacity:.5"></span><div class="grow"><div class="skel" style="height:12px;width:55%;margin-bottom:6px"></div><div class="skel" style="height:10px;width:80%"></div></div></div>`
+      : o.empty
+        ? `<div class="who"><span class="avatar">?</span><div class="grow"><div class="m">未登录</div><div class="t3 fs-cap">未找到 OAuth 账户</div></div></div>`
+        : `<div class="who"><span class="avatar">${o.init || 'L'}</span><div class="grow"><div class="m">${o.name || 'demo'}</div><div class="t3 fs-cap">${o.sub || 'Claude Max · 官方账号'}</div></div></div>`;
+    const cost = o.noCost ? '<span class="t3 grow">暂无数据</span>' : `<b class="num grow">${o.cost || '$12.40'}</b>`;
+    const lim = o.noLim
+      ? `<div class="q"><span style="width:62px" class="t3">账户限额</span><span class="t3 grow">暂无数据</span></div>`
+      : `<div class="q"><span style="width:62px" class="t3">5 小时</span><div class="meter"><i style="width:${o.pct != null ? o.pct : 38}%"></i></div><span class="num t3">${o.pct != null ? o.pct : 38}%</span></div>`;
+    return `<div class="acct pop a-pop-up">${who}<div class="quota"><div class="q"><span style="width:62px" class="t3">本月费用</span>${cost}</div>${lim}</div>
     <div class="menu">${ami('sliders', '设置', kbd('⌘', ','), 'data-act="screen" data-screen="settings"')}${ami('chart', '用量与成本', '', 'data-act="screen" data-screen="usage"')}${ami('kbd', '快捷键', '', 'data-act="settab" data-tab="shortcuts" data-goto="settings"')}<div class="sep"></div>${ami('refresh', '检查更新', '', 'data-act="settab" data-tab="about" data-goto="settings"')}${ami('info', '关于 MiniCode', '0.2.0', 'data-act="settab" data-tab="about" data-goto="settings"')}</div></div>`;
+  };
   /** 状态栏弹层:ctx 上下文 / upd 更新 / cfg 运行配置 */
   W.sbPop = (kind) => ({
     ctx: `<div class="sb-pop pop a-pop-up" data-state="ok">${F.ctxBody()}</div>`,

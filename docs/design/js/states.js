@@ -123,7 +123,7 @@
   const delDlg = `<div class="dlg" style="width:100%"><div class="f g3"><span class="dlg-i err">${ic('trash', 's16')}</span><div class="grow"><b>删除自动化「每日构建」?</b><div class="t3" style="margin-top:3px;line-height:1.55">已有的 12 条运行记录会一并删除,无法恢复。</div></div></div><div class="acts">${btn('取消', 'ghost')}${btn('删除', 'danger')}</div></div>`;
 
   const extra = () => sec('补充浮层与反馈', '设置、自定义与账号相关的交互,逐个给出静态样子;动起来的版本在对应页面里可以点。', `<div class="grid2">
-    ${spec('账号菜单', ['acct', '从触发点向上展开'], `<div style="position:relative;display:flex;justify-content:center">${acctStatic}</div>`)}
+    ${spec('账号菜单', ['acct', '从触发点向上展开'], `<div class="fc g3" style="position:relative;display:flex;flex-direction:column;align-items:center">${acctStatic}${W.acctMenu({ loading: true })}${W.acctMenu({ empty: true, noCost: true, noLim: true })}</div>`)}
     ${spec('设置搜索结果', ['⌘F 聚焦', '键盘 ↑↓ ↩'], searchSample)}
     ${spec('需要重启条', ['rbar', '设置页底部固定'], rbar)}
     ${spec('快捷键录制与冲突', ['keycap.rec', '冲突就地提示'], recSample)}
