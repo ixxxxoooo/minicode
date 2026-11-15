@@ -121,6 +121,9 @@ type settingsState struct {
 	lspScanning bool
 	lspScanned  bool
 	rulesErr    string
+	wt          []worktreeRow // worktree 列表缓存(后台刷新,渲染里不跑 git)
+	wtAt        time.Time
+	wtBusy      bool
 	envErr      string
 }
 

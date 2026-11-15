@@ -42,10 +42,14 @@ func (a *App) ScmFetchTick() {
 
 func (a *App) scmWorktreeBody(c *ui.Context) {
 	t := a.tk
-	rows := a.worktreeList()
+	rows := a.worktreeCached()
 	if len(rows) == 0 {
 		rowBox(a, c, true, 44).Children(func() {
-			ui.Text(c, "没有 worktree 或不是 Git 仓库").FontSize(theme.FsCap).TextColor(t.Tx3).Grow(1)
+			msg := "没有 worktree 或不是 Git 仓库"
+			if a.set.wtAt.IsZero() && !a.demoWs() {
+				msg = "正在读取…"
+			}
+			ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Tx3).Grow(1)
 		})
 		return
 	}
@@ -57,11 +61,38 @@ func (a *App) scmWorktreeBody(c *ui.Context) {
 				ui.Text(c, w.branch).FontWeight(500)
 				ui.Text(c, w.path).Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 			})
+			if i == 0 {
+				// 第一项是主工作树,不能删除。
+				ui.Text(c, "主工作树").FontSize(theme.FsCap).TextColor(t.Tx4)
+				return
+			}
 			kit.Ib(c, "trash", kit.IbOpt{Small: true, Tip: "删除"}).OnClick(func() {
 				a.confirmDlg("删除 worktree", "将删除 "+w.path+" 并移除注册。", "删除", true, func() { a.removeWorktree(w.path) })
 			})
 		})
 	}
+}
+
+// worktreeCached 返回缓存的 worktree 列表;过期(5 秒)或从未读过时在后台刷新,
+// 渲染线程不跑 git。
+func (a *App) worktreeCached() []worktreeRow {
+	if a.demoWs() {
+		return a.worktreeList()
+	}
+	if !a.set.wtBusy && time.Since(a.set.wtAt) > 5*time.Second {
+		a.set.wtBusy = true
+		a.bg("worktree-list", func() func() {
+			end := diag.SpanSlow("app", "git worktree list", 2*time.Second, "repo", a.proj)
+			rows := a.worktreeList()
+			end()
+			return func() {
+				a.set.wt = rows
+				a.set.wtAt = time.Now()
+				a.set.wtBusy = false
+			}
+		})
+	}
+	return a.set.wt
 }
 
 func (a *App) worktreeList() []worktreeRow {
@@ -112,6 +143,7 @@ func (a *App) removeWorktree(path string) {
 				return
 			}
 			a.toast = "已删除 worktree"
+			a.set.wtAt = time.Time{} // 让列表立即重读
 		}
 	})
 }
