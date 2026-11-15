@@ -52,10 +52,29 @@ type State struct {
 	noticeSeq int
 }
 
+// DefaultTitle 是还没有标题的新会话的默认标题。
+const DefaultTitle = "新会话"
+
+// TitleFromPrompt 取提问的第一个非空行作标题,最多 40 个字符(超出加省略号);空文本返回空串。
+func TitleFromPrompt(text string) string {
+	for _, ln := range strings.Split(text, "\n") {
+		ln = strings.TrimSpace(ln)
+		if ln == "" {
+			continue
+		}
+		r := []rune(ln)
+		if len(r) > 40 {
+			return string(r[:40]) + "…"
+		}
+		return ln
+	}
+	return ""
+}
+
 // NewState 创建空会话。
 func NewState() *State {
 	return &State{
-		Title:     "新会话",
+		Title:     DefaultTitle,
 		Models:    DefaultModels(),
 		Model:     "sonnet",
 		Effort:    EffortMedium,
@@ -222,6 +241,11 @@ func (s *State) Apply(ev Event) {
 		// 子 Agent 卡片进入时间线时记录开始时间;嵌套条目的到来算作父卡片的一次活动
 		if c, ok := e.Item.(*SubagentCard); ok {
 			c.StampStart(s.Now())
+		}
+		if u, ok := e.Item.(*User); ok && e.Parent == "" && s.Title == DefaultTitle {
+			if t := TitleFromPrompt(u.Text); t != "" {
+				s.Title = t // 后端没给标题时,用第一条提问当标题(与侧栏会话行一致)
+			}
 		}
 		s.touch(e.Parent)
 		l := s.itemsOf(e.Parent)
