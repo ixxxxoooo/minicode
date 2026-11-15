@@ -137,11 +137,14 @@ func genRunOn(chars int) string {
 	unit := "0123456789abcdef中英混排αβγ"
 	var b strings.Builder
 	b.Grow(chars + 8)
-	for b.Len() < chars {
+	for len([]rune(b.String())) < chars {
 		b.WriteString(unit)
 	}
 	rs := []rune(b.String())
-	return string(rs[:chars])
+	if len(rs) > chars {
+		rs = rs[:chars]
+	}
+	return string(rs)
 }
 
 func (b *stepBuf) think(id, text string, secs uint64) {

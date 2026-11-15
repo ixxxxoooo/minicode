@@ -27,6 +27,7 @@ func (a *App) composer(c *ui.Context) {
 	for _, s := range t.Shadow1() {
 		box.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
+	_ = a.chatDrop(box)
 	box.Children(func() {
 		in := ui.TextArea(c.Key("draft"), &a.draft).Lines(1, 8).Placeholder("描述任务,@ 引用文件,/ 调用命令").
 			PlaceholderColor(t.Tx3).Background(ui.Transparent).BorderWidth(0).Padding(9, 12, 3, 12).FontSize(theme.FsRead).LineHeight(1.55).
@@ -145,6 +146,9 @@ func (a *App) cfgChip(c *ui.Context, wide bool) {
 		kit.Ic(c, modeIcon(a.st.Mode), kit.S12)
 		ui.Text(c, a.st.Mode.Label()).SingleLine().Shrink(0)
 		div()
+		if prov, _ := a.pvModelLabel(); prov != "" {
+			ui.Text(c, provAbbr(prov)).FontSize(10).FontWeight(600).TextColor(t.AcTx).Background(t.AcSoft).Radius(t.RXs()).Padding(1, 4).SingleLine().Shrink(0)
+		}
 		ui.Text(c, a.modelName()).SingleLine().Shrink(1)
 		if wide {
 			div()
@@ -185,6 +189,12 @@ func effortLabel(e core.Effort) string {
 
 // modelName 当前模型的显示名。
 func (a *App) modelName() string {
+	if prov, m := a.pvModelLabel(); prov != "" { // 第三方服务商:显示映射的默认模型 ID
+		if m == "" {
+			return "未选模型"
+		}
+		return m
+	}
 	for _, m := range a.st.Models {
 		if m.ID == a.st.Model {
 			return m.Name

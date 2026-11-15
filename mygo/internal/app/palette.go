@@ -70,6 +70,7 @@ func (a *App) closePalette() {
 		a.previewPalette(a.pq.origPal) // 取消:还原(偏好没动过,不必写)
 	}
 	a.paletteOn = false
+	a.pq.sub = ""
 }
 
 // previewPalette 临时套用主题(命令面板里上下移动时预览),不写偏好。
@@ -359,6 +360,10 @@ func palRowY(items []palItem, i int) (top, h float32) {
 
 // paletteView 渲染面板(浮层)。
 func (a *App) paletteView(c *ui.Context) {
+	if a.paletteOn && c.Shortcut(0, ui.KeyEscape) {
+		a.closePalette()
+		return
+	}
 	if a.dlgClosing == "palette" && time.Since(a.dlgCloseAt) >= kit.DurFast {
 		a.dlgClosing, a.dlgSeen = "", ""
 		a.pq = palState{}
@@ -430,6 +435,7 @@ func (a *App) paletteView(c *ui.Context) {
 					in := ui.TextInputBase(c.Key("pal-in"), &a.pq.query).Grow(1).FontSize(theme.FsTitle).AutoFocus().
 						Placeholder(map[bool]string{true: "筛选主题…", false: "搜索命令、会话与文件"}[a.pq.sub == "theme"]).PlaceholderColor(t.Tx4)
 					in.OnSubmit(func() { run(a.pq.sel) })
+					in.OnShortcut(0, ui.KeyEscape, func() { a.closePalette() })
 					// 单行输入框会自己吃 ↑↓(跳到行首 / 行尾),所以挂在输入框自己的快捷键上
 					in.OnShortcut(0, ui.KeyDown, func() { move(1) })
 					in.OnShortcut(0, ui.KeyUp, func() { move(-1) })

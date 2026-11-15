@@ -35,8 +35,28 @@ func mdHeadingOffset(body string, line int, doc richtext.Text) int {
 	if line < 0 {
 		return -1
 	}
+	lines := strings.Split(body, "\n")
+	if line >= len(lines) {
+		return -1
+	}
+	ln := lines[line]
+	if m := reMd.FindStringSubmatch(ln); m != nil {
+		wantLvl := len(m[1])
+		want := strings.TrimSpace(m[2])
+		paras := doc.ParagraphCount()
+		for p := 0; p < paras; p++ {
+			off := paraStart(doc, p)
+			st := doc.ParagraphStyleAt(off)
+			if st.Heading == wantLvl {
+				_, e := doc.ParagraphRange(off) // off = 该段落起始 rune
+				if strings.Contains(doc.Slice(off, e).String(), want) {
+					return off
+				}
+			}
+		}
+	}
 	hix := -1
-	for i, ln := range strings.Split(body, "\n") {
+	for i, ln := range lines {
 		if i > line {
 			break
 		}
@@ -63,12 +83,13 @@ func mdHeadingOffset(body string, line int, doc richtext.Text) int {
 
 func paraStart(doc richtext.Text, p int) int {
 	n := 0
-	for i := 0; i < p; i++ {
-		_, e := doc.ParagraphRange(n)
-		n = e
+	for start := range doc.Paragraphs() {
+		if n == p {
+			return start
+		}
+		n++
 	}
-	s, _ := doc.ParagraphRange(n)
-	return s
+	return 0
 }
 
 // mdApplyReveal 处理标签上的 reveal(大纲 / 跳转):WYSIWYG 内滚动,不切源码。

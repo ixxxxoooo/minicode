@@ -58,14 +58,8 @@ func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, co
 	if live {
 		st.Y = math.MaxFloat32
 	}
-	col := ui.Column(c).Key("foldout-" + key)
-	if needFold || exp {
-		col = ui.Scroll(c).TrackScroll(&st).MaxHeight(float32(maxH)).Key("foldout-" + key)
-		if live && st.Y >= st.MaxY {
-			st.Y = math.MaxFloat32
-		}
-	}
-	col.Children(func() {
+	// 只创建一个元素:先建 Column 再换成 Scroll 会让同一个键注册两次(同父下重复键 panic)。
+	inner := func() {
 		ui.Column(c).Padding(6, 10).Gap(0).Children(func() {
 			for i, ln := range show {
 				row := ui.Row(c).Key(i).Height(monoLH).AlignItems(ui.Center)
@@ -81,7 +75,15 @@ func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, co
 				}
 			}
 		})
-	})
+	}
+	if needFold || exp {
+		if live && st.Y >= st.MaxY {
+			st.Y = math.MaxFloat32
+		}
+		ui.Scroll(c).TrackScroll(&st).MaxHeight(float32(maxH)).Key("foldout-" + key).Children(inner)
+	} else {
+		ui.Column(c).Key("foldout-" + key).Children(inner)
+	}
 	if n > foldLineCap {
 		ui.Row(c).Height(26).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
 			label := "展开 · 共 " + itoa(n) + " 行"

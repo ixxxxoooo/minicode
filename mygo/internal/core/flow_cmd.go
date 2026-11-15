@@ -15,8 +15,22 @@ type CmdForkSession struct {
 
 func (CmdForkSession) command() {}
 
-// TruncateFromUser 从某条用户消息起截断时间线(就地编辑 / 分叉演示用)。返回是否找到该用户消息。
+// TruncateFromUser 去掉该用户消息之后的条目,保留该用户消息(就地编辑用)。
 func (s *State) TruncateFromUser(userID string) (text string, ok bool) {
+	for i, it := range s.Items {
+		if u, y := it.(*User); y && u.ID == userID {
+			text = u.Text
+			s.Items = s.Items[:i+1]
+			s.cleanupAfterTruncate(userID)
+			s.Rev++
+			return text, true
+		}
+	}
+	return "", false
+}
+
+// TruncateBeforeUser 从该用户消息起截断(含该条),此前内容保留(分叉等)。
+func (s *State) TruncateBeforeUser(userID string) (text string, ok bool) {
 	for i, it := range s.Items {
 		if u, y := it.(*User); y && u.ID == userID {
 			text = u.Text

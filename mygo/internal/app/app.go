@@ -587,6 +587,10 @@ func (a *App) shortcuts(c *ui.Context) {
 	if a.termShortcuts(c) {
 		return
 	}
+	if c.Shortcut(ui.Alt, ui.KeyZ) || a.shortcutHit(c, "wrap", ui.Alt, ui.KeyZ) {
+		a.toggleWrap()
+		return
+	}
 	if a.editorShortcuts(c) {
 		return
 	}
@@ -605,6 +609,8 @@ func (a *App) shortcuts(c *ui.Context) {
 		} else {
 			a.SetMode(ModeAgent)
 		}
+	case a.paletteOn && c.Shortcut(0, ui.KeyEscape):
+		a.closePalette()
 	case a.shortcutHit(c, "palette", ui.Cmd, ui.KeyK):
 		if a.paletteOn {
 			a.closePalette()

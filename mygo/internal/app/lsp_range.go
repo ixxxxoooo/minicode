@@ -23,14 +23,16 @@ func lspPosEnd(tb *ideTab, off int) lsp.Position {
 	}
 	if off > 0 && off <= n {
 		p := tb.buf.Pos(off)
-		if p.Col == 0 && off > 0 {
-			prev := tb.buf.Pos(off - 1)
-			ln := tb.buf.Line(prev.Line)
-			if len(ln) > 0 && ln[len(ln)-1] == '\n' {
-				return lsp.Position{
-					Line:      prev.Line,
-					Character: lsp.ColToUTF16(ln[:len(ln)-1], len(ln)-1),
-				}
+		if p.Col == 0 && p.Line > 0 {
+			prevLine := p.Line - 1
+			ln := tb.buf.Line(prevLine)
+			trim := ln
+			if len(trim) > 0 && trim[len(trim)-1] == '\n' {
+				trim = trim[:len(trim)-1]
+			}
+			return lsp.Position{
+				Line:      prevLine,
+				Character: lsp.ColToUTF16(trim, len(trim)),
 			}
 		}
 	}

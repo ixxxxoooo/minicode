@@ -24,6 +24,10 @@ func (a *App) beginMorph() {
 }
 
 func (a *App) morphing() bool {
+	// 测试 / 截图(没有真实窗口)直达终态,不挡点击。
+	if a.win == nil {
+		return false
+	}
 	if a.morphUntil.IsZero() {
 		return false
 	}

@@ -128,6 +128,17 @@ func extractHTML(body []byte, normURL string) (Page, error) {
 	}
 	mins := max(words/400, 1)
 	sum, links := collectMeta(root, normURL)
+	if len(sum) == 0 {
+		for _, s := range secs {
+			t := strings.TrimSpace(s.Body)
+			if t != "" {
+				sum = append(sum, t)
+			}
+			if len(sum) >= 4 {
+				break
+			}
+		}
+	}
 	return Page{URL: normURL, Site: site, ReadMin: mins, Sections: secs, Summary: sum, Links: links}, nil
 }
 
@@ -272,8 +283,8 @@ func collectMeta(root *html.Node, base string) ([]string, []Link) {
 		}
 		if n.Type == html.ElementNode && n.Data == "p" {
 			t := textOf(n)
-			if len(sum) < 4 && len(t) > 40 {
-				sum = append(sum, t)
+			if len(sum) < 4 && len(strings.TrimSpace(t)) > 12 {
+				sum = append(sum, strings.TrimSpace(t))
 			}
 		}
 	kids:

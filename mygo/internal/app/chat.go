@@ -29,8 +29,12 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 	if w := p.Bounds().W; w > 0 {
 		a.chatW = w
 	}
-	hint := a.chatDrop(p) // 从文件树 / 标签 / 访达拖到对话栏 = 引用
+	hint := a.chatDrop(p)
 	p.Children(func() {
+		drop := ui.Box(c).Absolute().Left(0).Right(0).Top(0).Bottom(0).PassThrough()
+		if h := a.chatDrop(drop); h != "" {
+			hint = h
+		}
 		if hint != "" {
 			defer a.dropOverlay(c, hint) // 盖在最上层(后画),各条返回路径都会执行
 		}

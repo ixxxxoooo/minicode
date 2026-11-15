@@ -148,40 +148,51 @@ func (a *App) cuToggleRow(c *ui.Context, key, title, sub string, on bool, flip f
 	})
 }
 
-// cuDelete 删除并给 6 秒撤销窗口(设计稿 states「删除折叠 + 撤销」)。
+// cuDelete 两步确认:先点「删除」再点「确认删除」;完成后给撤销窗口。
 func (a *App) cuDelete(c *ui.Context, st *customize.Store, it *customize.Item, verb string) {
+	if a.cu.delArm == it {
+		kit.Btn(c, "确认删除", kit.BtnOpt{Variant: kit.BtnDanger, Icon: "trash"}).OnClick(func() {
+			a.cuDeleteDo(st, it, verb)
+		})
+		kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(func() { a.cu.delArm = nil })
+		return
+	}
+	kit.Btn(c, verb, kit.BtnOpt{Variant: kit.BtnDangerGhost, Icon: "trash"}).OnClick(func() {
+		a.cu.delArm = it
+	})
+}
+
+func (a *App) cuDeleteDo(st *customize.Store, it *customize.Item, verb string) {
 	cat := a.cuCat()
 	snap := *it
-	kit.Btn(c, verb, kit.BtnOpt{Variant: kit.BtnDangerGhost, Icon: "trash"}).OnClick(func() {
-		if a.cuDisk() != nil && cat != customize.Plugins {
-			a.cuRemoveDisk(st, it)
-		} else if cat == customize.Plugins {
-			if !a.cuDemo() {
-				res := customize.RunPluginUninstall(it.Name)
-				if res.Code != 0 && res.Err != "" {
-					a.toast = res.Err
-					return
-				}
-				if ds := a.cuDisk(); ds != nil {
-					ds.Reload()
-				}
-			}
-			st.Uninstall(it)
-		} else {
-			st.Remove(cat, it)
-		}
-		log.Info("删除自定义项", "cat", cat, "name", it.Name)
-		a.cu.sel, a.cu.dOf = nil, nil
-		a.delUndo.Begin("已"+verb+"「"+it.Name+"」", func() {
-			if cat == customize.Plugins {
+	if a.cuDisk() != nil && cat != customize.Plugins {
+		a.cuRemoveDisk(st, it)
+	} else if cat == customize.Plugins {
+		if !a.cuDemo() {
+			res := customize.RunPluginUninstall(it.Name)
+			if res.Code != 0 && res.Err != "" {
+				a.toast = res.Err
 				return
 			}
-			n := &snap
-			if ni, err := st.Add(cat, n.Name, n.Scope, n.Note); err == nil {
-				*ni = snap
+			if ds := a.cuDisk(); ds != nil {
+				ds.Reload()
 			}
-			a.cu.sel = n
-		})
+		}
+		st.Uninstall(it)
+	} else {
+		st.Remove(cat, it)
+	}
+	log.Info("删除自定义项", "cat", cat, "name", it.Name)
+	a.cu.sel, a.cu.dOf, a.cu.delArm = nil, nil, nil
+	a.delUndo.Begin("已"+verb+"「"+it.Name+"」", func() {
+		if cat == customize.Plugins {
+			return
+		}
+		n := &snap
+		if ni, err := st.Add(cat, n.Name, n.Scope, n.Note); err == nil {
+			*ni = snap
+		}
+		a.cu.sel = n
 	})
 }
 

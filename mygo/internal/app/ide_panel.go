@@ -216,8 +216,8 @@ func (a *App) problems(c *ui.Context) {
 					row.ContextMenu(func(m *ui.Menu) {
 						a.problemMenu(m, g.rel, p.line, p.msg, func() string {
 							var sb strings.Builder
-							for _, d := range demo.Problems() {
-								sb.WriteString(d.Path + ":" + itoa(d.Line) + " " + d.Msg + "\n")
+							for _, item := range g.items {
+								sb.WriteString(g.rel + ":" + itoa(item.line) + " " + item.msg + "\n")
 							}
 							return strings.TrimSpace(sb.String())
 						})

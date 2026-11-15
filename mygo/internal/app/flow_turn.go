@@ -107,7 +107,7 @@ func (a *App) forkTurn(atUser string) {
 
 func (a *App) forkTurnDemo(parent, newID, atUser string) {
 	a.OpenSession("fork:" + parent + ":" + newID)
-	if txt, ok := a.st.TruncateFromUser(atUser); ok {
+	if txt, ok := a.st.TruncateBeforeUser(atUser); ok {
 		_ = txt
 	}
 	a.toast = "已分叉(演示)"

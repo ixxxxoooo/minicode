@@ -156,7 +156,11 @@ func (a *App) resolveFile(f string) string {
 // outputMenu 是输出面板里一行的右键菜单。
 func (a *App) outputMenu(m *ui.Menu, line string, lines []string) {
 	if m.Item("复制此行").Chosen() {
-		a.copyOut(line, "此行")
+		raw := line
+		if i := strings.Index(line, "  "); i >= 0 {
+			raw = strings.TrimSpace(line[i+2:])
+		}
+		a.copyOut(raw, "此行")
 	}
 	if m.Item("复制全部").Chosen() {
 		a.copyOut(strings.Join(lines, "\n"), "全部输出")

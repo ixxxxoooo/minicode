@@ -45,6 +45,7 @@ func (a *App) dockIconPath(dark bool) string {
 	}
 	cand = append(cand,
 		map[bool]string{true: "app-dark.png", false: "app-light.png"}[dark],
+		"app-logo.png",
 		map[bool]string{true: "MiniCode-dark.icns", false: "MiniCode.icns"}[dark],
 	)
 	for _, c := range cand {

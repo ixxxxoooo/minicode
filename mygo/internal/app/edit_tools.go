@@ -22,6 +22,9 @@ func (a *App) toggleWrap() {
 		a.toast = "已关闭自动换行"
 	}
 	uxLog.Info("切换自动换行", "开", on)
+	if tb := a.ide.cur(); tb != nil && tb.st != nil {
+		a.applyEditorPrefs(tb)
+	}
 }
 
 // crumbTools 画面包屑条右侧的一组工具。

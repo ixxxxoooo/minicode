@@ -19,9 +19,9 @@ func (a *App) flowFadeMask(c *ui.Context) {
 		MaskLinearGradient(ui.LinearGradient{
 			Angle: 0,
 			Stops: []ui.GradientStop{
-				{ui.Transparent, 0},
-				{t.BG.Alpha(.85), .55},
-				{t.BG, 1},
+				{Color: ui.Transparent, At: 0},
+				{Color: t.BG.Alpha(.85), At: .55},
+				{Color: t.BG, At: 1},
 			},
 		})
 }

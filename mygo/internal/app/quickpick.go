@@ -154,6 +154,9 @@ func (a *App) gitOp(what, okMsg string, f func() error) {
 		err := f()
 		done := func() {
 			a.branch = a.repo.Current()
+			if a.multiRoot() && a.repoAct >= 0 && a.repoAct < len(a.repos) {
+				a.repos[a.repoAct].branch = a.branch
+			}
 			if err != nil {
 				log.Warn(what+"失败", "err", err)
 				a.toast = what + "失败:" + err.Error()

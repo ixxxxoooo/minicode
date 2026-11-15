@@ -91,6 +91,7 @@ func iconAssetPath(name string) string {
 	if wd, err := os.Getwd(); err == nil {
 		candidates = append(candidates, filepath.Join(wd, "assets", "icon", name))
 		candidates = append(candidates, filepath.Join(wd, "..", "assets", "icon", name))
+		candidates = append(candidates, filepath.Join(wd, "..", "..", "assets", "icon", name))
 	}
 	for _, c := range candidates {
 		if st, err := os.Stat(c); err == nil && !st.IsDir() {
