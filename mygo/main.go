@@ -226,7 +226,9 @@ func main() {
 			MinHeight:     560,
 			StateKey:      "main",
 			TitleBarStyle: mygo.TitleBarHidden,
-			Content:       ui.View(a.View),
+			// 红绿灯与 36 高的标题栏垂直居中(按钮高 14:顶边距 = (36−14)/2)
+			TrafficLightPosition: &mygo.Point{X: 14, Y: 11},
+			Content:              ui.View(a.View),
 		})
 		a.SetWindow(win)
 		win.OnClosed(func() { a.CloseTerminals(); diag.CleanExit("关闭窗口") })

@@ -47,12 +47,12 @@ func (a *App) wsPane(c *ui.Context, gap float32, left bool) {
 	if left {
 		key = "ws-l"
 	}
-	p := a.pane(c).Key(key).ClipX().Transition(morph)
+	p := a.pane(c).Key(key).ClipX().Transition(a.mt())
 	switch {
 	case active && left:
 		p.Grow(1).Basis(0)
 	case active:
-		p.Width(theme.WWs).Shrink(0).Margin(0, 0, 0, gap)
+		p.Width(a.wsRW()).Shrink(0).Margin(0, 0, 0, gap)
 	default:
 		p.Width(0).Shrink(0).Opacity(0)
 	}
@@ -66,7 +66,8 @@ func (a *App) wsPane(c *ui.Context, gap float32, left bool) {
 	p.Children(func() {
 		inner := ui.Column(c).Grow(1).MinHeight(0)
 		if !left {
-			inner.Width(theme.WWs)
+			inner.Width(a.wsRW())
+			a.resizeHandle(c, lyWs, "l", a.wsRW(), theme.WWs, 360, max(360, a.winW-a.sideW()-360), func(v float32) { a.ly.ws = v })
 		}
 		inner.Children(func() { a.workspace(c) })
 		a.flashOverlay(c)
@@ -97,6 +98,10 @@ func (a *App) flashOverlay(c *ui.Context) {
 // workspace 是工作区内容:标签条 + 当前标签的内容 + 底部面板。
 func (a *App) workspace(c *ui.Context) {
 	t := a.tk
+	if a.ly.panelMax && a.ide.bottomOpen { // 底部面板最大化:标签条与编辑器让位
+		a.bottomPanel(c)
+		return
+	}
 	a.etabs(c)
 	cur := a.ide.cur()
 	switch {
@@ -118,21 +123,6 @@ func (a *App) workspace(c *ui.Context) {
 	if a.ide.bottomOpen {
 		a.bottomPanel(c)
 	}
-}
-
-// wsEmpty 是没有任何标签时的占位。
-func (a *App) wsEmpty(c *ui.Context) {
-	t := a.tk
-	ui.Column(c).Grow(1).Justify(ui.Center).AlignItems(ui.Center).Gap(6).Children(func() {
-		ui.Text(c, "没有打开的标签").TextColor(t.Tx2).FontSize(theme.FsTitle).FontWeight(500)
-		ui.Text(c, "从文件树、源代码管理或会话流里打开内容").TextColor(t.Tx3)
-		if a.mode == ModeIDE {
-			ui.Row(c).Gap(6).Margin(6, 0, 0, 0).Children(func() {
-				kit.Kbd(c, "⌘", "P")
-				ui.Text(c, "快速打开").TextColor(t.Tx4).FontSize(theme.FsCap)
-			})
-		}
-	})
 }
 
 // ───────── 标签条 ─────────

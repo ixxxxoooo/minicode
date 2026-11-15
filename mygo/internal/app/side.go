@@ -1,6 +1,8 @@
 package app
 
 import (
+	"time"
+
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -49,14 +51,17 @@ func (a *App) sideWidth() float32 {
 // side 是导航栏:顶部分段 + 内容 + 底部页面入口。宽度变化带 260 ms 过渡,内容宽度固定所以只是被裁切。
 func (a *App) side(c *ui.Context) {
 	t := a.tk
-	w := a.sideWidth()
+	w := a.sideW()
 	target := w
 	if !a.sideOpen {
 		target = 0
 	}
 	ui.Column(c).Key("side").Width(target).Shrink(0).ClipX().
 		Opacity(map[bool]float32{true: 1, false: 0}[a.sideOpen]).
-		Transition(ui.ElementTransition{Size: true, Duration: kit.DurSlow, Ease: kit.EaseIO}).Children(func() {
+		Transition(a.sideTransition()).Children(func() {
+		if a.sideOpen {
+			a.resizeHandle(c, lySide, "r", w, a.sideWidth(), 180, 420, func(v float32) { a.ly.side = v })
+		}
 		ui.Column(c).Width(w).Grow(1).MinHeight(0).Children(func() {
 			a.sideTop(c)
 			ui.Column(c).Grow(1).MinHeight(0).PaddingX(6).Clip().Children(func() {
@@ -250,4 +255,12 @@ func itoa(n int) string {
 		n /= 10
 	}
 	return string(b[i:])
+}
+
+// sideTransition 是导航栏开合的宽度过渡(拖动调整宽度期间关掉)。
+func (a *App) sideTransition() ui.ElementTransition {
+	if a.ly.resizing != "" || time.Since(a.ly.lastDrag) < 200*time.Millisecond {
+		return ui.ElementTransition{}
+	}
+	return ui.ElementTransition{Size: true, Duration: kit.DurSlow, Ease: kit.EaseIO}
 }

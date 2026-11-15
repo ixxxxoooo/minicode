@@ -20,6 +20,22 @@ func (a *App) EditorDemo(spec string) {
 			}
 			return editor.Pos{Line: max(l-1, 0), Col: max(c-1, 0)}
 		}
+		switch name {
+		case "closeall": // 关掉全部标签(看工作区起始页)
+			for len(a.ide.tabs) > 0 {
+				a.ide.closeTab(a.ide.tabs[0].id)
+			}
+			continue
+		case "right": // 展开右栏
+			a.rightOn = true
+			continue
+		case "panelmax":
+			a.togglePanelMax()
+			continue
+		case "chatmax":
+			a.toggleChatMax()
+			continue
+		}
 		if name == "conflict" {
 			a.demoConflict()
 			continue

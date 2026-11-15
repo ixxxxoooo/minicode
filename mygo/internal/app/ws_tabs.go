@@ -189,3 +189,22 @@ func (a *App) seedWorkspace() {
 }
 
 // conflictView 合并冲突标签(三方解决,见 conflict.go)。
+
+// toggleChatMax 切换「对话占满」(IDE 形态):占满时工作区让位,再按一次或 Esc 还原。
+func (a *App) toggleChatMax() {
+	if a.mode != ModeIDE {
+		return
+	}
+	a.chatMax = !a.chatMax
+	if a.chatMax {
+		a.rightOn = true
+	}
+}
+
+// togglePanelMax 切换底部面板最大化(占满工作区,标签条与编辑器让位)。
+func (a *App) togglePanelMax() {
+	a.ly.panelMax = !a.ly.panelMax
+	if a.ly.panelMax {
+		a.ide.bottomOpen = true
+	}
+}

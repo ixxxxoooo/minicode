@@ -63,6 +63,10 @@ func (d *ide) canForward() bool { return d.ni+1 < len(d.nav) }
 
 // navGo 沿历史后退(-1)/ 前进(+1)。
 func (a *App) navGo(dir int) {
+	if a.mode == ModeAgent {
+		a.sessGo(dir)
+		return
+	}
 	d := a.ide
 	n := d.ni + dir
 	if n < 0 || n >= len(d.nav) {
@@ -477,4 +481,48 @@ func (a *App) askClaude(kind string) {
 		a.rightOn = true
 	}
 	a.toast = "已把选区引用到对话"
+}
+
+// ───────── Agent 形态的前进 / 后退:在打开过的会话之间走 ─────────
+
+// recordSess 记下一次「打开会话」(后退 / 前进触发的不记)。
+func (a *App) recordSess(id string) {
+	if a.sessWalking || id == a.curSess && len(a.sessNav) > 0 {
+		return
+	}
+	if len(a.sessNav) == 0 {
+		a.sessNav = []string{a.curSess}
+		a.sessI = 0
+	}
+	a.sessNav = append(a.sessNav[:a.sessI+1], id)
+	if len(a.sessNav) > 50 {
+		a.sessNav = a.sessNav[len(a.sessNav)-50:]
+	}
+	a.sessI = len(a.sessNav) - 1
+}
+
+func (a *App) sessGo(dir int) {
+	n := a.sessI + dir
+	if n < 0 || n >= len(a.sessNav) {
+		return
+	}
+	a.sessI = n
+	a.sessWalking = true
+	a.OpenSession(a.sessNav[n])
+	a.sessWalking = false
+}
+
+// canBack / canForward 当前形态下能不能后退 / 前进(IDE:跳转历史;Agent:会话历史)。
+func (a *App) canBack() bool {
+	if a.mode == ModeAgent {
+		return a.sessI > 0
+	}
+	return a.ide.canBack()
+}
+
+func (a *App) canForward() bool {
+	if a.mode == ModeAgent {
+		return a.sessI+1 < len(a.sessNav)
+	}
+	return a.ide.canForward()
 }

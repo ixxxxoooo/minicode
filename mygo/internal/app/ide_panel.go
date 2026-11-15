@@ -11,11 +11,24 @@ import (
 // bottomPanel 是编辑区底部面板:终端 / 问题 / 输出。
 func (a *App) bottomPanel(c *ui.Context) {
 	t := a.tk
-	h := float32(172)
-	if a.ide.bottomTab == "problems" || a.ide.bottomTab == "refs" {
-		h = 236
+	h := a.panelHeight()
+	box := ui.Column(c).Key("bpanel").BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2).Transition(a.mt())
+	if a.ly.panelMax {
+		box.Grow(1).MinHeight(0)
+	} else {
+		box.Height(h).Shrink(0)
 	}
-	ui.Column(c).Key("bpanel").Height(h).Shrink(0).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2).Transition(morph).Children(func() {
+	if b := box.Bounds(); b.H > 0 {
+		a.ide.panelTop = b.Y // 上一帧量到的面板上缘(测试与浮层定位用)
+	}
+	box.Children(func() {
+		if !a.ly.panelMax {
+			def := float32(172)
+			if a.ide.bottomTab == "problems" || a.ide.bottomTab == "refs" {
+				def = 236
+			}
+			a.resizeHandle(c, lyPanel, "t", h, def, 96, max(120, a.winH-theme.HBar-theme.HTab-120), func(v float32) { a.ly.panel = v })
+		}
 		items := []kit.TabItem{
 			{ID: "term", Text: "终端", Icon: "terminal"},
 			{ID: "problems", Text: "问题", Count: map[bool]int{true: 0, false: 3}[a.proj != ""]},
@@ -68,7 +81,12 @@ func (a *App) bottomPanel(c *ui.Context) {
 					kit.Ib(c, "cols", kit.IbOpt{Small: true})
 					kit.Ib(c, "gear", kit.IbOpt{Small: true, Tip: "终端设置"})
 				}
-				kit.Ib(c, "x", kit.IbOpt{Small: true}).OnClick(func() { a.ide.bottomOpen = false })
+				mi, mt := "max", "最大化面板 ⌘⇧J"
+				if a.ly.panelMax {
+					mi, mt = "min", "还原面板 ⌘⇧J"
+				}
+				kit.Ib(c, mi, kit.IbOpt{Small: true, Tip: mt, On: a.ly.panelMax}).OnClick(a.togglePanelMax)
+				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭面板 ⌘J"}).OnClick(func() { a.ide.bottomOpen, a.ly.panelMax = false, false })
 			})
 		}); id != "" {
 			a.ide.bottomTab = id

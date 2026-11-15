@@ -76,25 +76,30 @@ type App struct {
 	tk     *theme.Tokens
 
 	// 窗口形态与布局
-	mode      Mode
-	screen    Screen
-	sideOpen  bool
-	rightOn   bool      // 右侧栏开合:Agent 形态 = 工作区,IDE 形态 = 对话栏
-	chatMax   bool      // IDE 形态:对话栏占满主区(工作区让位)
-	memBy     [2]layMem // 各形态各自记住的右侧栏 / 底部面板开合(切回来还是原样)
-	flashAt   time.Time // 工作区被「打开标签」唤起的时刻(边框闪一下)
-	chatW     float32   // 对话栏上一帧的宽度(响应式三档按它判断)
-	wsW       float32   // 工作区上一帧的宽度
-	nav       string    // chat / files / search / scm
-	navBy     [2]string // 各形态各自记住的左栏分段(切回来还停在原处)
-	popup     string    // 状态栏 / 输入框弹层:cfg / ctx / upd / acct
-	paletteOn bool
-	pq        palState // 命令面板状态
-	setTab    string   // 设置页当前分类
-	set       settingsState
-	prefs     *prefs.Store // 用户偏好(~/.minicode/settings.json)
-	density   int          // 界面密度:0 紧凑 / 1 标准 / 2 宽松
-	radius    int          // 圆角:0 利落 / 1 适中 / 2 圆润
+	mode        Mode
+	screen      Screen
+	sideOpen    bool
+	rightOn     bool      // 右侧栏开合:Agent 形态 = 工作区,IDE 形态 = 对话栏
+	chatMax     bool      // IDE 形态:对话栏占满主区(工作区让位)
+	memBy       [2]layMem // 各形态各自记住的右侧栏 / 底部面板开合(切回来还是原样)
+	flashAt     time.Time // 工作区被「打开标签」唤起的时刻(边框闪一下)
+	sessNav     []string  // Agent 形态的「后退 / 前进」:打开过的会话序列
+	sessI       int
+	sessWalking bool
+	ly          layoutSizes // 拖出来的栏宽 / 面板高度
+	winW, winH  float32     // 窗口内容区尺寸(夹栏宽用)
+	chatW       float32     // 对话栏上一帧的宽度(响应式三档按它判断)
+	wsW         float32     // 工作区上一帧的宽度
+	nav         string      // chat / files / search / scm
+	navBy       [2]string   // 各形态各自记住的左栏分段(切回来还停在原处)
+	popup       string      // 状态栏 / 输入框弹层:cfg / ctx / upd / acct
+	paletteOn   bool
+	pq          palState // 命令面板状态
+	setTab      string   // 设置页当前分类
+	set         settingsState
+	prefs       *prefs.Store // 用户偏好(~/.minicode/settings.json)
+	density     int          // 界面密度:0 紧凑 / 1 标准 / 2 宽松
+	radius      int          // 圆角:0 利落 / 1 适中 / 2 圆润
 
 	// 侧栏数据
 	projects []core.ProjectInfo
@@ -205,6 +210,7 @@ func New(o Options) *App {
 	if a.prefs == nil {
 		a.prefs = prefs.Memory()
 	}
+	a.loadLayout()
 	if o.Mode == ModeAgent && a.setTab == "" {
 		a.setTab = "appearance"
 	}
@@ -280,6 +286,7 @@ func (a *App) SetSessionOpener(f func(id string) backend.Backend) { a.opener = f
 // OpenSession 切到某个会话:关掉旧后端、清空状态与排队、接上新后端(空 id = 新会话)。
 func (a *App) OpenSession(id string) {
 	log.Info("切换会话", "from", a.curSess, "to", id)
+	a.recordSess(id)
 	a.parkOrClose()
 	if lv := a.live[id]; lv != nil && id != "" { // 回到一个在后台跑着的会话:接回它的后端与状态
 		delete(a.live, id)
@@ -373,6 +380,7 @@ type layMem struct{ right, panel bool }
 func (a *App) View(c *ui.Context) {
 	defer diag.SpanSlow("app", "构建界面", 33*time.Millisecond)()
 	c.SetTheme(a.tk.UITheme())
+	a.winW, a.winH = c.Size()
 	a.shortcuts(c)
 	if a.popup == "" {
 		a.popSeen = ""
@@ -462,6 +470,16 @@ func (a *App) shortcuts(c *ui.Context) {
 		a.OpenQuick("symbols", "")
 	case c.Shortcut(ui.Cmd, ui.KeyJ):
 		a.ide.bottomOpen = !a.ide.bottomOpen
+	case c.Shortcut(ui.Cmd|ui.Shift, ui.KeyJ):
+		a.togglePanelMax()
+	case c.Shortcut(ui.Cmd|ui.Shift, ui.KeyM):
+		a.toggleChatMax()
+	case a.chatMax && !a.paletteOn && a.qp == nil && a.popup == "" && c.Shortcut(0, ui.KeyEscape):
+		a.chatMax = false // Esc:退出「对话占满」
+	case c.Shortcut(ui.Ctrl, ui.KeyMinus):
+		a.navGo(-1)
+	case c.Shortcut(ui.Ctrl|ui.Shift, ui.KeyMinus):
+		a.navGo(1)
 	case c.Shortcut(ui.Cmd, ui.KeyS):
 		if a.mode == ModeIDE {
 			if err := a.ide.save(); err != nil {

@@ -73,7 +73,8 @@ type ide struct {
 	sel  string          // 文件树里选中的路径
 
 	bottomOpen bool
-	bottomTab  string // term / problems / output
+	panelTop   float32 // 底部面板上缘(上一帧)
+	bottomTab  string  // term / problems / output
 	termLines  []termLine
 	termSt     ui.ScrollState
 	cmds       []cmdView    // 「在终端面板查看」打开的只读命令标签

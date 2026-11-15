@@ -77,8 +77,12 @@ func (a *App) chatHead(c *ui.Context, title string) {
 			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新会话 ⌘N"}).OnClick(a.NewSession)
 		}
 		kit.Ib(c, "history", kit.IbOpt{Small: true, Tip: "历史会话 ⌘⇧H", On: a.popup == "hist"}).OnClick(func() { a.togglePop("hist") })
-		if narrow && a.mode == ModeIDE {
-			kit.Ib(c, "max", kit.IbOpt{Small: true, Tip: "对话占满 ⌘⇧M", On: a.chatMax}).OnClick(func() { a.chatMax = !a.chatMax })
+		if a.mode == ModeIDE { // 占满与退出同一个按钮(占满后图标换成「还原」,Esc 也能退出)
+			ic, tip := "max", "对话占满 ⌘⇧M"
+			if a.chatMax {
+				ic, tip = "min", "还原对话栏 ⌘⇧M · Esc"
+			}
+			kit.Ib(c, ic, kit.IbOpt{Small: true, Tip: tip, On: a.chatMax}).OnClick(a.toggleChatMax)
 		}
 		kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多:重命名、分叉、归档、复制链接"})
 	})
