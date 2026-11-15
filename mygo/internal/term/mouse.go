@@ -24,7 +24,24 @@ func (t *Term) SendMouse(ev uv.MouseEvent) {
 	if t.em == nil {
 		return
 	}
+	if !mouseWanted(t.mouseModes.Load(), ev) {
+		return
+	}
 	t.em.SendMouse(ev)
+}
+
+// mouseWanted 按程序开的跟踪模式过滤事件:vt 库不区分,会把移动事件发给只开了 1000(仅点击)的程序。
+//   - 1000 / 1001 / 9:只要点击与释放(滚轮属于按键事件,照常放行)
+//   - 1002:再加「按住按键时的移动」
+//   - 1003:再加所有移动
+func mouseWanted(modes uint32, ev uv.MouseEvent) bool {
+	if _, ok := ev.(uv.MouseMotionEvent); !ok {
+		return true
+	}
+	if modes&mouseBits[ansi.ModeMouseAnyEvent] != 0 {
+		return true
+	}
+	return modes&mouseBits[ansi.ModeMouseButtonEvent] != 0 && ev.Mouse().Button != uv.MouseNone
 }
 
 func (t *Term) onMouseMode(mode ansi.Mode, on bool) {
