@@ -35,6 +35,11 @@ func (a *App) scmCompareTwo(aHash, bHash string) {
 	if repo == nil || aHash == "" || bHash == "" {
 		return
 	}
+	if aHash == bHash {
+		a.toast = "请选择两个不同的提交"
+		return
+	}
+	a.graphTab.picks = []string{aHash, bHash}
 	a.bg("scm.cmp2", func() func() {
 		fs, err := repo.CompareCommits(aHash, bHash)
 		return func() {

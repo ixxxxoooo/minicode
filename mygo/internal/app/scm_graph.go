@@ -95,6 +95,7 @@ func (a *App) graphView(c *ui.Context) {
 		})
 		return
 	}
+	a.graphPickBar(c)
 	gw := float32(s.lanes*graphLaneW + 10)
 	// 表头
 	ui.Row(c).Height(22).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {

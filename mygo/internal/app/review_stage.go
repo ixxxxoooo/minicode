@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
@@ -101,45 +102,83 @@ func (a *App) reviewStageAccepted() {
 		}
 		jobs = append(jobs, job{rel: a.wsRel(f.path), content: content})
 	}
-	prev := make(map[string]string, len(jobs))
-	repo := a.repo
-	a.scmAct("暂存已接受的改动", func(r vcs.Repo) error {
+	type stagedBefore struct {
+		repo    vcs.Repo
+		relPath string
+		content string
+	}
+	var prev []stagedBefore
+	var partialMsg string
+	var okN int
+	a.scmAct("暂存已接受的改动", func(_ vcs.Repo) error {
+		var firstErr error
+		fail := 0
+		okN = 0
 		for _, j := range jobs {
-			rp := j.rel
-			if _, rel := a.repoAt(a.treePath(rp)); rel != "" {
-				rp = rel
+			repo, rp := a.repoAt(a.treePath(j.rel))
+			if repo == nil {
+				fail++
+				if firstErr == nil {
+					firstErr = fmt.Errorf("无法找到仓库:%s", j.rel)
+				}
+				continue
 			}
-			if s, ok := r.Index(rp); ok {
-				prev[rp] = s
+			if s, ok := repo.Index(rp); ok {
+				prev = append(prev, stagedBefore{repo: repo, relPath: rp, content: s})
+			} else {
+				prev = append(prev, stagedBefore{repo: repo, relPath: rp, content: ""})
 			}
-			if err := r.StageContent(rp, j.content); err != nil {
-				return err
+			if err := repo.StageContent(rp, j.content); err != nil {
+				fail++
+				if firstErr == nil {
+					firstErr = err
+				}
+				diag.L("review").Warn("暂存块失败", "path", rp, "err", err)
+				continue
 			}
+			okN++
+		}
+		if fail > 0 && okN > 0 {
+			partialMsg = fmt.Sprintf("%d 个成功,%d 个失败", okN, fail)
+			return nil
+		}
+		if fail > 0 {
+			if firstErr != nil {
+				return firstErr
+			}
+			return fmt.Errorf("暂存失败")
 		}
 		return nil
 	}, func() {
-		n := len(jobs)
-		a.rvStageUndo.Begin("已暂存 "+itoa(n)+" 个文件", func() {
-			if repo == nil {
-				return
-			}
-			a.scmAct("撤销暂存", func(r vcs.Repo) error {
-				for rp, content := range prev {
-					if content == "" {
-						if err := r.Unstage(rp); err != nil {
-							return err
+		staged := len(jobs)
+		if partialMsg != "" {
+			staged = okN
+			a.toast = "部分暂存:" + partialMsg
+		}
+		a.rvStageUndo.Begin("已暂存 "+itoa(staged)+" 个文件", func() {
+			a.scmAct("撤销暂存", func(_ vcs.Repo) error {
+				var err error
+				for _, p := range prev {
+					if p.repo == nil {
+						continue
+					}
+					if p.content == "" {
+						if e := p.repo.Unstage(p.relPath); e != nil && err == nil {
+							err = e
 						}
 						continue
 					}
-					if err := r.StageContent(rp, content); err != nil {
-						return err
+					if e := p.repo.StageContent(p.relPath, p.content); e != nil && err == nil {
+						err = e
 					}
 				}
-				return nil
+				return err
 			})
 		})
-		a.toast = "已暂存 " + itoa(n) + " 个文件"
-		diag.L("review").Info("暂存已接受的改动", "files", n)
+		if partialMsg == "" {
+			a.toast = "已暂存 " + itoa(staged) + " 个文件"
+		}
+		diag.L("review").Info("暂存已接受的改动", "files", staged, "partial", partialMsg != "")
 	})
 }
 
