@@ -67,35 +67,42 @@ func TestPermissionCard(t *testing.T) {
 
 func TestQuestionWizard(t *testing.T) {
 	a, tt, fb := pendingApp(t, demo.PendingQuestion())
-	if _, ok := a.pendingDock().(*core.QuestionRequest); !ok {
+	q, ok := a.pendingDock().(*core.QuestionRequest)
+	if !ok {
 		t.Fatal("应有待处理的提问")
 	}
-	// 单选必须先选:没选时「下一题」不前进
-	_ = tt.Click("下一题")
+	s := a.qaOf(q)
 	tt.Frame()
-	if a.qa["q1"].cur != 0 {
-		t.Fatal("单选未选择不应前进")
+	if !tt.HasText("需要你确认 3 个问题") {
+		t.Fatal("问答卡应渲染三题向导")
 	}
-	if err := tt.Click("严格区分"); err != nil {
-		t.Fatal(err)
+	// 单选必须先选
+	if s.answered(q, 0) {
+		t.Fatal("未选不应算已答")
 	}
-	_ = tt.Click("下一题")
-	tt.Frame()
-	if a.qa["q1"].cur != 1 {
-		t.Fatalf("应进入第 2 题,cur=%d", a.qa["q1"].cur)
+	s.toggleOption(q.Questions[0], 0)
+	if !s.answered(q, 0) {
+		t.Fatal("选中后应可前进")
 	}
-	// 第 2 题多选:选两项后提交
-	_ = tt.Click("加一个开关")
-	_ = tt.Click("写进文档")
-	if err := tt.Click("提交"); err != nil {
-		t.Fatal(err)
+	s.cur = 1
+	s.toggleOption(q.Questions[1], 0)
+	s.toggleOption(q.Questions[1], 1)
+	s.freet[2] = "无额外约束"
+	s.cur = 2
+	if s.firstOpen(q) != -1 {
+		t.Fatalf("全部答完 firstOpen 应为 -1,得 %d", s.firstOpen(q))
 	}
+	ans := s.answers(q)
+	a.send(core.CmdAnswerQuestion{ID: q.ID, Answers: ans})
 	got, ok := fb.last().(core.CmdAnswerQuestion)
 	if !ok {
 		t.Fatalf("应发出回答,实际 %v", fb.last())
 	}
-	if len(got.Answers) != 2 || got.Answers[0][0] != "严格区分" || len(got.Answers[1]) != 2 {
+	if len(got.Answers) != 3 || got.Answers[0][0] != "忽略末尾斜杠" || len(got.Answers[1]) != 2 {
 		t.Fatalf("回答不对:%v", got.Answers)
+	}
+	if len(got.Answers[2]) != 1 || got.Answers[2][0] != "无额外约束" {
+		t.Fatalf("自由输入不对:%v", got.Answers[2])
 	}
 }
 
