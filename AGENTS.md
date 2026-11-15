@@ -188,6 +188,18 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 - **浏览器页**:没有可读正文(`pageHasNoText`)时显示空态卡 +「在系统浏览器打开」,不留空白;相对链接用 `resolveURL` 对当前页解析(`#锚点` / `javascript:` / `mailto:` 丢弃);地址栏图标:http 与本机地址为警示、https 为锁、空页为地球。开发验证用本地 `python3 -m http.server`,Shell 工具结束时会连带结束后台进程,要 `start_new_session=True` 脱离。
 - Computer Use 实机边界:悬停才出现的按钮(差异块「暂存 / 还原此块」)与弹出菜单项 AX 点不到、编辑器里放不下光标、不能打字进编辑器;这些只靠单测,实机用「搜索结果跳行」之类的入口间接到达。
 
+### 品牌图标 / 托盘 / 应用菜单(Computer Use + 菜单栏截图实测,已修)
+
+- **素材内嵌**:`assets/icon/build_all.sh` 生成后同步到 `mygo/internal/app/brandassets/`,`brand_embed.go` 用 `go:embed` 读取(开发版从访达 / `open` 启动时工作目录是 `/`,靠文件路径永远找不到素材,托盘曾因此整个不出现)。命名:应用图标 `app-style<N>[-dark|-clear|-tint].png`(N 与 `appStyles` 同序:织纹 / 经纬 / 提示符 / 棋盘 / 行 / 花括号),托盘 `tray-<状态>.png`(样式 0)与 `tray-s<N>-<状态>.png`(N = 1..4,对应 `trayStyles` 提示符…花括号),运行中三帧 `-running-0..2`。改 `gen.py` 后重跑 `build_all.sh` 并把 `brandassets` 一起提交。
+- **`mygo.NewTray` 在应用就绪前会直接 panic**(无任何输出、进程静默退出 2,日志停在「载入设置」后)。`syncBrand` 开头必须 `if !mygo.App.IsReady() { return }`;`New()` 里的 `retheme` 也会走到它,就绪后 `InitBrand` 会补一次。
+- **托盘模板图 vs 彩色徽标**:纯黑 + alpha 的模板图随菜单栏明暗自动着色;开「彩色徽标」时合成非模板图,必须用 `Tray.Dark()`(macOS 26 的菜单栏明暗跟壁纸走,不等于 `AppleInterfaceStyle`)并在 `OnAppearanceChange` 里重画。状态优先级见 `brandSummarize`:待确认 > 出错 > 已完成 > 运行中 > 有更新 > 暂停 > 空闲;出错 / 已完成只记「不在前台时发生」(`brand.trayErr/trayUnread`),回前台或新回合开始清除。
+- **库的菜单图标(`MenuItem.Icon`)在托盘菜单里实机不渲染**(PNG 正确、`NewMenuIcon` 成功,仍不显示;带 `Subtitle` 的项也一样),托盘会话行的状态点改用 🟠🔵🟢 字符。`System Events` 能点托盘:`click menu bar item 1 of menu bar 2`(`process "minicode"`),子菜单用 `menu 1 of menu item "…"`;`screencapture -x` 后用 PIL 裁剪看菜单栏。
+- **应用菜单栏**(`newwindow.go::installAppMenu`):自定义项不挂 Accelerator(快捷键由应用内按用户设置分发,可改键),标准项走 Role(`RoleEditMenu` / `RoleWindowMenu` / `RoleHide` / `RoleQuit`…);只放 MiniCode / 文件 两项会丢掉编辑、窗口、帮助与退出。
+- **暂停通知**:`general.pauseNotify`(开关)+ `general.pauseUntil`(限时到期 Unix 秒),`notifyPaused()` 懒清理到期项,`pauseNotifyFor(d)`:`d>0` 限时 / `0` 一直 / `<0` 恢复;托盘菜单是二级(1 小时 / 到明天 9:00 / 一直 / 恢复)。
+- **访达换装**(`brand_finder.go`,`appearance.fileIcon`):`NSWorkspace setIcon:forFile:` 给 `.app` 包写自定义图标(包根多一个 `Icon\r`,关闭即清除);按「开关 + 样式 + 外观」签名去重、后台执行;不是从 `.app` 启动(`go run` / 测试)直接跳过。开发版 `dev.sh` 每次重新打包会还原。
+- **图标名必须存在**:`kit.Ic/Ib/Btn{Icon}` 用不存在的名字会画成 ✕。图标表由 `scripts/gen-icons.mjs` 从 `docs/design/js/icons.js` 生成(先加设计稿再生成),`TestIconNamesExist` 静态扫源码、`zz_icons_test.go` 在 app 包所有界面测试之后检查 `kit.UnknownIcons()`。
+- **设置行 `setRow` 带键必须写 `def`**:自定义行(`kind: kNone`)没写默认值,`rowChanged` 一律认为「改过」,默认值也亮红点。
+
 ### 已知缺口(真实模式)
 
 - **真实模式实测第五轮(同上环境,Computer Use,SCM 提交回路)**:**开会话会往用户仓库里写 `.claude/settings.json` 与 `.mini-backup`**(`SyncClaudeSettingsFromPrefs` 每次都重写 + 换备份),现在内容没变不写,项目里没有该文件且用户没改过相关偏好时不创建;图谱 HEAD 提交右键的「检出此提交 / 与 HEAD 比较」置灰(检出当前提交会无故让 HEAD 游离);Git 操作失败的 toast / 提交框 / 推送被拒引导条改用 `friendlyGitErr`(无远程 / 无上游 / 认证 / 网络 / 被拒 / 未设用户 / 锁文件翻成一句中文加下一步,认不出取首行并截断),完整原文仍进输出面板与日志;**AI 提交说明等一次性 `claude -p`(`RunPromptModelCtx`)此前会在 `~/.claude/projects` 留下「你是 Git 提交说明助手…」会话污染历史列表**,现加 `--no-session-persistence`(自动化流式运行故意保留会话,「查看会话」要用);**真实后端的编辑块 `DiffBlock.Line` 一直是 0**(审查页「第 1–4 行」、编辑器「Claude 改动」叠层都标在第 1 行),现 `BuildTool` 按文件内容定位(实时找 old、回放找 new,>1 MiB 放弃);审查页文件标题不再露绝对目录、改动已提交后说明写「已经提交到 Git」。**均有 go test,并已在开发版实机走过**(暂存 → AI 提交说明 → 提交 → 图谱右键 → 推送无远程 → 审查页行号 → 命令面板 / 主题预览与切换)。已知:Computer Use 的 AX 点击对弹出菜单项无效(菜单项没有 press 动作),菜单只能点头部等价按钮或用坐标点击;「审查本轮改动」入口在改动已提交后仍显示「待审查」(审查页内已如实说明);此前已生成的一次性会话不会自动清理。
