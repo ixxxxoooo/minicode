@@ -70,6 +70,12 @@ func (a *App) statusbar(c *ui.Context) {
 				} else {
 					a.sbItem(c, "indent", func() { ui.Text(c, "空格:"+itoa(indent)) })
 				}
+				if n := a.prefs.Int(pEdFont, edFontDefault); a.prefs.Has(pEdFont) && n != edFontDefault {
+					// 字号被改过:状态栏常驻提示,点一下恢复默认(⌘0)
+					a.sbItem(c, "edfont", func() {
+						ui.Text(c, "字号 "+itoa(n)+"px · 恢复")
+					}).OnClick(a.resetEditorFont)
+				}
 				a.mcStatusChip(c, tab)
 				a.sbItem(c, "enc", func() { ui.Text(c, "UTF-8") })
 				lang := "纯文本"

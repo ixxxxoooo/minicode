@@ -154,6 +154,9 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 	if tb := a.ide.cur(); tb != nil && tb.buf != nil && tb.virt == "" && !tb.diff {
 		add("align", "格式化文档", "⇧⌥F", "有语言服务器就交给它,否则用内置格式化(Go / JSON / Markdown / 文本)。", a.formatDoc)
 		add("wrap", "切换自动换行", "⌥Z", "编辑器与差异视图共用的偏好 editor.wrap。", a.toggleWrap)
+		add("search", "编辑器:放大字号", "⌘+", "编辑器字号 +1(最大 24 px)。", func() { a.setEditorFont(a.prefs.Int(pEdFont, edFontDefault) + 1) })
+		add("search", "编辑器:缩小字号", "⌘-", "编辑器字号 −1(最小 9 px)。", func() { a.setEditorFont(a.prefs.Int(pEdFont, edFontDefault) - 1) })
+		add("refresh", "编辑器:重置字号", "⌘0", "把编辑器字号恢复为默认的 12 px。", a.resetEditorFont)
 		add("list", "转到行…", a.shortcutLabel("gotoLine"), "在当前文件跳到指定行,支持 行:列。", a.openGotoLine)
 		add("layers", "块注释", a.shortcutLabel("blockComment"), "用块注释包裹选区;无块注释时改用行注释。", a.toggleBlockComment)
 		okMc, whyMc := a.tbCodeEditable(tb)

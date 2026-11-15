@@ -507,7 +507,7 @@ func (a *App) peekPanel(c *ui.Context, tb *ideTab, y float32) {
 	}
 }
 
-// editorShortcuts 是编辑器级快捷键(只在有当前文件时生效):F12 / ⇧F12 / ⌥F12 / F2 / ⌘. / ⌘L / ⌘I / ⌃- / ⌃⇧-。
+// editorShortcuts 是编辑器级快捷键(只在有当前文件时生效):F12 / ⇧F12 / ⌥F12 / F2 / ⌘. / ⌘L / ⌘I / ⌃- / ⌃⇧- / ⌘+ ⌘- ⌘0(字号)。
 func (a *App) editorShortcuts(c *ui.Context) bool {
 	tb := a.ide.cur()
 	if tb != nil && tb.st != nil {
@@ -535,6 +535,12 @@ func (a *App) editorShortcuts(c *ui.Context) bool {
 		}
 	case a.shortcutHit(c, "format", ui.Shift|ui.Alt, ui.KeyF):
 		a.formatDoc()
+	case c.Shortcut(ui.Cmd, ui.KeyEqual), c.Shortcut(ui.Cmd|ui.Shift, ui.KeyEqual):
+		a.setEditorFont(a.prefs.Int(pEdFont, edFontDefault) + 1)
+	case c.Shortcut(ui.Cmd, ui.KeyMinus):
+		a.setEditorFont(a.prefs.Int(pEdFont, edFontDefault) - 1)
+	case c.Shortcut(ui.Cmd, ui.Key0):
+		a.resetEditorFont()
 	case a.shortcutHit(c, "reopenTab", ui.Cmd|ui.Shift, ui.KeyT):
 		a.reopenClosed()
 	case a.shortcutHit(c, "wrap", ui.Alt, ui.KeyZ):

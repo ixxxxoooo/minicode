@@ -120,11 +120,8 @@ func (a *App) applyEditorPrefs(tb *ideTab) {
 		return
 	}
 	size := a.prefs.Int(pEdFont, 12)
-	if a.prefs.Has(pEdFont) {
-		st.Font = ui.Font{Family: "monospace", Size: float32(size)}
-	} else {
-		st.Font = ui.Font{}
-	}
+	// 没改过字号时也要显式写成默认 12:库自带的默认是 13,和行高 / 浮层定位按 12 算的常量对不上
+	st.Font = ui.Font{Family: "monospace", Size: float32(size)}
 	switch a.prefs.Int(pEdIndent, 1) {
 	case 0:
 		st.TabSize, st.Indent = 2, editor.IndentSpaces
@@ -220,3 +217,22 @@ func d2active(d *ide, t *ideTab) func() {
 	d.active = t.id
 	return func() { d.active = old }
 }
+
+// edFontDefault 是编辑器字号的默认值(与设置页「字号」一致)。
+const edFontDefault = 12
+
+// setEditorFont 改编辑器字号(9–24):⌘+ / ⌘- / 状态栏芯片 / 命令面板共用;等于默认值时删键,设置页的「已修改」点随之消失。
+func (a *App) setEditorFont(n int) {
+	n = min(max(n, 9), 24)
+	if n == edFontDefault {
+		a.prefs.Reset(pEdFont)
+	} else {
+		a.prefs.Set(pEdFont, n)
+	}
+	a.applyBehavior()
+	a.toast = "编辑器字号 " + itoa(n) + " px"
+	log.Info("调整编辑器字号", "px", n)
+}
+
+// resetEditorFont 把编辑器字号恢复成默认(⌘0)。
+func (a *App) resetEditorFont() { a.setEditorFont(edFontDefault) }
