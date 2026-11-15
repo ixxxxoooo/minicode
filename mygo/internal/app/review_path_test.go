@@ -3,6 +3,7 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/egoist/mygo/ui"
@@ -48,5 +49,29 @@ func TestChangesCardAfterRealTurn(t *testing.T) {
 	}
 	if !tt.HasText("1 个文件已改动") {
 		t.Fatal("回合结束后应出现改动卡")
+	}
+}
+
+// 多轮会话里改动卡只出现一次(最后一轮),并且目录是相对项目根的。
+func TestChangesCardOnlyOnLastRound(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true})
+	a.proj = "/tmp/mc-e2e"
+	for _, id := range []string{"1", "2"} {
+		a.st.Apply(core.EvAppend{Item: &core.User{ID: "u" + id, Text: "改 " + id}})
+		a.st.Apply(core.EvAppend{Item: core.NewToolCall("t"+id, "Edit", "编辑").
+			WithContent(&core.DiffBlock{Path: "/private/tmp/mc-e2e/sub/x.go", Old: "a", New: "b", Line: 1})})
+		a.st.Apply(core.EvAppend{Item: &core.Assistant{ID: "a" + id, Text: "好了"}})
+		a.st.Apply(core.EvTurnEnded{})
+	}
+	tt := ui.NewTester(a.View, 1280, 800)
+	tt.Frame()
+	n := 0
+	for _, x := range tt.Texts() {
+		if strings.Contains(x, "个文件已改动") {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Fatalf("改动卡出现 %d 次,期望 1", n)
 	}
 }

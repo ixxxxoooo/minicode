@@ -117,7 +117,8 @@ func (a *App) flowRound(c *ui.Context, u *core.User, rest []core.Item) {
 				last = i
 			}
 			if uid, ok := turnEndRound(rest, last, u.ID); ok {
-				if last == len(rest)-1 && a.st.Phase != core.PhaseRunning {
+				// 改动卡汇总的是整个会话的改动,只放在最后一轮,免得每一轮都显示同一份累计数字。
+				if last == len(rest)-1 && a.st.Phase != core.PhaseRunning && rest[last] == a.st.Items[len(a.st.Items)-1] {
 					a.changesCard(c)
 				}
 				a.turnFooterActions(c, uid)
