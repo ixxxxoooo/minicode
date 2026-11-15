@@ -106,7 +106,7 @@
     ${sec('自定义页(7 类)', '参考 VS Code 扩展视图 + Claude Code 的 /plugin /mcp /skills:左侧分类,中间列表,右侧详情;「来源作用域」(用户 / 项目 / 本地)是每一行的一等属性。', tbl([['分类', 110], ['要点', 520], ['状态']], [
       ['插件', '市场 list JSON/文本+安装四态;卸载 CLI', st('part')], ['MCP', '编辑配置表单+SaveMCP;list/login;disabledMcpServers/工具 deny', st('part')], ['Skills', '读盘+重命名目录+编辑器打开', st('part')],
       ['命令 / 子 Agent / 钩子', '保存写 .md / settings.json;试运行(claude -p / shell)', st('part')], ['规则与记忆', 'CLAUDE.md / rules 读盘 + 编辑器打开;保存原子写', st('part')]]))}
-    <div class="t3" style="margin-top:14px;line-height:1.7">说明:浏览器 HTTP 抓取与画布版本步进器已部分接入;Mermaid 全屏仍用简版方框布局,复杂图排版以后换专用引擎。</div></div>`;
+    <div class="t3" style="margin-top:14px;line-height:1.7">说明:浏览器 HTTP 抓取与画布版本步进器已部分接入;会话流 Mermaid 已接专用排版引擎(流程 / 时序 / 饼 / 状态图),全屏矢量缩放;Go 分支未测。</div></div>`;
 
   /* ───────── 会话流任务追踪 ───────── */
   P['task-spec'] = () => `<div class="ds" style="max-width:1240px">${head('会话流 · 待办、审批、后台任务', '三类「需要你注意的东西」各有一个固定的家:正在做的事在会话流里(步骤行),需要你拍板的事就地替换输入框(交互卡),脱离回合继续跑的事在输入框上方的任务坞。互不抢位置,不弹模态框。')}
