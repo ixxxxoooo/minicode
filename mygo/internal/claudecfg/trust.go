@@ -3,6 +3,7 @@ package claudecfg
 import (
 	"os"
 	"path/filepath"
+	"sort"
 )
 
 // TrustEntry 是某个项目的信任状态。
@@ -13,9 +14,61 @@ type TrustEntry struct {
 	McpOK   bool
 }
 
+// PathsInClaudeJSON 返回 ~/.claude.json 的 projects 下所有路径键(不读其它字段)。
+func PathsInClaudeJSON() ([]string, error) {
+	root, err := readJSON(homeClaudeJSON())
+	if err != nil {
+		return nil, err
+	}
+	proj, _ := root["projects"].(map[string]any)
+	if len(proj) == 0 {
+		return nil, nil
+	}
+	out := make([]string, 0, len(proj))
+	for k := range proj {
+		if k != "" {
+			out = append(out, k)
+		}
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
+// MergeTrustPaths 合并 claude.json、项目注册表、侧栏项目与会话 cwd,去重后排序。
+func MergeTrustPaths(claudePaths, registry, sidebar []string, cwd string) []string {
+	seen := map[string]struct{}{}
+	var out []string
+	add := func(p string) {
+		if p == "" {
+			return
+		}
+		k := projectKey(p)
+		if _, ok := seen[k]; ok {
+			return
+		}
+		seen[k] = struct{}{}
+		out = append(out, k)
+	}
+	for _, p := range claudePaths {
+		add(p)
+	}
+	for _, p := range registry {
+		add(p)
+	}
+	for _, p := range sidebar {
+		add(p)
+	}
+	add(cwd)
+	sort.Strings(out)
+	return out
+}
+
 // ListTrust 列出 ~/.claude.json 里各项目的 hasTrustDialogAccepted。
-func ListTrust(paths []string) []TrustEntry {
-	root, _ := readJSON(homeClaudeJSON())
+func ListTrust(paths []string) ([]TrustEntry, error) {
+	root, err := readJSON(homeClaudeJSON())
+	if err != nil {
+		return nil, err
+	}
 	proj, _ := root["projects"].(map[string]any)
 	out := make([]TrustEntry, 0, len(paths))
 	for _, p := range paths {
@@ -36,7 +89,7 @@ func ListTrust(paths []string) []TrustEntry {
 		}
 		out = append(out, e)
 	}
-	return out
+	return out, nil
 }
 
 // SetTrust 写 hasTrustDialogAccepted(及其它信任开关)到 ~/.claude.json。

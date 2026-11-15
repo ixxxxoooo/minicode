@@ -8,6 +8,7 @@ package demo
 
 import (
 	"errors"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -127,22 +128,43 @@ func DemoTrust() []claudecfg.TrustEntry {
 	}
 }
 
+// SettingTrustList 设置页项目信任:演示数据,可用 MINI_SET_TRUST=empty|fail 覆盖。
+func SettingTrustList() ([]claudecfg.TrustEntry, error) {
+	switch os.Getenv("MINI_SET_TRUST") {
+	case "empty":
+		return nil, nil
+	case "fail":
+		return nil, errors.New("演示:无法读取信任列表")
+	default:
+		return DemoTrust(), nil
+	}
+}
+
+// TrustWriteFail 演示写失败(MINI_SET_TRUST=writefile)。
+func TrustWriteFail() bool { return os.Getenv("MINI_SET_TRUST") == "writefile" }
+
 // LSPDemoRow 是设置页语言服务器一行的演示数据。
 type LSPDemoRow struct {
-	Name   string
-	Status string
-	OK     bool
+	ID      string
+	Name    string
+	Lang    string
+	Exts    string
+	Status  string
+	Path    string
+	Install string
+	OK      bool
+	Enabled bool
 }
 
 // LSPDemoRows 已安装 / 未安装 / 过旧 / 启动失败 / 索引中。
 func LSPDemoRows() []LSPDemoRow {
 	return []LSPDemoRow{
-		{Name: "rust-analyzer", Status: "已就绪 · v2025.12.1", OK: true},
-		{Name: "gopls", Status: "已就绪 · v0.18.0", OK: true},
-		{Name: "Pyright", Status: "未安装 · pip install pyright", OK: false},
-		{Name: "typescript-language-server", Status: "版本过旧 · 需要 ≥ 4.0", OK: false},
-		{Name: "clangd", Status: "启动失败 · 上次退出码 1", OK: false},
-		{Name: "SourceKit-LSP", Status: "索引中 · 42%", OK: true},
+		{ID: "rust", Name: "rust-analyzer", Lang: "Rust", Exts: ".rs", Status: "已安装", Path: "/opt/homebrew/bin/rust-analyzer", OK: true, Enabled: true},
+		{ID: "go", Name: "gopls", Lang: "Go", Exts: ".go", Status: "已安装", Path: "~/go/bin/gopls", OK: true, Enabled: true},
+		{ID: "python", Name: "Pyright", Lang: "Python", Exts: ".py, .pyi", Status: "未安装", Install: "npm install -g pyright", OK: false, Enabled: true},
+		{ID: "ts", Name: "typescript-language-server", Lang: "TypeScript / JavaScript", Exts: ".ts, .tsx, .js", Status: "未安装", Install: "npm install -g typescript-language-server", OK: false, Enabled: false},
+		{ID: "c", Name: "clangd", Lang: "C / C++", Exts: ".c, .cpp, …", Status: "已安装", Path: "/usr/bin/clangd", OK: true, Enabled: true},
+		{ID: "swift", Name: "SourceKit-LSP", Lang: "Swift", Exts: ".swift", Status: "已安装", Path: "/usr/bin/sourcekit-lsp", OK: true, Enabled: true},
 	}
 }
 

@@ -111,6 +111,17 @@ type settingsState struct {
 	doctorLines   []string
 	// settings 导出
 	settingsImport []byte
+	// 项目信任(真实列表缓存)
+	trustRows    []claudecfg.TrustEntry
+	trustErr     string
+	trustLoading bool
+	trustRowErr  map[string]string // 路径 → 写失败文案
+	// 语言服务器检测
+	lspRows     []lspSettingRow
+	lspScanning bool
+	lspScanned  bool
+	rulesErr    string
+	envErr      string
 }
 
 func (a *App) setTabByID(id string) *setTabDef {

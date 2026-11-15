@@ -117,11 +117,11 @@
 
     permissions: { t: '权限与信任', d: '允许、询问与拒绝的规则,以及哪些项目可以运行钩子与 MCP。', body: () => {
       const grp = (id, title, kind, rows) => `<div class="set-grp" id="rg-${id}"><div class="gt">${title}</div><div class="card" data-list>${rows.map(t => ruleRow(kind, t)).join('')}</div></div>`;
-      const P = (n, p, a, b) => `<div class="set-row"><span class="si-box">${ic('folder')}</span><div class="grow"><div class="m">${n}</div><div class="d mono">${p}</div></div><span class="f ai g2 t3 fs-cap">钩子 ${tog(a)}</span><span class="f ai g2 t3 fs-cap">MCP ${tog(b)}</span></div>`;
+      const P = (n, p, trust, hook, mcp, err) => `<div class="set-row"${err ? ' data-trust-err' : ''} style="min-height:52px"><span class="si-box">${ic('folder')}</span><div class="grow"><div class="m">${n}</div><div class="d mono">${p}</div>${err ? `<div class="t4 c-err fs-cap">${err}</div>` : ''}</div><span class="f ai g2 t3 fs-cap">钩子 ${tog(hook)}</span><span class="f ai g2 t3 fs-cap">MCP ${tog(mcp)}</span><span class="f ai g2 t3 fs-cap">信任 ${tog(trust)}</span></div>`;
       return `${G('策略', R('配置层', '规则写入哪一层', seg(['用户', '项目', '本地'], 1)), R('默认权限模式', 'permissions.defaultMode', seg(['逐项确认', '自动接受编辑', '计划'], 0)), R('禁止绕过权限模式', 'permissions.disableBypassPermissionsMode', tog(0)), R('Bash 沙盒', 'sandbox.enabled:在受限环境里执行 Bash 命令', tog(0), { restart: 1 }), R('额外可访问目录', 'permissions.additionalDirectories', field('~/Projects/shared', 200, { mono: 1 })))}
       ${G('添加规则', `<div class="set-row"><label class="inp grow">${ic('plus', 's12')}<input data-in="rule" placeholder="示例:Bash(git status)、Read(src/**)" spellcheck="false"></label>${seg(['允许', '询问', '拒绝'], 0)}${btn('添加', 'sm pri', '', 'data-act="rule-add"')}</div>`)}
       ${grp('allow', '始终允许', 'allow', ['Bash(git status)', 'Bash(cargo test:*)', 'Read(src/**)'])}${grp('ask', '每次询问', 'ask', ['Bash(git push:*)'])}${grp('deny', '始终拒绝', 'deny', ['Read(.env)', 'Bash(rm -rf:*)'])}
-      ${G('项目信任', P('router-demo', '~/Projects/router-demo', 1, 1), P('web-dashboard', '~/Projects/web-dashboard', 1, 0), P('docs-site', '~/Projects/docs-site', 0, 0))}
+      ${G('项目信任', P('router-demo', '~/Projects/router-demo', 1, 1, 1, ''), P('web-dashboard', '~/Projects/web-dashboard', 1, 1, 0, ''), P('docs-site', '~/Projects/docs-site', 0, 0, 0, ''), `<div class="set-row t3 fs-cap" style="padding:12px">合并 ~/.claude.json 与项目注册表 · 撤销信任需确认 · 空态 / 读失败 / 写失败行内提示</div>`, btn('刷新列表', 'sm', 'refresh', 'data-act="toast" data-msg="刷新信任列表"'))}
       ${note('陌生项目带来的钩子与 MCP 默认不运行,信任后才生效。')}`; } },
 
     runtime: { t: '运行环境', d: 'MiniCode 如何找到并启动 claude:可执行文件、代理与网络、环境变量。', body: () => {
@@ -134,14 +134,14 @@
       ${G('新增或覆盖', `<div class="set-row"><label class="inp grow"><input data-in="env-k" placeholder="变量名,如 HTTPS_PROXY" spellcheck="false"></label><label class="inp grow"><input data-in="env-v" placeholder="值" spellcheck="false"></label>${seg(['用户', '项目', '本地'], 0)}${btn('添加', 'sm pri', '', 'data-act="env-add"')}</div>`)}`; } },
 
     editor: { t: '编辑器与语言服务', d: '代码编辑器的显示、括号与 Git 追溯,以及语言服务器(LSP)与搜索忽略规则。', body: () => {
-      const S = (n, st, ok) => `<div class="set-row" data-lsp="${ok}" style="min-height:32px"><span class="lsp-ic">${ic(ok ? 'okc' : 'alert', ok ? 'c-ok' : 'c-warn')}</span><span class="m grow">${n}</span><span class="t3 fs-cap lsp-st">${st}</span>${ok ? '' : btn('复制安装命令', 'sm', 'copy', 'data-act="copy-install"')}</div>`;
+      const S = (n, lang, path, inst, ok, en) => `<div class="set-row" data-lsp="${ok}" style="min-height:56px"><span class="lsp-ic">${ic(ok ? 'okc' : 'alert', ok ? 'c-ok' : 'c-warn')}</span><div class="grow"><div class="m">${n}</div><div class="t3 fs-cap">${lang}</div><div class="t3 fs-cap ${ok ? '' : 'c-warn'}">${ok ? path : '未安装 · ' + inst}</div></div><span class="f ai g2 t3 fs-cap">启用 ${tog(en)}</span>${ok ? '' : `${btn('复制', 'sm', 'copy', 'data-act="copy-install"')}${btn('在终端安装', 'sm', 'terminal', 'data-act="toast" data-msg="在终端安装"')}`}</div>`;
       return `${G('字体与缩进', R('字号', '', stp(12, 'px', { min: 9, max: 24 })), R('缩进', '', seg(['2 空格', '4 空格', 'Tab'], 1)), R('自动保存', '', seg(['关', '延时', '失焦'], 1)))}
       ${G('迷你地图', R('显示迷你地图', '', tog(1)), R('滑块', '视口滑块何时显示', seg(['悬停', '常驻'], 0)), R('宽度', '宽一点能看清更多列', seg(['窄', '中', '宽'], 1)), R('Git 改动刻度', '', tog(1)))}
       ${G('显示', R('行号', '', tog(1)), R('代码折叠', '', tog(1)), R('自动换行', '', tog(0)), R('括号配对高亮', '', tog(1)), R('括号配对着色', '', tog(1)), R('括号配对竖线', '', tog(1)), R('语法高亮', '', tog(1)))}
       ${G('Markdown 与格式化', R('Markdown 默认视图', '打开 .md / .markdown / .mdc 时的样子;标签右上角可随时切换,每个文件记住自己的选择', seg(['预览', '源码'], 0)), R('保存时格式化', '语言服务器或内置格式化器能处理的文件,保存前先整理一遍', tog(0)), R('保存时去掉行尾空白', '没有格式化器的文件也生效', tog(0)))}
       ${G('Git 追溯', R('行内追溯', '光标行末尾显示作者与时间', tog(1)), R('追溯栏', '行号左侧逐行显示提交', tog(0)))}
       ${G('语言服务', R('启用语言服务', '悬停、补全、转到定义、诊断', tog(1)))}
-      ${G('语言服务器', S('rust-analyzer', '已就绪 · 索引完成', 1), S('Pyright', '未安装', 0), S('gopls', '未安装', 0), S('typescript-language-server', '未安装', 0))}
+      ${G('语言服务器', S('rust-analyzer', 'Rust · .rs', '~/…/rust-analyzer', '', 1, 1), S('gopls', 'Go · .go', '~/go/bin/gopls', '', 1, 1), S('Pyright', 'Python · .py', '', 'npm install -g pyright', 0, 1), S('typescript-language-server', 'TS / JS · .ts', '', 'npm i -g typescript-language-server', 0, 0), `<div class="set-row">${btn('重新检测', 'sm', 'refresh', 'data-act="lsp-scan"')}<span class="t3 fs-cap">后台检测 PATH · 演示 MINI_SET_TRUST 不影响本块</span></div>`)}
       ${G('忽略规则', `<div style="padding:10px 12px">${area('target\nnode_modules\n.git\ndist', { mono: 1, id: 'ign', rows: 4 })}<div class="d t3 fs-cap" style="margin-top:6px">同时作用于文件树、搜索与文件监视</div></div>`)}`; } },
 
     terminal: { t: '终端', d: '内置终端的外观与 Shell。', body: () => `
