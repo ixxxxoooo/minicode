@@ -76,7 +76,7 @@ func brandAppBody(a *App, c *ui.Context) {
 		rSeg(pDockBadge, "Dock 角标", "", 1, "关", "待处理数", "运行中数"),
 		rSeg(pDockBnce, "需要确认时 Dock 弹跳", "", 1, "不弹", "一次", "直到处理"),
 		rTog(pDockProg, "Dock 图标显示进度", "", false),
-		rTog(pFileIcon, "同时更换访达里的图标", "", false),
+		rTog(pFileIcon, "同时更换访达里的图标", "把当前样式设为 MiniCode.app 在访达里的图标;关闭即还原。需要应用所在位置可写,开发版每次重新打包会还原", false),
 	}
 	for i, r := range rows {
 		a.settingsRow(c, r, i == 0)
