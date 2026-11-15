@@ -54,3 +54,26 @@ func (a *App) termPointerToMouse(tp *termPanel, ev ui.InputEvent) bool {
 	tp.t.SendMouse(me)
 	return true
 }
+
+// termPointerWheel 在鼠标跟踪开启时把滚轮编成 SGR 滚轮事件。
+func (a *App) termPointerWheel(tp *termPanel, ev ui.InputEvent) bool {
+	if tp.t == nil || !tp.t.MouseTracking() || ev.Mods&ui.Alt != 0 {
+		return false
+	}
+	p := a.termCell(tp, ev.X, ev.Y)
+	btn := uv.MouseWheelUp
+	if ev.DY > 0 {
+		btn = uv.MouseWheelDown
+	} else if ev.DY == 0 && ev.DX > 0 {
+		btn = uv.MouseWheelRight
+	} else if ev.DY == 0 && ev.DX < 0 {
+		btn = uv.MouseWheelLeft
+	}
+	row := p.row
+	if row >= tp.scr.ScreenTop {
+		row -= tp.scr.ScreenTop
+	}
+	me := uv.MouseWheelEvent{X: p.col, Y: row, Button: btn, Mod: termMods(ev.Mods)}
+	tp.t.SendMouse(me)
+	return true
+}

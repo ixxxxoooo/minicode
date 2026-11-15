@@ -192,7 +192,7 @@ func (a *App) etabsPane(c *ui.Context, pane int8) {
 			if tb.id == active {
 				d.paneSel = pane
 			}
-			a.etab(c, tb)
+			a.etabPane(c, tb, pane)
 		}
 	})
 }

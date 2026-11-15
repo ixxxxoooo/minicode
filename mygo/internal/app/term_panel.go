@@ -52,6 +52,7 @@ type termPanel struct {
 	hoverOn   bool
 	hoverMods ui.Modifiers
 	link      *termLink // 当前悬停的链接(⌘ 按住时才有)
+	nerdWarn  string    // Nerd Font 缺字形提示(见 term_nerd.go)
 }
 
 // redraw 让窗口重画一帧(终端输出到达时由内核的通知调用,任意 goroutine)。
@@ -180,6 +181,7 @@ func (a *App) realTerminal(c *ui.Context) {
 	}
 	a.termMenu(c, body, tp)
 	body.Children(func() {
+		a.termNerdCheck(c, tp)
 		switch {
 		case tp.err != "":
 			ui.Column(c).Grow(1).Padding(padY, padX).Children(func() {
@@ -248,6 +250,13 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 		return false
 	}
 	switch ev.Kind {
+	case ui.InputScroll:
+		if tp.t.MouseTracking() && ev.Mods&ui.Alt == 0 {
+			if a.termPointerWheel(tp, ev) {
+				return true
+			}
+		}
+		return false
 	case ui.InputPointerDown:
 		if tp.t.MouseTracking() && ev.Mods&ui.Alt == 0 {
 			if a.termPointerToMouse(tp, ev) {

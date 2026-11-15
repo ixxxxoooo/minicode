@@ -2,18 +2,22 @@ package app
 
 import (
 	"strings"
+	"time"
+
+	"github.com/ixxxxoooo/minicode/internal/claude"
 )
 
 // 行内补全(✦):库用 SetSuggestion 画幽灵文字,Tab 接受。
 type suggestSt struct {
-	at     int
-	prefix string
-	text   string
-	busy   bool
-	tab    string
+	at      int
+	prefix  string
+	text    string
+	busy    bool
+	tab     string
+	lastKey string // path+word 去重
 }
 
-// suggestTick 在停顿后请求占位补全(演示)或 claude -p(真实,未全量接入)。
+// suggestTick 在停顿后请求 Haiku 补全或演示占位。
 func (a *App) suggestTick(tb *ideTab) {
 	if tb == nil || tb.st == nil || tb.buf == nil || tb.diff || tb.ReadOnly() {
 		return
@@ -35,13 +39,58 @@ func (a *App) suggestTick(tb *ideTab) {
 	if len(w) < 2 {
 		return
 	}
+	key := tb.id + "|" + w + "|" + line
 	if a.sg != nil && a.sg.busy && a.sg.tab == tb.id {
 		return
 	}
+	if a.sg == nil {
+		a.sg = &suggestSt{}
+	}
+	if a.sg.busy && a.sg.lastKey == key {
+		return
+	}
+	if a.sg.lastKey == key && a.sg.text != "" {
+		tb.st.SetSuggestion(cur, a.sg.text)
+		return
+	}
 	ghost := placeholderSuggest(w, line)
+	if a.proj != "" {
+		a.sg.busy, a.sg.tab, a.sg.at, a.sg.prefix, a.sg.lastKey = true, tb.id, cur, w, key
+		ctx := a.beginClaudeJob()
+		path, ln, word := tb.path, line, w
+		a.bg("claude.suggest", func() func() {
+			defer a.endClaudeJob()
+			out, err := claude.RunPromptModelCtx(ctx, a.proj, suggestPrompt(path, ln, word), "plan", haikuInline, 45*time.Second)
+			if err != nil {
+				claudeEditLog.Warn("行内补全失败", "path", path, "err", err)
+				out = placeholderSuggest(word, ln)
+			} else {
+				out = strings.TrimSpace(out)
+				if strings.HasPrefix(out, word) {
+					out = strings.TrimPrefix(out, word)
+				}
+			}
+			if out == "" {
+				out = placeholderSuggest(word, ln)
+			}
+			sgText, sgAt := out, cur
+			return func() {
+				if a.sg == nil || a.sg.tab != tb.id {
+					return
+				}
+				a.sg.busy = false
+				a.sg.text, a.sg.at = sgText, sgAt
+				if t := a.ide.tab(tb.id); t != nil && t.st != nil {
+					t.st.SetSuggestion(sgAt, sgText)
+				}
+			}
+		})
+		return
+	}
 	if ghost == "" {
 		return
 	}
+	a.sg.lastKey, a.sg.text, a.sg.at = key, ghost, cur
 	tb.st.SetSuggestion(cur, ghost)
 }
 

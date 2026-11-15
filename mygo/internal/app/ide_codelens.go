@@ -19,6 +19,8 @@ func (a *App) codeLens(c *ui.Context, tb *ideTab) {
 	if last <= first {
 		return
 	}
+	stickyRows := a.stickyRows(tb, first)
+	codelensTop := 8 + float32(stickyRows)*24*edScale
 	syms := a.ide.fileSyms(tb.path)
 	t := a.tk
 	for _, s := range syms {
@@ -29,13 +31,13 @@ func (a *App) codeLens(c *ui.Context, tb *ideTab) {
 			continue
 		}
 		y := float32(tb.st.LineTop(s.Line)-tb.st.ScrollY())*edLineH*edScale - 16*edScale
-		if y < 8 || y > 600 {
+		if y < codelensTop || y > 600 {
 			continue
 		}
 		n := len(a.ide.findRefs(s.Name))
 		lbl := itoa(n) + " 个引用"
-		if strings.HasSuffix(tb.path, "_test.go") || strings.Contains(tb.path, "test") {
-			lbl += " · 测试"
+		if tc := a.testsForSymbol(tb, s); tc > 0 {
+			lbl += " · " + itoa(tc) + " 测试"
 		}
 		row := ui.Row(c).Key("cl-" + itoa(s.Line)).Absolute().Left(edGutter * edScale).Top(y).Height(14 * edScale).Gap(8).AlignItems(ui.Center).
 			FontSize(theme.FsMicro).TextColor(t.Tx4)

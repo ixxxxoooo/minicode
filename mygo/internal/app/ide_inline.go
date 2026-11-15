@@ -2,9 +2,11 @@ package app
 
 import (
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
+	"github.com/ixxxxoooo/minicode/internal/claude"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -17,6 +19,7 @@ type inlinePatch struct {
 	old    string
 	new    string
 	prompt string
+	busy   bool
 }
 
 func (a *App) submitInlineEdit(tb *ideTab, prompt string) {
@@ -33,16 +36,41 @@ func (a *App) submitInlineEdit(tb *ideTab, prompt string) {
 		return
 	}
 	old := tb.buf.Slice(lo, hi)
-	newText := demoInlineRewrite(old, prompt)
-	if newText == "" {
-		newText = old + " // " + prompt
-	}
 	if a.inl == nil {
 		a.inl = &inlinePatch{}
 	}
-	*a.inl = inlinePatch{tab: tb.id, start: lo, end: hi, old: old, new: newText, prompt: prompt}
+	*a.inl = inlinePatch{tab: tb.id, start: lo, end: hi, old: old, prompt: prompt, busy: true}
 	a.closeOv()
-	a.toast = "已生成行内修改预览 · Tab 或点「接受」写回"
+	a.toast = "正在生成行内修改…"
+	promptText := inlineEditPrompt(old, prompt)
+	ctx := a.beginClaudeJob()
+	tbID := tb.id
+	a.bg("claude.inline", func() func() {
+		defer a.endClaudeJob()
+		var newText string
+		var err error
+		if a.proj == "" {
+			newText = demoInlineRewrite(old, prompt)
+		} else {
+			newText, err = claude.RunPromptModelCtx(ctx, a.proj, promptText, "plan", haikuInline, 90*time.Second)
+			if err != nil {
+				claudeEditLog.Warn("行内编辑失败", "path", tb.path, "err", err)
+				newText = demoInlineRewrite(old, prompt)
+			}
+		}
+		newText = stripCodeFence(newText)
+		if newText == "" {
+			newText = old
+		}
+		return func() {
+			if a.inl == nil || a.inl.tab != tbID || !a.inl.busy {
+				return
+			}
+			a.inl.busy = false
+			a.inl.new = newText
+			a.toast = "已生成行内修改预览 · Tab 或点「接受」写回"
+		}
+	})
 }
 
 func demoInlineRewrite(src, prompt string) string {
@@ -62,9 +90,21 @@ func demoInlineRewrite(src, prompt string) string {
 	return ""
 }
 
+func stripCodeFence(s string) string {
+	s = strings.TrimSpace(s)
+	if strings.HasPrefix(s, "```") {
+		s = strings.TrimPrefix(s, "```")
+		if i := strings.Index(s, "\n"); i >= 0 {
+			s = s[i+1:]
+		}
+		s = strings.TrimSuffix(strings.TrimSpace(s), "```")
+	}
+	return strings.TrimSpace(s)
+}
+
 func (a *App) acceptInline() {
 	p := a.inl
-	if p == nil || p.tab == "" {
+	if p == nil || p.tab == "" || p.busy {
 		return
 	}
 	tb := a.ide.tab(p.tab)
@@ -79,6 +119,9 @@ func (a *App) acceptInline() {
 }
 
 func (a *App) revertInline() {
+	if a.inl != nil && a.inl.busy {
+		a.cancelClaudeJob()
+	}
 	a.inl = nil
 	a.toast = "已撤消行内修改预览"
 }
@@ -96,15 +139,21 @@ func (a *App) inlinePatchUI(c *ui.Context, tb *ideTab) {
 	row := ui.Row(c).Key("inl-bar").Absolute().Left(x).Top(y+28).Padding(6, 8).Gap(6).AlignItems(ui.Center).
 		Background(t.Raised).Radius(t.RMd()).Border(1, t.Ac).FontSize(theme.FsCap)
 	row.Children(func() {
+		if p.busy {
+			ui.Text(c, "正在请求 Claude…").TextColor(t.Ac)
+			kit.Btn(c, "取消", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(a.revertInline)
+			return
+		}
 		ui.Text(c, "行内修改预览").TextColor(t.Ac)
 		kit.Btn(c, "接受", kit.BtnOpt{Small: true, Variant: kit.BtnPri}).OnClick(a.acceptInline)
 		kit.Btn(c, "撤销", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(a.revertInline)
 		ui.Text(c, ellipsize(p.new, 40)).TextColor(t.Tx3).Font("monospace")
 	})
-	// 用半透明紫底标出将被替换的范围
-	tb.st.TextBackgrounds = append(tb.st.TextBackgrounds, editor.TextBackground{
-		Start: p.start, End: p.end, Color: t.Ac.Alpha(.22),
-	})
+	if !p.busy {
+		tb.st.TextBackgrounds = append(tb.st.TextBackgrounds, editor.TextBackground{
+			Start: p.start, End: p.end, Color: t.Ac.Alpha(.22),
+		})
+	}
 }
 
 func ellipsize(s string, n int) string {
@@ -122,11 +171,26 @@ func (a *App) reviewHover(c *ui.Context, tb *ideTab) {
 		return
 	}
 	line := tb.st.CursorPos().Line
-	var hit *[2]int
-	for _, g := range lines {
-		if line >= g[0] && line <= g[1] {
-			hit = &g
-			break
+	var hit *struct {
+		f chFile
+		i int
+	}
+	for _, f := range a.changedFiles() {
+		if a.wsRel(f.path) != tb.path {
+			continue
+		}
+		for i, b := range f.blocks {
+			if a.rv.hunk[hunkKey(f.path, i)] != "" {
+				continue
+			}
+			lo, hi := hunkRange(b)
+			if lo > 0 && line >= lo-1 && line <= hi-1 {
+				hit = &struct {
+					f chFile
+					i int
+				}{f, i}
+				break
+			}
 		}
 	}
 	if hit == nil {
@@ -138,7 +202,15 @@ func (a *App) reviewHover(c *ui.Context, tb *ideTab) {
 		Background(t.Raised).Radius(t.RSm()).Border(1, t.Bd1).FontSize(theme.FsMicro)
 	bar.Children(func() {
 		ui.Text(c, "Claude 改动").TextColor(t.Ac)
-		kit.Btn(c, "接受", kit.BtnOpt{Small: true}).OnClick(func() { a.toast = "已标记接受(演示)" })
-		kit.Btn(c, "撤销", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() { a.toast = "已标记撤销(演示)" })
+		kit.Btn(c, "接受", kit.BtnOpt{Small: true}).OnClick(func() {
+			a.rv.init()
+			a.rv.hunk[hunkKey(hit.f.path, hit.i)] = "ok"
+			a.toast = "已接受这一块改动"
+			log.Info("行内审查接受", "path", tb.path, "hunk", hit.i)
+		})
+		kit.Btn(c, "撤销", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() {
+			a.revertHunk(hit.f, hit.i)
+			a.toast = "已撤销这一块改动"
+		})
 	})
 }

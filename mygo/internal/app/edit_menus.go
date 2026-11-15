@@ -15,23 +15,25 @@ import (
 // closeTabsWhere 关掉满足条件的标签(从后往前,保证下标稳定),返回关了几个。
 func (a *App) closeTabsWhere(keep func(tb *ideTab) bool) int {
 	n := 0
-	for i := len(a.ide.tabs) - 1; i >= 0; i-- {
-		if tb := a.ide.tabs[i]; !keep(tb) {
-			a.closeWsTab(tb.id)
-			n++
+	for pane := int8(0); pane <= 1; pane++ {
+		if pane == 1 && a.ide.splitDir == 0 {
+			continue
+		}
+		tabs := a.ide.paneTabs(pane)
+		for i := len(tabs) - 1; i >= 0; i-- {
+			if !keep(tabs[i]) {
+				a.closeWsTab(tabs[i].id)
+				n++
+			}
 		}
 	}
 	return n
 }
 
-// tabIndex 是标签在标签条里的位置(找不到 -1)。
+// tabIndex 是当前焦点组里标签的下标(找不到 -1)。
 func (a *App) tabIndex(id string) int {
-	for i, t := range a.ide.tabs {
-		if t.id == id {
-			return i
-		}
-	}
-	for i, t := range a.ide.tabs2 {
+	tabs := a.ide.paneTabs(a.ide.paneSel)
+	for i, t := range tabs {
 		if t.id == id {
 			return i
 		}

@@ -102,7 +102,7 @@ func (a *App) chatDrop(p ui.Element) string {
 		a.dropRefs(refText(r.Path, r.Dir))
 	}
 	if ps := p.DroppedFiles(); len(ps) > 0 {
-		a.dropPaths(ps)
+		a.handleDroppedImages(ps)
 	}
 	if r, ok := ui.DragOver[fileRef](p); ok {
 		return refText(r.Path, r.Dir)

@@ -183,7 +183,7 @@ func (a *App) etabs(c *ui.Context) {
 		strip.Children(func() {
 			ui.Row(c).AlignItems(ui.Stretch).Children(func() {
 				for _, tb := range d.tabs {
-					a.etab(c, tb)
+					a.etabPane(c, tb, 0)
 				}
 			})
 		})
@@ -195,13 +195,19 @@ func (a *App) etabs(c *ui.Context) {
 	})
 }
 
-func (a *App) etab(c *ui.Context, tb *ideTab) {
+func (a *App) etab(c *ui.Context, tb *ideTab) { a.etabPane(c, tb, 0) }
+
+func (a *App) etabPane(c *ui.Context, tb *ideTab, pane int8) {
 	t := a.tk
-	on := tb.id == a.ide.active || tb.id == a.ide.active2
+	d := a.ide
+	on := tb.id == *d.paneActive(pane)
 	el := ui.ButtonBase(c).Key("etab-" + tb.id).PaddingX(10).Gap(6).AlignItems(ui.Center).Shrink(0).
 		TextColor(t.Tx3).Cursor(ui.CursorDefault).Transition(kit.Fade)
 	if isFileTab(tb) {
 		dragRef(el, tb.path, false) // 拖到对话栏 = 引用这个文件
+	}
+	if a.ide.splitDir != 0 {
+		a.etabDrag(el, tb, pane)
 	}
 	el.ContextMenu(func(m *ui.Menu) { a.tabMenu(m, tb) })
 	hov := el.Hovered()
@@ -227,9 +233,10 @@ func (a *App) etab(c *ui.Context, tb *ideTab) {
 		a.ide.tabW[tb.id] = w
 	}
 	if el.Clicked() {
-		a.ide.active = tb.id
+		*d.paneActive(pane) = tb.id
+		d.paneSel = pane
 		if tb.path != "" {
-			a.ide.sel = tb.path
+			d.sel = tb.path
 		}
 	}
 	if el.DoubleClicked() {

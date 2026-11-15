@@ -35,7 +35,13 @@ func (a *App) mdOptions() *markdown.Options {
 	th := a.mdTheme()
 	if a.md == nil || a.mdThemeKey != a.pal.ID+"|"+itoa(a.prefs.Int(pFontScale, 100)) {
 		a.mdThemeKey = a.pal.ID + "|" + itoa(a.prefs.Int(pFontScale, 100))
-		a.md = &markdown.Options{Theme: th, OnLink: a.openMdLink, LinkMenu: a.linkMenu}
+		opts := &markdown.Options{Theme: th, OnLink: a.openMdLink, LinkMenu: a.linkMenu}
+		if a.proj != "" {
+			opts.LoadImage = markdown.FileImages(a.proj)
+		} else if a.ide.fs != nil {
+			opts.LoadImage = markdown.FileImages(a.ide.fs.Abs(""))
+		}
+		a.md = opts
 		a.hookMDFold(a.md)
 	}
 	return a.md

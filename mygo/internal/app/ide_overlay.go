@@ -6,6 +6,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
+	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -141,24 +142,24 @@ func (a *App) decorate(tb *ideTab) {
 	if a.proj == "" && !tb.diagSet {
 		tb.diagSet = true
 		var ds []editor.Diagnostic
-		for _, p := range demoProblems() {
-			if p.file != path.Base(tb.path) {
+		for _, p := range demo.Problems() {
+			if p.Path != tb.path && path.Base(p.Path) != path.Base(tb.path) {
 				continue
 			}
-			ln := tb.buf.Line(p.line - 1)
+			ln := tb.buf.Line(p.Line - 1)
 			col := -1
-			if h := wordHits(ln, p.word); len(h) > 0 {
+			if h := wordHits(ln, p.Word); len(h) > 0 {
 				col = h[0]
 			}
 			if col < 0 {
 				col = len(ln) - len(strings.TrimLeft(ln, " \t"))
 			}
-			base := tb.buf.Offset(editor.Pos{Line: p.line - 1, Col: col})
-			sev := editor.SeverityWarning
-			if p.level == "err" {
-				sev = editor.SeverityError
+			end := col + len(p.Word)
+			if end > len(ln) {
+				end = len(ln)
 			}
-			ds = append(ds, editor.Diagnostic{Start: base, End: base + len(p.word), Severity: sev, Message: p.msg, Source: p.src})
+			base := tb.buf.Offset(editor.Pos{Line: p.Line - 1, Col: col})
+			ds = append(ds, editor.Diagnostic{Start: base, End: base + (end - col), Severity: demoProbSeverity(p.Level), Message: p.Msg, Source: p.Source})
 		}
 		st.SetDiagnostics(tb.buf.Version(), ds)
 	}
@@ -534,6 +535,8 @@ func (a *App) editorShortcuts(c *ui.Context) bool {
 		a.navGo(-1)
 	case c.Shortcut(ui.Ctrl|ui.Shift, ui.KeyMinus):
 		a.navGo(1)
+	case a.inl != nil && a.inl.busy && c.Shortcut(0, ui.KeyEscape):
+		a.revertInline()
 	case a.ide.ov.kind != "" && c.Shortcut(0, ui.KeyEscape):
 		a.closeOv()
 	default:
@@ -542,16 +545,15 @@ func (a *App) editorShortcuts(c *ui.Context) bool {
 	return true
 }
 
-// demoProblem 是问题面板与编辑器波浪线共用的演示诊断。
-type demoProb struct {
-	file, level, msg, src, word string
-	line                        int
-}
-
-func demoProblems() []demoProb {
-	return []demoProb{
-		{"router.rs", "warn", "`fallback` 字段从未被读取", "rust-analyzer", "fallback", 6},
-		{"router.rs", "warn", "未使用的变量:`h`", "rust-analyzer", "h", 11},
-		{"router_test.rs", "err", "找不到函数 `normalize`,需要 `use crate::router::normalize`", "rust-analyzer", "normalize", 8},
+func demoProbSeverity(level string) editor.Severity {
+	switch level {
+	case "err":
+		return editor.SeverityError
+	case "info":
+		return editor.SeverityInfo
+	case "hint":
+		return editor.SeverityHint
+	default:
+		return editor.SeverityWarning
 	}
 }

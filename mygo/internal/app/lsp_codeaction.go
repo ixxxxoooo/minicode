@@ -44,7 +44,3 @@ func (a *App) applyCodeAction(i int) {
 	a.toast = act.Title + " · " + itoa(n) + " 处(" + itoa(f) + " 个文件)"
 	a.codeActs = nil
 }
-
-func lspRange(tb *ideTab, start, end int) lsp.Range {
-	return lsp.Range{Start: lspPos(tb, start), End: lspPos(tb, end)}
-}

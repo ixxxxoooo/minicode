@@ -19,6 +19,7 @@ func (a *App) setupDiffView(tb *ideTab) {
 	if dv == nil {
 		return
 	}
+	// HunkActions=false 时库只走 Annotations,不会调 RenderHunkActions(diffside.go);注解条里复用 hunkBar。
 	dv.HunkActions = false
 	a.syncDiffAnns(tb)
 	dv.RenderHunkActions = func(c *ui.Context, bar ui.Element, act *editor.DiffHunkActions) {
