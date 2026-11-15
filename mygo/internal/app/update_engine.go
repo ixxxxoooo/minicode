@@ -31,7 +31,14 @@ func (a *App) initUpdater(demo bool) {
 	a.upd = &update.Runner{
 		Fetch:      fetch,
 		CurrentVer: cur,
-		OnProgress: a.onUpdateProgress,
+		OnProgress: func(p update.Progress) {
+			// 引擎在后台线程回调:状态一律回主线程改,错误态也能立刻重绘
+			if a.win != nil {
+				a.win.Update(func() { a.onUpdateProgress(p) })
+			} else {
+				a.onUpdateProgress(p)
+			}
+		},
 		InstallFunc: func(staging, pkgPath string) error {
 			script := filepath.Join(a.upd.WorkDir(), "replace-minicode.sh")
 			if err := update.WriteReplaceScript(staging, target, script); err != nil {
@@ -45,12 +52,8 @@ func (a *App) initUpdater(demo bool) {
 
 func (a *App) onUpdateProgress(p update.Progress) {
 	if p.Err != "" {
-		log.Warn("更新失败", "err", p.Err)
-		ph := updFail
-		if strings.Contains(p.Err, "HTTP") || strings.Contains(p.Err, "network") {
-			ph = updNetErr
-		}
-		a.updSt = updState{Phase: ph, Version: p.Version}
+		log.Warn("更新失败", "stage", p.ErrStage, "err", p.Err)
+		a.updSt = failedUpdState(p)
 		a.update = a.updLabel()
 		return
 	}
@@ -90,7 +93,7 @@ func (a *App) checkUpdateAsync() {
 	a.bg("update-check", func() func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 		defer cancel()
-		a.upd.Start(ctx)
+		a.upd.Run(ctx) // 同步跑完再 cancel;用 Start 会在返回瞬间把自己取消
 		return nil
 	})
 }
@@ -140,4 +143,55 @@ func (a *App) applyUpdateRestart() {
 			os.Exit(0)
 		}
 	})
+}
+
+// retryUpdate 更新失败后的「重试」:重新检查更新(演示与真实共用)。
+func (a *App) retryUpdate() {
+	a.checkUpdateAsync()
+}
+
+// failedUpdState 把更新引擎的失败翻成界面状态:阶段决定标题与归类,原因写成一句话加下一步。
+func failedUpdState(p update.Progress) updState {
+	st := updState{Phase: updFail, Version: p.Version}
+	e := p.Err
+	has := func(subs ...string) bool {
+		for _, s := range subs {
+			if strings.Contains(e, s) {
+				return true
+			}
+		}
+		return false
+	}
+	switch p.ErrStage {
+	case "check":
+		st.Phase = updNetErr
+		switch {
+		case has("HTTP 404"):
+			st.Title, st.Msg = "检查失败", "还没有找到发布信息(可能尚未发布正式版本)。可在设置 → 关于里打开 GitHub 查看。"
+		case has("context canceled", "deadline exceeded", "timeout", "Timeout"):
+			st.Msg = "请求超时。检查网络或代理后点「重试」。"
+		case has("no such host", "dial tcp", "connection refused", "connection reset", "network is unreachable"):
+			st.Msg = "连不上 GitHub。检查网络或代理(设置 → 运行环境)后点「重试」。"
+		default:
+			st.Title, st.Msg = "检查失败", "无法读取更新信息:"+shortErr(e)+"。稍后点「重试」。"
+		}
+	case "download":
+		st.Msg = "下载中断:" + shortErr(e) + "。点「重试」重新下载。"
+	case "verify":
+		st.Title, st.Msg = "校验失败", "下载包与发布的校验值不一致,可能已损坏。点「重试」重新下载。"
+	case "unpack", "install":
+		st.Title, st.Msg = "安装准备失败", shortErr(e)+"。点「重试」,仍失败请手动下载安装包。"
+	}
+	return st
+}
+
+// shortErr 取错误的第一行并截断,供界面显示。
+func shortErr(s string) string {
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		s = s[:i]
+	}
+	if r := []rune(s); len(r) > 80 {
+		s = string(r[:80]) + "…"
+	}
+	return s
 }

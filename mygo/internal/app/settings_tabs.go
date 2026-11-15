@@ -695,6 +695,10 @@ func aboutCard(a *App, c *ui.Context) {
 				kit.Ic(c, ic, kit.S12).TextColor(col)
 				ui.Text(c, hint).FontSize(theme.FsCap).TextColor(col)
 			})
+			// 失败时把原因与下一步写出来(原先只有一个红色标题,不知道该怎么办)
+			if (a.updSt.Phase == updFail || a.updSt.Phase == updNetErr) && a.updSt.Msg != "" {
+				ui.Text(c, a.updSt.Msg).FontSize(theme.FsCap).TextColor(t.Tx3).TextAlign(ui.Center).MaxWidth(360)
+			}
 		} else {
 			// 还没检查过:不能说「已是最新」,如实提示并引导点「检查更新」。
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Height(16).Children(func() {

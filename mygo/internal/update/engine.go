@@ -32,6 +32,7 @@ type Progress struct {
 	Percent  int
 	Version  string
 	Err      string
+	ErrStage string // 出错的阶段:check / download / verify / unpack / install
 	UpToDate bool
 }
 
@@ -116,10 +117,17 @@ func (r *Runner) Start(ctx context.Context) {
 	go r.run(ctx)
 }
 
+// Run 同步执行整个流程(调用方已在后台线程里):返回时 ctx 才可以取消。
+// 用 Start 的调用方若在返回后立刻 cancel(),整个检查会被自己取消。
+func (r *Runner) Run(ctx context.Context) {
+	r.emit(Progress{Phase: PhaseDownload, Percent: 0, Version: r.CurrentVer})
+	r.run(ctx)
+}
+
 func (r *Runner) run(ctx context.Context) {
 	ver, url, sha, ok, err := r.Fetch.Check(ctx)
 	if err != nil {
-		r.emit(Progress{Err: err.Error()})
+		r.emit(Progress{Err: err.Error(), ErrStage: "check"})
 		return
 	}
 	if !ok || ver == r.CurrentVer {
@@ -129,13 +137,13 @@ func (r *Runner) run(ctx context.Context) {
 	r.emit(Progress{Phase: PhaseDownload, Percent: 5, Version: ver})
 	path, err := r.download(ctx, url, func(p int) { r.emit(Progress{Phase: PhaseDownload, Percent: p, Version: ver}) })
 	if err != nil {
-		r.emit(Progress{Err: err.Error()})
+		r.emit(Progress{Err: err.Error(), ErrStage: "download"})
 		return
 	}
 	r.emit(Progress{Phase: PhaseVerify, Percent: 100, Version: ver})
 	if sha != "" {
 		if err := verifySHA(path, sha); err != nil {
-			r.emit(Progress{Err: err.Error()})
+			r.emit(Progress{Err: err.Error(), ErrStage: "verify"})
 			return
 		}
 	}
@@ -143,17 +151,17 @@ func (r *Runner) run(ctx context.Context) {
 	stage := filepath.Join(r.WorkDir(), "staging")
 	if path != "" {
 		if err := UnpackPackage(path, stage); err != nil {
-			r.emit(Progress{Err: "解包失败: " + err.Error()})
+			r.emit(Progress{Err: "解包失败: " + err.Error(), ErrStage: "unpack"})
 			return
 		}
 	} else if err := os.MkdirAll(filepath.Join(stage, "MiniCode.app"), 0o755); err != nil {
-		r.emit(Progress{Err: err.Error()})
+		r.emit(Progress{Err: err.Error(), ErrStage: "unpack"})
 		return
 	}
 	_ = os.WriteFile(filepath.Join(stage, "Meta.json"), []byte(`{"version":"`+ver+`"}`), 0o644)
 	if r.InstallFunc != nil {
 		if err := r.InstallFunc(stage, path); err != nil {
-			r.emit(Progress{Err: err.Error()})
+			r.emit(Progress{Err: err.Error(), ErrStage: "install"})
 			return
 		}
 	}

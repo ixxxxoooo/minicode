@@ -28,6 +28,8 @@ type updState struct {
 	Phase   updPhase
 	Percent int // 0..100
 	Version string
+	Title   string // 失败时的标题(空 = 按阶段用默认文案)
+	Msg     string // 失败时的一句原因 + 下一步(空 = 用默认文案)
 }
 
 func (a *App) updLabel() string {
@@ -50,11 +52,19 @@ func (a *App) updLabel() string {
 	case updReady:
 		return "重启更新"
 	case updFail:
-		return "下载失败"
+		return a.updFailTitle("下载失败")
 	case updNetErr:
-		return "网络错误"
+		return a.updFailTitle("网络错误")
 	}
 	return ""
+}
+
+// updFailTitle 失败标题:带了具体标题就用它,否则用默认。
+func (a *App) updFailTitle(def string) string {
+	if a.updSt.Title != "" {
+		return a.updSt.Title
+	}
+	return def
 }
 
 func (a *App) updSidebarCapsule(c *ui.Context) {
@@ -112,9 +122,9 @@ func (a *App) updPopup(c *ui.Context, anchor ui.Element) {
 			case updLatest:
 				title = "已是最新版本"
 			case updFail:
-				title = "下载失败"
+				title = a.updFailTitle("下载失败")
 			case updNetErr:
-				title = "网络错误"
+				title = a.updFailTitle("网络错误")
 			}
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 				ui.Text(c, title).FontWeight(600).Grow(1)
@@ -144,10 +154,19 @@ func (a *App) updPopup(c *ui.Context, anchor ui.Element) {
 				ui.Text(c, "更新已准备好,重启后生效。").FontSize(theme.FsCap).TextColor(t.Tx3)
 				kit.Btn(c, "重启更新", kit.BtnOpt{Variant: kit.BtnPri, Small: true, Icon: "refresh"}).OnClick(a.applyUpdateRestart)
 			case updFail:
-				ui.Text(c, "校验失败,安装包可能损坏。").FontSize(theme.FsCap).TextColor(t.Err)
-				kit.Btn(c, "重试", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() { a.SeedUpdateDemo("download", 0) })
+				msg := a.updSt.Msg
+				if msg == "" {
+					msg = "校验失败,安装包可能损坏。"
+				}
+				ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Err)
+				kit.Btn(c, "重试", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(a.retryUpdate)
 			case updNetErr:
-				ui.Text(c, "网络连接丢失,稍后再试。").FontSize(theme.FsCap).TextColor(t.Err)
+				msg := a.updSt.Msg
+				if msg == "" {
+					msg = "网络连接丢失,稍后再试。"
+				}
+				ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Err)
+				kit.Btn(c, "重试", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(a.retryUpdate)
 			default:
 				kit.Meter(c, 42)
 				ui.Text(c, "正在后台下载,完成后提示重启。").FontSize(theme.FsCap).TextColor(t.Tx3)
@@ -175,9 +194,9 @@ func (a *App) updAboutHint() (txt string, ok bool) {
 	case updReady:
 		return "可重启更新", true
 	case updFail:
-		return "下载失败", true
+		return a.updFailTitle("下载失败"), true
 	case updNetErr:
-		return "网络错误", true
+		return a.updFailTitle("网络错误"), true
 	case updFound:
 		return "发现新版本 " + a.updSt.Version, true
 	}
