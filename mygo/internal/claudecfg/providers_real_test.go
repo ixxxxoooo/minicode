@@ -50,11 +50,11 @@ func TestRealFetchModels(t *testing.T) {
 }
 
 func TestRealProviderConnectivity(t *testing.T) {
-	_, p, _ := realDeepseek(t)
-	ok, ms := TestProvider(p.BaseURL)
-	t.Logf("连通性:%s", FormatTestResult(ok, ms))
-	if !ok {
-		t.Fatal("DeepSeek 地址不可达")
+	_, p, keys := realDeepseek(t)
+	res := ProbeProvider(p, keys["deepseek"])
+	t.Logf("连通性: ok=%v kind=%s %s", res.OK, res.Kind, res.Detail)
+	if !res.OK {
+		t.Fatalf("DeepSeek 探测失败:%s", res.Detail)
 	}
 }
 
