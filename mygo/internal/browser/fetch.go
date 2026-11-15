@@ -40,6 +40,7 @@ func (h HTTPSource) Fetch(raw string) (Page, error) {
 	if u == "" {
 		return Page{}, fmt.Errorf("请输入网址")
 	}
+	explicitHTTP := strings.HasPrefix(strings.ToLower(strings.TrimSpace(raw)), "http://")
 	full, ok := fullURL(u)
 	if !ok {
 		return Page{}, fmt.Errorf("网址格式不正确")
@@ -64,7 +65,22 @@ func (h HTTPSource) Fetch(raw string) (Page, error) {
 	}
 	req.Header.Set("User-Agent", ua)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml")
+	if explicitHTTP && strings.HasPrefix(full, "https://") {
+		full = "http://" + strings.TrimPrefix(full, "https://") // 用户明确写了 http://
+		req.URL, _ = url.Parse(full)
+	}
 	resp, err := client.Do(req)
+	if err != nil && strings.HasPrefix(full, "https://") && httpsUnsupported(err) {
+		// 站点只有 http:自动补的 https 握手失败时退回 http 重试一次
+		alt := "http://" + strings.TrimPrefix(full, "https://")
+		if req2, e2 := http.NewRequest(http.MethodGet, alt, nil); e2 == nil {
+			req2.Header = req.Header.Clone()
+			if resp2, e3 := client.Do(req2); e3 == nil {
+				blog.Info("https 不可用,已退回 http", "host", RedactURL(alt))
+				full, resp, err = alt, resp2, nil
+			}
+		}
+	}
 	if err != nil {
 		blog.Warn("抓取失败", "host", RedactURL(full), "err", err, "ms", time.Since(start).Milliseconds())
 		return Page{}, fmt.Errorf("%s", friendlyNetErr(err))
@@ -110,6 +126,13 @@ func fullURL(u string) (string, bool) {
 		return "http://" + u, true
 	}
 	return "https://" + u, true
+}
+
+// httpsUnsupported 判断错误是否意味着「对方不说 HTTPS」(而不是域名 / 超时 / 证书被拒这类别的问题)。
+func httpsUnsupported(err error) bool {
+	m := strings.ToLower(err.Error())
+	return strings.Contains(m, "server gave http response") || strings.Contains(m, "first record does not look like a tls handshake") ||
+		strings.Contains(m, "connection reset") || strings.Contains(m, "protocol version not supported") || strings.Contains(m, "eof")
 }
 
 // friendlyNetErr 把网络错误翻成一句中文加下一步,原文只进日志。
