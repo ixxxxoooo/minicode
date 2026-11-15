@@ -23,6 +23,26 @@
 .code .src { flex: 1; min-width: 0; overflow: hidden; }
 .code .src .cur { background: var(--fill-1); }
 .blame { color: var(--tx-4); font: italic 11px var(--font-mono); margin-left: 28px; }
+/* 多光标选区 / 竖线 */
+.code .src .mc-sel { background: var(--ac-soft); box-shadow: inset 1.5px 0 var(--ac); }
+.code .src .cursor.mc { box-shadow: 1.5px 0 0 var(--ac); width: 0; display: inline-block; }
+/* 转到行浮条(贴在代码区顶栏下) */
+.goto-strip { display: flex; align-items: center; gap: 8px; padding: 4px 12px; font-size: 11.5px; flex: none; background: var(--bg-raised); box-shadow: inset 0 -1px var(--bd-1), var(--sh-1); }
+.goto-strip .inp { height: 24px; min-width: 72px; flex: none; }
+.goto-strip .hint { color: var(--tx-3); font-size: var(--fs-cap); white-space: nowrap; }
+/* 磁盘外部修改提示条 */
+.ext-strip { display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 11.5px; flex: none; background: var(--warn-soft); box-shadow: inset 0 -1px color-mix(in srgb, var(--warn) 35%, var(--bd-1)); }
+.ext-strip.del { background: var(--err-soft); box-shadow: inset 0 -1px color-mix(in srgb, var(--err) 35%, var(--bd-1)); }
+.etab.gone { opacity: .52; }
+.etab.gone .nm { text-decoration: line-through; color: var(--tx-4); }
+/* 追溯栏(行号左侧) */
+.code .blame-gut { width: 76px; flex: none; text-align: right; padding-right: 6px; color: var(--tx-4); font: 10px/20px var(--font-ui); border-right: 1px solid var(--bd-1); }
+.code .blame-gut .bar { position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--info); opacity: .75; }
+.code .blame-gut div { position: relative; height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.code .blame-gut .muted { opacity: .45; }
+/* 问题面板 · 工作区扫描进度 */
+.prog-scan { height: 4px; border-radius: 2px; background: var(--fill-2); overflow: hidden; margin: 4px 10px 6px; }
+.prog-scan > i { display: block; height: 100%; width: 40%; background: var(--ac); border-radius: inherit; }
 .sqw { text-decoration: underline wavy var(--warn); text-underline-offset: 3px; }
 .cursor { display: inline-block; width: 1.5px; height: 15px; background: var(--ac); vertical-align: -3px; animation: blink 1.1s steps(1) infinite; }
 .mm { width: 64px; flex: none; position: relative; padding: 4px 6px; overflow: hidden; box-shadow: inset 1px 0 var(--bd-1); }
