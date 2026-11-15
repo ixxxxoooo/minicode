@@ -149,16 +149,20 @@ func (a *App) mmSceneCard(c *ui.Context, sc *mermaid.Scene, scale float32, wheel
 	if sc == nil || scale <= 0 {
 		scale = 1
 	}
-	t := a.tk
 	const maxH = float32(360)
-	box := ui.Box(c).MaxHeight(maxH)
+	// 绘制层必须有明确尺寸:文字层是绝对定位,撑不开高度,否则整张图高度为 0 看不见
+	w, h := a.mmSceneSize(sc, scale)
+	if w <= 0 || h <= 0 {
+		return
+	}
+	box := ui.Box(c).Clip()
 	if wheelZoom {
 		box.Grow(1)
 	} else {
-		box.Cursor(ui.CursorPointer)
+		box.Height(min(h+16, maxH)).Cursor(ui.CursorPointer)
 	}
 	box.Children(func() {
-		layer := ui.Box(c)
+		layer := ui.Box(c).Size(w, h).Margin(8)
 		layer.Draw(func(p *ui.Painter, r ui.Rect) {
 			a.paintMmScene(p, sc, scale, r.X, r.Y)
 		})
@@ -166,7 +170,6 @@ func (a *App) mmSceneCard(c *ui.Context, sc *mermaid.Scene, scale float32, wheel
 			a.mmTextLayer(c, sc, scale)
 		})
 	})
-	_ = t
 }
 
 func (a *App) paintMmScene(p *ui.Painter, sc *mermaid.Scene, scale float32, ox, oy float32) {

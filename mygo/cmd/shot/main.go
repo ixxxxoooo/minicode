@@ -36,7 +36,7 @@ func main() {
 	palette := flag.String("palette", "", "打开命令面板并预填查询(用 _ 表示空查询)")
 	tab := flag.String("tab", "", "设置页 / 自定义页分类(配合 -screen settings / customize)")
 	squery := flag.String("squery", "", "设置页搜索词")
-	state := flag.String("state", "", "会话:welcome/perm/ask/plan/queue/steer/queue-paused/ask2/askdone/latest/latest-fresh")
+	state := flag.String("state", "", "会话:welcome/perm/ask/plan/queue/steer/queue-paused/ask2/askdone/latest/latest-fresh;scn:<场景 id> 回放任一演示场景")
 	askCur := flag.Int("ask-cur", 1, "ask2 状态:当前题号(1 起)")
 	quick := flag.String("quick", "", "快速选择浮层:history / branch,可带预填查询,如 branch:feat")
 	scm := flag.String("scm", "", "IDE 左栏源代码管理:[提交说明][|展开的提交哈希],如 |b7d02e4")
@@ -99,6 +99,21 @@ func main() {
 		a.PrepFlowScrollAway(*state == "latest-fresh")
 		skipTop = true
 	default:
+		if id, ok := strings.CutPrefix(*state, "scn:"); ok { // scn:<场景 id> 静态回放任一演示场景(如 scn:mermaid-samples)
+			found := false
+			for _, sc := range demo.Scenarios() {
+				if sc.ID == id {
+					demo.Replay(a.State(), sc.Build())
+					found = true
+					break
+				}
+			}
+			if !found {
+				fmt.Fprintln(os.Stderr, "没有这个演示场景:", id)
+				os.Exit(2)
+			}
+			break
+		}
 		demo.Replay(a.State(), demo.FixBug(false)) // 静态回放:不等待、同步归约
 		demo.ReplayTasks(a.State())
 		if *state == "queue" {
