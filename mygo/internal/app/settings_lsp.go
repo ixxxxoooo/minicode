@@ -144,7 +144,7 @@ func (a *App) lspBody(a2 *App, c *ui.Context) {
 			if !row.OK && row.Install != "" {
 				if kit.Btn(c, "复制", kit.BtnOpt{Small: true, Icon: "copy"}).Clicked() {
 					c.WriteClipboard(row.Install)
-					c.Toast("已复制安装命令")
+					a2.flash("已复制安装命令")
 				}
 				if kit.Btn(c, "在终端安装", kit.BtnOpt{Small: true, Icon: "terminal"}).Clicked() {
 					a2.lspInstallCmd(row.Install)

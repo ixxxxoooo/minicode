@@ -145,21 +145,22 @@ func (a *App) noticeToasts(c *ui.Context) {
 		return
 	}
 	ui.Column(c).Absolute().Right(12).Bottom(12 + theme.HStatus).Gap(8).Width(280).Children(func() {
-		for i, it := range live {
+		for _, it := range live {
 			icon, col := noticeIcon(t, it.level)
-			card := ui.Row(c).Key("toast-"+itoa(i)).Gap(8).Padding(10, 12).Radius(t.RLg()).Background(t.Raised).Border(1, t.Bd1)
+			card := ui.Row(c).Key("toast-"+itoa64(it.id)).Gap(8).Padding(10, 12).Radius(t.RLg()).Background(t.Raised).Border(1, t.Bd1).AlignItems(ui.Start)
+			for _, s := range t.Shadow2() {
+				card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+			}
 			card = kit.ToastSlide(card, it.at, a.frameSoon)
 			card.Children(func() {
-				for _, s := range t.Shadow2() {
-					_ = s
-				}
-				kit.Ic(c, icon, kit.S12).TextColor(col)
-				ui.Column(c).Grow(1).Children(func() {
-					ui.Text(c, it.title).FontWeight(500).SingleLine()
+				kit.Ic(c, icon, kit.S12).TextColor(col).Margin(2, 0, 0, 0)
+				ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+					ui.Text(c, it.title).FontWeight(500).MaxLines(3)
 					if it.body != "" {
-						ui.Text(c, it.body).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
+						ui.Text(c, it.body).FontSize(theme.FsCap).TextColor(t.Tx3).MaxLines(2)
 					}
 				})
+				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭"}).OnClick(func() { a.dismissToast(it.id) })
 			})
 		}
 	})

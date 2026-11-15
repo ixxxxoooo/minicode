@@ -66,17 +66,17 @@ func keycap(c *ui.Context, combo string) {
 }
 
 // openPath 在访达里打开目录(设置里的「在访达中显示」)。
-func openPath(c *ui.Context, p string) {
+func (a *App) openPath(p string) {
 	if strings.HasPrefix(p, "~/") {
 		p = filepath.Join(diag.Home(), "..", p[2:])
 		p = filepath.Clean(p)
 	}
 	_ = os.MkdirAll(p, 0o755)
 	if err := exec.Command("open", p).Start(); err != nil {
-		c.Toast("无法打开:" + err.Error())
+		a.flash("无法打开:" + err.Error())
 		return
 	}
-	c.Toast("已在访达中显示 " + p)
+	a.flash("已在访达中显示 " + p)
 }
 
 // ───────── 外观的自定义块 ─────────
@@ -259,7 +259,7 @@ func provRow(a *App, c *ui.Context, first bool, name, url, status string) {
 			})
 			ui.Text(c, url).Font("monospace").FontSize(theme.FsCap).TextColor(a.tk.Tx3).SingleLine()
 		})
-		kit.Btn(c, "测试", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() { c.Toast("连通性检测需要真实后端,稍后接入") })
+		kit.Btn(c, "测试", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() { a.flash("连通性检测需要真实后端,稍后接入") })
 	})
 }
 
@@ -505,7 +505,7 @@ var settingsTabs = []setTabDef{
 		{title: "日志与诊断包", rows: []setRow{
 			rSeg(pPrivacyLvl, "日志级别", "环境变量 MINI_LOG 优先", 2, "错误", "警告", "信息", "调试"),
 			rCustom("记录目录", "panic、崩溃、卡死、异常退出的记录与日志文件", func(a *App, c *ui.Context) {
-				kit.Btn(c, "在访达中显示", kit.BtnOpt{Small: true, Icon: "folder"}).OnClick(func() { openPath(c, diag.Home()) })
+				kit.Btn(c, "在访达中显示", kit.BtnOpt{Small: true, Icon: "folder"}).OnClick(func() { a.openPath(diag.Home()) })
 			}),
 			rCustom("诊断包", "家目录显示为 ~,只含配置概况与变量名,不含密钥和环境变量值", func(a *App, c *ui.Context) {
 				kit.Btn(c, "导出", kit.BtnOpt{Small: true, Icon: "download"}).OnClick(func() { a.exportDiagBundle() })
@@ -527,7 +527,7 @@ var settingsTabs = []setTabDef{
 		{title: "数据", rows: []setRow{
 			rCustom("数据目录", "设置、服务商、日志与诊断包所在目录", func(a *App, c *ui.Context) {
 				kit.Mono(c, "~/.minicode", a.tk.Tx2)
-				kit.Btn(c, "打开", kit.BtnOpt{Small: true, Icon: "folder"}).OnClick(func() { openPath(c, diag.Home()) })
+				kit.Btn(c, "打开", kit.BtnOpt{Small: true, Icon: "folder"}).OnClick(func() { a.openPath(diag.Home()) })
 			}),
 			{key: "settings.io", title: "设置文件", desc: "导出到「下载」/ 导入设置备份(.mcsettings,不含密钥);双击备份文件也能导入", kind: kNone, right: func(a *App, c *ui.Context) {
 				ui.Row(c).Gap(8).Children(func() {
@@ -550,7 +550,7 @@ var settingsTabs = []setTabDef{
 					a.prefs.ResetAll()
 					a.set = settingsState{}
 					a.applyPrefs()
-					c.Toast("已恢复默认设置")
+					a.flash("已恢复默认设置")
 				})
 			}),
 		}},
@@ -711,14 +711,14 @@ func aboutCard(a *App, c *ui.Context) {
 			kit.Btn(c, "检查更新", kit.BtnOpt{Icon: "refresh"}).OnClick(func() {
 				a.checkUpdateAsync()
 				if h, ok := a.updAboutHint(); ok {
-					c.Toast(h)
+					a.flash(h)
 				} else {
-					c.Toast("正在检查更新…")
+					a.flash("正在检查更新…")
 				}
 			})
 			kit.Btn(c, "复制版本信息", kit.BtnOpt{Variant: kit.BtnGhost, Icon: "copy"}).OnClick(func() {
 				c.WriteClipboard("MiniCode " + Version)
-				c.Toast("已复制版本信息")
+				a.flash("已复制版本信息")
 			})
 		})
 	})

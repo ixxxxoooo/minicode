@@ -1,6 +1,7 @@
 package app
 
 import (
+	"strings"
 	"time"
 
 	"github.com/egoist/mygo"
@@ -48,11 +49,61 @@ func (a *App) postNotice(level, title, body string, actions []noticeAction) {
 		a.nt.items = a.nt.items[:noticeCap]
 	}
 	a.nt.unread++
+	a.pushToast(it)
+	log.Info("通知", "level", level, "title", title)
+}
+
+// flashLevel 按文案推断轻提示的级别:失败类 = err,受限 / 提醒类 = warn,完成类 = ok,其余 = info。
+func flashLevel(msg string) string {
+	has := func(ks ...string) bool {
+		for _, k := range ks {
+			if strings.Contains(msg, k) {
+				return true
+			}
+		}
+		return false
+	}
+	switch {
+	case has("失败", "出错", "错误", "无法", "不能", "被拒", "拒绝", "冲突"):
+		return "err"
+	case has("禁止", "请先", "没有", "暂无", "未能", "未找到", "不支持", "置灰", "超过", "已存在"):
+		return "warn"
+	case has("已", "成功", "完成"):
+		return "ok"
+	}
+	return "info"
+}
+
+// flash 是一句话轻提示(原来的 toast),统一画成通知样式的卡片(右下角,几秒后淡出)。
+// info / ok 只闪一下;warn / err 同时记进通知中心,漏看了还能回头查。
+func (a *App) flash(msg string) {
+	if msg == "" {
+		return
+	}
+	lv := flashLevel(msg)
+	if lv == "warn" || lv == "err" {
+		a.postNotice(lv, msg, "", nil)
+		return
+	}
+	a.noticeInit()
+	it := noticeItem{id: a.nt.nextID, level: lv, title: msg, at: a.now(), read: true}
+	a.nt.nextID++
+	a.pushToast(it)
+	log.Debug("轻提示", "level", lv, "msg", msg)
+}
+
+// pushToast 把一条记录排进右下角叠放区,并安排两次唤醒让它淡出、移除(无输入时界面不会自己重绘)。
+func (a *App) pushToast(it noticeItem) {
 	a.nt.toasts = append(a.nt.toasts, it)
 	if len(a.nt.toasts) > 4 {
 		a.nt.toasts = a.nt.toasts[len(a.nt.toasts)-4:]
 	}
-	log.Info("通知", "level", level, "title", title)
+	if a.win == nil {
+		return
+	}
+	for _, d := range []time.Duration{3900 * time.Millisecond, 6200 * time.Millisecond} {
+		time.AfterFunc(d, func() { a.win.Update(func() { a.frameSoon() }) })
+	}
 }
 
 // postNoticeQuiet 只记进通知中心(已读、不弹浮层):事件本身已经在眼前(如会话里的权限卡)时用,
@@ -75,6 +126,20 @@ func (a *App) noticeWarn(title, body string, act []noticeAction) {
 }
 func (a *App) noticeErr(title, body string, act []noticeAction) {
 	a.postNotice("err", title, body, act)
+}
+
+// dismissToast 关掉右下角的一张卡片(不动通知中心里的历史)。
+func (a *App) dismissToast(id int64) {
+	if a.nt == nil {
+		return
+	}
+	var out []noticeItem
+	for _, it := range a.nt.toasts {
+		if it.id != id {
+			out = append(out, it)
+		}
+	}
+	a.nt.toasts = out
 }
 
 func (a *App) markNoticesRead() {

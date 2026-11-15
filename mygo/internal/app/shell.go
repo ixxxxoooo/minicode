@@ -36,16 +36,16 @@ func (a *App) root(c *ui.Context) {
 		a.projDialogs(c)
 		a.overlayLayer(c)
 		a.mermaidViewerOverlay(c)
+		if a.toast != "" { // 一句话轻提示统一走通知样式
+			a.flash(a.toast)
+			a.toast = ""
+		}
 		a.noticeToasts(c)
 		a.morphShield(c)
 		if a.delUndo.Active() {
 			ui.Row(c).Justify(ui.Center).Padding(0, 0, 8, 0).Children(func() {
 				kit.UndoBar(c, &a.delUndo)
 			})
-		}
-		if a.toast != "" {
-			c.Toast(a.toast)
-			a.toast = ""
 		}
 	})
 }
