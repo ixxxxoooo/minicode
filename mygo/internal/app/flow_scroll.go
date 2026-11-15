@@ -28,7 +28,7 @@ func flowTailMark(items []core.Item) int {
 // toLatestBtn 画圆形「回到最新」按钮,居中、贴着所在滚动区的底边;fresh = 带「有新内容」圆点。
 func (a *App) toLatestBtn(c *ui.Context, key string, fresh bool, bottom float32, onClick func()) {
 	t := a.tk
-	ui.Row(c).Key(key + "-wrap").Absolute().Left(0).Right(0).Bottom(bottom).Justify(ui.Center).ZIndex(5).Children(func() {
+	ui.Row(c).Key(key + "-wrap").Absolute().Left(0).Right(0).Bottom(bottom).Justify(ui.Center).ZIndex(5).PassThrough().Children(func() { // 整行容器不吃点击,只有圆钮本身响应
 		b := ui.ButtonBase(c).Key(key).Size(30, 30).Radius(15).Justify(ui.Center).AlignItems(ui.Center).
 			Background(t.Raised).Border(1, t.Bd2).Cursor(ui.CursorPointer).Transition(kit.Fade).
 			Tooltip("回到最新").Label("回到最新")
