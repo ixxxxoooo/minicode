@@ -135,6 +135,9 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 - **整页**:自动化 `automation.ParseCron` + 运行记录;画布 `canvas.OpenLibrary(~/.minicode/canvases)` + `ApplyClaudeReply`;浏览器 `browser.HTTPSource`(`browser.fetch` 可关);自定义 `customize.OpenDisk`(原子写 + 备份)、`claude mcp/plugin` 子进程;用量限额经活动会话 `CmdRefreshUsage`。
 - **本轮已知缺口**:⌥点击多光标、标签跨组拖动、真实 Haiku 行内补全、MD 图片附件;用户消息编辑只做本地截断、计划选中批注未接选区;演示 Bash 无增量输出剧本;MCP 工具级热开关、系统通知点击回会话、真实 updater 重启;终端滚轮上报、Nerd Font 缺字形检测;画布全屏无平移与列表删除 / 重命名;自动化运行中无流式输出、取消不杀子进程;浏览器框选元素;MCP / 插件表单未写回 JSON;Dock / 托盘缺动画帧与 error/update/paused/demo 图;`shortcutRecordCapture` 透明层可能挡点击(待测)。
 
+- **二期与梳理补充(同样未测试)**:`kit` 新增 `Btn` 的 `Disabled/Loading`、`Field`(错误描边 + `ShakeInput`)、`popshell.go`(`PopIn/PopOut/StaggerRise/CollapseHide`)、`Ring`/`SkelRows`、`DurLoop`(1600 ms)、`UndoSlot`+`UndoBar`(会话删除先折叠再延迟落盘);用户消息编辑 `CmdEditUser`(`resume_session_at`,无 uuid 则置灰);计划段落「批注」(`plan_annotate.go`);MCP 工具级开关写本地 `permissions.deny`;`CmdCompact` 发 `/compact`;`internal/update` 状态机 + GitHub appcast(开发版重启走 `scripts/dev.sh`,正式包替换仍是占位);跨组拖标签 `ide_split_drag.go`;Claude 行内补全 / ⌘I 走 `claude.RunPromptModelCtx`(Haiku,可取消,失败退回占位);CodeLens 测试数来自本地符号启发式;终端 SGR 滚轮上报与 Nerd Font 缺字形提示(`term_nerd.go`);自动化 `RunPromptStreamCtx` 流式 + 取消杀进程组;画布 ` ```canvas ` 围栏回合结束自动写回;浏览器阅读区框选引用(`browser_select.go`);`DiskStore.SaveMCP`;服务商 CRUD(`providers.json` + 0600 `provider-keys.json`);Dock 图标读 `appearance.appIcon*` 并随系统深浅轮询;对话栏「分叉会话…」与回合条共用 `forkTurn`;文件标签右键「在新窗口中打开」= `SpawnNewWindow`。
+- **二期仍未做**:语义高亮(无库 API)、剪贴板贴图与 WYSIWYG 内嵌图片块、系统通知点击回会话(缺 UN 委托)、正式包更新替换、托盘 error / update / paused / demo 图与动画帧、欢迎页 64px 品牌徽标、MCP 详情「编辑配置」表单、服务商行内「编辑」入口、Skill 重命名目录、文字流光 / 流底部渐隐 / 抽屉 / ok-pop 等剩余动效、`kit.Field` 铺到设置单行。
+
 ### 已知缺口(真实模式)
 
 - 设置页:快捷键录制、服务商 / 规则 / 环境变量 / LSP 行是演示数据;「项目信任」只列项目,不读写信任状态;除上面列出的偏好外,其它控件只存偏好。

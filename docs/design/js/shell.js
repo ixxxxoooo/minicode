@@ -67,9 +67,10 @@
 
   /* ───────── 对话栏 ───────── */
   const starter = (n, t, d) => `<div class="starter"><span class="c-ac">${ic(n)}</span><b>${t}</b><span class="t3 fs-cap" style="line-height:1.35">${d}</span></div>`;
-  const welcome = () => `<div class="welcome"><div class="fc ai g3 a-rise">${U.brand.logo(36)}<div class="fs-head b" style="margin-top:6px;text-align:center">今天想在 router-demo 里做点什么?</div><div class="t3">main · 3 项未提交改动 · 上次会话 5 分钟前</div></div>
+  const welcome = () => `<div class="welcome"><div class="fc ai g3 a-rise"><span class="halo" style="margin:8px 0 4px">${U.brand.logo(64)}</span><div class="fs-head b" style="margin-top:2px;text-align:center">今天想在 router-demo 里做点什么?</div><div class="t3">trunk · 2 项未提交改动 · 上次会话 5 分钟前</div></div>
     <div style="width:600px;max-width:92%" class="a-rise composer-slot">${F.composer({ focus: true })}</div>
-    <div class="f g4 stagger starters">${starter('bug', '修复一个 Bug', '描述现象,我来定位')}${starter('book', '解释这个项目', '梳理结构与关键流程')}${starter('check', '补充测试', '为最近改动补单测')}${starter('eye', '审查改动', '3 个文件 · +18 −2')}</div></div>`;
+    <div class="f g4 stagger starters">${starter('bug', '修复一个 Bug', '描述现象,我来定位')}${starter('book', '解释这个项目', '梳理结构与关键流程')}${starter('check', '补充测试', '为最近改动补单测')}${starter('eye', '审查改动', '3 个文件 · +18 −4')}</div>
+    <div class="fc g2 recent" style="width:600px;max-width:92%;margin-top:10px"><div class="t3 fs-cap b" style="color:var(--tx-3)">最近会话</div>${[['完整修复路径匹配', '5 分钟前'], ['梳理路由层结构', '昨天']].map(([t, w]) => `<div class="row" style="height:28px;padding:0 8px"><span class="ell grow">${t}</span><span class="t4 aux">${w}</span></div>`).join('')}</div></div>`;
   /** 对话栏头部。宽 / 中:标题 + 分支 + 历史 + 更多;窄(IDE 右侧停靠):标题变下拉,补上「新会话」「占满」 */
   const chatHead = (title, o = {}) => `<div class="chat-head"><div class="ttl" data-act="hist">${o.run ? '<span class="dot ac only-narrow"></span>' : ''}<b class="ell">${title}</b>${ic('chevD', 's12 t3 only-narrow')}</div>${o.branch ? chip('main', 'branch', 'not-narrow') : ''}<span class="grow"></span>
     <span class="only-narrow f ai">${ib('plus', 'sm', '新会话 ⌘N', 'data-act="newchat"')}</span>${ib('history', 'sm', '历史会话 ⌘⇧H', 'data-act="hist"')}<span class="only-narrow f ai">${ib('max', 'sm', '对话占满 ⌘⇧M', 'data-act="chatmax"')}</span>${ib('more', 'sm', '更多:重命名、分叉、归档、复制链接')}</div>`;
