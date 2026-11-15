@@ -111,13 +111,18 @@ func (a *App) sessionRows(c *ui.Context, p core.ProjectInfo) {
 		}
 		a.sessRow(c, s, true)
 	}
+	a.archiveFold(c, p.ID, arch, 25, true)
+}
+
+// archiveFold 画底部「已归档 N」折叠行,展开后列出被归档的会话;indent 是行首缩进,nested 表示按项目嵌套的会话行样式。
+func (a *App) archiveFold(c *ui.Context, projID string, arch []core.SessionInfo, indent float32, nested bool) {
 	if len(arch) == 0 {
 		return
 	}
 	t := a.tk
-	key := "arch:" + p.ID
+	key := "arch:" + projID
 	open := a.projOpen[key]
-	r := kit.RowEl(c, false).Key("archhead-" + p.ID).Height(24).PaddingStart(25).Gap(5).TextColor(t.Tx3)
+	r := kit.RowEl(c, false).Key("archhead-" + projID).Height(24).PaddingStart(indent).Gap(5).TextColor(t.Tx3)
 	r.OnClick(func() { a.projOpen[key] = !open })
 	r.Children(func() {
 		rot := float32(0)
@@ -132,7 +137,10 @@ func (a *App) sessionRows(c *ui.Context, p core.ProjectInfo) {
 	})
 	if open {
 		for _, s := range arch {
-			a.sessRow(c, s, true)
+			if !nested {
+				s.Label = s.Clock
+			}
+			a.sessRow(c, s, nested)
 		}
 	}
 }

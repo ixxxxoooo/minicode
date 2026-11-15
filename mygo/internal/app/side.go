@@ -256,17 +256,20 @@ func (a *App) sessionsB(c *ui.Context) {
 				if p.ID != proj.ID {
 					continue
 				}
-				for _, ss := range p.Sessions {
-					if ss.Archived {
-						continue
+				live, arch := sessionsSplit(p) // 置顶的排最前
+				for _, ss := range live {
+					g := ss.Group
+					if ss.Pinned {
+						g = "置顶"
 					}
-					if ss.Group != cur {
-						cur = ss.Group
+					if g != cur {
+						cur = g
 						kit.Grp(c, cur)
 					}
 					ss.Label = ss.Clock
 					a.sessRow(c, ss, false)
 				}
+				a.archiveFold(c, p.ID, arch, 8, false) // 归档的收在底部,可展开、可取消归档
 			}
 			_ = t
 		})

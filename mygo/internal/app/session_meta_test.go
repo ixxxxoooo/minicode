@@ -7,6 +7,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/demo"
 )
 
 func sessIDs(a *App, proj string) []string {
@@ -160,5 +161,30 @@ func TestSessionDelete(t *testing.T) {
 	a.st.Phase = core.PhaseIdle
 	if a.sessionRunning("md") {
 		t.Fatal("空闲时不应判为运行中")
+	}
+}
+
+// 方案 B 的平铺列表:置顶会话排最前并归入「置顶」分组;归档的收在底部「已归档 N」折叠行,可展开。
+func TestSessionsBPinnedAndArchived(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "b", FakeLights: true})
+	a.SetProjects(demo.Projects(), "fixbug")
+	a.SeedDemoExtras()
+	tt := ui.NewTester(a.View, 1280, 800)
+	tt.Frame()
+	if !tt.HasText("置顶") {
+		t.Fatal("方案 B 应有「置顶」分组")
+	}
+	if !tt.HasText("已归档") {
+		t.Fatal("方案 B 应有「已归档」折叠行,否则归档后无处找回")
+	}
+	if tt.HasText("调研:axum 与 actix 的路由差异") {
+		t.Fatal("归档的会话默认收起")
+	}
+	if err := tt.Click("已归档"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if !tt.HasText("调研:axum 与 actix 的路由差异") {
+		t.Fatal("展开后应显示归档的会话")
 	}
 }
