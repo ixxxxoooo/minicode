@@ -559,3 +559,91 @@ func (c *Client) DocumentSymbols(uri string) ([]DocSymbol, error) {
 	}
 	return convSyms(items), nil
 }
+
+// ───────── 编辑类请求 ─────────
+
+// TextEdit 是一处文本替换。
+type TextEdit struct {
+	Range   Range  `json:"range"`
+	NewText string `json:"newText"`
+}
+
+// Formatting 请求整篇格式化,返回要应用的编辑。
+func (c *Client) Formatting(uri string, tabSize int, spaces bool) ([]TextEdit, error) {
+	var edits []TextEdit
+	err := c.Call("textDocument/formatting", map[string]any{
+		"textDocument": map[string]any{"uri": uri},
+		"options":      map[string]any{"tabSize": tabSize, "insertSpaces": spaces},
+	}, &edits, 15*time.Second)
+	return edits, err
+}
+
+// Rename 请求重命名,返回各文件(URI)要应用的编辑。
+func (c *Client) Rename(uri string, p Position, newName string) (map[string][]TextEdit, error) {
+	params := docPos(uri, p)
+	params["newName"] = newName
+	var raw struct {
+		Changes         map[string][]TextEdit `json:"changes"`
+		DocumentChanges []struct {
+			TextDocument struct {
+				URI string `json:"uri"`
+			} `json:"textDocument"`
+			Edits []TextEdit `json:"edits"`
+		} `json:"documentChanges"`
+	}
+	if err := c.Call("textDocument/rename", params, &raw, 20*time.Second); err != nil {
+		return nil, err
+	}
+	out := raw.Changes
+	if out == nil {
+		out = map[string][]TextEdit{}
+	}
+	for _, dc := range raw.DocumentChanges {
+		if dc.TextDocument.URI != "" {
+			out[dc.TextDocument.URI] = append(out[dc.TextDocument.URI], dc.Edits...)
+		}
+	}
+	return out, nil
+}
+
+// ApplyEdits 把一组编辑应用到文本上(位置按 UTF-16 列解释),返回新文本。重叠的编辑返回错误。
+func ApplyEdits(text string, edits []TextEdit) (string, error) {
+	lines := strings.Split(text, "\n")
+	starts := make([]int, len(lines)+1)
+	for i, l := range lines {
+		starts[i+1] = starts[i] + len(l) + 1
+	}
+	off := func(p Position) int {
+		if p.Line >= len(lines) {
+			return len(text)
+		}
+		if p.Line < 0 {
+			return 0
+		}
+		return starts[p.Line] + ColFromUTF16(strings.TrimSuffix(lines[p.Line], "\r"), p.Character)
+	}
+	type span struct {
+		s, e int
+		t    string
+	}
+	sp := make([]span, 0, len(edits))
+	for _, e := range edits {
+		sp = append(sp, span{off(e.Range.Start), off(e.Range.End), e.NewText})
+	}
+	// 稳定排序(按起点),再从后往前应用
+	for i := 1; i < len(sp); i++ {
+		for j := i; j > 0 && sp[j].s < sp[j-1].s; j-- {
+			sp[j], sp[j-1] = sp[j-1], sp[j]
+		}
+	}
+	for i := 1; i < len(sp); i++ {
+		if sp[i].s < sp[i-1].e {
+			return text, fmt.Errorf("编辑范围重叠")
+		}
+	}
+	out := text
+	for i := len(sp) - 1; i >= 0; i-- {
+		out = out[:sp[i].s] + sp[i].t + out[sp[i].e:]
+	}
+	return out, nil
+}

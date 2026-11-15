@@ -219,6 +219,8 @@ func (a *App) etab(c *ui.Context, tb *ideTab) {
 		ic := kit.Ic(c, a.tabIcon(tb), kit.S12)
 		if tb.virt == vReview || tb.virt == vPlan {
 			ic.TextColor(t.Ac)
+		} else if tb.virt == "" && !tb.diff {
+			ic.TextColor(a.fileTint(tb.path, t.Tx3))
 		}
 		nm := ui.Text(c, a.tabTitle(tb)).SingleLine()
 		if tb.preview {

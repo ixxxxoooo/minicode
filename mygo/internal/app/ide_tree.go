@@ -116,7 +116,7 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 			kit.Ic(c, "folder", kit.S12)
 		} else {
 			ui.Box(c).Size(12, 12).Shrink(0)
-			kit.Ic(c, fileIcon(e.Name), kit.S12)
+			a.fileIc(c, e.Name)
 		}
 		ui.Text(c, e.Name).Grow(1).SingleLine()
 		if g != "" && !e.Dir {
@@ -207,4 +207,42 @@ func (a *App) outlineRows(c *ui.Context) {
 			ui.Text(c, itoa(s.Line+1)).FontSize(theme.FsMicro).TextColor(t.Tx4)
 		})
 	}
+}
+
+// fileTint 是文件图标的颜色:按类型取主题令牌(换主题自动跟着变)。
+// 设置 → 外观 →「彩色文件图标」关闭后一律用次要文字色。
+func (a *App) fileTint(name string, fallback ui.Color) ui.Color {
+	if !a.prefs.Bool("appearance.fileIcons", true) {
+		return fallback
+	}
+	t := a.tk
+	n := strings.ToLower(name)
+	switch {
+	case strings.HasSuffix(n, ".rs"):
+		return t.Warn
+	case strings.HasSuffix(n, ".go"):
+		return t.Info
+	case strings.HasSuffix(n, ".ts"), strings.HasSuffix(n, ".tsx"), strings.HasSuffix(n, ".swift"):
+		return t.Ac
+	case strings.HasSuffix(n, ".js"), strings.HasSuffix(n, ".jsx"), strings.HasSuffix(n, ".lua"):
+		return t.Warn
+	case strings.HasSuffix(n, ".py"):
+		return t.Ok
+	case strings.HasSuffix(n, ".md"), strings.HasSuffix(n, ".txt"):
+		return t.Tx3
+	case strings.HasSuffix(n, ".toml"), strings.HasSuffix(n, ".json"), strings.HasSuffix(n, ".yaml"), strings.HasSuffix(n, ".yml"):
+		return t.Tx2
+	case strings.HasSuffix(n, ".sh"), strings.HasSuffix(n, ".zsh"):
+		return t.Ok
+	case strings.HasSuffix(n, ".c"), strings.HasSuffix(n, ".h"), strings.HasSuffix(n, ".cpp"), strings.HasSuffix(n, ".hpp"):
+		return t.Info
+	case n == "cargo.lock", strings.HasSuffix(n, ".lock"), strings.HasPrefix(n, "."):
+		return t.Tx4
+	}
+	return fallback
+}
+
+// fileIc 画带类型色的文件图标。
+func (a *App) fileIc(c *ui.Context, name string) ui.Element {
+	return kit.Ic(c, fileIcon(name), kit.S12).TextColor(a.fileTint(name, a.tk.Tx3))
 }

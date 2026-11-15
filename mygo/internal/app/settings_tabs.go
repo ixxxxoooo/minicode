@@ -328,6 +328,9 @@ var settingsTabs = []setTabDef{
 			rSeg("appearance.density2", "工具调用详细程度", "精简只显示动词与对象;详细默认展开输出", 1, "精简", "标准", "详细"),
 			rStp("appearance.fontScale", "时间线字号", "会话里 Claude 回复正文的字号(85%–150%)", 100, 85, 150, 5, "%"),
 		}},
+		{title: "文件树", rows: []setRow{
+			rTog("appearance.fileIcons", "彩色文件图标", "按文件类型给图标上色(Rust 橙、Go 蓝、Python 绿…);关闭后全部用灰色。作用于文件树、标签、搜索与源代码管理", true),
+		}},
 		{title: "动效", rows: []setRow{
 			rTog("appearance.motion", "动效", "流光、滑入与布局变形;关闭后所有时长令牌归零(也跟随系统「减弱动态效果」)", true),
 			rSeg("appearance.morph", "形态切换动画", "Agent ⇄ IDE 的布局变形,约 0.44 秒;「简化」只淡入淡出", 0, "流畅", "简化", "无"),

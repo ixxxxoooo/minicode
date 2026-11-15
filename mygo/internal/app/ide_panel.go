@@ -261,7 +261,7 @@ func (a *App) refsPanel(c *ui.Context) {
 					}
 					ui.Row(c).Key("rg-" + it.path).Height(24).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Children(func() {
 						kit.Ic(c, "chevD", kit.S12)
-						kit.Ic(c, fileIcon(it.path), kit.S12)
+						a.fileIc(c, it.path)
 						ui.Text(c, it.path).Grow(1)
 						kit.Cnt(c, itoa(n), false)
 					})

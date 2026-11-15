@@ -123,3 +123,51 @@ func TestLSPMissingServerShowsInstall(t *testing.T) {
 		t.Fatal("重新检测应丢掉旧会话")
 	}
 }
+
+// 重命名(含文档注释共 3 处)与格式化走服务器,结果落到缓冲区且可撤销。
+func TestLSPRenameAndFormat(t *testing.T) {
+	if _, ok := lsp.ForFile("a.go").Find(); !ok {
+		t.Skip("没有安装 gopls")
+	}
+	a, b, _ := lspProject(t)
+	pump := func(until func() bool, what string) {
+		t.Helper()
+		deadline := time.Now().Add(60 * time.Second)
+		for time.Now().Before(deadline) {
+			b.frames(1)
+			a.drainUI()
+			if until() {
+				return
+			}
+			time.Sleep(40 * time.Millisecond)
+		}
+		t.Fatalf("等不到:%s", what)
+	}
+	pump(func() bool {
+		s := a.lspFor("main.go")
+		return s != nil && s.state == lspReady && s.docs["main.go"] != nil
+	}, "gopls 就绪并已同步文档")
+	tb := a.ide.cur()
+	decl := strings.Index(goDemoSrc, "func Greet") + 6
+	tb.st.Select(decl, decl)
+	a.applyRename("Greet", "Hello")
+	pump(func() bool { return strings.Count(tb.buf.String(), "Hello") == 3 }, "三处都改成 Hello")
+	if strings.Contains(tb.buf.String(), "Greet") {
+		t.Fatalf("不应残留旧名:%s", tb.buf.String())
+	}
+	if !tb.buf.Undo() || !strings.Contains(tb.buf.String(), "Greet") {
+		t.Fatal("重命名应可一次撤销")
+	}
+
+	// 格式化:把缩进弄乱
+	tb.buf.Set("package main\n\nfunc  main( ) {\nx:=1\n_=x\n}\n")
+	pump(func() bool {
+		d := a.lspH.sess[a.lspFor("main.go").root+"|go"].docs["main.go"]
+		return d != nil && d.bufVer == tb.buf.Version()
+	}, "改动已同步")
+	a.formatDoc()
+	pump(func() bool { return strings.Contains(tb.buf.String(), "func main() {") }, "格式化完成")
+	if !strings.Contains(tb.buf.String(), "\tx := 1") {
+		t.Fatalf("格式化结果:%q", tb.buf.String())
+	}
+}

@@ -436,46 +436,6 @@ func symKind(k string) editor.CompletionKind {
 	return editor.CompletionText
 }
 
-// editorMenu 是编辑器右键菜单里追加的项(编辑器自带复制 / 粘贴 / 全选)。
-func (a *App) editorMenu(tb *ideTab, m *ui.Menu) {
-	m.Separator()
-	if m.Item("转到定义").Chosen() {
-		a.goDef()
-	}
-	if m.Item("查找所有引用").Chosen() {
-		a.showRefs(a.cursorWord())
-	}
-	if m.Item("预览定义").Chosen() {
-		a.openPeek()
-	}
-	if m.Item("重命名符号…").Chosen() {
-		a.openRename()
-	}
-	m.Separator()
-	on := a.prefs.Bool(pBlameInline, true)
-	if m.Item(map[bool]string{true: "关闭行内 Git 追溯", false: "开启行内 Git 追溯"}[on]).Chosen() {
-		if on {
-			a.prefs.Set(pBlameInline, false)
-		} else {
-			a.prefs.Reset(pBlameInline)
-		}
-	}
-	if m.Item("显示文件历史").Chosen() {
-		a.ide.sections["时间线"] = true
-		a.nav, a.sideOpen = "files", true
-	}
-	m.Separator()
-	if m.Item("问 Claude").Chosen() {
-		a.askClaude("问")
-	}
-	if m.Item("让 Claude 解释").Chosen() {
-		a.askClaude("解释")
-	}
-	if m.Item("让 Claude 修改这段代码…").Chosen() {
-		a.askClaude("编辑")
-	}
-}
-
 // selectionRef 是选区(没有选区取光标所在行)的「文件:行」引用文字。
 func (a *App) selectionRef() (ref, text string) {
 	tb := a.ide.cur()

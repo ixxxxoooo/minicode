@@ -257,7 +257,7 @@ func (a *App) scmFile(c *ui.Context, grp string, ch vcs.Change) {
 		col = t.Tx4
 	}
 	r.TextColor(col).Children(func() {
-		kit.Ic(c, fileIcon(path.Base(ch.Path)), kit.S12).TextColor(t.Tx3)
+		a.fileIc(c, path.Base(ch.Path))
 		nm := ui.Text(c, path.Base(ch.Path)).SingleLine().Shrink(0)
 		if ch.Status == 'D' {
 			nm.Strikethrough()

@@ -322,7 +322,7 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 		row.OnClick(func() { s.folded[f.Path] = !s.folded[f.Path] })
 		row.Children(func() {
 			kit.Ic(c, map[bool]string{true: "chevR", false: "chevD"}[s.folded[f.Path]], kit.S12).TextColor(t.Tx3)
-			kit.Ic(c, fileIcon(path.Base(f.Path)), kit.S12).TextColor(t.Tx3)
+			a.fileIc(c, path.Base(f.Path))
 			ui.Text(c, path.Base(f.Path)).SingleLine().Shrink(0)
 			if d := path.Dir(f.Path); d != "." {
 				ui.Text(c, d).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().Shrink(1).MinWidth(0)

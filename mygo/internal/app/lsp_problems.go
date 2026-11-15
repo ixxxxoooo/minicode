@@ -57,7 +57,7 @@ func (a *App) realProblems(c *ui.Context) {
 				sort.SliceStable(ds, func(i, j int) bool { return ds[i].Range.Start.Line < ds[j].Range.Start.Line })
 				ui.Row(c).Key("pg-" + f).Height(24).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Children(func() {
 					kit.Ic(c, "chevD", kit.S12)
-					kit.Ic(c, fileIcon(f), kit.S12)
+					a.fileIc(c, f)
 					ui.Text(c, f).Grow(1).SingleLine()
 					kit.Cnt(c, itoa(len(ds)), false)
 				})

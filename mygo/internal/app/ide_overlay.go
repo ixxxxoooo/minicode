@@ -301,6 +301,18 @@ func (a *App) applyRename(word, to string) {
 		a.closeOv()
 		return
 	}
+	if tb := d.cur(); tb != nil && tb.st != nil && tb.buf != nil {
+		if a.lspRename(tb, tb.st.Cursor(), word, to, func() { a.renameLocal(word, to) }) {
+			a.closeOv()
+			return
+		}
+	}
+	a.renameLocal(word, to)
+}
+
+// renameLocal 用本地符号索引重命名(没有语言服务器 / 服务器拒绝时)。
+func (a *App) renameLocal(word, to string) {
+	d := a.ide
 	n := 0
 	for _, p := range d.codeFiles() {
 		src, ok := d.fileText(p)
@@ -481,6 +493,8 @@ func (a *App) editorShortcuts(c *ui.Context) bool {
 		a.openPeek()
 	case c.Shortcut(0, ui.KeyF2):
 		a.openRename()
+	case c.Shortcut(ui.Shift|ui.Alt, ui.KeyF):
+		a.formatDoc()
 	case c.Shortcut(ui.Cmd, ui.KeyPeriod):
 		a.openActs()
 	case c.Shortcut(ui.Cmd, ui.KeyL):

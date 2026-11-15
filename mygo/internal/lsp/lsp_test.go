@@ -249,8 +249,46 @@ func TestRealGopls(t *testing.T) {
 	if err != nil || len(items) == 0 {
 		t.Fatalf("补全应有结果:%d %v", len(items), err)
 	}
+	// 重命名 Greet → Hello:两处
+	changes, err := c.Rename(uri, Position{Line: 5, Character: 6}, "Hello")
+	if err != nil || len(changes[uri]) != 3 {
+		t.Fatalf("重命名应在 3 处改(含文档注释):%v %v", changes, err)
+	}
+	renamed, err := ApplyEdits(src, changes[uri])
+	if err != nil || strings.Count(renamed, "Hello") != 3 || strings.Contains(renamed, "Greet(") {
+		t.Fatalf("应用重命名结果不对:%q %v", renamed, err)
+	}
+	// 格式化:把缩进弄乱后应回到 gofmt 风格
+	messy := "package main\n\nfunc  main( ) {\nx:=1\n_=x\n}\n"
+	_ = c.DidChange(uri, 2, messy)
+	fm, err := c.Formatting(uri, 4, false)
+	if err != nil || len(fm) == 0 {
+		t.Fatalf("格式化应有编辑:%v %v", fm, err)
+	}
+	if out, _ := ApplyEdits(messy, fm); !strings.Contains(out, "func main() {") || !strings.Contains(out, "\tx := 1") {
+		t.Fatalf("格式化结果 %q", out)
+	}
 	syms, err := c.DocumentSymbols(uri)
-	if err != nil || len(syms) < 2 {
-		t.Fatalf("文档符号应含 Greet 与 main:%v %v", syms, err)
+	if err != nil || len(syms) < 1 || syms[0].Name != "main" {
+		t.Fatalf("文档符号应含 main(此时文档已被改成只剩 main):%v %v", syms, err)
+	}
+}
+
+func TestApplyEdits(t *testing.T) {
+	text := "a汉😀b\nline2\nend"
+	// 把 😀(UTF-16 列 2–4)换成 X,再在第二行行首插入 ">",并把 end 换成 END
+	got, err := ApplyEdits(text, []TextEdit{
+		{Range: Range{Start: Position{0, 2}, End: Position{0, 4}}, NewText: "X"},
+		{Range: Range{Start: Position{1, 0}, End: Position{1, 0}}, NewText: ">"},
+		{Range: Range{Start: Position{2, 0}, End: Position{2, 3}}, NewText: "END"},
+	})
+	if err != nil || got != "a汉Xb\n>line2\nEND" {
+		t.Fatalf("应用编辑得到 %q %v", got, err)
+	}
+	if _, err := ApplyEdits("abcdef", []TextEdit{
+		{Range: Range{Start: Position{0, 0}, End: Position{0, 4}}, NewText: "x"},
+		{Range: Range{Start: Position{0, 2}, End: Position{0, 5}}, NewText: "y"},
+	}); err == nil {
+		t.Fatal("重叠的编辑应报错")
 	}
 }
