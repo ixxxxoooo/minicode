@@ -208,7 +208,9 @@ type App struct {
 	canv            *canvas.Store                  // 画布文档(首次打开页面时建立)
 	cvLibData       *canvas.Library                // 多画布落盘库
 	cv              canvasState                    // 画布页状态
-	cvView          cvViewer                       // 图表全屏查看
+	cvView          cvViewer                       // 画布图表全屏查看
+	mmCache         map[string]*mmCached           // Mermaid 排版缓存(按源码哈希)
+	mmView          mmViewer                       // Mermaid 全屏查看
 	br              *browser.Browser               // 内置浏览器(首次打开页面时建立)
 	brs             browserState                   // 浏览器页状态
 	brSel           brSelect                       // 阅读模式框选引用

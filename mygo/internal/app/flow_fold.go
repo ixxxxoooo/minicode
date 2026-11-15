@@ -111,6 +111,10 @@ func (a *App) foldCodeBlock(c *ui.Context, b *markdown.CodeBlockView) {
 func (a *App) hookMDFold(o *markdown.Options) {
 	prev := o.CodeBlock
 	o.CodeBlock = func(c *ui.Context, b *markdown.CodeBlockView) {
+		if isMermaidInfo(b.Info) {
+			a.foldMermaidBlock(c, b)
+			return
+		}
 		if prev != nil {
 			prev(c, b)
 			return
