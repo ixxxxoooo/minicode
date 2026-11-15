@@ -115,7 +115,7 @@ func (a *App) composerBar(c *ui.Context) {
 		ctxBtn.Children(func() {
 			if wide {
 				col := t.Tx2
-				if pct >= ctxCompressThr {
+				if pct >= a.ctxWarnRatio() {
 					col = t.Warn
 				}
 				if pct >= 0.95 {

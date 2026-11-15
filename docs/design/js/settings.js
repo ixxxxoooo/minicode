@@ -81,7 +81,7 @@
         R('关闭窗口时', '红色按钮:隐藏=OnClose PreventDefault+Hide,退出=关窗;⌘Q 仍走 OnBeforeQuit(未测试)', seg(['隐藏', '退出'], 0)),
         R('开标签时自动展开右侧工作区', 'Agent 形态下在会话里点计划 / 文件 / 审查时展开工作区;各形态的面板开合各自记忆', tog(1)))}
       ${note('想同时看另一个项目?⇧⌘N 新开一个完整窗口,它同样可以在 Agent / IDE 之间切换。不再有单独的「IDE 窗口」。')}
-      ${G('输入', R('发送键', '另一个键用于换行(Shift+Enter 始终换行)', seg(['Enter', '⌘ Enter'], 0)), R('回合进行中再发消息', 'Enter = 排队;⌘Enter = 立即引导', seg(['排队', '立即引导'], 0)), R('粘贴长文本时折叠为附件', '超过 2000 字时作为文本附件加入,不撑开输入框', tog(1)))}
+      ${G('输入', R('发送键', '另一个键用于换行(Shift+Enter 始终换行)', seg(['Enter', '⌘ Enter'], 0)), R('回合进行中再发消息', 'Enter = 排队;⌘Enter = 立即引导', seg(['排队', '立即引导'], 0)), R('粘贴长文本时折叠为附件', 'general.paste:>2000 字写入 ~/.minicode/paste 并插 @ 引用,发送时展开 <pasted>(无 chip 展开按钮,未测)', tog(1)))}
       ${G('通知与菜单栏', R('任务完成时通知', '回合结束且 MiniCode 不在前台时发送系统通知', tog(1)), R('需要确认时提醒', '权限请求、提问在后台出现时弹通知', tog(1)), R('通知声音', 'general.sound 控制 UN 通知 / osascript 是否带声(未测试)', seg(['静音', '轻提示'], 1)), R('菜单栏图标', '是否显示、样式、状态徽标与动画都在「外观 → 菜单栏图标」里设置', btn('前往', 'sm', 'arrow', 'data-act="settab" data-tab="appearance"')))}
       ${G('语言', R('界面语言', '目前仅提供简体中文', chip('简体中文', '', 'line')))}` },
 
@@ -104,8 +104,8 @@
       <div class="kb-warn" hidden></div>`; } },
 
     models: { t: '模型与服务商', d: '默认模型与思考强度、上下文压缩,以及第三方模型服务商。密钥单独存放在 0600 权限的文件里。', body: () => `
-      ${G('默认', R('默认模型', '新会话的起始模型;运行中可在输入框运行配置或状态栏里按服务商选模型', `<span class="f g2">${['Fable 5.2', 'Opus 5.5', 'Sonnet 5.5', 'Haiku 5.5'].map((m, k) => chip(m, '', k === 2 ? 'on' : 'line', 'data-act="chip-one" tabindex="0"')).join('')}</span>`), R('默认思考强度', '', seg(['关', '低', '中', '高'], 2)), R('默认开启扩展思考', 'alwaysThinkingEnabled', tog(1)))}
-      ${G('上下文', R('自动压缩', '接近上限时自动 /compact', tog(1)), R('压缩触发阈值', '占用达到该比例时压缩', stp(85, '%', { min: 50, max: 95, step: 5 })), R('输出风格', '', chip('默认', '', 'line')))}
+      ${G('默认', R('默认模型', '新会话的起始模型;运行中可在输入框运行配置或状态栏里按服务商选模型', `<span class="f g2">${['Fable 5.2', 'Opus 5.5', 'Sonnet 5.5', 'Haiku 5.5'].map((m, k) => chip(m, '', k === 2 ? 'on' : 'line', 'data-act="chip-one" tabindex="0"')).join('')}</span>`), R('默认思考强度', '', seg(['关', '低', '中', '高'], 2)), R('默认开启扩展思考', '写 ~/.claude/settings.json alwaysThinkingEnabled(未测试)', tog(1)))}
+      ${G('上下文', R('自动压缩', 'models.compact 空闲时 CmdCompact(未测试)', tog(1)), R('压缩触发阈值', 'models.compactAt;环与弹层同色阶(未测试)', stp(85, '%', { min: 50, max: 95, step: 5 })), R('输出风格', '', chip('默认', '', 'line')))}
       ${typeof PV !== 'undefined' ? PV.providersSection() + PV.mappingBlock() : ''}` },
 
     chat: { t: '对话与提示词', d: '会话流的显示与回合行为,以及追加到系统提示词的内容。', body: () => `

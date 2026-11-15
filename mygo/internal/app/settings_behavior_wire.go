@@ -110,3 +110,28 @@ func (a *App) HandleComposerPaste(text string) bool {
 func stringsHasSuffixNL(s string) bool {
 	return strings.TrimSpace(s) == "" || s[len(s)-1] == '\n'
 }
+
+// expandPasteRefs 发送前把 ~/.minicode/paste 下的 @ 引用展开为 <pasted> 块。
+func (a *App) expandPasteRefs(body string) string {
+	if a == nil || body == "" {
+		return body
+	}
+	pasteDir := filepath.Join(diag.Home(), "paste")
+	var out []string
+	for _, ln := range strings.Split(body, "\n") {
+		raw := strings.TrimSpace(ln)
+		if strings.HasPrefix(raw, "@") {
+			p := strings.TrimPrefix(raw, "@")
+			if rel, err := filepath.Rel(pasteDir, p); err == nil && !strings.HasPrefix(rel, "..") {
+				if b, err := os.ReadFile(p); err == nil {
+					out = append(out, "<pasted>\n"+string(b)+"\n</pasted>")
+					continue
+				}
+			}
+		}
+		if raw != "" {
+			out = append(out, ln)
+		}
+	}
+	return strings.TrimSpace(strings.Join(out, "\n"))
+}

@@ -12,7 +12,12 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
-const ctxCompressThr = 0.85
+func (a *App) ctxWarnRatio() float32 {
+	if a != nil {
+		return a.ContextCompactThreshold()
+	}
+	return 0.85
+}
 
 // ctxState 推断上下文弹层的展示态(设计稿六种状态)。
 func (a *App) ctxState() string {
@@ -39,7 +44,7 @@ func (a *App) ctxState() string {
 	if r >= 0.95 {
 		return "warn"
 	}
-	if r >= ctxCompressThr {
+	if r >= a.ctxWarnRatio() {
 		return "warn"
 	}
 	return "ok"
@@ -50,7 +55,7 @@ func (a *App) ctxRingColor(p float32) ui.Color {
 	if p >= 0.95 {
 		return t.Err
 	}
-	if p >= ctxCompressThr {
+	if p >= a.ctxWarnRatio() {
 		return t.Warn
 	}
 	return t.Ac

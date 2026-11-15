@@ -233,7 +233,7 @@ func (a *App) submitPrompt(text string, steer bool) {
 			imgs = append(imgs, abs)
 		}
 	}
-	body = strings.TrimSpace(body)
+	body = strings.TrimSpace(a.expandPasteRefs(body))
 	if body == "" && len(imgs) == 0 {
 		return
 	}
