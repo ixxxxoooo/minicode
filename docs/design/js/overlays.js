@@ -45,9 +45,11 @@
 
   /* ───────── 会话流补充 ───────── */
   const msgSec = sec('会话流补充', '长消息折叠、编辑、回合折叠、回退文件、图表卡与附件;都沿用步骤行栅格与卡片层级。',
-    g3(spec('用户消息吸顶 · 滚动试试(第 2 条提问已固定在顶部)', ['.msg-u', '.stuck', 'position: sticky'], F.stickyDemo({ init: 330 })),
-      spec('用户消息吸顶 · 长消息(固定时仍折叠为 6 行)', ['.msg-u.clamp', '.stuck'], F.stickyDemo({ init: 330, long: 1 })),
-      spec('用户消息吸顶 · 关闭后', ['body.no-sticky-user', '设置 → 对话与提示词'], F.stickyDemo({ init: 330 }).replace('class="sdemo"', 'class="sdemo no-sticky-user"')),
+    g3(spec('用户消息吸顶 · 滚动试试', ['.round', 'position: sticky', '.stuck'], F.stickyDemo({ init: 330 })),
+      spec('吸顶 · 下一条顶上来,上一条被顶走', ['.round', '始终最多一张', '--dur-base'], F.stickyDemo({ init: 'push' })),
+      spec('吸顶 · 长消息固定时仍折叠为 6 行', ['.msg-u.clamp', '.stuck'], F.stickyDemo({ init: 330, long: 1 })),
+      spec('点击提问卡 · 就地编辑(固定时同样可以)', ['.msg-u.editing', '.ed-acts', '取消 / 发送'], F.stickyDemo({ init: 330, edit: 1, h: 330 })),
+      spec('吸顶 · 关闭后(设置 → 对话与提示词)', ['.no-sticky-user'], F.stickyDemo({ init: 330 }).replace('class="sdemo"', 'class="sdemo no-sticky-user"')),
       spec('长消息 · 折叠为 6 行', ['.msg-u', '.fade', '--dur-slow'], `<div class="msg-u clamp">请按下面的清单逐项处理:<br>1. 把 normalize 抽到单独的模块<br>2. 补 4 条大小写用例<br>3. 修复 CI 里失败的 clippy 警告<br>4. 更新 README 的路由示例<br>5. 把 fallback 逻辑改成显式配置<br>6. 清理未使用的依赖<br>7. 补充发布说明<div class="fade"></div></div><div class="f ai g2 t3 fs-cap" style="margin-top:6px">${ic('chevD', 's12')}展开 · 共 14 行</div>`),
       spec('编辑已发送的消息', ['.dockcard', '.on-out'], `<div class="dockcard" style="box-shadow:0 0 0 1px var(--bd-3),var(--sh-2)"><div class="cmp-in v" style="padding:0">把 normalize 抽到单独的模块,并补 4 条大小写用例</div><div class="f ai g3"><span class="t3 fs-cap">发送后会回退这一轮之后的文件改动</span><span class="grow"></span>${btn('取消', 'sm ghost')}${btn('发送', 'sm pri')}</div></div>`),
       spec('回合折叠 · 已处理', ['.step', '--tx-3'], `${F.step('group', '1 分 13 秒', '3 步 · 2 个文件', '', { verb: '已处理', body: `<div class="nest">${F.step('read', 'router.rs', 'src/', '86 行')}${F.step('edit', 'router.rs', 'src/', '<span class="c-ok">+4</span>')}</div>` })}<div class="t4 fs-cap" style="padding:6px 0 0 22px">点开查看本回合的全部步骤</div>`),

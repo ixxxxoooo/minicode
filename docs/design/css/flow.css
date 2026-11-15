@@ -125,14 +125,27 @@
 .ctx-skel .skel { display: block; }
 .ctx-foot { padding-top: 7px; box-shadow: inset 0 1px var(--bd-1); margin: 0 -12px -4px; padding-inline: 12px 8px; }
 
-/* ───────── 用户消息吸顶(见 js/sticky.js):提问卡 sticky 固定在会话流顶部,下一条提问从下方盖住并接替 ───────── */
-.flow .msg-u { position: sticky; top: 0; z-index: 4; }
+/* ───────── 用户消息吸顶 + 就地编辑(见 js/sticky.js,对标 Cursor)
+   回合 .round 是 sticky 的包含块:卡片固定到回合结束,下一回合顶上来时随回合一起被顶走,任何时刻最多固定一张。 ───────── */
+.round { display: flex; flex-direction: column; gap: 8px; } .round + .round { margin-top: 10px; } [data-scheme="c"] .round { gap: 6px; }
+.flow .msg-u { position: sticky; top: 0; z-index: 4; cursor: text; transition: box-shadow var(--dur-base) var(--ease-out), background var(--dur-base); }
+.flow .msg-u:hover { box-shadow: var(--sh-1), inset 0 0 0 1px var(--bd-3); }
+.flow .msg-u::before { content: "编辑"; position: absolute; right: 7px; top: 6px; padding: 0 6px; border-radius: var(--r-xs); background: var(--fill-1); color: var(--tx-3); font-size: 10.5px; line-height: 17px; opacity: 0; transition: opacity var(--dur-fast); pointer-events: none; }
+.flow .msg-u:hover::before { opacity: 1; } .flow .msg-u.editing::before { display: none; }
 .flow .msg-u.stuck { box-shadow: var(--sh-2), inset 0 0 0 1px var(--bd-1); }
-.flow .msg-u.stuck::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 14px; background: linear-gradient(var(--bg), transparent); pointer-events: none; border-radius: 0; }
+.flow .msg-u::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 14px; background: linear-gradient(var(--bg), transparent); pointer-events: none; opacity: 0; transition: opacity var(--dur-base) var(--ease-out); }
+.flow .msg-u.stuck::after { opacity: 1; }
 /* 吸顶卡必须不透明:方案 B / C 的底色是半透明叠色,垫一层 --bg */
 [data-scheme="b"] .flow .msg-u { background: linear-gradient(var(--ac-soft), var(--ac-soft)), var(--bg); }
 [data-scheme="c"] .flow .msg-u { background: linear-gradient(var(--fill-1), var(--fill-1)), var(--bg); }
-/* 开启吸顶时,会话流顶部不再做淡出遮罩(卡片贴着顶边) */
+/* 开启吸顶时,会话流顶部不再做淡出遮罩(卡片贴着顶边);工作页的 .it 包装不参与包含块 */
 body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 16px), transparent); }
+.flow > .it:has(> .msg-u) { display: contents; }
 .no-sticky-user .flow .msg-u { position: static; } .no-sticky-user .flow .msg-u::after { display: none; }
+/* 编辑态:同一张卡就地变形(高度补间在 JS 里),强调描边 + 提升层级;长消息的 6 行限高解除 */
+.flow .msg-u.morph { transition: height var(--dur-base) var(--ease-out), box-shadow var(--dur-base); overflow: hidden; }
+.flow .msg-u.editing { cursor: default; max-height: none; box-shadow: 0 0 0 1px var(--ac-line), var(--sh-2); }
+.msg-u textarea.ed { display: block; width: 100%; resize: none; border: 0; outline: none; background: transparent; padding: 0; margin: 0; font: inherit; line-height: 1.55; color: var(--tx-1); }
+.msg-u .ed-acts { display: flex; align-items: center; gap: 8px; margin-top: 7px; padding-top: 7px; box-shadow: inset 0 1px var(--bd-1); }
+.su-note { margin-top: -2px; }
 .sdemo { border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--bd-1); background: var(--bg); overflow: hidden; } .sdemo .flow-wrap { overflow: auto; }
