@@ -206,7 +206,7 @@ func (d *ide) findRefs(word string) []refItem {
 			continue
 		}
 		for i, ln := range strings.Split(src, "\n") {
-			for _, c := range wordHits(ln, word) {
+			for _, c := range wordHits(codePart(ln), word) {
 				out = append(out, refItem{p, i, c, strings.TrimSpace(ln)})
 				if len(out) >= 500 {
 					return out
@@ -215,6 +215,20 @@ func (d *ide) findRefs(word string) []refItem {
 		}
 	}
 	return out
+}
+
+// codePart 去掉一行里的注释部分:整行注释返回空,行尾的 `//` 注释截掉;`package x` 声明行也不算引用。
+// 只是启发式(不认字符串里的 `//`),用于本地索引的引用计数,语言服务器在线时以它为准。
+func codePart(ln string) string {
+	t := strings.TrimSpace(ln)
+	switch {
+	case t == "", strings.HasPrefix(t, "//"), strings.HasPrefix(t, "/*"), strings.HasPrefix(t, "* "), t == "*", strings.HasPrefix(t, "# "), strings.HasPrefix(t, "package "):
+		return ""
+	}
+	if i := strings.Index(ln, " //"); i >= 0 && !strings.Contains(ln[:i], `"`) && !strings.Contains(ln[:i], "`") {
+		return ln[:i]
+	}
+	return ln
 }
 
 // refsState 是底部「引用」分段的内容。

@@ -45,7 +45,13 @@ func (a *App) codeLens(c *ui.Context, tb *ideTab) {
 		if y < codelensTop-lineH || s.Line < first || s.Line > last {
 			continue
 		}
-		n := len(a.ide.findRefs(s.Name))
+		n := 0
+		for _, r := range a.ide.findRefs(s.Name) {
+			if r.path == tb.path && r.line == s.Line { // 声明行自己不算引用
+				continue
+			}
+			n++
+		}
 		lbl := itoa(n) + " 个引用"
 		if tc := a.testsForSymbol(tb, s); tc > 0 {
 			lbl += " · " + itoa(tc) + " 测试"
