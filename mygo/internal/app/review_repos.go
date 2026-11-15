@@ -381,6 +381,7 @@ func (a *App) demoRepoFiles() []chFile {
 
 // fileDispDir 审查文件头里显示的目录:多根时去掉文件夹的绝对前缀,只留仓库内目录。
 func (a *App) fileDispDir(p string) string {
+	p = a.shortPath(p) // 单项目:绝对路径先换成相对项目根,标题里不再露出 /private/tmp/… 这类长前缀
 	if i := a.repoIdxOfFile(p); i >= 0 {
 		p = strings.TrimPrefix(p, a.repos[i].dir+"/")
 	}
