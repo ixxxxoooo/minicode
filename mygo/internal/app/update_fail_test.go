@@ -41,3 +41,26 @@ func TestRunnerRunIsSynchronous(t *testing.T) {
 		t.Fatalf("同步返回时应已走到「已是最新」,实际 %+v", got)
 	}
 }
+
+// 检查更新刚开始时界面应显示「检查更新…」,而不是「发现新版本」。
+func TestRunnerRunStartsAsChecking(t *testing.T) {
+	var first *update.Progress
+	r := &update.Runner{
+		Fetch:      update.DemoFetcher{Version: "9.9.9"},
+		CurrentVer: "9.9.9",
+		OnProgress: func(p update.Progress) {
+			if first == nil {
+				first = &p
+			}
+		},
+	}
+	r.Run(t.Context())
+	if first == nil || first.Phase != update.PhaseNone {
+		t.Fatalf("开头应发 PhaseNone(检查中),实际 %+v", first)
+	}
+	a := &App{}
+	a.onUpdateProgress(*first)
+	if a.updSt.Phase != updChecking {
+		t.Fatalf("界面应进入「检查中」,实际阶段 %v", a.updSt.Phase)
+	}
+}

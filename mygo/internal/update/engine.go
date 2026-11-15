@@ -120,7 +120,8 @@ func (r *Runner) Start(ctx context.Context) {
 // Run 同步执行整个流程(调用方已在后台线程里):返回时 ctx 才可以取消。
 // 用 Start 的调用方若在返回后立刻 cancel(),整个检查会被自己取消。
 func (r *Runner) Run(ctx context.Context) {
-	r.emit(Progress{Phase: PhaseDownload, Percent: 0, Version: r.CurrentVer})
+	// 开头只表示「在检查」:不能发下载进度,否则界面会把它当成「发现新版本」(版本号还是当前版本)
+	r.emit(Progress{Phase: PhaseNone, Version: r.CurrentVer})
 	r.run(ctx)
 }
 
