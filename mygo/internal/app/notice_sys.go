@@ -14,8 +14,9 @@ func (a *App) maybeSystemNotify(title, body, sessID string) {
 	}
 	sessID = strings.TrimSpace(sessID)
 	t, b, sid := title, body, sessID
+	sound := a.notifySoundOn()
 	a.bg("system-notify", func() func() {
-		return func() { a.notifyMacNative(t, b, sid) }
+		return func() { a.notifyMacNative(t, b, sid, sound) }
 	})
 }
 
@@ -56,6 +57,7 @@ func (a *App) onTurnFinished() {
 		body = "可以查看结果"
 	}
 	a.postNotice("ok", title, body, nil)
+	a.playTurnDing()
 	a.maybeSystemNotify(title, body, a.curSess)
 }
 

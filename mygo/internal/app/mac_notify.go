@@ -8,8 +8,17 @@ import (
 // macNotifyApp 由 maybeSystemNotify 在发送前设置,供平台实现读取。
 var macNotifyApp *App
 
+func (a *App) notifyOSAScriptSilent(title, body string) {
+	script := `display notification "` + escOSA(body) + `" with title "` + escOSA(title) + `" subtitle "MiniCode" sound name ""`
+	a.runOSA(script)
+}
+
 func (a *App) notifyOSAScript(title, body string) {
 	script := `display notification "` + escOSA(body) + `" with title "` + escOSA(title) + `" subtitle "MiniCode"`
+	a.runOSA(script)
+}
+
+func (a *App) runOSA(script string) {
 	a.bg("osascript-notify", func() func() {
 		err := exec.Command("osascript", "-e", script).Run()
 		return func() {
@@ -20,10 +29,10 @@ func (a *App) notifyOSAScript(title, body string) {
 	})
 }
 
-func (a *App) notifyMacNative(title, body, sessID string) {
+func (a *App) notifyMacNative(title, body, sessID string, sound bool) {
 	macNotifyApp = a
 	initMacNotifyBundle()
-	postMacNotification(title, body, sessID)
+	postMacNotification(title, body, sessID, sound)
 }
 
 // OpenSessionFromNotify 供未来原生通知点击回调跳到会话。

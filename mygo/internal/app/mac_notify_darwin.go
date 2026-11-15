@@ -37,19 +37,27 @@ func installMacNotifyDelegate() bool {
 	return ok
 }
 
-func postMacNotification(title, body, sessID string) {
+func postMacNotification(title, body, sessID string, sound bool) {
 	if macNotifyApp == nil {
 		return
 	}
 	if !macNotifyBundle {
-		macNotifyApp.notifyOSAScript(title, body)
+		if sound {
+			macNotifyApp.notifyOSAScript(title, body)
+		} else {
+			macNotifyApp.notifyOSAScriptSilent(title, body)
+		}
 		return
 	}
 	ct, cb, cs := C.CString(title), C.CString(body), C.CString(sessID)
 	defer C.free(unsafe.Pointer(ct))
 	defer C.free(unsafe.Pointer(cb))
 	defer C.free(unsafe.Pointer(cs))
-	C.mc_post_notify(ct, cb, cs)
+	snd := 0
+	if sound {
+		snd = 1
+	}
+	C.mc_post_notify(ct, cb, cs, C.int(snd))
 }
 
 var macNotifyBundle bool

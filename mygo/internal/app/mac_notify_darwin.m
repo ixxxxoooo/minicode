@@ -63,7 +63,7 @@ static void mc_go_notify_open(const char *sess) {
   goMCNotifySession((char *)sess);
 }
 
-void mc_post_notify(const char *title, const char *body, const char *sess) {
+void mc_post_notify(const char *title, const char *body, const char *sess, int playSound) {
   if (@available(macOS 10.14, *)) {
     if (!mc_bundle_app) {
       return;
@@ -71,7 +71,9 @@ void mc_post_notify(const char *title, const char *body, const char *sess) {
     UNMutableNotificationContent *c = [UNMutableNotificationContent new];
     c.title = [NSString stringWithUTF8String:title];
     c.body = [NSString stringWithUTF8String:body];
-    c.sound = [UNNotificationSound defaultSound];
+    if (playSound) {
+      c.sound = [UNNotificationSound defaultSound];
+    }
     if (sess && sess[0]) {
       c.userInfo = @{@"sess": [NSString stringWithUTF8String:sess]};
       c.categoryIdentifier = @"minicode.session";
