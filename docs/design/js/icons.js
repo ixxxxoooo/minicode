@@ -93,6 +93,7 @@
     wrap: '<path d="M4 6h16M4 12h12.5a3 3 0 0 1 0 6H12M14.5 15.5 12 18l2.5 2.5M4 18h4"/>',
     align: '<path d="M4 6h16M4 10.5h10M4 15h16M4 19.5h10"/>',
     arrowL: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+    arrowDown: '<path d="M12 5v14M6 13l6 6 6-6"/>',
     quote: '<path d="M10 7H6.5A1.5 1.5 0 0 0 5 8.5V12a1.5 1.5 0 0 0 1.5 1.5H9V15a2 2 0 0 1-2 2M19 7h-3.5A1.5 1.5 0 0 0 14 8.5V12a1.5 1.5 0 0 0 1.5 1.5H18V15a2 2 0 0 1-2 2"/>',
     ret: '<path d="M19 6v6a2 2 0 0 1-2 2H6M10 10l-4 4 4 4"/>',
     diff: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v6M9 11h6M9 16.5h6"/>',

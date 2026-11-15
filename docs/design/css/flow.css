@@ -159,3 +159,40 @@ body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 
 [data-flow="wide"] .flow .msg-u:hover { box-shadow: var(--sh-1), inset 0 0 0 1px var(--bd-3); }
 [data-flow="wide"] .flow .msg-u.stuck { box-shadow: var(--sh-2), inset 0 0 0 1px var(--bd-1); }
 [data-flow="wide"] .flow .msg-u.editing { box-shadow: 0 0 0 1px var(--ac-line), var(--sh-2); }
+
+/* 待发送区(排队 / 引导共用,在输入框正上方) */
+.queue .qh { display: flex; align-items: center; gap: 8px; padding: 2px 6px 3px; color: var(--tx-3); font-size: var(--fs-cap); }
+.queue .qh b { color: var(--tx-2); font-weight: 600; }
+.queue .row { display: flex; align-items: center; gap: 8px; min-height: 26px; padding: 0 6px; border-radius: var(--r-sm); transition: background var(--dur-fast); }
+.queue .row:hover { background: var(--fill-1); }
+.queue .row .acts { display: none; gap: 1px; flex: none; } .queue .row:hover .acts { display: flex; }
+.queue .qk { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 17px; padding: 0 6px; border-radius: 9px; font-size: 11px; background: var(--fill-2); color: var(--tx-2); }
+.queue .row.steer .qk { background: var(--ac-soft); color: var(--ac-tx); }
+.queue .row.steer .qs { color: var(--tx-3); font-size: var(--fs-cap); flex: none; display: inline-flex; align-items: center; gap: 5px; }
+.queue .row.sent { opacity: 0; transform: translateY(-4px); transition: opacity var(--dur-base), transform var(--dur-base); }
+.queue .qwarn { display: flex; align-items: center; gap: 6px; padding: 2px 6px; }
+
+/* 提问卡:多题步骤条 + 上一题 / 下一题 */
+.qa-steps { display: flex; gap: 4px; flex-wrap: wrap; }
+.qa-step { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 11.5px; color: var(--tx-2); box-shadow: inset 0 0 0 1px var(--bd-2); cursor: default; max-width: 160px; transition: background var(--dur-fast), box-shadow var(--dur-fast); }
+.qa-step .n { font-variant-numeric: tabular-nums; color: var(--tx-3); } .qa-step span.ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qa-step:hover { background: var(--fill-1); } .qa-step.cur { background: var(--ac-soft); box-shadow: inset 0 0 0 1.5px var(--ac); color: var(--tx-1); }
+.qa-step.done .n { color: var(--ok); }
+.qa[data-cur="0"] .qp:not([data-i="0"]), .qa[data-cur="1"] .qp:not([data-i="1"]) { display: none; }
+.qa[data-cur="0"] [data-act="qa-go"][data-d="-1"] { opacity: .4; pointer-events: none; }
+.qa[data-cur="0"] .qa-last, .qa[data-cur="1"] .qa-next { display: none; }
+
+/* 已回答的提问:会话流里的卡片 */
+.qa-done { background: var(--bg-raised); border-radius: var(--r-md); box-shadow: var(--sh-1); padding: 8px 11px; display: flex; flex-direction: column; gap: 7px; }
+.qa-done .hd { display: flex; align-items: center; gap: 7px; font-weight: var(--fw-bold); }
+.qa-done .qr { display: flex; flex-direction: column; gap: 3px; }
+.qa-done .qq { color: var(--tx-2); } .qa-done .qq .n { color: var(--tx-4); font-variant-numeric: tabular-nums; margin-right: 5px; }
+.qa-done .qa-a { display: flex; flex-wrap: wrap; gap: 4px; padding-left: 16px; }
+.qa-done .ans { display: inline-flex; align-items: center; gap: 4px; min-height: 20px; padding: 1px 8px; border-radius: 10px; background: var(--ac-soft); color: var(--tx-1); line-height: 1.45; }
+.qa-done .ans.skip { background: var(--fill-1); color: var(--tx-3); }
+.qa-done .ans.free { border-radius: var(--r-sm); }
+
+/* 回到最新:输入框正上方居中的圆形按钮 */
+.to-latest { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--bg-raised); color: var(--tx-2); box-shadow: inset 0 0 0 1px var(--bd-2), var(--sh-2); cursor: default; transition: background var(--dur-fast), color var(--dur-fast), transform var(--dur-fast) var(--ease-out); z-index: 5; }
+.to-latest:hover { background: var(--fill-2); color: var(--tx-1); transform: translateX(-50%) translateY(-1px); }
+.to-latest.fresh::after { content: ''; position: absolute; top: 3px; right: 3px; width: 7px; height: 7px; border-radius: 50%; background: var(--ac); box-shadow: 0 0 0 2px var(--bg-raised); }
