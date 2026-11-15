@@ -4,8 +4,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-
-	"github.com/egoist/mygo/ui/editor"
 )
 
 // parsePathLine 从命令面板查询解析「路径:行[:列]」。相对路径无盘符,只认最后一个「:数字」后缀。
@@ -63,27 +61,21 @@ func (a *App) openFileAtLine(p string, line, col int) {
 	a.ide.sel = p
 }
 
-// gotoLineInCurrent 转到当前标签的某行(超界夹到末行),并选中整行。
-func (a *App) gotoLineInCurrent(line int) {
+// gotoLineInCurrent 转到当前标签的某行与列(0 起);超界夹到末行,列夹到行尾。
+func (a *App) gotoLineInCurrent(line, col int) {
 	tb := a.ide.cur()
 	if tb == nil || tb.st == nil || tb.buf == nil || tb.diff || tb.virt != "" {
 		a.toast = "先打开一个文件"
 		return
 	}
 	n := tb.buf.LineCount()
-	if n < 1 {
+	clamped, ok := a.jumpToLineCol(tb, line, col)
+	if !ok {
 		return
 	}
-	if line < 0 {
-		line = 0
+	if clamped {
+		a.toast = "共 " + itoa(n) + " 行,已跳到末行"
 	}
-	if line >= n {
-		line = n - 1
-	}
-	ln := tb.buf.Line(line)
-	p0 := editor.Pos{Line: line, Col: 0}
-	tb.st.GoTo(p0)
-	tb.st.Select(tb.buf.Offset(p0), tb.buf.Offset(editor.Pos{Line: line, Col: len(ln)}))
 }
 
 // paletteGotoLine 处理命令面板里的「:行号」或带路径的 :行号打开项。
@@ -98,12 +90,7 @@ func (a *App) paletteGotoLine(q string) bool {
 			a.toast = "先打开要编辑的文件"
 			return true
 		}
-		a.gotoLineInCurrent(line)
-		if col > 0 {
-			p0 := editor.Pos{Line: line, Col: col}
-			tb.st.GoTo(p0)
-			tb.st.Select(tb.buf.Offset(p0), tb.buf.Offset(p0))
-		}
+		a.gotoLineInCurrent(line, col)
 		return true
 	}
 	a.openFileAtLine(p, line, col)

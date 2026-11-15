@@ -49,7 +49,10 @@ type ideTab struct {
 	md     *mdState // Markdown 所见即所得的状态(edit_md.go)
 	mdMode int8     // Markdown 视图:0 跟随偏好,mdWysiwyg / mdSource = 在标签上手动选的
 
-	extBanner bool // 磁盘上文件已变且本地有未保存修改
+	extBanner  bool // 磁盘上文件已变且本地有未保存修改
+	extKeep    bool // 用户选择保留编辑器版本
+	extOrphan  bool // 文件在磁盘上已不存在
+	extDeleted bool // 用户确认已删除
 }
 
 func (t *ideTab) dirty() bool { return !t.diff && t.buf != nil && t.buf.String() != t.saved }
@@ -123,8 +126,10 @@ type ide struct {
 	filesCache []string                     // allFiles 的缓存
 	listCache  map[string][]workspace.Entry // 目录列表缓存
 
-	diskSnaps  map[string]diskSnap // 已打开文件的磁盘快照(外部修改检测)
-	extmodLast time.Time
+	diskSnaps   map[string]diskSnap // 已打开文件的磁盘快照(外部修改检测)
+	extmodLast  time.Time
+	extmodFocus bool
+	extmodAlert map[string]diskSnap // 已提示过的外部修改(同一快照不再弹)
 }
 
 // termLine 是终端面板里的一行(带色段)。

@@ -25,12 +25,24 @@ func TestParsePathLine(t *testing.T) {
 	}
 }
 
+func TestParseLineColInvalid(t *testing.T) {
+	for _, s := range []string{"", "foo", ":", "12:", "12:0", ":5"} {
+		if _, _, ok := parseLineCol(s); ok {
+			t.Fatalf("%q 应解析失败", s)
+		}
+	}
+	line, col, ok := parseLineCol("42:8")
+	if !ok || line != 41 || col != 7 {
+		t.Fatalf("42:8 => %d,%d,%v", line, col, ok)
+	}
+}
+
 func TestGotoLineClamp(t *testing.T) {
 	a := New(Options{Mode: ModeIDE})
 	a.ide.openFile("src/router.rs", true)
 	tb := a.ide.cur()
 	lines := tb.buf.LineCount()
-	a.gotoLineInCurrent(9999)
+	a.gotoLineInCurrent(9999, 0)
 	if p := tb.st.CursorPos(); p.Line != lines-1 {
 		t.Fatalf("超界应夹到末行 %d, got %d", lines-1, p.Line)
 	}
