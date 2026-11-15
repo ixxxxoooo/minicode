@@ -404,8 +404,8 @@ var settingsTabs = []setTabDef{
 		{title: "claude 命令行", body: func(a *App, c *ui.Context) { a.claudeCmdRow(c) }},
 		{title: "代理与网络", rows: []setRow{
 			rSeg("runtime.proxy", "代理模式", "跟随系统:沿用继承的 HTTP(S)_PROXY;直连:清空代理变量", 0, "跟随系统", "直连", "自定义"),
-			rFld("runtime.proxyUrl", "代理地址", "写入 HTTP_PROXY、HTTPS_PROXY、ALL_PROXY", "http://127.0.0.1:7890", 200, true, ""),
-			rFld("runtime.noProxy", "绕过代理", "NO_PROXY:这些主机直连", "localhost,127.0.0.1", 200, true, ""),
+			rFld("runtime.proxyUrl", "代理地址", "写入 HTTP_PROXY、HTTPS_PROXY、ALL_PROXY", "", 200, true, "例如 http://127.0.0.1:7890"),
+			rFld("runtime.noProxy", "绕过代理", "NO_PROXY:这些主机直连", "", 200, true, "例如 localhost,127.0.0.1"),
 			rFld("runtime.timeout", "请求超时(秒)", "API_TIMEOUT_MS;留空为 claude 默认", "", 90, false, "默认"),
 		}},
 		{title: "环境变量(只显示变量名,值已遮盖)", body: func(a *App, c *ui.Context) { a.envBody(a, c) }},
@@ -464,7 +464,7 @@ var settingsTabs = []setTabDef{
 			rTog("term.nerdFallback", "无 Nerd Font 时回退系统等宽", "图标显示成方框时可开启", true),
 		}},
 		{title: "Shell", rows: []setRow{
-			rFld("term.shell", "Shell 程序", "留空使用环境变量 $SHELL;失焦或回车应用", "/bin/zsh", 160, true, ""),
+			rFld("term.shell", "Shell 程序", "留空使用环境变量 $SHELL;失焦或回车应用", "", 160, true, "跟随 $SHELL"),
 			rTog("term.login", "登录 shell", "", true),
 			rTog("term.cwd", "在项目目录启动", "", true),
 			rTog("term.shellIntegration", "Shell 集成 (OSC 133)", "命令成败装饰与点击复制输出;关闭后不再自动 source 集成脚本", true),
