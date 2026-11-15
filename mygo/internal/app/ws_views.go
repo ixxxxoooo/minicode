@@ -148,7 +148,11 @@ func (a *App) subView(c *ui.Context, id string) {
 			})
 		}
 	})
-	ui.Scroll(c).Key("subview-" + id).Grow(1).MinHeight(0).Children(func() {
+	st := &a.subSt
+	if run {
+		st.Y = 1e9
+	}
+	ui.Scroll(c).Key("subview-" + id).TrackScroll(st).Grow(1).MinHeight(0).Children(func() {
 		ui.Column(c).Padding(14, 18, 20, 18).Gap(10).MaxWidth(720).Children(func() {
 			wsSection(c, t, "任务")
 			ui.Column(c).Padding(8, 12).Background(t.Sunken).Radius(t.RMd()).Border(1, t.Bd1).Children(func() {

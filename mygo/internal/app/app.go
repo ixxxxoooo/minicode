@@ -223,6 +223,7 @@ type App struct {
 	cw              *commitWizard       // 「逐个提交」向导(nil = 没有进行中的)
 	taskSt          ui.ScrollState      // 任务输出标签的滚动
 	taskNoFollow    bool                // 任务输出:关闭「跟随输出」
+	subSt           ui.ScrollState      // 子 Agent 标签「过程」区滚动
 	q               promptQueue         // 排队的消息
 	qa              map[string]*qaState // 提问向导的本地进度
 

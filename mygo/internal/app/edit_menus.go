@@ -95,6 +95,14 @@ func (a *App) tabStripMenu(m *ui.Menu) {
 	if m.Item("重新打开已关闭的标签").Trailing("⇧⌘T").Disabled(len(d.closed) == 0).Chosen() {
 		a.reopenClosed()
 	}
+	m.Separator()
+	if m.Item("向右拆分").Trailing("⌘\\").Chosen() {
+		a.splitEditor(1)
+	}
+	if m.Item("向下拆分").Chosen() {
+		a.splitEditor(2)
+	}
+	m.Separator()
 	if m.Item("复制所有标签路径").Disabled(len(d.tabs) == 0).Chosen() {
 		var ps []string
 		for _, tb := range d.tabs {
@@ -159,6 +167,11 @@ func (a *App) tabMenu(m *ui.Menu, tb *ideTab) {
 	a.pathMenu(m, tb.path)
 	if m.Item("在文件树中定位").Chosen() {
 		a.revealInTree(tb.path)
+	}
+	m.Separator()
+	proj := a.proj
+	if m.Item("在新窗口中打开").Disabled(proj == "").Tooltip(map[bool]string{true: "演示模式没有真实项目目录"}[proj == ""]).Chosen() {
+		a.SpawnNewWindow(proj)
 	}
 }
 
@@ -293,10 +306,8 @@ func (a *App) treeHeadMenu(m *ui.Menu) {
 
 const noBackend = "后端暂未支持"
 
-const noFork = "分叉后端尚未接入(internal/claude/fork.go)"
-
 // sessionMenu 是会话的「···」/ 右键菜单(导航栏会话行与对话栏头部共用)。
-// 重命名 / 置顶 / 归档 / 复制为 Markdown / 删除见 session_meta.go;分叉 / 复制链接:后端没有对应命令,置灰并写明原因。
+// 重命名 / 置顶 / 归档 / 复制为 Markdown / 删除见 session_meta.go;分叉走 CmdForkSession(演示 / 真实均已接)。
 func (a *App) sessionMenu(m *ui.Menu, id, title string, inHead bool) {
 	fresh := id == "" || strings.HasPrefix(id, "new:") // 新会话还没有 id,没有可整理的对象
 	meta := a.sessMeta().Get(id)
@@ -331,8 +342,12 @@ func (a *App) sessionMenu(m *ui.Menu, id, title string, inHead bool) {
 		if m.Item("复制会话链接").Disabled(fresh).Tooltip(noID).Chosen() {
 			a.copySessionLink(id)
 		}
-		forkOff := fresh || a.sessFork == nil
-		if m.Item("分叉会话…").Disabled(forkOff).Tooltip(map[bool]string{true: noFork, false: ""}[a.sessFork == nil]).Chosen() {
+		run := a.sessionRunning(id)
+		forkWhy := map[bool]string{true: noID}[fresh]
+		if forkWhy == "" && run {
+			forkWhy = "会话正在运行,先停止或等它结束再分叉"
+		}
+		if m.Item("分叉会话…").Disabled(fresh || run).Tooltip(forkWhy).Chosen() {
 			a.forkSessionAsk(id)
 		}
 		if m.Item("历史会话").Trailing("⇧⌘H").Chosen() {

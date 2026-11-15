@@ -56,6 +56,7 @@ func (a *App) brandAppStylePick(c *ui.Context) {
 			if ch.Clicked() {
 				a.prefs.Set(pAppStyle, i)
 				setLog.Info("选择应用图标样式", "style", name)
+				a.syncBrand()
 			}
 			_ = t
 		}
@@ -93,6 +94,7 @@ func (a *App) brandTintPick(c *ui.Context) {
 				} else {
 					a.prefs.Set(pAppTint, i)
 				}
+				a.syncBrand()
 			}
 		}
 	})
@@ -111,7 +113,7 @@ func brandAppBody(a *App, c *ui.Context) {
 	ui.Column(c).Padding(10, 12).Gap(6).Children(func() {
 		a.brandPreviewDock(c)
 	})
-	a.settingsRow(c, setRow{key: pAppStyle, title: "图标样式", desc: "六选一;小尺寸自动换粗织纹(预览即时生效,Dock 换装待接)", kind: kNone, right: func(a *App, c *ui.Context) {
+	a.settingsRow(c, setRow{key: pAppStyle, title: "图标样式", desc: "六选一;有对应 icns 时换 Dock,否则保持包内默认织纹", kind: kNone, right: func(a *App, c *ui.Context) {
 		ui.Column(c).Gap(6).Children(func() {
 			ui.Text(c, appStyles[a.prefs.Int(pAppStyle, 0)]).FontWeight(600).TextColor(a.tk.Tx2)
 			a.brandAppStylePick(c)
