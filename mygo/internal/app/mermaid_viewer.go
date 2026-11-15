@@ -91,4 +91,3 @@ func (a *App) mermaidViewerOverlay(c *ui.Context) {
 		v.open = false
 	}
 }
-
