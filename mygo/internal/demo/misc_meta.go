@@ -31,6 +31,9 @@ func SessMetaPresets() []SessMetaPreset {
 
 // ApplySessMeta 把预置写入 sessmeta 存储。
 func ApplySessMeta(m *sessmeta.Store) {
+	if !sandboxExtras { // 默认侧栏与设计稿 work 页一致(无置顶 / 改名 / 归档);整理态随压力开关
+		return
+	}
 	for _, p := range SessMetaPresets() {
 		if p.Title != "" {
 			_ = m.SetTitle(p.ID, p.Title)

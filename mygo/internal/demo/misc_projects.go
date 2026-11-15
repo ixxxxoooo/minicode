@@ -18,6 +18,9 @@ import (
 
 // ExtraProjects 返回附加的侧栏项目(合并进 Projects,位于 scenario 合并之前)。
 func ExtraProjects() []core.ProjectInfo {
+	if !sandboxExtras { // 默认只留设计稿里的四个项目;压力项目随压力开关(MINI_DEMO_STRESS=1)
+		return nil
+	}
 	out := []core.ProjectInfo{
 		megaProject(),
 		longPathProject(),
@@ -159,6 +162,9 @@ func statusLabProject() core.ProjectInfo {
 
 // RegistryManualProjects 手动添加、无 Claude 会话的项目路径(进 registry.Projects)。
 func RegistryManualProjects() []string {
+	if !sandboxExtras {
+		return nil
+	}
 	return []string{
 		"/demo/empty-lab",
 	}
