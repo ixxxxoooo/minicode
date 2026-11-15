@@ -77,8 +77,11 @@ func turnEndRound(rest []core.Item, i int, uid string) (string, bool) {
 }
 
 func (a *App) flowRound(c *ui.Context, u *core.User, rest []core.Item) {
-	ui.Column(c).Key("round-" + u.ID).Gap(8).AlignItems(ui.Stretch).Children(func() {
-		a.userMsg(c, u)
+	round := ui.Column(c).Key("round-" + u.ID).Gap(8).AlignItems(ui.Stretch)
+	// 上一帧回合的顶边:提问卡的顶边比它低,说明正被吸顶(Bounds 是上一帧的矩形,第一帧为空)。
+	roundTop := round.Bounds()
+	round.Children(func() {
+		a.userMsg(c, u, roundTop)
 		for i := 0; i < len(rest); {
 			last := i
 			if isStepItem(rest[i]) {
@@ -137,7 +140,7 @@ func (a *App) beginUserEdit(u *core.User) {
 
 func (a *App) cancelUserEdit() { a.userEd = userEdit{} }
 
-func (a *App) userMsg(c *ui.Context, u *core.User) {
+func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 	t := a.tk
 	style := a.prefs.Int(pFlowStyle, 0)
 	sticky := a.prefs.Bool(pStickyUser, true)
@@ -150,27 +153,48 @@ func (a *App) userMsg(c *ui.Context, u *core.User) {
 		return
 	}
 	card := ui.ButtonBase(c).Key("user-"+u.ID).Background(t.Raised).Radius(t.RMd()).Padding(7, 11).AlignItems(ui.Stretch).Vertical()
+	// 正被吸顶:上一帧提问卡的顶边比所属回合的顶边低(设计稿 .msg-u.stuck)。
+	stuck := false
 	if sticky {
 		card = card.Sticky().Top(0).ZIndex(2)
+		if b := card.Bounds(); b.H > 0 && roundBox.H > 0 && b.Y > roundBox.Y+0.5 {
+			stuck = true
+		}
 	}
+	// 吸顶的卡必须不透明,否则下面滚过来的内容会透出来叠成一团:
+	// Fill1 之类的半透明填充要先叠在底色 BG 上。
 	switch style {
 	case 1:
-		card.AlignSelf(ui.End).MaxWidthPercent(86).Background(t.AcSoft).Radius(t.RLg(), t.RLg(), t.RXs(), t.RLg())
+		card.AlignSelf(ui.End).MaxWidthPercent(86).Background(t.AcSoft.Over(t.BG)).Radius(t.RLg(), t.RLg(), t.RXs(), t.RLg())
 	case 2:
-		card.AlignSelf(ui.Stretch).MaxWidthPercent(100)
+		card.AlignSelf(ui.Stretch).MaxWidthPercent(100).Background(t.Raised.Over(t.BG))
 	default:
-		for _, s := range t.Shadow1() {
-			card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
-		}
+		card.Background(t.Raised.Over(t.BG))
 		if t.Scheme.ID == "b" {
-			card.AlignSelf(ui.End).MaxWidthPercent(86).Background(t.AcSoft).Radius(t.RLg(), t.RLg(), t.RXs(), t.RLg())
+			card.AlignSelf(ui.End).MaxWidthPercent(86).Background(t.AcSoft.Over(t.BG)).Radius(t.RLg(), t.RLg(), t.RXs(), t.RLg())
 		}
 		if t.Scheme.ID == "c" {
-			card.Background(t.Fill1).Radius(0, t.RSm(), t.RSm(), 0)
+			card.Background(t.Fill1.Over(t.BG)).Radius(0, t.RSm(), t.RSm(), 0)
+		}
+	}
+	if stuck {
+		// 固定在顶部时抬高一层并描一圈细边,与下面滚动的内容分开。
+		for _, s := range t.Shadow2() {
+			card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+		}
+		card.Shadow(0, 0, 0, 1, t.Bd1)
+	} else if style == 0 && t.Scheme.ID != "b" {
+		for _, s := range t.Shadow1() {
+			card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
 	}
 	card.OnClick(func() { a.beginUserEdit(u) }).Cursor(ui.CursorPointer)
 	card.Children(func() {
+		if stuck {
+			// 卡片下沿 14px 的渐隐,让滚到下面的内容淡入而不是被硬切(设计稿 .msg-u::after)。
+			ui.Box(c).Key("user-fade-"+u.ID).Absolute().Left(0).Right(0).TopPercent(100).Height(14).PassThrough().
+				Gradient(t.BG, t.BG.Alpha(0), 180)
+		}
 		if clamp && exp && lines > userFoldExp {
 			ui.Scroll(c).MaxHeight(float32(userFoldExp) * theme.FsRead * 1.55).Key("user-scroll-" + u.ID).Children(func() {
 				a.userMsgBody(c, u)
