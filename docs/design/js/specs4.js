@@ -62,6 +62,15 @@
       cell('顶部条', [], `<div class="snip" style="height:78px;width:560px">${bar(tools({ wrap: 1 }))}${bar(`${seg(['左右', '统一'], 0, 'sm')}${ib('wrap', 'sm', '自动换行  ⌥Z')}<span class="t4">差异</span>`)}</div>`, '上:文本标签(换行已开);下:差异标签的右侧同样有换行钮。换行是全局偏好 editor.wrap,开关即时作用于所有编辑器与差异标签。'),
       cell('格式化的三种结果', ['⇧', '⌥', 'F'], `<div class="fc g3">${fmtCase('有语言服务器', toast('okc', '已格式化(rust-analyzer)', 'c-ok'), '整篇交给服务器返回编辑,期间文件被改动则取消。')}${fmtCase('没有服务器,但有内置格式化器', toast('okc', '已格式化(内置 · Go)', 'c-ok'), 'Go(gofmt)、JSON(缩进整理)、Markdown(规范化)、其余文本:去行尾空白 + 末尾恰好一个换行。')}${fmtCase('已经是整齐的', toast('info', '已经是格式化好的', 'c-info'), '不产生改动,也不弄脏文件。')}</div>`, '一律先试服务器,再退内置;都不行才提示。「保存时格式化」打开后保存前自动走同一条路径。'),
       cell('设置里的对应项', [], box(`<div style="padding:10px 14px;display:flex;flex-direction:column;gap:10px"><div class="set-row">${'<span class="m grow">自动换行</span>'}${tog(0)}</div><div class="set-row"><span class="m grow">Markdown 默认视图</span>${seg(['预览', '源码'], 0)}</div><div class="set-row"><span class="m grow">保存时格式化</span>${tog(0)}</div><div class="set-row"><span class="m grow">保存时去掉行尾空白</span>${tog(0)}</div></div>`, 190, 560), '设置 → 编辑器与语言服务;「Markdown 与格式化」是新分组,自动换行仍在「显示」。')))}
+    ${sec('写回策略', '预览里编辑触发写回时,**只替换被改动的块**(段落 / 标题 / 列表项 / 代码块围栏);缓冲区里其余字节原样保留。整篇规范化只发生在用户点「格式化文档」或显式切源码后走格式化时,不由预览随便触发。', grid(
+      cell('并排对比', '', `<div class="grid2" style="gap:10px"><div class="spec" style="padding:10px 12px"><div class="cap2"><b>编辑前(磁盘)</b></div><pre class="mono t3" style="margin:0;white-space:pre-wrap;line-height:1.55"># 快速开始\n\n第一段:设计稿先行。\n\n第二段:先改<strong>这一</strong>段。\n\n第三段:段内硬换行\n仍在本段。\n\n\`\`\`rust\nfn main() {}\n\`\`\`\n\n- 用 * 列表</pre></div><div class="spec" style="padding:10px 12px"><div class="cap2"><b>只改第二段后写回</b>${tag('块 2', 'ac')}</div><pre class="mono t3" style="margin:0;white-space:pre-wrap;line-height:1.55"># 快速开始\n\n第一段:设计稿先行。 <span class="tag ok" style="font-size:10px">原样</span>\n\n第二段:先改<b>预览里</b>这一段。\n\n第三段:段内硬换行\n仍在本段。 <span class="tag ok" style="font-size:10px">原样</span>\n\n\`\`\`rust\nfn main() {}\n\`\`\` <span class="tag ok" style="font-size:10px">原样</span>\n\n- 用 * 列表 <span class="tag ok" style="font-size:10px">原样</span></pre></div></div>`, '未改段落:空行数量、段内硬换行、列表符(* vs -)、代码块语言行均不动;只替换光标所在块的 Markdown 源码区间。'),
+      cell('什么算「被编辑过」', '', tbl([['块类型', 160], ['写回范围', 520]], [
+        ['段落 / 标题 / 引用', '该块对应的 Markdown 行区间(到下一个空行或同级标题为止)'],
+        ['列表项', '单条 <span class="mono">-</span> / <span class="mono">*</span> / <span class="mono">1.</span> 行及其续行缩进'],
+        ['代码块', '整段围栏 <span class="mono">```</span>…<span class="mono">```</span>(含语言标注行)'],
+        ['任务列表', '单条 <span class="mono">- [ ]</span> 行'],
+        ['跨块选区', '从块 A 首到块 B 尾合并写回(仍不碰中间未选中的块)'],
+        ['整篇规范化', '仅 ⇧⌥F / 保存时格式化(若开)或用户确认「规范化预览」后的一次性全量替换']]), '浏览与只读预览不写盘;「写法规范化提示条」逻辑保持不变。')))}
     ${sec('差异标签', '差异标签与编辑器共用一套顶部条:上一处 / 下一处、左右 · 统一、自动换行、打开文件。', tbl([['能力', 200], ['说明', 520], ['状态']], [
       ['自动换行', '跟随偏好 editor.wrap;顶部条有换行钮,点它改的是全局偏好', st('ok')],
       ['Markdown 文件的差异', '仍是源码级差异(逐行),不做渲染后的差异;「打开文件」按钮按预览打开', st('ok')],
