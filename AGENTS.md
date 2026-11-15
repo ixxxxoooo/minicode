@@ -174,6 +174,15 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 - **Nerd Font**:`term_fonts.go` 后台扫 `/Library/Fonts`、`~/Library/Fonts`;`termFontFamily` 只在「选了 Nerd 字体且确认未安装」时回退等宽;提示条 `nerdWarning` 分「没装 / 已装未选用」两种文案。
 - 调试:`MINI_TERM_CMD='clear; seq 1 120; ls'` 启动后在第一个终端自动输入命令;Computer Use 的字母键会走输入法(首次回车被组字吃掉),终端正文不能 `computer_type`,滚轮可用,不能带修饰键点击(⌘点击链接只能靠单测)。
 
+### 全流程实测踩坑(Computer Use,真实 DeepSeek 回路,已修)
+
+- **`EvPromoteToPermission` 会把时间线里的 `*core.ToolCall` 整个换成 `*core.PermissionRequest{Tool}`**。凡是遍历 `a.st.Items` 找工具的代码(改动统计、回合折叠摘要、审查入口……)必须同时处理这两种条目,统一用 `doneToolOf(it)`(只认已处理的权限请求),否则「允许后的编辑」整轮都不出现在改动卡 / 审查页 / 「本轮」里。`ToolStatus.Unsuccessful()`(失败 / 拒绝 / 中断)的编辑不计入改动。
+- **被拒绝的命令没有执行过**:后端回的「退出码 1」只是拒绝信号。实时路径是 `ToolDenied`,**历史回放没有权限事件,状态只是 `Failed`**,所以命令卡用 `deniedOutput(输出)` 按拒绝文案兜底显示「未执行」。
+- **文件树缓存**:Claude 新建文件后树里不出现(要手点刷新)。`syncTreeGit` 发现改动路径集合变化(`treeKeysChanged`)就清 `listCache / filesCache`,回合结束(`EvTurnEnded`)也清一次。
+- **CodeLens 与行内追溯同在光标行右端会叠成乱码**:光标行正显示追溯(`tb.blameShown`)时不画该行的 CodeLens(追溯优先)。
+- **SIGTERM / SIGINT / SIGHUP 要当正常退出**(`diag.WatchSignals`):系统关机 / 登出 / `pkill` 重启开发版都发这些信号,不处理会让「崩溃与卡顿」列表被「未正常退出」淹没;SIGKILL 与真崩溃仍留运行标记。macOS 输入法框架的 `TSM AdjustCapsLockLED…` stderr 提示是无害噪音,已降为调试级。
+- Computer Use 实机边界:悬停才出现的按钮(差异块「暂存 / 还原此块」)与弹出菜单项 AX 点不到、编辑器里放不下光标、不能打字进编辑器;这些只靠单测,实机用「搜索结果跳行」之类的入口间接到达。
+
 ### 已知缺口(真实模式)
 
 - **真实模式实测第五轮(同上环境,Computer Use,SCM 提交回路)**:**开会话会往用户仓库里写 `.claude/settings.json` 与 `.mini-backup`**(`SyncClaudeSettingsFromPrefs` 每次都重写 + 换备份),现在内容没变不写,项目里没有该文件且用户没改过相关偏好时不创建;图谱 HEAD 提交右键的「检出此提交 / 与 HEAD 比较」置灰(检出当前提交会无故让 HEAD 游离);Git 操作失败的 toast / 提交框 / 推送被拒引导条改用 `friendlyGitErr`(无远程 / 无上游 / 认证 / 网络 / 被拒 / 未设用户 / 锁文件翻成一句中文加下一步,认不出取首行并截断),完整原文仍进输出面板与日志;**AI 提交说明等一次性 `claude -p`(`RunPromptModelCtx`)此前会在 `~/.claude/projects` 留下「你是 Git 提交说明助手…」会话污染历史列表**,现加 `--no-session-persistence`(自动化流式运行故意保留会话,「查看会话」要用);**真实后端的编辑块 `DiffBlock.Line` 一直是 0**(审查页「第 1–4 行」、编辑器「Claude 改动」叠层都标在第 1 行),现 `BuildTool` 按文件内容定位(实时找 old、回放找 new,>1 MiB 放弃);审查页文件标题不再露绝对目录、改动已提交后说明写「已经提交到 Git」。**均有 go test,并已在开发版实机走过**(暂存 → AI 提交说明 → 提交 → 图谱右键 → 推送无远程 → 审查页行号 → 命令面板 / 主题预览与切换)。已知:Computer Use 的 AX 点击对弹出菜单项无效(菜单项没有 press 动作),菜单只能点头部等价按钮或用坐标点击;「审查本轮改动」入口在改动已提交后仍显示「待审查」(审查页内已如实说明);此前已生成的一次性会话不会自动清理。
