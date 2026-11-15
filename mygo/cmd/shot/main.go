@@ -38,6 +38,7 @@ func main() {
 	squery := flag.String("squery", "", "设置页搜索词")
 	state := flag.String("state", "", "会话状态:welcome(空会话)/ perm / ask / plan / queue(权限·提问·计划·排队)")
 	quick := flag.String("quick", "", "快速选择浮层:history / branch,可带预填查询,如 branch:feat")
+	srch := flag.String("search", "", "IDE 左栏搜索:查询[|替换文本],如 match_path|find_route")
 	flag.Parse()
 
 	home := "/tmp/minicode-shot-home"
@@ -77,6 +78,12 @@ func main() {
 	}
 	if *top {
 		a.ScrollFlowTop()
+		tt.Frame()
+	}
+	if *srch != "" {
+		q, r, hasR := strings.Cut(*srch, "|")
+		a.OpenSearch()
+		a.SetSearch(q, r, hasR)
 		tt.Frame()
 	}
 	if *quick != "" {

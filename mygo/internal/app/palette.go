@@ -132,6 +132,7 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 	} else {
 		common[add("swap", "切换到 Agent", "⌘E", "把窗口切到 Agent 形态:对话在前,检查器在右侧。", func() { a.SetMode(ModeAgent) })] = true
 	}
+	common[add("search", "在项目中搜索", "⇧⌘F", "在整个项目里搜索 / 替换文本,支持正则、全词、包含与排除。", func() { a.OpenSearch() })] = true
 	common[add("branch", "Git:切换分支…", "", "搜索本地与远程分支并切换;输入新名字可创建并切换。", func() { a.OpenQuick("branch", "") })] = true
 	common[add("history", "历史会话…", "", "按标题搜索并打开历史会话。", func() { a.OpenQuick("history", "") })] = true
 	common[add("sliders", "设置:外观", "⌘,", "打开设置的「外观」:主题、布局方案、强调色。", func() { a.openSettings("appearance") })] = true

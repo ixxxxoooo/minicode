@@ -101,6 +101,7 @@ type App struct {
 
 	// 输入框
 	draft        string
+	sr           searchState         // 项目内搜索
 	qp           *qpState            // 快速选择浮层(历史会话 / 分支),nil = 关闭
 	repo         vcs.Repo            // 当前项目的仓库(演示为内存实现)
 	branch       string              // 当前分支名(缓存,避免每帧查 git)
@@ -342,6 +343,8 @@ func (a *App) shortcuts(c *ui.Context) {
 		}
 	case c.Shortcut(ui.Cmd, ui.KeyN):
 		a.NewSession()
+	case c.Shortcut(ui.Cmd|ui.Shift, ui.KeyF):
+		a.OpenSearch()
 	case c.Shortcut(ui.Cmd, ui.KeyJ):
 		a.ide.bottomOpen = !a.ide.bottomOpen
 	case c.Shortcut(ui.Cmd, ui.KeyS):

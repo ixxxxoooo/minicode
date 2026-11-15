@@ -202,6 +202,12 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 	st.Font = ui.Font{Family: "monospace", Size: 12}
 	st.LineHeight = 20.0 / 12.0
 	st.NoScrollbars = true
+	if r := tb.reveal; r != nil { // 搜索结果 / 跳转:选中命中处并滚到可见
+		tb.reveal = nil
+		p0 := editor.Pos{Line: r[0], Col: r[1]}
+		st.GoTo(p0)
+		st.Select(tb.buf.Offset(p0), tb.buf.Offset(editor.Pos{Line: r[0], Col: r[2]}))
+	}
 	ui.Row(c).Grow(1).MinHeight(0).Children(func() {
 		editor.View(c.Key("ed-"+tb.id), st).Grow(1).MinWidth(0).FillHeight()
 		a.minimap(c, tb)

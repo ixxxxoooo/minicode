@@ -23,8 +23,9 @@ type ideTab struct {
 	buf     *editor.Buffer
 	st      *editor.State
 	dv      *editor.DiffState
-	saved   string // 最近一次落盘的内容(判断是否有未保存修改)
-	err     string // 读取失败 / 太大时的提示
+	saved   string  // 最近一次落盘的内容(判断是否有未保存修改)
+	err     string  // 读取失败 / 太大时的提示
+	reveal  *[3]int // 待选中的范围:行、起止列(下一次渲染时应用)
 }
 
 func (t *ideTab) dirty() bool { return !t.diff && t.buf != nil && t.buf.String() != t.saved }
@@ -127,6 +128,27 @@ func (d *ide) openFile(p string, pin bool) {
 		}
 	}
 	d.addTab(t)
+}
+
+// reloadOpen 把已打开且没有未保存修改的文件标签读回磁盘内容(批量替换之后用)。
+func (d *ide) reloadOpen() {
+	for _, t := range d.tabs {
+		if t.diff || t.buf == nil || t.dirty() {
+			continue
+		}
+		if src, err := d.fs.Read(t.path); err == nil && src != t.saved {
+			t.buf.Reset(src)
+			t.saved = src
+		}
+	}
+}
+
+// openAt 打开文件并(在下一次渲染时)选中 line 行 [col,end) 列的范围。
+func (d *ide) openAt(p string, line, col, end int, pin bool) {
+	d.openFile(p, pin)
+	if t := d.tab(p); t != nil && t.buf != nil {
+		t.reveal = &[3]int{line, col, end}
+	}
 }
 
 // openDiff 打开某个文件的对比标签(HEAD ↔ 工作区)。
