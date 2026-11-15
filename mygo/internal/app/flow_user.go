@@ -112,7 +112,9 @@ func (a *App) flowRound(c *ui.Context, u *core.User, rest []core.Item) {
 					last = j - 1
 				}
 			} else {
-				a.flowTail(c, rest, i)
+				if !(foldTurn && foldedSteps && turnFoldedItem(rest[i])) {
+					a.flowTail(c, rest, i)
+				}
 				last = i
 			}
 			if uid, ok := turnEndRound(rest, last, u.ID); ok {

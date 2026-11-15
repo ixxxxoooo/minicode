@@ -15,11 +15,22 @@ func (a *App) turnFoldEnabled() bool { return a.prefs.Bool(pTurnFold, true) }
 func turnStepItems(rest []core.Item) []core.Item {
 	var out []core.Item
 	for _, it := range rest {
-		if isStepItem(it) {
+		if turnFoldedItem(it) {
 			out = append(out, it)
 		}
 	}
 	return out
+}
+
+// turnFoldedItem 回合折叠时收进「已处理」的条目(步骤行 + 已回答的提问卡)。
+func turnFoldedItem(it core.Item) bool {
+	if isStepItem(it) {
+		return true
+	}
+	if q, ok := it.(*core.QuestionRequest); ok && q.Answered {
+		return true
+	}
+	return false
 }
 
 func turnMustStayOpen(rest []core.Item) bool {
@@ -117,6 +128,10 @@ func (a *App) turnFoldGroup(c *ui.Context, uid string, steps []core.Item) {
 	a.stepRow(c, sp, func() {
 		a.nest(c, func() {
 			for _, it := range steps {
+				if q, ok := it.(*core.QuestionRequest); ok && q.Answered {
+					a.askEcho(c, q)
+					continue
+				}
 				a.stepItem(c, it)
 			}
 		})
