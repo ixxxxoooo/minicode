@@ -80,3 +80,20 @@ func TestSteerPending(t *testing.T) {
 		t.Fatal("回合结束应放出")
 	}
 }
+
+// 超过 steerMaxWait 仍不满足启发式时,一律从待发送区放出。
+func TestSteerMaxWait(t *testing.T) {
+	var q promptQueue
+	t0 := time.Now()
+	items := []core.Item{&core.User{ID: "u1", Text: "首条"}, &core.Assistant{ID: "a1"}}
+	q.addSteer("卡住", "卡住", len(items), t0)
+	items = append(items, &core.User{ID: "u2", Text: "卡住"})
+	q.syncSteers(items, true, t0.Add(steerDwell+time.Second))
+	if len(q.steers) != 1 {
+		t.Fatal("仅有回显、后面没有新步骤时不应放出")
+	}
+	q.syncSteers(items, true, t0.Add(steerMaxWait+time.Millisecond))
+	if len(q.steers) != 0 || q.held("u2") {
+		t.Fatal("超时后应放出")
+	}
+}

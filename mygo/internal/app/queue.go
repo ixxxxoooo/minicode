@@ -4,7 +4,10 @@ import (
 	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/diag"
 )
+
+var queueLog = diag.L("app")
 
 // 排队与引导(对标 Cursor):回合进行中发新消息默认排队,本轮正常结束后自动逐条发送;
 // ⌘Enter 立即「引导」(塞进当前回合)。回合被中断 / 出错时队列暂停,等用户选择继续或撤回。
@@ -36,6 +39,9 @@ type steerPend struct {
 // steerDwell 引导行至少停留这么久再放进会话流。
 const steerDwell = 700 * time.Millisecond
 
+// steerMaxWait 引导在待发送区最长停留(兜底:回显丢失或未满足启发式时仍放出)。
+const steerMaxWait = 20 * time.Second
+
 // addSteer 登记一条刚发出的引导。
 func (q *promptQueue) addSteer(text, show string, from int, now time.Time) {
 	q.steers = append(q.steers, &steerPend{Text: text, Show: show, from: from, at: now})
@@ -52,7 +58,15 @@ func (q *promptQueue) held(uid string) bool {
 }
 
 // syncSteers 对照会话流更新引导:找到回显的用户消息就绑定 id;其后出现新的非用户条目(Claude 已接着往下走)
-// 或回合结束,即视为已接收,放进会话流。后端没有显式确认,这是启发式。
+// 或回合结束,即视为已接收,放进会话流。
+//
+// 调研(只读,未跑实机对话):claude --help 有 --replay-user-messages(标明用于 acknowledgment),
+// 但 MiniCode 启动参数(options.Args)未开启,也未验证回显行的 uuid / isReplay 形态。
+// ~/.claude/projects 的 jsonl 在 priority:next 被吸收时有 type queue-operation、operation remove、
+// reason absorbed_mid_turn、commandUuid,但仅见于落盘 transcript;translate.Handle 实时路径不处理该行,
+// 且无证据 stream-json stdout 会推送 queue-operation(与 assistant/user 不同,type 不在现网翻译列表里)。
+// 实时 type user 在翻译器里只展开 tool_result,用户正文由 backend.onPrompt 本地 UserPrompt 补上,没有消费确认字段。
+// 故无可靠确认信号可用;演示后端与其它路径仍走下列启发式,并辅以 steerMaxWait 超时放出。
 func (q *promptQueue) syncSteers(items []core.Item, running bool, now time.Time) {
 	if len(q.steers) == 0 {
 		return
@@ -90,6 +104,10 @@ func (q *promptQueue) syncSteers(items []core.Item, running bool, now time.Time)
 					break
 				}
 			}
+		}
+		if !done && now.Sub(s.at) >= steerMaxWait {
+			queueLog.Info("引导超时放出", "show", s.Show, "wait", now.Sub(s.at).Round(time.Second))
+			done = true
 		}
 		if !done {
 			keep = append(keep, s)
