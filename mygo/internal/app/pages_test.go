@@ -159,3 +159,68 @@ func TestCanvasPage(t *testing.T) {
 		t.Fatalf("应回到对话并填入提示词:%v %q", a.screen, a.draft)
 	}
 }
+
+func TestBrowserPage(t *testing.T) {
+	a, tt := newTestApp(t)
+	a.SeedDemoExtras()
+	a.screen = ScreenBrowser
+	tt.SetSize(1024, 330) // 矮窗口,正文才有可滚动的余量
+	tt.Frame()
+	tt.Frame()
+	b := a.brw()
+	if b.Page().Title() != "Routing" || a.brs.url != "docs.rs/axum/latest/axum/routing" {
+		t.Fatalf("起始页不对:%q %q", b.Page().Title(), a.brs.url)
+	}
+	if _, ok := a.brs.pos[2]; !ok {
+		t.Fatalf("应记下各节位置:%v", a.brs.pos)
+	}
+	// 大纲 → 滚动
+	if err := tt.Click("大纲"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	// 大纲文字与正文标题同名,Click 会点到正文;改按抽屉里「大纲」标签下方的行位置点
+	tab, ok := tt.Find("大纲")
+	if !ok {
+		t.Fatal("找不到大纲标签")
+	}
+	for dy := float32(30); dy < 200 && a.brs.st.Y <= 0; dy += 8 {
+		tt.ClickAt(tab.X+10, tab.Y+dy)
+		tt.Frame()
+	}
+	if a.brs.st.Y <= 0 {
+		t.Fatalf("点大纲应滚动正文:%v", a.brs.st.Y)
+	}
+	// 链接 → 站内跳转,后退回来
+	if err := tt.Click("链接"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if err := tt.Click("tower::Service"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if b.Page().Title() != "Trait Service" || !b.CanBack() || a.brs.st.Y != 0 {
+		t.Fatalf("应跳到 tower 文章:%q", b.Page().Title())
+	}
+	b.Back()
+	tt.Frame()
+	if b.Page().Title() != "Routing" {
+		t.Fatal("后退应回到 Routing")
+	}
+	// 抓不了的地址 → 错误卡,保留旧页
+	a.browseTo("example.com")
+	tt.Frame()
+	if b.Err == nil || b.Page().Title() != "Routing" {
+		t.Fatal("未接入的地址应报错并保留旧页")
+	}
+	// 快捷提示 → 回对话并带上页面
+	a.screen = ScreenBrowser
+	tt.Frame()
+	if err := tt.Click("总结要点"); err != nil {
+		t.Fatal(err)
+	}
+	if a.screen != ScreenWork || !strings.Contains(a.draft, "docs.rs/axum/latest/axum/routing") || !strings.Contains(a.draft, "总结要点") {
+		t.Fatalf("应回到对话并填好提示词:%q", a.draft)
+	}
+}

@@ -1,0 +1,241 @@
+package app
+
+import (
+
+	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/markdown"
+	"github.com/ixxxxoooo/minicode/internal/browser"
+	"github.com/ixxxxoooo/minicode/internal/demo"
+	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/theme"
+)
+
+// 浏览器整页(设计稿 pages.js):地址栏 + 阅读模式正文 + 右侧「与此页面对话」抽屉(摘要 / 大纲 / 链接)。
+// 页面模型与历史在 internal/browser;抓取目前只有演示数据源,真实网页抓取尚未接入。
+
+type browserState struct {
+	url     string // 地址栏文本
+	lastURL string // 上次同步进地址栏的地址(变了才覆盖,免得打断输入)
+	tab     string // sum / out / lnk
+	hideDr  bool   // 用户关掉了抽屉
+	ask     string
+	st      ui.ScrollState
+	pos     map[int]float32 // 节下标 → 相对正文顶端的 Y
+}
+
+// noFetch 是没有演示数据时的数据源:什么都抓不了。
+type noFetch struct{}
+
+func (noFetch) Fetch(string) (browser.Page, error) { return browser.Page{}, browser.ErrNoFetch }
+
+func (a *App) brw() *browser.Browser {
+	if a.br == nil {
+		if a.demoExtra {
+			a.br = browser.New(demo.BrowserSource{}, demo.BrowserHome)
+		} else {
+			a.br = browser.New(noFetch{}, "")
+		}
+	}
+	return a.br
+}
+
+// browseTo 在地址栏里提交一个地址。
+func (a *App) browseTo(u string) {
+	b := a.brw()
+	if err := b.Go(u); err != nil {
+		log.Warn("浏览器打开失败", "url", u, "err", err)
+	}
+	a.brs.st.Y = 0
+}
+
+func (a *App) browserPage(c *ui.Context) {
+	t := a.tk
+	b := a.brw()
+	v := &a.brs
+	if v.pos == nil {
+		v.pos = map[int]float32{}
+		v.tab = "sum"
+	}
+	if b.URL() != v.lastURL {
+		v.url, v.lastURL = b.URL(), b.URL()
+	}
+	pg := b.Page()
+	a.pane(c).Grow(1).Children(func() {
+		// 地址栏
+		ui.Row(c).Height(40).Padding(0, 12).Gap(4).AlignItems(ui.Center).Shrink(0).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+			if kit.Ib(c, "chevL", kit.IbOpt{Tip: "后退", Color: dim(b.CanBack(), t)}).Clicked() {
+				b.Back()
+			}
+			if kit.Ib(c, "chevR", kit.IbOpt{Tip: "前进", Color: dim(b.CanForward(), t)}).Clicked() {
+				b.Forward()
+			}
+			if kit.Ib(c, "refresh", kit.IbOpt{Tip: "重新载入"}).Clicked() {
+				b.Reload()
+			}
+			box := ui.Row(c.Key("br-urlbox")).Grow(1).MinWidth(0).Height(28).PaddingX(8).Gap(6).AlignItems(ui.Center).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd2)
+			if box.FocusWithin() {
+				box.BorderColor(t.Ac)
+			}
+			box.Children(func() {
+				kit.Ic(c, "lock", kit.S12).TextColor(t.Ok)
+				in := ui.TextInput(c.Key("br-url"), &v.url).Grow(1).MinWidth(0).Background(ui.Transparent).BorderWidth(0).Padding(0).FontSize(theme.FsBody).Placeholder("输入网址").PlaceholderColor(t.Tx4).FocusRing(false)
+				in.OnTextKey(func(k ui.TextKey) bool {
+					if k.Key == ui.KeyEnter && k.Mods == 0 {
+						a.browseTo(k.Text())
+						return true
+					}
+					return false
+				})
+				fav := b.Fav[b.URL()]
+				ib := kit.Ib(c, "bookmark", kit.IbOpt{Small: true, Tip: "收藏"})
+				if fav {
+					ib.TextColor(t.Ac)
+				}
+				if ib.Clicked() && b.URL() != "" {
+					if b.ToggleFav() {
+						a.toast = "已收藏"
+					} else {
+						a.toast = "已取消收藏"
+					}
+				}
+			})
+			if kit.Chip(c, "阅读模式", kit.ChipOpt{Icon: "book", On: true, Tip: "内置浏览器目前只提供阅读模式"}).Clicked() {
+				a.toast = "内置浏览器目前只提供阅读模式"
+			}
+			if kit.Chip(c, "与此页面对话", kit.ChipOpt{Icon: "chat", Line: true}).Clicked() {
+				v.hideDr = !v.hideDr
+			}
+			if kit.Ib(c, "gear", kit.IbOpt{Tip: "浏览器设置"}).Clicked() {
+				a.openSettings("browser")
+			}
+		})
+		var drawer func()
+		if !v.hideDr && pg.URL != "" {
+			drawer = func() { a.browserDrawer(c, b, pg) }
+		}
+		a.pageSplitW(c, "br", drawerW, &v.st, func() { a.browserReader(c, b, pg) }, drawer)
+	})
+}
+
+// browserReader 是阅读模式正文:居中一列,每节自己量位置供大纲定位。
+func (a *App) browserReader(c *ui.Context, b *browser.Browser, pg browser.Page) {
+	t := a.tk
+	v := &a.brs
+	ui.Row(c).Justify(ui.Center).Children(func() {
+		col := ui.Column(c).Key("br-col").Width(640).Shrink(1).MinWidth(0).Padding(14, 0, 24, 0)
+		col.Children(func() {
+			top := col.Bounds().Y
+			if b.Err != nil {
+				a.box(c).Padding(12, 14).Gap(4).Margin(0, 0, 14, 0).Children(func() {
+					ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+						kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
+						ui.Text(c, "无法打开 "+v.url).FontWeight(600).SingleLine()
+					})
+					ui.Text(c, b.Err.Error()+"。目前只能打开演示里的页面(docs.rs 的 axum / tower 文章)。").TextColor(t.Tx3).LineHeight(1.5)
+				})
+			}
+			if pg.URL == "" {
+				if b.Err == nil {
+					ui.Text(c, "输入网址开始阅读。").TextColor(t.Tx3)
+				}
+				return
+			}
+			ui.Text(c, pg.Site+" · 阅读约 "+itoa(pg.ReadMin)+" 分钟").FontSize(theme.FsCap).TextColor(t.Tx3).Margin(0, 0, 6, 0)
+			for i, s := range pg.Sections {
+				el := ui.Column(c.Key("brs-" + itoa(i)))
+				el.Children(func() {
+					switch s.Level {
+					case 0:
+						ui.Text(c, s.Heading).FontSize(26).FontWeight(700).Margin(2, 0, 14, 0)
+					case 1:
+						ui.Text(c, s.Heading).FontSize(15).FontWeight(700).Padding(16, 0, 8, 0)
+					default:
+						ui.Text(c, s.Heading).FontSize(13).FontWeight(650).Padding(12, 0, 6, 0)
+					}
+					markdown.View(c, padCode(s.Body), a.mdOptions())
+				})
+				v.pos[i] = el.Bounds().Y - top
+			}
+		})
+	})
+}
+
+func (a *App) browserDrawer(c *ui.Context, b *browser.Browser, pg browser.Page) {
+	t := a.tk
+	v := &a.brs
+	ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+		ui.Text(c, "与此页面对话").FontWeight(600).Grow(1).SingleLine()
+		kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭"}).OnClick(func() { v.hideDr = true })
+	})
+	if id := kit.Tabs(c, []kit.TabItem{{ID: "sum", Text: "摘要"}, {ID: "out", Text: "大纲"}, {ID: "lnk", Text: "链接"}}, v.tab, 30, nil); id != "" {
+		v.tab = id
+	}
+	switch v.tab {
+	case "sum":
+		ui.Column(c).Gap(7).Children(func() {
+			for _, s := range pg.Summary {
+				ui.Row(c).Gap(7).AlignItems(ui.Start).Children(func() {
+					ui.Box(c).Size(6, 6).Radius(3).Background(t.Ac).Margin(7, 0, 0, 0).Shrink(0)
+					ui.Text(c, s).LineHeight(1.55).Grow(1).MinWidth(0)
+				})
+			}
+		})
+	case "out":
+		ui.Column(c).Margin(0, -6).Children(func() {
+			for _, o := range pg.Outline() {
+				r := kit.RowEl(c, false).Key("bo-" + itoa(o.Index)).PaddingStart(8 + float32(o.Level)*14).Justify(ui.Start)
+				r.OnClick(func() {
+					if y, ok := v.pos[o.Index]; ok {
+						v.st.Y = max(0, y-4)
+					}
+				})
+				r.Children(func() { ui.Text(c, o.Text).SingleLine() })
+			}
+		})
+	case "lnk":
+		ui.Column(c).Margin(0, -6).Children(func() {
+			for i, l := range pg.Links {
+				r := kit.RowEl(c, false).Key("bl-" + itoa(i)).Justify(ui.Start).Padding(5, 8).Height(40)
+				r.OnClick(func() {
+					if l.URL == "" {
+						a.toast = "此链接(" + l.Host + ")暂不能在内置浏览器里打开"
+						return
+					}
+					a.browseTo(l.URL)
+				})
+				r.Children(func() {
+					ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+						ui.Text(c, l.Title).SingleLine()
+						ui.Text(c, l.Host).FontSize(theme.FsMicro).TextColor(t.Tx4)
+					})
+					kit.Ic(c, "ext", kit.S12).TextColor(t.Tx4)
+				})
+			}
+		})
+	}
+	ui.Column(c).Gap(6).Children(func() {
+		kit.Grp(c, "快捷提示")
+		ui.Row(c).Gap(6).Wrap().Children(func() {
+			for _, q := range []string{"总结要点", "提取代码示例", "翻译成中文", "对比 actix"} {
+				if kit.Chip(c, q, kit.ChipOpt{Line: true}).Clicked() {
+					a.AskClaude("关于网页「" + pg.Title() + "」(" + pg.URL + "):" + q)
+				}
+			}
+		})
+	})
+	ui.Spacer(c).Grow(1)
+	a.miniComposer(c, "br-ask", "就这个页面提问…", &v.ask, "", func(text string) {
+		if text != "" {
+			a.AskClaude("关于网页「" + pg.Title() + "」(" + pg.URL + "):" + text)
+		}
+	})
+}
+
+
+// dim 给不可用的图标按钮淡色(可用返回零值 = 默认色)。
+func dim(ok bool, t *theme.Tokens) ui.Color {
+	if ok {
+		return ui.Color{}
+	}
+	return t.Tx4
+}

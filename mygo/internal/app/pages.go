@@ -23,6 +23,8 @@ func (a *App) page(c *ui.Context) bool {
 		a.autoPage(c)
 	case ScreenCanvas:
 		a.canvasPage(c)
+	case ScreenBrowser:
+		a.browserPage(c)
 	default:
 		return false
 	}
@@ -60,7 +62,7 @@ func (a *App) pageSplitW(c *ui.Context, key string, w float32, st *ui.ScrollStat
 			ui.Column(c).Padding(4, 20, 24, 20).Children(main)
 		})
 		if drawer != nil {
-			ui.Column(c).Key(key+"-drawer").Width(drawerW).Shrink(0).Padding(14, 16).Gap(12).BorderWidth(0, 0, 0, 1).BorderColor(t.Bd1).Children(drawer)
+			ui.Column(c).Key(key+"-drawer").Width(w).Shrink(0).Padding(14, 16).Gap(12).BorderWidth(0, 0, 0, 1).BorderColor(t.Bd1).Children(drawer)
 		}
 	})
 }
