@@ -12,7 +12,7 @@ import (
 var sessRestoreLog = diag.L("session.restore")
 
 const (
-	pRestore     = "general.restore"
+	pRestore      = "general.restore"
 	lastStateFile = "last-session.json"
 )
 

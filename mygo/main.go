@@ -313,7 +313,6 @@ func main() {
 			Content:              ui.View(a.View),
 		})
 		a.SetWindow(win)
-		a.WireMainWindowClose(win)
 		a.InstallAppMenu()
 		a.InitBrand()
 		if nwVirt != "" {

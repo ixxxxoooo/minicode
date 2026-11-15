@@ -66,6 +66,11 @@ func (a *App) compactModeSeg() bool {
 	return a.winTier() >= 3
 }
 
+// pageNarrowMid 整页(设置 / 自定义 / 用量)在中等宽度下的紧凑布局。
+func (a *App) pageNarrowMid() bool {
+	return a.winW > 0 && a.winW < bpMid
+}
+
 // fitPanels 按断点自动收起 / 恢复次要区域;变宽只恢复曾被自动收起的项。
 func (a *App) fitPanels() {
 	w := a.winW
