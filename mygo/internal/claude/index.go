@@ -295,10 +295,32 @@ func sessionsIn(dir string) []SessionMeta {
 		if title == "" { // 没有任何用户输入的会话不展示
 			continue
 		}
+		if isInternalPrompt(sc.FirstUser) { // 应用自己的一次性调用(旧版本没加 --no-session-persistence)留下的会话
+			continue
+		}
 		out = append(out, SessionMeta{ID: strings.TrimSuffix(e.Name(), ".jsonl"), Path: p, Cwd: sc.Cwd, Title: title, Modified: info.ModTime()})
 	}
 	sort.SliceStable(out, func(i, j int) bool { return out[i].Modified.After(out[j].Modified) })
 	return out
+}
+
+// internalPrompts 是 MiniCode 自己做一次性 `claude -p` 调用时的提示词开头(AI 提交说明、行内补全 / 编辑)。
+// 旧版本这类调用会在 ~/.claude/projects 留下会话,混进用户的历史列表;现在的调用已加 --no-session-persistence,
+// 这里只负责不展示老版本留下的那些。
+var internalPrompts = []string{
+	"你是 Git 提交说明助手",
+	"你是代码编辑助手。只输出要替换进编辑器的代码片段",
+	"你是代码补全助手。只输出要接在光标后的补全文本",
+}
+
+func isInternalPrompt(first string) bool {
+	first = strings.TrimSpace(first)
+	for _, p := range internalPrompts {
+		if strings.HasPrefix(first, p) {
+			return true
+		}
+	}
+	return false
 }
 
 // DeleteSession 删除某个会话的历史文件;id 只允许字母、数字、-、_,防止借 .. 删到目录之外。文件不存在视为成功。
