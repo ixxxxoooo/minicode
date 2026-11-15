@@ -1,6 +1,8 @@
 package claudecfg
 
 import (
+	"os"
+	"reflect"
 	"strings"
 
 	"github.com/ixxxxoooo/minicode/internal/core"
@@ -23,6 +25,7 @@ func SyncSessionPrefs(p SessionPrefs) error {
 	if err != nil {
 		return err
 	}
+	before, _ := readJSON(path) // 深拷贝一份原样内容,用来判断这次同步有没有真的改动
 	if p.AlwaysThinking != nil {
 		root["alwaysThinkingEnabled"] = *p.AlwaysThinking
 	}
@@ -55,8 +58,17 @@ func SyncSessionPrefs(p SessionPrefs) error {
 			delete(perm, "additionalDirectories")
 		}
 	}
+	if _, err := os.Stat(path); err == nil && reflect.DeepEqual(before, root) {
+		return nil // 内容没变:不重写文件、不换备份(否则每次开会话都在用户仓库里留下 .mini-backup)
+	}
 	log.Info("同步 Claude 设置", "layer", p.Layer, "alwaysThinking", p.AlwaysThinking != nil, "defaultMode", p.DefaultMode)
 	return writeJSON(path, root)
+}
+
+// SettingsFileExists 该层的设置文件是否已存在(决定「没有显式设置过就不创建」)。
+func SettingsFileExists(layer Layer, project string) bool {
+	_, err := os.Stat(settingsPath(layer, project))
+	return err == nil
 }
 
 // PermModeCLI 把界面分段索引映射为 permissions.defaultMode 字符串。

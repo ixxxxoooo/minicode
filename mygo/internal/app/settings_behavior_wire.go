@@ -66,6 +66,12 @@ func (a *App) SyncClaudeSettingsFromPrefs() {
 		return
 	}
 	layer := a.permLayer()
+	// 项目 / 本地层的文件在用户仓库里:文件还不存在、用户也从没改过相关偏好时不创建,
+	// 否则只是「打开一个项目的会话」就会在它的 .claude/ 里凭空多出文件(实测污染源代码管理的改动列表)。
+	if !a.prefs.Has(pModelThink) && !a.prefs.Has(pPermMode) && !a.prefs.Has(pPermNoByp) && !a.prefs.Has(pPermDirs) &&
+		!claudecfg.SettingsFileExists(layer, a.proj) {
+		return
+	}
 	th := a.prefs.Bool(pModelThink, true)
 	deny := a.prefs.Bool(pPermNoByp, false)
 	sp := claudecfg.SessionPrefs{
