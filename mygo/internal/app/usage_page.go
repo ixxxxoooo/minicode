@@ -1,6 +1,8 @@
 package app
 
 import (
+	"time"
+
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/demo"
@@ -23,6 +25,9 @@ func (a *App) usage() core.UsageReport {
 	return demo.Usage(a.use.rng)
 }
 
+// SetUsageSource 注入真实的用量数据源(按范围出报告);未就绪时可返回没有 Days 的空报告。
+func (a *App) SetUsageSource(f func(rng int) core.UsageReport) { a.usageSrc = f }
+
 // SetUsageRange 切换用量范围(测试 / 截图用)。
 func (a *App) SetUsageRange(r int) { a.use.rng, a.use.set = r, true }
 
@@ -32,6 +37,14 @@ func (a *App) usagePage(c *ui.Context) {
 		a.use.rng, a.use.set = 1, true // 默认 30 天
 	}
 	u := a.usage()
+	if len(u.Days) == 0 {
+		a.pane(c).Grow(1).Children(func() {
+			a.pageHead(c, "用量与成本", "本机各会话的 token 与费用估算。", nil)
+			ui.Text(c, "正在统计会话记录…").TextColor(t.Tx3).Padding(16)
+		})
+		a.redrawSoon()
+		return
+	}
 	a.pane(c).Grow(1).Children(func() {
 		a.pageHead(c, "用量与成本", "本机各会话的 token 与费用估算(取自会话记录,第三方服务商没有费用时只显示 token),以及账户限额。", func() {
 			items := make([]kit.SegItem, 0, 3)
@@ -178,9 +191,14 @@ func (a *App) usageDrawer(c *ui.Context, u core.UsageReport) {
 	t := a.tk
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 		ui.Text(c, "账户限额").FontWeight(600).Grow(1)
-		ui.Text(c, "更新于 "+u.LimitsUpdated).FontSize(theme.FsCap).TextColor(t.Tx4)
-		kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { a.toast = "已刷新账户限额" })
+		if len(u.Limits) > 0 {
+			ui.Text(c, "更新于 "+u.LimitsUpdated).FontSize(theme.FsCap).TextColor(t.Tx4)
+			kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { a.toast = "已刷新账户限额" })
+		}
 	})
+	if len(u.Limits) == 0 {
+		ui.Text(c, "账户限额还没有接入(需要 claude 的 get_usage 控制请求),这里先只显示本机会话统计。").FontSize(theme.FsCap).TextColor(t.Tx4).LineHeight(1.45)
+	}
 	ui.Column(c).Gap(10).Children(func() {
 		for _, l := range u.Limits {
 			ui.Column(c).Gap(4).Children(func() {
@@ -225,4 +243,15 @@ func (a *App) exportUsage(u core.UsageReport) {
 	}
 	log.Info("导出用量", "path", p, "days", len(u.Days))
 	a.toast = "已导出到 " + p
+}
+
+// redrawSoon 0.3 秒后重画一帧(等后台统计完成;用标志位避免堆积定时器)。
+func (a *App) redrawSoon() {
+	if a.win == nil || a.redrawPending {
+		return
+	}
+	a.redrawPending = true
+	time.AfterFunc(300*time.Millisecond, func() {
+		a.win.Update(func() { a.redrawPending = false })
+	})
 }

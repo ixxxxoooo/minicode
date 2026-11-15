@@ -74,9 +74,10 @@ type ide struct {
 	bottomTab  string // term / problems / output
 	termLines  []termLine
 	termSt     ui.ScrollState
-	cmds       []cmdView // 「在终端面板查看」打开的只读命令标签
-	termSel    string    // 当前终端分段选中的标签(空 = shell)
-	tp         termPanel // 真实终端(真实模式)
+	cmds       []cmdView    // 「在终端面板查看」打开的只读命令标签
+	termSel    string       // 当前终端分段选中的标签(空 = shell)
+	tps        []*termPanel // 真实终端标签(真实模式),每个一个独立的 shell
+	tpSel      int          // 当前终端标签
 
 	sections map[string]bool // 资源管理器区块折叠(大纲 / 时间线)
 
@@ -352,4 +353,16 @@ func (d *ide) seedDemo() {
 type cmdView struct {
 	id, title, output string
 	exit              *int
+}
+
+// tpc 返回当前终端标签(没有就建一个,真正的 shell 要等面板量出大小才启动)。
+func (d *ide) tpc() *termPanel {
+	if len(d.tps) == 0 {
+		d.tps = []*termPanel{{}}
+		d.tpSel = 0
+	}
+	if d.tpSel < 0 || d.tpSel >= len(d.tps) {
+		d.tpSel = len(d.tps) - 1
+	}
+	return d.tps[d.tpSel]
 }

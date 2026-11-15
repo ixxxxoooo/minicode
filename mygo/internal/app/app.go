@@ -3,6 +3,7 @@
 package app
 
 import (
+	"sort"
 	"strings"
 	"time"
 
@@ -111,37 +112,40 @@ type App struct {
 	opener func(id string) backend.Backend
 
 	// 输入框
-	draft        string
-	sr           searchState                    // 项目内搜索
-	gi           map[string]*gitInfo            // 文件的追溯 / 历史缓存
-	blameOn      bool                           // 行内追溯(光标行末尾的作者 · 时间 · 摘要)
-	cf           map[string]*confState          // 合并冲突标签的状态(按文件)
-	sc           scmState                       // 源代码管理
-	auto         *automation.Store              // 自动化清单
-	au           autoState                      // 自动化页状态
-	clock        func() time.Time               // 当前时间(测试 / 截图注入固定时间)
-	canv         *canvas.Store                  // 画布文档(首次打开页面时建立)
-	cv           canvasState                    // 画布页状态
-	br           *browser.Browser               // 内置浏览器(首次打开页面时建立)
-	brs          browserState                   // 浏览器页状态
-	cust         *customize.Store               // 自定义页数据(首次打开页面时建立)
-	cu           custState                      // 自定义页状态
-	cuNoMem      bool                           // 自定义页:「加载 CLAUDE.md 记忆文件」被关掉(只是界面状态,尚未接入 env)
-	use          usageState                     // 用量页
-	usageSrc     func(rng int) core.UsageReport // 用量数据源(nil = 演示数据)
-	qp           *qpState                       // 快速选择浮层(历史会话 / 分支),nil = 关闭
-	repo         vcs.Repo                       // 当前项目的仓库(演示为内存实现)
-	branch       string                         // 当前分支名(缓存,避免每帧查 git)
-	copyText     string                         // 待写入剪贴板的文字(需要 ui.Context 才能写,下一帧消费)
-	toast        string                         // 待显示的一条轻提示(渲染时消费)
-	welcomeFocus bool                           // 欢迎页的输入框自动聚焦
-	cardHov      bool                           // 当前这张工具卡是否被悬停(卡片内容里的悬停按钮用)
-	hist         histState                      // 历史会话弹层的搜索词
-	rv           reviewState                    // 审查标签状态
-	taskSt       ui.ScrollState                 // 任务输出标签的滚动
-	taskNoFollow bool                           // 任务输出:关闭「跟随输出」
-	q            promptQueue                    // 排队的消息
-	qa           map[string]*qaState            // 提问向导的本地进度
+	draft         string
+	sr            searchState                    // 项目内搜索
+	gi            map[string]*gitInfo            // 文件的追溯 / 历史缓存
+	live          map[string]*liveSess           // 切走时还在跑的会话:后端继续保活,事件归约到自己的状态
+	redrawPending bool                           // redrawSoon 已排了定时重画
+	pickOnReady   bool                           // 新会话握手后应用已记住的模型 / 思考强度
+	blameOn       bool                           // 行内追溯(光标行末尾的作者 · 时间 · 摘要)
+	cf            map[string]*confState          // 合并冲突标签的状态(按文件)
+	sc            scmState                       // 源代码管理
+	auto          *automation.Store              // 自动化清单
+	au            autoState                      // 自动化页状态
+	clock         func() time.Time               // 当前时间(测试 / 截图注入固定时间)
+	canv          *canvas.Store                  // 画布文档(首次打开页面时建立)
+	cv            canvasState                    // 画布页状态
+	br            *browser.Browser               // 内置浏览器(首次打开页面时建立)
+	brs           browserState                   // 浏览器页状态
+	cust          *customize.Store               // 自定义页数据(首次打开页面时建立)
+	cu            custState                      // 自定义页状态
+	cuNoMem       bool                           // 自定义页:「加载 CLAUDE.md 记忆文件」被关掉(只是界面状态,尚未接入 env)
+	use           usageState                     // 用量页
+	usageSrc      func(rng int) core.UsageReport // 用量数据源(nil = 演示数据)
+	qp            *qpState                       // 快速选择浮层(历史会话 / 分支),nil = 关闭
+	repo          vcs.Repo                       // 当前项目的仓库(演示为内存实现)
+	branch        string                         // 当前分支名(缓存,避免每帧查 git)
+	copyText      string                         // 待写入剪贴板的文字(需要 ui.Context 才能写,下一帧消费)
+	toast         string                         // 待显示的一条轻提示(渲染时消费)
+	welcomeFocus  bool                           // 欢迎页的输入框自动聚焦
+	cardHov       bool                           // 当前这张工具卡是否被悬停(卡片内容里的悬停按钮用)
+	hist          histState                      // 历史会话弹层的搜索词
+	rv            reviewState                    // 审查标签状态
+	taskSt        ui.ScrollState                 // 任务输出标签的滚动
+	taskNoFollow  bool                           // 任务输出:关闭「跟随输出」
+	q             promptQueue                    // 排队的消息
+	qa            map[string]*qaState            // 提问向导的本地进度
 
 	// 测试 / 截图用:没有系统红绿灯时自己画
 	fakeLights bool
@@ -217,7 +221,8 @@ func (a *App) Attach(be backend.Backend) {
 	a.be = be
 	be.Start(func(ev core.Event) {
 		apply := func() {
-			if a.be != be { // 已切到别的会话:旧后端的迟到事件丢弃
+			if a.be != be {
+				a.applyParked(be, ev) // 后台保活的会话:事件归约到它自己的状态;其余旧后端的迟到事件丢弃
 				return
 			}
 			end := diag.SpanSlow("app", "归约事件", 8*time.Millisecond, "ev", evName(ev))
@@ -236,6 +241,10 @@ func (a *App) Attach(be backend.Backend) {
 // afterEvent 归约之后的界面侧反应:回合结束时处理排队。
 func (a *App) afterEvent(ev core.Event) {
 	// 新会话的 id 在握手后才知道:记下来,侧栏就能高亮它(演示后端的占位 id 不记)
+	if _, ok := ev.(core.EvReady); ok && a.pickOnReady {
+		a.pickOnReady = false
+		a.applySavedPicks()
+	}
 	if e, ok := ev.(core.EvReady); ok && a.curSess == "" && e.SessionID != "" && !strings.HasPrefix(e.SessionID, "demo-") {
 		a.curSess = e.SessionID
 	}
@@ -263,9 +272,19 @@ func (a *App) SetSessionOpener(f func(id string) backend.Backend) { a.opener = f
 // OpenSession 切到某个会话:关掉旧后端、清空状态与排队、接上新后端(空 id = 新会话)。
 func (a *App) OpenSession(id string) {
 	log.Info("切换会话", "from", a.curSess, "to", id)
-	if a.be != nil {
-		a.be.Close()
-		a.be = nil
+	a.parkOrClose()
+	if lv := a.live[id]; lv != nil && id != "" { // 回到一个在后台跑着的会话:接回它的后端与状态
+		delete(a.live, id)
+		a.be, a.st = lv.be, lv.st
+		a.q.clear()
+		a.qa = nil
+		a.folds = map[string]bool{}
+		a.draft = ""
+		a.curSess = id
+		a.screen = ScreenWork
+		a.flowSt = ui.ScrollState{}
+		log.Info("接回后台会话", "id", id)
+		return
 	}
 	a.st = core.NewState()
 	a.q.clear()
@@ -275,9 +294,19 @@ func (a *App) OpenSession(id string) {
 	a.curSess = id
 	a.screen = ScreenWork
 	a.flowSt = ui.ScrollState{}
+	a.pickOnReady = id == "" || strings.HasPrefix(id, "new:") // 新会话沿用上次选的模型与思考强度
 	if a.opener != nil {
 		a.Attach(a.opener(id))
 	}
+	if strings.HasPrefix(id, "new:") { // 项目内新会话:对界面来说仍是「还没有 id 的新会话」
+		a.curSess = ""
+	}
+}
+
+// NewSessionIn 在某个项目里开新会话(侧栏项目行的「+」)。
+func (a *App) NewSessionIn(p core.ProjectInfo) {
+	a.projOpen[p.ID] = true
+	a.OpenSession("new:" + p.Path)
 }
 
 // QueuePrompts 直接排入若干条消息(截图 / 测试用)。
@@ -429,4 +458,108 @@ func (a *App) shortcuts(c *ui.Context) {
 	case a.screen == ScreenSettings && !a.paletteOn && a.set.query == "" && c.Shortcut(0, ui.KeyEscape):
 		a.closeSettings()
 	}
+}
+
+// 模型与思考强度的选择写进偏好,新会话沿用(历史会话保持它自己的)。
+const (
+	prefModel  = "claude.model"
+	prefEffort = "claude.effort"
+)
+
+func (a *App) pickModel(id string) {
+	a.send(core.CmdSetModel{Model: id})
+	a.st.Model = id
+	a.prefs.Set(prefModel, id)
+}
+
+func (a *App) pickEffort(e core.Effort) {
+	a.send(core.CmdSetEffort{Effort: e})
+	a.st.Effort = e
+	a.prefs.Set(prefEffort, int(e))
+}
+
+// applySavedPicks 把记住的模型 / 强度发给刚握手的新会话(模型要在列表里才用)。
+func (a *App) applySavedPicks() {
+	if m := a.prefs.Str(prefModel, ""); m != "" && m != a.st.Model {
+		for _, mi := range a.st.Models {
+			if mi.ID == m {
+				a.send(core.CmdSetModel{Model: m})
+				a.st.Model = m
+				break
+			}
+		}
+	}
+	if a.prefs.Has(prefEffort) {
+		if e := core.Effort(a.prefs.Int(prefEffort, int(core.EffortMedium))); e != a.st.Effort && e >= core.EffortLow && e <= core.EffortMax {
+			a.send(core.CmdSetEffort{Effort: e})
+			a.st.Effort = e
+		}
+	}
+}
+
+// liveSess 是被切到后台、回合仍在进行的会话。
+type liveSess struct {
+	be backend.Backend
+	st *core.State
+	id string
+}
+
+// parkOrClose 离开当前会话时:回合正在进行的后端留在后台继续跑(完成后自动结束),其余直接结束。
+func (a *App) parkOrClose() {
+	be := a.be
+	if be == nil {
+		return
+	}
+	a.be = nil
+	if a.curSess != "" && a.st != nil && a.st.Phase == core.PhaseRunning && be.Name() != "demo" {
+		if a.live == nil {
+			a.live = map[string]*liveSess{}
+		}
+		if old := a.live[a.curSess]; old != nil && old.be != be {
+			old.be.Close()
+		}
+		a.live[a.curSess] = &liveSess{be: be, st: a.st, id: a.curSess}
+		log.Info("会话转入后台继续运行", "id", a.curSess)
+		return
+	}
+	be.Close()
+}
+
+// applyParked 把后台会话的事件归约到它自己的状态;回合结束后结束它的后端(历史已落盘,再打开时回放)。
+func (a *App) applyParked(be backend.Backend, ev core.Event) {
+	for id, lv := range a.live {
+		if lv.be != be {
+			continue
+		}
+		lv.st.Apply(ev)
+		if lv.st.Phase != core.PhaseRunning {
+			if _, ok := ev.(core.EvTurnEnded); ok {
+				log.Info("后台会话已结束,释放后端", "id", id)
+				delete(a.live, id)
+				be.Close()
+			}
+		}
+		return
+	}
+}
+
+// BackgroundSessions 返回正在后台运行的会话 id(测试 / 侧栏提示用)。
+func (a *App) BackgroundSessions() []string {
+	var ids []string
+	for id := range a.live {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+// closeBackends 退出前结束当前与后台会话的 claude 进程。
+func (a *App) closeBackends() {
+	if a.be != nil {
+		a.be.Close()
+	}
+	for _, lv := range a.live {
+		lv.be.Close()
+	}
+	a.live = nil
 }

@@ -180,7 +180,7 @@ func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 		kit.Ic(c, "folder", kit.S12).TextColor(t.Tx3)
 		ui.Text(c, p.Name).Grow(1).SingleLine()
 		if hov {
-			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "在此项目新建会话"}).Margin(0, -4, 0, 0)
+			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "在此项目新建会话"}).Margin(0, -4, 0, 0).OnClick(func() { a.NewSessionIn(p) })
 		} else {
 			ui.Text(c, itoa(p.Count)).FontSize(theme.FsMicro).FontWeight(400).TextColor(t.Tx4).FontFeatures("tnum")
 		}

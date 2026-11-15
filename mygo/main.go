@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/egoist/mygo"
@@ -14,6 +15,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/app"
 	"github.com/ixxxxoooo/minicode/internal/backend"
 	"github.com/ixxxxoooo/minicode/internal/claude"
+	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/prefs"
@@ -87,6 +89,12 @@ func (r *realSetup) refresh() *claude.Index {
 func (r *realSetup) open(id string) backend.Backend {
 	r.mu.Lock()
 	cfg := claude.Config{Cwd: r.curCwd}
+	if dir, ok := strings.CutPrefix(id, "new:"); ok { // 「在此项目新建会话」:换目录,不接旧会话
+		if dir != "" {
+			cfg.Cwd, r.curCwd = dir, dir
+		}
+		id = ""
+	}
 	if loc, ok := r.ix.Locate(id); ok && id != "" {
 		cfg.Cwd, cfg.SessionID, cfg.HistoryPath = loc.Cwd, id, loc.Path
 		r.curCwd = loc.Cwd
@@ -98,6 +106,51 @@ func (r *realSetup) open(id string) backend.Backend {
 		cb(cfg.Cwd)
 	}
 	return claude.New(cfg)
+}
+
+// startUsage 后台统计用量(启动后立刻扫一次,之后每分钟增量重扫),返回给用量页读的数据源。
+func startUsage(rs *realSetup, win *mygo.Window) func(rng int) core.UsageReport {
+	var sc claude.UsageScanner
+	var recs atomic.Pointer[[]claude.UsageRec]
+	title := func(id string) (string, string) {
+		rs.mu.Lock()
+		ix := rs.ix
+		rs.mu.Unlock()
+		if ix != nil {
+			if loc, ok := ix.Locate(id); ok {
+				return loc.Title, loc.Cwd
+			}
+		}
+		return "", ""
+	}
+	go func() {
+		defer diag.Recover("用量统计")
+		for {
+			end := diag.SpanSlow("app", "扫描用量", time.Second)
+			r := sc.Scan(claude.ProjectsDir())
+			end()
+			recs.Store(&r)
+			win.Update(func() {})
+			time.Sleep(time.Minute)
+		}
+	}()
+	cache := map[int]core.UsageReport{}
+	var cached *[]claude.UsageRec
+	return func(rng int) core.UsageReport {
+		p := recs.Load()
+		if p == nil {
+			return core.UsageReport{}
+		}
+		if p != cached { // 有新数据:丢掉旧报告
+			cache, cached = map[int]core.UsageReport{}, p
+		}
+		if r, ok := cache[rng]; ok {
+			return r
+		}
+		r := claude.BuildReport(*p, rng, time.Now(), title)
+		cache[rng] = r
+		return r
+	}
 }
 
 // initialCwd 新会话默认目录:MINI_PROJECT > 最近有活动的项目 > 当前目录(从访达启动时是 /,退回用户主目录)。
@@ -183,12 +236,18 @@ func main() {
 			speed = v
 		}
 		if demoMode {
-			a.SetSessionOpener(func(id string) backend.Backend { return demo.Session(id, speed) })
+			a.SetSessionOpener(func(id string) backend.Backend {
+				if strings.HasPrefix(id, "new:") {
+					id = ""
+				}
+				return demo.Session(id, speed)
+			})
 			a.Attach(demo.New(func() []demo.Step { return demo.FixBug(true) }, speed))
 			return
 		}
 		a.SetSessionOpener(rs.open)
 		a.Attach(rs.open(""))
+		a.SetUsageSource(startUsage(rs, win))
 		// 侧栏定时重扫:别处(终端里的 claude、本应用刚写盘的新会话)产生的会话也能出现
 		go func() {
 			defer diag.Recover("会话索引刷新")

@@ -85,8 +85,7 @@ func (a *App) cfgPopup(c *ui.Context, key string, anchor ui.Element, compact boo
 			kit.Cap(c, "模型")
 			for _, m := range a.st.Models {
 				if a.mi(c, "model-"+m.ID, "", m.Name, shortDesc(m), a.st.Model == m.ID).Clicked() {
-					a.send(core.CmdSetModel{Model: m.ID})
-					a.st.Model = m.ID
+					a.pickModel(m.ID)
 				}
 			}
 			if compact {
@@ -105,8 +104,7 @@ func (a *App) cfgPopup(c *ui.Context, key string, anchor ui.Element, compact boo
 					}
 				}
 				if i := kit.Seg(c, items, on, kit.SegOpt{Key: "effortseg"}); i >= 0 {
-					a.send(core.CmdSetEffort{Effort: efforts[i]})
-					a.st.Effort = efforts[i]
+					a.pickEffort(efforts[i])
 				}
 			})
 		})

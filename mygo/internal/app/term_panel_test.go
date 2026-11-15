@@ -28,7 +28,7 @@ func TestRealTerminalPanel(t *testing.T) {
 		}
 		t.Fatalf("等不到:%s;当前文字 %v", what, tt.Texts())
 	}
-	pump(func() bool { return a.ide.tp.t != nil }, "终端启动")
+	pump(func() bool { return a.ide.tpc().t != nil }, "终端启动")
 	pump(func() bool { return containsText(tt.Texts(), "$") }, "出现提示符")
 
 	tt.Type("printf 'ab%s' cd")
@@ -52,10 +52,10 @@ func TestRealTerminalPanel(t *testing.T) {
 		return tt.HasText("按回车重新开始") || containsText(tt.Texts(), "按回车重新开始")
 	}, "退出提示")
 	tt.Key(0, ui.KeyEnter)
-	pump(func() bool { return a.ide.tp.t != nil && !exitedNow(a) }, "回车后重新启动")
+	pump(func() bool { return a.ide.tpc().t != nil && !exitedNow(a) }, "回车后重新启动")
 }
 
-func exitedNow(a *App) bool { ex, _ := a.ide.tp.t.Exited(); return ex }
+func exitedNow(a *App) bool { ex, _ := a.ide.tpc().t.Exited(); return ex }
 
 func containsText(ts []string, sub string) bool {
 	for _, s := range ts {

@@ -47,15 +47,44 @@ func (a *App) redraw() {
 
 // closeTerm 结束当前终端进程(切项目、重启、退出时)。
 func (a *App) closeTerm() {
-	tp := &a.ide.tp
-	if tp.t != nil {
+	for _, tp := range a.ide.tps {
+		if tp.t != nil {
+			tp.t.Close()
+		}
+	}
+	a.ide.tps, a.ide.tpSel = nil, 0
+}
+
+// newTerm 新建一个终端标签并切过去(新 shell 在面板下一次渲染量出大小后启动)。
+func (a *App) newTerm() {
+	cw := a.ide.tpc().cellW
+	a.ide.tps = append(a.ide.tps, &termPanel{cellW: cw, focusIt: true})
+	a.ide.tpSel = len(a.ide.tps) - 1
+	a.ide.termSel = ""
+	a.redraw()
+}
+
+// closeTermTab 关掉第 i 个终端标签(结束它的 shell);最后一个关掉后留一个空白标签,下次显示时重开。
+func (a *App) closeTermTab(i int) {
+	if i < 0 || i >= len(a.ide.tps) {
+		return
+	}
+	if tp := a.ide.tps[i]; tp.t != nil {
 		tp.t.Close()
 	}
-	*tp = termPanel{cellW: tp.cellW}
+	a.ide.tps = append(a.ide.tps[:i:i], a.ide.tps[i+1:]...)
+	if a.ide.tpSel >= len(a.ide.tps) {
+		a.ide.tpSel = len(a.ide.tps) - 1
+	}
+	if a.ide.tpSel < 0 {
+		a.ide.tpSel = 0
+	}
+	a.ide.tpc().focusIt = true
+	a.redraw()
 }
 
 // CloseTerminals 应用退出前调用:结束所有终端子进程。
-func (a *App) CloseTerminals() { a.closeTerm() }
+func (a *App) CloseTerminals() { a.closeTerm(); a.closeBackends() }
 
 // shellName 是标签上显示的 shell 名。
 func shellName() string {
@@ -67,7 +96,7 @@ func shellName() string {
 
 // realTerminal 画真实终端(项目目录下的登录 shell)。
 func (a *App) realTerminal(c *ui.Context) {
-	tp := &a.ide.tp
+	tp := a.ide.tpc()
 	t := a.tk
 	if tp.cellW == 0 {
 		w, _ := c.MeasureText(10000, ui.Span{Text: "MMMMMMMMMM", Font: "monospace", Size: termFont})
@@ -149,13 +178,17 @@ func (a *App) realTerminal(c *ui.Context) {
 
 // restartTerm 在同一目录重开一个 shell。
 func (a *App) restartTerm() {
-	a.closeTerm()
+	tp := a.ide.tpc()
+	if tp.t != nil {
+		tp.t.Close()
+	}
+	*tp = termPanel{cellW: tp.cellW}
 	a.redraw()
 }
 
 // termInput 把窗口输入交给终端:按键走仿真器编码(应用光标键、修饰键),文字与粘贴直接送入。
 func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
-	tp := &a.ide.tp
+	tp := a.ide.tpc()
 	if tp.t == nil {
 		return false
 	}
@@ -216,7 +249,7 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 // flushPendLater 安排一次超时补发:系统正常会在按键之后立刻给文字事件(清掉 pend);
 // 40 ms 后还没来(合成按键、没有文字事件的输入源),就按美式键盘补发这个字符。
 func (a *App) flushPendLater() {
-	tp := &a.ide.tp
+	tp := a.ide.tpc()
 	tp.pendSeq++
 	if a.win == nil {
 		return // 测试里没有窗口:靠 KeyUp 补发
@@ -224,7 +257,7 @@ func (a *App) flushPendLater() {
 	seq := tp.pendSeq
 	time.AfterFunc(40*time.Millisecond, func() {
 		a.win.Update(func() {
-			tp := &a.ide.tp
+			tp := a.ide.tpc()
 			if tp.t == nil || tp.pend == ui.KeyUnknown || tp.pendSeq != seq || tp.compose {
 				return
 			}

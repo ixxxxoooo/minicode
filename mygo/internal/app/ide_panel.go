@@ -34,13 +34,35 @@ func (a *App) bottomPanel(c *ui.Context) {
 					kit.Chip(c, "全部", kit.ChipOpt{Icon: "filter", On: true})
 					kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "重新检查"})
 				} else {
-					kit.Chip(c, shellName(), kit.ChipOpt{Icon: "terminal", On: a.ide.termSel == ""}).OnClick(func() { a.ide.termSel = "" })
+					if a.proj != "" {
+						n := len(a.ide.tps)
+						if n == 0 {
+							n = 1
+						}
+						for i := 0; i < n; i++ {
+							i := i
+							name := shellName()
+							if i > 0 {
+								name += " " + itoa(i+1)
+							}
+							on := a.ide.termSel == "" && a.ide.tpSel == i
+							kit.Chip(c, name, kit.ChipOpt{Icon: "terminal", On: on}).OnClick(func() {
+								a.ide.termSel, a.ide.tpSel = "", i
+								a.ide.tpc().focusIt = true
+							})
+							if on && n > 1 {
+								kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭这个终端"}).OnClick(func() { a.closeTermTab(i) })
+							}
+						}
+					} else {
+						kit.Chip(c, shellName(), kit.ChipOpt{Icon: "terminal", On: a.ide.termSel == ""}).OnClick(func() { a.ide.termSel = "" })
+					}
 					for _, v := range a.ide.cmds {
 						kit.Chip(c, v.title, kit.ChipOpt{Icon: "lock", On: a.ide.termSel == v.id, Tip: "只读 · Claude 运行的命令"}).OnClick(func() { a.ide.termSel = v.id })
 					}
-					kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: map[bool]string{true: "重启终端", false: "新建终端"}[a.proj != ""]}).OnClick(func() {
+					kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建终端"}).OnClick(func() {
 						if a.proj != "" {
-							a.restartTerm()
+							a.newTerm()
 						}
 					})
 					kit.Ib(c, "cols", kit.IbOpt{Small: true})
