@@ -11,16 +11,17 @@ func Customize() *c.Store {
 		}
 		return out
 	}
+	inc := func(kind string, n int) c.Inc { return c.Inc{Kind: kind, N: n, On: true} }
 	items := map[c.Cat][]*c.Item{
 		c.Plugins: {
 			{Name: "superpowers", Desc: "官方市场 · v4.2.0 · 12 个 Skills", Scope: c.User, On: true, Ver: "4.2.0", Upd: "4.3.0", Src: "claude-plugins-official",
-				About: "一套工程方法论 Skills:先梳理需求、先写失败的测试、系统化调试。", Inc: []c.Inc{{"Skills", 12, true}, {"斜杠命令", 3, true}, {"钩子", 1, true}}},
+				About: "一套工程方法论 Skills:先梳理需求、先写失败的测试、系统化调试。", Inc: []c.Inc{inc("Skills", 12), inc("斜杠命令", 3), inc("钩子", 1)}},
 			{Name: "code-review", Desc: "官方市场 · v1.3.0 · 2 个命令", Scope: c.User, On: true, Ver: "1.3.0", Src: "claude-plugins-official",
-				About: "按严重程度审查当前改动,并给出可直接应用的修改建议。", Inc: []c.Inc{{"斜杠命令", 2, true}, {"子 Agent", 1, true}}},
+				About: "按严重程度审查当前改动,并给出可直接应用的修改建议。", Inc: []c.Inc{inc("斜杠命令", 2), inc("子 Agent", 1)}},
 			{Name: "commit-helper", Desc: "本地 · v0.2.0", Scope: c.Project, On: true, Ver: "0.2.0", Src: "本地目录 ~/plugins/commit-helper",
-				About: "根据暂存区改动生成符合 Conventional Commits 的提交说明。", Inc: []c.Inc{{"斜杠命令", 1, true}, {"钩子", 1, true}}},
+				About: "根据暂存区改动生成符合 Conventional Commits 的提交说明。", Inc: []c.Inc{inc("斜杠命令", 1), inc("钩子", 1)}},
 			{Name: "design-kit", Desc: "官方市场 · v0.9.1", Scope: c.User, Ver: "0.9.1", Src: "claude-plugins-official",
-				About: "设计令牌检查与组件审查。", Inc: []c.Inc{{"Skills", 4, true}}},
+				About: "设计令牌检查与组件审查。", Inc: []c.Inc{inc("Skills", 4)}},
 		},
 		c.MCP: {
 			{Name: "github", Desc: "stdio · 14 个工具 · 已连接", Scope: c.User, On: true, Status: c.StOK, Transport: "stdio", Cmd: "npx -y @modelcontextprotocol/server-github",
