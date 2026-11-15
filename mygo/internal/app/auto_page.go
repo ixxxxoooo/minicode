@@ -316,7 +316,7 @@ func (a *App) autoDrawer(c *ui.Context) {
 		})
 	})
 	if nx, ok := it.NextRun(a.now()); ok {
-		ui.Text(c, "下次运行 · "+automation.When(a.now(), nx)+" "+fmtTime(nx)).FontSize(theme.FsCap).TextColor(t.Tx3)
+		ui.Text(c, "下次运行 · "+automation.WhenNext(a.now(), nx)).FontSize(theme.FsCap).TextColor(t.Tx3)
 	}
 	ui.Column(c).Gap(4).Children(func() {
 		lbl("最近运行")
@@ -430,8 +430,4 @@ func (a *App) autoDayPicker(c *ui.Context) {
 			s.days = "每月 " + itoa(n%28+1) + " 日"
 		}
 	})
-}
-
-func fmtTime(t time.Time) string {
-	return fmt.Sprintf("%02d:%02d", t.Hour(), t.Minute())
 }

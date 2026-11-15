@@ -147,6 +147,24 @@ func When(now, t time.Time) string {
 	return fmt.Sprintf("%d 月 %d 日", int(t.Month()), t.Day())
 }
 
+// WhenNext 把「将来的时间」说成人话:今天 09:00 / 明天 09:00 / 周五 09:00(一周内)/ 11 月 2 日 09:00。
+// When 是给过去时间用的(昨天、上周二),拿来说将来会得到「11 月 2 日」且今天分支带了时分,
+// 页面再拼一次时间就重复成「今天 09:00 09:00」,所以将来的单独一个函数,时分一律由它自己带上。
+func WhenNext(now, t time.Time) string {
+	day := func(x time.Time) time.Time { return time.Date(x.Year(), x.Month(), x.Day(), 0, 0, 0, 0, time.UTC) }
+	diff := int(day(t).Sub(day(now)).Hours() / 24)
+	hm := fmt.Sprintf("%02d:%02d", t.Hour(), t.Minute())
+	switch {
+	case diff <= 0:
+		return "今天 " + hm
+	case diff == 1:
+		return "明天 " + hm
+	case diff < 7:
+		return weekdays[int(t.Weekday()+6)%7] + " " + hm
+	}
+	return fmt.Sprintf("%d 月 %d 日 %s", int(t.Month()), t.Day(), hm)
+}
+
 // Slot 是周历里某天的一个时间块。
 type Slot struct {
 	ID   int
