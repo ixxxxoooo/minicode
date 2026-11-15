@@ -150,7 +150,7 @@
 
     scm: { t: '源代码管理', d: '改动面板、差异与 Worktree。', body: () => `
       ${G('改动面板', R('Diff 视图', '改动、提交详情里差异的默认呈现;差异块右上角也能随时切换', seg(['左右', '统一'], 0)), R('Diff 大小上限', '超过这个大小的文件不计算 diff,避免卡顿', field('512 KB', 100)), R('AI 提交说明', '用 Haiku 根据改动生成', tog(1)), R('自动获取远端', '每 5 分钟 git fetch', tog(0)), R('多仓库:全部展开', '多根工作区里每个仓库各显示一整块更改与提交框(默认只显示活动仓库 + 总览)', tog(0)))}
-      ${G('Worktree', R('存放位置', '', field('~/.minicode/worktrees', 200, { mono: 1 })), `<div class="set-row" data-rm><span class="si-box">${ic('branch')}</span><div class="grow"><div class="m">feat/auth</div><div class="d mono">~/.minicode/worktrees/router-demo-auth</div></div>${ib('trash', 'sm', '删除', 'data-act="del-row"')}</div>`)}` },
+      ${G('Worktree', R('存放位置', '', field('~/.minicode/worktrees', 200, { mono: 1 })), `<div class="set-row" data-rm><span class="si-box">${ic('branch')}</span><div class="grow"><div class="m">feat/auth</div><div class="d mono">~/.minicode/worktrees/router-demo-auth</div></div>${ib('trash', 'sm', '删除', 'data-act="del-row"')}</div><div class="set-row"><span class="si-box">${ic('plus')}</span><div class="grow"><div class="d mono">新分支名(已存在则直接检出),例如 feat/login</div><div class="d" style="color:var(--err)">分支名不合法:不能含空格、~ ^ : ? * [ \\ 或以 / 开头结尾</div></div>${ib('plus', 'sm', '新建 worktree')}</div>`)}` },
 
     browser: { t: '浏览器', d: '内置阅读模式浏览器的抓取参数。浏览器页右上角的齿轮会直接跳到这里。', body: () => `${G('抓取', R('请求超时', '单个页面的最长等待时间', stp(20, '秒', { min: 5, max: 120 })), R('User-Agent', '留空使用内置标识;个别站点会按它返回不同内容', field('', 220, { ph: '默认' })), R('默认进入阅读模式', '', tog(1)))}` },
 

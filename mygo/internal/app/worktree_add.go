@@ -92,9 +92,6 @@ func (a *App) worktreeNewRow(c *ui.Context) {
 				in.OnChange(func() { a.set.wtErr = "" })
 				in.OnSubmit(a.worktreeCreate)
 			})
-			if a.set.wtErr != "" {
-				ui.Text(c, a.set.wtErr).FontSize(theme.FsCap).TextColor(t.Err)
-			}
 		})
 		kit.Btn(c, "新建 worktree", kit.BtnOpt{Small: true, Variant: kit.BtnSoft, Disabled: canWhy != "", Loading: a.set.wtBuilding, Tip: canWhy}).OnClick(a.worktreeCreate)
 	})
