@@ -18,6 +18,7 @@ type qaState struct {
 	cur   int
 	sel   [][]int
 	freet []string // 每题「其它」或纯自由输入
+	skip  []bool   // 每题是否被「跳过」
 }
 
 // dockCard 画待处理卡;返回是否画了(画了就不再画输入框)。
@@ -146,7 +147,7 @@ func (a *App) qaOf(q *core.QuestionRequest) *qaState {
 	}
 	s := a.qa[q.ID]
 	if s == nil {
-		s = &qaState{sel: make([][]int, len(q.Questions)), freet: make([]string, len(q.Questions))}
+		s = &qaState{sel: make([][]int, len(q.Questions)), freet: make([]string, len(q.Questions)), skip: make([]bool, len(q.Questions))}
 		a.qa[q.ID] = s
 	}
 	return s
@@ -157,11 +158,14 @@ func isOtherLabel(label string) bool {
 	return label == "其他" || label == "其它" || strings.HasPrefix(label, "其它")
 }
 
-func (s *qaState) wantsFreeInput(qu core.Question) bool {
+func (s *qaState) wantsFreeInput(qu core.Question) bool { return s.wantsFreeAt(qu, s.cur) }
+
+// wantsFreeAt 第 i 题是否需要自由输入(无选项,或选了「其它」)。
+func (s *qaState) wantsFreeAt(qu core.Question, i int) bool {
 	if len(qu.Options) == 0 {
 		return true
 	}
-	for _, k := range s.sel[s.cur] {
+	for _, k := range s.sel[i] {
 		if k >= 0 && k < len(qu.Options) && isOtherLabel(qu.Options[k].Label) {
 			return true
 		}
@@ -198,6 +202,9 @@ func (s *qaState) toggleOption(q core.Question, i int) {
 func (s *qaState) answers(q *core.QuestionRequest) [][]string {
 	out := make([][]string, len(q.Questions))
 	for i, qu := range q.Questions {
+		if i < len(s.skip) && s.skip[i] {
+			continue
+		}
 		if len(qu.Options) == 0 {
 			if t := strings.TrimSpace(s.freet[i]); t != "" {
 				out[i] = []string{t}
@@ -224,118 +231,6 @@ func (s *qaState) answers(q *core.QuestionRequest) [][]string {
 		}
 	}
 	return out
-}
-
-func (a *App) askCard(c *ui.Context, q *core.QuestionRequest) {
-	t := a.tk
-	if len(q.Questions) == 0 {
-		return
-	}
-	s := a.qaOf(q)
-	qu := q.Questions[s.cur]
-	last := s.cur == len(q.Questions)-1
-	advance := func() {
-		if len(qu.Options) == 0 {
-			if strings.TrimSpace(s.freet[s.cur]) == "" {
-				return
-			}
-		} else if s.wantsFreeInput(qu) && strings.TrimSpace(s.freet[s.cur]) == "" {
-			// 选了「其它」须填写说明
-			return
-		}
-		if len(s.sel[s.cur]) == 0 && len(qu.Options) > 0 && !qu.MultiSelect {
-			return // 单选必须先选;多选可以一个都不选
-		}
-		if last {
-			a.send(core.CmdAnswerQuestion{ID: q.ID, Answers: s.answers(q)})
-			delete(a.qa, q.ID)
-		} else {
-			s.cur++
-		}
-	}
-	skip := func() {
-		s.sel[s.cur] = nil
-		if last {
-			a.send(core.CmdAnswerQuestion{ID: q.ID, Answers: s.answers(q)})
-			delete(a.qa, q.ID)
-		} else {
-			s.cur++
-		}
-	}
-	if !a.paletteOn && a.screen == ScreenWork && c.Shortcut(0, ui.KeyEnter) {
-		advance()
-	}
-	a.cardShell(c, "dock-ask").Children(func() {
-		ui.Row(c).Gap(7).AlignItems(ui.Center).Children(func() {
-			kit.Ic(c, "info", kit.S12).TextColor(t.AcTx)
-			ui.Text(c, qu.Question).FontWeight(700).Shrink(1)
-			ui.Spacer(c).Grow(1)
-			a.dockBadge(c)
-			if n := len(q.Questions); n > 1 {
-				ui.Text(c, itoa(s.cur+1)+" / "+itoa(n)).FontSize(theme.FsCap).TextColor(t.Tx3).FontFeatures("tnum")
-			}
-		})
-		if len(qu.Options) == 0 {
-			ui.TextInputBase(c.Key("ask-free"), &s.freet[s.cur]).Height(28).PaddingX(9).Radius(t.RSm()).Border(1, t.Bd2).Placeholder("输入你的回答…").PlaceholderColor(t.Tx4)
-		}
-		ui.Column(c).Gap(4).Children(func() {
-			for i, o := range qu.Options {
-				on := hasInt(s.sel[s.cur], i)
-				i := i
-				row := ui.ButtonBase(c).Key("opt" + itoa(i)).Justify(ui.Start).Height(28).PaddingX(9).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).Cursor(ui.CursorPointer).
-					Transition(kit.Fade)
-				switch {
-				case on:
-					row.Background(t.AcSoft).Border(1.5, t.Ac)
-				case row.Hovered():
-					row.Background(t.Fill1).Border(1, t.Bd2)
-				default:
-					row.Border(1, t.Bd2)
-				}
-				row.OnClick(func() { s.toggleOption(qu, i) })
-				row.Children(func() {
-					st := 0
-					if on {
-						st = 2
-					}
-					kit.Chk(c, st)
-					ui.Text(c, o.Label).FontWeight(500).SingleLine().Shrink(0)
-					if o.Description != "" {
-						ui.Text(c, o.Description).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Shrink(1)
-					}
-				})
-			}
-		})
-		if s.wantsFreeInput(qu) && len(qu.Options) > 0 {
-			ui.TextInputBase(c.Key("ask-other"), &s.freet[s.cur]).Height(28).PaddingX(9).Radius(t.RSm()).Border(1, t.Bd2).Placeholder("其它说明…").PlaceholderColor(t.Tx4)
-		}
-		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-			ui.Spacer(c).Grow(1)
-			kit.Btn(c, "跳过", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(skip)
-			label := "下一题"
-			if last {
-				label = "提交"
-			}
-			kit.Btn(c, label, kit.BtnOpt{Variant: kit.BtnPri, Small: true}).OnClick(advance)
-		})
-	})
-}
-
-// askEcho 是已回答的提问在会话流里的回显(一行灰字)。
-func (a *App) askEcho(c *ui.Context, q *core.QuestionRequest) {
-	t := a.tk
-	var parts []string
-	for i, qu := range q.Questions {
-		ans := "跳过"
-		if i < len(q.Answers) && len(q.Answers[i]) > 0 {
-			ans = strings.Join(q.Answers[i], "、")
-		}
-		parts = append(parts, qu.Question+" → "+ans)
-	}
-	ui.Row(c).MinHeight(22).Gap(6).TextColor(t.Tx3).AlignItems(ui.Center).Children(func() {
-		ui.Row(c).Width(16).Justify(ui.Center).Shrink(0).Children(func() { kit.Ic(c, "check", kit.S12) })
-		ui.Text(c, strings.Join(parts, ";")).Shrink(1)
-	})
 }
 
 // ───────── 计划卡(会话流里) ─────────
