@@ -109,6 +109,7 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 		a.askBar(c, tb)
 		a.inlinePatchUI(c, tb)
 		a.reviewHover(c, tb)
+		a.blameGutterWrapHint(c, tb)
 		a.blameGutterOverlay(c, tb)
 		a.blameCardOverlay(c, tb)
 		a.ovPanel(c, tb)

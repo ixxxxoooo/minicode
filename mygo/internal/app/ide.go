@@ -104,17 +104,19 @@ type ide struct {
 
 	sections map[string]bool // 资源管理器区块折叠(大纲 / 时间线)
 
-	tabSt      ui.ScrollState     // 标签条的横向滚动
-	tabSeen    string             // 已滚动到可见的标签
-	tabW       map[string]float32 // 各标签上一帧的宽度
-	nav        []navPos           // 导航历史(位置栈)
-	ni         int                // 历史里当前项的下标
-	refs       *refsState         // 底部「引用」分段的内容
-	ov         ideOv              // 代码区浮层
-	blameHover bool
-	blameLine  int
-	textCache  map[string]string   // 读盘缓存(引用 / 定义索引用)
-	symCache   map[string]symEntry // 符号缓存
+	tabSt          ui.ScrollState     // 标签条的横向滚动
+	tabSeen        string             // 已滚动到可见的标签
+	tabW           map[string]float32 // 各标签上一帧的宽度
+	nav            []navPos           // 导航历史(位置栈)
+	ni             int                // 历史里当前项的下标
+	refs           *refsState         // 底部「引用」分段的内容
+	ov             ideOv              // 代码区浮层
+	blameLine      int
+	blameHoverAt   time.Time           // 悬停追溯文字的起始时刻(满 300ms 才出卡)
+	blameCardShow  bool                // 提交卡已显示
+	blameCardHover bool                // 鼠标在提交卡上
+	textCache      map[string]string   // 读盘缓存(引用 / 定义索引用)
+	symCache       map[string]symEntry // 符号缓存
 
 	filesCache []string                     // allFiles 的缓存
 	listCache  map[string][]workspace.Entry // 目录列表缓存

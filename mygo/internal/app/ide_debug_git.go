@@ -1,5 +1,7 @@
 package app
 
+import "time"
+
 // gitDebug 处理 -ed 中与 Git / 差异相关的调试动作。
 func (a *App) gitDebug(name, arg string) bool {
 	switch name {
@@ -33,7 +35,9 @@ func (a *App) gitDebug(name, arg string) bool {
 		}
 		if tb := a.ide.cur(); tb != nil {
 			tb.st.GoTo(tb.st.CursorPos())
-			a.ide.blameHover, a.ide.blameLine = true, tb.st.CursorPos().Line
+			a.ide.blameLine = tb.st.CursorPos().Line
+			a.ide.blameHoverAt = time.Now().Add(-400 * time.Millisecond)
+			a.ide.blameCardShow = true
 		}
 		return true
 	case "stashfiles":
