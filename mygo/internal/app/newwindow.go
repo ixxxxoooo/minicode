@@ -150,14 +150,55 @@ func (a *App) installAppMenu() {
 		}
 		return items
 	}
+	// 快捷键由应用内按用户设置分发(可改键),所以这里的自定义项不挂 Accelerator,避免与改键后的绑定冲突;
+	// 系统标准项(编辑 / 窗口 / 退出 / 隐藏…)用 Role,自带本地化文案与快捷键。
+	settings := func(tab string) func(*mygo.MenuItem, *mygo.Window) {
+		return func(*mygo.MenuItem, *mygo.Window) { a.openSettings(tab) }
+	}
 	mygo.App.SetMenu(mygo.NewMenu([]*mygo.MenuItem{
-		{Label: "MiniCode", Submenu: []*mygo.MenuItem{{Role: mygo.RoleAbout}}},
+		{Label: "MiniCode", Submenu: []*mygo.MenuItem{
+			{Role: mygo.RoleAbout},
+			{Type: mygo.MenuItemSeparator},
+			{Label: "设置…", Click: func(*mygo.MenuItem, *mygo.Window) {
+				tab := a.setTab
+				if tab == "" {
+					tab = "general"
+				}
+				a.openSettings(tab)
+			}},
+			{Type: mygo.MenuItemSeparator},
+			{Role: mygo.RoleServices},
+			{Type: mygo.MenuItemSeparator},
+			{Role: mygo.RoleHide},
+			{Role: mygo.RoleHideOthers},
+			{Role: mygo.RoleUnhide},
+			{Type: mygo.MenuItemSeparator},
+			{Role: mygo.RoleQuit},
+		}},
 		{Label: "文件", Submenu: []*mygo.MenuItem{
+			{Label: "新建会话", Click: func(*mygo.MenuItem, *mygo.Window) { a.NewSession() }},
 			{Label: "新建窗口", Accelerator: "CmdOrCtrl+Shift+N", Click: func(*mygo.MenuItem, *mygo.Window) {
 				a.SpawnNewWindow(a.proj)
 			}},
 			{Type: mygo.MenuItemSeparator},
 			{Label: "打开最近的项目", Submenu: recent()},
+			{Type: mygo.MenuItemSeparator},
+			{Role: mygo.RoleClose},
+		}},
+		{Role: mygo.RoleEditMenu},
+		{Label: "视图", Submenu: []*mygo.MenuItem{
+			{Label: "Agent 形态", Click: func(*mygo.MenuItem, *mygo.Window) { a.SetMode(ModeAgent) }},
+			{Label: "IDE 形态", Click: func(*mygo.MenuItem, *mygo.Window) { a.SetMode(ModeIDE) }},
+			{Type: mygo.MenuItemSeparator},
+			{Label: "命令面板…", Click: func(*mygo.MenuItem, *mygo.Window) { a.openPalette() }},
+			{Type: mygo.MenuItemSeparator},
+			{Role: mygo.RoleToggleFullScreen},
+		}},
+		{Role: mygo.RoleWindowMenu},
+		{Label: "帮助", Role: mygo.RoleHelp, Submenu: []*mygo.MenuItem{
+			{Label: "快捷键", Click: settings("shortcuts")},
+			{Label: "检查更新", Click: settings("about")},
+			{Label: "隐私与诊断", Click: settings("privacy")},
 		}},
 	}))
 }
