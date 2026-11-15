@@ -1,6 +1,8 @@
 package claude
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/ixxxxoooo/minicode/internal/core"
@@ -128,13 +130,15 @@ func BuildTool(id, name string, input obj, cwd string) *core.ToolCall {
 	switch name {
 	case "Edit":
 		if path != "" {
-			t.WithContent(&core.DiffBlock{Path: path, Old: str(input, "old_string"), New: str(input, "new_string")})
+			old, nw := str(input, "old_string"), str(input, "new_string")
+			t.WithContent(&core.DiffBlock{Path: path, Old: old, New: nw, Line: locateLine(path, cwd, old, nw)})
 		}
 	case "MultiEdit":
 		if path != "" {
 			for _, e := range arr(input, "edits") {
 				em := asObj(e)
-				t.WithContent(&core.DiffBlock{Path: path, Old: str(em, "old_string"), New: str(em, "new_string")})
+				old, nw := str(em, "old_string"), str(em, "new_string")
+				t.WithContent(&core.DiffBlock{Path: path, Old: old, New: nw, Line: locateLine(path, cwd, old, nw)})
 			}
 		}
 	case "Write":
@@ -198,4 +202,37 @@ func permissionOptions(p *Pending) []core.PermissionOption {
 		{ID: "allow_always", Label: label, Kind: core.AllowAlways},
 		{ID: "reject", Label: "拒绝", Kind: core.RejectOnce},
 	}
+}
+
+// locateLine 找出一处编辑在文件里的起始行号(从 1 起),找不到返回 0(界面按 1 计)。
+// 工具调用事件早于执行,此时文件里还是 old,直接在原文里找 old;回放历史时文件已经改过,
+// 退而在现文件里找 new。文件超过 1 MiB 或读不到都放弃,不为行号拖慢事件处理。
+func locateLine(path, cwd, old, nw string) int {
+	if old == "" && nw == "" {
+		return 0
+	}
+	if !filepath.IsAbs(path) {
+		if cwd == "" {
+			return 0
+		}
+		path = filepath.Join(cwd, path)
+	}
+	st, err := os.Stat(path)
+	if err != nil || st.IsDir() || st.Size() > 1<<20 {
+		return 0
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return 0
+	}
+	src := string(b)
+	for _, needle := range []string{old, nw} {
+		if needle == "" {
+			continue
+		}
+		if i := strings.Index(src, needle); i >= 0 {
+			return strings.Count(src[:i], "\n") + 1
+		}
+	}
+	return 0
 }
