@@ -10,6 +10,7 @@ import (
 
 // termRen 是终端标签行内重命名状态(只存在内存)。
 type termRen struct {
+	on  bool // 零值 = 没在重命名(ix 零值是 0,不能单靠 ix 判断,否则第 0 个终端永远处于重命名)
 	ix  int
 	buf string
 }
@@ -31,16 +32,22 @@ func (a *App) termDisplayName(i int) string {
 	return a.termDefaultName(i)
 }
 
+// termRenaming 判断第 i 个终端标签是否正在行内重命名。
+func (a *App) termRenaming(i int) bool { return a.termRen.on && a.termRen.ix == i }
+
 func (a *App) beginTermRename(i int) {
 	if i < 0 || i >= len(a.ide.tps) {
 		return
 	}
-	a.termRen = termRen{ix: i, buf: a.ide.tps[i].label}
+	a.termRen = termRen{on: true, ix: i, buf: a.ide.tps[i].label}
 	log.Info("终端标签重命名", "index", i)
 }
 
 func (a *App) commitTermRename() {
 	r := a.termRen
+	if !r.on {
+		return
+	}
 	if r.ix < 0 || r.ix >= len(a.ide.tps) {
 		a.termRen = termRen{}
 		return
@@ -57,7 +64,7 @@ func (a *App) commitTermRename() {
 func (a *App) termChip(c *ui.Context, i int) {
 	t := a.tk
 	name := a.termDisplayName(i)
-	ren := a.termRen.ix == i
+	ren := a.termRenaming(i)
 	if ren {
 		ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "terminal", kit.S12).TextColor(t.Tx3)

@@ -24,3 +24,22 @@ func TestTermRenameCommitAndCancel(t *testing.T) {
 		t.Fatal("Esc 取消不应改名")
 	}
 }
+
+// 回归:没点重命名时,任何终端标签(尤其是第 0 个)都不该处于重命名状态。
+func TestTermRenameIdleByDefault(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a"})
+	a.ide.tps = []*termPanel{{}, {}}
+	for i := range a.ide.tps {
+		if a.termRenaming(i) {
+			t.Fatalf("默认状态下终端 %d 不该在重命名", i)
+		}
+	}
+	a.beginTermRename(0)
+	if !a.termRenaming(0) || a.termRenaming(1) {
+		t.Fatal("只有被点的那个在重命名")
+	}
+	a.commitTermRename()
+	if a.termRenaming(0) {
+		t.Fatal("提交后应退出重命名")
+	}
+}
