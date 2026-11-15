@@ -185,6 +185,23 @@ func (a *App) setPref(r setRow, v any) {
 	a.applyPrefs()
 }
 
+// rowChanged 判断一行是否「改过」:键存在且值与默认不同。
+// 原先只看键是否存在,改过又改回默认(如字号 14 → 12)的行仍亮红点,与「恢复默认」的含义不符。
+func (a *App) rowChanged(r setRow) bool {
+	if r.key == "" || !a.prefs.Has(r.key) {
+		return false
+	}
+	switch d := r.def.(type) {
+	case int:
+		return a.prefs.Int(r.key, d) != d
+	case bool:
+		return a.prefs.Bool(r.key, d) != d
+	case string:
+		return a.prefs.Str(r.key, d) != d
+	}
+	return true
+}
+
 func (a *App) resetPref(r setRow) {
 	a.prefs.Reset(r.key)
 	delete(a.set.restart, r.key)
@@ -391,7 +408,7 @@ func (a *App) settingsGroup(c *ui.Context, g setGroup, index int) {
 // settingsRow 画一行:标题 + 说明在左,控件在右;改过的行左侧有强调色小点,悬停时出现「恢复默认」。
 func (a *App) settingsRow(c *ui.Context, r setRow, first bool) {
 	t := a.tk
-	changed := r.key != "" && a.prefs.Has(r.key)
+	changed := a.rowChanged(r)
 	row := ui.Row(c.Key("sr-"+r.key+r.title)).MinHeight(38).Padding(6, 12).Gap(12).AlignItems(ui.Center)
 	if !first {
 		row.BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1)

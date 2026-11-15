@@ -120,3 +120,20 @@ func TestSettingsGroupRowsAndBodyBothRender(t *testing.T) {
 		}
 	}
 }
+
+// 改过又改回默认值的行不再算「已修改」(齿轮弹层等直接写键的入口会留下等于默认值的键)。
+func TestRowChangedComparesDefault(t *testing.T) {
+	a, _ := newTestApp(t)
+	r := setRow{key: pTermFont, def: 12}
+	if a.rowChanged(r) {
+		t.Fatal("没写键不该算已修改")
+	}
+	a.prefs.Set(pTermFont, 14)
+	if !a.rowChanged(r) {
+		t.Fatal("值与默认不同应算已修改")
+	}
+	a.prefs.Set(pTermFont, 12)
+	if a.rowChanged(r) {
+		t.Fatal("值等于默认不该算已修改")
+	}
+}
