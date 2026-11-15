@@ -497,6 +497,7 @@ func (a *App) termFindBar(c *ui.Context, tp *termPanel) {
 	} else {
 		bar = kit.PopIn(bar, f.openedAt)
 	}
+	defer func() { tp.addOverlay(bar.Bounds()) }()
 	bar.Children(func() {
 		in := ui.TextInputBase(c.Key("tfind-in"), &f.query).Width(150).FontSize(theme.FsBody).Placeholder("在终端中查找").PlaceholderColor(t.Tx4)
 		if f.focus {

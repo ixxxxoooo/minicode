@@ -25,7 +25,7 @@ func (a *App) termNerdCheck(c *ui.Context, tp *termPanel) {
 		return
 	}
 	t := a.tk
-	ui.Row(c).Key("term-nerd").Height(28).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).
+	bar := ui.Row(c).Key("term-nerd").Height(28).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).
 		Background(t.WarnSoft).BorderWidth(0, 0, 1, 0).BorderColor(t.Warn).Children(func() {
 		ui.Text(c, tp.nerdWarn).FontSize(theme.FsCap).TextColor(t.Warn).Grow(1).MinWidth(0).SingleLine()
 		kit.Btn(c, "终端设置", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() {
@@ -36,6 +36,7 @@ func (a *App) termNerdCheck(c *ui.Context, tp *termPanel) {
 			a.prefs.Set("terminal.nerdHint", false)
 		})
 	})
+	tp.addOverlay(bar.Bounds())
 }
 
 // nerdWarning 返回提示文案;空 = 不需要提示。

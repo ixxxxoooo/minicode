@@ -266,3 +266,39 @@ func TestTermCommandBlockDecoration(t *testing.T) {
 		t.Fatalf("复制到的输出 %q", a.copyText)
 	}
 }
+
+// 叠在终端正文上的控件(提示条按钮、搜索条、「↓ 回到底部」)要能点:
+// 正文的选择处理不能把按下事件吃掉。以前点它们只会在终端里画出一块选区,按钮从不触发。
+func TestTermOverlayPassesPointer(t *testing.T) {
+	t.Setenv("SHELL", "/bin/sh")
+	a, tt := newTestApp(t)
+	a.SetProject(t.TempDir())
+	a.SetMode(ModeIDE)
+	a.ide.bottomOpen, a.ide.bottomTab = true, "term"
+	t.Cleanup(a.CloseTerminals)
+	deadline := time.Now().Add(10 * time.Second)
+	tp := a.ide.tpc()
+	for time.Now().Before(deadline) && tp.t == nil {
+		tt.Frame()
+		time.Sleep(30 * time.Millisecond)
+	}
+	if tp.t == nil {
+		t.Fatal("终端没起来")
+	}
+	tp.over = []ui.Rect{{X: 100, Y: 50, W: 80, H: 20}}
+	down := func(x, y float32) bool {
+		return a.termInput(nil, ui.InputEvent{Kind: ui.InputPointerDown, X: x, Y: y})
+	}
+	if down(120, 60) {
+		t.Fatal("按在覆盖控件上应放行(返回 false),交给控件自己")
+	}
+	if tp.sel.drag {
+		t.Fatalf("按在覆盖控件上不该开始选择:%+v", tp.sel)
+	}
+	if !down(300, 60) {
+		t.Fatal("按在正文上应由终端处理(开始选择)")
+	}
+	if !tp.sel.drag {
+		t.Fatal("按在正文上应开始选择")
+	}
+}

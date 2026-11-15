@@ -57,6 +57,8 @@ type termPanel struct {
 	hoverMods ui.Modifiers
 	link      *termLink // 当前悬停的链接(⌘ 按住时才有)
 	nerdWarn  string    // Nerd Font 缺字形提示(见 term_nerd.go)
+	over      []ui.Rect // 画在正文上的控件(提示条、搜索条、回到底部)的区域,相对正文左上角;正文的选择 / 鼠标处理要放过它们
+	bodyR     ui.Rect   // 正文上一帧的窗口坐标区域
 	nerdKey   string    // 上次判断时的「画面版本|字体|扫描完成」,没变就不重判
 }
 
@@ -192,7 +194,9 @@ func (a *App) realTerminal(c *ui.Context) {
 		body.Cursor(ui.CursorText)
 	}
 	a.termMenu(c, body, tp)
+	tp.bodyR = b
 	body.Children(func() {
+		tp.over = tp.over[:0]
 		a.termNerdCheck(c, tp)
 		switch {
 		case tp.err != "":
@@ -234,8 +238,9 @@ func (a *App) realTerminal(c *ui.Context) {
 		}
 		atBottom := tp.st.MaxY <= 0 || tp.st.Y >= tp.st.MaxY-8
 		if !atBottom && tp.t != nil {
-			kit.Btn(c, "↓ 回到底部", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).Absolute().Right(12).Bottom(10).
+			btn := kit.Btn(c, "↓ 回到底部", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).Absolute().Right(12).Bottom(10).
 				OnClick(func() { tp.st.Y = math.MaxFloat32; a.redraw() })
+			tp.addOverlay(btn.Bounds())
 		}
 	})
 }
@@ -265,6 +270,13 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 			return true
 		}
 		return false
+	}
+	switch ev.Kind {
+	case ui.InputPointerDown, ui.InputPointerUp, ui.InputPointerMove:
+		// 点在叠在正文上的控件(提示条按钮、搜索条、回到底部)上:不当成选择 / 鼠标上报,交给控件自己
+		if tp.overlayHit(ev.X, ev.Y) {
+			return false
+		}
 	}
 	switch ev.Kind {
 	case ui.InputScroll:
@@ -747,4 +759,22 @@ func termSpans(t *theme.Tokens, ln term.Line) []ui.Span {
 		out = append(out, ui.Span{Text: " ", Font: termFamily, Size: termFont})
 	}
 	return out
+}
+
+// addOverlay 登记一个画在正文上的控件区域(窗口坐标,存成相对正文的)。
+func (tp *termPanel) addOverlay(r ui.Rect) {
+	if r.W <= 0 || r.H <= 0 {
+		return
+	}
+	tp.over = append(tp.over, ui.Rect{X: r.X - tp.bodyR.X, Y: r.Y - tp.bodyR.Y, W: r.W, H: r.H})
+}
+
+// overlayHit 判断正文内坐标 (x, y) 是否落在某个覆盖控件上。
+func (tp *termPanel) overlayHit(x, y float32) bool {
+	for _, r := range tp.over {
+		if x >= r.X && x <= r.X+r.W && y >= r.Y && y <= r.Y+r.H {
+			return true
+		}
+	}
+	return false
 }
