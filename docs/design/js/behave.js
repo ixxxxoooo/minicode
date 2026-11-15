@@ -19,14 +19,16 @@
   const idxOn = (box, sel = '.on') => [...box.children].findIndex(c => c.matches(sel));
 
   /* ═════════ 偏好:密度 / 圆角 / 强调色 / 动效(设计令牌的倍率,即改即生效) ═════════ */
-  st.prefs = Object.assign({ density: 1, radius: 1, accent: '', motion: 1, stickyUser: 1 }, st.prefs);
+  st.prefs = Object.assign({ density: 1, radius: 1, accent: '', motion: 1, stickyUser: 1, flowStyle: 0 }, st.prefs);
   const BASE = { a: { h: 24, r: .8 }, b: { h: 26, r: 1.4 }, c: { h: 22, r: 1 } };
   const applyPrefs = () => {
     const p = st.prefs;
     $$('.frame').forEach(f => { const b = BASE[f.dataset.scheme] || BASE.a;
       f.style.setProperty('--h-row', (b.h + [-2, 0, 2][p.density]) + 'px');
       f.style.setProperty('--r-k', +(b.r * [.55, 1, 1.35][p.radius]).toFixed(3));
-      p.accent ? f.style.setProperty('--c-accent', `var(${p.accent})`) : f.style.removeProperty('--c-accent'); });
+      p.accent ? f.style.setProperty('--c-accent', `var(${p.accent})`) : f.style.removeProperty('--c-accent');
+      /* 会话样式:0 跟随布局(不写属性)/ 1 对话 / 2 通栏 */
+      p.flowStyle ? f.dataset.flow = ['', 'chat', 'wide'][p.flowStyle] : delete f.dataset.flow; });
     document.body.classList.toggle('no-motion', !p.motion);
     document.body.classList.toggle('no-sticky-user', !p.stickyUser); if (A.stickyChanged) A.stickyChanged();
   };
@@ -242,7 +244,7 @@
   ACT.doctor = (el) => { const out = $('#doctor-out'); if (out.classList.contains('open')) return out.classList.remove('open');
     loading(el, true); later(1200, () => { loading(el, false); out.classList.add('open'); out.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }); };
   ACT['reset-all'] = () => modal({ icon: 'undo', lvl: 'warn', title: '恢复默认客户端偏好?', body: '主题、发送键、通知、代理等会恢复默认值。不会影响 Claude 配置、栏宽与最近项目。', ok: '恢复默认', danger: true,
-    onOk: () => { SAVED.clear(); RESTART.clear(); LATER = 0; st.prefs = { density: 1, radius: 1, accent: '', motion: 1, stickyUser: 1 }; st.theme = 'paper'; A.apply(); A.renderBar(); A.save(); A.rerender(); toast('已恢复默认偏好', { lvl: 'ok' }); } });
+    onOk: () => { SAVED.clear(); RESTART.clear(); LATER = 0; st.prefs = { density: 1, radius: 1, accent: '', motion: 1, stickyUser: 1, flowStyle: 0 }; st.theme = 'paper'; A.apply(); A.renderBar(); A.save(); A.rerender(); toast('已恢复默认偏好', { lvl: 'ok' }); } });
   ACT.runmode = (el) => { const seg = el.closest('.seg'), to = +el.dataset.i, from = 1 - to, row = el.closest('.set-row');
     const back = () => { seg.style.setProperty('--i', from); $$('button', seg).forEach((b, k) => cls(b, 'on', k === from)); };
     modal({ icon: 'refresh', title: `切换到「${to ? '演示' : '真实'}」模式并重启?`, body: to ? '演示模式使用脚本化后端与沙盒项目,不连接 claude;切换后窗口会重启一次,运行中的会话会被停止。' : '真实模式会读取 ~/.claude 并按需启动 claude。', ok: '切换并重启', onCancel: back,

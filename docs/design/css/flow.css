@@ -149,3 +149,14 @@ body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 
 .msg-u .ed-acts { display: flex; align-items: center; gap: 8px; margin-top: 7px; padding-top: 7px; box-shadow: inset 0 1px var(--bd-1); }
 .su-note { margin-top: -2px; }
 .sdemo { border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--bd-1); background: var(--bg); overflow: hidden; } .sdemo .flow-wrap { overflow: auto; }
+
+/* ───────── 会话样式(设置 → 外观 → Agent 会话;偏好 flowStyle,由 behave.js 写到 .frame[data-flow])
+   跟随布局:不写属性,各方案按自己的 .msg-u 样式;chat 对话:用户消息靠右气泡;wide 通栏:所有消息占满整列宽度、上下排列 ───────── */
+[data-flow="chat"] .flow .msg-u { align-self: flex-end; max-width: 86%; background: linear-gradient(var(--ac-soft), var(--ac-soft)), var(--bg); box-shadow: none; border-radius: var(--r-lg) var(--r-lg) var(--r-xs) var(--r-lg); }
+[data-flow="chat"] .flow .msg-u:hover { box-shadow: inset 0 0 0 1px var(--ac-line); }
+[data-flow="chat"] .flow .msg-u.editing { max-width: 100%; align-self: stretch; box-shadow: 0 0 0 1px var(--ac-line), var(--sh-2); }
+[data-flow="wide"] .flow .msg-u { align-self: stretch; max-width: none; margin-inline: -16px; padding: 9px 16px; border-radius: 0; background: linear-gradient(var(--fill-1), var(--fill-1)), var(--bg); box-shadow: inset 0 1px var(--bd-1), inset 0 -1px var(--bd-1); }
+[data-flow="wide"] .flow .msg-u:hover { box-shadow: inset 0 1px var(--bd-2), inset 0 -1px var(--bd-2); }
+[data-flow="wide"] .flow .msg-u.stuck { box-shadow: inset 0 -1px var(--bd-2), 0 6px 10px -8px rgb(var(--c-shade) / .3); }
+[data-flow="wide"] .flow .msg-u.editing { background: var(--bg-raised); box-shadow: inset 0 1px var(--ac-line), inset 0 -1px var(--ac-line), var(--sh-2); }
+[data-flow="wide"] .flow .msg-u::before { right: 16px; }

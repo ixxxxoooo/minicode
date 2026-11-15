@@ -46,6 +46,8 @@
   /* ───────── 会话流补充 ───────── */
   const msgSec = sec('会话流补充', '长消息折叠、编辑、回合折叠、回退文件、图表卡与附件;都沿用步骤行栅格与卡片层级。',
     g3(spec('用户消息吸顶 · 滚动试试', ['.round', 'position: sticky', '.stuck'], F.stickyDemo({ init: 330 })),
+      spec('会话样式 · 对话(设置 → 外观)', ['[data-flow="chat"]', '.msg-u', 'flowStyle'], `<div data-flow="chat">${F.stickyDemo({ init: 0, h: 250 })}</div>`),
+      spec('会话样式 · 通栏(整列宽度,上下排列)', ['[data-flow="wide"]', '.msg-u', 'flowStyle'], `<div data-flow="wide">${F.stickyDemo({ init: 330, h: 250 })}</div>`),
       spec('吸顶 · 下一条顶上来,上一条被顶走', ['.round', '始终最多一张', '--dur-base'], F.stickyDemo({ init: 'push' })),
       spec('吸顶 · 长消息固定时仍折叠为 6 行', ['.msg-u.clamp', '.stuck'], F.stickyDemo({ init: 330, long: 1 })),
       spec('点击提问卡 · 就地编辑(固定时同样可以)', ['.msg-u.editing', '.ed-acts', '取消 / 发送'], F.stickyDemo({ init: 330, edit: 1, h: 330 })),
