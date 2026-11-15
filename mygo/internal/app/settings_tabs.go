@@ -604,12 +604,12 @@ func sysPromptArea(a *App, c *ui.Context) {
 	const key = "chat.sys"
 	buf, ok := a.set.bufs[key]
 	if !ok {
-		s := a.prefs.Str(key, "所有回答用中文,注释也用中文。\n提交信息使用 Conventional Commits。\n不要读取或输出任何密钥。")
+		s := a.prefs.Str(key, "")
 		buf = &s
 		a.set.bufs[key] = buf
 	}
 	ui.Column(c).Padding(10, 12).Gap(6).Children(func() {
-		in := ui.TextArea(c.Key("sys"), buf).Height(88).FontSize(theme.FsCap + .5)
+		in := ui.TextArea(c.Key("sys"), buf).Height(88).FontSize(theme.FsCap + .5).Placeholder(chatSysExample).PlaceholderColor(t.Tx4)
 		in.OnChange(func() { a.prefs.Set(key, *buf) })
 		ui.Row(c).Gap(8).Children(func() {
 			ui.Text(c, "以 --append-system-prompt 传给 claude,新会话生效;多根工作区说明会自动合并").FontSize(theme.FsCap).TextColor(t.Tx3).Grow(1)

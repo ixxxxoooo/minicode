@@ -19,15 +19,15 @@ const (
 	pWinClose   = "general.close"
 )
 
-// defaultChatSys 与 settings_tabs.sysPromptArea 默认文案一致。
-const defaultChatSys = "所有回答用中文,注释也用中文。\n提交信息使用 Conventional Commits。\n不要读取或输出任何密钥。"
+// chatSysExample 是输入框里的占位示例(只做提示,不会发给 claude)。
+const chatSysExample = "例如:\n所有回答用中文,注释也用中文。\n提交信息使用 Conventional Commits。"
 
-// ChatSystemPrompt 追加系统提示词(空键时用默认示范文案)。
+// ChatSystemPrompt 追加系统提示词;用户没填就是空,不静默注入任何默认内容。
 func (a *App) ChatSystemPrompt() string {
 	if a == nil || a.prefs == nil {
-		return defaultChatSys
+		return ""
 	}
-	return strings.TrimSpace(a.prefs.Str(pChatSys, defaultChatSys))
+	return strings.TrimSpace(a.prefs.Str(pChatSys, ""))
 }
 
 // RuntimeExtraEnv 返回应从偏好注入 claude 子进程的环境变量。
