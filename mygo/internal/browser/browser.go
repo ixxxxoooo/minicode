@@ -69,6 +69,9 @@ type Browser struct {
 	page Page
 	Err  error // 最近一次导航的错误(成功则为 nil)
 	Fav  map[string]bool
+
+	failed string          // 最近一次失败导航的地址(规整后);「重新载入」优先重试它
+	plain  map[string]bool // 用户明确写了 http:// 的地址(规整后),重新载入 / 前进后退沿用
 }
 
 // New 建立浏览器,起始页为 home(空则不导航)。
@@ -89,22 +92,35 @@ func Normalize(u string) string {
 	return strings.TrimRight(u, "/")
 }
 
-// Go 导航到 url 并截断前进历史;失败时保留旧页面,Err 记录原因。
+// Go 导航到 url 并截断前进历史;失败时保留旧页面,Err 记录原因,地址记入 failed 供「重新载入」重试。
 func (b *Browser) Go(url string) error {
 	u := Normalize(url)
 	if u == "" {
 		return nil
 	}
+	if b.plain == nil {
+		b.plain = map[string]bool{}
+	}
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(url)), "http://") {
+		b.plain[u] = true
+	}
 	if err := b.load(u); err != nil {
+		b.failed = u
 		return err
 	}
+	b.failed = ""
 	b.hist = append(b.hist[:b.cur+1], u)
 	b.cur = len(b.hist) - 1
 	return nil
 }
 
+// load 取页面;用户明确写过 http:// 的地址带上协议交给数据源(Normalize 会丢掉协议)。
 func (b *Browser) load(u string) error {
-	p, err := b.src.Fetch(u)
+	arg := u
+	if b.plain[u] {
+		arg = "http://" + u
+	}
+	p, err := b.src.Fetch(arg)
 	b.Err = err
 	if err != nil {
 		return err
@@ -120,6 +136,7 @@ func (b *Browser) CanForward() bool { return b.cur >= 0 && b.cur < len(b.hist)-1
 // Back 后退一步。
 func (b *Browser) Back() {
 	if b.CanBack() {
+		b.failed = ""
 		b.cur--
 		_ = b.load(b.hist[b.cur])
 	}
@@ -128,13 +145,18 @@ func (b *Browser) Back() {
 // Forward 前进一步。
 func (b *Browser) Forward() {
 	if b.CanForward() {
+		b.failed = ""
 		b.cur++
 		_ = b.load(b.hist[b.cur])
 	}
 }
 
-// Reload 重新载入当前页。
+// Reload 重新载入当前页;若上一次导航失败,则重试失败的地址。
 func (b *Browser) Reload() {
+	if b.failed != "" { // 上一次导航失败:重试它(失败时还没进历史,所以单靠历史重载什么也不做)
+		_ = b.Go(b.failed)
+		return
+	}
 	if b.cur >= 0 {
 		_ = b.load(b.hist[b.cur])
 	}

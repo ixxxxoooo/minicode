@@ -33,6 +33,9 @@ func TestHTTPSUnsupported(t *testing.T) {
 	if !httpsUnsupported(errString("http: server gave HTTP response to HTTPS client")) {
 		t.Error("应识别为不支持 https")
 	}
+	if !httpsUnsupported(errString("dial tcp 1.2.3.4:443: connect: connection refused")) {
+		t.Error("443 被拒绝(只开了 80)应退回 http")
+	}
 	if httpsUnsupported(errString("dial tcp: lookup x: no such host")) {
 		t.Error("域名错误不该退回 http")
 	}

@@ -132,7 +132,7 @@ func fullURL(u string) (string, bool) {
 func httpsUnsupported(err error) bool {
 	m := strings.ToLower(err.Error())
 	return strings.Contains(m, "server gave http response") || strings.Contains(m, "first record does not look like a tls handshake") ||
-		strings.Contains(m, "connection reset") || strings.Contains(m, "protocol version not supported") || strings.Contains(m, "eof")
+		strings.Contains(m, "connection reset") || strings.Contains(m, "connection refused") || strings.Contains(m, "protocol version not supported") || strings.Contains(m, "eof")
 }
 
 // friendlyNetErr 把网络错误翻成一句中文加下一步,原文只进日志。
