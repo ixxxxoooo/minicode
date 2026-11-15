@@ -138,6 +138,13 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 - **二期与梳理补充(同样未测试)**:`kit` 新增 `Btn` 的 `Disabled/Loading`、`Field`(错误描边 + `ShakeInput`)、`popshell.go`(`PopIn/PopOut/StaggerRise/CollapseHide`)、`Ring`/`SkelRows`、`DurLoop`(1600 ms)、`UndoSlot`+`UndoBar`(会话删除先折叠再延迟落盘);用户消息编辑 `CmdEditUser`(`resume_session_at`,无 uuid 则置灰);计划段落「批注」(`plan_annotate.go`);MCP 工具级开关写本地 `permissions.deny`;`CmdCompact` 发 `/compact`;`internal/update` 状态机 + GitHub appcast(开发版重启走 `scripts/dev.sh`,正式包替换仍是占位);跨组拖标签 `ide_split_drag.go`;Claude 行内补全 / ⌘I 走 `claude.RunPromptModelCtx`(Haiku,可取消,失败退回占位);CodeLens 测试数来自本地符号启发式;终端 SGR 滚轮上报与 Nerd Font 缺字形提示(`term_nerd.go`);自动化 `RunPromptStreamCtx` 流式 + 取消杀进程组;画布 ` ```canvas ` 围栏回合结束自动写回;浏览器阅读区框选引用(`browser_select.go`);`DiskStore.SaveMCP`;服务商 CRUD(`providers.json` + 0600 `provider-keys.json`);Dock 图标读 `appearance.appIcon*` 并随系统深浅轮询;对话栏「分叉会话…」与回合条共用 `forkTurn`;文件标签右键「在新窗口中打开」= `SpawnNewWindow`。
 - **二期仍未做**:语义高亮(无库 API)、剪贴板贴图与 WYSIWYG 内嵌图片块、系统通知点击回会话(缺 UN 委托)、正式包更新替换、托盘 error / update / paused / demo 图与动画帧、欢迎页 64px 品牌徽标、MCP 详情「编辑配置」表单、服务商行内「编辑」入口、Skill 重命名目录、文字流光 / 流底部渐隐 / 抽屉 / ok-pop 等剩余动效、`kit.Field` 铺到设置单行。
 
+- **三期补充(未测试,仅编译通过)**:
+  - 品牌:`assets/icon/gen.py all` + `build_all.sh` 生成六样式 × 浅 / 深 / 透明 / 着色 `.icns`、托盘 11 态 PNG 与动画帧、文档图标;`brand_tray.go`(托盘状态机)、`brand_dock.go` / `mac_dock_darwin.go`(Dock 弹跳 / 进度)、`brand_logo.go`(欢迎页徽标)、`mac_a11y_*`(减弱动态 / 高对比读取与 VoiceOver 播报);`scripts/dev.sh` 注册 UTType。
+  - cgo 注意:带 `//export` 的 Go 文件序言里不能放非 static 定义(会被编译两次导致重复符号),ObjC 实现放 `.m` + `.h`(见 `mac_notify_darwin.*`)。
+  - 真实模式:`claude/mcp_status.go`(`mcp_status`)、`claude/context_usage.go`(`get_context_usage`)、任务事件翻译与 `task_restart.go`、`welcome_recent.go`、通知点击经 UN 委托回 `OpenSessionFromNotify`、`internal/update/install.go`(替换脚本 + 重启)。
+  - 动效 / 控件:`kit/motion_ui.go`(DrawerSlide / DragLift / ToastSlide / TextShimmer)、`kit/connectivity.go`(ConnTestRow)、`chat_fade.go`(流底部渐隐)、`dialogOpen`(对话框退场);Markdown 大纲定位 / 粘贴图片 / 往返保留(`edit_md_nav|paste|preserve.go`);OSC 133 注入 bash / zsh(`term/integration.go`);`--virt` 虚拟标签新窗口(`newwindow_virt.go`);MCP 编辑配置、Skill 重命名、服务商编辑、画布全屏坐标 / 适应、演示自动化运行器、用量重试。
+- **三期仍未做**:语义高亮(MyGo 无 API,文档已写明取舍)、`resume_session_at` 分叉的真实后端核验、Mermaid 完整引擎、fish 的 OSC 133、JPEG 剪贴板、工作区 / 诊断 pull、`.icon` 打包与 Finder 图标换装、托盘按样式分图、规则 / 环境变量行与 quickpick 接 `Field` / `dialogOpen`、ok-pop / 折叠高度插值、侧栏会话行错峰入场、插件表单回写、会话内画布版本步进。**以上全部未做过截图 / `go test` 验证,等用户通知再进入阶段三。**
+
 ### 已知缺口(真实模式)
 
 - 设置页:快捷键录制、服务商 / 规则 / 环境变量 / LSP 行是演示数据;「项目信任」只列项目,不读写信任状态;除上面列出的偏好外,其它控件只存偏好。
