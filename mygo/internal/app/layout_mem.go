@@ -83,6 +83,9 @@ func (a *App) loadLayMemFromPrefs() {
 	if a.prefs == nil {
 		return
 	}
+	if !a.RestoreEnabled() {
+		return
+	}
 	// general.insp: Agent 形态开标签时是否自动展开右侧工作区
 	if a.prefs.Bool("general.insp", true) {
 		a.memBy[ModeAgent].right = true
@@ -105,6 +108,9 @@ func (a *App) loadLayMemFromPrefs() {
 
 func (a *App) saveLayMemToPrefs() {
 	if a.secondary || a.prefs == nil {
+		return
+	}
+	if !a.RestoreEnabled() {
 		return
 	}
 	pack := func(m layMem) int {

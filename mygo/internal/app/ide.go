@@ -188,6 +188,25 @@ func (d *ide) tabOn(id string, tabs []*ideTab) *ideTab {
 	return nil
 }
 
+// tabByPath 按路径找首个非虚拟 / 非 diff 标签(恢复编辑器焦点用)。
+func (d *ide) tabByPath(path string) *ideTab {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return nil
+	}
+	for _, t := range d.tabs {
+		if t != nil && t.virt == "" && !t.diff && t.path == path {
+			return t
+		}
+	}
+	for _, t := range d.tabs2 {
+		if t != nil && t.virt == "" && !t.diff && t.path == path {
+			return t
+		}
+	}
+	return nil
+}
+
 func (d *ide) paneTabs(pane int8) []*ideTab {
 	if pane == 1 && d.splitDir != 0 {
 		return d.tabs2
