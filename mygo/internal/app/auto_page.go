@@ -180,7 +180,11 @@ func (a *App) autoList(c *ui.Context, items []automation.Automation) {
 		a.box(c).Padding(30, 12).Gap(6).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "timer", 20).TextColor(t.Tx4)
 			ui.Text(c, map[int]string{1: "没有运行中的自动化", 2: "没有已暂停的自动化", 0: "还没有自动化"}[s.filter]).FontWeight(600)
-			ui.Text(c, "切到「全部」看看。").FontSize(theme.FsCap).TextColor(t.Tx3)
+			hint := "切到「全部」看看。"
+			if s.filter == 0 {
+				hint = "点右上角「新建自动化」,让 Claude 按计划自动做事。"
+			}
+			ui.Text(c, hint).FontSize(theme.FsCap).TextColor(t.Tx3)
 		})
 		return
 	}
