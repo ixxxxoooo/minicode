@@ -495,8 +495,8 @@ var settingsTabs = []setTabDef{
 
 	{id: "privacy", title: "隐私与诊断", icon: "lock", desc: "默认不上报任何数据;性能、崩溃与卡顿记录都在本机。", groups: []setGroup{
 		{title: "数据上报", rows: []setRow{
-			rTog("privacy.crash", "崩溃报告", "本应用不上报任何数据;此开关仅为占位", false),
-			rTog("privacy.usage", "使用统计", "本应用不上报任何数据;此开关仅为占位", false),
+			rTog("privacy.crash", "崩溃报告", "本应用不会上报任何数据,此开关暂无作用", false),
+			rTog("privacy.usage", "使用统计", "本应用不会上报任何数据,此开关暂无作用", false),
 			rCustom("凭据", "MiniCode 不读取钥匙串;服务商 API Key 单独存放在 0600 权限的文件里", func(a *App, c *ui.Context) { kit.Tag(c, "本地", kit.KOk) }),
 		}},
 		{title: "性能(最近 5 分钟,来自本进程的实时采样)", body: perfBody},
