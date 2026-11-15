@@ -78,7 +78,7 @@ ${live ? 'test matches_trailing_slash ... <span class="caret"></span>' : 'test r
   /** 回合结束的改动卡:代替旧的「检查器 · 改动」标签,入口是「审查」 */
   F.chg = () => `<div class="chg-card">${ic('diff', 's12 c-ac')}<b>3 个文件已修改</b><span class="c-ok mono fs-cap">+18</span><span class="c-err mono fs-cap">−2</span><div class="files">${['router.rs', 'router_test.rs', 'case_test.rs'].map(n => `<span class="ref" data-act="open" data-id="${n === 'router.rs' ? 'diff:router.rs' : n}">${ic('code', 's12')}${n}</span>`).join('')}</div>${btn('撤销', 'sm ghost', 'undo')}${btn('审查', 'sm soft', 'eye', 'data-act="open" data-id="review"')}</div>`;
   /** 待发送区(输入框正上方):排队与引导共用。items:[{k:'queue'|'steer', t}];o.paused 暂停态 */
-  F.queue = (items, o = {}) => { items = items || [{ k: 'steer', t: '先别动 handlers,只改 router.rs' }, { k: 'queue', t: '顺便把 README 里的路由示例也更新一下' }, { k: 'queue', t: '跑一遍 cargo clippy' }];
+  F.queue = (items, o = {}) => { items = items || [{ k: 'steer', t: '先别动 handlers,只改 router.rs' }, { k: 'queue', t: '对照截图修 UI', img: 2 }, { k: 'queue', t: '顺便把 README 里的路由示例也更新一下' }, { k: 'queue', t: '', img: 1 }];
     return `<div class="queue"><div class="qh">${ic('clock', 's12')}<b>待发送 ${items.length}</b><span class="grow"></span><span class="f ai g2">${kbd('⏎')}排队<span style="width:6px"></span>${kbd('⌘⏎')}引导</span></div>
     ${o.paused ? `<div class="qwarn">${ic('alert', 's12 c-warn')}<span class="grow t2 fs-cap">回合被中断,排队已暂停</span>${btn('继续', 'sm soft')}${btn('撤回', 'sm ghost')}</div>` : ''}
     ${items.map((it, n) => it.k === 'steer'

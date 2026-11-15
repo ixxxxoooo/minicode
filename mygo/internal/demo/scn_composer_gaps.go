@@ -14,6 +14,10 @@ func init() {
 		Build: buildQueueMulti,
 	})
 	Register(Scenario{
+		ID: "b4-queue-img", Title: "B4 · 排队带图片", Label: "刚刚", Live: true,
+		Build: buildQueueMulti,
+	})
+	Register(Scenario{
 		ID: "b4-ask-free", Title: "B4 · 提问自由输入", Label: "刚刚",
 		Build: buildAskFree,
 	})

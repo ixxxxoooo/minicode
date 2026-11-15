@@ -342,11 +342,13 @@ func (a *App) queueCard(c *ui.Context) {
 			kit.Ic(c, "clock", kit.S12)
 			ui.Text(c, "待发送 "+itoa(nq+ns)).FontWeight(600).TextColor(t.Tx2)
 			ui.Spacer(c).Grow(1)
-			e, m := a.busyKeys()
-			kit.Kbd(c, "⏎")
-			ui.Text(c, e)
-			kit.Kbd(c, "⌘⏎")
-			ui.Text(c, m)
+			if a.chatTier() != tierNarrow {
+				e, m := a.busyKeys()
+				kit.Kbd(c, "⏎")
+				ui.Text(c, e)
+				kit.Kbd(c, "⌘⏎")
+				ui.Text(c, m)
+			}
 		})
 		if a.q.paused && nq > 0 {
 			ui.Row(c).Gap(6).Padding(2, 6).AlignItems(ui.Center).Children(func() {
@@ -376,10 +378,14 @@ func (a *App) queueCard(c *ui.Context) {
 			}
 			row.Children(func() {
 				a.queueKind(c, false, i+1)
-				ui.Text(c, it.Text).SingleLine().Grow(1).MinWidth(0).Cursor(ui.CursorPointer).Tooltip("点击退回输入框编辑").OnClick(func() { // 点文字:退回输入框编辑
+				ui.Row(c).Gap(6).Grow(1).MinWidth(0).AlignItems(ui.Center).Cursor(ui.CursorPointer).Tooltip("点击退回输入框编辑").OnClick(func() {
 					if s, ok := a.q.take(i); ok {
 						a.draft = s
+						a.ux.focusDraft = true
 					}
+				}).Children(func() {
+					a.queueAttachChips(c, it.Text)
+					ui.Text(c, queueShowText(it.Text)).SingleLine().Grow(1).MinWidth(0)
 				})
 				if row.Hovered() {
 					kit.Ib(c, "bolt", kit.IbOpt{Small: true, Tip: "改为引导:现在就插进当前回合"}).OnClick(func() {
@@ -395,12 +401,12 @@ func (a *App) queueCard(c *ui.Context) {
 	})
 }
 
-// drainQueue 空闲时发出队首(暂停中不发)。
+// drainQueue 空闲时发出队首(暂停中不发);图片附件随正文一并解析发送。
 func (a *App) drainQueue() {
 	if a.st.Phase == core.PhaseRunning {
 		return
 	}
 	if s, ok := a.q.next(); ok {
-		a.send(core.CmdPrompt{Text: s})
+		a.submitPrompt(s, false)
 	}
 }

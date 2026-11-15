@@ -36,7 +36,8 @@ func main() {
 	palette := flag.String("palette", "", "打开命令面板并预填查询(用 _ 表示空查询)")
 	tab := flag.String("tab", "", "设置页 / 自定义页分类(配合 -screen settings / customize)")
 	squery := flag.String("squery", "", "设置页搜索词")
-	state := flag.String("state", "", "会话状态:welcome(空会话)/ perm / ask / plan / queue(权限·提问·计划·排队)")
+	state := flag.String("state", "", "会话:welcome/perm/ask/plan/queue/steer/queue-paused/ask2/askdone/latest/latest-fresh")
+	askCur := flag.Int("ask-cur", 1, "ask2 状态:当前题号(1 起)")
 	quick := flag.String("quick", "", "快速选择浮层:history / branch,可带预填查询,如 branch:feat")
 	scm := flag.String("scm", "", "IDE 左栏源代码管理:[提交说明][|展开的提交哈希],如 |b7d02e4")
 	srch := flag.String("search", "", "IDE 左栏搜索:查询[|替换文本],如 match_path|find_route")
@@ -67,6 +68,7 @@ func main() {
 			a.SetActiveRepoIndex(*repoIx)
 		}
 	}
+	skipTop := false
 	switch *state {
 	case "welcome":
 	case "perm":
@@ -75,11 +77,35 @@ func main() {
 		demo.Replay(a.State(), demo.PendingQuestion())
 	case "plan":
 		demo.Replay(a.State(), demo.PendingPlan())
+	case "steer":
+		demo.Replay(a.State(), demo.RunningFixBug())
+		a.SeedSteers("先只看 normalize 行为", "README 里补一句说明")
+		a.QueuePrompts("顺便把 README 里的路由示例也更新一下", "再跑一遍完整测试")
+	case "queue-paused":
+		demo.Replay(a.State(), demo.RunningFixBug())
+		a.SeedQueuePaused("顺便把 README 里的路由示例也更新一下", "再跑一遍完整测试")
+	case "ask2":
+		demo.Replay(a.State(), demo.PendingQuestion3())
+		cur := *askCur - 1
+		if cur < 0 {
+			cur = 0
+		}
+		a.SetAskCur("q1", cur, *askCur > 1)
+	case "askdone":
+		demo.Replay(a.State(), demo.AskDoneReplay())
+	case "latest", "latest-fresh":
+		demo.Replay(a.State(), demo.FixBug(false))
+		demo.ReplayTasks(a.State())
+		a.PrepFlowScrollAway(*state == "latest-fresh")
+		skipTop = true
 	default:
 		demo.Replay(a.State(), demo.FixBug(false)) // 静态回放:不等待、同步归约
 		demo.ReplayTasks(a.State())
 		if *state == "queue" {
 			a.QueuePrompts("顺便把 README 里的路由示例也更新一下", "再跑一遍完整测试")
+		}
+		if *state == "queue-imgs" {
+			a.QueuePrompts(demo.QueuePromptSamples()...)
 		}
 	}
 
@@ -94,8 +120,16 @@ func main() {
 	if *screen == "customize" && *tab != "" {
 		a.SetCustomize(*tab)
 	}
-	if *top {
+	if *top && !skipTop {
 		a.ScrollFlowTop()
+		tt.Frame()
+	}
+	if skipTop {
+		tt.Frame()
+		a.ApplyFlowScrollAway()
+		if *state == "latest-fresh" {
+			a.AppendFlowTailForFresh()
+		}
 		tt.Frame()
 	}
 	if *srch != "" {

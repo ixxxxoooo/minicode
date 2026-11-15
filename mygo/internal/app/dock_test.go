@@ -175,3 +175,23 @@ func isPrompt(c core.Command, text string, steer bool) bool {
 	p, ok := c.(core.CmdPrompt)
 	return ok && p.Text == text && p.Steer == steer
 }
+
+func TestQueueWithImages(t *testing.T) {
+	a, tt, fb := pendingApp(t, demo.FixBug(false))
+	a.st.Apply(core.EvTurnStarted{})
+	tt.Frame()
+	imgDraft := "请看截图\n![](demo/queue-shot.png)"
+	a.submitKey(imgDraft, false)
+	if a.q.len() != 1 || a.q.items[0].Text != imgDraft {
+		t.Fatalf("排队应保留图片语法:%q", a.q.items[0].Text)
+	}
+	a.afterEventForTest(core.EvTurnEnded{Reason: core.StopEndTurn})
+	got := fb.last()
+	p, ok := got.(core.CmdPrompt)
+	if !ok || p.Text != "请看截图" || len(p.Images) != 1 || p.Steer {
+		t.Fatalf("自动发送应带图片:%v", got)
+	}
+	if a.q.len() != 0 {
+		t.Fatalf("队首应已发送,len=%d", a.q.len())
+	}
+}
