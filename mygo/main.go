@@ -187,7 +187,7 @@ func initialCwd(ix *claude.Index) string {
 
 func main() {
 	dev := os.Getenv("MINI_DEV") != ""
-	secondary, nwProject := app.ParseArgs()
+	secondary, nwProject, nwVirt := app.ParseArgs()
 	demoMode := resolveDemo(dev)
 	runMode := "real"
 	if demoMode {
@@ -296,6 +296,9 @@ func main() {
 		a.SetWindow(win)
 		a.InstallAppMenu()
 		a.InitBrand()
+		if nwVirt != "" {
+			a.ApplyStartupVirt(nwVirt)
+		}
 		win.OnClosed(func() {
 			a.SaveLayMemToPrefs()
 			a.CloseTerminals()
@@ -325,6 +328,7 @@ func main() {
 				return demo.Session(id, speed)
 			})
 			a.Attach(demo.New(func() []demo.Step { return demo.FixBug(true) }, speed))
+			a.SetAutomationRunnerCtx(demo.RunAutomationDemo)
 			return
 		}
 		a.SetSessionOpener(rs.open)

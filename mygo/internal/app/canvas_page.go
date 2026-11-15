@@ -168,27 +168,40 @@ func (a *App) exportCanvas() {
 func (a *App) canvasDoc(c *ui.Context, s *canvas.Store) {
 	t := a.tk
 	v := &a.cv
+	viewDoc := s.Doc
+	readVer := v.verIx > 0 && v.verIx < len(s.Versions)
+	if readVer {
+		viewDoc = s.Versions[v.verIx].Doc
+		v.preview = true
+	}
 	if v.preview && v.code {
-		kit.Mono(c, s.Doc.Markdown(), t.Tx2).LineHeight(1.5)
+		kit.Mono(c, viewDoc.Markdown(), t.Tx2).LineHeight(1.5)
 		return
 	}
 	ui.Row(c).Justify(ui.Center).Children(func() {
 		col := ui.Column(c).Key("cv-col").Width(620).Shrink(1).MinWidth(0).Padding(18, 0, 24, 0)
 		col.Children(func() {
 			top := col.Bounds().Y
+			if readVer {
+				ui.Text(c, "正在查看历史版本 v"+itoa(s.Versions[v.verIx].N)+" · 只读").FontSize(theme.FsCap).TextColor(t.Tx3).Margin(0, 0, 8, 0)
+			}
 			title := ui.Column(c)
 			title.Children(func() {
 				if v.preview {
-					ui.Text(c, s.Doc.Title).FontSize(22).FontWeight(700)
+					ui.Text(c, viewDoc.Title).FontSize(22).FontWeight(700)
 				} else {
 					ui.TextInput(c.Key("cv-title"), &s.Doc.Title).FontSize(22).FontWeight(700).Background(ui.Transparent).BorderWidth(0).Padding(0)
 				}
 			})
 			v.pos["title"] = title.Bounds().Y - top
-			for i := range s.Doc.Blocks {
-				b := &s.Doc.Blocks[i]
+			blocks := s.Doc.Blocks
+			if readVer {
+				blocks = viewDoc.Blocks
+			}
+			for i := range blocks {
+				b := blocks[i]
 				el := ui.Column(c.Key("cvb-" + b.ID))
-				el.Children(func() { a.canvasBlock(c, b) })
+				el.Children(func() { a.canvasBlock(c, &b) })
 				v.pos[b.ID] = el.Bounds().Y - top
 			}
 		})

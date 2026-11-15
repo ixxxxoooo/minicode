@@ -90,6 +90,16 @@ func envKeysOnly(m map[string]any) []string {
 	return out
 }
 
+func envValsOf(m map[string]any) map[string]string {
+	out := map[string]string{}
+	for k, v := range m {
+		if s, ok := v.(string); ok {
+			out[k] = s
+		}
+	}
+	return out
+}
+
 func readJSON(path string, v any) bool {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -216,6 +226,7 @@ func (ds *DiskStore) loadMCP() {
 				Desc: ly.scope.Label() + " · 待刷新状态"}
 			if em, ok := ent["env"].(map[string]any); ok {
 				it.Env = envKeysOnly(em)
+				it.EnvVals = envValsOf(em)
 			}
 			ds.items[MCP] = append(ds.items[MCP], it)
 		}
@@ -462,7 +473,7 @@ func (ds *DiskStore) Persist(c Cat, it *Item, draft Item) error {
 	case Skills:
 		return ds.saveSkillMeta(it, draft)
 	case MCP:
-		return ds.SaveMCP(it, draft)
+		return ds.SaveMCP(it, draft, nil)
 	default:
 		return nil // 插件由 CLI 安装
 	}

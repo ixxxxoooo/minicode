@@ -9,7 +9,7 @@ import (
 func init() {
 	Register(Scenario{
 		ID: "tools-bash-fg-out", Title: "工具卡 · 前台命令 EvTaskOutput",
-		Live: true, Build: buildScnBashFgOutput,
+		Project: "router-demo", Live: true, Build: buildScnBashFgOutput,
 	})
 }
 

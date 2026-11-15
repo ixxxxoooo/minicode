@@ -81,26 +81,30 @@ func (a *App) autoModals(c *ui.Context) {
 }
 
 func (a *App) autoDlg(c *ui.Context, key string, w float32, title string, close func(), body func()) {
+	if a.dlgClosing == key && time.Since(a.dlgCloseAt) >= kit.DurFast {
+		a.dlgClosing, a.dlgSeen = "", ""
+		close()
+		return
+	}
+	want := (key == "auto-new" && a.au.newDlg) || (key == "au-run" && a.au.runView != "")
 	t := a.tk
-	open := true
-	ui.DialogBase(c, &open, func(backdrop, panel ui.Element) {
-		backdrop.Background(t.Scrim).Justify(ui.Center).AlignItems(ui.Center)
-		panel.Width(w).Background(t.Raised).Radius(t.RXl()).Column().Border(1, t.Bd1).Padding(14, 16).Gap(8)
-		for _, sh := range t.Shadow3() {
-			panel.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
-		}
-		a.dialogIn(key, backdrop, panel)
-		panel.Children(func() {
-			ui.Row(c).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, title).FontSize(theme.FsHead).FontWeight(700).Grow(1)
-				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭 Esc"}).OnClick(close)
+	a.dialogOpen(key, want, func(open *bool) {
+		ui.DialogBase(c, open, func(backdrop, panel ui.Element) {
+			backdrop.Background(t.Scrim).Justify(ui.Center).AlignItems(ui.Center)
+			panel.Width(w).Background(t.Raised).Radius(t.RXl()).Column().Border(1, t.Bd1).Padding(14, 16).Gap(8)
+			for _, sh := range t.Shadow3() {
+				panel.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
+			}
+			a.dialogIn(key, backdrop, panel)
+			panel.Children(func() {
+				ui.Row(c).AlignItems(ui.Center).Children(func() {
+					ui.Text(c, title).FontSize(theme.FsHead).FontWeight(700).Grow(1)
+					kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭 Esc"}).OnClick(close)
+				})
+				body()
 			})
-			body()
 		})
 	})
-	if !open {
-		close()
-	}
 }
 
 // autoNewDlg 渲染新建模态。
@@ -112,9 +116,9 @@ func (a *App) autoNewDlg(c *ui.Context) {
 		t := a.tk
 		s := &a.au
 		lbl := func(text string) { ui.Text(c, text).FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3) }
-		ui.Column(c).Gap(4).Children(func() {
-			lbl("名称")
-			ui.TextInput(c.Key("aun-name"), &s.newName).Height(28)
+		kit.Field(c, "aun-name", kit.FieldOpt{Label: "名称", Err: s.newErr}, func(box ui.Element) {
+			box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(28)
+			ui.TextInputBase(c.Key("aun-name"), &s.newName).Grow(1).FontSize(theme.FsBody)
 		})
 		ui.Column(c).Gap(4).Children(func() {
 			lbl("提示词")
@@ -135,17 +139,14 @@ func (a *App) autoNewDlg(c *ui.Context) {
 		if i := kit.Seg(c, []kit.SegItem{{Text: kinds[0]}, {Text: kinds[1]}, {Text: kinds[2]}, {Text: kinds[3]}}, cur, kit.SegOpt{Key: "aun-kind", Fill: true}); i >= 0 {
 			s.newDays = []string{"每天", "工作日", "周一", "0 9 * * *"}[i]
 		}
-		ui.Row(c).Gap(6).Children(func() {
-			lbl("时间")
-			ui.TextInput(c.Key("aun-time"), &s.newTime).Width(72)
+		kit.Field(c, "aun-time", kit.FieldOpt{Label: "时间"}, func(box ui.Element) {
+			box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(28).Width(120).Shrink(0)
+			ui.TextInputBase(c.Key("aun-time"), &s.newTime).Grow(1).FontSize(theme.FsBody)
 		})
 		ui.Column(c).Gap(4).Children(func() {
 			lbl("项目")
 			a.autoProjPick(c, &s.newProj, "aun-proj")
 		})
-		if s.newErr != "" {
-			ui.Text(c, s.newErr).FontSize(theme.FsCap).TextColor(t.Err)
-		}
 		ui.Row(c).Gap(8).Justify(ui.End).Children(func() {
 			kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(a.closeAutoNewDlg)
 			kit.Btn(c, "创建", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(a.submitAutoNew)

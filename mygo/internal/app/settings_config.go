@@ -243,13 +243,20 @@ func (a *App) providersBody(a2 *App, c *ui.Context) {
 					ui.Text(c, "密钥 "+m).Font("monospace").FontSize(theme.FsCap).TextColor(a2.tk.Tx4).SingleLine()
 				}
 			})
-			st := a2.set.provBusy[p.ID]
-			btnLabel := "测试"
-			if st == 1 {
-				btnLabel = "测试中"
+			busy := a2.set.provBusy[p.ID]
+			st := kit.ConnIdle
+			if busy == 1 {
+				st = kit.ConnRun
+			} else if p.Status == claudecfg.ProvFail {
+				st = kit.ConnFail
+			} else if p.Status == claudecfg.ProvOK || strings.HasPrefix(p.Status, claudecfg.ProvOK) {
+				st = kit.ConnOK
 			}
-			kit.Btn(c, btnLabel, kit.BtnOpt{Small: true, Icon: "refresh", Loading: st == 1, Disabled: st == 1}).OnClick(func() {
-				a2.testProvider(p.ID)
+			kit.ConnTestRow(c, "prov-"+p.ID, st, "测试连接", p.Status, func() { a2.testProvider(p.ID) })
+			kit.Btn(c, "编辑", kit.BtnOpt{Small: true, Icon: "edit"}).OnClick(func() {
+				a2.set.provEdit = true
+				a2.set.provDraft = p
+				a2.set.provKey = ""
 			})
 		})
 	}
@@ -294,30 +301,24 @@ func (a *App) netCheckBody(a2 *App, c *ui.Context) {
 		h := h
 		st := a2.set.net[h]
 		rowBox(a2, c, i == 0, 32).Children(func() {
+			cs := kit.ConnIdle
+			res := ""
 			switch st {
-			case 2:
-				kit.Ic(c, "okc", kit.S12).TextColor(a2.tk.Ok)
-			case 3:
-				kit.Ic(c, "errc", kit.S12).TextColor(a2.tk.Err)
 			case 1:
-				kit.Ic(c, "refresh", kit.S12).TextColor(a2.tk.Warn)
-			default:
-				kit.Ic(c, "activity", kit.S12).TextColor(a2.tk.Tx4)
+				cs = kit.ConnRun
+			case 2:
+				cs = kit.ConnOK
+				if ms, ok := a2.set.netMs[h]; ok {
+					res = claudecfg.FormatTestResult(true, ms)
+				} else {
+					res = claudecfg.ProvOK
+				}
+			case 3:
+				cs = kit.ConnFail
+				res = claudecfg.ProvFail
 			}
 			ui.Text(c, h).Font("monospace").Grow(1)
-			lbl := "未测"
-			switch st {
-			case 1:
-				lbl = claudecfg.ProvTestIng
-			case 2:
-				lbl = claudecfg.ProvOK
-			case 3:
-				lbl = claudecfg.ProvFail
-			}
-			if ms, ok := a2.set.netMs[h]; ok && st == 2 {
-				lbl = claudecfg.FormatTestResult(true, ms)
-			}
-			ui.Text(c, lbl).FontSize(theme.FsCap).TextColor(a2.tk.Tx3)
+			kit.ConnTestRow(c, "net-"+h, cs, "测试", res, func() { a2.runNetCheck([]string{h}) })
 		})
 	}
 	rowBox(a2, c, false, 32).Children(func() {

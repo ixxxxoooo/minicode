@@ -152,7 +152,27 @@ func (ds *DiskStore) saveHook(old *Item, draft Item) error {
 }
 
 func (ds *DiskStore) saveSkillMeta(old *Item, draft Item) error {
+	newName := strings.TrimSpace(draft.Name)
+	if newName == "" {
+		return fmt.Errorf("名称不能为空")
+	}
 	dir := old.Path
+	if dir != "" && newName != old.Name {
+		abs := dir
+		if strings.HasPrefix(abs, "~") {
+			abs = filepath.Join(ds.home, strings.TrimPrefix(abs, "~"))
+		} else if !filepath.IsAbs(abs) && ds.proj != "" {
+			abs = filepath.Join(ds.proj, abs)
+		}
+		parent := filepath.Dir(abs)
+		dst := filepath.Join(parent, newName)
+		if err := os.Rename(abs, dst); err != nil {
+			return fmt.Errorf("重命名目录失败:%w", err)
+		}
+		dir = ds.relDisplay(dst)
+		old.Path = dir
+		old.Name = newName
+	}
 	if dir == "" {
 		base := filepath.Join(userClaude(ds.home), "skills", strings.TrimSpace(draft.Name))
 		if draft.Scope == Project && ds.proj != "" {

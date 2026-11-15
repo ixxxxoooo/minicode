@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/canvas"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -8,16 +10,19 @@ import (
 )
 
 type cvViewer struct {
-	open  bool
-	block string
-	scale float32
-	panX  float32
-	panY  float32
-	fit   bool
+	open      bool
+	block     string
+	scale     float32
+	panX      float32
+	panY      float32
+	fit       bool
+	returnBlk string
+	lastX     float32
+	lastY     float32
 }
 
 func (a *App) openCvViewer(blockID string) {
-	a.cvView = cvViewer{open: true, block: blockID, scale: 1, fit: true}
+	a.cvView = cvViewer{open: true, block: blockID, scale: 1, fit: true, returnBlk: a.cv.selBlk}
 }
 
 func (a *App) canvasViewerOverlay(c *ui.Context) {
@@ -41,7 +46,13 @@ func (a *App) canvasViewerOverlay(c *ui.Context) {
 	open := true
 	ui.DialogBase(c, &open, func(backdrop, panel ui.Element) {
 		backdrop.Background(t.Scrim).Grow(1)
-		backdrop.OnClick(func() { v.open = false })
+		closeFn := func() {
+			v.open = false
+			if v.returnBlk != "" {
+				a.cv.selBlk = v.returnBlk
+			}
+		}
+		backdrop.OnClick(closeFn)
 		panel.Grow(1).Background(t.BG).Column()
 		panel.Children(func() {
 			ui.Row(c).Height(44).Padding(0, 16).Gap(8).AlignItems(ui.Center).Children(func() {
@@ -50,9 +61,9 @@ func (a *App) canvasViewerOverlay(c *ui.Context) {
 				kit.Btn(c, "100%", kit.BtnOpt{Small: true}).OnClick(func() { v.fit = false; v.scale = 1 })
 				kit.Btn(c, "＋", kit.BtnOpt{Small: true}).OnClick(func() { v.fit = false; v.scale = clamp(v.scale*1.15, 0.25, 4) })
 				kit.Btn(c, "－", kit.BtnOpt{Small: true}).OnClick(func() { v.fit = false; v.scale = clamp(v.scale/1.15, 0.25, 4) })
-				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭 Esc"}).OnClick(func() { v.open = false })
+				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭 Esc"}).OnClick(closeFn)
 			})
-			panel.OnShortcut(0, ui.KeyEscape, func() { v.open = false })
+			panel.OnShortcut(0, ui.KeyEscape, closeFn)
 			for _, sk := range []struct {
 				key ui.Key
 				dx  float32
@@ -93,6 +104,11 @@ func (a *App) canvasViewerOverlay(c *ui.Context) {
 				}
 				ox, oy := r.X+v.panX, r.Y+v.panY
 				pt := func(x, y float32) (float32, float32) { return ox + x*sc, oy + y*sc }
+				if cv.Pressed() {
+					if cx, cy, ok := cv.PointerPosition(); ok {
+						v.lastX, v.lastY = (cx-ox)/sc, (cy-oy)/sc
+					}
+				}
 				for _, e := range dg.Edges {
 					pts := make([][2]float32, len(e))
 					for i, q := range e {
@@ -112,6 +128,11 @@ func (a *App) canvasViewerOverlay(c *ui.Context) {
 					}
 					bx.Children(func() { ui.Text(c, n.Label).SingleLine() })
 				}
+			})
+			ui.Row(c).Height(22).Padding(0, 12).Gap(8).AlignItems(ui.Center).FontSize(theme.FsMicro).TextColor(t.Tx4).Children(func() {
+				ui.Text(c, fmt.Sprintf("缩放 %.0f%% · 中心 (%.0f, %.0f)", v.scale*100, v.lastX, v.lastY))
+				ui.Spacer(c).Grow(1)
+				ui.Text(c, "拖拽平移 · 滚轮缩放 · ⇧方向键大步").SingleLine()
 			})
 		})
 	})

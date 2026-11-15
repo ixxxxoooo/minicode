@@ -376,7 +376,7 @@ func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func
 	return func() {
 		a.cuDelete(c, st, it, "删除")
 		ui.Spacer(c).Grow(1)
-		kit.Btn(c, "编辑配置", kit.BtnOpt{Icon: "edit"}).OnClick(func() { a.toast = "编辑配置:尚未接入配置文件读写" })
+		kit.Btn(c, "编辑配置", kit.BtnOpt{Icon: "edit"}).OnClick(func() { a.cuMCPStartEdit(it) })
 	}
 }
 
@@ -395,7 +395,10 @@ func (a *App) cuReconnect(it *customize.Item) {
 
 func (a *App) cuSkill(c *ui.Context, it *customize.Item) func() {
 	t := a.tk
-	a.cuHead(c, a.cuStore(), it, "spark", it.Name, nil)
+	st := a.cuStore()
+	d := &a.cu.draft
+	a.cuHead(c, st, it, "spark", it.Name, nil)
+	a.cuLbl(c, "名称(重命名目录)", func() { a.cuField(c, "sk-n", &d.Name, false, "skill-name") })
 	a.cuKV(c, [][2]string{{"范围", it.Scope.Label()}, {"位置", it.Path}})
 	a.cuLbl(c, "文件", func() {
 		a.cuCard(c, func() {
@@ -437,9 +440,11 @@ func (a *App) cuSkill(c *ui.Context, it *customize.Item) func() {
 		})
 	})
 	return func() {
+		a.cuDelete(c, st, it, "删除")
 		kit.Btn(c, "复制路径", kit.BtnOpt{Variant: kit.BtnGhost, Icon: "copy"}).OnClick(func() { a.toast = "已复制路径:" + it.Path })
 		ui.Spacer(c).Grow(1)
 		kit.Btn(c, "在编辑器打开", kit.BtnOpt{Variant: kit.BtnSoft, Icon: "code"}).OnClick(func() { a.cuOpenPath(it.Path) })
+		kit.Btn(c, "保存", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(func() { a.cuSaveSkillRename(st, it) })
 	}
 }
 

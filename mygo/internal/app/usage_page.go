@@ -245,8 +245,15 @@ func (a *App) usageDrawer(c *ui.Context, u core.UsageReport) {
 			msg = "演示模式:限额为示例数据。"
 		} else if a.be == nil {
 			msg = "还没有打开会话,无法查询账户限额。请先在工作台打开一个会话,或稍后再试。"
+		} else if a.use.limitsState == core.LimitsUnavailable && a.use.limitsAt != 0 {
+			msg = "查询账户限额失败。请确认会话仍连接并重试。"
+		} else if a.use.limitsState == core.LimitsChecking {
+			msg = "正在查询账户限额…"
 		}
 		ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Tx4).LineHeight(1.45)
+		if !a.cuDemo() && a.use.limitsState == core.LimitsUnavailable {
+			kit.Btn(c, "重试", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() { a.usageRefreshLimits(true) })
+		}
 	}
 	ui.Column(c).Gap(10).Children(func() {
 		for _, l := range u.Limits {

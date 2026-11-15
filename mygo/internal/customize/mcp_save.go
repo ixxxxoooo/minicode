@@ -8,14 +8,18 @@ import (
 )
 
 // SaveMCP 把 MCP 草稿写入对应层的 claude.json / .mcp.json(原子写 + 备份)。
-func (ds *DiskStore) SaveMCP(it *Item, draft Item) error {
+// env 非 nil 时写入 mcpServers 条目的 env 字段;否则沿用 draft.EnvVals。
+func (ds *DiskStore) SaveMCP(it *Item, draft Item, env map[string]string) error {
 	name := strings.TrimSpace(draft.Name)
 	if name == "" {
 		return fmt.Errorf("名称不能为空")
 	}
+	if env == nil {
+		env = draft.EnvVals
+	}
 	switch draft.Scope {
 	case User:
-		return ds.saveMCPUser(name, draft)
+		return ds.saveMCPUser(name, draft, env)
 	case Project, Local:
 		if ds.proj == "" {
 			return fmt.Errorf("需要打开项目才能写入项目/本地层 MCP")
@@ -24,13 +28,13 @@ func (ds *DiskStore) SaveMCP(it *Item, draft Item) error {
 		if draft.Scope == Local {
 			file = ".claude/settings.local.json"
 		}
-		return ds.saveMCPProject(name, draft, file)
+		return ds.saveMCPProject(name, draft, file, env)
 	default:
-		return ds.saveMCPUser(name, draft)
+		return ds.saveMCPUser(name, draft, env)
 	}
 }
 
-func (ds *DiskStore) saveMCPUser(name string, draft Item) error {
+func (ds *DiskStore) saveMCPUser(name string, draft Item, env map[string]string) error {
 	var root map[string]any
 	if !readJSON(ds.claudeJSON, &root) {
 		root = map[string]any{}
@@ -40,7 +44,7 @@ func (ds *DiskStore) saveMCPUser(name string, draft Item) error {
 		mcp = map[string]any{}
 		root["mcpServers"] = mcp
 	}
-	mcp[name] = mcpEntryOf(draft)
+	mcp[name] = mcpEntryOf(draft, env)
 	b, err := json.MarshalIndent(root, "", "  ")
 	if err != nil {
 		return err
@@ -48,7 +52,7 @@ func (ds *DiskStore) saveMCPUser(name string, draft Item) error {
 	return writeAtomic(ds.claudeJSON, b, 0o600)
 }
 
-func (ds *DiskStore) saveMCPProject(name string, draft Item, rel string) error {
+func (ds *DiskStore) saveMCPProject(name string, draft Item, rel string, env map[string]string) error {
 	if draft.Scope == Local {
 		rel = filepath.Join(".claude", "settings.local.json")
 	}
@@ -62,7 +66,7 @@ func (ds *DiskStore) saveMCPProject(name string, draft Item, rel string) error {
 		mcp = map[string]any{}
 		root["mcpServers"] = mcp
 	}
-	mcp[name] = mcpEntryOf(draft)
+	mcp[name] = mcpEntryOf(draft, env)
 	b, err := json.MarshalIndent(root, "", "  ")
 	if err != nil {
 		return err
@@ -70,7 +74,7 @@ func (ds *DiskStore) saveMCPProject(name string, draft Item, rel string) error {
 	return writeAtomic(path, b, 0o600)
 }
 
-func mcpEntryOf(d Item) map[string]any {
+func mcpEntryOf(d Item, env map[string]string) map[string]any {
 	ent := map[string]any{}
 	switch d.Transport {
 	case "http", "sse":
@@ -87,6 +91,13 @@ func mcpEntryOf(d Item) map[string]any {
 				ent["args"] = args
 			}
 		}
+	}
+	if len(env) > 0 {
+		em := map[string]any{}
+		for k, v := range env {
+			em[k] = v
+		}
+		ent["env"] = em
 	}
 	return ent
 }

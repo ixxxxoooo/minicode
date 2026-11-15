@@ -93,6 +93,7 @@ type Item struct {
 	Transport string // stdio / http
 	Cmd       string // 命令或地址
 	Env       []string
+	EnvVals   map[string]string // 键值(读盘时填充;保存 MCP 时用)
 	Tok       string
 	Tools     []Tool
 	OnDemand  bool

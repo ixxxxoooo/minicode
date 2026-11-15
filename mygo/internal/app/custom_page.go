@@ -2,6 +2,7 @@ package app
 
 import (
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/customize"
@@ -45,6 +46,8 @@ type custState struct {
 	ask     string
 	disk    *customize.DiskStore
 	plug    *pluginInstall
+	mcpEdit bool
+	mcpEnv  string
 }
 
 // pluginInstall 跟踪市场插件安装进度(0 进行中 / 1 收尾 / 2 成功 / 3 失败)。
@@ -148,6 +151,7 @@ func (a *App) customizePage(c *ui.Context) {
 		})
 	})
 	a.cuDialog(c, st)
+	a.cuMCPEditDlg(c, st)
 }
 
 func (a *App) cuRail(c *ui.Context, st *customize.Store) {
@@ -400,58 +404,61 @@ func (a *App) cuDialog(c *ui.Context, st *customize.Store) {
 		a.cuSelect(it)
 		a.toast = "已新建「" + it.Name + "」"
 	}
-	open := true
-	ui.DialogBase(c, &open, func(backdrop, panel ui.Element) {
-		backdrop.Background(t.Scrim).Justify(ui.Center).AlignItems(ui.Center)
-		panel.Width(420).Background(t.Raised).Radius(t.RXl()).Column().Border(1, t.Bd1).Padding(16).Gap(12)
-		for _, sh := range t.Shadow3() {
-			panel.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
-		}
-		panel.Children(func() {
-			ui.Text(c, meta.add).FontSize(theme.FsTitle).FontWeight(600)
-			a.cuLbl(c, "名称", func() {
-				in := ui.TextInput(c.Key("cd-name"), &d.name).Height(26).FontSize(theme.FsBody).Placeholder(ph).PlaceholderColor(t.Tx4).AutoFocus()
-				in.OnSubmit(create)
-			})
-			if extraLbl != "" {
-				a.cuLbl(c, extraLbl, func() {
-					ui.TextInput(c.Key("cd-extra"), &d.extra).Height(26).FontSize(theme.FsBody).Placeholder(extraPh).PlaceholderColor(t.Tx4)
-				})
+	if a.dlgClosing == "cu-new" && time.Since(a.dlgCloseAt) >= kit.DurFast {
+		a.dlgClosing, a.dlgSeen = "", ""
+		s.dlg = nil
+		return
+	}
+	a.dialogOpen("cu-new", s.dlg != nil, func(open *bool) {
+		ui.DialogBase(c, open, func(backdrop, panel ui.Element) {
+			backdrop.Background(t.Scrim).Justify(ui.Center).AlignItems(ui.Center)
+			panel.Width(420).Background(t.Raised).Radius(t.RXl()).Column().Border(1, t.Bd1).Padding(16).Gap(12)
+			for _, sh := range t.Shadow3() {
+				panel.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
 			}
-			if cat == customize.Hooks {
-				a.cuLbl(c, "事件", func() {
-					ui.Row(c).Gap(6).Wrap().Children(func() {
-						for i, e := range customize.Events {
-							ch := kit.Chip(c, e, kit.ChipOpt{Line: i != d.event, On: i == d.event}).Key("cd-ev-" + e)
-							ch.OnClick(func() { d.event = i })
-						}
+			a.dialogIn("cu-new", backdrop, panel)
+			panel.Children(func() {
+				ui.Text(c, meta.add).FontSize(theme.FsTitle).FontWeight(600)
+				kit.Field(c, "cd-name", kit.FieldOpt{Label: "名称", Err: d.err}, func(box ui.Element) {
+					box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(26)
+					in := ui.TextInputBase(c.Key("cd-name"), &d.name).Grow(1).FontSize(theme.FsBody).Placeholder(ph).PlaceholderColor(t.Tx4).AutoFocus()
+					in.OnSubmit(create)
+				})
+				if extraLbl != "" {
+					kit.Field(c, "cd-extra", kit.FieldOpt{Label: extraLbl}, func(box ui.Element) {
+						box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(26)
+						ui.TextInputBase(c.Key("cd-extra"), &d.extra).Grow(1).FontSize(theme.FsBody).Placeholder(extraPh).PlaceholderColor(t.Tx4)
 					})
-				})
-			}
-			a.cuLbl(c, "范围", func() {
-				on := 0
-				for i, sc := range cuScopes[1:] {
-					if sc == d.scope {
-						on = i
+				}
+				if cat == customize.Hooks {
+					a.cuLbl(c, "事件", func() {
+						ui.Row(c).Gap(6).Wrap().Children(func() {
+							for i, e := range customize.Events {
+								ch := kit.Chip(c, e, kit.ChipOpt{Line: i != d.event, On: i == d.event}).Key("cd-ev-" + e)
+								ch.OnClick(func() { d.event = i })
+							}
+						})
+					})
+				}
+				a.cuLbl(c, "范围", func() {
+					on := 0
+					for i, sc := range cuScopes[1:] {
+						if sc == d.scope {
+							on = i
+						}
 					}
-				}
-				items := []kit.SegItem{{Text: "用户"}, {Text: "项目"}, {Text: "本地"}}
-				if i := kit.Seg(c, items, on, kit.SegOpt{Key: "cd-scope"}); i >= 0 {
-					d.scope = cuScopes[1:][i]
-				}
-			})
-			if d.err != "" {
-				ui.Text(c, d.err).FontSize(theme.FsCap).TextColor(t.Err)
-			}
-			ui.Row(c).Gap(8).Justify(ui.End).Children(func() {
-				kit.Btn(c, "取消").OnClick(func() { s.dlg = nil })
-				kit.Btn(c, "创建", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(create)
+					items := []kit.SegItem{{Text: "用户"}, {Text: "项目"}, {Text: "本地"}}
+					if i := kit.Seg(c, items, on, kit.SegOpt{Key: "cd-scope"}); i >= 0 {
+						d.scope = cuScopes[1:][i]
+					}
+				})
+				ui.Row(c).Gap(8).Justify(ui.End).Children(func() {
+					kit.Btn(c, "取消").OnClick(func() { *open = false })
+					kit.Btn(c, "创建", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(create)
+				})
 			})
 		})
 	})
-	if !open {
-		s.dlg = nil
-	}
 }
 
 // cuLbl 是「小标题 + 内容」的竖排。

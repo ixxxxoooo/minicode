@@ -3,6 +3,7 @@ package customize
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"strings"
@@ -95,8 +96,29 @@ func RunMarketplaceList() []*Market {
 		alog.Warn("marketplace list 失败", "err", err)
 		return nil
 	}
+	raw := strings.TrimSpace(out.String())
 	var list []*Market
-	for _, line := range strings.Split(out.String(), "\n") {
+	if strings.HasPrefix(raw, "[") || strings.HasPrefix(raw, "{") {
+		var arr []struct {
+			Name, ID, Description string
+		}
+		if json.Unmarshal([]byte(raw), &arr) == nil {
+			for _, e := range arr {
+				n := e.Name
+				if n == "" {
+					n = e.ID
+				}
+				if n == "" {
+					continue
+				}
+				list = append(list, &Market{Name: n, By: "市场", Desc: e.Description})
+			}
+			if len(list) > 0 {
+				return list
+			}
+		}
+	}
+	for _, line := range strings.Split(raw, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "Available") {
 			continue
