@@ -56,12 +56,7 @@ func (a *App) projectsList(c *ui.Context) {
 		}
 		a.projRow(c, p)
 		if a.projOpen[p.ID] {
-			for i, s := range p.Sessions {
-				if i >= 4 {
-					break
-				}
-				a.sessRow(c, s, true)
-			}
+			a.sessionRows(c, p)
 		}
 	}
 }
@@ -112,12 +107,7 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 		a.memberRow(c, w, i, f)
 	}
 	prim := a.primaryProject(w)
-	for i, s := range prim.Sessions {
-		if i >= 4 {
-			break
-		}
-		a.sessRow(c, s, true)
-	}
+	a.sessionRows(c, prim)
 }
 
 func (a *App) memberRow(c *ui.Context, w projects.Workspace, i int, f projects.Folder) {

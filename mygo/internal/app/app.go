@@ -24,6 +24,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/prefs"
 	"github.com/ixxxxoooo/minicode/internal/projects"
+	"github.com/ixxxxoooo/minicode/internal/sessmeta"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
@@ -124,6 +125,10 @@ type App struct {
 	solo     *soloState          // 进入工作区前的单项目现场(退出时还原)
 	pd       projDlg             // 添加项目 / 工作区对话框状态
 	sessMore map[string]bool
+	meta     *sessmeta.Store       // 会话的本机整理信息(置顶 / 归档 / 自定义标题)
+	rawProj  []core.ProjectInfo    // 未套用整理信息的项目与会话(a.projects 是套用后的)
+	sessDel  func(id string) error // 真实模式:删除会话的磁盘文件(演示为空)
+	ren      sessRename            // 侧栏正在行内重命名的会话
 
 	// 会话流的折叠状态:条目 id → 是否展开(没有记录就用默认)
 	folds map[string]bool

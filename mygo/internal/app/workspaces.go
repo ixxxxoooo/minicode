@@ -98,6 +98,7 @@ func (a *App) seedDemoRegistry() {
 		{Path: "/demo/router-demo"}, {Path: "/demo/web-dashboard"}, {Path: "/demo/docs-site"},
 	}})
 	a.reg = r
+	a.seedDemoSessMeta()
 	a.projOpen["ws-fullstack"] = true
 }
 

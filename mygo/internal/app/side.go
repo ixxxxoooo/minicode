@@ -24,7 +24,9 @@ var pages = []struct {
 
 // SetProjects 设置侧栏的项目与会话。
 func (a *App) SetProjects(p []core.ProjectInfo, current string) {
-	a.projects = p
+	a.rawProj = p
+	a.projects = a.applyMeta(p)
+	p = a.projects
 	a.curSess = current
 	for _, pr := range p {
 		if pr.ID == "web-dashboard" { // 演示:设计稿里 web-dashboard 默认展开
@@ -39,7 +41,10 @@ func (a *App) SetProjects(p []core.ProjectInfo, current string) {
 }
 
 // RefreshProjects 只更新项目与会话列表(定时重扫用),不动当前会话与展开状态。
-func (a *App) RefreshProjects(p []core.ProjectInfo) { a.projects = p }
+func (a *App) RefreshProjects(p []core.ProjectInfo) {
+	a.rawProj = p
+	a.projects = a.applyMeta(p)
+}
 
 func (a *App) sideWidth() float32 {
 	if a.tk.Scheme.ID == "c" {
@@ -194,6 +199,10 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 		r.PaddingStart(25)
 	}
 	hov := r.Hovered()
+	if a.ren.id == s.ID { // 行内重命名:整行换成输入框
+		r.Children(func() { a.renameInput(c, s.ID) })
+		return
+	}
 	r.OnClick(func() { a.OpenSession(s.ID) })
 	r.ContextMenu(func(m *ui.Menu) { a.sessionMenu(m, s.ID, s.Title, false) })
 	r.Children(func() {
@@ -201,7 +210,13 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 			// 方案 A:选中行左侧一道强调色竖线
 			ui.Box(c).Absolute().Left(0).Top(5).Bottom(5).Width(2).Radius(2).Background(t.Ac)
 		}
-		ui.Text(c, s.Title).Grow(1).SingleLine()
+		if s.Pinned {
+			kit.Ic(c, "pin", kit.S12).TextColor(t.Ac).Tooltip("已置顶")
+		}
+		title := ui.Text(c, s.Title).Grow(1).SingleLine()
+		if s.Archived {
+			title.TextColor(t.Tx3)
+		}
 		if hov {
 			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Margin(0, -4, 0, 0).Menu(func(m *ui.Menu) { a.sessionMenu(m, s.ID, s.Title, false) })
 		} else {
@@ -225,6 +240,9 @@ func (a *App) sessionsB(c *ui.Context) {
 					continue
 				}
 				for _, ss := range p.Sessions {
+					if ss.Archived {
+						continue
+					}
 					if ss.Group != cur {
 						cur = ss.Group
 						kit.Grp(c, cur)

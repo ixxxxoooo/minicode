@@ -22,6 +22,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/prefs"
 	"github.com/ixxxxoooo/minicode/internal/projects"
+	"github.com/ixxxxoooo/minicode/internal/sessmeta"
 )
 
 // 构建时可用 -ldflags "-X main.version=..." 覆盖。
@@ -216,6 +217,16 @@ func main() {
 		reg := projects.Open(filepath.Join(diag.Home(), "workspaces.json"))
 		a.SetRegistry(reg)
 		rs = &realSetup{reg: reg}
+		a.SetSessMeta(sessmeta.Open(filepath.Join(diag.Home(), "session-meta.json")))
+		a.SetSessionDeleter(app.SessionDeleter(func(id string) (string, bool) {
+			rs.mu.Lock()
+			defer rs.mu.Unlock()
+			if rs.ix == nil {
+				return "", false
+			}
+			loc, ok := rs.ix.Locate(id)
+			return loc.Cwd, ok
+		}))
 		ix := rs.refresh()
 		rs.curCwd = initialCwd(ix)
 		log.Info("真实模式", "projects", len(ix.Projects), "cwd", rs.curCwd)

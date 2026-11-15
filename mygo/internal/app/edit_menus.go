@@ -231,25 +231,36 @@ func (a *App) treeHeadMenu(m *ui.Menu) {
 const noBackend = "后端暂未支持"
 
 // sessionMenu 是会话的「···」/ 右键菜单(导航栏会话行与对话栏头部共用)。
-// 重命名 / 置顶 / 归档 / 删除 / 分叉 / 复制链接:后端没有对应命令,置灰并写明原因。
+// 重命名 / 置顶 / 归档 / 复制为 Markdown / 删除见 session_meta.go;分叉 / 复制链接:后端没有对应命令,置灰并写明原因。
 func (a *App) sessionMenu(m *ui.Menu, id, title string, inHead bool) {
+	fresh := id == "" || strings.HasPrefix(id, "new:") // 新会话还没有 id,没有可整理的对象
+	meta := a.sessMeta().Get(id)
 	if !inHead {
 		if m.Item("打开").Trailing("⏎").Disabled(id == a.curSess).Chosen() {
 			a.OpenSession(id)
 		}
 		m.Separator()
 	}
-	m.Item("重命名…").Disabled(true).Tooltip(noBackend + ":会话标题由 Claude 生成,暂不能手改")
-	m.Item("置顶").Disabled(true).Tooltip(noBackend)
-	m.Item("归档").Disabled(true).Tooltip(noBackend)
+	noID := map[bool]string{true: "新会话还没有 ID,发出第一条消息后才有"}[fresh]
+	if m.Item("重命名…").Disabled(fresh).Tooltip(noID).Chosen() {
+		a.beginRename(id)
+	}
+	if m.Item(map[bool]string{true: "取消置顶", false: "置顶"}[meta.Pinned]).Disabled(fresh).Tooltip(noID).Chosen() {
+		a.pinSession(id, !meta.Pinned)
+	}
+	if m.Item(map[bool]string{true: "取消归档", false: "归档"}[meta.Archived]).Disabled(fresh).Tooltip(noID).Chosen() {
+		a.archiveSession(id, !meta.Archived)
+	}
 	m.Separator()
-	if m.Item("复制会话 ID").Disabled(id == "" || strings.HasPrefix(id, "new:")).Tooltip(map[bool]string{true: "新会话还没有 ID,发出第一条消息后才有"}[strings.HasPrefix(id, "new:")]).Chosen() {
-		a.copyText = id
-		a.toast = "已复制会话 ID"
+	if m.Item("复制会话 ID").Disabled(fresh).Tooltip(noID).Chosen() {
+		a.copyOut(id, "会话 ID")
 	}
 	if m.Item("复制标题").Disabled(title == "").Chosen() {
-		a.copyText = title
-		a.toast = "已复制标题"
+		a.copyOut(title, "标题")
+	}
+	mdOff := id != a.curSess
+	if m.Item("复制为 Markdown").Disabled(mdOff).Tooltip(map[bool]string{true: "只能复制已打开的会话,先点开它"}[mdOff]).Chosen() {
+		a.copySessionMarkdown(id, title)
 	}
 	if inHead {
 		m.Item("复制会话链接").Disabled(true).Tooltip(noBackend)
@@ -260,7 +271,10 @@ func (a *App) sessionMenu(m *ui.Menu, id, title string, inHead bool) {
 		return
 	}
 	m.Separator()
-	m.Item("删除会话…").Danger().Disabled(true).Tooltip(noBackend)
+	run := a.sessionRunning(id)
+	if m.Item("删除会话…").Danger().Disabled(fresh || run).Tooltip(map[bool]string{true: "会话正在运行,先停止或等它结束"}[run && !fresh]).Chosen() {
+		a.deleteSessionAsk(id)
+	}
 }
 
 // ───────── 小工具 ─────────
