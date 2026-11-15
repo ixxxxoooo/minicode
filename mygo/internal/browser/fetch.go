@@ -115,7 +115,9 @@ func extractHTML(body []byte, normURL string) (Page, error) {
 	if len(secs) == 0 && title != "" {
 		secs = []Section{{Heading: title, Level: 0}}
 	}
-	if len(secs) > 0 && secs[0].Level != 0 {
+	if len(secs) > 0 && secs[0].Heading == "" && secs[0].Level == 0 && title != "" {
+		secs[0].Heading = title // 开头是没有标题的正文:标题取 <title>,正文留在这一节里
+	} else if len(secs) > 0 && secs[0].Level != 0 {
 		secs = append([]Section{{Heading: title, Level: 0}}, secs...)
 	}
 	site := normURL
@@ -174,13 +176,28 @@ func findMain(n *html.Node) *html.Node {
 	}
 	walk(n)
 	if best == nil {
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			if c.Type == html.ElementNode && c.Data == "body" {
-				return c
-			}
-		}
+		best = findTag(n, "body") // 文档根下面是 <html>,<body> 在它里面,要递归找
 	}
 	return best
+}
+
+// findTag 深度优先找第一个指定标签。
+func findTag(n *html.Node, tag string) *html.Node {
+	if n.Type == html.ElementNode && n.Data == tag {
+		return n
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if r := findTag(c, tag); r != nil {
+			return r
+		}
+	}
+	return nil
+}
+
+// skipTags 是不含正文的容器:导航、页眉页脚、脚本样式、表单等。
+var skipTags = map[string]bool{
+	"script": true, "style": true, "noscript": true, "nav": true, "header": true,
+	"footer": true, "aside": true, "form": true, "svg": true, "head": true, "template": true,
 }
 
 func walkContent(n *html.Node, out *[]Section, lvl int) {
@@ -231,7 +248,7 @@ func walkContent(n *html.Node, out *[]Section, lvl int) {
 				}
 			}
 		default:
-			if c.Data == "div" || c.Data == "section" {
+			if !skipTags[c.Data] { // div / section / html / body 等容器一律往里找正文
 				walkContent(c, out, lvl+1)
 			}
 		}

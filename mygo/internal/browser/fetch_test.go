@@ -30,3 +30,22 @@ func TestNormalizeFetchKey(t *testing.T) {
 		t.Fatalf("got %q", u)
 	}
 }
+
+// 只有 <p> 的极简页面(example.com):标题取 <title>,正文不能丢。
+func TestExtractHTMLBareParagraph(t *testing.T) {
+	body := []byte(`<!doctype html><html><head><title>Example Domain</title></head><body><p>This domain is for use in documentation examples.</p></body></html>`)
+	pg, err := extractHTML(body, "example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pg.Title() != "Example Domain" {
+		t.Fatalf("标题应取 <title>:%q", pg.Title())
+	}
+	var all string
+	for _, s := range pg.Sections {
+		all += s.Body
+	}
+	if !strings.Contains(all, "documentation examples") {
+		t.Fatalf("正文丢失:%+v", pg.Sections)
+	}
+}

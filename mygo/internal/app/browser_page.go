@@ -140,7 +140,12 @@ func (a *App) browserReader(c *ui.Context, b *browser.Browser, pg browser.Page) 
 			}
 			if pg.URL == "" {
 				if b.Err == nil {
-					ui.Text(c, "输入网址开始阅读。").TextColor(t.Tx3)
+					ui.Column(c).AlignItems(ui.Center).Gap(6).Padding(80, 0, 0, 0).Children(func() {
+						kit.Ic(c, "globe", kit.S20).TextColor(t.Tx4)
+						ui.Text(c, "阅读模式浏览器").FontWeight(600)
+						ui.Text(c, "在上方地址栏输入网址并回车,正文会以干净的版式显示,还能就这个页面向 Claude 提问。").
+							FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.5).TextAlign(ui.Center)
+					})
 				}
 				return
 			}
@@ -220,7 +225,7 @@ func (a *App) browserDrawer(c *ui.Context, b *browser.Browser, pg browser.Page) 
 	ui.Column(c).Gap(6).Children(func() {
 		kit.Grp(c, "快捷提示")
 		ui.Row(c).Gap(6).Wrap().Children(func() {
-			for _, q := range []string{"总结要点", "提取代码示例", "翻译成中文", "对比 actix"} {
+			for _, q := range []string{"总结要点", "提取代码示例", "翻译成中文", "列出相关链接"} {
 				if kit.Chip(c, q, kit.ChipOpt{Line: true}).Clicked() {
 					a.fillDraftWithPage(pg, q)
 				}
