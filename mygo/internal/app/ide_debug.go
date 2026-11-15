@@ -36,6 +36,14 @@ func (a *App) EditorDemo(spec string) {
 			a.toggleChatMax()
 			continue
 		}
+		if name == "graph" {
+			a.openGraph()
+			if arg != "" {
+				a.graphTab.sel = arg
+				a.scmCommitFiles(arg)
+			}
+			continue
+		}
 		if name == "conflict" {
 			a.demoConflict()
 			continue

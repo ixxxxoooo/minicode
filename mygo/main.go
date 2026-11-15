@@ -263,6 +263,11 @@ func main() {
 			defer end()
 			return claude.RunPrompt(dir, it.Prompt, claude.PermModeOf(it.Perm), 15*time.Minute)
 		})
+		a.SetTextGenerator(func(dir, prompt string) (string, error) {
+			end := diag.SpanSlow("app", "AI 提交说明", 20*time.Second)
+			defer end()
+			return claude.RunPromptModel(dir, prompt, "plan", "haiku", 60*time.Second)
+		})
 		go func() {
 			defer diag.Recover("自动化定时")
 			for range time.Tick(30 * time.Second) {

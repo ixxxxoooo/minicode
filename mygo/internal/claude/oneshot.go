@@ -14,6 +14,11 @@ import (
 // permMode 是 --permission-mode 的值(plan / acceptEdits / default…),空 = 默认。
 // 返回标准输出(去掉首尾空白);超时或进程失败返回错误,错误里带 stderr 末尾。
 func RunPrompt(cwd, prompt, permMode string, timeout time.Duration) (string, error) {
+	return RunPromptModel(cwd, prompt, permMode, "", timeout)
+}
+
+// RunPromptModel 同 RunPrompt,另指定模型(如 haiku;空 = 默认)。提交说明这类小活用小模型。
+func RunPromptModel(cwd, prompt, permMode, model string, timeout time.Duration) (string, error) {
 	path, ok := FindClaude("")
 	if !ok {
 		return "", fmt.Errorf("没有找到 claude 命令")
@@ -23,6 +28,9 @@ func RunPrompt(cwd, prompt, permMode string, timeout time.Duration) (string, err
 	args := []string{"-p", "--output-format", "text"}
 	if permMode != "" {
 		args = append(args, "--permission-mode", permMode)
+	}
+	if model != "" {
+		args = append(args, "--model", model)
 	}
 	cmd := exec.CommandContext(ctx, path, args...)
 	cmd.Dir = cwd

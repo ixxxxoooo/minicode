@@ -151,6 +151,7 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 	if a.demoExtra {
 		add("fork", "演示:打开合并冲突", "", "写入一个带冲突标记的文件并打开三方合并标签。", a.demoConflict)
 	}
+	add("fork", "Git:打开提交图谱", "", "在工作区打开完整的 Git 图谱(搜索、详情、右键操作)。", a.openGraph)
 	add("chart", "用量与成本", "", "打开用量整页。", func() { a.screen = ScreenUsage })
 	add("clock", "自动化", "", "打开自动化页面。", func() { a.screen = ScreenAutomation })
 	add("layers", "画布", "", "打开画布页面。", func() { a.screen = ScreenCanvas })

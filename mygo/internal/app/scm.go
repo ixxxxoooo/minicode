@@ -31,6 +31,8 @@ type scmState struct {
 	busy          string // 正在进行的操作名(提交 / 拉取 / 推送),空 = 空闲
 	amend         bool
 	stashes       []vcs.Stash
+	genning       bool // 正在让模型生成提交说明
+	genGen        int
 	createAt      string // 非空:分支选择器里「创建并切换」从这个提交起
 }
 
@@ -225,20 +227,6 @@ func (a *App) scmSync(pull, push bool) {
 		}
 		return nil
 	})
-}
-
-// scmGenMsg 按暂存的更改(没有就按全部更改)起草一条 Conventional Commits 说明。
-// 这是本地启发式,接上 Claude 后端后换成真正的 AI 生成(t8)。
-func (a *App) scmGenMsg() {
-	staged, work := a.sc.split()
-	pick := staged
-	if len(pick) == 0 {
-		pick = work
-	}
-	a.sc.msg = draftCommitMsg(pick)
-	if a.sc.msg == "" {
-		a.toast = "没有可描述的更改"
-	}
 }
 
 func draftCommitMsg(cs []vcs.Change) string {

@@ -79,12 +79,14 @@ type App struct {
 	mode         Mode
 	screen       Screen
 	sideOpen     bool
-	rightOn      bool      // 右侧栏开合:Agent 形态 = 工作区,IDE 形态 = 对话栏
-	chatMax      bool      // IDE 形态:对话栏占满主区(工作区让位)
-	memBy        [2]layMem // 各形态各自记住的右侧栏 / 底部面板开合(切回来还是原样)
-	flashAt      time.Time // 工作区被「打开标签」唤起的时刻(边框闪一下)
-	termHasFocus bool      // 终端面板此刻有键盘焦点(⌘F 查找走终端)
-	sessNav      []string  // Agent 形态的「后退 / 前进」:打开过的会话序列
+	rightOn      bool                                     // 右侧栏开合:Agent 形态 = 工作区,IDE 形态 = 对话栏
+	chatMax      bool                                     // IDE 形态:对话栏占满主区(工作区让位)
+	memBy        [2]layMem                                // 各形态各自记住的右侧栏 / 底部面板开合(切回来还是原样)
+	flashAt      time.Time                                // 工作区被「打开标签」唤起的时刻(边框闪一下)
+	genText      func(dir, prompt string) (string, error) // 一次性文本生成(提交说明等)
+	graphTab     graphTabState                            // Git 图谱标签的搜索与选中
+	termHasFocus bool                                     // 终端面板此刻有键盘焦点(⌘F 查找走终端)
+	sessNav      []string                                 // Agent 形态的「后退 / 前进」:打开过的会话序列
 	sessI        int
 	sessWalking  bool
 	ly           layoutSizes // 拖出来的栏宽 / 面板高度

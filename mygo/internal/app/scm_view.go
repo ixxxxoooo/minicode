@@ -108,7 +108,7 @@ func (a *App) scmCommitBox(c *ui.Context, nStaged int) {
 	s := &a.sc
 	ui.Column(c).Gap(6).Padding(2, 2, 8, 2).Shrink(0).Children(func() {
 		box := ui.Column(c).Key("scm-box").Background(t.Raised).Radius(t.RSm()).Border(1, t.Bd2)
-		if box.FocusWithin() {
+		if box.FocusWithin() || s.genning {
 			box.BorderColor(t.Ac)
 		}
 		box.Children(func() {
@@ -126,7 +126,12 @@ func (a *App) scmCommitBox(c *ui.Context, nStaged int) {
 					kit.Tag(c, "修改上次提交", kit.KWarn)
 				}
 				ui.Spacer(c).Grow(1)
-				kit.Ib(c, "star", kit.IbOpt{Small: true, Tip: "根据更改起草提交说明"}).OnClick(a.scmGenMsg)
+				if s.genning {
+					ui.Text(c, "正在生成提交说明…").FontSize(theme.FsCap).TextColor(t.Tx3).Margin(0, 6, 0, 0)
+					kit.Spin(c, t.Ac)
+				} else {
+					kit.Ib(c, "star", kit.IbOpt{Small: true, Tip: "用 AI 根据更改起草提交说明"}).OnClick(a.scmGenMsg)
+				}
 			})
 		})
 		ui.Row(c).Gap(1).Children(func() {
@@ -303,6 +308,7 @@ func (a *App) scmGraph(c *ui.Context) {
 		ui.Spacer(c).Grow(1)
 		if len(s.log) > 0 {
 			ui.Text(c, itoa(len(s.log))+" 个提交").FontSize(theme.FsMicro).TextColor(t.Tx4)
+			kit.Ib(c, "max", kit.IbOpt{Small: true, Tip: "在工作区打开完整图谱"}).OnClick(a.openGraph)
 		}
 	})
 	if s.folded["graph"] {

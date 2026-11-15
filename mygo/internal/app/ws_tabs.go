@@ -16,6 +16,7 @@ const (
 	vSub      = "sub"
 	vTask     = "task"
 	vConflict = "conflict"
+	vGraph    = "graph"
 )
 
 // virtID 虚拟标签的 id:同一种内容(同一个 ref)只会有一个标签。
@@ -91,6 +92,8 @@ func (a *App) tabTitle(t *ideTab) string {
 		return "任务输出"
 	case vConflict:
 		return strings.TrimPrefix(t.ref, "") + " (合并冲突)"
+	case vGraph:
+		return "Git 图谱"
 	}
 	return t.title()
 }
@@ -116,7 +119,7 @@ func (a *App) tabIcon(t *ideTab) string {
 		return "bot"
 	case vTask:
 		return "terminal"
-	case vConflict:
+	case vConflict, vGraph:
 		return "fork"
 	}
 	switch {

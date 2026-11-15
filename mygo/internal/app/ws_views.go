@@ -23,6 +23,8 @@ func (a *App) virtView(c *ui.Context, tb *ideTab) {
 		a.taskView(c, tb.ref)
 	case vConflict:
 		a.conflictView(c, tb)
+	case vGraph:
+		a.graphView(c)
 	}
 }
 
