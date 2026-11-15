@@ -17,14 +17,28 @@ func RunPrompt(cwd, prompt, permMode string, timeout time.Duration) (string, err
 	return RunPromptModel(cwd, prompt, permMode, "", timeout)
 }
 
+// RunPromptCtx 同 RunPrompt,但可取消(自动化「停止」用)。
+func RunPromptCtx(ctx context.Context, cwd, prompt, permMode string, timeout time.Duration) (string, error) {
+	return RunPromptModelCtx(ctx, cwd, prompt, permMode, "", timeout)
+}
+
 // RunPromptModel 同 RunPrompt,另指定模型(如 haiku;空 = 默认)。提交说明这类小活用小模型。
 func RunPromptModel(cwd, prompt, permMode, model string, timeout time.Duration) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	return RunPromptModelCtx(ctx, cwd, prompt, permMode, model, timeout)
+}
+
+func RunPromptModelCtx(ctx context.Context, cwd, prompt, permMode, model string, timeout time.Duration) (string, error) {
 	path, ok := FindClaude("")
 	if !ok {
 		return "", fmt.Errorf("没有找到 claude 命令")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
+	if deadline, ok := ctx.Deadline(); !ok || time.Until(deadline) > timeout {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
 	args := []string{"-p", "--output-format", "text"}
 	if permMode != "" {
 		args = append(args, "--permission-mode", permMode)

@@ -14,15 +14,30 @@ import (
 // 数据源是 a.usageSrc(演示用 demo.Usage,真实后端接上后换成扫描 ~/.claude/projects 的结果)。
 
 type usageState struct {
-	rng int // 0 = 7 天 / 1 = 30 天 / 2 = 本月
-	set bool
+	rng           int // 0 = 7 天 / 1 = 30 天 / 2 = 本月
+	set           bool
+	limits        []core.Limit
+	limitsAt      int64
+	limitsState   core.LimitsState
+	limitsUpdated string
 }
 
 func (a *App) usage() core.UsageReport {
+	var u core.UsageReport
 	if a.usageSrc != nil {
-		return a.usageSrc(a.use.rng)
+		u = a.usageSrc(a.use.rng)
+	} else {
+		u = demo.Usage(a.use.rng)
 	}
-	return demo.Usage(a.use.rng)
+	a.usageLimitsFromSession()
+	if len(a.use.limits) > 0 {
+		u.Limits = a.use.limits
+		u.LimitsUpdated = relLimitsAge(a.use.limitsAt)
+	} else if !a.cuDemo() && a.use.limitsState == core.LimitsUnavailable {
+		u.Limits = nil
+		u.LimitsUpdated = ""
+	}
+	return u
 }
 
 // SetUsageSource 注入真实的用量数据源(按范围出报告);未就绪时可返回没有 Days 的空报告。
@@ -35,6 +50,9 @@ func (a *App) usagePage(c *ui.Context) {
 	t := a.tk
 	if !a.use.set {
 		a.use.rng, a.use.set = 1, true // 默认 30 天
+	}
+	if !a.cuDemo() {
+		a.usageRefreshLimits(false)
 	}
 	u := a.usage()
 	if len(u.Days) == 0 {
@@ -176,7 +194,13 @@ func (a *App) usageTop(c *ui.Context, u core.UsageReport) {
 			if r.Hovered() {
 				r.Background(t.Fill1)
 			}
-			r.OnClick(func() { a.toast = "已在 Agent 形态打开该会话" })
+			r.OnClick(func() {
+				if s.SessionID != "" {
+					a.OpenSession(s.SessionID)
+					return
+				}
+				a.toast = "找不到该会话的 id"
+			})
 			r.Children(func() {
 				ui.Text(c, s.Title).Grow(1).SingleLine().MinWidth(0)
 				ui.Text(c, s.Project).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Shrink(0)
@@ -191,13 +215,21 @@ func (a *App) usageDrawer(c *ui.Context, u core.UsageReport) {
 	t := a.tk
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 		ui.Text(c, "账户限额").FontWeight(600).Grow(1)
-		if len(u.Limits) > 0 {
+		if a.use.limitsState == core.LimitsChecking {
+			ui.Text(c, "更新中…").FontSize(theme.FsCap).TextColor(t.Tx4)
+		} else if u.LimitsUpdated != "" {
 			ui.Text(c, "更新于 "+u.LimitsUpdated).FontSize(theme.FsCap).TextColor(t.Tx4)
-			kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { a.toast = "已刷新账户限额" })
 		}
+		kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { a.usageRefreshLimits(true) })
 	})
 	if len(u.Limits) == 0 {
-		ui.Text(c, "账户限额还没有接入(需要 claude 的 get_usage 控制请求),这里先只显示本机会话统计。").FontSize(theme.FsCap).TextColor(t.Tx4).LineHeight(1.45)
+		msg := "当前版本无法读取账户限额(需要已连接的 claude 会话发送 get_usage)。本页仍显示本机会话统计。"
+		if a.cuDemo() {
+			msg = "演示模式:限额为示例数据。"
+		} else if a.be == nil {
+			msg = "还没有打开会话,无法查询账户限额。请先在工作台打开一个会话,或稍后再试。"
+		}
+		ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Tx4).LineHeight(1.45)
 	}
 	ui.Column(c).Gap(10).Children(func() {
 		for _, l := range u.Limits {

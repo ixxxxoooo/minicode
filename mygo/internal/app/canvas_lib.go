@@ -1,0 +1,91 @@
+package app
+
+import (
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/canvas"
+	"github.com/ixxxxoooo/minicode/internal/demo"
+	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/theme"
+)
+
+func (a *App) cvLib() *canvas.Library {
+	if a.cvLibData != nil {
+		return a.cvLibData
+	}
+	if a.demoExtra {
+		s := demo.Canvas(a.now())
+		l, _ := canvas.OpenLibrary(filepath.Join(os.TempDir(), "minicode-demo-canvas"))
+		id := "q3-router"
+		l.SetActive(id)
+		a.cvLibData = l
+		a.canv = s
+		return l
+	}
+	home, _ := os.UserHomeDir()
+	dir := filepath.Join(home, ".minicode", "canvases")
+	l, err := canvas.OpenLibrary(dir)
+	if err != nil {
+		log.Warn("打开画布库失败", "err", err)
+		l, _ = canvas.OpenLibrary(dir)
+	}
+	if len(l.IDs()) == 0 {
+		doc := canvas.Doc{Title: "未命名画布", Status: "草稿", Blocks: []canvas.Block{
+			{ID: "p1", Kind: canvas.Para, Lead: true, Anchor: "概述", Text: "在这里写下想法,或点「让 Claude 修改」让它帮你起草。"},
+		}}
+		s, id, err := l.New("未命名画布", doc, "你", "新建", a.now())
+		if err != nil {
+			log.Warn("新建默认画布失败", "err", err)
+		}
+		a.canv, _ = s, id
+	} else {
+		s, err := l.ActiveStore()
+		if err == nil {
+			a.canv = s
+		}
+	}
+	a.cvLibData = l
+	return l
+}
+
+func (a *App) canvasList(c *ui.Context) {
+	t := a.tk
+	l := a.cvLib()
+	v := &a.cv
+	ui.Column(c).Width(200).Shrink(0).Padding(0, 12, 0, 0).Gap(8).BorderWidth(0, 1, 0, 0).BorderColor(t.Bd1).Children(func() {
+		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+			ui.Text(c, "画布").FontWeight(600).Grow(1)
+			if kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建"}).Clicked() {
+				doc := canvas.Doc{Title: "未命名画布", Status: "草稿"}
+				if s, id, err := l.New("未命名画布", doc, "你", "新建", a.now()); err == nil {
+					a.canv = s
+					l.SetActive(id)
+					a.toast = "已新建画布"
+				}
+			}
+		})
+		for _, id := range l.IDs() {
+			s, err := l.Store(id)
+			if err != nil {
+				continue
+			}
+			on := l.Active() == id
+			row := kit.RowEl(c, on).Key("cv-id-"+id).Padding(6, 8).Justify(ui.Start)
+			row.OnClick(func() {
+				l.SetActive(id)
+				a.canv = s
+				v.preview = false
+			})
+			row.Children(func() {
+				kit.Ic(c, "fileText", kit.S12)
+				ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+					ui.Text(c, s.Doc.Title).SingleLine()
+					ui.Text(c, canvas.Ago(a.now(), time.Now())).FontSize(theme.FsMicro).TextColor(t.Tx4)
+				})
+			})
+		}
+	})
+}

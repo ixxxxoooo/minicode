@@ -279,7 +279,7 @@ func BuildReport(recs []UsageRec, rng int, now time.Time, title func(id string) 
 				best, bv = m, v
 			}
 		}
-		rep.TopSessions = append(rep.TopSessions, core.CostSession{Title: ttl, Project: filepath.Base(proj), Model: best, Cost: t.c})
+		rep.TopSessions = append(rep.TopSessions, core.CostSession{SessionID: t.id, Title: ttl, Project: filepath.Base(proj), Model: best, Cost: t.c})
 	}
 	rep.Tips = usageTips(rep, cacheW, cacheR)
 	return rep

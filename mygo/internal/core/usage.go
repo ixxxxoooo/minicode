@@ -20,6 +20,7 @@ type Share struct {
 
 // CostSession 是一个费用高的会话。
 type CostSession struct {
+	SessionID             string
 	Title, Project, Model string
 	Cost                  float64
 }

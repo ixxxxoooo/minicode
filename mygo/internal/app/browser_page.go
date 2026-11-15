@@ -4,7 +4,6 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/browser"
-	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -28,21 +27,21 @@ type noFetch struct{}
 func (noFetch) Fetch(string) (browser.Page, error) { return browser.Page{}, browser.ErrNoFetch }
 
 func (a *App) brw() *browser.Browser {
-	if a.br == nil {
-		if a.demoExtra {
-			a.br = browser.New(demo.BrowserSource{}, demo.BrowserHome)
-		} else {
-			a.br = browser.New(noFetch{}, "")
-		}
-	}
+	a.initBrowser()
 	return a.br
 }
 
 // browseTo 在地址栏里提交一个地址。
 func (a *App) browseTo(u string) {
+	if !a.demoExtra && a.prefs != nil && !a.prefs.Bool(prefBrowserFetch, true) {
+		a.toast = "抓取已关闭:设置 → 浏览器 → 允许抓取网页"
+		return
+	}
 	b := a.brw()
+	host := browser.Normalize(u)
 	if err := b.Go(u); err != nil {
-		log.Warn("浏览器打开失败", "url", u, "err", err)
+		log.Warn("浏览器打开失败", "host", host, "err", err)
+		a.toast = err.Error()
 	}
 	a.brs.st.Y = 0
 }
@@ -98,8 +97,8 @@ func (a *App) browserPage(c *ui.Context) {
 					}
 				}
 			})
-			if kit.Chip(c, "阅读模式", kit.ChipOpt{Icon: "book", On: true, Tip: "内置浏览器目前只提供阅读模式"}).Clicked() {
-				a.toast = "内置浏览器目前只提供阅读模式"
+			if kit.Ib(c, "ext", kit.IbOpt{Tip: "在系统浏览器中打开"}).Clicked() && b.URL() != "" {
+				a.openExtBrowser(b.URL())
 			}
 			if kit.Chip(c, "与此页面对话", kit.ChipOpt{Icon: "chat", Line: true}).Clicked() {
 				v.hideDr = !v.hideDr
@@ -130,7 +129,8 @@ func (a *App) browserReader(c *ui.Context, b *browser.Browser, pg browser.Page) 
 						kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
 						ui.Text(c, "无法打开 "+v.url).FontWeight(600).SingleLine()
 					})
-					ui.Text(c, b.Err.Error()+"。目前只能打开演示里的页面(docs.rs 的 axum / tower 文章)。").TextColor(t.Tx3).LineHeight(1.5)
+					ui.Text(c, b.Err.Error()+"。可尝试在系统浏览器中打开,或到 设置 → 浏览器 检查抓取开关与超时。").TextColor(t.Tx3).LineHeight(1.5)
+					kit.Btn(c, "在系统浏览器打开", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() { a.openExtBrowser(v.url) })
 				})
 			}
 			if pg.URL == "" {
@@ -217,7 +217,7 @@ func (a *App) browserDrawer(c *ui.Context, b *browser.Browser, pg browser.Page) 
 		ui.Row(c).Gap(6).Wrap().Children(func() {
 			for _, q := range []string{"总结要点", "提取代码示例", "翻译成中文", "对比 actix"} {
 				if kit.Chip(c, q, kit.ChipOpt{Line: true}).Clicked() {
-					a.AskClaude("关于网页「" + pg.Title() + "」(" + pg.URL + "):" + q)
+					a.fillDraftWithPage(pg, q)
 				}
 			}
 		})
@@ -225,7 +225,7 @@ func (a *App) browserDrawer(c *ui.Context, b *browser.Browser, pg browser.Page) 
 	ui.Spacer(c).Grow(1)
 	a.miniComposer(c, "br-ask", "就这个页面提问…", &v.ask, "", func(text string) {
 		if text != "" {
-			a.AskClaude("关于网页「" + pg.Title() + "」(" + pg.URL + "):" + text)
+			a.fillDraftWithPage(pg, text)
 		}
 	})
 }

@@ -1,0 +1,263 @@
+package app
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/automation"
+	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/theme"
+)
+
+type autoLive struct {
+	cancel context.CancelFunc
+	buf    strings.Builder
+	at     time.Time
+}
+
+// openAutoNewDlg 打开「新建自动化」模态(设计稿 behave.js au-new)。
+func (a *App) openAutoNewDlg() {
+	s := &a.au
+	s.newDlg = true
+	s.newName, s.newPrompt, s.newTime = "新的自动化", "", "09:00"
+	s.newDays, s.newPerm = "每天", autoPerms[0]
+	if n := a.currentProjectName(); n != "" {
+		s.newProj = n
+	}
+}
+
+func (a *App) closeAutoNewDlg() { a.au.newDlg = false }
+
+func (a *App) submitAutoNew() {
+	s := &a.au
+	if strings.TrimSpace(s.newName) == "" {
+		s.newErr = "请填写名称"
+		return
+	}
+	if strings.TrimSpace(s.newPrompt) == "" {
+		s.newErr = "请写下要做什么"
+		return
+	}
+	if !automation.ValidTime(s.newTime) {
+		s.newErr = "时间格式如 09:30"
+		return
+	}
+	n := a.auto.Add(s.newProj)
+	n.Name, n.Prompt, n.Time, n.Days, n.Perm, n.Project = strings.TrimSpace(s.newName), strings.TrimSpace(s.newPrompt), s.newTime, s.newDays, s.newPerm, s.newProj
+	if err := a.auto.Update(n); err != nil {
+		s.newErr = err.Error()
+		return
+	}
+	s.sel, s.draftID, s.focusName = n.ID, 0, false
+	a.closeAutoNewDlg()
+	a.toast = "已创建「" + n.Name + "」"
+	log.Info("新建自动化", "id", n.ID)
+}
+
+// autoModals 自动化页浮层(新建 / 查看运行)。
+func (a *App) autoModals(c *ui.Context) {
+	a.autoNewDlg(c)
+	a.autoRunView(c)
+}
+
+func (a *App) autoDlg(c *ui.Context, key string, w float32, title string, close func(), body func()) {
+	t := a.tk
+	open := true
+	ui.DialogBase(c, &open, func(backdrop, panel ui.Element) {
+		backdrop.Background(t.Scrim).Justify(ui.Center).AlignItems(ui.Center)
+		panel.Width(w).Background(t.Raised).Radius(t.RXl()).Column().Border(1, t.Bd1).Padding(14, 16).Gap(8)
+		for _, sh := range t.Shadow3() {
+			panel.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
+		}
+		a.dialogIn(key, backdrop, panel)
+		panel.Children(func() {
+			ui.Row(c).AlignItems(ui.Center).Children(func() {
+				ui.Text(c, title).FontSize(theme.FsHead).FontWeight(700).Grow(1)
+				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭 Esc"}).OnClick(close)
+			})
+			body()
+		})
+	})
+	if !open {
+		close()
+	}
+}
+
+// autoNewDlg 渲染新建模态。
+func (a *App) autoNewDlg(c *ui.Context) {
+	if !a.au.newDlg {
+		return
+	}
+	a.autoDlg(c, "auto-new", 420, "新建自动化", a.closeAutoNewDlg, func() {
+		t := a.tk
+		s := &a.au
+		lbl := func(text string) { ui.Text(c, text).FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3) }
+		ui.Column(c).Gap(4).Children(func() {
+			lbl("名称")
+			ui.TextInput(c.Key("aun-name"), &s.newName).Height(28)
+		})
+		ui.Column(c).Gap(4).Children(func() {
+			lbl("提示词")
+			ui.TextArea(c.Key("aun-prompt"), &s.newPrompt).Height(72)
+		})
+		kinds := []string{"每天", "工作日", "每周一", "Cron"}
+		cur := 0
+		switch s.newDays {
+		case "工作日":
+			cur = 1
+		case "周一":
+			cur = 2
+		case "0 9 * * 1", "0 9 * * *":
+			if automation.KindOf(s.newDays) == automation.KCron {
+				cur = 3
+			}
+		}
+		if i := kit.Seg(c, []kit.SegItem{{Text: kinds[0]}, {Text: kinds[1]}, {Text: kinds[2]}, {Text: kinds[3]}}, cur, kit.SegOpt{Key: "aun-kind", Fill: true}); i >= 0 {
+			s.newDays = []string{"每天", "工作日", "周一", "0 9 * * *"}[i]
+		}
+		ui.Row(c).Gap(6).Children(func() {
+			lbl("时间")
+			ui.TextInput(c.Key("aun-time"), &s.newTime).Width(72)
+		})
+		ui.Column(c).Gap(4).Children(func() {
+			lbl("项目")
+			a.autoProjPick(c, &s.newProj, "aun-proj")
+		})
+		if s.newErr != "" {
+			ui.Text(c, s.newErr).FontSize(theme.FsCap).TextColor(t.Err)
+		}
+		ui.Row(c).Gap(8).Justify(ui.End).Children(func() {
+			kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(a.closeAutoNewDlg)
+			kit.Btn(c, "创建", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(a.submitAutoNew)
+		})
+	})
+}
+
+// autoProjPick 项目下拉(列出侧栏已知项目)。
+func (a *App) autoProjPick(c *ui.Context, sel *string, key string) {
+	t := a.tk
+	names := a.projectNames()
+	if len(names) == 0 {
+		*sel = ""
+		ui.Text(c, "还没有项目,请先添加").FontSize(theme.FsCap).TextColor(t.Tx4)
+		return
+	}
+	if *sel == "" {
+		*sel = names[0]
+	}
+	idx := 0
+	for i, n := range names {
+		if n == *sel {
+			idx = i
+			break
+		}
+	}
+	items := make([]kit.SegItem, len(names))
+	for i, n := range names {
+		items[i] = kit.SegItem{Text: n}
+	}
+	if i := kit.Seg(c, items, idx, kit.SegOpt{Key: key, Fill: true}); i >= 0 && i < len(names) {
+		*sel = names[i]
+	}
+}
+
+func (a *App) projectNames() []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, p := range a.projects {
+		if p.Name != "" && !seen[p.Name] {
+			seen[p.Name] = true
+			out = append(out, p.Name)
+		}
+	}
+	return out
+}
+
+// autoPermPick 权限下拉。
+func (a *App) autoPermPick(c *ui.Context, perm *string) {
+	idx := 0
+	for i, x := range autoPerms {
+		if x == *perm {
+			idx = i
+			break
+		}
+	}
+	items := make([]kit.SegItem, len(autoPerms))
+	for i, p := range autoPerms {
+		items[i] = kit.SegItem{Text: p}
+	}
+	if i := kit.Seg(c, items, idx, kit.SegOpt{Key: "au-perm", Fill: true}); i >= 0 {
+		*perm = autoPerms[i]
+	}
+}
+
+// autoRunView 运行记录只读查看(点最近运行进入)。
+func (a *App) autoRunView(c *ui.Context) {
+	s := &a.au
+	if s.runView == "" {
+		return
+	}
+	id, _ := parseRunView(s.runView)
+	it, ok := a.auto.Get(id)
+	title := "运行输出"
+	if ok {
+		title = it.Name + " · 运行记录"
+	}
+	a.autoDlg(c, "au-run", 520, title, func() { s.runView = "" }, func() {
+		t := a.tk
+		var body string
+		var live bool
+		if lv := a.autoLive[id]; lv != nil && s.runView == liveKey(id) {
+			live = true
+			body = lv.buf.String()
+		}
+		if ok {
+			for _, r := range it.Runs {
+				if r.Key == s.runView || (r.Key == "" && fmt.Sprintf("auto:%d:%d", id, r.At.Unix()) == s.runView) {
+					body = r.Output
+					if r.Err != "" && body == "" {
+						body = r.Err
+					}
+					break
+				}
+			}
+		}
+		if live {
+			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+				kit.Spin(c, t.Ac)
+				ui.Text(c, "运行中…").TextColor(t.Ac)
+				ui.Spacer(c).Grow(1)
+				kit.Btn(c, "取消运行", kit.BtnOpt{Small: true, Variant: kit.BtnDangerGhost}).OnClick(func() { a.cancelAutoRun(id) })
+			})
+		}
+		box := ui.Column(c).Background(t.Sunken).Radius(t.RSm()).Padding(10, 12).MaxHeight(360)
+		box.Children(func() {
+			if body == "" {
+				ui.Text(c, map[bool]string{true: "正在运行,输出会出现在这里…", false: "没有输出"}[live]).TextColor(t.Tx3).LineHeight(1.55)
+			} else {
+				ui.Text(c, body).FontFeatures("mono").FontSize(theme.FsCap).LineHeight(1.55).TextColor(t.Tx2)
+			}
+		})
+	})
+}
+
+func liveKey(id int) string { return fmt.Sprintf("auto:%d:live", id) }
+
+func parseRunView(k string) (id int, rest string) {
+	if strings.HasPrefix(k, "auto:") {
+		parts := strings.SplitN(k, ":", 3)
+		if len(parts) >= 2 {
+			id = atoi(parts[1])
+		}
+	}
+	return id, k
+}
+
+func (a *App) cancelAutoRun(id int) {
+	if lv := a.autoLive[id]; lv != nil && lv.cancel != nil {
+		lv.cancel()
+	}
+}

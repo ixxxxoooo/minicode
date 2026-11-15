@@ -160,27 +160,23 @@ func (a *App) cuDelete(c *ui.Context, st *customize.Store, it *customize.Item, v
 			s.delArm = it
 			return
 		}
-		if a.cuCat() == customize.Plugins {
+		if a.cuDisk() != nil && a.cuCat() != customize.Plugins {
+			a.cuRemoveDisk(st, it)
+		} else if a.cuCat() == customize.Plugins {
 			st.Uninstall(it)
 		} else {
 			st.Remove(a.cuCat(), it)
 		}
 		log.Info("删除自定义项", "cat", a.cuCat(), "name", it.Name)
 		s.sel, s.dOf, s.delArm = nil, nil, nil
-		a.toast = "已" + verb + "「" + it.Name + "」"
+		if s.err == "" {
+			a.toast = "已" + verb + "「" + it.Name + "」"
+		}
 	})
 }
 
 func (a *App) cuSave(st *customize.Store, it *customize.Item) {
-	s := &a.cu
-	if err := st.Save(a.cuCat(), it, s.draft); err != nil {
-		s.err = err.Error()
-		return
-	}
-	s.err = ""
-	s.dOf = nil // 重新载入草稿(去掉首尾空白等)
-	a.toast = "已保存「" + it.Name + "」"
-	log.Info("保存自定义项", "cat", a.cuCat(), "name", it.Name)
+	a.cuSaveDisk(st, it)
 }
 
 func (a *App) cuErr(c *ui.Context) {
@@ -222,12 +218,19 @@ func (a *App) cuMarketDetail(c *ui.Context, st *customize.Store) {
 		if m.Installed {
 			kit.Tag(c, "已安装", kit.KOk)
 		} else {
-			kit.Btn(c, "安装", kit.BtnOpt{Variant: kit.BtnPri, Icon: "download"}).OnClick(func() {
-				if it, err := st.Install(m); err == nil {
-					a.toast = "已安装「" + it.Name + "」"
-					log.Info("安装插件", "name", it.Name)
+			if a.cu.plug != nil && a.cu.plug.name == m.Name {
+				phases := []string{"正在下载…", "正在解包…", "安装完成", "安装失败"}
+				p := a.cu.plug.phase
+				if p < 0 || p >= len(phases) {
+					p = 0
 				}
-			})
+				kit.Tag(c, phases[p], kit.KInfo)
+				if a.cu.plug.phase == 3 {
+					kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() { a.cuInstallPlugin(st, m) })
+				}
+			} else {
+				kit.Btn(c, "安装", kit.BtnOpt{Variant: kit.BtnPri, Icon: "download"}).OnClick(func() { a.cuInstallPlugin(st, m) })
+			}
 		}
 		ui.Spacer(c).Grow(1)
 		kit.Btn(c, "查看源码", kit.BtnOpt{Variant: kit.BtnGhost, Icon: "ext"}).OnClick(func() { a.toast = "查看源码:尚未接入" })
@@ -288,8 +291,8 @@ func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func
 	a.cuHead(c, st, it, "server", it.Name, nil)
 	switch it.Status {
 	case customize.StOK:
-		a.cuBanner(c, kit.KOk, "check", "已连接 · "+itoa(len(it.Tools))+" 个工具 · 延迟 23 ms", func() {
-			kit.Btn(c, "重新连接", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() { a.cuReconnect(it) })
+		a.cuBanner(c, kit.KOk, "check", "已连接 · "+itoa(len(it.Tools))+" 个工具", func() {
+			kit.Btn(c, "重新连接", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() { a.cuReconnectReal(it) })
 		})
 	case customize.StWarn:
 		a.cuBanner(c, kit.KWarn, "alert", "需要授权后才能使用", func() {
@@ -301,7 +304,7 @@ func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func
 			reason = it.Desc[i+len(":"):]
 		}
 		a.cuBanner(c, kit.KErr, "alert", "连接失败:"+reason+"。检查命令与环境变量后重试。", func() {
-			kit.Btn(c, "重试", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() { a.cuReconnect(it) })
+			kit.Btn(c, "重试", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() { a.cuReconnectReal(it) })
 		})
 	}
 	where := "命令"
@@ -350,7 +353,7 @@ func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func
 			ui.Row(c).Height(t.Scheme.RowH).PaddingX(8).Gap(6).AlignItems(ui.Center).Children(func() {
 				kit.Mono(c, it.Tools[i].Name, t.Tx1).Grow(1).SingleLine()
 				if kit.Tog(c, it.Tools[i].On, "cmt-"+it.Name+"-"+it.Tools[i].Name) {
-					it.ToggleTool(i)
+					a.cuMCPTool(it, i)
 				}
 			})
 		}
@@ -373,6 +376,8 @@ func (a *App) cuReconnect(it *customize.Item) {
 		a.toast = "连接失败「" + it.Name + "」:命令为空或服务器已停用"
 	}
 }
+
+// cuReconnect 供演示;真实模式走 cuReconnectReal。
 
 // ───────── Skills ─────────
 
@@ -422,7 +427,7 @@ func (a *App) cuSkill(c *ui.Context, it *customize.Item) func() {
 	return func() {
 		kit.Btn(c, "复制路径", kit.BtnOpt{Variant: kit.BtnGhost, Icon: "copy"}).OnClick(func() { a.toast = "已复制路径:" + it.Path })
 		ui.Spacer(c).Grow(1)
-		kit.Btn(c, "在 IDE 中打开", kit.BtnOpt{Variant: kit.BtnSoft, Icon: "code"}).OnClick(func() { a.toast = "在 IDE 中打开 " + it.Name + "/SKILL.md:尚未接入" })
+		kit.Btn(c, "在编辑器打开", kit.BtnOpt{Variant: kit.BtnSoft, Icon: "code"}).OnClick(func() { a.cuOpenPath(it.Path) })
 	}
 }
 
@@ -462,6 +467,9 @@ func (a *App) cuCommand(c *ui.Context, st *customize.Store, it *customize.Item) 
 	})
 	a.cuLbl(c, "模型", func() { a.cuModelSeg(c, "cc-model", &d.Model, false) })
 	a.cuLbl(c, "提示词($ARGUMENTS 会被命令后面的文字替换)", func() { a.cuArea(c, "cc-b", &d.Body, 110, true) })
+	if a.cu.runOut != "" {
+		ui.Column(c).Padding(8, 10).Background(t.Fill1).Radius(t.RSm()).Children(func() { kit.Mono(c, a.cu.runOut, t.Tx2) })
+	}
 	arg, argv := "(空)", ""
 	if d.Hint != "" {
 		arg, argv = "123", " 123"
@@ -471,7 +479,8 @@ func (a *App) cuCommand(c *ui.Context, st *customize.Store, it *customize.Item) 
 	return func() {
 		a.cuDelete(c, st, it, "删除")
 		ui.Spacer(c).Grow(1)
-		kit.Btn(c, "在输入框试用", kit.BtnOpt{Icon: "send"}).OnClick(func() {
+		kit.Btn(c, "试运行", kit.BtnOpt{Icon: "play"}).OnClick(func() { a.cuTryCommand(it) })
+		kit.Btn(c, "填进输入框", kit.BtnOpt{Icon: "send"}).OnClick(func() {
 			a.draft = it.Name + argvOf(it)
 			a.screen = ScreenWork
 			a.toast = "已把命令填进输入框"
@@ -527,11 +536,14 @@ func (a *App) cuAgent(c *ui.Context, st *customize.Store, it *customize.Item) fu
 		})
 	})
 	a.cuLbl(c, "系统提示词", func() { a.cuArea(c, "ca-p", &d.Body, 110, false) })
+	if a.cu.runOut != "" {
+		ui.Column(c).Padding(8, 10).Background(t.Fill1).Radius(t.RSm()).Children(func() { kit.Mono(c, a.cu.runOut, t.Tx2) })
+	}
 	a.cuErr(c)
 	return func() {
 		a.cuDelete(c, st, it, "删除")
 		ui.Spacer(c).Grow(1)
-		kit.Btn(c, "试运行", kit.BtnOpt{Icon: "play"}).OnClick(func() { a.toast = "试运行:尚未接入真实 Agent 后端" })
+		kit.Btn(c, "试运行", kit.BtnOpt{Icon: "play"}).OnClick(func() { a.cuTryAgent(it) })
 		kit.Btn(c, "保存", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(func() { a.cuSave(st, it) })
 	}
 }
@@ -591,7 +603,7 @@ func (a *App) cuRule(c *ui.Context, st *customize.Store, it *customize.Item) fun
 	return func() {
 		a.cuDelete(c, st, it, "删除")
 		ui.Spacer(c).Grow(1)
-		kit.Btn(c, "在 IDE 中打开", kit.BtnOpt{Icon: "code"}).OnClick(func() { a.toast = "在 IDE 中打开 " + it.Name + ":尚未接入" })
+		kit.Btn(c, "在编辑器打开", kit.BtnOpt{Icon: "code"}).OnClick(func() { a.cuOpenPath(it.Path) })
 		kit.Btn(c, "保存", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(func() { a.cuSave(st, it) })
 	}
 }
@@ -655,7 +667,7 @@ func (a *App) cuHook(c *ui.Context, st *customize.Store, it *customize.Item) fun
 	return func() {
 		a.cuDelete(c, st, it, "删除")
 		ui.Spacer(c).Grow(1)
-		kit.Btn(c, "试运行", kit.BtnOpt{Icon: "play"}).OnClick(func() { a.cu.hookOut = customize.TestHook(*d) })
+		kit.Btn(c, "试运行", kit.BtnOpt{Icon: "play"}).OnClick(func() { a.cuTryHook(d) })
 		kit.Btn(c, "保存", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(func() { a.cuSave(st, it) })
 	}
 }

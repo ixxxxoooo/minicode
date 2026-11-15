@@ -13,20 +13,28 @@ import (
 
 type canvasState struct {
 	preview bool
+	code    bool // 预览时的源码视图
 	st      ui.ScrollState
 	pos     map[string]float32 // 块 ID → 相对文档顶端的 Y(上一帧量到的)
 	outline string             // 大纲里当前项
 	ask     string
+	apply   string // 粘贴 Claude 回复以写回画布
+	selBlk  string // 让 Claude 修改时引用的块
+	verIx   int    // 版本步进器(0=最新)
+	drawBot bool   // 窄窗右栏落底部
 }
 
 func (a *App) cvStore() *canvas.Store {
-	if a.canv == nil {
-		if a.demoExtra {
+	if a.demoExtra {
+		if a.canv == nil {
 			a.canv = demo.Canvas(a.now())
-		} else {
-			a.canv = canvas.NewStore(canvas.Doc{Title: "未命名画布", Status: "草稿", Blocks: []canvas.Block{
-				{ID: "p1", Kind: canvas.Para, Lead: true, Anchor: "概述", Text: "在这里写下想法,或点「让 Claude 修改」让它帮你起草。"},
-			}}, "你", "新建", a.now())
+		}
+		return a.canv
+	}
+	l := a.cvLib()
+	if a.canv == nil {
+		if s, err := l.ActiveStore(); err == nil {
+			a.canv = s
 		}
 	}
 	return a.canv
@@ -39,6 +47,8 @@ func (a *App) canvasPage(c *ui.Context) {
 	if v.pos == nil {
 		v.pos = map[string]float32{}
 	}
+	a.canvasViewerOverlay(c)
+	narrow := a.winW > 0 && a.winW < 900
 	a.pane(c).Grow(1).Children(func() {
 		// 顶栏
 		ui.Row(c).Height(40).Padding(0, 16).Gap(8).AlignItems(ui.Center).Shrink(0).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
@@ -47,23 +57,96 @@ func (a *App) canvasPage(c *ui.Context) {
 			kit.Tag(c, s.Doc.Status)
 			v0 := s.Versions[0]
 			ui.Text(c, "v"+itoa(v0.N)+" · "+canvas.Ago(a.now(), v0.At)+"由 "+v0.By+" 修改").FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Grow(1).MinWidth(0)
-			on := 0
-			if v.preview {
-				on = 1
+			mode := 0
+			if v.code {
+				mode = 2
+			} else if v.preview {
+				mode = 1
 			}
-			if i := kit.Seg(c, []kit.SegItem{{Text: "编辑"}, {Text: "预览"}}, on, kit.SegOpt{Key: "cv-mode"}); i >= 0 {
-				if i == 1 && !v.preview && s.Commit("你", "手动编辑", a.now()) {
-					log.Info("画布保存版本", "n", s.Versions[0].N)
+			if i := kit.Seg(c, []kit.SegItem{{Text: "编辑"}, {Text: "预览"}, {Text: "源码"}}, mode, kit.SegOpt{Key: "cv-mode"}); i >= 0 {
+				switch i {
+				case 0:
+					v.preview, v.code = false, false
+				case 1:
+					if !v.preview && s.Commit("你", "手动编辑", a.now()) {
+						log.Info("画布保存版本", "n", s.Versions[0].N)
+						a.canvasPersist()
+					}
+					v.preview, v.code = true, false
+				case 2:
+					v.preview, v.code = true, true
 				}
-				v.preview = i == 1
 			}
+			if v.verIx >= len(s.Versions) {
+				v.verIx = 0
+			}
+			if len(s.Versions) > 1 {
+				kit.Ib(c, "chevL", kit.IbOpt{Small: true, Tip: "上一版"}).OnClick(func() {
+					if v.verIx < len(s.Versions)-1 {
+						v.verIx++
+					}
+				})
+				ui.Text(c, "v"+itoa(s.Versions[v.verIx].N)).FontFeatures("tnum")
+				kit.Ib(c, "chevR", kit.IbOpt{Small: true, Tip: "下一版"}).OnClick(func() {
+					if v.verIx > 0 {
+						v.verIx--
+					}
+				})
+			}
+			kit.Btn(c, "复制源码", kit.BtnOpt{Small: true, Icon: "copy"}).OnClick(func() {
+				a.copyText = s.Doc.Markdown()
+				a.toast = "已复制 Markdown 源码"
+			})
 			kit.Btn(c, "导出", kit.BtnOpt{Small: true, Icon: "download"}).OnClick(a.exportCanvas)
 			kit.Btn(c, "让 Claude 修改", kit.BtnOpt{Small: true, Variant: kit.BtnSoft, Icon: "spark"}).OnClick(func() {
-				a.AskClaude("请修改画布「" + s.Doc.Title + "」:")
+				ref := s.Doc.Title
+				if v.selBlk != "" {
+					if b := s.Doc.Block(v.selBlk); b != nil {
+						ref = b.Text
+						if b.Anchor != "" {
+							ref = b.Anchor
+						}
+					}
+				}
+				msg := "请修改画布「" + s.Doc.Title + "」"
+				if v.selBlk != "" {
+					msg += "(块:" + ref + ")"
+				}
+				a.AskClaude(msg + ":")
 			})
 		})
-		a.pageSplitW(c, "cv", 280, &v.st, func() { a.canvasDoc(c, s) }, func() { a.canvasDrawer(c, s) })
+		body := func() { a.canvasDoc(c, s) }
+		drawer := func() { a.canvasDrawer(c, s) }
+		if narrow {
+			ui.Column(c).Grow(1).MinHeight(0).Children(func() {
+				ui.Row(c).Grow(1).MinHeight(0).Children(func() {
+					if !a.demoExtra {
+						a.canvasList(c)
+					}
+					ui.Scroll(c).Key("cv-main").Grow(1).TrackScroll(&v.st).Children(func() {
+						ui.Column(c).Padding(4, 20, 12, 20).Children(body)
+					})
+				})
+				ui.Column(c).Key("cv-drawer-b").MaxHeight(220).Padding(12, 16).Gap(8).BorderWidth(1, 0, 0, 0).BorderColor(a.tk.Bd1).Children(drawer)
+			})
+		} else {
+			ui.Row(c).Grow(1).MinHeight(0).Children(func() {
+				if !a.demoExtra {
+					a.canvasList(c)
+				}
+				a.pageSplitW(c, "cv", 280, &v.st, body, drawer)
+			})
+		}
 	})
+}
+
+func (a *App) canvasPersist() {
+	if a.demoExtra || a.cvLibData == nil {
+		return
+	}
+	if err := a.cvLibData.SaveActive(); err != nil {
+		log.Warn("画布保存失败", "err", err)
+	}
 }
 
 func (a *App) exportCanvas() {
@@ -80,6 +163,10 @@ func (a *App) exportCanvas() {
 func (a *App) canvasDoc(c *ui.Context, s *canvas.Store) {
 	t := a.tk
 	v := &a.cv
+	if v.preview && v.code {
+		kit.Mono(c, s.Doc.Markdown(), t.Tx2).LineHeight(1.5)
+		return
+	}
 	ui.Row(c).Justify(ui.Center).Children(func() {
 		col := ui.Column(c).Key("cv-col").Width(620).Shrink(1).MinWidth(0).Padding(18, 0, 24, 0)
 		col.Children(func() {
@@ -121,7 +208,7 @@ func (a *App) canvasBlock(c *ui.Context, b *canvas.Block) {
 			ui.TextArea(c.Key("cvp-"+b.ID), &b.Text).Lines(1, 12).MinHeight(20).Background(ui.Transparent).BorderWidth(0).Padding(6, 0, 4, 0).TextColor(t.Tx2).LineHeight(1.65)
 		}
 	case canvas.DiagramBlock:
-		a.canvasDiagram(c, b.Diagram)
+		a.canvasDiagram(c, b)
 	case canvas.TableBlock:
 		a.canvasTable(c, b.Table)
 	case canvas.TodoBlock:
@@ -148,7 +235,8 @@ func (a *App) canvasBlock(c *ui.Context, b *canvas.Block) {
 }
 
 // canvasDiagram 画流程图卡片:头部(说明、Mermaid 标签、全屏、源码)+ 方框与箭头。
-func (a *App) canvasDiagram(c *ui.Context, d *canvas.Diagram) {
+func (a *App) canvasDiagram(c *ui.Context, b *canvas.Block) {
+	d := b.Diagram
 	t := a.tk
 	const sc = 1.0 // 520 宽的设计坐标缩到正文列宽
 	a.box(c).Background(t.Sunken).Clip().Margin(4, 0).Children(func() {
@@ -156,8 +244,11 @@ func (a *App) canvasDiagram(c *ui.Context, d *canvas.Diagram) {
 			kit.Ic(c, "layers", kit.S12)
 			ui.Text(c, d.Caption).Grow(1).SingleLine()
 			kit.Tag(c, "Mermaid")
-			kit.Ib(c, "max", kit.IbOpt{Small: true, Tip: "全屏查看"}).OnClick(func() { a.toast = "图表全屏查看:滚轮缩放、拖动平移(待移植)" })
-			kit.Ib(c, "code", kit.IbOpt{Small: true, Tip: "查看源码"})
+			kit.Ib(c, "max", kit.IbOpt{Small: true, Tip: "全屏查看"}).OnClick(func() { a.openCvViewer(b.ID) })
+			kit.Ib(c, "code", kit.IbOpt{Small: true, Tip: "查看源码"}).OnClick(func() {
+				a.copyText = "```mermaid\n" + d.Caption + "\n```"
+				a.toast = "已复制图表源码"
+			})
 		})
 		cv := ui.Box(c).Height(150*sc).Margin(0, 0, 8, 0)
 		cv.Draw(func(p *ui.Painter, r ui.Rect) {
@@ -238,6 +329,7 @@ func (a *App) canvasDrawer(c *ui.Context, s *canvas.Store) {
 			r := kit.RowEl(c, on).Key("ol-" + o.ID).PaddingStart(8 + float32(o.Level)*14).Justify(ui.Start)
 			r.OnClick(func() {
 				v.outline = o.ID
+				v.selBlk = o.ID
 				if y, ok := v.pos[o.ID]; ok {
 					v.scrollTo(y)
 				}
@@ -272,6 +364,7 @@ func (a *App) canvasDrawer(c *ui.Context, s *canvas.Store) {
 					kit.Ib(c, "rewind", kit.IbOpt{Small: true, Tip: "回到此版本"}).OnClick(func() {
 						if err := s.Rewind(ver.N, a.now()); err == nil {
 							a.toast = "已回到 v" + itoa(ver.N)
+							a.canvasPersist()
 							log.Info("画布回退", "to", ver.N)
 						}
 					})
@@ -281,9 +374,31 @@ func (a *App) canvasDrawer(c *ui.Context, s *canvas.Store) {
 	})
 	ui.Spacer(c).Grow(1)
 	kit.Grp(c, "让 Claude 修改")
-	a.miniComposer(c, "cv-ask", "描述要怎么改,例如「把里程碑改成表格」", &v.ask, "选中:架构图", func(text string) {
+	chip := ""
+	if v.selBlk != "" {
+		if b := s.Doc.Block(v.selBlk); b != nil {
+			if b.Anchor != "" {
+				chip = "块:" + b.Anchor
+			} else {
+				chip = "块:" + b.Text
+			}
+		}
+	}
+	if v.apply != "" {
+		if kit.Btn(c, "应用 Claude 回复到画布", kit.BtnOpt{Variant: kit.BtnSoft, Small: true}).Clicked() {
+			if ok, msg := s.ApplyClaudeReply(v.apply, "Claude", "按对话修改", a.now()); ok {
+				v.apply = ""
+				a.canvasPersist()
+				a.toast = "已写入新版本 v" + itoa(s.Versions[0].N)
+			} else {
+				a.toast = msg
+			}
+		}
+	}
+	ui.TextArea(c.Key("cv-apply"), &v.apply).Lines(2, 4).Placeholder("将 Claude 的 JSON 回复粘贴到这里,点上方按钮写回…").FontSize(theme.FsCap)
+	a.miniComposer(c, "cv-ask", "描述要怎么改,例如「把里程碑改成表格」", &v.ask, chip, func(text string) {
 		if text != "" {
-			a.AskClaude("请修改画布「" + s.Doc.Title + "」:" + text)
+			a.AskClaude("请修改画布「" + s.Doc.Title + "」(引用块 " + chip + "):" + text)
 		}
 	})
 }

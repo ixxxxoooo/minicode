@@ -30,6 +30,7 @@ type Run struct {
 	OK     bool
 	Err    string // 失败原因,如「网络超时」
 	Output string // 运行输出的末尾摘要(真实运行才有)
+	Key    string // 查看键:auto:<自动化id>:<unix>,空则按 At 生成
 }
 
 // Automation 是一条自动化。
@@ -65,6 +66,9 @@ func KindOf(days string) Kind {
 
 // Schedule 是列表里的计划说明,如「每周二 · 14:00」「工作日 · 09:00」。
 func (a Automation) Schedule() string {
+	if KindOf(a.Days) == KCron {
+		return "Cron " + a.Days
+	}
 	d := a.Days
 	if KindOf(d) == KWeekly {
 		d = "每" + d
@@ -86,6 +90,8 @@ func (a Automation) FiresOn(d time.Time) bool {
 	case KMonthly:
 		n, _ := strconv.Atoi(strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(strings.TrimPrefix(a.Days, "每月")), "日")))
 		return n == d.Day()
+	case KCron:
+		return cronFiresOn(a.Days, d)
 	}
 	return false
 }
@@ -162,7 +168,11 @@ func Week(items []Automation, monday, from time.Time) [7][]Slot {
 			if !probe.FiresOn(d) || (!a.On && d.Before(fromDay)) {
 				continue
 			}
-			s := Slot{ID: a.ID, Time: a.Time, Name: a.Name, Off: !a.On}
+			tm := a.Time
+			if KindOf(a.Days) == KCron {
+				tm = cronSlotTime(a.Days, d)
+			}
+			s := Slot{ID: a.ID, Time: tm, Name: a.Name, Off: !a.On}
 			for _, r := range a.Runs {
 				if sameDay(r.At, d) && !r.OK {
 					s.Err = true
@@ -251,17 +261,42 @@ func (s *Store) Record(id int, r Run) {
 func (s *Store) Due(from, now time.Time) []Automation {
 	var out []Automation
 	for _, a := range s.List() {
-		if !a.On || !a.FiresOn(now) || !ValidTime(a.Time) {
+		if !a.On {
+			continue
+		}
+		if KindOf(a.Days) == KCron {
+			if _, err := ParseCron(a.Days); err != nil {
+				continue
+			}
+			for _, at := range cronFireTimesBetween(a.Days, from, now) {
+				if firedAlready(a.Runs, at) {
+					continue
+				}
+				out = append(out, a)
+				break
+			}
+			continue
+		}
+		if !a.FiresOn(now) || !ValidTime(a.Time) {
 			continue
 		}
 		h, _ := strconv.Atoi(a.Time[:2])
 		m, _ := strconv.Atoi(a.Time[3:])
 		at := time.Date(now.Year(), now.Month(), now.Day(), h, m, 0, 0, now.Location())
-		if at.After(from) && !at.After(now) && !(len(a.Runs) > 0 && sameDay(a.Runs[0].At, now)) {
+		if at.After(from) && !at.After(now) && !firedAlready(a.Runs, at) {
 			out = append(out, a)
 		}
 	}
 	return out
+}
+
+func firedAlready(runs []Run, at time.Time) bool {
+	for _, r := range runs {
+		if r.At.Truncate(time.Minute).Equal(at.Truncate(time.Minute)) {
+			return true
+		}
+	}
+	return false
 }
 
 // NewStore 用给定清单建一个存储。
@@ -311,7 +346,11 @@ func (s *Store) Update(a Automation) error {
 	if strings.TrimSpace(a.Name) == "" {
 		return fmt.Errorf("名称不能为空")
 	}
-	if !ValidTime(a.Time) {
+	if KindOf(a.Days) == KCron {
+		if _, err := ParseCron(a.Days); err != nil {
+			return fmt.Errorf("cron 表达式不合法:%v", err)
+		}
+	} else if !ValidTime(a.Time) {
 		return fmt.Errorf("时间要写成 HH:MM,如 09:00")
 	}
 	s.mu.Lock()

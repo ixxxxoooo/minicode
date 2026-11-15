@@ -11,7 +11,7 @@ import (
 )
 
 // 自定义整页(设计稿 customize.js):左分类栏 + 列表 + 各类专属详情抽屉。
-// 数据模型与校验在 internal/customize;真实读写 ~/.claude 与项目 .claude 目录尚未接入(演示数据在内存里改)。
+// 数据模型与校验在 internal/customize;真实模式经 customize.OpenDisk 读盘写盘,演示仍用 demo.Customize()。
 
 type custMeta struct {
 	icon, title, desc, add string
@@ -38,10 +38,20 @@ type custState struct {
 	dOf     *customize.Item   // 草稿对应哪一项
 	rulePV  bool              // 规则:预览
 	hookOut string
+	runOut  string
 	err     string
 	delArm  *customize.Item // 点过一次「删除」,等待确认
 	dlg     *custDlg
 	ask     string
+	disk    *customize.DiskStore
+	plug    *pluginInstall
+}
+
+// pluginInstall 跟踪市场插件安装进度(0 进行中 / 1 收尾 / 2 成功 / 3 失败)。
+type pluginInstall struct {
+	name, market string
+	phase        int
+	err          string
 }
 
 // custDlg 是「新建」对话框的状态。
@@ -53,12 +63,15 @@ type custDlg struct {
 }
 
 func (a *App) cuStore() *customize.Store {
-	if a.cust == nil {
-		if a.demoExtra {
+	if a.cuDemo() {
+		if a.cust == nil {
 			a.cust = demo.Customize()
-		} else {
-			a.cust = customize.NewStore(nil, nil)
 		}
+		return a.cust
+	}
+	a.cuEnsureDisk()
+	if a.cust == nil {
+		a.cust = customize.NewStore(nil, nil)
 	}
 	return a.cust
 }
@@ -276,15 +289,23 @@ func (a *App) cuRow(c *ui.Context, st *customize.Store, it *customize.Item, on, 
 			kit.Btn(c, "授权", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() { a.cuAuth(it) })
 		}
 		if kit.Tog(c, it.On, "cut-"+it.Name) {
-			it.On = !it.On
-			log.Info("自定义启停", "cat", a.cuCat(), "name", it.Name, "on", it.On)
+			if a.cuCat() == customize.MCP && !a.cuDemo() {
+				a.cuMCPOn(it, !it.On)
+			} else {
+				it.On = !it.On
+				log.Info("自定义启停", "cat", a.cuCat(), "name", it.Name, "on", it.On)
+			}
 		}
 	})
 }
 
 func (a *App) cuAuth(it *customize.Item) {
-	it.Authorize()
-	a.toast = "已授权「" + it.Name + "」"
+	if a.cuDemo() {
+		it.Authorize()
+		a.toast = "已授权「" + it.Name + "」"
+		return
+	}
+	a.cuAuthReal(it)
 }
 
 // cuMarket 是插件市场:两列卡片。
@@ -369,6 +390,12 @@ func (a *App) cuDialog(c *ui.Context, st *customize.Store) {
 			it.Event = d.event
 		}
 		log.Info("新建自定义项", "cat", cat, "name", it.Name)
+		if ds := a.cuDisk(); ds != nil {
+			if err := ds.Persist(cat, it, it.Clone()); err != nil {
+				d.err = "写盘失败: " + err.Error()
+				return
+			}
+		}
 		s.dlg, s.scope, s.q = nil, customize.All, ""
 		a.cuSelect(it)
 		a.toast = "已新建「" + it.Name + "」"

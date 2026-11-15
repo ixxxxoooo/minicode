@@ -1,6 +1,9 @@
 package app
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/automation"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -18,9 +21,16 @@ type autoState struct {
 	// 抽屉里的编辑草稿:换选中项时从存储重新载入,点「保存」才写回
 	draftID          int
 	name, prompt, tm string
-	days, perm       string
+	days, perm, proj string
 	errMsg           string
 	focusName        bool
+	runView          string // 正在查看的运行记录键
+
+	// 新建模态
+	newDlg                      bool
+	newName, newPrompt, newTime string
+	newDays, newPerm, newProj   string
+	newErr                      string
 }
 
 var autoPerms = []string{"只读 · 计划模式", "逐项确认", "自动编辑"}
@@ -43,20 +53,16 @@ func (a *App) autoLoadDraft() {
 	if s.draftID == it.ID {
 		return
 	}
-	s.draftID, s.name, s.prompt, s.tm, s.days, s.perm, s.errMsg = it.ID, it.Name, it.Prompt, it.Time, it.Days, it.Perm, ""
+	s.draftID, s.name, s.prompt, s.tm, s.days, s.perm, s.proj, s.errMsg = it.ID, it.Name, it.Prompt, it.Time, it.Days, it.Perm, it.Project, ""
 }
 
 func (a *App) autoPage(c *ui.Context) {
-	s := &a.au
 	items := a.auto.List()
 	a.autoLoadDraft()
 	a.pane(c).Grow(1).Children(func() {
 		a.pageHead(c, "自动化", "让 Claude 按计划自动做事:定时检查、生成报告、巡检依赖。每次运行都会留下一个可回看的会话。", func() {
 			if kit.Btn(c, "新建自动化", kit.BtnOpt{Variant: kit.BtnPri, Icon: "plus"}).Clicked() {
-				n := a.auto.Add(a.currentProjectName())
-				s.sel, s.focusName = n.ID, true
-				s.draftID = 0
-				a.autoLoadDraft()
+				a.openAutoNewDlg()
 			}
 		})
 		a.pageSplit(c, "au", func() {
@@ -65,6 +71,7 @@ func (a *App) autoPage(c *ui.Context) {
 			a.autoList(c, items)
 		}, func() { a.autoDrawer(c) })
 	})
+	a.autoModals(c)
 }
 
 // currentProjectName 是当前会话所在项目名(新建自动化的默认项目)。
@@ -217,7 +224,12 @@ func (a *App) autoCard(c *ui.Context, it automation.Automation) {
 					a.auto.Toggle(it.ID)
 				}
 			})
+			busy := a.autoBusy != nil && a.autoBusy[it.ID]
 			ui.Row(c).Gap(8).AlignItems(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx3).Children(func() {
+				if busy {
+					kit.Spin(c, t.Ac)
+					ui.Text(c, "运行中…").TextColor(t.Ac)
+				}
 				kit.Chip(c, it.Project, kit.ChipOpt{Icon: "folder", Line: true})
 				ui.Spacer(c).Grow(1)
 				switch st {
@@ -270,28 +282,27 @@ func (a *App) autoDrawer(c *ui.Context) {
 		if i := kit.Seg(c, []kit.SegItem{{Text: kinds[0]}, {Text: kinds[1]}, {Text: kinds[2]}, {Text: kinds[3]}}, cur, kit.SegOpt{Fill: true, Key: "au-kind"}); i >= 0 && i != cur {
 			s.days = []string{"每天", "周一", "每月 1 日", "0 9 * * 1"}[i]
 		}
-		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-			a.autoDayPicker(c)
-			field("au-time", &s.tm, 24).Width(70).Grow(0).Shrink(0)
-			ui.Text(c, "时区 Asia/Shanghai").FontSize(theme.FsCap).TextColor(t.Tx3)
-		})
+		if automation.KindOf(s.days) == automation.KCron {
+			ui.TextInput(c.Key("au-cron"), &s.days).FontSize(theme.FsBody).Placeholder("分 时 日 月 周,如 0 9 * * 1")
+			ui.Text(c, "五段标准 cron;时间与 Asia/Shanghai 本地一致").FontSize(theme.FsCap).TextColor(t.Tx3)
+		} else {
+			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+				a.autoDayPicker(c)
+				field("au-time", &s.tm, 24).Width(70).Grow(0).Shrink(0)
+				ui.Text(c, "时区 Asia/Shanghai").FontSize(theme.FsCap).TextColor(t.Tx3)
+			})
+		}
 	})
 	ui.Column(c).Gap(4).Children(func() {
 		lbl("项目与权限")
-		ui.Row(c).Gap(6).Children(func() {
-			kit.Chip(c, it.Project, kit.ChipOpt{Icon: "folder", Line: true})
-			p := kit.Chip(c, s.perm, kit.ChipOpt{Icon: "shield", Line: true, Tip: "点击切换权限"})
-			p.OnClick(func() {
-				for i, x := range autoPerms {
-					if x == s.perm {
-						s.perm = autoPerms[(i+1)%len(autoPerms)]
-						return
-					}
-				}
-				s.perm = autoPerms[0]
-			})
+		ui.Column(c).Gap(6).Children(func() {
+			a.autoProjPick(c, &s.proj, "au-proj")
+			a.autoPermPick(c, &s.perm)
 		})
 	})
+	if nx, ok := it.NextRun(a.now()); ok {
+		ui.Text(c, "下次运行 · "+automation.When(a.now(), nx)+" "+fmtTime(nx)).FontSize(theme.FsCap).TextColor(t.Tx3)
+	}
 	ui.Column(c).Gap(4).Children(func() {
 		lbl("最近运行")
 		a.box(c).Padding(2, 4).Children(func() {
@@ -302,7 +313,13 @@ func (a *App) autoDrawer(c *ui.Context) {
 				if i >= 5 {
 					break
 				}
-				kit.RowEl(c, false).Key("run-" + itoa(it.ID) + "-" + itoa(i)).Height(28).Children(func() {
+				rk := r.Key
+				if rk == "" {
+					rk = fmt.Sprintf("auto:%d:%d", it.ID, r.At.Unix())
+				}
+				row := kit.RowEl(c, false).Key("run-" + itoa(it.ID) + "-" + itoa(i)).Height(28)
+				row.OnClick(func() { s.runView = rk })
+				row.Children(func() {
 					if r.OK {
 						kit.Ic(c, "okc", kit.S12).TextColor(t.Ok)
 					} else {
@@ -319,11 +336,20 @@ func (a *App) autoDrawer(c *ui.Context) {
 		ui.Text(c, s.errMsg).FontSize(theme.FsCap).TextColor(t.Err)
 	}
 	ui.Spacer(c).Grow(1)
+	busy := a.autoBusy != nil && a.autoBusy[it.ID]
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-		kit.Btn(c, "立即运行", kit.BtnOpt{Variant: kit.BtnSoft, Icon: "play"}).OnClick(func() {
-			a.runAutomation(it)
-			log.Info("立即运行自动化", "id", it.ID, "name", it.Name)
-		})
+		runBtn := kit.Btn(c, map[bool]string{true: "运行中…", false: "立即运行"}[busy], kit.BtnOpt{Variant: kit.BtnSoft, Icon: "play"})
+		if busy {
+			runBtn.OnClick(func() { s.runView = liveKey(it.ID) })
+		} else {
+			runBtn.OnClick(func() {
+				a.runAutomation(it)
+				log.Info("立即运行自动化", "id", it.ID, "name", it.Name)
+			})
+		}
+		if busy {
+			kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(func() { a.cancelAutoRun(it.ID) })
+		}
 		kit.Btn(c, "删除", kit.BtnOpt{Variant: kit.BtnDangerGhost, Icon: "trash"}).OnClick(func() {
 			a.auto.Delete(it.ID)
 			s.draftID = 0
@@ -337,7 +363,7 @@ func (a *App) autoDrawer(c *ui.Context) {
 // autoSave 把草稿写回存储(校验名称与时间)。
 func (a *App) autoSave(it automation.Automation) {
 	s := &a.au
-	it.Name, it.Prompt, it.Time, it.Days, it.Perm = s.name, s.prompt, s.tm, s.days, s.perm
+	it.Name, it.Prompt, it.Time, it.Days, it.Perm, it.Project = s.name, s.prompt, s.tm, s.days, s.perm, s.proj
 	if err := a.auto.Update(it); err != nil {
 		s.errMsg = err.Error()
 		return
@@ -374,4 +400,8 @@ func (a *App) autoDayPicker(c *ui.Context) {
 			s.days = "每月 " + itoa(n%28+1) + " 日"
 		}
 	})
+}
+
+func fmtTime(t time.Time) string {
+	return fmt.Sprintf("%02d:%02d", t.Hour(), t.Minute())
 }
