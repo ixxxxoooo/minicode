@@ -100,6 +100,10 @@ func TestRealClaudeViaMappedProvider(t *testing.T) {
 	if _, ok := FindClaude(""); !ok {
 		t.Skip("本机没有 claude")
 	}
+	// 本机可能为真实场景测试注入了 ANTHROPIC_*(如 scripts/with-deepseek.sh),会污染假服务商的鉴权判断,这里清空
+	for _, k := range []string{"ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL", "ANTHROPIC_MODEL", "ANTHROPIC_SMALL_FAST_MODEL", "ANTHROPIC_DEFAULT_OPUS_MODEL", "ANTHROPIC_DEFAULT_SONNET_MODEL", "ANTHROPIC_DEFAULT_HAIKU_MODEL", "CLAUDE_CODE_SUBAGENT_MODEL"} {
+		t.Setenv(k, "")
+	}
 	mockA := newMockAnthropic("来自A家的回复")
 	defer mockA.srv.Close()
 	mockB := newMockAnthropic("来自B家的回复")
@@ -166,7 +170,7 @@ func TestRealClaudeViaMappedProvider(t *testing.T) {
 	}
 	for _, q := range breqs {
 		if q.APIKey != "KEY-B" || q.Auth != "" {
-			t.Errorf("B 家应使用 x-api-key 鉴权:%+v", q)
+			t.Errorf("B 家应使用 x-api-key 鉴权:apiKey=%q 是否带 Bearer=%v", q.APIKey, q.Auth != "")
 		}
 		if q.Model != "b-1" {
 			t.Errorf("发给 B 家的模型名应为 b-1:%q", q.Model)
