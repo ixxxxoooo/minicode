@@ -46,6 +46,9 @@ func (a *App) RefreshProjects(p []core.ProjectInfo) {
 	a.projects = a.applyMeta(p)
 }
 
+// SetProjectRefresher 注入立即重扫会话索引(自动化「查看会话」用)。
+func (a *App) SetProjectRefresher(f func() []core.ProjectInfo) { a.projRefresh = f }
+
 func (a *App) sideWidth() float32 {
 	if a.tk.Scheme.ID == "c" {
 		return 212

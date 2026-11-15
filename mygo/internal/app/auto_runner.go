@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/automation"
@@ -11,8 +12,8 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/diag"
 )
 
-// runAutomationNow 自动化页「立即运行」(带会话 id 记录);定时任务仍走 app.runAutomation。
-func (a *App) runAutomationNow(it automation.Automation) {
+// runAutomationCore 立即运行与定时到点共用:流式运行、回写 session_id 并落盘。
+func (a *App) runAutomationCore(it automation.Automation) {
 	log := diag.L("app")
 	if a.autoRun == nil && a.autoRunCtx == nil && !a.demoWs() {
 		a.auto.RunNow(it.ID, a.now())
@@ -49,16 +50,38 @@ func (a *App) runAutomationNow(it automation.Automation) {
 		switch {
 		case a.demoWs():
 			out, err = demo.RunAutomationDemo(ctx, it, dir, lv.appendChunk)
-			sessionID = demo.AutomationDemoSessionID
+			var sid string
+			out, sid = automation.SplitSession(out)
+			sessionID = sid
+			if sessionID == "" {
+				sessionID = demo.AutomationDemoSessionID
+			}
 		default:
-			end := diag.SpanSlow("app", "运行自动化(stream)", 30*time.Second, "name", it.Name)
-			res, e := claude.RunAutomationPromptStreamCtx(ctx, dir, it.Prompt, claude.PermModeOf(it.Perm), 15*time.Minute, lv.appendChunk)
-			end()
-			out, sessionID, err = res.Output, res.SessionID, e
-			if err != nil && runCtxFn != nil && sessionID == "" && out == "" {
-				// 无 stream-json 能力时回落注入的运行器(无会话 id)
+			_, hasClaude := claude.FindClaude("")
+			switch {
+			case !hasClaude && runCtxFn != nil:
 				out, err = runCtxFn(ctx, it, dir, lv.appendChunk)
-				out, _ = automation.SplitSession(out)
+				out, sessionID = automation.SplitSession(out)
+			case !hasClaude && a.autoRun != nil:
+				out, err = runCtxLegacy(ctx, it, dir, a.autoRun, lv)
+				out, sessionID = automation.SplitSession(out)
+			default:
+				end := diag.SpanSlow("app", "运行自动化(stream)", 30*time.Second, "name", it.Name)
+				res, e := claude.RunAutomationPromptStreamCtx(ctx, dir, it.Prompt, claude.PermModeOf(it.Perm), 15*time.Minute, lv.appendChunk)
+				end()
+				out, sessionID, err = res.Output, res.SessionID, e
+				if sessionID == "" && out != "" {
+					out, sessionID = automation.SplitSession(out)
+				}
+				if err != nil && sessionID == "" && out == "" {
+					if runCtxFn != nil {
+						out, err = runCtxFn(ctx, it, dir, lv.appendChunk)
+						out, sessionID = automation.SplitSession(out)
+					} else if a.autoRun != nil {
+						out, err = runCtxLegacy(ctx, it, dir, a.autoRun, lv)
+						out, sessionID = automation.SplitSession(out)
+					}
+				}
 			}
 		}
 		r := automation.Run{At: time.Now(), OK: err == nil, SessionID: sessionID}
@@ -94,15 +117,72 @@ func (a *App) runAutomationNow(it automation.Automation) {
 	})
 }
 
-// openAutoRun 打开一条运行记录:有会话 id 则进会话,否则只读输出浮层。
-func (a *App) openAutoRun(r automation.Run, rk string) {
+// runAutomationNow 自动化页「立即运行」按钮入口。
+func (a *App) runAutomationNow(it automation.Automation) { a.runAutomationCore(it) }
+
+func autoRunSessionID(r automation.Run) string {
 	if r.SessionID != "" {
-		a.OpenSession(r.SessionID)
-		return
+		return r.SessionID
 	}
 	_, sid := automation.SplitSession(r.Output)
-	if sid != "" {
-		a.OpenSession(sid)
+	return sid
+}
+
+func autoNoSessionReason(r automation.Run) string {
+	if autoRunSessionID(r) != "" {
+		return ""
+	}
+	switch {
+	case r.Err == "已取消":
+		return "已取消,未产生会话"
+	case !r.OK:
+		return "运行失败,未产生会话"
+	default:
+		return "没有关联会话(旧记录或未启动成功)"
+	}
+}
+
+// openAutomationSession 打开自动化关联的会话;索引未就绪时触发一次重扫。
+func (a *App) openAutomationSession(id string) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		a.toast = "此次运行没有关联会话"
+		return
+	}
+	if _, _, ok := a.sessionByID(id); ok {
+		a.OpenSessionChecked(id)
+		return
+	}
+	if a.demoWs() {
+		a.OpenSessionChecked(id)
+		return
+	}
+	if a.projRefresh == nil {
+		a.toast = "会话正在索引,请稍后再试「查看会话」"
+		log.Warn("自动化会话未在索引中", "session", id)
+		return
+	}
+	a.SetProjScanning(true)
+	a.bg("会话索引", func() func() {
+		ps := a.projRefresh()
+		return func() {
+			a.SetProjScanning(false)
+			a.RefreshProjects(ps)
+			if _, _, ok := a.sessionByID(id); ok {
+				a.OpenSessionChecked(id)
+				log.Info("自动化打开会话", "session", id)
+			} else {
+				a.toast = "会话正在索引,请稍后再试「查看会话」"
+				log.Warn("自动化会话未在索引中", "session", id)
+			}
+		}
+	})
+}
+
+// openAutoRun 打开一条运行记录:有会话 id 则进会话,否则只读输出浮层。
+func (a *App) openAutoRun(r automation.Run, rk string) {
+	if sid := autoRunSessionID(r); sid != "" {
+		a.openAutomationSession(sid)
 		return
 	}
 	a.au.runView = rk

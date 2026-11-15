@@ -270,11 +270,13 @@ func (a *App) autoRunView(c *ui.Context) {
 					kit.Btn(c, "取消运行", kit.BtnOpt{Small: true, Variant: kit.BtnDangerGhost}).OnClick(func() { a.cancelAutoRun(id) })
 				})
 			})
-		} else if rec.SessionID != "" {
+		} else if sid := autoRunSessionID(rec); sid != "" {
 			kit.Btn(c, "查看会话", kit.BtnOpt{Variant: kit.BtnPri, Icon: "chat"}).OnClick(func() {
-				a.OpenSession(rec.SessionID)
+				a.openAutomationSession(sid)
 				s.runView = ""
 			})
+		} else if why := autoNoSessionReason(rec); why != "" {
+			ui.Text(c, why).FontSize(theme.FsCap).TextColor(t.Tx4)
 		}
 		box := ui.Column(c).Background(t.Sunken).Radius(t.RSm()).Padding(10, 12).MaxHeight(360)
 		box.Children(func() {

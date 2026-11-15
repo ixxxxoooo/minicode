@@ -57,7 +57,7 @@
       R('偏好未接线 · 通用 / 模型 / 对话', '通用:恢复上次会话与布局、关闭窗口时、粘贴长文本折叠为附件、通知声音。模型:默认模型 / 默认思考强度(键 models.* 与真正生效的 claude.model / claude.effort 不是同一个键,改设置不影响实际选择)、默认开启扩展思考、自动压缩与触发阈值。对话:回合结束后折叠过程(chat.fold)、默认权限模式、提示音、排队两项、追加系统提示词(chat.sys 只写偏好,没有下发给 claude)', 'todo', 'B6'),
       R('偏好未接线 · 权限 / 运行环境', '权限:默认模式、禁止绕过、Bash 沙盒、额外可访问目录,只存偏好,没写回 claude 设置。运行环境:可执行文件(runtime.bin 没传给 claude.Config.ClaudePath,仍走 PATH / MINI_CLAUDE_PATH)、代理模式 / 地址 / 绕过、超时 ◆ 第一波:settings_wire.go 接了 runtime.bin / 代理 / 超时,权限写回 claude 设置;未测试,Bash 沙盒与额外目录是否真被 claude 采用待核', 'part', 'B6'),
       R('偏好未接线 · 编辑器 / 终端 / SCM / 浏览器', '编辑器:语法高亮开关、追溯栏(editor.blameGutter,代码只实现行内追溯)。终端:登录 shell、在项目目录启动(term.Start 没读)。SCM:Diff 大小上限、自动 fetch、Worktree 存放位置。浏览器:默认阅读模式 ◆ 第一波:term.Start 经 TermStartOpts 读登录 shell / 目录 / shell / 回看,Diff 大小上限在 openDiffKind 弹确认(仍然显示),自动 fetch 节拍常开按偏好执行;追溯栏见编辑器行;未测试', 'part', 'B6'),
-      R('偏好未接线 · 隐私 / 高级 / 关于', '隐私:崩溃报告、使用统计、日志级别(diag.SetLevel 存在,设置页没调)。高级:前台命令实时输出开关、主线程看门狗开关。关于:自动下载更新、更新通道。外观:「跟随系统深浅色」只驱动 Dock 图标,不切主题 ◆ 第一波:日志级别经 ApplyDiagPrefs、看门狗开关、前台实时输出开关已接;「会话流一次测完行高」只存偏好(MyGo 没有对应 API);未测试', 'part', 'B6'),
+      R('偏好未接线 · 隐私 / 高级 / 关于', '隐私:崩溃报告、使用统计、日志级别(diag.SetLevel 存在,设置页没调)。高级:前台命令实时输出开关、主线程看门狗开关。关于:自动下载更新、更新通道。外观:「跟随系统深浅色」只驱动 Dock 图标,不切主题 ◆ 第一波:日志级别经 ApplyDiagPrefs、看门狗开关、前台实时输出开关已接;「会话流一次测完行高」只存偏好并注明 Go 版不生效;未测试', 'part', 'B6'),
       R('设计稿有、设置页没有的行', '外观:等待动画、滚动条。模型:输出风格。运行环境:claude「检测」按钮与版本、环境变量显示 / 遮盖、连通性第三主机。隐私:诊断包「导出」、claude doctor 与结果折叠、「崩溃与卡顿」近 30 天块。高级:settings.json 导出 / 导入、会话流一次测完行高。关于:开源致谢、在 GitHub 上查看。SCM:Worktree 列表行 ◆ 第一波:settings_runtime_ui / settings_privacy_extra / settings_advanced_data 补了检测按钮、环境变量遮盖、诊断包导出、settings.json 导出导入等;外观「等待动画 / 滚动条」是否齐全待阶段三对照;未测试', 'part', 'B6'),
       R('设置里「检查器」措辞与设计稿不一致', '设计稿 v3.1 没有「检查器」,对应项是「开标签时自动展开右侧工作区」;Go 的 general.insp、快捷键列表「显示 / 隐藏检查器」、方案卡示意图仍沿用旧名(以设计稿为准,改 Go 文案) ◆ general.insp 的文案已改为「开标签时自动展开右侧工作区」;快捷键列表与方案卡示意图是否还有旧名待阶段三核对', 'part', 'B6'),
       R('规则 / 环境变量 / 语言服务器 / 项目信任', '规则 / 环境变量添加行、Skill 重命名已接;语言服务器行仍是演示数据;项目信任是否真读写,阶段三核实', 'part', 'B6'),
@@ -205,7 +205,7 @@
       R('计划 Cron', '五段 cron 解析、FiresOn/Due 到点触发、下次运行时间', 'ok', 'B7'),
       R('项目选择 / 权限选择', '新建模态与编辑抽屉:项目分段 + 权限分段', 'ok', 'B7'),
       R('立即运行', '真实 claude -p 流式+取消;演示 RunAutomationDemo 流式+取消+失败样例', 'ok', 'B7'),
-      R('最近运行可点进会话', '现在是点运行行打开「只读输出浮层」;设计稿(behave.js au-run)是「查看会话」,运行器只记录输出,不建会话索引,所以进不了会话', 'part', 'B7'),
+      R('最近运行可点进会话', '定时与立即运行共用 runAutomationCore,成功/失败/取消回写 session_id 并落盘;无 id 时置灰并说明原因,真实模式打开前可触发索引重扫(未测试)', 'part', 'B7'),
       R('新建模态与失败 / 运行中状态', '设计稿 behave.js au-new/au-run;Go 模态+运行浮层', 'ok', 'B7')],
     canvas: [
       R('块编辑 / 预览、大纲定位、版本提交与回退、导出 Markdown', '', 'ok'),
@@ -257,7 +257,7 @@
       R('文字流光 / 流底部渐隐遮罩', 'TextShimmer 透明度扫光+Pulse;流底 MaskLinearGradient', 'part', 'B8'),
       R('列表入场 stagger、折叠的高度插值', '设置/命令面板 StaggerRise;删除 CollapseHide;FoldHeight 预留', 'part', 'B8'),
       R('states 增补的 11 种动效(抖动 / 折叠 / 抽屉 / 骨架 / 浮起 …)', '抽屉/拖起/toast/终端搜索/LSP 卡/模态退场已接;ok-pop / 柱状生长 / 骨架→内容交叉淡入 / 不确定进度条仍缺', 'part', 'B8'),
-      R('已定义但没有调用点的动效', 'OkPop / IndetMeter / FoldHeight 已在自动化页接线(auto_page.go / auto_ui.go);GrowY / Crossfade 定义了尚无调用点;未测试', 'part', 'B8')]
+      R('已定义但没有调用点的动效', 'GrowY 已接用量页日/周柱、Crossfade 接用量页统计骨架→内容;OkPop / IndetMeter / FoldHeight 已在自动化页接线;未测试', 'part', 'B8')]
   };
 
   /** 在页面底部追加状态表(自己已有状态表的页面不会出现在 STATUS 里) */

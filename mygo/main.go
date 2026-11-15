@@ -270,6 +270,7 @@ func main() {
 		a.SetProjects(ix.Projects, "")
 		a.SetProject(rs.curCwd)
 		rs.onCwd = a.SetProject
+		a.SetProjectRefresher(func() []core.ProjectInfo { return rs.refresh().Projects })
 	}
 
 	mygo.App.WhenReady(func() {

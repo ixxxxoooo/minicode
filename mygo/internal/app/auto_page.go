@@ -335,8 +335,10 @@ func (a *App) autoDrawer(c *ui.Context) {
 						kit.Ic(c, "errc", kit.S12).TextColor(t.Err)
 					}
 					ui.Text(c, automation.When(a.now(), r.At)).Grow(1)
-					if r.SessionID != "" {
+					if sid := autoRunSessionID(r); sid != "" {
 						ui.Text(c, "查看会话").FontSize(theme.FsCap).TextColor(t.Ac)
+					} else if why := autoNoSessionReason(r); why != "" {
+						ui.Text(c, "无法查看会话").FontSize(theme.FsCap).TextColor(t.Tx4).Tooltip(why)
 					} else {
 						ui.Text(c, map[bool]string{true: "成功", false: "失败"}[r.OK]).TextColor(t.Tx3)
 					}

@@ -10,8 +10,8 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/automation"
 )
 
-// AutomationDemoSessionID 是演示自动化运行完成后可打开的回放会话。
-const AutomationDemoSessionID = "demo-fixbug"
+// AutomationDemoSessionID 是演示自动化运行完成后可打开的侧栏会话 id。
+const AutomationDemoSessionID = "fixbug"
 
 // RunAutomationDemo 在演示模式下跑一条自动化:分多段写出输出,ctx 取消则返回已取消。
 func RunAutomationDemo(ctx context.Context, it automation.Automation, _ string, onChunk func(string)) (string, error) {

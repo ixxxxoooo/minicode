@@ -4,7 +4,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -195,6 +194,7 @@ type App struct {
 	sideOvlAt       time.Time                      // 侧栏抽屉滑入
 	dockOvlAt       time.Time                      // 对话栏浮层滑入
 	projScan        bool                           // 侧栏正在重扫会话索引(显示骨架)
+	projRefresh     func() []core.ProjectInfo      // 真实模式:立即重扫 ~/.claude/projects
 	delUndo         kit.UndoSlot                   // 全局删除撤销(会话 / 自定义等)
 	sessHide        map[string]time.Time           // 折叠删除中的会话行
 	sessDelWait     map[string]func()              // 延迟落盘的取消函数
@@ -217,6 +217,7 @@ type App struct {
 	cuNoMem         bool                           // 自定义页:「加载 CLAUDE.md 记忆文件」被关掉(只是界面状态,尚未接入 env)
 	use             usageState                     // 用量页
 	usageSrc        func(rng int) core.UsageReport // 用量数据源(nil = 演示数据)
+	acct            acctState                      // 账号菜单(真实模式缓存)
 	qp              *qpState                       // 快速选择浮层(历史会话 / 分支),nil = 关闭
 	repo            vcs.Repo                       // 当前项目的仓库(演示为内存实现)
 	branch          string                         // 当前分支名(缓存,避免每帧查 git)
@@ -388,6 +389,11 @@ func (a *App) afterEvent(ev core.Event) {
 	}
 	if e, ok := ev.(core.EvReady); ok && a.curSess == "" && e.SessionID != "" && !strings.HasPrefix(e.SessionID, "demo-") {
 		a.curSess = e.SessionID
+	}
+	if _, ok := ev.(core.EvTurnStarted); ok {
+		if a.cuDemo() && a.curSess == "b4-queue-img" && a.q.len() == 0 {
+			a.QueuePrompts(demo.QueuePromptSamples()...)
+		}
 	}
 	if e, ok := ev.(core.EvTurnEnded); ok {
 		if a.q.preempt != "" {
@@ -814,71 +820,8 @@ func (a *App) SetAutomationRunner(f func(it automation.Automation, dir string) (
 // SetAutomations 换上持久化的自动化存储。
 func (a *App) SetAutomations(s *automation.Store) { a.auto = s }
 
-// runAutomation 立即运行一条自动化(「立即运行」按钮与定时到点都走这里);没有运行器时只记一条演示记录。
-func (a *App) runAutomation(it automation.Automation) {
-	if a.autoRun == nil && a.autoRunCtx == nil {
-		a.auto.RunNow(it.ID, a.now())
-		a.toast = "已开始运行「" + it.Name + "」"
-		return
-	}
-	if a.autoBusy == nil {
-		a.autoBusy = map[int]bool{}
-	}
-	if a.autoBusy[it.ID] {
-		a.toast = "「" + it.Name + "」正在运行"
-		return
-	}
-	dir := a.projectDir(it.Project)
-	if dir == "" {
-		a.auto.Record(it.ID, automation.Run{At: a.now(), Err: "找不到项目「" + it.Project + "」的目录"})
-		a.toast = "运行失败:找不到项目目录"
-		return
-	}
-	if a.autoLive == nil {
-		a.autoLive = map[int]*autoLive{}
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	lv := &autoLive{cancel: cancel, at: a.now()}
-	a.autoLive[it.ID] = lv
-	a.autoBusy[it.ID] = true
-	a.toast = "已开始运行「" + it.Name + "」"
-	run := a.autoRun
-	runCtxFn := a.autoRunCtx
-	a.bg("automation", func() func() {
-		var out string
-		var err error
-		if runCtxFn != nil {
-			out, err = runCtxFn(ctx, it, dir, lv.appendChunk)
-		} else {
-			out, err = runCtxLegacy(ctx, it, dir, run, lv)
-		}
-		r := automation.Run{At: time.Now(), OK: err == nil}
-		if err != nil {
-			r.Err = err.Error()
-			if ctx.Err() == context.Canceled {
-				r.Err = "已取消"
-			}
-		}
-		if out == "" {
-			out = lv.snapshot()
-		}
-		if rs := []rune(out); len(rs) > 8000 {
-			out = string(rs[len(rs)-8000:])
-		}
-		r.Output = out
-		r.Key = fmt.Sprintf("auto:%d:%d", it.ID, r.At.Unix())
-		return func() {
-			delete(a.autoBusy, it.ID)
-			delete(a.autoLive, it.ID)
-			a.auto.Record(it.ID, r)
-			if r.OK {
-				a.toast = "「" + it.Name + "」运行完成"
-			} else {
-				a.toast = "「" + it.Name + "」运行失败:" + r.Err
-			}
-		}
-	})
-}
+// runAutomation 定时到点与测试入口(与「立即运行」同路径,会回写 session_id)。
+func (a *App) runAutomation(it automation.Automation) { a.runAutomationCore(it) }
 
 type autoRunner func(it automation.Automation, dir string) (string, error)
 
@@ -917,7 +860,7 @@ func (a *App) projectDir(name string) string {
 func (a *App) AutomationTick(now time.Time) {
 	from := a.autoSeen
 	a.autoSeen = now
-	if from.IsZero() || (a.autoRun == nil && a.autoRunCtx == nil) {
+	if from.IsZero() || (a.autoRun == nil && a.autoRunCtx == nil && !a.demoWs()) {
 		return
 	}
 	for _, it := range a.auto.Due(from, now) {
