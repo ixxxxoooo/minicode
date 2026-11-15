@@ -9,7 +9,7 @@ import (
 )
 
 // EditorDemo 按「动作:参数」驱动编辑器进入某个状态(cmd/shot 截图用,多个动作用逗号隔开):
-// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签)、expand:路径、newfile|newdir:文件夹:名字、renamef:路径:名字、foerr、discardask:路径、cmpfiles:提交、resetask:序号、delask:路径、rename:会话id、archived:项目id、scm、syncall、repobusy:N、search:查询、scope:文件夹、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容。
+// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签;review:empty 空态)、expand:路径、newfile|newdir:文件夹:名字、renamef:路径:名字、foerr、discardask:路径、cmpfiles:提交、resetask:序号、delask:路径、rename:会话id、archived:项目id、scm、syncall、repobusy:N、search:查询、scope:文件夹、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容。
 func (a *App) EditorDemo(spec string) {
 	for _, act := range strings.Split(spec, ",") {
 		name, arg, _ := strings.Cut(act, ":")
@@ -130,10 +130,25 @@ func (a *App) EditorDemo(spec string) {
 				a.repos[i].busy = "同步"
 			}
 			continue
-		case "pop": // pop:<键>:直接展开某个弹层(如 fp-graph-repo、fp-search-scope)
+		case "pop": // pop:<键>:直接展开某个弹层(如 mcp / ctx-cmp / upd / notice)
 			a.popup = arg
+			if arg == "notice" {
+				if a.nt == nil {
+					a.nt = &noticeStore{}
+				}
+				a.nt.panelOn = true
+				if len(a.nt.items) == 0 {
+					a.noticeWarn("未安装 rust-analyzer", "语言智能暂不可用。", nil)
+				}
+			}
 			continue
-		case "review": // 打开审查标签
+		case "upd":
+			a.SeedUpdateDemo(arg, 42)
+			continue
+		case "review": // 打开审查标签;review:empty = 空态
+			if arg == "empty" {
+				a.reviewDemoEmpty = true
+			}
 			a.OpenReview()
 			continue
 		case "wizard": // wizard / wizard:1(前进到第 2 个)/ wizard:done(全部处理完):多仓库逐个提交向导

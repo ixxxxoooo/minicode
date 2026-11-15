@@ -409,6 +409,8 @@ func (s *State) Apply(ev Event) {
 		if t := s.task(e.TaskID); t != nil {
 			t.PushOutput(s.Now(), e.Text)
 		}
+	case EvForkSession:
+		// 分叉由界面切换会话处理,状态机不归约
 	case EvTurnEnded:
 		s.Phase = PhaseIdle
 		r := e.Reason

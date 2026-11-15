@@ -153,17 +153,17 @@
       ['MiniCode.icns / MiniCode-dark.icns', '16–512 @1x/@2x(含 1024)', '<span class="kcode">gen.py</span> → <span class="kcode">render.py</span> → <span class="kcode">iconutil</span>(现有)', stt('ok')],
       ['app-light.png / app-dark.png', '1024,Dock 运行时随主题切换用', '同上(现有)', stt('ok')],
       ['其余 5 种样式 × 4 种外观', '1024 PNG + .icns;透明 / 着色另出 .icon', '<span class="kcode">gen.py</span> 增加样式与外观参数;分段织纹不再依赖背景色挖洞', stt('todo')],
-      ['tray-*.png', '36 × 36 模板(idle / running / unread / waiting 四张现有)', '<span class="kcode">render.py --template</span>;补 error / update / paused / demo 与五种样式,动画帧 3 张', stt('part')],
+      ['tray-*.png', '36 × 36 模板(idle / running / unread / waiting 四张现有)', 'error / update / paused / demo PNG 未生成', stt('part')],
       ['文档图标 .icns', '16–512', '同流水线,纸页模板 + 图形', stt('todo')],
       ['MiniCode.icon(Icon Composer)', '背景 / 经线 / 纬线三层', '由分层 SVG 导出,macOS 26 自动派生四种外观', stt('todo')]]))}
 
     ${sec('实现状态', '如实标出 Go 版(feat/mygo 分支)现在做到哪一步,避免设计稿与代码对不上。', tbl([['能力', 240], ['现状'], ['状态']], [
       ['应用图标:织纹 浅 / 深 + .icns', '资源已生成并随包;Go 版打包脚本沿用', stt('ok')],
-      ['运行时 Dock 图标随主题 / 系统深浅切换', '旧 Rust 版有;Go 版 <span class="kcode">assets/icon/</span> 只有浅 / 深两套 .icns 与四张托盘 PNG,运行时不换图标,也没有托盘', stt('todo')],
+      ['运行时 Dock 图标随主题 / 系统深浅切换', 'Dock.SetIcon + darwin cgo 读 .icns;尚未接 appearance.appIcon* 偏好与系统外观实时监听', stt('part')],
       ['图标样式 / 外观 / 配色的选择与偏好', '设计稿已定;偏好键 <span class="kcode">appearance.appIcon / appIconMode / appIconTint</span> 待加', stt('todo')],
-      ['Dock 角标 / 弹跳 / 进度', '需 cgo 调 <span class="kcode">NSApp.dockTile</span>;进度自绘', stt('todo')],
-      ['菜单栏图标(<span class="kcode">general.tray</span> 开关)', '偏好已有、界面有开关;<span class="kcode">NSStatusItem</span> 桥待做,四张托盘资源已有', stt('part')],
-      ['托盘状态 / 动画 / 菜单 / 数字', '待做;状态由 <span class="kcode">core.State</span> 汇总(待确认 > 出错 > 完成 > 运行)', stt('todo')],
+      ['Dock 角标 / 弹跳 / 进度', 'Dock.SetBadge 按待确认数;进度条与弹跳降级未做', stt('part')],
+      ['菜单栏图标(<span class="kcode">general.tray</span> 开关)', 'mygo.NewTray 四态 PNG;无动画帧', stt('part')],
+      ['托盘状态 / 动画 / 菜单 / 数字', '待确认 / 运行态汇总;动画帧与 VoiceOver 标签未做', stt('part')],
       ['文件类型图标与关联', '提案', stt('todo')],
       ['应用内小标统一用应用图标', '设计稿已替换(查看器顶栏、欢迎页、关于);Go 版仍是通用符号', stt('todo')]]))}
     </div>`;

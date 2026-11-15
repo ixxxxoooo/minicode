@@ -46,6 +46,7 @@ func WorkspaceFolders() []WsFolder {
 		[]vcs.Change{
 			{Path: "src/charts.ts", Status: 'M', Add: 6, Del: 2},
 			{Path: "src/components/Card.tsx", Status: 'A', Add: 1},
+			{Path: "packages/ui", Status: 'M', Add: 1, Del: 1}, // 子模块指针变更
 		},
 		[]vcs.Commit{
 			{Hash: "9c1d2e3", Subject: "feat(charts): 折线图支持缩放", Author: "你", When: "1 小时", Parents: []string{"7a6b5c4"}, Refs: []string{"HEAD", "feat/charts"}},

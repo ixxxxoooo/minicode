@@ -17,6 +17,7 @@ func SessionTitle(id string) string {
 }
 
 // Session 为侧栏里的某个会话造后端:
+//   - 登记在 registry.go 里的场景(Live 按节奏播放,否则一次性回放);
 //   - fixbug:历史会话,一次性回放完整回合;
 //   - perm:启动后自动发一条会触发权限请求的提示,停在权限卡上等用户处理;
 //   - 空 id:全新会话(欢迎页),没有任何条目;
@@ -28,6 +29,13 @@ func Session(id string, speed float64) *Backend {
 			s = append(s, Step{0, core.EvTitleChanged{Title: title}})
 		}
 		return s
+	}
+	// 先查场景注册表(scn_*.go 登记的各种样式场景)
+	if sc, ok := findScenario(id); ok && sc.Build != nil {
+		b := New(sc.Build, speed)
+		b.Instant = !sc.Live
+		b.Auto = sc.Auto
+		return b
 	}
 	switch id {
 	case "fixbug":

@@ -3,6 +3,8 @@
 package app
 
 import (
+	"context"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -22,6 +24,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/lsp"
 	"github.com/ixxxxoooo/minicode/internal/prefs"
 	"github.com/ixxxxoooo/minicode/internal/projects"
 	"github.com/ixxxxoooo/minicode/internal/sessmeta"
@@ -85,8 +88,14 @@ type App struct {
 	sideOpen     bool
 	rightOn      bool                                     // 右侧栏开合:Agent 形态 = 工作区,IDE 形态 = 对话栏
 	chatMax      bool                                     // IDE 形态:对话栏占满主区(工作区让位)
-	memBy        [2]layMem                                // 各形态各自记住的右侧栏 / 底部面板开合(切回来还是原样)
+	memBy        [2]layMem                                // 各形态各自记住的右侧栏 / 底栏 / 导航栏 / 对话占满
+	secondary    bool                                     // 从属新窗口进程:不写偏好与工作区存储
+	morphUntil   time.Time                                // 形态切换期间锁定指针(设计稿 .morphing)
+	wsFloat      bool                                     // Agent 窄窗:工作区浮层打开
+	dockFloat    bool                                     // IDE 窄窗:对话栏浮层打开
+	sideDrawer   bool                                     // <720:导航栏以抽屉展示
 	flashAt      time.Time                                // 工作区被「打开标签」唤起的时刻(边框闪一下)
+	panelFlashAt time.Time                                // 底部终端面板展开 / 新建时的边框闪一下
 	genText      func(dir, prompt string) (string, error) // 一次性文本生成(提交说明等)
 	graphTab     graphTabState                            // Git 图谱标签的搜索与选中
 	out          outState                                 // 底部「输出」面板
@@ -115,82 +124,109 @@ type App struct {
 	radius       int          // 圆角:0 利落 / 1 适中 / 2 圆润
 
 	// 侧栏数据
-	projects []core.ProjectInfo
-	curSess  string
-	projOpen map[string]bool
-	reg      *projects.Store     // 手动添加的项目与工作区(真实:~/.minicode/workspaces.json;演示:内存)
-	ws       *projects.Workspace // 当前激活的工作区(nil = 单项目)
-	repos    []*repoEntry        // 多根时每个顶层文件夹一项
-	repoAct  int                 // 活动仓库(源代码管理里正在操作的那个)
-	solo     *soloState          // 进入工作区前的单项目现场(退出时还原)
-	pd       projDlg             // 添加项目 / 工作区对话框状态
-	sessMore map[string]bool
-	meta     *sessmeta.Store       // 会话的本机整理信息(置顶 / 归档 / 自定义标题)
-	rawProj  []core.ProjectInfo    // 未套用整理信息的项目与会话(a.projects 是套用后的)
-	sessDel  func(id string) error // 真实模式:删除会话的磁盘文件(演示为空)
-	ren      sessRename            // 侧栏正在行内重命名的会话
-	fo       fileOp                // 文件树正在进行的行内新建 / 重命名
+	projects   []core.ProjectInfo
+	curSess    string
+	projOpen   map[string]bool
+	reg        *projects.Store     // 手动添加的项目与工作区(真实:~/.minicode/workspaces.json;演示:内存)
+	ws         *projects.Workspace // 当前激活的工作区(nil = 单项目)
+	repos      []*repoEntry        // 多根时每个顶层文件夹一项
+	repoAct    int                 // 活动仓库(源代码管理里正在操作的那个)
+	solo       *soloState          // 进入工作区前的单项目现场(退出时还原)
+	pd         projDlg             // 添加项目 / 工作区对话框状态
+	sessMore   map[string]bool
+	meta       *sessmeta.Store       // 会话的本机整理信息(置顶 / 归档 / 自定义标题)
+	rawProj    []core.ProjectInfo    // 未套用整理信息的项目与会话(a.projects 是套用后的)
+	sessDel    func(id string) error // 真实模式:删除会话的磁盘文件(演示为空)
+	ren        sessRename            // 侧栏正在行内重命名的会话
+	fo         fileOp                // 文件树正在进行的行内新建 / 重命名
+	filesFocus bool                  // 文件树正在接键盘(F2 / ⌘⌫)
+	sg         *suggestSt            // 行内补全(ide_suggest.go)
+	inl        *inlinePatch          // 行内编辑预览(ide_inline.go)
+	codeActs   []lsp.CodeAction      // ⌘. 拉取的 LSP 代码操作
+	mmTip      string                // 迷你地图悬停源码摘要
 
 	// 会话流的折叠状态:条目 id → 是否展开(没有记录就用默认)
-	folds map[string]bool
+	folds        map[string]bool
+	outFold      map[string]bool      // 长输出 / 用户消息展开
+	tickTool     map[string]string    // 工具组 → 当前展示的最新工具 id
+	tickAt       map[string]time.Time // 最新一步滑入动画起点
+	termLive     map[string]string    // 运行中命令 output_file 尾读缓存
+	planOpened   map[string]bool      // 已因流式自动打开过的计划
+	userEd       userEdit             // 正在就地编辑的用户消息
+	flowNoFollow bool                 // 会话流:用户上滑后停止贴底
 
 	// Markdown 选项(随主题重建)
-	md *markdown.Options
+	md         *markdown.Options
+	mdThemeKey string
 
 	// 会话切换:由入口注入,按 id 造后端(空串 = 新会话)
 	opener func(id string) backend.Backend
 
 	// 输入框
-	draft         string
-	sr            searchState                                                // 项目内搜索
-	gi            map[string]*gitInfo                                        // 文件的追溯 / 历史缓存
-	autoRun       func(it automation.Automation, dir string) (string, error) // 自动化运行器(nil = 演示:只记录)
-	autoSeen      time.Time                                                  // 上次检查定时的时间
-	autoBusy      map[int]bool                                               // 正在运行的自动化
-	live          map[string]*liveSess                                       // 切走时还在跑的会话:后端继续保活,事件归约到自己的状态
-	framePending  bool                                                       // frameSoon 已排队
-	foldAt        map[string]time.Time                                       // 步骤行展开的时刻(入场动画)
-	dlgSeen       string                                                     // 已开始计时入场动画的居中浮层
-	dlgAt         time.Time
-	popSeen       string                         // 已开始计时入场动画的弹层
-	popAt         time.Time                      // 该弹层打开的时刻
-	redrawPending bool                           // redrawSoon 已排了定时重画
-	pickOnReady   bool                           // 新会话握手后应用已记住的模型 / 思考强度
-	cf            map[string]*confState          // 合并冲突标签的状态(按文件)
-	sc            scmState                       // 源代码管理
-	auto          *automation.Store              // 自动化清单
-	au            autoState                      // 自动化页状态
-	clock         func() time.Time               // 当前时间(测试 / 截图注入固定时间)
-	canv          *canvas.Store                  // 画布文档(首次打开页面时建立)
-	cv            canvasState                    // 画布页状态
-	br            *browser.Browser               // 内置浏览器(首次打开页面时建立)
-	brs           browserState                   // 浏览器页状态
-	cust          *customize.Store               // 自定义页数据(首次打开页面时建立)
-	cu            custState                      // 自定义页状态
-	cuNoMem       bool                           // 自定义页:「加载 CLAUDE.md 记忆文件」被关掉(只是界面状态,尚未接入 env)
-	use           usageState                     // 用量页
-	usageSrc      func(rng int) core.UsageReport // 用量数据源(nil = 演示数据)
-	qp            *qpState                       // 快速选择浮层(历史会话 / 分支),nil = 关闭
-	repo          vcs.Repo                       // 当前项目的仓库(演示为内存实现)
-	branch        string                         // 当前分支名(缓存,避免每帧查 git)
-	copyText      string                         // 待写入剪贴板的文字(需要 ui.Context 才能写,下一帧消费)
-	toast         string                         // 待显示的一条轻提示(渲染时消费)
-	welcomeFocus  bool                           // 欢迎页的输入框自动聚焦
-	cardHov       bool                           // 当前这张工具卡是否被悬停(卡片内容里的悬停按钮用)
-	hist          histState                      // 历史会话弹层的搜索词
-	rv            reviewState                    // 审查标签状态
-	cw            *commitWizard                  // 「逐个提交」向导(nil = 没有进行中的)
-	taskSt        ui.ScrollState                 // 任务输出标签的滚动
-	taskNoFollow  bool                           // 任务输出:关闭「跟随输出」
-	q             promptQueue                    // 排队的消息
-	qa            map[string]*qaState            // 提问向导的本地进度
+	draft           string
+	sr              searchState                                                // 项目内搜索
+	gi              map[string]*gitInfo                                        // 文件的追溯 / 历史缓存
+	autoRun         func(it automation.Automation, dir string) (string, error) // 自动化运行器(nil = 演示:只记录)
+	autoSeen        time.Time                                                  // 上次检查定时的时间
+	autoBusy        map[int]bool                                               // 正在运行的自动化
+	autoLive        map[int]*autoLive                                          // 运行中输出的累积与取消
+	live            map[string]*liveSess                                       // 切走时还在跑的会话:后端继续保活,事件归约到自己的状态
+	framePending    bool                                                       // frameSoon 已排队
+	foldAt          map[string]time.Time                                       // 步骤行展开的时刻(入场动画)
+	dlgSeen         string                                                     // 已开始计时入场动画的居中浮层
+	dlgAt           time.Time
+	popSeen         string                         // 已开始计时入场动画的弹层
+	popAt           time.Time                      // 该弹层打开的时刻
+	redrawPending   bool                           // redrawSoon 已排了定时重画
+	pickOnReady     bool                           // 新会话握手后应用已记住的模型 / 思考强度
+	cf              map[string]*confState          // 合并冲突标签的状态(按文件)
+	sc              scmState                       // 源代码管理
+	auto            *automation.Store              // 自动化清单
+	au              autoState                      // 自动化页状态
+	clock           func() time.Time               // 当前时间(测试 / 截图注入固定时间)
+	canv            *canvas.Store                  // 画布文档(首次打开页面时建立)
+	cvLibData       *canvas.Library                // 多画布落盘库
+	cv              canvasState                    // 画布页状态
+	cvView          cvViewer                       // 图表全屏查看
+	br              *browser.Browser               // 内置浏览器(首次打开页面时建立)
+	brs             browserState                   // 浏览器页状态
+	cust            *customize.Store               // 自定义页数据(首次打开页面时建立)
+	cu              custState                      // 自定义页状态
+	cuNoMem         bool                           // 自定义页:「加载 CLAUDE.md 记忆文件」被关掉(只是界面状态,尚未接入 env)
+	use             usageState                     // 用量页
+	usageSrc        func(rng int) core.UsageReport // 用量数据源(nil = 演示数据)
+	qp              *qpState                       // 快速选择浮层(历史会话 / 分支),nil = 关闭
+	repo            vcs.Repo                       // 当前项目的仓库(演示为内存实现)
+	branch          string                         // 当前分支名(缓存,避免每帧查 git)
+	copyText        string                         // 待写入剪贴板的文字(需要 ui.Context 才能写,下一帧消费)
+	toast           string                         // 待显示的一条轻提示(渲染时消费)
+	welcomeFocus    bool                           // 欢迎页的输入框自动聚焦
+	cardHov         bool                           // 当前这张工具卡是否被悬停(卡片内容里的悬停按钮用)
+	hist            histState                      // 历史会话弹层的搜索词
+	rv              reviewState                    // 审查标签状态
+	reviewDemoEmpty bool                           // 演示:审查标签空态(-ed review:empty)
+	diffSelTab      *ideTab                        // 差异标签的行选区
+	diffSelRange    editor.DiffLineRange
+	cw              *commitWizard       // 「逐个提交」向导(nil = 没有进行中的)
+	taskSt          ui.ScrollState      // 任务输出标签的滚动
+	taskNoFollow    bool                // 任务输出:关闭「跟随输出」
+	q               promptQueue         // 排队的消息
+	qa              map[string]*qaState // 提问向导的本地进度
 
 	// 测试 / 截图用:没有系统红绿灯时自己画
-	fakeLights bool
-	devBadge   string
-	proj       string // 真实项目目录(演示模式为空)
-	demoExtra  bool   // 演示:工作区里还有一个本会话没碰过的未提交文件
-	update     string // 状态栏更新提示文案(空 = 不显示)
+	fakeLights    bool
+	devBadge      string
+	proj          string // 真实项目目录(演示模式为空)
+	demoExtra     bool   // 演示:工作区里还有一个本会话没碰过的未提交文件
+	update        string // 状态栏更新提示文案(空 = 不显示)
+	updSt         updState
+	nt            *noticeStore
+	mcpExp        map[string]bool // MCP 弹层里各服务器是否展开工具列表
+	ctxLoading    bool
+	ctxCompacting bool
+	sideBF        string // 方案 B 侧栏当前浏览的项目 id
+	sessFork      func(fromID string) (newID string, err error)
+	brand         brand // Dock / 托盘(brand.go)
 }
 
 // Options 是创建应用的参数。
@@ -201,6 +237,7 @@ type Options struct {
 	FakeLights              bool
 	Prefs                   *prefs.Store // 空 = 只在内存
 	DevBadge                string
+	Secondary               bool // 从属新窗口进程
 }
 
 // New 创建应用状态(不开窗口)。
@@ -216,8 +253,14 @@ func New(o Options) *App {
 		sideOpen:   true,
 		nav:        "",
 		projOpen:   map[string]bool{},
+		mcpExp:     map[string]bool{},
 		sessMore:   map[string]bool{},
 		folds:      map[string]bool{},
+		outFold:    map[string]bool{},
+		tickTool:   map[string]string{},
+		tickAt:     map[string]time.Time{},
+		termLive:   map[string]string{},
+		planOpened: map[string]bool{},
 		foldAt:     map[string]time.Time{},
 		ide:        newIDE(),
 		prefs:      o.Prefs,
@@ -225,13 +268,18 @@ func New(o Options) *App {
 		radius:     1,
 		fakeLights: o.FakeLights,
 		devBadge:   o.DevBadge,
+		secondary:  o.Secondary,
 	}
 	if a.screen == "" {
 		a.screen = ScreenWork
 	}
 	// 默认开合:Agent = 工作区收起、底部面板收起;IDE = 对话栏展开、底部面板展开
-	a.memBy = [2]layMem{{right: false, panel: false}, {right: true, panel: true}}
-	a.rightOn, a.ide.bottomOpen = a.memBy[a.mode].right, a.memBy[a.mode].panel
+	a.memBy = [2]layMem{
+		{right: false, panel: false, side: true},
+		{right: true, panel: true, side: true},
+	}
+	a.loadLayMemFromPrefs()
+	a.applyLayMem(a.memBy[a.mode])
 	if a.prefs == nil {
 		a.prefs = prefs.Memory()
 	}
@@ -255,6 +303,9 @@ func (a *App) retheme() {
 	a.md = nil
 	a.ux.rt = nil
 	log.Debug("主题", "palette", a.pal.ID, "scheme", a.sch.ID)
+	if !a.secondary {
+		a.syncBrand()
+	}
 }
 
 // Attach 把后端接到应用上:事件经窗口的 Update 切回主线程再归约。
@@ -294,6 +345,20 @@ func (a *App) afterEvent(ev core.Event) {
 		a.q.turnEnded(e.Reason == core.StopEndTurn)
 		a.drainQueue()
 	}
+	if e, ok := ev.(core.EvPlanUpdated); ok && e.Streaming {
+		a.onPlanUpdated(e.ID, true)
+	}
+	if e, ok := ev.(core.EvTaskOutput); ok {
+		a.syncTaskOutput(e.TaskID, e.Text)
+	}
+	switch ev.(type) {
+	case core.EvTaskStarted, core.EvTaskProgress, core.EvTaskUpdated:
+		a.pollTaskOutputFiles()
+	}
+	if u, ok := ev.(core.EvUsage); ok {
+		a.onUsageEvent(u.Usage)
+	}
+	a.afterEventNotify(ev)
 }
 
 // SetRepo 设置当前项目的仓库;nil 表示不是 Git 仓库(分支显示为空)。
@@ -323,6 +388,10 @@ func (a *App) OpenSession(id string) {
 		a.q.clear()
 		a.qa = nil
 		a.folds = map[string]bool{}
+		a.outFold = map[string]bool{}
+		a.termLive = map[string]string{}
+		a.userEd = userEdit{}
+		a.flowNoFollow = false
 		a.draft = ""
 		a.curSess = id
 		a.screen = ScreenWork
@@ -334,6 +403,13 @@ func (a *App) OpenSession(id string) {
 	a.q.clear()
 	a.qa = nil
 	a.folds = map[string]bool{}
+	a.outFold = map[string]bool{}
+	a.tickTool = map[string]string{}
+	a.tickAt = map[string]time.Time{}
+	a.termLive = map[string]string{}
+	a.planOpened = map[string]bool{}
+	a.userEd = userEdit{}
+	a.flowNoFollow = false
 	a.draft = ""
 	a.curSess = id
 	a.screen = ScreenWork
@@ -394,16 +470,17 @@ func (a *App) SetMode(m Mode) {
 		return
 	}
 	log.Info("切换形态", "from", a.mode, "to", m)
-	a.navBy[a.mode] = a.nav
-	a.memBy[a.mode] = layMem{right: a.rightOn, panel: a.ide.bottomOpen}
+	a.rememberLayout()
 	a.mode = m
-	a.nav = a.navBy[m]
-	a.rightOn, a.ide.bottomOpen = a.memBy[m].right, a.memBy[m].panel
-	a.chatMax = false
+	a.restoreLayoutFor(m)
+	a.beginMorph()
 }
 
-// layMem 是一个形态记住的开合。
-type layMem struct{ right, panel bool }
+// layMem 是一个形态记住的开合(见 layout_mem.go)。
+type layMem struct {
+	right, panel, side bool
+	chatMax            bool
+}
 
 // View 是窗口的根视图。
 func (a *App) View(c *ui.Context) {
@@ -453,7 +530,7 @@ func (a *App) SeedDemoExtras() {
 	a.ide.seedDemo()
 	a.seedDemoRegistry()
 	a.seedWorkspace()
-	a.update = "更新 42%"
+	a.SeedUpdateDemo("download", 42)
 }
 
 // ScrollFlowTop 把会话流滚到最上面(截图与设计稿对照用:设计稿的流停在顶部)。
@@ -478,32 +555,47 @@ func (a *App) shortcuts(c *ui.Context) {
 	if a.editorShortcuts(c) {
 		return
 	}
+	if c.Shortcut(ui.Cmd, ui.KeyBackspace) && a.filesFocus && a.ide.sel != "" {
+		dir := false
+		for _, e := range a.ide.listing(parentDir(a.ide.sel)) {
+			if e.Path == a.ide.sel {
+				dir = e.Dir
+				break
+			}
+		}
+		a.askDelete(a.ide.sel, dir)
+		return
+	}
 	switch {
-	case c.Shortcut(ui.Cmd, ui.KeyB):
+	case a.shortcutHit(c, "nav", ui.Cmd, ui.KeyB):
 		a.sideOpen = !a.sideOpen
-	case c.Shortcut(ui.Cmd|ui.Alt, ui.KeyB):
+	case a.shortcutHit(c, "right", ui.Cmd|ui.Alt, ui.KeyB):
 		a.toggleRight()
-	case c.Shortcut(ui.Cmd, ui.KeyE):
+	case a.shortcutHit(c, "toggleMode", ui.Cmd, ui.KeyE):
 		if a.mode == ModeAgent {
 			a.SetMode(ModeIDE)
 		} else {
 			a.SetMode(ModeAgent)
 		}
-	case c.Shortcut(ui.Cmd, ui.KeyK):
+	case a.shortcutHit(c, "palette", ui.Cmd, ui.KeyK):
 		if a.paletteOn {
 			a.closePalette()
 		} else {
 			a.openPalette()
 		}
-	case c.Shortcut(ui.Cmd, ui.KeyN):
+	case a.shortcutHit(c, "newChat", ui.Cmd, ui.KeyN):
 		a.NewSession()
-	case c.Shortcut(ui.Cmd|ui.Shift, ui.KeyF):
+	case a.shortcutHit(c, "newWin", ui.Cmd|ui.Shift, ui.KeyN):
+		if !a.secondary {
+			a.SpawnNewWindow(a.proj)
+		}
+	case a.shortcutHit(c, "search", ui.Cmd|ui.Shift, ui.KeyF):
 		a.OpenSearch()
-	case c.Shortcut(ui.Ctrl|ui.Shift, ui.KeyG):
+	case a.shortcutHit(c, "scm", ui.Ctrl|ui.Shift, ui.KeyG):
 		a.OpenSCM()
-	case c.Shortcut(ui.Cmd|ui.Shift, ui.KeyO):
+	case a.shortcutHit(c, "symbols", ui.Cmd|ui.Shift, ui.KeyO):
 		a.OpenQuick("symbols", "")
-	case c.Shortcut(ui.Cmd, ui.KeyJ):
+	case a.shortcutHit(c, "panel", ui.Cmd, ui.KeyJ):
 		a.ide.bottomOpen = !a.ide.bottomOpen
 	case c.Shortcut(ui.Cmd|ui.Shift, ui.KeyJ):
 		a.togglePanelMax()
@@ -515,13 +607,13 @@ func (a *App) shortcuts(c *ui.Context) {
 		a.navGo(-1)
 	case c.Shortcut(ui.Ctrl|ui.Shift, ui.KeyMinus):
 		a.navGo(1)
-	case c.Shortcut(ui.Cmd, ui.KeyS):
+	case a.shortcutHit(c, "save", ui.Cmd, ui.KeyS):
 		if a.mode == ModeIDE {
 			if err := a.ide.save(); err != nil {
 				log.Error("保存失败", "err", err)
 			}
 		}
-	case c.Shortcut(ui.Cmd, ui.KeyComma):
+	case a.shortcutHit(c, "settings", ui.Cmd, ui.KeyComma):
 		a.openSettings(a.setTab)
 	case a.screen == ScreenSettings && !a.paletteOn && a.set.query == "" && c.Shortcut(0, ui.KeyEscape):
 		a.closeSettings()
@@ -660,21 +752,35 @@ func (a *App) runAutomation(it automation.Automation) {
 		a.toast = "运行失败:找不到项目目录"
 		return
 	}
+	if a.autoLive == nil {
+		a.autoLive = map[int]*autoLive{}
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	lv := &autoLive{cancel: cancel, at: a.now()}
+	a.autoLive[it.ID] = lv
 	a.autoBusy[it.ID] = true
 	a.toast = "已开始运行「" + it.Name + "」"
 	run := a.autoRun
 	a.bg("automation", func() func() {
-		out, err := run(it, dir)
+		out, err := runCtx(ctx, it, dir, run, lv)
 		r := automation.Run{At: time.Now(), OK: err == nil}
 		if err != nil {
 			r.Err = err.Error()
+			if ctx.Err() == context.Canceled {
+				r.Err = "已取消"
+			}
 		}
-		if rs := []rune(out); len(rs) > 600 {
-			out = string(rs[len(rs)-600:])
+		if out == "" {
+			out = lv.buf.String()
+		}
+		if rs := []rune(out); len(rs) > 8000 {
+			out = string(rs[len(rs)-8000:])
 		}
 		r.Output = out
+		r.Key = fmt.Sprintf("auto:%d:%d", it.ID, r.At.Unix())
 		return func() {
 			delete(a.autoBusy, it.ID)
+			delete(a.autoLive, it.ID)
 			a.auto.Record(it.ID, r)
 			if r.OK {
 				a.toast = "「" + it.Name + "」运行完成"
@@ -683,6 +789,29 @@ func (a *App) runAutomation(it automation.Automation) {
 			}
 		}
 	})
+}
+
+type autoRunner func(it automation.Automation, dir string) (string, error)
+
+func runCtx(ctx context.Context, it automation.Automation, dir string, run autoRunner, lv *autoLive) (string, error) {
+	type res struct {
+		out string
+		err error
+	}
+	ch := make(chan res, 1)
+	go func() {
+		o, e := run(it, dir)
+		ch <- res{o, e}
+	}()
+	select {
+	case <-ctx.Done():
+		return lv.buf.String(), ctx.Err()
+	case r := <-ch:
+		if r.out != "" {
+			lv.buf.WriteString(r.out)
+		}
+		return r.out, r.err
+	}
 }
 
 // projectDir 按项目名找目录(侧栏项目列表里的路径;找不到返回空)。

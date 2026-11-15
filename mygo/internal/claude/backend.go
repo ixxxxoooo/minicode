@@ -37,6 +37,8 @@ type Config struct {
 	InitTimeout time.Duration
 	// ProjectsDir 会话记录目录,空 = ~/.claude/projects(重启时判断会话是否已落盘)。
 	ProjectsDir string
+	// Fork 非空 = 从已有会话分叉出新会话(不走 HistoryPath)。
+	Fork *ForkConfig
 }
 
 type msgKind int
@@ -124,11 +126,20 @@ var idGen atomic.Int64
 func New(cfg Config) *Backend {
 	b := &Backend{
 		cfg: cfg, cmds: make(chan core.Command, 1024), msgs: make(chan msg, 256), done: make(chan struct{}),
-		reqs: map[string]req{}, resume: cfg.SessionID,
+		reqs: map[string]req{},
 	}
-	if cfg.SessionID != "" {
-		b.sessionID = cfg.SessionID
-	} else {
+	switch {
+	case cfg.Fork != nil && cfg.Fork.ParentSessionID != "":
+		b.resume = cfg.Fork.ParentSessionID
+		b.fork = true
+		if cfg.Fork.NewSessionID != "" {
+			b.sessionID = cfg.Fork.NewSessionID
+		} else {
+			b.sessionID = newUUID()
+		}
+	case cfg.SessionID != "":
+		b.sessionID, b.resume = cfg.SessionID, cfg.SessionID
+	default:
 		b.sessionID = newUUID()
 	}
 	if cfg.Mode != nil {
@@ -548,6 +559,11 @@ func (b *Backend) onCommand(c core.Command) {
 			b.shutdown("环境变量变化")
 			b.restartConfig()
 		}
+	case core.CmdForkSession:
+		log.Info("分叉会话", "parent", c.ParentID, "new", c.NewID, "at", c.AtUser)
+		b.emit(core.EvForkSession{ParentID: c.ParentID, NewID: c.NewID, Cwd: b.cfg.Cwd, AtUser: c.AtUser})
+	case core.CmdRetryTurn:
+		log.Info("重试回合(由界面发 CmdPrompt)", "user", c.UserID)
 	}
 }
 

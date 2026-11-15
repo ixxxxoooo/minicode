@@ -85,11 +85,11 @@ test result: <span class="p">ok</span>. 12 passed; 0 failed
   /** 合并冲突标签(三方):当前 / 传入并排,下方是结果,每处冲突都有逐块操作 */
   const cfL = (cls, rows) => rows.map(t => `<div class="${cls}">${rust(t)}</div>`).join('');
   WS.conflict = () => `<div class="cf-head">${ic('merge', 's16 c-err')}<b class="grow ell">router.rs</b>${tag('2 处冲突 · 已解决 0', 'err')}${btn('让 Claude 解决', 'sm soft', 'spark')}${btn('标记为已解决', 'sm', 'check')}</div>
-    <div class="cf-wrap"><div class="cf-act"><span class="grow">冲突 1 / 2 · 第 17–20 行</span>${btn('接受当前', 'ghost', '', '')}${btn('接受传入', 'ghost')}${btn('接受双方', 'ghost')}${btn('比较', 'ghost', 'diff')}</div>
+    <div class="cf-wrap"><div class="cf-act">${ib('chevL', 'sm', '上一处')}${ib('chevR', 'sm', '下一处')}<span class="grow t2" style="text-align:center">冲突 1 / 2 · 第 17–20 行</span>${btn('接受当前', 'ghost', '', '')}${btn('接受传入', 'ghost')}${btn('接受双方', 'ghost')}${btn('比较', 'ghost', 'diff')}</div>
       <div class="cf-two"><div class="cf-pane"><div class="cf-ph"><span class="dot ok"></span><b class="t2">当前更改</b><span>main · 你</span></div><div class="cf-code">${cfL('', ['    // 匹配路径'])}${cfL('cur', ['    pub fn match_path(&self, path: &str) -> Option<&Handler> {', '        let key = normalize(path);', '        self.routes.get(&key).or(self.fallback.as_ref())'])}${cfL('', ['    }'])}</div></div>
         <div class="cf-pane"><div class="cf-ph"><span class="dot info"></span><b class="t2">传入更改</b><span>feat/auth · Lin</span></div><div class="cf-code">${cfL('', ['    // 匹配路径'])}${cfL('inc', ['    pub fn match_path(&self, path: &str, auth: &Auth) -> Option<&Handler> {', '        let h = self.routes.get(path)?;', '        auth.check(h).then_some(h)'])}${cfL('', ['    }'])}</div></div></div>
-      <div class="cf-ph" style="box-shadow:inset 0 1px var(--bd-2),inset 0 -1px var(--bd-1)">${ic('merge', 's12')}<b class="t2">结果</b><span class="grow"></span><span>选择上面的操作,或直接在这里编辑</span></div>
-      <div class="cf-res scroll"><div class="cf-code">${cfL('', ['    // 匹配路径'])}${cfL('res', ['    // ← 选一边,或接受双方后手动合并'])}${cfL('', ['    }', '', '    fn normalize(path: &str) -> String {', '        path.trim_end_matches(\'/\').to_ascii_lowercase()', '    }'])}</div></div></div>`;
+      <div class="cf-ph" style="box-shadow:inset 0 1px var(--bd-2),inset 0 -1px var(--bd-1)">${ic('merge', 's12')}<b class="t2">结果</b><span class="grow"></span><span class="t4">可编辑 · 接受操作后会自动重算</span></div>
+      <div class="cf-res scroll"><div class="inp" style="margin:0;border:none;border-radius:0;min-height:120px;font-family:var(--mono);font-size:12px;line-height:1.6;padding:8px 10px">    // 匹配路径\n    // ← 选一边,或接受双方后手动编辑\n    fn normalize(path: &str) -> String {\n        path.trim_end_matches('/').to_ascii_lowercase()\n    }</div></div></div>`;
 
   /** 工作区主体:按标签种类分发 */
   WS.body = (id, o) => { const k = (WS.TAB[id] || {}).k;

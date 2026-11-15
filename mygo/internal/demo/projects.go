@@ -11,7 +11,7 @@ func Projects() []core.ProjectInfo {
 		}
 		return si
 	}
-	return []core.ProjectInfo{
+	ps := []core.ProjectInfo{
 		{ID: "router-demo", Name: "router-demo", Path: "/demo/router-demo", Count: 4, Sessions: []core.SessionInfo{
 			s("fixbug", "完整修复一个 Bug:路由大小写匹配", "刚刚"),
 			s("perm", "权限请求:修改配置与执行命令", "5 分钟"),
@@ -27,6 +27,34 @@ func Projects() []core.ProjectInfo {
 			s("subagent", "子 Agent:代码审查与调研", "昨天"),
 		}},
 		{ID: "docs-site", Name: "docs-site", Path: "/demo/docs-site", Count: 6},
-		{ID: "scenario-lab", Name: "scenario-lab", Path: "/demo/scenario-lab", Count: 61},
+		{ID: "scenario-lab", Name: "scenario-lab", Path: "/demo/scenario-lab"},
 	}
+	// 把登记的场景并入侧栏:id 已在基础列表里的只换剧本;其余按 Project 归入对应项目(默认场景实验室)
+	have := map[string]bool{}
+	for _, p := range ps {
+		for _, x := range p.Sessions {
+			have[x.ID] = true
+		}
+	}
+	for _, sc := range Scenarios() {
+		if have[sc.ID] {
+			continue
+		}
+		have[sc.ID] = true
+		proj := sc.Project
+		if proj == "" {
+			proj = "scenario-lab"
+		}
+		for i := range ps {
+			if ps[i].ID == proj {
+				ps[i].Sessions = append(ps[i].Sessions, sc.sessionInfo())
+			}
+		}
+	}
+	for i := range ps {
+		if len(ps[i].Sessions) > ps[i].Count {
+			ps[i].Count = len(ps[i].Sessions)
+		}
+	}
+	return ps
 }
