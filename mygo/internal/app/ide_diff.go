@@ -320,5 +320,32 @@ func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 		kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(func(m *ui.Menu) { a.diffMoreMenu(m, tb) })
 	})
 	a.diffLineBar(c, tb)
+	if len(hunks) == 0 {
+		a.diffEmptyBar(c, tb)
+	}
 	editor.DiffView(c.Key("dv-"+tb.id), dv).Grow(1).MinHeight(0).FillWidth()
+}
+
+// diffEmptyText 两侧完全相同时的说明(按三种差异写不同的话,并给出下一步)。
+func diffEmptyText(kind string) string {
+	switch kind {
+	case dkWork:
+		return "暂存区与工作区一致,没有未暂存的改动。"
+	case dkStaged:
+		return "暂存区与 HEAD 一致,没有已暂存的改动。"
+	}
+	return "工作区与 HEAD 一致,没有改动。"
+}
+
+// diffEmptyBar 差异为空时在正文上方给一行说明,免得用户对着一整屏没有颜色的代码发愣。
+func (a *App) diffEmptyBar(c *ui.Context, tb *ideTab) {
+	t := a.tk
+	kind := tb.dk
+	if kind == "" {
+		kind = dkHead
+	}
+	ui.Row(c).Height(26).Shrink(0).PaddingX(12).Gap(6).AlignItems(ui.Center).Background(t.Fill1).Children(func() {
+		kit.Ic(c, "check", kit.S12).TextColor(t.Ok)
+		ui.Text(c, diffEmptyText(kind)).FontSize(theme.FsCap).TextColor(t.Tx3)
+	})
 }

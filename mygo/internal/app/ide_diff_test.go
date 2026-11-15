@@ -130,6 +130,10 @@ func TestRefreshDiffTabsAfterStage(t *testing.T) {
 	if len(tb.dv.Hunks()) != 0 {
 		t.Fatalf("暂存全部后,暂存区 ↔ 工作区应没有差异块,实际 %d 块", len(tb.dv.Hunks()))
 	}
+	tt.Frame()
+	if !tt.HasText(diffEmptyText(dkWork)) {
+		t.Fatalf("差异为空时应有说明,实际文本:%v", tt.Texts())
+	}
 	// 用户在工作区一侧改了内容:再刷新不能把它冲掉
 	tb.dv.New.Reset(work + "// 我的修改\n")
 	a.refreshDiffTabs()
