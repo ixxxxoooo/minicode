@@ -131,6 +131,7 @@ func (a *App) sideTop(c *ui.Context) {
 		if i := kit.Seg(c, items, on, kit.SegOpt{Icons: true, Fill: true, Key: "navseg"}); i >= 0 {
 			a.nav = navs[i].id
 			a.leavePage()
+			a.focusSearchOnEnter(navs[i].id)
 		}
 	})
 }

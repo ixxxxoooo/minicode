@@ -97,6 +97,13 @@ func (a *App) OpenSearch() {
 	a.sr.focusNext = true
 }
 
+// focusSearchOnEnter 切到「搜索」分段时把焦点交给搜索框(与 ⌘⇧F 一致),其余分段不动。
+func (a *App) focusSearchOnEnter(id string) {
+	if id == "search" {
+		a.sr.focusNext = true
+	}
+}
+
 // SetSearch 直接设置查询(测试 / 截图用)并立即搜索。
 func (a *App) SetSearch(query string, replace string, showRepl bool) {
 	a.sr.query, a.sr.repl, a.sr.showRepl = query, replace, showRepl

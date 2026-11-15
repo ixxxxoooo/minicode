@@ -42,6 +42,7 @@ func (a *App) rail(c *ui.Context) {
 			if ri(n.icon, n.name, a.NavID() == n.id && a.screen == ScreenWork, badge).Clicked() {
 				a.nav = n.id
 				a.leavePage()
+				a.focusSearchOnEnter(n.id)
 			}
 		}
 		ui.Box(c).Size(20, 1).Background(t.Bd1).Margin(6, 0)
