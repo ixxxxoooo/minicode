@@ -24,6 +24,10 @@ func (a *App) reviewFooterText(files []chFile) string {
 		}
 	}
 	parts := []string{"已查看 " + itoa(viewed) + " / " + itoa(len(files))}
+	if a.wsNarrow() {
+		// 窄档页脚还要放三个按钮,模型 / 用量 / 时间挤进去只会被截成残句,只留进度
+		return parts[0]
+	}
 	uid := a.lastUserID()
 	if stats, ok := a.st.TurnStats[uid]; ok && !stats.Empty() {
 		if lbl := stats.ModelLabel(); lbl != "" {
