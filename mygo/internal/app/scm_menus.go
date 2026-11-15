@@ -50,33 +50,33 @@ func (a *App) scmDiscardAsk(chs []vcs.Change) {
 
 // scmFileMenu 是 SCM 文件行的右键菜单:打开更改 / 打开文件 / 暂存 / 放弃 / 历史 / 复制路径。
 func (a *App) scmFileMenu(m *ui.Menu, grp string, ch vcs.Change) {
-	if m.Item("打开更改").Chosen() {
+	if menuItem(m, "打开更改").Chosen() {
 		a.scmOpenFile(grp, ch, true)
 	}
 	gone := ch.Status == 'D' && grp != "staged"
-	if m.Item("打开文件").Disabled(gone).Tooltip(map[bool]string{true: "文件已被删除"}[gone]).Chosen() {
+	if menuItem(m, "打开文件").Disabled(gone).Tooltip(map[bool]string{true: "文件已被删除"}[gone]).Chosen() {
 		a.ide.openFile(a.treePath(ch.Path), true)
 	}
 	m.Separator()
 	if grp == "staged" {
-		if m.Item("取消暂存").Chosen() {
+		if menuItem(m, "取消暂存").Chosen() {
 			a.scmUnstage(ch.Path)
 		}
 	} else {
-		if m.Item("暂存更改").Disabled(grp == "merge").Tooltip(map[bool]string{true: "先解决冲突(打开更改)"}[grp == "merge"]).Chosen() {
+		if menuItem(m, "暂存更改").Disabled(grp == "merge").Tooltip(map[bool]string{true: "先解决冲突(打开更改)"}[grp == "merge"]).Chosen() {
 			a.scmStage(ch.Path)
 		}
-		if m.Item("放弃更改…").Danger().Disabled(grp == "merge").Tooltip(map[bool]string{true: "冲突文件请在合并视图里处理"}[grp == "merge"]).Chosen() {
+		if menuItem(m, "放弃更改…").Danger().Disabled(grp == "merge").Tooltip(map[bool]string{true: "冲突文件请在合并视图里处理"}[grp == "merge"]).Chosen() {
 			a.scmDiscardAsk([]vcs.Change{ch})
 		}
 	}
 	m.Separator()
-	if m.Item("显示文件历史").Disabled(ch.Status == 'U' || ch.Status == 'A' && grp == "staged").Tooltip(map[bool]string{true: "新文件还没有历史"}[ch.Status == 'U' || ch.Status == 'A' && grp == "staged"]).Chosen() {
+	if menuItem(m, "显示文件历史").Disabled(ch.Status == 'U' || ch.Status == 'A' && grp == "staged").Tooltip(map[bool]string{true: "新文件还没有历史"}[ch.Status == 'U' || ch.Status == 'A' && grp == "staged"]).Chosen() {
 		a.ide.sel = a.treePath(ch.Path)
 		a.ide.sections["时间线"] = true
 		a.nav, a.sideOpen = "files", true
 	}
-	if m.Item("复制路径").Chosen() {
+	if menuItem(m, "复制路径").Chosen() {
 		a.copyOut(a.absPath(a.treePath(ch.Path)), "路径")
 	}
 }
@@ -92,10 +92,10 @@ func (a *App) scmGroupMenu(m *ui.Menu, id string, cs []vcs.Change) {
 		return out
 	}
 	none := func(n int) string { return map[bool]string{true: "没有可操作的文件"}[n == 0] }
-	if m.Item("全部暂存").Disabled(len(work) == 0).Tooltip(none(len(work))).Chosen() {
+	if menuItem(m, "全部暂存").Disabled(len(work) == 0).Tooltip(none(len(work))).Chosen() {
 		a.scmStage(paths(work)...)
 	}
-	if m.Item("全部取消暂存").Disabled(len(staged) == 0).Tooltip(none(len(staged))).Chosen() {
+	if menuItem(m, "全部取消暂存").Disabled(len(staged) == 0).Tooltip(none(len(staged))).Chosen() {
 		a.scmUnstage(paths(staged)...)
 	}
 	var disc []vcs.Change // 只放弃「更改」分组里的,冲突文件与暂存区不动
@@ -294,18 +294,18 @@ func (a *App) searchFileMenu(m *ui.Menu, p string) {
 	if s.folded[p] {
 		label = "展开"
 	}
-	if m.Item(label).Chosen() {
+	if menuItem(m, label).Chosen() {
 		s.folded[p] = !s.folded[p]
 		s.rows = s.flatten()
 	}
-	if m.Item("打开文件").Chosen() {
+	if menuItem(m, "打开文件").Chosen() {
 		a.ide.openFile(p, false)
 	}
-	if m.Item("在文件树中定位").Chosen() {
+	if menuItem(m, "在文件树中定位").Chosen() {
 		a.revealInTree(p)
 	}
 	m.Separator()
-	if m.Item("复制路径").Chosen() {
+	if menuItem(m, "复制路径").Chosen() {
 		a.copyOut(p, "路径")
 	}
 }

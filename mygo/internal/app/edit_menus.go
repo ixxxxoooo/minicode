@@ -69,10 +69,10 @@ func (a *App) tabStripMenu(m *ui.Menu) {
 			saved++
 		}
 	}
-	if m.Item("关闭已保存").Disabled(saved == 0).Chosen() {
+	if menuItem(m, "关闭已保存").Disabled(saved == 0).Chosen() {
 		a.closeTabsWhere(func(tb *ideTab) bool { return tb.dirty() })
 	}
-	if m.Item("关闭全部").Disabled(len(d.tabs) == 0).Tooltip("有未保存修改的标签也会关闭").Chosen() {
+	if menuItem(m, "关闭全部").Disabled(len(d.tabs) == 0).Tooltip("有未保存修改的标签也会关闭").Chosen() {
 		a.closeTabsWhere(func(*ideTab) bool { return false })
 	}
 	m.Separator()
@@ -88,22 +88,28 @@ func (a *App) tabStripMenu(m *ui.Menu) {
 			tb.mdMode = 0
 		}
 	}
-	if m.Item("自动换行").Trailing("⌥Z").Checked(a.prefs.Bool(pEdWrap, false)).Chosen() {
+	if menuItem(m, "自动换行").Trailing("⌥Z").Checked(a.prefs.Bool(pEdWrap, false)).Chosen() {
 		a.toggleWrap()
 	}
 	m.Separator()
-	if m.Item("重新打开已关闭的标签").Trailing("⇧⌘T").Disabled(len(d.closed) == 0).Chosen() {
+	if menuItem(m, "重新打开已关闭的标签").Trailing("⇧⌘T").Disabled(len(d.closed) == 0).Chosen() {
 		a.reopenClosed()
 	}
 	m.Separator()
-	if m.Item("向右拆分").Trailing("⌘\\").Chosen() {
+	if menuItem(m, "向右拆分").Trailing("⌘\\").Chosen() {
 		a.splitEditor(1)
 	}
-	if m.Item("向下拆分").Chosen() {
+	if menuItem(m, "向下拆分").Chosen() {
 		a.splitEditor(2)
 	}
+	if tb := d.cur(); tb != nil && isFileTab(tb) {
+		if menuItem(m, "在侧边打开").Trailing("⌘⏎").Chosen() {
+			a.openSide(tb.path, true)
+		}
+	}
+	a.mdMenuItems(m)
 	m.Separator()
-	if m.Item("复制所有标签路径").Disabled(len(d.tabs) == 0).Chosen() {
+	if menuItem(m, "复制所有标签路径").Disabled(len(d.tabs) == 0).Chosen() {
 		var ps []string
 		for _, tb := range d.tabs {
 			if isFileTab(tb) {
@@ -119,31 +125,31 @@ func (a *App) tabStripMenu(m *ui.Menu) {
 func (a *App) tabMenu(m *ui.Menu, tb *ideTab) {
 	d := a.ide
 	ix := a.tabIndex(tb.id)
-	if m.Item("关闭").Trailing("⌘W").Chosen() {
+	if menuItem(m, "关闭").Trailing("⌘W").Chosen() {
 		a.closeWsTab(tb.id)
 	}
-	if m.Item("关闭其他").Disabled(len(d.tabs) < 2).Chosen() {
+	if menuItem(m, "关闭其他").Disabled(len(d.tabs) < 2).Chosen() {
 		a.closeTabsWhere(func(x *ideTab) bool { return x.id == tb.id })
 	}
-	if m.Item("关闭右侧").Disabled(ix < 0 || ix >= len(d.tabs)-1).Chosen() {
+	if menuItem(m, "关闭右侧").Disabled(ix < 0 || ix >= len(d.tabs)-1).Chosen() {
 		a.closeTabsWhere(func(x *ideTab) bool { return a.tabIndex(x.id) <= ix })
 	}
-	if m.Item("向右拆分").Trailing("⌘\\").Chosen() {
+	if menuItem(m, "向右拆分").Trailing("⌘\\").Chosen() {
 		a.splitEditor(1)
 	}
-	if m.Item("向下拆分").Chosen() {
+	if menuItem(m, "向下拆分").Chosen() {
 		a.splitEditor(2)
 	}
-	if m.Item("固定标签").Disabled(!tb.preview).Chosen() {
+	if menuItem(m, "固定标签").Disabled(!tb.preview).Chosen() {
 		tb.preview = false
 	}
-	if m.Item("在侧边打开").Chosen() {
+	if menuItem(m, "在侧边打开").Trailing("⌘⏎").Chosen() {
 		a.openSide(tb.path, true)
 	}
-	if m.Item("在侧边预览").Chosen() {
+	if menuItem(m, "在侧边预览").Chosen() {
 		a.openSide(tb.path, false)
 	}
-	if m.Item("关闭已保存").Chosen() {
+	if menuItem(m, "关闭已保存").Chosen() {
 		a.closeTabsWhere(func(x *ideTab) bool { return x.dirty() })
 	}
 	if tb.isVirt() {
@@ -155,31 +161,31 @@ func (a *App) tabMenu(m *ui.Menu, tb *ideTab) {
 		return
 	}
 	m.Separator()
-	if m.Item("引用到对话").Chosen() {
+	if menuItem(m, "引用到对话").Chosen() {
 		a.dropRefs(refText(tb.path, false))
 	}
 	a.pathMenu(m, tb.path)
-	if m.Item("在文件树中定位").Chosen() {
+	if menuItem(m, "在文件树中定位").Chosen() {
 		a.revealInTree(tb.path)
 	}
 	m.Separator()
 	proj := a.proj
-	if m.Item("在新窗口中打开").Disabled(proj == "").Tooltip(map[bool]string{true: "演示模式没有真实项目目录"}[proj == ""]).Chosen() {
+	if menuItem(m, "在新窗口中打开").Disabled(proj == "").Tooltip(map[bool]string{true: "演示模式没有真实项目目录"}[proj == ""]).Chosen() {
 		a.SpawnNewWindow(proj)
 	}
 }
 
 // pathMenu 是「复制路径 / 复制相对路径 / 在访达中显示」三项(标签、文件树共用)。
 func (a *App) pathMenu(m *ui.Menu, rel string) {
-	if m.Item("复制路径").Chosen() {
+	if menuItem(m, "复制路径").Chosen() {
 		a.copyText = a.absPath(rel)
 		a.toast = "已复制路径"
 	}
-	if m.Item("复制相对路径").Chosen() {
+	if menuItem(m, "复制相对路径").Chosen() {
 		a.copyText = rel
 		a.toast = "已复制相对路径"
 	}
-	if m.Item("在访达中显示").Disabled(a.proj == "").Tooltip(map[bool]string{true: "演示模式没有真实目录"}[a.proj == ""]).Chosen() {
+	if menuItem(m, "在访达中显示").Disabled(a.proj == "").Tooltip(map[bool]string{true: "演示模式没有真实目录"}[a.proj == ""]).Chosen() {
 		a.revealInFinder(a.absPath(rel))
 	}
 }
@@ -275,23 +281,23 @@ func (a *App) openTermAt(rel string) {
 // treeHeadMenu 是文件树标题「···」:刷新、全部折叠、在访达中显示项目。
 func (a *App) treeHeadMenu(m *ui.Menu) {
 	_, ro := a.mutable()
-	if m.Item("新建文件…").Disabled(ro != "").Tooltip(ro).Chosen() {
+	if menuItem(m, "新建文件…").Disabled(ro != "").Tooltip(ro).Chosen() {
 		a.beginNew(a.newTargetDir(), false)
 	}
-	if m.Item("新建文件夹…").Disabled(ro != "").Tooltip(ro).Chosen() {
+	if menuItem(m, "新建文件夹…").Disabled(ro != "").Tooltip(ro).Chosen() {
 		a.beginNew(a.newTargetDir(), true)
 	}
 	m.Separator()
-	if m.Item("刷新").Chosen() {
+	if menuItem(m, "刷新").Chosen() {
 		a.ide.listCache, a.ide.filesCache = nil, nil
 	}
-	if m.Item("全部折叠").Chosen() {
+	if menuItem(m, "全部折叠").Chosen() {
 		for k := range a.ide.open {
 			delete(a.ide.open, k)
 		}
 	}
 	m.Separator()
-	if m.Item("在访达中显示项目").Disabled(a.proj == "").Tooltip(map[bool]string{true: "演示模式没有真实目录"}[a.proj == ""]).Chosen() {
+	if menuItem(m, "在访达中显示项目").Disabled(a.proj == "").Tooltip(map[bool]string{true: "演示模式没有真实目录"}[a.proj == ""]).Chosen() {
 		a.revealInFinder(a.proj)
 	}
 }

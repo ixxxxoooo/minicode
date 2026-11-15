@@ -260,41 +260,41 @@ func (a *App) repoRowMenu(m *ui.Menu, i int) {
 	e := a.repos[i]
 	has := e.repo != nil
 	why := map[bool]string{true: "这个文件夹还不是 Git 仓库"}[!has]
-	if m.Item("设为活动仓库").Disabled(i == a.repoAct).Chosen() {
+	if menuItem(m, "设为活动仓库").Disabled(i == a.repoAct).Chosen() {
 		a.setActiveRepo(i)
 	}
 	m.Separator()
-	if m.Item("拉取").Disabled(!has).Tooltip(why).Chosen() {
+	if menuItem(m, "拉取").Disabled(!has).Tooltip(why).Chosen() {
 		a.repoSync(i, true, false)
 	}
-	if m.Item("推送").Disabled(!has).Tooltip(why).Chosen() {
+	if menuItem(m, "推送").Disabled(!has).Tooltip(why).Chosen() {
 		a.repoSync(i, false, true)
 	}
-	if m.Item("同步").Disabled(!has).Tooltip(why).Chosen() {
+	if menuItem(m, "同步").Disabled(!has).Tooltip(why).Chosen() {
 		a.repoSync(i, true, true)
 	}
-	if m.Item("切换分支…").Disabled(!has).Tooltip(why).Chosen() {
+	if menuItem(m, "切换分支…").Disabled(!has).Tooltip(why).Chosen() {
 		a.setActiveRepo(i)
 		a.OpenQuick("branch", "")
 	}
 	m.Separator()
-	if m.Item("在图谱中查看").Disabled(!has).Tooltip(why).Chosen() {
+	if menuItem(m, "在图谱中查看").Disabled(!has).Tooltip(why).Chosen() {
 		a.setActiveRepo(i)
 		a.openGraph()
 	}
-	if m.Item("储藏所有更改").Disabled(!has).Tooltip(why).Chosen() {
+	if menuItem(m, "储藏所有更改").Disabled(!has).Tooltip(why).Chosen() {
 		a.repoStash(i)
 	}
 	m.Separator()
 	real := !a.demoWs()
 	nd := map[bool]string{true: "演示模式没有真实目录"}[!real]
-	if m.Item("在访达中显示").Disabled(!real).Tooltip(nd).Chosen() {
+	if menuItem(m, "在访达中显示").Disabled(!real).Tooltip(nd).Chosen() {
 		a.revealInFinder(e.dir)
 	}
-	if m.Item("在此处打开终端").Disabled(!real).Tooltip(nd).Chosen() {
+	if menuItem(m, "在此处打开终端").Disabled(!real).Tooltip(nd).Chosen() {
 		a.openTermAt(e.name)
 	}
-	if m.Item("复制路径").Chosen() {
+	if menuItem(m, "复制路径").Chosen() {
 		a.copyOut(e.dir, "路径")
 	}
 }

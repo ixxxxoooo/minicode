@@ -162,16 +162,16 @@ func (a *App) timelineRows(c *ui.Context) {
 			a.scmOpenCommitFile(cm, tb.path, true)
 		}
 		r.ContextMenu(func(m *ui.Menu) {
-			if m.Item("打开该次提交里的改动").Chosen() {
+			if menuItem(m, "打开该次提交里的改动").Chosen() {
 				a.scmOpenCommitFile(cm, tb.path, true)
 			}
-			if m.Item("在图谱中查看").Chosen() {
+			if menuItem(m, "在图谱中查看").Chosen() {
 				a.openGraph()
 				a.graphTab.sel = cm.Hash
 				a.scmCommitFiles(cm.Hash)
 			}
 			m.Separator()
-			if m.Item("复制哈希").Chosen() {
+			if menuItem(m, "复制哈希").Chosen() {
 				a.scmCommitOp(cm, "copy")
 			}
 		})

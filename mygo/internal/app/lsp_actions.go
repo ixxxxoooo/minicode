@@ -192,44 +192,44 @@ func (a *App) editorMenu(tb *ideTab, m *ui.Menu) {
 	why := a.lspEditorWhy(tb)
 	lspOff := why != ""
 	m.Separator()
-	if m.Item("转到定义  F12").Chosen() {
+	if menuItem(m, "转到定义  F12").Chosen() {
 		a.goDef()
 	}
-	it := m.Item("转到类型定义")
+	it := menuItem(m, "转到类型定义")
 	if lspOff {
 		it.Disabled(true).Tooltip(why)
 	} else if it.Chosen() {
 		a.gotoKind("转到类型定义")
 	}
-	it = m.Item("转到实现")
+	it = menuItem(m, "转到实现")
 	if lspOff {
 		it.Disabled(true).Tooltip(why)
 	} else if it.Chosen() {
 		a.gotoKind("转到实现")
 	}
-	if m.Item("查找所有引用  ⇧F12").Chosen() {
+	if menuItem(m, "查找所有引用  ⇧F12").Chosen() {
 		a.showRefs(a.cursorWord())
 	}
-	if m.Item("预览定义  ⌥F12").Chosen() {
+	if menuItem(m, "预览定义  ⌥F12").Chosen() {
 		a.openPeek()
 	}
 	m.Separator()
-	it = m.Item("重命名符号…  F2")
+	it = menuItem(m, "重命名符号…  F2")
 	if lspOff {
 		it.Disabled(true).Tooltip(why)
 	} else if it.Chosen() {
 		a.openRename()
 	}
-	if m.Item("格式化文档  ⇧⌥F").Chosen() {
+	if menuItem(m, "格式化文档  ⇧⌥F").Chosen() {
 		a.formatDoc()
 	}
-	selFmt := m.Item("格式化选定内容")
+	selFmt := menuItem(m, "格式化选定内容")
 	if lspOff {
 		selFmt.Disabled(true).Tooltip(why)
 	} else if selFmt.Chosen() {
 		a.formatSelection()
 	}
-	it = m.Item("源代码操作…  ⌘.")
+	it = menuItem(m, "源代码操作…  ⌘.")
 	if lspOff {
 		it.Disabled(true).Tooltip(why)
 	} else if it.Chosen() {
@@ -237,50 +237,53 @@ func (a *App) editorMenu(tb *ideTab, m *ui.Menu) {
 	}
 	m.Separator()
 	if !tb.diff && tb.path != "" {
-		if m.Item("与 HEAD 比较").Chosen() {
+		if menuItem(m, "与 HEAD 比较").Chosen() {
 			a.openDiffKind(dkHead, tb.path, true)
 		}
 	}
 	on := a.prefs.Bool(pBlameInline, true)
-	if m.Item(map[bool]string{true: "关闭行内 Git 追溯", false: "开启行内 Git 追溯"}[on]).Chosen() {
+	if menuItem(m, map[bool]string{true: "关闭行内 Git 追溯", false: "开启行内 Git 追溯"}[on]).Chosen() {
 		if on {
 			a.prefs.Set(pBlameInline, false)
 		} else {
 			a.prefs.Reset(pBlameInline)
 		}
 	}
-	if m.Item("显示文件历史").Chosen() {
+	if menuItem(m, "显示文件历史").Chosen() {
 		a.ide.sections["时间线"] = true
 		a.nav, a.sideOpen = "files", true
 	}
 	m.Separator()
-	if m.Item("复制路径").Chosen() {
+	if menuItem(m, "复制路径").Chosen() {
 		a.copyText = a.absPath(tb.path)
 		a.toast = "已复制路径"
 	}
-	if m.Item("复制相对路径").Chosen() {
+	if menuItem(m, "复制相对路径").Chosen() {
 		a.copyText = tb.path
 		a.toast = "已复制相对路径"
 	}
-	if a.proj != "" && m.Item("在访达中显示").Chosen() {
+	if menuItem(m, "在访达中显示").Disabled(a.proj == "").Tooltip(map[bool]string{true: "演示模式没有真实目录"}[a.proj == ""]).Chosen() {
 		a.revealInFinder(a.absPath(tb.path))
 	}
 	m.Separator()
 	wrap := a.prefs.Bool(pEdWrap, false)
-	if m.Item(map[bool]string{true: "关闭自动换行", false: "开启自动换行"}[wrap]).Chosen() {
+	if menuItem(m, map[bool]string{true: "关闭自动换行", false: "开启自动换行"}[wrap]).Chosen() {
 		a.prefs.Set(pEdWrap, !wrap)
 	}
-	if m.Item("命令面板…  ⌘K").Chosen() {
+	if menuItem(m, "命令面板…  ⌘K").Chosen() {
 		a.openPalette()
 	}
 	m.Separator()
-	if m.Item("问 Claude").Chosen() {
+	if menuItem(m, "问 Claude  ⌘L").Chosen() {
 		a.askClaude("问")
 	}
-	if m.Item("让 Claude 解释").Chosen() {
+	if menuItem(m, "行内编辑…  ⌘I").Chosen() {
+		a.openInline()
+	}
+	if menuItem(m, "让 Claude 解释").Chosen() {
 		a.askClaude("解释")
 	}
-	if m.Item("让 Claude 修改这段代码…").Chosen() {
+	if menuItem(m, "让 Claude 修改这段代码…").Chosen() {
 		a.askClaude("编辑")
 	}
 }

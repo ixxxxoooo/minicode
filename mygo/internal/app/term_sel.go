@@ -556,29 +556,42 @@ func wordBound(rs []rune, a, b int) bool {
 func (a *App) termMenu(c *ui.Context, body ui.Element, tp *termPanel) {
 	body.ContextMenu(func(m *ui.Menu) {
 		has := tp.selectedText() != ""
-		if m.Item("复制").Disabled(!has).Chosen() {
+		live := tp.t != nil
+		if menuItem(m, "复制").Trailing("⌘C").Disabled(!has).Tooltip(map[bool]string{true: "先在终端里选中文字"}[!has]).Chosen() {
 			a.copyText = tp.selectedText()
 		}
-		if m.Item("粘贴").Chosen() && tp.t != nil {
+		if menuItem(m, "粘贴").Trailing("⌘V").Disabled(!live).Tooltip(map[bool]string{true: "终端还没启动"}[!live]).Chosen() && live {
 			if s := c.ReadClipboard(); s != "" {
 				tp.t.Paste(s)
 			}
 		}
-		if m.Item("全选").Chosen() {
+		if menuItem(m, "全选").Trailing("⌘A").Chosen() {
 			tp.selectAll()
 		}
 		m.Separator()
-		if m.Item("在终端中查找  ⌘F").Chosen() {
+		if menuItem(m, "查找…").Trailing("⌘F").Chosen() {
 			a.openTermFind()
 		}
-		if m.Item("清屏  ⌘K").Chosen() && tp.t != nil {
+		if menuItem(m, "清屏").Trailing("⌘K").Disabled(!live).Tooltip(map[bool]string{true: "终端还没启动"}[!live]).Chosen() && live {
+			tp.t.ClearCmdBlocks()
 			tp.t.SendText("\x0c") // Ctrl-L
 		}
 		m.Separator()
-		if m.Item("新建终端").Chosen() {
+		if menuItem(m, "新建终端").Disabled(a.proj == "").Tooltip(map[bool]string{true: "演示模式没有真实终端"}[a.proj == ""]).Chosen() {
 			a.newTerm()
 		}
-		if m.Item("终端设置…").Chosen() {
+		if menuItem(m, "关闭终端").Disabled(len(a.ide.tps) < 2).Tooltip(map[bool]string{true: "至少保留一个终端"}[len(a.ide.tps) < 2]).Chosen() {
+			a.askCloseTermTab(a.ide.tpSel)
+		}
+		m.Separator()
+		dir := tp.cwd
+		if dir == "" {
+			dir = a.proj
+		}
+		if menuItem(m, "在访达中打开当前目录").Disabled(dir == "").Tooltip(map[bool]string{true: "演示模式没有真实目录"}[dir == ""]).Chosen() {
+			a.revealInFinder(dir)
+		}
+		if menuItem(m, "终端设置…").Chosen() {
 			a.popup = "termset"
 		}
 	})

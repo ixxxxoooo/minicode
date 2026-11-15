@@ -18,22 +18,22 @@ import (
 // scmHeadMenu 是 SCM 标题「···」:拉取 / 推送 / 同步 / 储藏 / 刷新。
 func (a *App) scmHeadMenu(m *ui.Menu) {
 	s := &a.sc
-	if m.Item("拉取").Chosen() {
+	if menuItem(m, "拉取").Chosen() {
 		a.scmSync(true, false)
 	}
-	if m.Item("推送").Chosen() {
+	if menuItem(m, "推送").Chosen() {
 		a.scmSync(false, true)
 	}
-	if m.Item("同步").Chosen() {
+	if menuItem(m, "同步").Chosen() {
 		a.scmSync(true, true)
 	}
 	m.Separator()
 	none := len(s.changes) == 0
-	if m.Item("储藏所有更改").Disabled(none).Tooltip(map[bool]string{true: "没有可储藏的更改"}[none]).Chosen() {
+	if menuItem(m, "储藏所有更改").Disabled(none).Tooltip(map[bool]string{true: "没有可储藏的更改"}[none]).Chosen() {
 		a.scmStashPush()
 	}
 	noStash := len(s.stashes) == 0
-	if m.Item("弹出最近的储藏").Disabled(noStash).Tooltip(map[bool]string{true: "没有储藏"}[noStash]).Chosen() {
+	if menuItem(m, "弹出最近的储藏").Disabled(noStash).Tooltip(map[bool]string{true: "没有储藏"}[noStash]).Chosen() {
 		a.scmStashApply(0, true)
 	}
 	m.Separator()
@@ -42,11 +42,11 @@ func (a *App) scmHeadMenu(m *ui.Menu) {
 	if tree {
 		lbl = "切换为列表视图"
 	}
-	if m.Item(lbl).Trailing(map[bool]string{true: "✓"}[tree]).Chosen() {
+	if menuItem(m, lbl).Trailing(map[bool]string{true: "✓"}[tree]).Chosen() {
 		a.toggleScmViewMode()
 	}
 	m.Separator()
-	if m.Item("刷新").Chosen() {
+	if menuItem(m, "刷新").Chosen() {
 		s.last = time.Time{}
 	}
 }
@@ -57,11 +57,11 @@ func (a *App) diffMoreMenu(m *ui.Menu, tb *ideTab) {
 	if a.prefs.Bool(pEdWrap, false) {
 		wrap = "关闭自动换行"
 	}
-	if m.Item(wrap).Trailing("⌥Z").Chosen() {
+	if menuItem(m, wrap).Trailing("⌥Z").Chosen() {
 		a.toggleWrap()
 	}
 	narrow := a.wsNarrow()
-	if m.Item("切换左右 / 统一").Disabled(narrow).Tooltip(map[bool]string{true: "工作区太窄,已强制统一视图"}[narrow]).Chosen() {
+	if menuItem(m, "切换左右 / 统一").Disabled(narrow).Tooltip(map[bool]string{true: "工作区太窄,已强制统一视图"}[narrow]).Chosen() {
 		if a.diffLayout(tb, false) == 0 { // 左右 → 统一
 			tb.lay = 2
 		} else {
@@ -72,13 +72,13 @@ func (a *App) diffMoreMenu(m *ui.Menu, tb *ideTab) {
 	}
 	m.Separator()
 	gone := tb.dk != "" && tb.dv != nil && tb.dv.New.String() == "" && tb.dv.Old.String() != ""
-	if m.Item("打开文件").Disabled(gone).Tooltip(map[bool]string{true: "文件已被删除"}[gone]).Chosen() {
+	if menuItem(m, "打开文件").Disabled(gone).Tooltip(map[bool]string{true: "文件已被删除"}[gone]).Chosen() {
 		a.jumpTo(tb.path, 0, 0, 0)
 	}
-	if m.Item("复制路径").Chosen() {
+	if menuItem(m, "复制路径").Chosen() {
 		a.copyOut(a.absPath(tb.path), "路径")
 	}
-	if m.Item("显示文件历史").Chosen() {
+	if menuItem(m, "显示文件历史").Chosen() {
 		a.ide.sel = tb.path
 		a.ide.sections["时间线"] = true
 		a.nav, a.sideOpen = "files", true
@@ -88,7 +88,7 @@ func (a *App) diffMoreMenu(m *ui.Menu, tb *ideTab) {
 	if a.diffIgnoreWS() {
 		ign = "显示空白差异"
 	}
-	if m.Item(ign).Chosen() {
+	if menuItem(m, ign).Chosen() {
 		a.toggleDiffIgnoreWS(tb)
 	}
 }
@@ -121,10 +121,10 @@ func (a *App) termMoreMenu(m *ui.Menu) {
 // problemMenu 是问题行的右键菜单;all 给出「复制全部」的文本。
 func (a *App) problemMenu(m *ui.Menu, file string, line int, msg string, all func() string) {
 	full := a.resolveFile(file)
-	if m.Item("转到位置").Disabled(full == "").Tooltip(map[bool]string{true: "找不到这个文件"}[full == ""]).Chosen() {
+	if menuItem(m, "转到位置").Disabled(full == "").Tooltip(map[bool]string{true: "找不到这个文件"}[full == ""]).Chosen() {
 		a.jumpTo(full, max(line-1, 0), 0, 0)
 	}
-	if m.Item("让 Claude 修复").Chosen() {
+	if menuItem(m, "让 Claude 修复").Chosen() {
 		a.draft = strings.TrimSpace(a.draft + "\n请修复这个问题:" + file + ":" + itoa(line) + " " + msg)
 		if a.mode == ModeIDE {
 			a.rightOn = true
@@ -132,10 +132,10 @@ func (a *App) problemMenu(m *ui.Menu, file string, line int, msg string, all fun
 		a.toast = "已把问题放进输入框"
 	}
 	m.Separator()
-	if m.Item("复制消息").Chosen() {
+	if menuItem(m, "复制消息").Chosen() {
 		a.copyOut(msg, "消息")
 	}
-	if m.Item("复制全部").Chosen() {
+	if menuItem(m, "复制全部").Chosen() {
 		a.copyOut(all(), "全部问题")
 	}
 }
@@ -155,19 +155,19 @@ func (a *App) resolveFile(f string) string {
 
 // outputMenu 是输出面板里一行的右键菜单。
 func (a *App) outputMenu(m *ui.Menu, line string, lines []string) {
-	if m.Item("复制此行").Chosen() {
+	if menuItem(m, "复制此行").Chosen() {
 		raw := line
 		if i := strings.Index(line, "  "); i >= 0 {
 			raw = strings.TrimSpace(line[i+2:])
 		}
 		a.copyOut(raw, "此行")
 	}
-	if m.Item("复制全部").Chosen() {
+	if menuItem(m, "复制全部").Chosen() {
 		a.copyOut(strings.Join(lines, "\n"), "全部输出")
 	}
 	m.Separator()
 	app := a.out.ch == outApp
-	if m.Item("清空输出").Disabled(app).Tooltip(map[bool]string{true: "应用日志来自日志文件,不能清空"}[app]).Danger().Chosen() {
+	if menuItem(m, "清空输出").Disabled(app).Tooltip(map[bool]string{true: "应用日志来自日志文件,不能清空"}[app]).Danger().Chosen() {
 		a.out.lines[a.out.ch] = nil
 	}
 }
@@ -195,17 +195,17 @@ func (a *App) virtText(tb *ideTab) string {
 func (a *App) virtMenu(m *ui.Menu, tb *ideTab) {
 	txt := a.virtText(tb)
 	why := map[bool]string{true: "这个标签没有可复制的文本"}[txt == ""]
-	if m.Item("复制内容").Disabled(txt == "").Tooltip(why).Chosen() {
+	if menuItem(m, "复制内容").Disabled(txt == "").Tooltip(why).Chosen() {
 		a.copyOut(txt, "内容")
 	}
-	virtWin := m.Item("在新窗口中打开")
+	virtWin := menuItem(m, "在新窗口中打开")
 	if why2 := a.virtNewWindowWhy(tb.virt); why2 != "" {
 		virtWin.Disabled(true).Tooltip(why2)
 	} else if virtWin.Chosen() {
 		a.SpawnVirtWindow(tb)
 	}
 	m.Separator()
-	if m.Item("引用到对话").Disabled(txt == "").Tooltip(why).Chosen() {
+	if menuItem(m, "引用到对话").Disabled(txt == "").Tooltip(why).Chosen() {
 		q := txt
 		if r := []rune(q); len(r) > 1500 {
 			q = string(r[:1500]) + "…"
@@ -220,13 +220,13 @@ func (a *App) virtMenu(m *ui.Menu, tb *ideTab) {
 
 // cuMoreMenu 是自定义详情头部「···」:复制名称 / 访达 / 删除。
 func (a *App) cuMoreMenu(m *ui.Menu, st *customize.Store, it *customize.Item) {
-	if m.Item("复制名称").Chosen() {
+	if menuItem(m, "复制名称").Chosen() {
 		a.copyOut(it.Name, "名称")
 	}
 	real := it.Path != "" && !a.cuDemo()
 	why := "这一项没有对应的文件(或在演示数据里)"
 	canEdit := real && a.cuOpenOK(it)
-	if m.Item("在访达中显示文件").Disabled(!real).Tooltip(why).Chosen() {
+	if menuItem(m, "在访达中显示文件").Disabled(!real).Tooltip(why).Chosen() {
 		p := it.Path
 		if strings.HasPrefix(p, "~") {
 			if h, err := os.UserHomeDir(); err == nil {
@@ -244,7 +244,7 @@ func (a *App) cuMoreMenu(m *ui.Menu, st *customize.Store, it *customize.Item) {
 	if !canEdit {
 		editWhy = "没有可打开的源文件"
 	}
-	if m.Item("用编辑器打开").Disabled(!canEdit).Tooltip(editWhy).Chosen() {
+	if menuItem(m, "用编辑器打开").Disabled(!canEdit).Tooltip(editWhy).Chosen() {
 		a.cuOpenPath(it.Path)
 	}
 	m.Separator()
@@ -252,7 +252,7 @@ func (a *App) cuMoreMenu(m *ui.Menu, st *customize.Store, it *customize.Item) {
 	if a.cuCat() == customize.Plugins {
 		verb = "卸载"
 	}
-	if m.Item(verb + "…").Danger().Chosen() {
+	if menuItem(m, verb+"…").Danger().Chosen() {
 		a.confirmDlg(verb+"「"+it.Name+"」?", "这会从本机移除它的配置,无法撤销。", verb, true, func() {
 			if a.cuCat() == customize.Plugins {
 				st.Uninstall(it)

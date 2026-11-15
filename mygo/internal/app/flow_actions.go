@@ -91,18 +91,18 @@ func (a *App) openMdLink(dest string) {
 // linkMenu 是链接的右键菜单:路径 → 打开 / 复制;网址 → 打开 / 复制。
 func (a *App) linkMenu(m *ui.Menu, dest string) {
 	if strings.HasPrefix(dest, "http") {
-		if m.Item("在浏览器中打开").Chosen() {
+		if menuItem(m, "在浏览器中打开").Chosen() {
 			a.openURL(dest)
 		}
-		if m.Item("复制链接").Chosen() {
+		if menuItem(m, "复制链接").Chosen() {
 			a.copyOut(dest, "链接")
 		}
 		return
 	}
-	if m.Item("在工作区打开").Chosen() {
+	if menuItem(m, "在工作区打开").Chosen() {
 		a.openMdLink(dest)
 	}
-	if m.Item("复制路径").Chosen() {
+	if menuItem(m, "复制路径").Chosen() {
 		a.copyOut(dest, "路径")
 	}
 }

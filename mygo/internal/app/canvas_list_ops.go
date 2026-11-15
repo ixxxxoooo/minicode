@@ -68,10 +68,10 @@ func (a *App) canvasListRow(c *ui.Context, l *canvas.Library, id string, s *canv
 
 func (a *App) canvasListMenu(m *ui.Menu, l *canvas.Library, id, title string) {
 	v := &a.cv
-	if m.Item("重命名").Chosen() {
+	if menuItem(m, "重命名").Chosen() {
 		v.listRenID, v.listRenName = id, title
 	}
-	if m.Item("删除…").Chosen() {
+	if menuItem(m, "删除…").Chosen() {
 		st, err := l.Store(id)
 		if err != nil {
 			return
