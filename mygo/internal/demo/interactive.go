@@ -177,8 +177,12 @@ func (b *Backend) prompt(p core.CmdPrompt) {
 	switch {
 	case strings.Contains(text, "权限"):
 		head = append(head, b.permissionScene(uid)...)
+	case strings.Contains(text, "多问") || strings.Contains(text, "三个问题"):
+		head = append(head, b.questionScene3(uid)...)
 	case strings.Contains(text, "提问"):
 		head = append(head, b.questionScene(uid)...)
+	case strings.Contains(text, "引导"):
+		head = append(head, b.steerDemoScene(uid)...)
 	case strings.Contains(text, "计划"):
 		head = append(head, b.planScene(uid)...)
 	case strings.Contains(text, "子代理") || strings.Contains(text, "子 agent"):
@@ -231,6 +235,43 @@ func (b *Backend) permissionScene(uid string) []Step {
 // PermissionOptions 是 Bash 权限卡的标准三个选项。
 func PermissionOptions() []core.PermissionOption {
 	return permOptsAll()
+}
+
+// questionScene3 三题向导(单选 + 多选 + 自由输入)。
+func (b *Backend) questionScene3(uid string) []Step {
+	ms := func(n int) time.Duration { return time.Duration(n) * time.Millisecond }
+	id := b.nextID("iq")
+	b.later(id, func() []Step { return b.replyScene(uid, "收到,三题都记下了。") })
+	return []Step{{ms(200), core.EvAppend{Item: &core.QuestionRequest{ID: id, Questions: Questions3()}}}}
+}
+
+// steerDemoScene 较长回合(~8s 内多步工具),便于演示 ⌘⏎ 引导与 ⏎ 排队。
+func (b *Backend) steerDemoScene(uid string) []Step {
+	ms := func(n int) time.Duration { return time.Duration(n) * time.Millisecond }
+	var s []Step
+	s = append(s,
+		Step{ms(400), core.EvAppend{Item: &core.Thinking{ID: "sg1", Streaming: true}}},
+		Step{ms(1200), core.EvThinkingDelta{ID: "sg1", Delta: "先读路由与测试,再分批改。"}},
+		Step{ms(800), core.EvItemDone{ID: "sg1"}},
+	)
+	r1 := core.NewToolCall(b.nextID("sr"), "Read", "读取 src/router.rs").WithInput(map[string]any{"file_path": "src/router.rs"}).WithLocation("src/router.rs")
+	s = append(s,
+		Step{ms(300), core.EvAppend{Item: r1}},
+		Step{ms(2000), core.EvToolUpdate{ID: r1.ID, Patch: core.ToolPatch{Status: core.Status(core.ToolCompleted), DurationMs: 800}}},
+	)
+	g1 := core.NewToolCall(b.nextID("sg"), "Grep", "搜索 match_path").WithInput(map[string]any{"pattern": "match_path", "path": "src/"})
+	s = append(s,
+		Step{ms(400), core.EvAppend{Item: g1}},
+		Step{ms(2200), core.EvToolUpdate{ID: g1.ID, Patch: core.ToolPatch{Status: core.Status(core.ToolCompleted), DurationMs: 600}}},
+	)
+	r2 := core.NewToolCall(b.nextID("sr2"), "Read", "读取 tests/router_test.rs").WithInput(map[string]any{"file_path": "tests/router_test.rs"}).WithLocation("tests/router_test.rs")
+	s = append(s,
+		Step{ms(500), core.EvAppend{Item: r2}},
+		Step{ms(1800), core.EvToolUpdate{ID: r2.ID, Patch: core.ToolPatch{Status: core.Status(core.ToolCompleted), DurationMs: 700}}},
+	)
+	// 故意不收尾,回合保持进行中
+	s = append(s, Step{ms(300), core.EvAppend{Item: &core.Assistant{ID: b.nextID("sa"), Streaming: true}}})
+	return s
 }
 
 // Questions 是演示用的两题向导(设计稿 F.ask 的内容)。
@@ -374,9 +415,9 @@ func pendingBase(item core.Item) []Step {
 	}
 }
 
-// PendingQuestion 停在两题向导上。
+// PendingQuestion 停在三题向导上(截图 / 测试默认待办)。
 func PendingQuestion() []Step {
-	return pendingBase(&core.QuestionRequest{ID: "q1", Questions: Questions()})
+	return pendingQuestionBase(Questions3())
 }
 
 // PendingPlan 停在待批准的计划上。
