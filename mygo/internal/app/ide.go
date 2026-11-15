@@ -33,6 +33,7 @@ type ideTab struct {
 	dk      string  // 差异来源:head / work / staged(空 = 提交里的差异)
 	hooked  bool    // 已接上悬停 / 转到定义 / 补全
 	diagSet bool    // 演示诊断已装
+	diagGen int     // 已铺到编辑器的语言服务诊断代数(+1)
 	fq      *string // 编辑器查找条的查询词(迷你地图画命中刻度)
 	fcs     *bool   // 查找是否区分大小写
 	mm      *mmInfo // 迷你地图叠加数据缓存
@@ -73,8 +74,9 @@ type ide struct {
 	sel  string          // 文件树里选中的路径
 
 	bottomOpen bool
-	panelTop   float32 // 底部面板上缘(上一帧)
-	bottomTab  string  // term / problems / output
+	onSaved    func(path string) // 保存成功后(语言服务 didSave)
+	panelTop   float32           // 底部面板上缘(上一帧)
+	bottomTab  string            // term / problems / output
 	termLines  []termLine
 	termSt     ui.ScrollState
 	cmds       []cmdView    // 「在终端面板查看」打开的只读命令标签
@@ -304,6 +306,9 @@ func (d *ide) save() error {
 	}
 	t.saved = s
 	t.buf.MarkSaved()
+	if d.onSaved != nil {
+		d.onSaved(t.path)
+	}
 	d.invalidate()
 	ideLog.Info("已保存", "path", t.path, "bytes", len(s))
 	return nil
@@ -369,4 +374,13 @@ func (d *ide) tpc() *termPanel {
 		d.tpSel = len(d.tps) - 1
 	}
 	return d.tps[d.tpSel]
+}
+
+// fileTextBG 供后台线程读文件内容(只读磁盘,不碰缓存与缓冲区)。
+func (d *ide) fileTextBG(p string) (string, bool) {
+	s, err := d.fs.Read(p)
+	if err != nil || len(s) > 2<<20 {
+		return "", false
+	}
+	return s, true
 }

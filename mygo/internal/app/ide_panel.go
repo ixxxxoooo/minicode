@@ -175,11 +175,8 @@ type problem struct {
 
 func (a *App) problems(c *ui.Context) {
 	t := a.tk
-	if a.proj != "" { // 真实模式:语言服务器尚未接入,没有诊断可显示
-		ui.Column(c).Grow(1).Padding(8, 12).Gap(4).Children(func() {
-			ui.Text(c, "没有检测到问题").TextColor(t.Tx2)
-			ui.Text(c, "诊断来自语言服务器,目前尚未接入。").FontSize(theme.FsCap).TextColor(t.Tx4)
-		})
+	if a.proj != "" {
+		a.realProblems(c)
 		return
 	}
 	type group struct {

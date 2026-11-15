@@ -39,6 +39,7 @@ type termPanel struct {
 	compose bool   // 输入法正在组字
 	preedit string // 组字中的文字(显示在光标处,提交时由 InputText 送入)
 	focusIt bool   // 下一帧把键盘焦点给终端(刚启动 / 刚重启)
+	initCmd string // shell 起来后自动输入的一条命令(安装语言服务器用)
 
 	scr       *term.Screen // 最近一帧的画面快照(选择 / 搜索 / 链接按它换算)
 	viewH     float32      // 可视高度(搜索命中滚到中间用)
@@ -96,7 +97,7 @@ func (a *App) closeTermTab(i int) {
 }
 
 // CloseTerminals 应用退出前调用:结束所有终端子进程。
-func (a *App) CloseTerminals() { a.closeTerm(); a.closeBackends() }
+func (a *App) CloseTerminals() { a.closeTerm(); a.lspReset(); a.closeBackends() }
 
 // shellName 是标签上显示的 shell 名。
 func shellName() string {
@@ -130,6 +131,10 @@ func (a *App) realTerminal(c *ui.Context) {
 			log.Error("启动终端失败", "err", err)
 		} else {
 			tp.t, tp.focusIt = tm, true
+			if tp.initCmd != "" {
+				tm.SendText(tp.initCmd + "\n")
+				tp.initCmd = ""
+			}
 		}
 	}
 	if tp.t != nil && cols >= 4 && rows >= 1 {

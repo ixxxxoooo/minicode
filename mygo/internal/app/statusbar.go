@@ -46,11 +46,15 @@ func (a *App) statusbar(c *ui.Context) {
 			ui.Text(c, txt)
 		}).OnClick(func() { a.OpenSCM() })
 		a.sbItem(c, "diag", func() {
-			kit.Ic(c, "errc", kit.S12)
-			ui.Text(c, "0")
-			kit.Ic(c, "alert", kit.S12)
-			ui.Text(c, map[bool]string{true: "0", false: "1"}[a.proj != ""]) // 真实模式没有语言服务器诊断
-		})
+			ne, nw := 0, 1 // 演示数据沿用设计稿
+			if a.proj != "" {
+				ne, nw = a.lspCounts()
+			}
+			kit.Ic(c, "errc", kit.S12).TextColor(map[bool]ui.Color{true: t.Err, false: t.Tx3}[ne > 0])
+			ui.Text(c, itoa(ne))
+			kit.Ic(c, "alert", kit.S12).TextColor(map[bool]ui.Color{true: t.Warn, false: t.Tx3}[nw > 0])
+			ui.Text(c, itoa(nw))
+		}).OnClick(func() { a.ide.bottomOpen, a.ide.bottomTab = true, "problems" })
 		if a.mode == ModeIDE {
 			if tab := a.ide.cur(); tab != nil && !tab.diff && tab.st != nil {
 				p := tab.st.CursorPos()
@@ -61,11 +65,10 @@ func (a *App) statusbar(c *ui.Context) {
 					lang = l.Name
 				}
 				a.sbItem(c, "lang", func() { ui.Text(c, lang) })
-				// 语言服务器尚未接入:只在演示数据里展示设计稿的状态项,真实模式不假装有连接
-				if srv := lspName(lang); srv != "" && a.demoExtra {
+				if a.proj != "" {
+					a.lspStatus(c, tab)
+				} else if srv := lspName(lang); srv != "" && a.demoExtra {
 					a.sbItem(c, "lsp", func() { kit.Ic(c, "okc", kit.S12).TextColor(t.Ok); ui.Text(c, srv) })
-				} else if srv != "" {
-					a.sbItem(c, "lsp", func() { ui.Text(c, "语言服务未接入").TextColor(t.Tx4) })
 				}
 			}
 		}
@@ -107,4 +110,33 @@ func lspName(lang string) string {
 		return "typescript-language-server"
 	}
 	return ""
+}
+
+// lspStatus 是状态栏里当前文件的语言服务状态:就绪 / 启动中(带索引进度)/ 没装 / 失败;点击打开问题面板(安装与重试在那里)。
+func (a *App) lspStatus(c *ui.Context, tab *ideTab) {
+	t := a.tk
+	s := a.lspFor(tab.path)
+	if s == nil {
+		return
+	}
+	it := a.sbItem(c, "lsp", func() {
+		switch s.state {
+		case lspReady:
+			kit.Ic(c, "okc", kit.S12).TextColor(t.Ok)
+			ui.Text(c, s.spec.Name)
+			if s.work != "" {
+				ui.Text(c, s.work).TextColor(t.Tx4).SingleLine().MaxWidth(160)
+			}
+		case lspStarting:
+			kit.Spin(c, t.Tx3)
+			ui.Text(c, s.spec.Name+" 启动中…").TextColor(t.Tx3)
+		case lspMissing:
+			kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
+			ui.Text(c, "未安装 "+s.spec.Name).TextColor(t.Warn)
+		default:
+			kit.Ic(c, "errc", kit.S12).TextColor(t.Err)
+			ui.Text(c, s.spec.Name+" 未运行").TextColor(t.Err)
+		}
+	})
+	it.OnClick(func() { a.ide.bottomOpen, a.ide.bottomTab = true, "problems" })
 }

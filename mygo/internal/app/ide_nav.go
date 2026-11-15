@@ -230,8 +230,14 @@ func (a *App) showRefs(word string) {
 		a.toast = "把光标放在一个符号上再查找引用"
 		return
 	}
-	d.refs = &refsState{word: word, items: d.findRefs(word)}
-	d.bottomOpen, d.bottomTab = true, "refs"
+	local := func() {
+		d.refs = &refsState{word: word, items: d.findRefs(word)}
+		d.bottomOpen, d.bottomTab = true, "refs"
+	}
+	if tb := d.cur(); tb != nil && tb.st != nil && tb.buf != nil && a.lspReferences(tb, tb.st.Cursor(), word, local) {
+		return
+	}
+	local()
 }
 
 // ───────── 编辑器钩子 ─────────
@@ -263,6 +269,14 @@ func wordUnder(tb *ideTab, off int) (w string, start, end int) {
 
 // goDefAt 是 ⌘点击 / F12:跳到名字的定义;没有定义就提示。
 func (a *App) goDefAt(tb *ideTab, off int) {
+	if a.lspDefinition(tb, off, func() { a.goDefLocal(tb, off) }) {
+		return
+	}
+	a.goDefLocal(tb, off)
+}
+
+// goDefLocal 用本地符号索引转到定义(没有语言服务器、服务器没答案时的退路)。
+func (a *App) goDefLocal(tb *ideTab, off int) {
 	w, _, _ := wordUnder(tb, off)
 	if w == "" || isKeyword(w) {
 		return
@@ -325,6 +339,14 @@ func (a *App) hoverAt(tb *ideTab, req editor.HoverRequest) {
 	if w == "" || isKeyword(w) {
 		return
 	}
+	if a.lspHover(tb, req, s, e, func() { a.hoverLocal(tb, req, w, s, e) }) {
+		return
+	}
+	a.hoverLocal(tb, req, w, s, e)
+}
+
+// hoverLocal 用本地符号索引悬停。
+func (a *App) hoverLocal(tb *ideTab, req editor.HoverRequest, w string, s, e int) {
 	defs := a.ide.findDefs(w, tb.path)
 	if len(defs) == 0 {
 		return
@@ -355,6 +377,14 @@ func (a *App) hoverAt(tb *ideTab, req editor.HoverRequest) {
 
 // completeAt 补全:项目里的符号 + 当前文件里出现过的单词。
 func (a *App) completeAt(tb *ideTab, req editor.CompletionRequest) {
+	if a.lspCompletion(tb, req, func() { a.completeLocal(tb, req) }) {
+		return
+	}
+	a.completeLocal(tb, req)
+}
+
+// completeLocal 本地补全:项目符号 + 当前文件单词。
+func (a *App) completeLocal(tb *ideTab, req editor.CompletionRequest) {
 	seen := map[string]bool{}
 	var items []editor.Completion
 	add := func(label, detail string, k editor.CompletionKind, doc string) {

@@ -5,6 +5,7 @@ package app
 import (
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/egoist/mygo/ui/editor"
@@ -86,8 +87,11 @@ type App struct {
 	genText      func(dir, prompt string) (string, error) // 一次性文本生成(提交说明等)
 	graphTab     graphTabState                            // Git 图谱标签的搜索与选中
 	out          outState                                 // 底部「输出」面板
-	termHasFocus bool                                     // 终端面板此刻有键盘焦点(⌘F 查找走终端)
-	sessNav      []string                                 // Agent 形态的「后退 / 前进」:打开过的会话序列
+	lspH         lspHub                                   // 语言服务会话与诊断
+	pmu          sync.Mutex
+	pend         []func() // 没有窗口时攒下的界面回调(测试)
+	termHasFocus bool     // 终端面板此刻有键盘焦点(⌘F 查找走终端)
+	sessNav      []string // Agent 形态的「后退 / 前进」:打开过的会话序列
 	sessI        int
 	sessWalking  bool
 	ly           layoutSizes // 拖出来的栏宽 / 面板高度
@@ -219,6 +223,7 @@ func New(o Options) *App {
 		a.setTab = "appearance"
 	}
 	a.applyPrefs()
+	a.ide.onSaved = a.lspSaved
 	return a
 }
 

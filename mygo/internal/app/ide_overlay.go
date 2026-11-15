@@ -153,6 +153,9 @@ func (a *App) decorate(tb *ideTab) {
 		st.SetDiagnostics(tb.buf.Version(), ds)
 	}
 	a.applyEditorPrefs(tb)
+	if a.proj != "" {
+		a.lspTick(tb)
+	}
 	a.blameInlay(tb)
 }
 
