@@ -183,6 +183,47 @@ func TestRealClaudeViaMappedProvider(t *testing.T) {
 
 // startRealRig 与 startRig 相同,但不把 ProjectsDir 换成临时目录:
 // 真实应用读写真实的 ~/.claude/projects,切换环境后「会话已落盘就 --resume」依赖这一点。
+// TestRealDeepSeekModelFromEnv 在 with-deepseek.sh 注入环境下跑一条消息,核对回合统计里的模型 id 与 ANTHROPIC_MODEL 一致。
+func TestRealDeepSeekModelFromEnv(t *testing.T) {
+	if os.Getenv("MINI_REAL_CLAUDE") != "1" {
+		t.Skip("设置 MINI_REAL_CLAUDE=1")
+	}
+	want := strings.TrimSpace(os.Getenv("ANTHROPIC_MODEL"))
+	if want == "" {
+		t.Skip("需要 scripts/with-deepseek.sh 注入 ANTHROPIC_MODEL")
+	}
+	if _, ok := FindClaude(""); !ok {
+		t.Skip("本机没有 claude")
+	}
+	var env []core.EnvVar
+	for _, k := range []string{
+		"ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_API_KEY",
+		"ANTHROPIC_MODEL", "ANTHROPIC_DEFAULT_OPUS_MODEL", "ANTHROPIC_DEFAULT_SONNET_MODEL",
+		"ANTHROPIC_DEFAULT_HAIKU_MODEL", "CLAUDE_CODE_SUBAGENT_MODEL", "ENABLE_TOOL_SEARCH",
+	} {
+		if v := os.Getenv(k); v != "" {
+			env = append(env, core.EnvVar{Key: k, Value: v})
+		}
+	}
+	cwd := t.TempDir()
+	r := startRealRig(t, Config{Cwd: cwd, Env: env})
+	t.Cleanup(func() { cleanClaudeSession(t, r, cwd) })
+	r.b.Send(core.CmdPrompt{Text: "只回复 ok"})
+	r.wait("回合结束", func() bool { return turnsEnded(r) == 1 })
+	var gotModel string
+	r.mu.Lock()
+	for _, e := range r.evs {
+		if ts, ok := e.(core.EvTurnStats); ok && ts.Stats.Model != "" {
+			gotModel = ts.Stats.Model
+		}
+	}
+	r.mu.Unlock()
+	t.Logf("期望模型 %s,回合统计 %s", want, gotModel)
+	if gotModel != "" && gotModel != want && !strings.Contains(gotModel, strings.TrimPrefix(want, "deepseek")) {
+		t.Errorf("模型应对齐注入环境:got %q want %q", gotModel, want)
+	}
+}
+
 func startRealRig(t *testing.T, cfg Config) *rig {
 	t.Helper()
 	r := &rig{t: t, st: core.NewState()}

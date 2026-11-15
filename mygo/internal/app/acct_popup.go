@@ -75,9 +75,7 @@ func (a *App) acctApplyProfile(p claudecfg.OAuthProfile) {
 		name = name[:at]
 	}
 	if name == "" {
-		a.acct.name = "未登录"
-		a.acct.subtitle = "未找到 OAuth 账户"
-		a.acct.initial = "?"
+		a.acctApplyThirdPartyOrGuest()
 		return
 	}
 	a.acct.name = name
@@ -95,6 +93,22 @@ func acctInitial(name string) string {
 		return strings.ToUpper(s[:1])
 	}
 	return "?"
+}
+
+// acctApplyThirdPartyOrGuest 没有 OAuth 时:若映射到第三方服务商则显示其名称,否则未登录空态。
+func (a *App) acctApplyThirdPartyOrGuest() {
+	st, _ := claudecfg.LoadStore()
+	if st.Mapping.Enabled {
+		if pr := st.Get(st.Mapping.Provider); pr != nil {
+			a.acct.name = pr.Name
+			a.acct.subtitle = "使用第三方服务商 · 无 Claude 官方账户"
+			a.acct.initial = acctInitial(pr.Name)
+			return
+		}
+	}
+	a.acct.name = "未登录"
+	a.acct.subtitle = "未找到 OAuth 账户"
+	a.acct.initial = "?"
 }
 
 func acctSubtitle(p claudecfg.OAuthProfile) string {
