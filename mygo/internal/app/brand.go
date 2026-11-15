@@ -19,8 +19,12 @@ type brand struct {
 	mu        sync.Mutex
 	tray      *mygo.Tray
 	trayMode  string
+	trayFrame int
+	animStop  chan struct{}
 	dockDark  bool
 	lastBadge string
+	lastA11y  string
+	bounceID  int
 }
 
 func (a *App) initBrand() {
@@ -40,7 +44,7 @@ func (a *App) syncBrand() {
 		a.setDockIconFromPrefs(dark)
 	}
 	if a.prefs != nil {
-		if mode := a.prefs.Int(pAppMode, 1); mode == 1 {
+		if mode := a.prefs.Int(pAppMode, 1); mode == 0 {
 			if sysDark := systemIsDark(); sysDark != a.brand.dockDark {
 				a.brand.dockDark = sysDark
 				a.setDockIconFromPrefs(sysDark)
@@ -49,6 +53,7 @@ func (a *App) syncBrand() {
 	}
 	a.syncDockBadge()
 	a.syncTray(dark)
+	a.syncDockProgress()
 }
 
 func (a *App) setDockIcon(dark bool) {
@@ -95,30 +100,10 @@ func iconAssetPath(name string) string {
 	return ""
 }
 
-func (a *App) syncDockBadge() {
-	if a.st == nil {
-		return
-	}
-	n := traySummary(a.st).badge
-	label := ""
-	if n > 0 {
-		if n > 99 {
-			label = "99+"
-		} else {
-			label = strconv.Itoa(n)
-		}
-	}
-	if label == a.brand.lastBadge {
-		return
-	}
-	a.brand.lastBadge = label
-	mygo.App.Dock.SetBadge(label)
-}
-
 type traySum struct {
-	badge int
-	mode  string // idle / running / waiting / unread / error / update / paused / demo
-	title string
+	badge, pending, running int
+	mode                    string // idle / running / waiting / unread / error / update / paused / demo
+	title                   string
 }
 
 func traySummary(st *core.State) traySum {
@@ -148,58 +133,72 @@ func traySummary(st *core.State) traySum {
 }
 
 func (a *App) syncTray(dark bool) {
+	_ = dark
 	if a.prefs != nil && !a.prefs.Bool("general.tray", true) {
+		a.stopTrayAnim()
 		if a.brand.tray != nil {
 			a.brand.tray.Destroy()
 			a.brand.tray = nil
 		}
 		return
 	}
-	sum := traySummary(a.st)
-	iconName := "tray-" + sum.mode + ".png"
-	if _, err := os.Stat(iconAssetPath(iconName)); err != nil {
-		iconName = map[string]string{
-			"running": "tray-running.png",
-			"waiting": "tray-waiting.png",
-			"unread":  "tray-unread.png",
-		}[sum.mode]
-		if iconName == "" {
-			iconName = "tray-idle.png"
-		}
-	}
-	data, err := os.ReadFile(iconAssetPath(iconName))
+	sum := a.brandSummarize()
+	path := a.trayIconPath(sum)
+	data, err := os.ReadFile(path)
 	if err != nil {
+		brandLog.Debug("托盘图标未找到", "path", path, "err", err)
 		return
 	}
+	a11y := a.trayA11yLabel(sum)
+	tip := a11y
+	if sum.title != "" {
+		tip = sum.title + " · " + a11y
+	}
+	template := a.prefs == nil || !a.prefs.Bool(pTrayColor, true) || a11yIncreaseContrast() || a11yReduceTransparency()
+	if sum.mode != "idle" && sum.mode != "running" {
+		template = true
+	}
+	clickMenu := a.prefs == nil || a.prefs.Int(pTrayClick, 0) == 0
 	if a.brand.tray == nil {
 		tr, err := mygo.NewTray(mygo.TrayOptions{
 			ID:             "minicode.main",
 			Icon:           data,
-			IconIsTemplate: true,
-			ToolTip:        sum.title,
-			Menu:           a.trayMenu(),
+			IconIsTemplate: template,
+			Title:          a.trayCountTitle(sum),
+			ToolTip:        tip,
+			Menu:           a.trayMenuFull(),
 		})
 		if err != nil {
 			brandLog.Warn("创建托盘失败", "err", err)
 			return
 		}
+		if !clickMenu {
+			tr.OnClick(func() { mygo.App.Focus() })
+		}
 		a.brand.tray = tr
 		a.brand.trayMode = sum.mode
+		if a11y != a.brand.lastA11y {
+			a.brand.lastA11y = a11y
+			postA11yAnnouncement(a11y)
+		}
+		a.scheduleTrayAnim()
 		return
 	}
 	if sum.mode != a.brand.trayMode {
-		_ = a.brand.tray.SetIcon(data, true)
+		a.stopTrayAnim()
+		_ = a.brand.tray.SetIcon(data, template)
 		a.brand.trayMode = sum.mode
+		a.scheduleTrayAnim()
+	} else {
+		a.refreshTrayIcon()
 	}
-	if sum.title != "" {
-		a.brand.tray.SetToolTip(sum.title)
+	a.brand.tray.SetTitle(a.trayCountTitle(sum))
+	a.brand.tray.SetToolTip(tip)
+	if clickMenu {
+		a.brand.tray.SetMenu(a.trayMenuFull())
 	}
-}
-
-func (a *App) trayMenu() *mygo.Menu {
-	return mygo.NewMenu([]*mygo.MenuItem{
-		{Label: "显示 MiniCode", Click: func(*mygo.MenuItem, *mygo.Window) { mygo.App.Focus() }},
-		{Type: mygo.MenuItemSeparator},
-		{Label: "退出", Role: mygo.RoleQuit},
-	})
+	if a11y != a.brand.lastA11y {
+		a.brand.lastA11y = a11y
+		postA11yAnnouncement(a11y)
+	}
 }
