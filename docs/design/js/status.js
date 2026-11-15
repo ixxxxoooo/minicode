@@ -136,7 +136,7 @@
       R('排队卡「停止并发送」', '设计稿 F.queue 三个动作;Go queueCard 只有引导 / 删除 ◆ 第一波:composer_queue.go;未测试', 'part', 'B4'),
       R('排队消息带图片', '排队项保留草稿图片语法;卡上缩略图 chip;退回编辑还原;发送经 submitPrompt 带 Images;演示 b4-queue-img。未测试', 'part', 'B4'),
       R('提示卡的动作(重试 / 压缩)与权限「你拒绝了…」专用行', '错误/警告卡 noticeActions 有重试·压缩;已拒绝权限:工具行 deny+lock 与 flow_note permissionDenyNote(shield 灰字)。不可重试。未测试', 'part', 'B4'),
-      R('会话流内 Mermaid 图表卡与全屏查看', '助手回复里的 mermaid 围栏按普通代码块显示;设计稿是图表卡 + 全屏查看器。排版引擎也没有(画布页只有简版方框布局)', 'todo', 'B7'),
+      R('会话流内 Mermaid 图表卡与全屏查看', '◆ flow_mermaid.go 图表卡(复制/全屏/查看源码)+internal/mermaid 排版+后台缓存;mermaid_viewer.go 全屏适应/±/平移/Esc。画布页仍为简版方框。未测;滚轮缩放未接;复杂 flow 样式类/er/gantt/class 等未做', 'part', 'B7'),
       R('task-spec 页实现状态表', 'specs2 待办 / 尾读 / 通知 / 分叉四行', 'ok', 'B0')],
     overlays: [
       R('命令面板、历史会话、分支选择器、账号菜单、运行配置弹层', '', 'ok'),

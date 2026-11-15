@@ -35,6 +35,7 @@ func (a *App) root(c *ui.Context) {
 		a.quickView(c)
 		a.projDialogs(c)
 		a.overlayLayer(c)
+		a.mermaidViewerOverlay(c)
 		a.noticeToasts(c)
 		a.morphShield(c)
 		if a.delUndo.Active() {
