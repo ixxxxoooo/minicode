@@ -35,11 +35,12 @@ func isMarkdownFile(p string) bool {
 // mdState 是一个 Markdown 标签的所见即所得状态。
 type mdState struct {
 	doc    *richtext.Document
-	ver    uint64 // 文档是按缓冲区的这一版建的
-	front  string // 文件开头的 YAML 头(原样保留,不进文档)
-	unsafe string // 非空 = 含无法往返的内容(表格 / HTML / 脚注),只读预览
-	notes  int    // 解析再序列化后写法会变的行数
-	edited bool   // 在所见即所得里改过
+	ver    uint64      // 文档是按缓冲区的这一版建的
+	front  string      // 文件开头的 YAML 头(原样保留,不进文档)
+	unsafe string      // 非空 = 含无法往返的内容(表格 / HTML / 脚注),只读预览
+	notes  int         // 若编辑对应块会被规范化的非空行数
+	edited bool        // 在所见即所得里改过
+	body   mdBodySplit // 读入时切分的正文块(写回时只替换变了的块)
 }
 
 // mdSource 此刻该标签是否显示源码:标签上的选择优先,否则看偏好 editor.mdView。
@@ -129,27 +130,9 @@ func mdUnsafe(body string) string {
 	return ""
 }
 
-// mdNormalized 粗略估计「解析再序列化」会改掉多少行:原文里找不到对应(去首尾空白后)的非空行数。
+// mdNormalized 统计编辑时可能被规范化的非空行数(只计会变的块)。
 func mdNormalized(body string) int {
-	have := map[string]int{}
-	for _, l := range strings.Split(richtext.ParseMarkdown(body).Markdown(), "\n") {
-		if s := strings.TrimSpace(l); s != "" {
-			have[s]++
-		}
-	}
-	n := 0
-	for _, l := range strings.Split(body, "\n") {
-		s := strings.TrimSpace(l)
-		if s == "" {
-			continue
-		}
-		if have[s] > 0 {
-			have[s]--
-		} else {
-			n++
-		}
-	}
-	return n
+	return mdNormalizedBlocks(body)
 }
 
 // mdEnsure 保证文档与缓冲区同步:缓冲区版本变了(源码里改过、格式化、磁盘重载)就重新读入。
@@ -168,6 +151,7 @@ func (a *App) mdEnsure(tb *ideTab) *mdState {
 	md.front, md.edited = front, false
 	md.unsafe = mdUnsafe(body)
 	md.notes = 0
+	md.body = mdSplitBodyBlocks(body)
 	if md.unsafe == "" {
 		md.notes = mdNormalized(body)
 		text := richtext.ParseMarkdown(body)
@@ -182,21 +166,28 @@ func (a *App) mdEnsure(tb *ideTab) *mdState {
 	return md
 }
 
-// mdWrite 把文档序列化回缓冲区(所见即所得里的每次修改)。
+// mdWrite 把文档序列化回缓冲区(所见即所得里的每次修改);只替换被编辑过的块。
 func (a *App) mdWrite(tb *ideTab, md *mdState) {
-	body := md.doc.Text().Markdown()
+	serialized := md.doc.Text().Markdown()
+	_, origBody := mdSplitFront(tb.buf.String())
+	merged := mdPreserveBody(origBody, md.body, serialized)
 	out := md.front
-	if body != "" {
-		out += body + "\n"
+	if merged != "" {
+		out += merged
+		if !strings.HasSuffix(out, "\n") {
+			out += "\n"
+		}
 	}
 	orig := tb.buf.String()
-	out = mdPreserveRoundTrip(orig, out)
 	if out == orig {
 		return
 	}
 	tb.buf.Set(out)
 	md.ver = tb.buf.Version()
 	md.edited = true
+	_, body := mdSplitFront(out)
+	md.body = mdSplitBodyBlocks(body)
+	uxLog.Debug("Markdown 写回", "path", tb.path, "blocks", len(md.body.parts))
 }
 
 // rtTheme 把当前令牌映射成富文本编辑器的外观(随主题缓存)。
@@ -241,7 +232,7 @@ func (a *App) mdView(c *ui.Context, tb *ideTab) {
 			})
 			return
 		case md.notes > 0 && !md.edited && !a.ux.mdNoteOff[tb.id]:
-			a.mdBanner(c, tb, false, "有 "+itoa(md.notes)+" 行的写法(如代码块语言标注、段内换行)在预览里会被规范化。只有你开始编辑后才会改写文件。", func() {
+			a.mdBanner(c, tb, false, "有 "+itoa(md.notes)+" 行写法与预览序列化不完全一致(如段内换行、列表符、围栏语言)。编辑对应段落后才会写回,未改动的段落保持原样。", func() {
 				kit.Btn(c, "知道了", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(func() {
 					if a.ux.mdNoteOff == nil {
 						a.ux.mdNoteOff = map[string]bool{}
