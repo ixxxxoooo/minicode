@@ -1,4 +1,4 @@
-/* 设计稿 v3 · 工作台外壳:标题栏、图标轨、导航栏、对话栏、检查器、状态栏;三套方案共用同一份结构
+/* 设计稿 v3 · 工作台外壳:标题栏、图标轨、导航栏、对话栏、工作区、状态栏;三套方案共用同一份结构
    状态 st:{ scheme: a|b|c, mode: agent|ide, screen: work|welcome|palette|settings, theme }
    @author ixxxxoooo */
 (function () {
@@ -7,10 +7,15 @@
   const NAVS = [['chat', 'chat', '会话'], ['files', 'folder', '文件'], ['search', 'search', '搜索'], ['scm', 'branch', '源代码管理']];
   /** 整页功能:图标、名称、屏幕 id(与查看器页面 id 同名) */
   const PAGES = [['timer', '自动化', 'automation'], ['canvas', '画布', 'canvas'], ['globe', '浏览器', 'browser'], ['plug', '自定义', 'customize']];
-  /** 整页屏幕:替换工作台的编辑区 / 对话栏 / 检查器 */
+  /** 整页屏幕:替换工作台的工作区 / 对话栏 */
   const PG = PAGES.map(p => p[2]).concat(['usage']);
   /** IDE 细节屏幕:固定为 IDE 模式,并带上该屏幕要展示的导航与编辑区状态 */
-  const IDE_SCREENS = { 'ide-search': { nav: 'search', hl: 1, rep: 1 }, 'ide-scm': { nav: 'scm', graph: 1 }, 'ide-diff': { nav: 'scm', diff: 1 }, 'ide-problems': { nav: 'files', panel: 'problems' } };
+  /** 带固定形态 / 工作区状态的屏幕:mode 固定形态,nav 左栏分栏,ws 当前标签,其余是编辑器与面板的展示状态 */
+  const IDE_SCREENS = {
+    'ide-search': { nav: 'search', hl: 1, rep: 1, ws: 'router.rs' }, 'ide-scm': { nav: 'scm', graph: 1, ws: 'diff:router.rs' }, 'ide-diff': { nav: 'scm', ws: 'diff:router.rs' }, 'ide-problems': { nav: 'files', panel: 'problems', ws: 'router.rs' },
+    'ide-editor': { nav: 'files', ws: 'router.rs', occ: 1 }, 'ide-review': { mode: 'agent', ws: 'review' }, 'ide-merge': { nav: 'scm', ws: 'conflict', io: 'merge' },
+    'ws-plan': { mode: 'agent', ws: 'plan' }, 'ws-sub': { mode: 'ide', nav: 'files', ws: 'sub:handlers', occ: 1 }, 'ws-task': { mode: 'agent', ws: 'task:watch', panelOn: 1 },
+  };
   const CRUMB = { automation: '自动化', canvas: '画布', browser: '浏览器', customize: '自定义', usage: '用量与成本' };
 
   /* ───────── 标题栏 ───────── */
@@ -18,8 +23,8 @@
   const cmdk = `<div class="cmdk" data-act="palette">${ic('search', 's12')}<span class="grow">搜索会话、文件与命令</span>${kbd('⌘', 'K')}</div>`;
   const crumb = (st) => `<div class="crumb">${ic('folder', 's12')}<span>router-demo</span>${ic('chevR', 's12')}<b class="ell">${CRUMB[st.screen] || '路由大小写匹配'}</b></div>`;
   const titlebar = (st) => {
-    const lead = `<span class="lights"><i></i><i></i><i></i></span>${ib('panelL', '', '导航栏 ⌘B', 'data-act="side"')}`;
-    const tools = `${ib('panelB', 'only-ide', '终端 ⌃`')}${ib('panelR', 'only-agent', '检查器 ⌥⌘B', 'data-act="insp"')}${ib('bell', '', '通知')}`;
+    const lead = `<span class="lights"><i></i><i></i><i></i></span>${ib('panelL', '', '导航栏 ⌘B', 'data-act="side"')}<span class="navh">${ib('arrowL', 'dis', '后退 ⌃-')}${ib('arrow', '', '前进 ⌃⇧-')}</span>`;
+    const tools = `${ib('panelB', 'on', '底部面板 ⌘J', 'data-act="panel"')}${ib('panelR', 'on', '右侧栏 ⌥⌘B(Agent = 工作区,IDE = 对话)', 'data-act="right"')}${ib('bell', '', '通知')}`;
     const parts = {
       a: [lead + crumb(st), modeSeg(st), cmdk + tools],
       b: [lead + modeSeg(st), cmdk, tools + '<button class="avatar acct-btn" style="margin-left:4px" data-act="acct" data-tip="账号与设置">L</button>'],
@@ -62,29 +67,23 @@
 
   /* ───────── 对话栏 ───────── */
   const starter = (n, t, d) => `<div class="starter"><span class="c-ac">${ic(n)}</span><b>${t}</b><span class="t3 fs-cap" style="line-height:1.35">${d}</span></div>`;
-  const welcome = () => `<div class="welcome"><div class="fc ai g3 a-rise"><span class="logo" style="width:36px;height:36px;border-radius:var(--r-lg)">${ic('mark', 's20')}</span><div class="fs-head b" style="margin-top:6px">今天想在 router-demo 里做点什么?</div><div class="t3">main · 3 项未提交改动 · 上次会话 5 分钟前</div></div>
-    <div style="width:600px;max-width:92%" class="a-rise">${F.composer({ focus: true })}</div>
-    <div class="f g4 stagger">${starter('bug', '修复一个 Bug', '描述现象,我来定位')}${starter('book', '解释这个项目', '梳理结构与关键流程')}${starter('check', '补充测试', '为最近改动补单测')}${starter('eye', '审查改动', '3 个文件 · +18 −4')}</div></div>`;
+  const welcome = () => `<div class="welcome"><div class="fc ai g3 a-rise"><span class="logo" style="width:36px;height:36px;border-radius:var(--r-lg)">${ic('mark', 's20')}</span><div class="fs-head b" style="margin-top:6px;text-align:center">今天想在 router-demo 里做点什么?</div><div class="t3">main · 3 项未提交改动 · 上次会话 5 分钟前</div></div>
+    <div style="width:600px;max-width:92%" class="a-rise composer-slot">${F.composer({ focus: true })}</div>
+    <div class="f g4 stagger starters">${starter('bug', '修复一个 Bug', '描述现象,我来定位')}${starter('book', '解释这个项目', '梳理结构与关键流程')}${starter('check', '补充测试', '为最近改动补单测')}${starter('eye', '审查改动', '3 个文件 · +18 −2')}</div></div>`;
+  /** 对话栏头部。宽 / 中:标题 + 分支 + 历史 + 更多;窄(IDE 右侧停靠):标题变下拉,补上「新会话」「占满」 */
+  const chatHead = (title, o = {}) => `<div class="chat-head"><div class="ttl" data-act="hist">${o.run ? '<span class="dot ac only-narrow"></span>' : ''}<b class="ell">${title}</b>${ic('chevD', 's12 t3 only-narrow')}</div>${o.branch ? chip('main', 'branch', 'not-narrow') : ''}<span class="grow"></span>
+    <span class="only-narrow f ai">${ib('plus', 'sm', '新会话 ⌘N', 'data-act="newchat"')}</span>${ib('history', 'sm', '历史会话 ⌘⇧H', 'data-act="hist"')}<span class="only-narrow f ai">${ib('max', 'sm', '对话占满 ⌘⇧M', 'data-act="chatmax"')}</span>${ib('more', 'sm', '更多:重命名、分叉、归档、复制链接')}</div>`;
+  /** 历史会话弹层(本项目最近的会话 + 搜索 + 全部历史)。是「跳转」不是第二份列表:家仍是左栏「会话」 */
+  F.hist = () => { const r = (t, time, dot, on) => `<div class="row ${on ? 'on' : ''}">${dot ? `<span class="dot ${dot}"></span>` : '<span style="width:6px"></span>'}<span class="grow ell">${t}</span><span class="aux">${time}</span></div>`;
+    return `<div class="hist-pop pop a-pop-up"><label class="inp fill">${ic('search', 's12')}<input placeholder="搜索 router-demo 的会话" spellcheck="false" style="all:unset;flex:1;min-width:0"></label>
+      <div class="cap">本项目</div>${r('完整修复一个 Bug:路由大小写匹配', '刚刚', 'ac', 1)}${r('权限请求:修改配置与执行命令', '5 分钟', 'warn')}${r('文件读写:梳理并整理路由层', '1 小时')}${r('Markdown 与代码高亮:发布说明', '昨天')}
+      <div class="ft">${ic('history', 's12')}<span class="grow">全部历史…</span>${kbd('⌘', '⇧', 'H')}</div><div class="ft" style="box-shadow:none;padding-top:0">${ic('plus', 's12')}<span class="grow">新会话</span>${kbd('⌘', 'N')}</div></div>`; };
   const chat = (st) => st.screen === 'welcome'
-    ? `<div class="chat-head"><b>新对话</b><span class="grow"></span>${ib('history', 'sm', '历史会话')}</div>${welcome()}`
-    : `<div class="chat-head"><b class="ell">完整修复一个 Bug:路由大小写匹配</b>${chip('main', 'branch')}<span class="grow"></span>${ib('history', 'sm', '历史会话')}${ib('more', 'sm')}</div>
+    ? `${chatHead('新对话')}${welcome()}`
+    : `${chatHead('完整修复一个 Bug:路由大小写匹配', { branch: 1, run: 1 })}
       <div class="flow-wrap"><div class="col"><div class="flow">${F.turn()}</div></div></div>
       <div class="chat-foot"><div class="col">${F.tdock()}<div class="dockslot"><div class="slot-cmp">${F.composer()}</div><div class="slot-card hide"></div></div></div></div>`;
-
-  /* ───────── 检查器(Agent 右栏) ───────── */
-  const TABS = [['changes', '改动', 3], ['files', '文件'], ['term', '终端'], ['plan', '计划'], ['tasks', '任务', 2]];
-  const task = (n, t, d, time) => `<div class="row" style="height:auto;padding:5px 8px;align-items:flex-start"><span style="margin-top:3px"><span class="spin"></span></span><div class="grow"><div class="f ai g3"><span class="m ell" style="color:var(--tx-1)">${t}</span>${tag(n)}</div><div class="t3 fs-cap ell shimmer">${d}</div></div><span class="aux">${time}</span></div>`;
-  W.inspBody = (tab) => `<div class="a-swap">${{
-    changes: () => `<div class="f ai g3" style="padding:0 12px 6px"><span class="t3">3 个文件</span><span class="c-ok mono">+18</span><span class="c-err mono">−1</span><span class="grow"></span>${btn('审查', 'sm ghost', 'eye')}${btn('提交', 'sm soft', 'check')}</div>
-      <div class="ch-file">${IDE.changeRow('router.rs', 'src', 'M', 4, 1, 1)}<div style="margin:3px 0 6px">${F.diff(false)}</div>${IDE.changeRow('router_test.rs', 'tests', 'M', 12, 0)}${IDE.changeRow('case_test.rs', 'tests', 'A', 2, 0)}</div>`,
-    files: () => `<div style="padding:0 6px">${IDE.tree(false)}</div>`,
-    term: () => `<div class="term">${IDE.termLines()}</div>`,
-    plan: () => `<div style="padding:2px 12px" class="fc g4"><div class="f ai g3"><b class="grow">执行进度</b><span class="t3 num">2 / 3</span></div><div class="meter"><i style="width:66%"></i></div>${F.todo(2)}<div class="sep"></div>${F.plan(false)}</div>`,
-    tasks: () => `<div style="padding:0 6px">${task('子代理', '审查 handlers 的错误处理', '搜索 "unwrap()"', '48 秒')}${task('后台命令', 'cargo watch -x test', '等待文件变化…', '6 分')}<div class="grp-h" style="margin-top:6px">已结束</div><div class="row">${ic('check', 's12 c-ok')}<span class="grow ell">调研 axum 的路由匹配</span><span class="aux">1 分 20 秒</span></div></div>`,
-  }[tab]()}</div>`;
-  const insp = () => `<aside class="pane insp"><div class="insp-in">
-    <div class="tabs">${TABS.map(([id, t, n], k) => `<span class="tab ${k ? '' : 'on'}" data-act="insp-tab" data-tab="${id}">${t}${n ? cnt(n) : ''}</span>`).join('')}<span class="grow"></span><span class="f ai">${ib('plus', 'sm')}</span></div>
-    <div class="insp-body">${W.inspBody('changes')}</div></div></aside>`;
+  W.chat = chat;
 
   /* ───────── 状态栏 ───────── */
   const sbar = () => `<div class="sbar"><span class="it">${ic('branch', 's12')}main</span><span class="it">${ic('refresh', 's12')}↑1</span><span class="it">${ic('errc', 's12')}0 ${ic('alert', 's12')}1</span>
@@ -101,13 +100,18 @@
       <div class="pal-prev"><b>主题:切换…</b><div class="t3 fs-cap" style="margin:4px 0 10px;line-height:1.5">展开主题列表。上下移动时即时预览,回车确认,Esc 还原。</div>${U.THEMES.map(t => `<div class="f ai g3 fs-cap" style="height:20px"><span class="dot" data-theme="${t.id}" style="background:var(--c-accent)"></span>${t.name}<span class="t4">${t.sub}</span></div>`).join('')}</div></div>
     <div class="pal-foot"><span class="f ai g2">${kbd('↑', '↓')}选择</span><span class="f ai g2">${kbd('⏎')}执行</span><span class="f ai g2">${kbd('esc')}关闭</span><span class="grow"></span><span>共 6 项</span></div></div>`;
 
-  /** 整个窗口。st 见文件头;screen 可取 work / welcome / palette / settings / 四个整页 / 四个 IDE 细节屏幕 */
+  /** 整个窗口。st 见文件头;screen 可取 work / welcome / palette / settings / 整页 / IDE 细节与工作区标签屏幕。
+      区域模型:导航栏 + 对话栏 + 工作区 + 状态栏。data-right 是「右侧那一栏」的开合(Agent = 工作区,IDE = 对话栏),data-panel 是工作区底部面板的开合。 */
   W.win = (st) => {
     const io = IDE_SCREENS[st.screen], pg = PG.includes(st.screen);
-    st = { ...st, io, mode: io ? 'ide' : pg ? 'agent' : st.mode, nav: st.nav || (io && io.nav) };
+    st = { ...st, io, mode: io ? (io.mode || 'ide') : pg ? 'agent' : st.mode, nav: st.nav || (io && io.nav) };
+    const mode = st.mode, wsId = (io && io.ws) || st.ws || (mode === 'ide' ? 'router.rs' : 'review');
+    const tabs = WS.TAB[wsId] && !WS.DEFAULT.includes(wsId) ? WS.DEFAULT.concat([wsId]) : WS.DEFAULT;
+    const panelOn = (io && io.panelOn) || st.panel === 'on' || (mode === 'ide' && st.panel !== 'off');
+    const o = { tabs, active: wsId, panel: (io && io.panel) || st.panelKind, hl: io && io.hl, rep: io && io.rep, ov: st.ov, unified: st.unified, staged: st.staged, sel: st.sel, scroll: +st.scroll || 0, sticky: st.sticky, cmenu: st.cmenu };
     const stage = pg ? `<section class="pane page">${W.pages[st.screen](st)}</section>`
-      : `<section class="pane ed">${IDE.editor(io)}</section><section class="pane chat">${chat(st)}</section>${insp()}`;
-    return `<div class="win" data-mode="${st.mode}" data-side="on" data-insp="on">${titlebar(st)}
+      : `<section class="pane chat">${chat(st)}</section><section class="pane ws">${WS.html(o)}</section>`;
+    return `<div class="win" data-mode="${mode}" data-side="on" data-right="${st.right === 'off' ? 'off' : 'on'}" data-panel="${panelOn ? 'on' : 'off'}">${titlebar(st)}
     ${st.screen === 'settings' ? W.settings(st) : `<div class="body">${rail(st)}${side(st)}<div class="stage">${stage}</div></div>`}
     ${sbar()}${st.screen === 'palette' ? palette() : ''}</div>`;
   };

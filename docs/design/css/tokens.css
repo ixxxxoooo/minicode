@@ -17,7 +17,7 @@
 
   /* 固定尺寸 */
   --h-ctl: 24px; --h-ctl-sm: 20px; --h-bar: 36px; --h-tab: 30px; --h-status: 22px;
-  --w-rail: 44px; --w-side: 228px; --w-insp: 304px; --w-dock: 352px; --w-col: 712px;
+  --w-rail: 44px; --w-side: 228px; --w-ws: 560px; --w-dock: 352px; --w-col: 712px;
   --ic: 14px; --flow-inset: 22px;
 
   /* 动效:时长 */

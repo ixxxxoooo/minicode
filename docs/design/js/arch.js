@@ -60,33 +60,32 @@
   const gantt = (title, rows) => `<div class="fc g3"><b>${title}</b><div class="gantt">${rows.map(([n, a, b, c, l]) => `<span class="t2">${n}</span>${bar(l || (b - a) + 'ms', a, b, c)}`).join('')}<span></span><div class="axis"><span>0</span><span>100</span><span>200</span><span>300</span><span>400</span><span>500 ms</span></div></div></div>`;
   const rows2 = (r) => `<table class="ia-tbl"><thead><tr><th style="width:130px">区域</th><th>Agent 形态</th><th>IDE 形态</th></tr></thead><tbody>${r.map(([a, b, c]) => `<tr><td><b>${a}</b></td><td>${b}</td><td>${c}</td></tr>`).join('')}</tbody></table>`;
   const mini = `<div class="forms-demo"><div class="mini-win" data-act="mini" data-mode="agent" tabindex="0"><div class="mw-t"><i></i><i></i><i></i><span class="grow"></span><span>点一下窗口:Agent ⇄ IDE</span><span class="grow"></span></div>
-    <div class="mw-b"><div class="mw-s">导航栏</div><div class="mw-e">编辑区 · 文件</div><div class="mw-c">对话</div><div class="mw-i">检查器</div></div></div></div>`;
+    <div class="mw-b"><div class="mw-s">导航栏</div><div class="mw-e">工作区 · 文件</div><div class="mw-c">对话</div><div class="mw-i">工作区</div></div></div></div>`;
 
   P.forms = () => `<div class="ds">${head('窗口形态 · 一个窗口两种形态', '不再有「融合模式」,也不再有独立的 IDE 窗口。一个窗口默认打开 Agent 形态,按 ⌘E(或点标题栏的分段)原地变形成 IDE,再按一次变回来。对话、终端、打开的文件都不会重载。')}
     ${sec('切换', `演示:点窗口切换。真实窗口里每一帧都是同一个布局在改宽度。${kbd('⌘', 'E')}`, mini)}
     ${sec('两种形态里各区域是什么', '形态只改变「谁占主要空间」。同一份会话、终端、编辑器标签在两个形态里都在。', rows2([
       ['导航栏', '会话列表(按项目分组)', '文件树(同一栏顶部分段可切回会话)'],
-      ['编辑区', '没有;文件在右侧检查器的「文件」标签里预览', '占据主区域,多标签、拆分、迷你地图'],
-      ['对话栏', '居中的会话流,内容宽度上限 712', '收成右侧 352 的窄栏,输入框保持最小宽度'],
-      ['检查器', '改动 / 文件 / 终端 / 计划 / 任务', '收起;改动在左栏「源代码管理」,终端在底部面板'],
+      ['工作区', '右侧 560 宽的面板(默认收起,开标签时自动展开):文件、差异、审查、计划、子 Agent、任务输出都是它的标签,底部可开终端 / 问题 / 输出', '占据主区域(同一份编辑器组与底部面板),多标签、拆分、迷你地图'],
+      ['对话栏', '居中的会话流,内容宽度上限 712;有工作区时让出右侧', '挪到右侧 352 的窄栏(三档响应式:头部带会话下拉 / 新会话 / 历史 / 占满)'],
       ['标题栏', '分段高亮 Agent', '分段高亮 IDE;项目名固定在进入时的项目'],
       ['状态栏', '分支、上下文、更新', '另有光标位置、编码、语言服务状态']]))}
     ${sec('过渡编排', '同一个窗口里面板改宽度,所以变形是「连续的」。进入与离开不是简单倒放:内容在大小稳定时才出现,避免文字被挤压成一团。', `<div class="grid2">
-      ${spec('进入 IDE', ['--dur-morph', '--ease-morph', '--dur-slow'], gantt('Agent → IDE · 约 440ms', [['检查器收起', 0, 260, 'b2'], ['编辑区展开', 0, 440, ''], ['对话栏收窄', 0, 440, ''], ['编辑区内容淡入', 90, 350, 'b3', '延迟 90ms'], ['导航栏内容换成文件树', 0, 180, 'b2'], ['标题栏滑块', 0, 180, 'b3']]))}
-      ${spec('回到 Agent', ['--dur-morph', '--dur-fast', '--ease-io'], gantt('IDE → Agent · 约 440ms', [['编辑区内容淡出', 0, 120, 'b3'], ['编辑区收回', 0, 440, ''], ['对话栏拉宽', 0, 440, ''], ['检查器恢复', 60, 320, 'b2', '延迟 60ms'], ['导航栏内容换回会话', 0, 180, 'b2'], ['标题栏滑块', 0, 180, 'b3']]))}</div>
+      ${spec('进入 IDE', ['--dur-morph', '--ease-morph', '--dur-slow'], gantt('Agent → IDE · 约 440ms', [['工作区展开', 0, 440, ''], ['对话栏收窄', 0, 440, ''], ['编辑区内容淡入', 90, 350, 'b3', '延迟 90ms'], ['导航栏内容换成文件树', 0, 180, 'b2'], ['标题栏滑块', 0, 180, 'b3']]))}
+      ${spec('回到 Agent', ['--dur-morph', '--dur-fast', '--ease-io'], gantt('IDE → Agent · 约 440ms', [['编辑区内容淡出', 0, 120, 'b3'], ['编辑区收回', 0, 440, ''], ['对话栏拉宽', 0, 440, ''], ["工作区回到右侧", 60, 320, 'b2', '延迟 60ms'], ['导航栏内容换回会话', 0, 180, 'b2'], ['标题栏滑块', 0, 180, 'b3']]))}</div>
       <div class="t3 fs-cap" style="margin-top:8px;line-height:1.6">变形期间窗口加 <span class="mono">.morphing</span>(约 470ms)锁定指针事件,防止半途点击;「动效」关闭或系统「减弱动态效果」时,所有时长归零,直接跳到终态。</div>`)}
     ${sec('每个形态各自记住什么', '记「开合」,不记内容。内容(文件、终端、会话)全窗口只有一份。', `<div class="grid2">
-      ${spec('各形态独立记忆', ['win._mem'], '<div class="t2" style="line-height:1.8">· 导航栏开 / 合<br>· 检查器开 / 合(IDE 默认收起,Agent 默认展开)<br>· 对话栏占满(IDE)<br>· 底部终端面板开合(IDE)<br>· 导航栏当前分栏(IDE 默认文件,Agent 默认会话)</div>')}
+      ${spec('各形态独立记忆', ['win._mem'], '<div class="t2" style="line-height:1.8">· 导航栏开 / 合<br>· 工作区开 / 合(Agent 默认收起,开标签时自动展开)<br>· 对话栏占满(IDE)<br>· 底部面板开合与当前分段<br>· 导航栏当前分栏(IDE 默认文件,Agent 默认会话)</div>')}
       ${spec('全窗口共用', ['SessionModel', 'Workbench.editor'], '<div class="t2" style="line-height:1.8">· 会话与正在进行的回合、输入框草稿与排队消息<br>· 编辑器的全部标签、选区、滚动位置、未保存修改<br>· 终端会话(按项目根分组)<br>· 源代码管理状态与 Git 图谱<br>· 后台任务与子 Agent</div>')}</div>`)}
     ${sec('怎么触发', '所有入口走同一个函数,所以结果一致。', `<table class="ia-tbl"><tbody>${[
       ['快捷键', `${kbd('⌘', 'E')} 在 Agent 与 IDE 之间切换;设置页、整页功能里按它会先回到工作台再切形态`],
       ['标题栏分段', '点「Agent」或「IDE」;在整页里点同样先回工作台'],
       ['命令面板', '「切换到 IDE」/「切换到 Agent」(⌘K)'],
-      ['会话流里的文件链接', '默认在当前形态打开(Agent = 右栏预览;IDE = 编辑区);按住 ⌥ 点击强制在 IDE 打开'],
+      ['会话流里的文件链接', '在工作区开标签(Agent 形态下自动展开右侧工作区;IDE = 编辑区);按住 ⌥ 点击强制在 IDE 打开'],
       ['「在 IDE 中打开」按钮', '自定义页的 Skills / 规则、改动列表、差异;点了切到 IDE 形态并打开该文件,右下角提示一句'],
       ['启动时', '设置 → 通用 →「启动时的形态」:Agent / IDE / 上次']].map(([a, b]) => `<tr><td style="width:170px"><b>${a}</b></td><td class="t2">${b}</td></tr>`).join('')}</tbody></table>`)}
     ${sec('与整页功能、设置的关系', '它们仍是替换工作区的页面,标题栏保持不变,形态分段在其中仍可点。', `<div class="grid2">
       ${spec('整页功能 / 设置', ['Page', 'Esc'], '<div class="t2" style="line-height:1.7">自动化 / 画布 / 浏览器 / 自定义 / 用量 / 设置都是「页面」,不属于任一形态。点标题栏的 Agent / IDE = 回到工作台并切到那个形态;设置按 Esc 或「返回」回到进入前的位置。</div>')}
       ${spec('再开一个窗口', ['⇧⌘N'], '<div class="t2" style="line-height:1.7">想同时看另一个项目:⇧⌘N 新开一个完整窗口(自己的 Agent / IDE 形态与记忆)。<b>不再有「独立 IDE 窗口」</b>:IDE 永远是某个窗口的一种形态。</div>')}</div>`)}
-    ${sec('窄窗口', '窗口变窄时先让出次要面板,变宽后恢复(自动收起不覆盖你手动设置的开合)。', `<table class="ia-tbl"><tbody>${[['< 1100px', 'Agent 形态的检查器自动收起;标题栏搜索框收窄'], ['< 900px', 'IDE 形态的对话栏收成图标,点开变浮层'], ['< 720px', '导航栏变抽屉,点标题栏最左的按钮滑出']].map(([a, b]) => `<tr><td style="width:120px"><span class="mono">${a}</span></td><td class="t2">${b}</td></tr>`).join('')}</tbody></table>`)}</div>`;
+    ${sec('窄窗口', '窗口变窄时先让出次要面板,变宽后恢复(自动收起不覆盖你手动设置的开合)。', `<table class="ia-tbl"><tbody>${[['< 1100px', 'Agent 形态的工作区自动收起(开标签时仍会展开并覆盖对话);标题栏搜索框收窄'], ['< 900px', 'IDE 形态的对话栏收成图标,点开变浮层'], ['< 720px', '导航栏变抽屉,点标题栏最左的按钮滑出']].map(([a, b]) => `<tr><td style="width:120px"><span class="mono">${a}</span></td><td class="t2">${b}</td></tr>`).join('')}</tbody></table>`)}</div>`;
 })();

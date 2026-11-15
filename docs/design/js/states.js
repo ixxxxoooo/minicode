@@ -72,7 +72,7 @@
   P.demos = P.demos.concat(NEW);
 
   const CH = [
-    ['Agent ⇄ IDE', '检查器先收 → 编辑区宽度展开 → 内容晚 90ms 淡入;离开时内容先淡出再收宽度', '<span class="mono">--dur-morph · --ease-morph</span>'],
+    ['Agent ⇄ IDE', '工作区宽度展开、对话栏收到右侧 → 内容晚 90ms 淡入;离开时内容先淡出再收宽度', '<span class="mono">--dur-morph · --ease-morph</span>'],
     ['进入设置 / 整页功能', '整页内容整体淡入;设置里分组依次上升,间隔 30ms;返回时反向淡出', '<span class="mono">--dur-base</span>'],
     ['设置分类切换', '正文分组 stagger 上升;搜索结果即时替换,不做动画(边打字边变不该晃)', '<span class="mono">--dur-base</span>'],
     ['抽屉内容切换', '换选中项时内容就地淡入(a-swap),抽屉本身不再滑动', '<span class="mono">--dur-base</span>'],

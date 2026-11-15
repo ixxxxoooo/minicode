@@ -106,11 +106,7 @@ textarea.ta:hover { box-shadow: inset 0 0 0 1px var(--bd-3); } textarea.ta:focus
 .sb-pop .ring.big { width: 34px; height: 34px; -webkit-mask: radial-gradient(circle, transparent 11px, #000 12px); mask: radial-gradient(circle, transparent 11px, #000 12px); }
 
 /* ───────── Agent ⇄ IDE 形态切换的编排 ─────────
-   进入 IDE:检查器先收(快),编辑区宽度从 0 展开(--dur-morph),内容晚 90ms 淡入;离开时反向:内容先淡出,再收宽度。 */
-.ed { transition: width var(--dur-morph) var(--ease-morph), opacity var(--dur-fast) var(--ease-in), margin var(--dur-morph) var(--ease-morph), background var(--dur-slow); }
-.win[data-mode="ide"] .ed { transition: width var(--dur-morph) var(--ease-morph), opacity var(--dur-slow) var(--ease-out) 90ms, margin var(--dur-morph) var(--ease-morph), background var(--dur-slow); }
-.insp { transition: width var(--dur-slow) var(--ease-io) 60ms, opacity var(--dur-fast) var(--ease-in), margin var(--dur-slow) var(--ease-io) 60ms, background var(--dur-slow); }
-.win[data-mode="ide"] .insp, .win[data-insp="off"] .insp { transition: width var(--dur-slow) var(--ease-io), opacity var(--dur-fast) var(--ease-in), margin var(--dur-slow) var(--ease-io), background var(--dur-slow); }
+   对话栏与工作区交换主位:宽度走 --dur-morph,对话栏同时在「中间 ⇄ 右侧停靠」之间滑动(ws.css)。 */
 .win.morphing { pointer-events: none; } .win.morphing .pane { will-change: width; }
 .win.morphing .flow-wrap { overflow: hidden; }
 .pane.page, .set { animation: fade var(--dur-base) var(--ease-out) both; }
