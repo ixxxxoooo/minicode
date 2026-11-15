@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -655,7 +656,7 @@ func perfBody(a *App, c *ui.Context) {
 	frame := "暂无"
 	for _, st := range diag.Stats() {
 		if st.Name == "app.构建界面" && st.Count > 0 {
-			frame = "平均 " + (time.Duration(int64(st.Total) / st.Count)).Round(10*time.Microsecond).String() + " · 最慢 " + st.Max.Round(10*time.Microsecond).String()
+			frame = "平均 " + fmtPerfDur(time.Duration(int64(st.Total)/st.Count)) + " · 最慢 " + fmtPerfDur(st.Max)
 		}
 	}
 	line := func(first bool, title, desc, val string, vals []float64) {
@@ -720,3 +721,11 @@ func aboutCard(a *App, c *ui.Context) {
 
 // Version 是显示用的版本号(构建时可用 -ldflags 覆盖)。
 var Version = "0.3.0-mygo"
+
+// fmtPerfDur 把耗时写成易读形式:不足 1 秒用毫秒(两位小数),否则用秒(两位小数)。
+func fmtPerfDur(d time.Duration) string {
+	if d >= time.Second {
+		return fmt.Sprintf("%.2f s", d.Seconds())
+	}
+	return fmt.Sprintf("%.2f ms", float64(d)/float64(time.Millisecond))
+}

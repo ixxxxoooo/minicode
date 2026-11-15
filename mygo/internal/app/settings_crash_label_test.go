@@ -19,3 +19,12 @@ func TestCrashKindLabel(t *testing.T) {
 		}
 	}
 }
+
+func TestFmtPerfDur(t *testing.T) {
+	if got := fmtPerfDur(20290 * 1000); got != "20.29 ms" {
+		t.Errorf("毫秒档: %q", got)
+	}
+	if got := fmtPerfDur(1269660 * 1000); got != "1.27 s" {
+		t.Errorf("秒档: %q", got)
+	}
+}
