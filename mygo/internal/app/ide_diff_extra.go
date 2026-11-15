@@ -56,7 +56,8 @@ func (a *App) hunkAnnBar(c *ui.Context, tb *ideTab, i int) {
 	tk := a.tk
 	bar := ui.Row(c).Height(24).PaddingX(4).Gap(4).AlignItems(ui.Center).Background(tk.Raised).Border(1, tk.Bd2).Radius(tk.RSm())
 	act := &editor.DiffHunkActions{Index: i, Hunk: dvHunk(tb.dv, i)}
-	a.hunkBar(c, bar, act, tb)
+	// 按钮必须在 bar 的 Children 里创建,否则成了注解容器的兄弟节点:纵向堆叠并盖住代码行。
+	bar.Children(func() { a.hunkBar(c, bar, act, tb) })
 }
 
 func dvHunk(dv *editor.DiffState, i int) editor.DiffHunk {
