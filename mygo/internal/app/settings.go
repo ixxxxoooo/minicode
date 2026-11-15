@@ -315,7 +315,7 @@ func (a *App) settingsMain(c *ui.Context) {
 						a.settingsGroup(c, g, gi)
 					}
 					if tab.note != "" {
-						ui.Text(c, tab.note).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.5).Padding(0, 4)
+						ui.Text(c, tab.note).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(theme.LhBody).Padding(0, 4)
 					}
 					if a.setTab == "shortcuts" {
 						a.shortcutWarnBar(c)
@@ -380,7 +380,7 @@ func (a *App) settingsRow(c *ui.Context, r setRow, first bool) {
 				}
 			})
 			if r.desc != "" {
-				ui.Text(c, r.desc).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.4)
+				ui.Text(c, r.desc).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(theme.LhUI)
 			}
 		})
 		a.settingsControl(c, r)
@@ -450,11 +450,13 @@ func (a *App) settingsControl(c *ui.Context, r setRow) {
 	}
 }
 
-// settingsField 是设置里的单行输入(白底描边,失焦 / 回车 / 编辑时写入偏好)。
+// settingsField 是设置里的单行输入(kit.Field:错误描边 + 抖动 + 说明)。
 func (a *App) settingsField(c *ui.Context, r setRow) {
-	t := a.tk
 	if a.set.bufs == nil {
 		a.set.bufs = map[string]*string{}
+	}
+	if a.set.fieldShake == nil {
+		a.set.fieldShake = map[string]time.Time{}
 	}
 	buf, ok := a.set.bufs[r.key]
 	if !ok {
@@ -466,11 +468,15 @@ func (a *App) settingsField(c *ui.Context, r setRow) {
 	if w == 0 {
 		w = 160
 	}
-	in := ui.TextInput(c.Key("fld-"+r.key), buf).Width(w).Height(24).FontSize(theme.FsCap + .5).Placeholder(r.ph).PlaceholderColor(t.Tx4).Shrink(0)
-	if r.mono {
-		in.Font("monospace")
-	}
-	in.OnChange(func() { a.setPref(r, *buf) })
+	shake := a.set.fieldShake[r.key]
+	kit.Field(c, r.key, kit.FieldOpt{ShakeAt: &shake}, func(box ui.Element) {
+		box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(24).Width(w).Shrink(0)
+		in := ui.TextInputBase(c.Key("fld-"+r.key), buf).Grow(1).FontSize(theme.FsCap + .5).Placeholder(r.ph).PlaceholderColor(a.tk.Tx4)
+		if r.mono {
+			in.Font("monospace")
+		}
+		in.OnChange(func() { a.setPref(r, *buf) })
+	})
 }
 
 // restartBar 是「需重启」条:有需要重启的项被改过时浮在内容底部。
@@ -535,7 +541,7 @@ func (a *App) settingsSearchView(c *ui.Context, q string) {
 			kit.Ic(c, "search", kit.S20).TextColor(t.Tx4)
 			ui.Text(c, "没有匹配「"+q+"」的设置").FontWeight(600)
 			ui.Text(c, "换个关键字试试,例如「主题」「代理」「快捷键」「服务商」。\n功能内容(MCP、Skills、命令……)在侧栏的「自定义」页。").
-				FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.6).TextAlign(ui.Center)
+				FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(theme.LhMono).TextAlign(ui.Center)
 			kit.Btn(c, "清除搜索", kit.BtnOpt{Small: true, Icon: "x"}).OnClick(func() { a.set.query = "" })
 		})
 		return

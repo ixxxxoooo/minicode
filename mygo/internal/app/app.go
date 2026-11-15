@@ -185,6 +185,9 @@ type App struct {
 	popCloseAt      time.Time
 	dlgClosing      string
 	dlgCloseAt      time.Time
+	wsOvlAt         time.Time                      // 工作区浮层滑入
+	sideOvlAt       time.Time                      // 侧栏抽屉滑入
+	dockOvlAt       time.Time                      // 对话栏浮层滑入
 	projScan        bool                           // 侧栏正在重扫会话索引(显示骨架)
 	delUndo         kit.UndoSlot                   // 全局删除撤销(会话 / 自定义等)
 	sessHide        map[string]time.Time           // 折叠删除中的会话行
@@ -386,6 +389,7 @@ func (a *App) afterEvent(ev core.Event) {
 	}
 	a.afterEventNotify(ev)
 	a.afterEventCanvas(ev)
+	a.brandAfterEvent(ev)
 }
 
 // SetRepo 设置当前项目的仓库;nil 表示不是 Git 仓库(分支显示为空)。
@@ -760,7 +764,7 @@ func (a *App) SetAutomations(s *automation.Store) { a.auto = s }
 
 // runAutomation 立即运行一条自动化(「立即运行」按钮与定时到点都走这里);没有运行器时只记一条演示记录。
 func (a *App) runAutomation(it automation.Automation) {
-	if a.autoRun == nil {
+	if a.autoRun == nil && a.autoRunCtx == nil {
 		a.auto.RunNow(it.ID, a.now())
 		a.toast = "已开始运行「" + it.Name + "」"
 		return
@@ -861,7 +865,7 @@ func (a *App) projectDir(name string) string {
 func (a *App) AutomationTick(now time.Time) {
 	from := a.autoSeen
 	a.autoSeen = now
-	if from.IsZero() || a.autoRun == nil {
+	if from.IsZero() || (a.autoRun == nil && a.autoRunCtx == nil) {
 		return
 	}
 	for _, it := range a.auto.Due(from, now) {

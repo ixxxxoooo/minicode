@@ -117,7 +117,8 @@
     cell('限定后与入口', '', box(`<div style="padding:10px 12px"><div class="f ai g2" style="margin-bottom:8px">${chip('router-demo', 'folder', 'on')}${ib('x', 'sm', '清除范围')}<span class="t3 fs-cap">在 router-demo 内 · 4 个文件 · 7 处匹配</span></div><div class="t3 fs-cap" style="line-height:1.8">入口:<br>· 文件树里文件夹右键「在文件夹中搜索…」(多根时顶层文件夹也有「仅在此文件夹搜索」)<br>· 搜索面板里的范围 chip<br>范围只是「第一段路径 = 文件夹名」的过滤,和「要包含的文件」glob 可叠加。切换工作区时清除。</div></div>`, 190, 560), '没有命中时的空态写明范围:「router-demo 内没有结果 · 清除范围」。'));
   const mgNested = grid(
     cell('子模块 / 嵌套仓库', '', box(`<div style="padding:8px"><div class="row" style="height:24px">${ic('chevD', 's12')}${ic('folder', 's12', 'c-ac')}<span class="grow b">web-dashboard</span>${tag('主', 'ac')}</div><div class="row" style="height:22px;padding-left:34px">${ic('chevD', 's12')}${ic('folder', 's12')}<span class="grow">packages</span></div><div class="row" style="height:22px;padding-left:50px">${ic('folder', 's12', 'c-ac')}<span class="grow">ui</span>${tag('子模块')}${cnt(1)}</div><div class="sep" style="margin:6px 0"></div>${repoRow('web-dashboard', 'feat/charts', '↑2', 2, 0)}<div style="padding-left:18px">${repoRow('packages/ui', 'main', '', 1, 0, tag('子模块'))}</div></div>`, 230, 560), '嵌套仓库在总览里缩进显示在父仓库下面,带「子模块」标签(没有 .gitmodules 的嵌套仓库标「嵌套」);文件树里那个文件夹带同样的标签和改动数。'),
-    cell('归属规则', '', box(`<div style="padding:12px 14px" class="t2"><div>· 一个文件属于「离它最近的 .git」所在的仓库</div><div>· 父仓库的状态把子模块当成一个条目(提交指针变更),文件级改动在子模块自己的行里处理</div><div>· 父仓库的暂存 / 提交不会带上子模块里未提交的改动,总览行提示「子模块有未提交改动」</div><div>· 发现范围:每个工作区文件夹向下 2 层找 .git,跳过 node_modules / target 等</div><div>· 子模块行同样有切换活动仓库 / 拉取 / 推送</div></div>`, 190, 560), '发现是后台、只读的 git rev-parse / ls-files;失败不影响其它仓库。'));
+    cell('归属规则', '', box(`<div style="padding:12px 14px" class="t2"><div>· 一个文件属于「离它最近的 .git」所在的仓库</div><div>· 父仓库的状态把子模块当成一个条目(提交指针变更),文件级改动在子模块自己的行里处理</div><div>· 父仓库的暂存 / 提交不会带上子模块里未提交的改动,总览行提示「子模块有未提交改动」</div><div>· 发现范围:每个工作区文件夹向下 2 层找 .git,跳过 node_modules / target 等</div><div>· 子模块行同样有切换活动仓库 / 拉取 / 推送</div></div>`, 190, 560), '发现是后台、只读的 git rev-parse / ls-files;失败不影响其它仓库。'),
+    cell('子模块有未提交改动', '', box(`<div class="banner warn" style="margin:8px 0;padding:8px 10px;border-radius:8px"><div class="f ai g2">${ic('alert', 's12 c-warn')}<span class="grow m">packages/ui 子模块有未提交的改动(1 项)</span>${btn('查看', 'sm')}</div><div class="t3 fs-cap" style="margin-top:4px;line-height:1.5">出现在父仓库 SCM 总览下方;点击切换到该子模块为活动仓库;父仓库暂存区仍有「子模块指针变更(M)」条目。</div></div>`, 170, 560), 'Go:scm_nested_hint.go;演示工作区 web-dashboard/packages/ui 有样例。'));
   P['multi-git'] = () => `<div class="ds" style="max-width:1240px">${head('多仓库 Git · 项目修改产生的 Git 文件怎么处理', '原则(对标 VS Code):每个仓库独立,<b>任何会改动仓库的操作都必须让用户一眼看清「作用在哪个仓库」</b>。默认是「活动仓库」模式 —— 顶部是仓库总览(每个仓库一行:分支 · 领先落后 · 改动数),下面是活动仓库的完整 SCM;点另一行就切换活动仓库。「全部展开」模式(设置项)把每个仓库的区块都铺开。')}
     ${sec('源代码管理(多仓库)', '总览行始终可见;提交框上方写明「提交到 router-demo · main」;非仓库文件夹给「初始化仓库」,不报错。', grid(
       cell('活动仓库模式(默认)', '', box(scmMulti, 520, 330), '总览里每行 10 秒在后台读一次状态(只读 git status,带 --no-optional-locks);活动仓库照常 4 秒 + 文件监视刷新。'),
@@ -150,7 +151,7 @@
   const M = (title, items) => `<div><div class="cap2"><b>${title}</b></div>${menu(236, items)}</div>`;
   P['menus'] = () => `<div class="ds" style="max-width:1240px">${head('右键菜单与动作矩阵', '规则:① 每个可点的对象都有右键菜单,菜单顺序固定为「主要动作 → 导航 → 复制 / 访达 → 危险操作」;② 危险项在最后、红色、带确认;③ 同一动作在不同对象里叫法与图标一致;④ 菜单项有快捷键就显示;⑤ 不可用的项置灰并在悬停提示原因,而不是隐藏。')}
     ${sec('导航栏', '', `<div class="gal" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))">
-      ${M('会话行', [['play', '打开', '⏎'], ['edit', '重命名…'], ['pin', '置顶'], ['archive', '归档'], ['-'], ['copy', '复制会话 ID'], ['copy', '复制为 Markdown'], ['-'], ['trash', '删除会话…', '', 'danger']])}
+      ${M('会话行', [['play', '打开', '⏎'], ['edit', '重命名…'], ['pin', '置顶'], ['archive', '归档'], ['-'], ['copy', '复制会话 ID'], ['copy', '复制标题'], ['copy', '复制为 Markdown'], ['-'], ['trash', '删除会话…', '', 'danger']])}
       ${M('文件(文件树)', [['code', '打开', '⏎'], ['split', '在侧边打开', '⌘⏎'], ['-'], ['eye', '打开更改', '', ''], ['clock', '显示文件历史'], ['spark', '让 Claude 解释 / 修改…'], ['-'], ['edit', '重命名…', 'F2'], ['copy', '复制'], ['trash', '删除…', '⌘⌫', 'danger'], ['-'], ['folder', '在访达中显示'], ['copy', '复制路径'], ['copy', '复制相对路径']])}
       ${M('文件夹(文件树)', [['plus', '新建文件…'], ['folder', '新建文件夹…'], ['-'], ['search', '在文件夹中搜索…'], ['terminal', '在此处打开终端'], ['-'], ['edit', '重命名…'], ['trash', '删除…', '', 'danger'], ['-'], ['folder', '在访达中显示'], ['copy', '复制路径']])}
       ${M('多根:顶层文件夹', [['branch', '在源代码管理中查看'], ['arrow', '设为主文件夹'], ['search', '仅在此文件夹搜索'], ['-'], ['folder', '在访达中显示'], ['copy', '复制路径'], ['-'], ['x', '从工作区移出', '', 'danger']])}
@@ -198,7 +199,7 @@
       ['助手正文里的链接', '—', '网址 → 系统浏览器;路径[:行:列] → 工作区', '在工作区打开 · 在浏览器中打开 · 复制']]))}
     ${sec('实现状态', '', tbl([['范围', 220], ['说明', 440], ['状态']], [
       ['会话流步骤行 / 命令卡 / 差异卡 / 链接动作', '本页「会话流里的动作」整张表', st('ok')],
-      ['文件 / 文件夹 / 标签 / 编辑器 / 图谱 / 终端菜单', 'treeMenu / tabMenu / scm 等已对齐;「在侧边打开 / 预览」需先拆分编辑器组;编辑器右键未全接 LSP 子项', st('part')],
+      ['文件 / 文件夹 / 标签 / 编辑器 / 图谱 / 终端菜单', '侧边打开自动拆分;编辑器右键 LSP 子项含置灰原因;虚拟标签新窗口(演示/审查);fish 集成未做', st('part')],
       ['会话行 / 项目行 / 工作区行菜单', '置顶 / 归档 / 重命名 / 删除 / 复制为 Markdown / 复制标题 / 链接已做;头部「分叉会话…」= CmdForkSession(运行中置灰);侧栏行无分叉项', st('ok')],
       ['SCM 文件行 / 分组 / 图谱提交 / 搜索结果菜单', '本页「具体行为」一节已实现:放弃更改确认(悬停按钮同走)、分组菜单、与工作区比较(先选文件,只读差异)、回退到这里(reset --keep,含已推送提示)、搜索结果菜单(匹配行 / 文件行);「在侧边预览」依赖编辑器拆分,置灰', st('ok')],
       ['问题 / 输出 / 虚拟标签菜单', '问题行:转到位置 / 让 Claude 修复 / 复制消息 / 复制全部;输出行:复制此行 / 复制全部 / 清空(应用日志通道置灰);计划 / 子 Agent / 任务标签:复制内容 / 引用到对话(标签右键里)。「在新窗口中打开」未做,不放进菜单', st('ok')]]))}</div>`;
@@ -212,18 +213,5 @@
       ['窗口自适应收起', '已按宽度自动收起 / 恢复导航栏与右侧栏', '—', st('ok')],
       ['差异左右 / 统一', '差异标签与审查标签都已生效,视图选择会记住', '—', st('ok')],
       ['会话流动作', '文件图标、跳转、复制、终端面板、链接都可用', '—', st('ok')]]))}
-    ${sec('P1 · 完整度', '', tbl([['项', 220], ['现状', 360], ['计划', 200], ['状态']], [
-      ['语言服务:大纲 / 代码操作 / 内联提示 / 语义高亮', '仅诊断 / 悬停 / 定义 / 引用 / 补全 / 重命名 / 格式化', 'documentSymbol → codeAction → inlayHint', st('part')],
-      ['终端鼠标上报 / 命令装饰', '未做', 'OSC 133 + 鼠标模式', st('todo')],
-      ['合并冲突「1 / 2」逐个切换与三方结果区', '逐个切换 + base + 可编辑结果', '—', st('ok')],
-      ['差异块头常驻', '注解条常驻', '—', st('ok')],
-      ['审查页行内评论串', '回复续串 + 发送给 Claude', '—', st('ok')],
-      ['画布 / 浏览器 / 自定义', '演示数据为主', '见「画布 / 浏览器 / 自定义 · 业界做法」', st('part')],
-      ['设置页:快捷键录制 / 服务商 / 规则 / 环境变量', '演示数据', '逐项接真实配置', st('part')],
-      ['用量页账户限额 / 上下文分类', '限额接 get_usage(需活动会话);分类明细仍在输入框弹层', '上下文分类归 B4', st('part')]]))}
-    ${sec('P2 · 打磨', '', tbl([['项', 220], ['现状', 360], ['计划', 200], ['状态']], [
-      ['新元素的入场 / 退出动效', '弹层有 popIn;终端搜索条、安装卡、对话框未统一', '全部走 popIn / dialogIn', st('part')],
-      ['文字流光 / 流底部渐隐遮罩', '用呼吸代替', '库支持后换', st('todo')],
-      ['完成通知(系统通知)', '未做', '回合结束 / 需要审批 / 任务完成', st('todo')],
-      ['拖拽排序(工作区 / 成员文件夹)', '拖动换位 + 上移 / 下移菜单(见 proj-ws「拖拽排序」);项目行按最近活动排序,不手动排', '—', st('ok')]]))}</div>`;
+    ${sec('说明', '完整缺口清单已迁到 js/status.js,由 P[\'gaps\'] 自动生成。本段历史表不再维护,避免与代码 / 总表不一致。', '')}</div>`;
 })();

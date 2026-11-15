@@ -11,33 +11,34 @@ import (
 // 设置页里真正驱动行为的项(其余控件仍只存偏好,见 AGENTS.md「已知缺口」)。
 // 键名与 settings_tabs.go 里的声明一一对应;默认值也必须和那里一致(setPref 在值等于默认时会删键)。
 const (
-	pMotion       = "appearance.motion"
-	pMorph        = "appearance.morph"
-	pShimmer      = "appearance.shimmer"
-	pFontScale    = "appearance.fontScale"
-	pThinkOpen    = "chat.thinkOpen"
-	pStats        = "chat.stats"
-	pGroupFold    = "chat.groupFold"
-	pSend         = "general.send"
-	pBusy         = "general.busy"
-	pEdFont       = "editor.fontSize"
-	pEdIndent     = "editor.indent"
-	pEdAutosave   = "editor.autosave"
-	pMinimap      = "editor.minimap"
-	pMmSlider     = "editor.minimapSlider"
-	pMmWidth      = "editor.minimapWidth"
-	pMmGit        = "editor.minimapGit"
-	pBracketGuide = "editor.bracketGuide"
-	pBracketColor = "editor.bracketColor"
-	pBracketMatch = "editor.bracketMatch"
-	pEdNumbers    = "editor.lineNumbers"
-	pEdFolding    = "editor.folding"
-	pEdWrap       = "editor.wrap"
-	pMdView       = "editor.mdView"       // Markdown 默认视图:0 所见即所得,1 源码
-	pFmtSave      = "editor.formatOnSave" // 保存时格式化
-	pTrimSave     = "editor.trimOnSave"   // 保存时去掉行尾空白
-	pBlameInline  = "editor.blameInline"
-	pTermFont     = "term.fontSize"
+	pMotion        = "appearance.motion"
+	pMorph         = "appearance.morph"
+	pShimmer       = "appearance.shimmer"
+	pFontScale     = "appearance.fontScale"
+	pThinkOpen     = "chat.thinkOpen"
+	pStats         = "chat.stats"
+	pGroupFold     = "chat.groupFold"
+	pSend          = "general.send"
+	pBusy          = "general.busy"
+	pEdFont        = "editor.fontSize"
+	pEdIndent      = "editor.indent"
+	pEdAutosave    = "editor.autosave"
+	pMinimap       = "editor.minimap"
+	pMmSlider      = "editor.minimapSlider"
+	pMmWidth       = "editor.minimapWidth"
+	pMmGit         = "editor.minimapGit"
+	pBracketGuide  = "editor.bracketGuide"
+	pBracketColor  = "editor.bracketColor"
+	pBracketMatch  = "editor.bracketMatch"
+	pEdNumbers     = "editor.lineNumbers"
+	pEdFolding     = "editor.folding"
+	pEdWrap        = "editor.wrap"
+	pMdView        = "editor.mdView"       // Markdown 默认视图:0 所见即所得,1 源码
+	pFmtSave       = "editor.formatOnSave" // 保存时格式化
+	pTrimSave      = "editor.trimOnSave"   // 保存时去掉行尾空白
+	pBlameInline   = "editor.blameInline"
+	pTermFont      = "term.fontSize"
+	pTermIntegrate = "term.shellIntegration"
 )
 
 // edScale 是编辑器字号相对 12px 的倍数(浮层定位用的字宽 / 行高按它缩放)。
@@ -63,7 +64,7 @@ func (a *App) ToolDetailLevel() int {
 func (a *App) applyBehavior() {
 	on := a.prefs.Bool(pMotion, true) && !kit.SystemReduceMotion()
 	kit.SetMotion(on)
-	kit.SetPulse(a.prefs.Int(pShimmer, 0) != 2)
+	kit.SetShimmer(a.prefs.Int(pShimmer, 0))
 	// 形态切换动画:流畅 = 440 ms;简化 = 160 ms;无 = 立即(动效整体关闭时也是立即)
 	d := kit.DurMorph
 	switch a.prefs.Int(pMorph, 0) {

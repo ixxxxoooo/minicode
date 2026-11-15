@@ -87,6 +87,15 @@
       <div class="fc g2"><span class="t3 fs-cap m">快捷提示</span><div class="f g2 wrap">${['总结要点', '提取代码示例', '翻译成中文', '对比 actix'].map(t => chip(t, '', 'line', `data-act="br-ask" data-q="${t}" tabindex="0"`)).join('')}</div></div>
       <span class="grow"></span>${miniCmp('就这个页面提问…', '', 'br-q')}</aside></div>`;
 
+  pages['usage-states'] = () => `<div class="ds" style="max-width:720px">${pgh('用量 · 加载与限额', 'Ring/SkelRows;失败重试。', '')}
+    <div class="fc g3">${[['正在统计会话记录…', 1], ['查询账户限额失败', 0], ['还没有打开会话', 0]].map(([t, ok]) => `<div class="card f ai g3" style="padding:14px">${ok ? '<span class="spin"></span>' : ic('errc', 's16')}<span class="grow">${t}</span>${!ok && t.includes('失败') ? btn('重试', 'sm', 'refresh') : ''}</div>`).join('')}</div></div>`;
+  pages['auto-states'] = () => `<div class="ds" style="max-width:900px">${pgh('自动化 · 状态专屏', '运行中、失败记录、新建模态(Go: auto_ui + runView)。', '')}
+    <div class="grid2" style="margin-top:12px">
+      <div class="card" style="padding:12px"><b>运行中</b> ${btn('取消运行', 'ghost')}<div class="term" style="margin-top:8px;height:72px">[演示] 开始运行…\n正在检查仓库状态…</div></div>
+      <div class="card" style="padding:12px"><b class="c-err">失败</b><div class="t3">周二 14:00 · 网络超时</div></div>
+      <div class="card" style="padding:12px;grid-column:1/-1"><b>新建模态</b>${field('周报生成', 0)}${area('根据本周提交…', { rows: 2 })}</div>
+    </div></div>`;
+
   W.pages = pages;
   W.diagram = diagram;
   W.au = { AUS, SLOTS, auDrawer, auBody, auCard, wk, wkHead, weekDates, BRP, VERS, versRows };

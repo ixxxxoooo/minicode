@@ -36,8 +36,8 @@
       R('每个形态各自记住面板开合', '右侧栏 / 底栏 / 导航栏 / 对话占满与左栏分段按形态记忆;偏好 layout.memAgent / memIDE', 'ok', 'B6'),
       R('形态切换期间锁定指针事件(.morphing)', 'morph.go 过渡遮罩锁指针约 470ms', 'ok', 'B6')],
     welcome: [
-      R('居中问候 + 状态行 + 输入框 + 四张起手卡(悬停上浮)', '顶部徽标设计稿 64px 光晕;Go 暂用通用 mark 图标', 'part', 'B6'),
-      R('最近会话列表', '演示模式有;真实模式待接会话索引', 'part', 'B2'),
+      R('居中问候 + 状态行 + 输入框 + 四张起手卡(悬停上浮)', '欢迎页 64px 品牌光晕徽标(brand_logo.go 嵌入 PNG)', 'ok', 'B6'),
+      R('最近会话列表', '演示 WelcomeRecent;真实跨项目索引最近 5 条,点击 OpenSession', 'ok', 'B2'),
       R('窄档起手卡单列', '', 'ok'),
       R('空会话下的拖拽引用落点', '欢迎页同样可以拖文件进输入框', 'ok')],
     palette: [
@@ -49,10 +49,10 @@
       R('设置内搜索', '命中后跳进分类并滚动高亮目标行(约 1.4s)', 'ok', 'B6'),
       R('需重启条', '「立即重启」自启动进程并退出(开发版 .app 路径)', 'ok', 'B6'),
       R('外观 → 时间线字号', '会话流读 appearance.fontScale;工具卡读 App.ToolDetailLevel()=appearance.density2', 'part', 'B6'),
-      R('外观 → 应用图标 / 菜单栏图标两组', '偏好与预览已接;Dock 织纹浅/深 icns+自动/system;样式资源缺省时退回包内默认;托盘四态无动画帧', 'part', 'B6'),
-      R('快捷键:点键录制、冲突当场提示', '全局快捷键读偏好;编辑器 / 终端快捷键未全部收录', 'part', 'B6'),
+      R('外观 → 应用图标 / 菜单栏图标两组', '六样式×四外观 assets、Dock 弹跳/进度/角标、托盘动画/菜单/数字/VoiceOver;访达换装与 .icon 打包未接', 'part', 'B6'),
+      R('快捷键:点键录制、冲突当场提示', '全局 / 编辑器 / 终端快捷键读偏好', 'ok', 'B6'),
       R('其余偏好', '已补启动形态、忽略规则等廉价接线;括号 / 迷你地图细节仍待 IDE', 'part', 'B6'),
-      R('服务商 / 规则 / 环境变量 / 语言服务器 / 项目信任', '规则/环境变量添加行、服务商 CRUD+密钥 0600;Skill 重命名待补', 'part', 'B6'),
+      R('服务商 / 规则 / 环境变量 / 语言服务器 / 项目信任', '规则/环境变量添加行、服务商 CRUD+密钥 0600+行内编辑;Skill 重命名已接', 'part', 'B6'),
       R('窄于 900 时左侧分类收成下拉', '左侧栏隐藏,顶部分类下拉', 'ok', 'B6')],
     forms: [
       R('单窗口、无融合 / 独立 IDE 窗口;两种形态共享会话 / 编辑器 / 终端', '', 'ok'),
@@ -87,27 +87,27 @@
     'ws-task': [
       R('任务输出标签:跟随输出、停止任务', '', 'ok'),
       R('「在终端面板中打开」', '展开底部面板并选中只读 cmd: 标签(与命令卡「在终端面板查看」同路径)', 'ok', 'B4'),
-      R('重启任务 / 显示 pid', '演示 CmdRestartTask;真实置灰+原因;run id 行内显示', 'part', 'B4'),
-      R('正常运行时注入任务', '只有截图 / 演示注入,真实回合里的后台任务未接入', 'part', 'B4')],
+      R('重启任务 / 显示 pid', '演示 CmdRestartTask;真实 claude 置灰+原因;run id / pid 行内显示', 'ok', 'B4'),
+      R('正常运行时注入任务', 'translate task_* + 任务坞;未测试', 'part', 'B4')],
     flow: [
       R('步骤行(进行 / 错误 / 拒绝)、探索分组、工具展开 diff / 终端、待办、权限 / 提问 / 计划卡、提示三级', '', 'ok'),
       R('长输出限高折叠(12 行 → 196px,展开 480px)', '工具 / 终端 / 文本与 Markdown 代码块', 'ok', 'B4'),
       R('折叠工具分组的「最新一步」滚动行', '探索组折叠且运行中 22px 滑入行', 'ok', 'B4'),
       R('改动卡的「撤销」按钮', '逐文件 revertHunk', 'ok', 'B4'),
       R('回合操作条:复制 / 重试 / 分叉', '复制 / 重试 / 分叉(真实 fork: 会话);演示 fork 会话', 'ok', 'B4'),
-      R('用户消息卡:长消息折叠 / 编辑', '折叠+Esc/点外取消;真实 CmdEditUser+resume_session_at(不支持则警告+仅本地)', 'part', 'B4'),
+      R('用户消息卡:长消息折叠 / 编辑', '折叠+Esc/点外取消;真实 resume_session_at 控制请求,无 uuid 置灰+分叉提示', 'part', 'B4'),
       R('工作区起始页(本轮 / 终端 / 打开三组列表;终端行列出已开终端 + 新建)', 'ws_empty.go 三组列表', 'ok', 'B4'),
       R('发送 / 停止按钮为圆形', '设计稿与 Go 版同步', 'ok', 'B4'),
       R('会话样式(跟随布局 / 对话气泡 / 通栏=与正文同宽的圆角卡片;设置 → 外观 → Agent 会话)', 'appearance.flowStyle 三档', 'ok', 'B4'),
       R('用户消息吸顶(回合内 sticky,下一轮顶走上一张,最多一张;点击就地编辑 / 取消 / 发送;设置 → 对话与提示词,默认开)', 'MyGo Sticky + chat.stickyUser', 'ok', 'B4'),
-      R('输入框 MCP chip 与弹层', '服务器/工具开关;工具写本地 deny+RefreshMcp', 'part', 'B4'),
+      R('输入框 MCP chip 与弹层', 'mcp_status+无会话 mcp list;工具 deny+RefreshMcp', 'part', 'B4'),
       R('task-spec 页实现状态表', 'specs2 待办 / 尾读 / 通知 / 分叉四行', 'ok', 'B0')],
     overlays: [
       R('命令面板、历史会话、分支选择器、账号菜单、运行配置弹层', '', 'ok'),
-      R('IDE 通知中心(铃铛 / 历史 / 右下角叠放)', 'Agent/IDE 共用铃铛与历史;系统通知 Darwin UN 已发,userInfo.sess 已写,点击委托未接', 'part', 'B4'),
-      R('任务坞停滞 / 已结束 / 监听 / 工作流胶囊', '六类胶囊+演示 StopTask/RestartTask;真实任务靠 translate 事件', 'part', 'B4'),
-      R('上下文弹层(输入框圆环 / 状态栏;分类明细 / 阈值刻度 / 账户限额 / 刷新 / 压缩;常态 / 接近阈值 / 压缩中 / 加载 / 无限额 / 失败)', 'CmdCompact+/compact;压缩中与 Notice 联动', 'part', 'B4'),
-      R('更新进度胶囊四态', 'internal/update appcast+状态机;开发版重启走 scripts/dev.sh', 'part', 'B4'),
+      R('IDE 通知中心(铃铛 / 历史 / 右下角叠放)', '铃铛已接;.app 内 UN 点击 sess 回会话;go run 降级', 'part', 'B4'),
+      R('任务坞停滞 / 已结束 / 监听 / 工作流胶囊', '六类胶囊+translate 事件;未测试', 'part', 'B4'),
+      R('上下文弹层(输入框圆环 / 状态栏;分类明细 / 阈值刻度 / 账户限额 / 刷新 / 压缩;常态 / 接近阈值 / 压缩中 / 加载 / 无限额 / 失败)', 'get_context_usage+失败重试;get_usage 限额', 'part', 'B4'),
+      R('更新进度胶囊四态', '下载/校验/解包/替换脚本;开发版 dev.sh;正式包退出后 ditto', 'part', 'B4'),
       R('确认框(模式切换 / 未保存 / 删除)', '通用确认框已用于会话删除 / 移除项目 / 切换模式', 'ok', 'B2')],
     'ide-editor': [
       R('迷你地图(语法色块、滑块拖动)、Git / 搜索 / 同词 / 诊断 / 光标刻度、概览标尺、同词高亮、窄档藏地图', '', 'ok'),
@@ -120,7 +120,7 @@
       R('代码操作 ⌘.', 'LSP codeAction + 本地兜底;无服务器时仍为本地菜单', 'ok', 'B5'),
       R('选中工具条 / ⌘I 行内编辑', '真实模式 claude -p Haiku 生成替换预览,Esc/取消可中断;演示仍走占位', 'ok', 'B5'),
       R('行内审查(悬停接受 / 撤销)', '改动行悬停接受写入审查状态 ok、撤销走 revertHunk', 'ok', 'B5'),
-      R('括号配对竖线 / 着色', '竖线接 NoIndentGuides;着色用括号深度染色(非 tree-sitter)', 'part', 'B5'),
+      R('括号配对竖线 / 着色', '竖线接 NoIndentGuides;着色用括号深度染色(MyGo 无 tree-sitter 应用层 API,已取舍)', 'ok', 'B5'),
       R('多光标', '库内置 ⌥点击加/减光标、⌘D / ⇧⌘L / ⌥⌘↑↓', 'ok', 'B5'),
       R('编辑器组向右 / 向下拆分', '两组标签 + 共享缓冲区;标签可跨组拖动', 'ok', 'B5'),
       R('Claude 行内补全(✦)', '真实 Haiku claude -p + SetSuggestion;演示占位,Tab 接受', 'ok', 'B5')],
@@ -133,7 +133,7 @@
     'ide-problems': [
       R('状态栏错误 / 警告计数 → 问题面板、按文件分组、点击跳转、未安装语言服务器的安装卡', '', 'ok'),
       R('「重新检查」按钮与「全部 / 仅错误」筛选', '刷新按钮触发工作区重检;演示模式同步筛选', 'ok', 'B5'),
-      R('工作区级诊断', '设置开关下对项目源文件 didOpen 轻量检查(有上限);仍依赖各服务器能力', 'part', 'B5')],
+      R('工作区级诊断', '开关 + 上限 + 取消代次;didOpen 轻量扫盘(gopls/pyright/tsserver/rust-analyzer);无 workspace/diagnostic pull', 'ok', 'B5')],
     'ide-scm': [
       R('分支行、拉取 / 推送 / 同步、储藏、提交框(⌘↩ + AI 说明)、暂存 / 更改 / 冲突分组、悬停操作、内嵌图谱、审查入口', '', 'ok'),
       R('提交分裂按钮里的「提交并同步」', '提交后 pull --ff-only + push', 'ok', 'B3'),
@@ -157,14 +157,14 @@
       R('周历(翻周 / 今天)、卡片列表筛选与启停、右侧编辑抽屉、新建 / 删除、真实落盘', '', 'ok'),
       R('计划 Cron', '五段 cron 解析、FiresOn/Due 到点触发、下次运行时间', 'ok', 'B7'),
       R('项目选择 / 权限选择', '新建模态与编辑抽屉:项目分段 + 权限分段', 'ok', 'B7'),
-      R('立即运行', '真实模式 claude -p 流式+取消;演示无运行器只记静态记录', 'part', 'B7'),
+      R('立即运行', '真实 claude -p 流式+取消;演示 RunAutomationDemo 流式+取消+失败样例', 'ok', 'B7'),
       R('最近运行可点进会话', '点运行行打开只读输出浮层', 'ok', 'B7'),
       R('新建模态与失败 / 运行中状态', '设计稿 behave.js au-new/au-run;Go 模态+运行浮层', 'ok', 'B7')],
     canvas: [
       R('块编辑 / 预览、大纲定位、版本提交与回退、导出 Markdown', '', 'ok'),
       R('落盘', '~/.minicode/canvases/*.json 原子写;损坏改名留底;多画布列表', 'ok', 'B7'),
       R('让 Claude 修改', '块引用+ApplyClaudeReply;在画布页回合结束自动写回并落盘', 'ok', 'B7'),
-      R('图表全屏查看 / 源码', 'Mermaid/图表全屏:平移缩放适应/Esc;复杂图排版仍简版', 'part', 'B7'),
+      R('图表全屏查看 / 源码', '全屏:适应/100%/±/平移/Esc/坐标;复杂图仍简版方框布局', 'part', 'B7'),
       R('窄窗右栏收成底栏', '宽<900 时大纲/版本落底部', 'ok', 'B7'),
       R('左侧画布列表(多画布)', 'Library 多画布:切换/新建/重命名/删除+撤销;演示多套 demoPgCanvas', 'ok', 'B7')],
     browser: [
@@ -174,37 +174,37 @@
       R('系统浏览器打开 / 隐私设置', '地址栏外链;设置 browser.fetch 可关抓取', 'ok', 'B7')],
     customize: [
       R('七类左栏、筛选与作用域、开关 / 新建 / 删除、详情表单', '界面与校验完整;演示内存+演示多套', 'ok'),
-      R('读写真实的 ~/.claude 与项目 .claude', 'MCP 新建写 JSON;插件卸载 CLI;市场 list 失败兜底演示数据', 'part', 'B7'),
+      R('读写真实的 ~/.claude 与项目 .claude', 'MCP 编辑配置 SaveMCP+env;命令/Agent/规则/钩子写盘;Skill 重命名目录;市场 list JSON/文本', 'part', 'B7'),
       R('插件市场安装进度', '四态进度条;install/uninstall CLI', 'part', 'B7'),
-      R('MCP 授权 / 重连 / 工具开关接真实状态', 'claude mcp list/login + disabledMcpServers/工具 deny;无会话时状态可能不完整', 'part', 'B7'),
+      R('MCP 授权 / 重连 / 工具开关接真实状态', 'mcp_status+mcp list 兜底+init 初值;login 仍手工', 'part', 'B7'),
       R('命令 / 子 Agent 试运行、钩子试运行', 'claude -p 与 shell 试运行已接;钩子带确认与超时', 'part', 'B7'),
       R('Skills / 规则「在编辑器里打开」', '已接 openFile;用户层路径依赖绝对路径', 'part', 'B7')],
     usage: [
       R('7 天 / 30 天 / 本月、汇总卡、柱图悬停、按模型 / 项目 / 贵会话、导出 CSV、空数据加载态(真实扫描)', '', 'ok'),
-      R('账户限额与刷新', '接会话 get_usage + 5 分钟缓存;无会话时如实说明', 'part', 'B7'),
+      R('账户限额与刷新', 'get_usage+缓存;无会话/失败文案;限额失败「重试」', 'part', 'B7'),
       R('贵会话点击跳转到会话', 'TopSessions 带 SessionID 时 OpenSession', 'ok', 'B7')],
     comps: [
       R('按钮 / 图标按钮 / 胶囊 / 标签 / 计数 / 分段 / 开关 / 标签条 / 列表行 / Spin / Meter / Chk / Dot / Kbd', '', 'ok'),
       R('按钮 disabled / loading 态', 'kit.Btn Disabled/Loading;提交/安装/重试等接线', 'ok', 'B8'),
-      R('输入框统一封装与错误描边', 'kit.Field + 设置/对话框典型路径', 'part', 'B8'),
-      R('菜单 / 弹层壳', 'kit.PopIn/PopOut/DialogIn;Popover 退场;旧菜单不强改', 'part', 'B8'),
+      R('输入框统一封装与错误描边', 'kit.Field:设置单行、项目/工作区/自动化/自定义新建对话框(提交框除外)', 'ok', 'B8'),
+      R('菜单 / 弹层壳', 'kit.PopIn/PopOut/DialogIn/DialogOut+dialogOpen;终端搜索/安装卡/通知 toast', 'part', 'B8'),
       R('进度环、骨架占位', 'kit.Ring/SkelRows;用量加载/侧栏重扫', 'ok', 'B8')],
     states: [
-      R('控件悬停 / 按下 / 选中、需重启条、提示条、账号菜单、设置搜索', '部分,详见下行', 'part', 'B8'),
-      R('输入错误 + 抖动', 'kit.FieldErr/ShakeInput;添加项目路径等', 'part', 'B8'),
+      R('控件悬停 / 按下 / 选中、需重启条、提示条、账号菜单、设置搜索', 'kit 控件+重启条+ToastSlide+设置搜索/stagger;账号菜单 pop', 'part', 'B8'),
+      R('输入错误 + 抖动', 'kit.Field+ShakeInput;添加项目/设置/自定义新建', 'ok', 'B8'),
       R('删除折叠 + 6 秒撤销', 'UndoBar+折叠行;会话/自定义/设置规则', 'part', 'B8'),
-      R('快捷键录制与冲突、连通性测试四态', '设置页已做;其它页未统一', 'part', 'B6'),
+      R('快捷键录制与冲突、连通性测试四态', '快捷键设置页;连通性 kit.ConnTestRow(服务商+诊断)', 'part', 'B8'),
       R('减弱动态联动系统设置', 'applyBehavior:偏好动效 ∧ ¬SystemReduceMotion', 'ok', 'B8')],
     tokens: [
       R('六套色板、三种布局的圆角 / 间距 / 行高倍率、8 档间距、7 档字号、布局宽高', 'CSS 与 Go 一致', 'ok'),
       R('--dur-loop(循环档 1600 ms)', 'kit.DurLoop;Pulse/Spin 已读', 'ok', 'B8'),
-      R('行高令牌 --lh-*', 'theme.LhTight/Body/Read;典型处已替换', 'part', 'B8')],
+      R('行高令牌 --lh-*', 'theme.LhTight~LhRead 七档;设置/通知等已替换,长文仍有字面量', 'part', 'B8')],
     motion: [
       R('时长 5 档 + 5 条曲线、形态切换 440 ms、流畅 / 简化 / 无', '', 'ok'),
-      R('弹层退场(pop-out)', 'kit.PopOut+popClosing;居中 DialogOut 部分', 'part', 'B8'),
-      R('文字流光 / 流底部渐隐遮罩', 'MyGo 无渐变文字,Pulse 呼吸;底部渐隐未做', 'part', 'B8'),
-      R('列表入场 stagger、折叠的高度插值', '设置分组 StaggerRise;删除 CollapseHide', 'part', 'B8'),
-      R('states 增补的 11 种动效(抖动 / 折叠 / 抽屉 / 骨架 / 浮起 …)', '抖动/折叠/骨架/模态入场部分有;抽屉/拖起/ok-pop 等未全接', 'part', 'B8')]
+      R('弹层退场(pop-out)', 'PopOut+popClosing;dialogOpen+DialogOut 居中框', 'ok', 'B8'),
+      R('文字流光 / 流底部渐隐遮罩', 'TextShimmer 透明度扫光+Pulse;流底 MaskLinearGradient', 'part', 'B8'),
+      R('列表入场 stagger、折叠的高度插值', '设置/命令面板 StaggerRise;删除 CollapseHide;FoldHeight 预留', 'part', 'B8'),
+      R('states 增补的 11 种动效(抖动 / 折叠 / 抽屉 / 骨架 / 浮起 …)', '抽屉/拖起/toast/终端搜索/LSP 卡/模态退场已接;ok-pop/柱状生长/骨架切换仍缺', 'part', 'B8')]
   };
 
   /** 在页面底部追加状态表(自己已有状态表的页面不会出现在 STATUS 里) */
@@ -238,9 +238,9 @@
   const DESIGN_TODO = [
     R('多仓:审查按仓库分组、「逐个提交」向导', '已补画面:分组头 / 横幅 / 向导步骤 / 全部完成 / 中途失败', 'ok', 'B1'),
     R('多仓:图谱仓库下拉、分支选择器仓库 chip', '已补「切换后标签名、选中提交清空」等规则', 'ok', 'B1'),
-    R('嵌套仓库 / 子模块', '已补总览缩进、文件树标签、归属规则;「子模块有未提交改动」提示行的画面仍缺', 'part', 'B1'),
+    R('嵌套仓库 / 子模块', '总览缩进/标签/归属;scm 提示行画面见 multi-git 页', 'ok', 'B1'),
     R('搜索「仅某个文件夹」', '已补范围下拉、限定态与空态', 'ok', 'B1'),
-    R('审查 / 搜索 / 问题 / 自动化的空、错误、加载状态', 'Go 已补;flows 页有空态矩阵;原型截图页与自动化/用量加载画面仍偏少', 'part', 'B0'),
+    R('审查 / 搜索 / 问题 / 自动化的空、错误、加载状态', 'Go 已补;flows 专屏+pages/usage 加载失败态', 'part', 'B0'),
     R('layout-dock 页把「编辑器组拆分」标成已实现', 'specs2 已改回已实现(标签条 / 菜单 / ⌘\\ 已接线)', 'ok'),
     R('term-spec 页把「⌘F 搜索」标成已实现', '全词 / 正则 / 命中刻度 / 选区预填已接', 'ok'),
     R('artifact-spec 页把浏览器能力标成待做', '实际有演示源的界面,应改成部分', 'ok'),

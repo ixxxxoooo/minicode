@@ -467,6 +467,7 @@ var settingsTabs = []setTabDef{
 			rFld("term.shell", "Shell 程序", "留空使用环境变量 $SHELL;失焦或回车应用", "/bin/zsh", 160, true, ""),
 			rTog("term.login", "登录 shell", "", true),
 			rTog("term.cwd", "在项目目录启动", "", true),
+			rTog("term.shellIntegration", "Shell 集成 (OSC 133)", "命令成败装饰与点击复制输出;关闭后不再自动 source 集成脚本", true),
 		}},
 	}},
 
@@ -649,9 +650,7 @@ func perfBody(a *App, c *ui.Context) {
 func aboutCard(a *App, c *ui.Context) {
 	t := a.tk
 	ui.Column(c).Padding(22).Gap(6).AlignItems(ui.Center).Children(func() {
-		ui.Row(c).Size(52, 52).Radius(t.RXl()).Background(t.Ac).TextColor(t.OnAc).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
-			kit.Ic(c, "mark", 20)
-		})
+		a.brandLogo(c, 96, false)
 		ui.Text(c, "MiniCode").FontSize(theme.FsHead).FontWeight(700).Margin(6, 0, 0, 0)
 		ui.Text(c, "版本 "+Version).TextColor(t.Tx3)
 		if hint, ok := a.updAboutHint(); ok {
@@ -673,7 +672,14 @@ func aboutCard(a *App, c *ui.Context) {
 			})
 		}
 		ui.Row(c).Gap(8).Margin(6, 0, 0, 0).Children(func() {
-			kit.Btn(c, "检查更新", kit.BtnOpt{Icon: "refresh"}).OnClick(func() { c.Toast("已是最新版本") })
+			kit.Btn(c, "检查更新", kit.BtnOpt{Icon: "refresh"}).OnClick(func() {
+				a.checkUpdateAsync()
+				if h, ok := a.updAboutHint(); ok {
+					c.Toast(h)
+				} else {
+					c.Toast("正在检查更新…")
+				}
+			})
 			kit.Btn(c, "复制版本信息", kit.BtnOpt{Variant: kit.BtnGhost, Icon: "copy"}).OnClick(func() {
 				c.WriteClipboard("MiniCode " + Version)
 				c.Toast("已复制版本信息")

@@ -92,6 +92,7 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 		}
 	})
 	r.ContextMenu(func(m *ui.Menu) { a.wsMenu(m, w) })
+	kit.DragLift(r, r.Dragging())
 	r.Children(func() {
 		if over {
 			dropLine(c, t)
@@ -135,6 +136,7 @@ func (a *App) memberRow(c *ui.Context, w projects.Workspace, i int, f projects.F
 	over = over && d.WS == w.ID && i >= 1 && d.Idx != i && d.Idx >= 1 // 主文件夹行不可放
 	r.OnClick(func() { a.locateFolder(w, f) })
 	r.ContextMenu(func(m *ui.Menu) { a.memberMenu(m, w, i, f) })
+	kit.DragLift(r, r.Dragging())
 	r.Children(func() {
 		if over {
 			dropLine(c, t)

@@ -46,6 +46,6 @@ func (a *App) groupLatest(c *ui.Context, grpID string, tc *core.ToolCall) {
 	row.Translate(0, off).Opacity(1 - off/22)
 	row.Children(func() {
 		kit.Ic(c, sp.icon, kit.S12)
-		kit.Pulse(ui.Text(c, sp.verb+" "+sp.obj).SingleLine().Grow(1).MinWidth(0))
+		kit.RunText(ui.Text(c, sp.verb+" "+sp.obj).SingleLine().Grow(1).MinWidth(0))
 	})
 }

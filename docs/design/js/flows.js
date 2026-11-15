@@ -61,7 +61,9 @@
       ['审查 · 本轮无改动', '审查标签首屏文案「本轮还没有改动」', 'MINI_ED=review:empty 或演示 -ed review:empty'],
       ['搜索 · 空 / 进行中 / 失败 / 截断', '侧栏搜索:空查询提示、转圈「搜索中…」、错误行、超出上限摘要', 'MINI_ED=search:<查询>'],
       ['问题 · 无诊断', '「没有检测到问题」或未打开文件时的引导', '打开无错误的 .md 或演示 demo.Problems'],
-      ['工作区起始页 · 本轮全空', '三组列表「本轮」一行灰字(不放置灰链接)', '关掉全部虚拟标签后看起始页']]))}</div>`;
+      ['工作区起始页 · 本轮全空', '三组列表「本轮」一行灰字(不放置灰链接)', '关掉全部虚拟标签后看起始页'],
+      ['自动化 · 运行中 / 失败 / 新建', '演示 RunAutomationDemo;运行浮层流式输出;新建模态校验', '命令面板「演示:自动化」;见 pages auto-states'],
+      ['用量 · 加载 / 限额失败 / 无会话', 'Ring+SkelRows;LimitsChecking/Unavailable+重试', 'MINI_PAGE=usage;演示 pages usage-states']]))}</div>`;
 
   /* ───────── 响应式 ───────── */
   const chatBox = (w, screen = 'work') => `<div class="rz-cell"><div class="f ai g3"><b>${w < 420 ? '窄' : w < 640 ? '中' : '宽'}</b><span class="mono t3">${w}px</span>${tag(w < 420 ? 'IDE 右侧停靠' : w < 640 ? 'Agent 默认(带工作区)' : 'Agent 默认(无工作区)', w < 420 ? 'ac' : '')}</div><div class="rz-box chat" style="width:${w}px">${W.chat({ screen })}</div></div>`;

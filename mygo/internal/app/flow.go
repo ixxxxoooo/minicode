@@ -185,8 +185,8 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 		verb := ui.Text(c, sp.verb).TextColor(t.Tx3).Shrink(0).SingleLine()
 		obj := ui.Text(c, sp.obj).FontWeight(500).TextColor(t.Tx1).SingleLine().Shrink(1)
 		if sp.state == "run" { // 运行中的步骤文字呼吸
-			kit.Pulse(verb)
-			kit.Pulse(obj)
+			kit.RunText(verb)
+			kit.RunText(obj)
 		}
 		if sp.state == "deny" {
 			obj.Strikethrough().TextColor(t.Tx3)

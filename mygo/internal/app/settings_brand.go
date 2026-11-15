@@ -71,6 +71,7 @@ func (a *App) brandTrayStylePick(c *ui.Context) {
 			if ch.Clicked() {
 				a.prefs.Set(pTrayStyle, i)
 				setLog.Info("选择菜单栏图标样式", "style", name)
+				a.syncBrand()
 			}
 		}
 	})
