@@ -122,6 +122,31 @@ func composeConflicts(segs []confSeg, choice map[int]int) string {
 	return strings.Join(out, "\n")
 }
 
+// composePreview 是结果区的预览:未处理的冲突不露出 <<<<<<< 标记,换成设计稿里的一行占位提示。
+func composePreview(segs []confSeg, choice map[int]int) string {
+	var out []string
+	k := 0
+	for _, s := range segs {
+		if !s.conflict {
+			out = append(out, s.plain...)
+			continue
+		}
+		switch choice[k] {
+		case chCur:
+			out = append(out, s.cur...)
+		case chInc:
+			out = append(out, s.inc...)
+		case chBoth:
+			out = append(out, s.cur...)
+			out = append(out, s.inc...)
+		default:
+			out = append(out, "    // ← 选一边,或接受双方后手动编辑")
+		}
+		k++
+	}
+	return strings.Join(out, "\n")
+}
+
 // confState 是一个冲突文件的界面状态。
 type confState struct {
 	src        string // 解析时的原文(检测磁盘是否变过)
@@ -166,7 +191,7 @@ func (a *App) conflictOf(p string) *confState {
 
 func (s *confState) refreshResult() {
 	if !s.resultEdit {
-		s.result = composeConflicts(s.segs, s.choice)
+		s.result = composePreview(s.segs, s.choice)
 	}
 }
 
@@ -203,7 +228,7 @@ func (s *confState) pickChoice(k, ch int) {
 func (a *App) finishConflict(tb *ideTab, s *confState) {
 	p := tb.ref
 	text := s.result
-	if text == "" {
+	if text == "" || !s.resultEdit {
 		text = composeConflicts(s.segs, s.choice)
 	}
 	if err := a.ide.fs.Write(p, text); err != nil {
@@ -367,7 +392,7 @@ func (a *App) conflictResult(c *ui.Context, s *confState) {
 			ui.Text(c, "结果").FontSize(theme.FsCap).FontWeight(600).TextColor(t.Tx3)
 			ui.Text(c, "选择上面的操作,或直接在这里编辑").FontSize(theme.FsMicro).TextColor(t.Tx4).Grow(1).SingleLine()
 		})
-		auto := composeConflicts(s.segs, s.choice)
+		auto := composePreview(s.segs, s.choice)
 		if s.result != auto {
 			s.resultEdit = true
 		}
