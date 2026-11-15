@@ -489,6 +489,13 @@ func (a *App) termRest(s string, mk func(string, ui.Color) ui.Span) []ui.Span {
 	return out
 }
 
+// deniedOutput 判断命令输出是不是「用户拒绝」的回执:本应用自己回的文案,
+// 或终端版 claude 的 "The user doesn't want to proceed…"。
+func deniedOutput(out string) bool {
+	s := strings.TrimSpace(out)
+	return s == "用户拒绝了此次操作" || strings.HasPrefix(s, "The user doesn't want to proceed")
+}
+
 func (a *App) termCard(c *ui.Context, tc *core.ToolCall, tb *core.TerminalBlock) {
 	t := a.tk
 	live := tb.ExitCode == nil
@@ -496,8 +503,9 @@ func (a *App) termCard(c *ui.Context, tc *core.ToolCall, tb *core.TerminalBlock)
 		kit.Ic(c, "prompt", kit.S12)
 		ui.Text(c, tb.Command).Font("monospace").FontSize(11.5).Grow(1).SingleLine()
 		if !live {
-			if tc != nil && tc.Status == core.ToolDenied {
+			if (tc != nil && tc.Status == core.ToolDenied) || deniedOutput(tb.Output) {
 				// 用户拒绝了这条命令:根本没跑过,后端回的「退出码 1」只是拒绝信号,不当作失败显示
+				// (历史回放没有权限事件,状态是 Failed,只能按拒绝文案识别)
 				ui.Text(c, "未执行").TextColor(t.Tx3)
 			} else if *tb.ExitCode == 0 {
 				ui.Text(c, "通过").TextColor(t.Ok)

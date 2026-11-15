@@ -166,6 +166,28 @@ func TestDeniedCommandCardNoExitCode(t *testing.T) {
 	}
 }
 
+// 历史回放没有权限事件:被拒命令的状态只是 Failed,要按拒绝文案识别成「未执行」。
+func TestDeniedCommandCardFromReplay(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true})
+	a.st.Apply(core.EvAppend{Item: &core.User{ID: "u1", Text: "跑一下"}})
+	one := 1
+	tc := core.NewToolCall("t1", "Bash", "运行 rm -rf x").
+		WithContent(&core.TerminalBlock{Command: "rm -rf x", Output: "用户拒绝了此次操作", ExitCode: &one})
+	tc.Status = core.ToolFailed
+	a.st.Apply(core.EvAppend{Item: tc})
+	a.st.Apply(core.EvAppend{Item: &core.Assistant{ID: "a1", Text: "好的"}})
+	a.st.Apply(core.EvTurnEnded{})
+	a.folds["turnfold:u1"] = true
+	tt := ui.NewTester(a.View, 1280, 800)
+	tt.Frame()
+	if tt.HasText("退出码 1") || !tt.HasText("未执行") {
+		t.Fatal("回放的被拒命令应显示「未执行」而不是退出码")
+	}
+	if !deniedOutput("The user doesn't want to proceed with this tool use. The tool use was rejected") || deniedOutput("exit status 1") {
+		t.Fatal("deniedOutput 判断不对")
+	}
+}
+
 // 改动里出现新文件(Claude 新建)时,文件树目录缓存要作废;实机发现 main_test.go 只出现在 SCM、树里要手点刷新。
 func TestSyncTreeGitInvalidatesTreeCache(t *testing.T) {
 	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true})
