@@ -306,7 +306,7 @@ func (a *App) palItems() []palItem {
 	}
 	if p, line, col, ok := parsePathLine(q); ok && p == "" {
 		fs = append(fs, scored{palItem{
-			group: "命令", icon: "hash", title: "转到第 " + itoa(line+1) + " 行",
+			group: "命令", icon: "list", title: "转到第 " + itoa(line+1) + " 行",
 			right: "当前文件", desc: "在当前编辑器标签跳到该行并选中。",
 			run: func() { a.gotoLineInCurrent(line, col) },
 		}, 1000, 0})

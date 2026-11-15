@@ -59,7 +59,8 @@ func (a *App) statusbar(c *ui.Context) {
 		if a.mode == ModeIDE {
 			if tab := a.ide.cur(); tab != nil && !tab.diff && tab.st != nil {
 				p := tab.st.CursorPos()
-				a.sbItem(c, "pos", func() { ui.Text(c, "行 "+itoa(p.Line+1)+",列 "+itoa(p.Col+1)).FontFeatures("tnum") })
+				// 点光标位置 = 转到行(与 VS Code 一致,键盘 ⌃G 同一入口)
+				a.sbItem(c, "pos", func() { ui.Text(c, "行 "+itoa(p.Line+1)+",列 "+itoa(p.Col+1)).FontFeatures("tnum") }).OnClick(a.openGotoLine)
 				indent := tab.st.TabSize
 				if indent < 1 {
 					indent = 4
