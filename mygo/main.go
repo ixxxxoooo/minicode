@@ -188,8 +188,11 @@ func initialCwd(ix *claude.Index) string {
 	if p := os.Getenv("MINI_PROJECT"); p != "" {
 		return p
 	}
-	if len(ix.Projects) > 0 {
-		return ix.Projects[0].Path
+	// 跳过已不存在的目录(例如测试 / 临时目录留下的会话),否则新会话会落在一个打不开的路径。
+	for _, p := range ix.Projects {
+		if st, err := os.Stat(p.Path); err == nil && st.IsDir() {
+			return p.Path
+		}
 	}
 	if wd, err := os.Getwd(); err == nil && wd != "/" {
 		return wd

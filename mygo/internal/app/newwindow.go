@@ -101,9 +101,14 @@ func (a *App) recentProjects() []string {
 	var out []string
 	for _, p := range strings.Split(raw, "\n") {
 		p = strings.TrimSpace(p)
-		if p != "" {
-			out = append(out, p)
+		if p == "" {
+			continue
 		}
+		// 目录已被删除(临时目录等)就不再列在「最近项目」里。
+		if st, err := os.Stat(p); err != nil || !st.IsDir() {
+			continue
+		}
+		out = append(out, p)
 	}
 	return out
 }
