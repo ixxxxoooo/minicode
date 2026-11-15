@@ -78,7 +78,11 @@ func (a *App) slashCommandItems() []*customize.Item {
 	return a.slashDisk.List(customize.Commands, customize.All, "")
 }
 
-func (a *App) slashOpen() bool { return a.slashPrefix() != "" }
+// slashOpen 草稿以 / 开头且还没有参数时就打开补全;只有一个 / 时前缀为空,列出全部命令。
+func (a *App) slashOpen() bool {
+	s := strings.TrimLeft(a.draft, " \t")
+	return strings.HasPrefix(s, "/") && !strings.ContainsAny(s, " \n\t")
+}
 
 func (a *App) slashPopup(c *ui.Context, anchor ui.Element) {
 	if !a.slashOpen() {
