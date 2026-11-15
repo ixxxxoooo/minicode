@@ -281,7 +281,7 @@ func (a *App) dlgFrame(c *ui.Context, key string, w float32, title string, body 
 func (a *App) dlgInput(c *ui.Context, key string, v *string, ph string, autoFocus bool, submit func()) {
 	d := &a.pd
 	kit.Field(c, key, kit.FieldOpt{Err: d.err, ShakeAt: &d.shakeAt}, func(box ui.Element) {
-		box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(26)
+		box.Height(30)
 		in := ui.TextInputBase(c.Key(key), v).Grow(1).MinWidth(0).FontSize(theme.FsBody).Placeholder(ph).PlaceholderColor(a.tk.Tx4)
 		if autoFocus {
 			in.AutoFocus()

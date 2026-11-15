@@ -292,8 +292,13 @@ func (a *App) cuEmpty(c *ui.Context, st *customize.Store) {
 	ui.Column(c).AlignItems(ui.Center).Gap(6).Padding(36, 12).Children(func() {
 		kit.Ic(c, m.icon, kit.S20).TextColor(t.Tx4)
 		if st.Count(cat) == 0 {
-			ui.Text(c, "还没有"+m.title).FontWeight(600)
-			ui.Text(c, m.desc).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.5).TextAlign(ui.Center)
+			sp := ""
+			if m.title != "" && m.title[0] < 0x80 { // 英文开头的名称与「还没有」之间补空格
+				sp = " "
+			}
+			ui.Text(c, "还没有"+sp+m.title).FontWeight(600)
+			// 页头已经写过这类内容的说明,空态只告诉用户下一步
+			ui.Text(c, "点右上角的按钮添加第一个。").FontSize(theme.FsCap).TextColor(t.Tx3).TextAlign(ui.Center)
 		} else {
 			ui.Text(c, "没有符合条件的"+m.title).FontWeight(600)
 			ui.Text(c, "换个关键字,或把范围切回「全部」。").FontSize(theme.FsCap).TextColor(t.Tx3)
@@ -474,13 +479,13 @@ func (a *App) cuDialog(c *ui.Context, st *customize.Store) {
 			panel.Children(func() {
 				ui.Text(c, meta.add).FontSize(theme.FsTitle).FontWeight(600)
 				kit.Field(c, "cd-name", kit.FieldOpt{Label: "名称", Err: d.err}, func(box ui.Element) {
-					box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(26)
+					box.Height(30)
 					in := ui.TextInputBase(c.Key("cd-name"), &d.name).Grow(1).FontSize(theme.FsBody).Placeholder(ph).PlaceholderColor(t.Tx4).AutoFocus()
 					in.OnSubmit(create)
 				})
 				if extraLbl != "" {
 					kit.Field(c, "cd-extra", kit.FieldOpt{Label: extraLbl}, func(box ui.Element) {
-						box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(26)
+						box.Height(30)
 						ui.TextInputBase(c.Key("cd-extra"), &d.extra).Grow(1).FontSize(theme.FsBody).Placeholder(extraPh).PlaceholderColor(t.Tx4)
 					})
 				}
