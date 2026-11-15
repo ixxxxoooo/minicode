@@ -159,7 +159,7 @@
       R('代码操作 ⌘.', 'LSP codeAction + 本地兜底;无服务器时仍为本地菜单', 'ok', 'B5'),
       R('选中工具条 / ⌘I 行内编辑', '真实模式 claude -p Haiku 生成替换预览,Esc/取消可中断;演示仍走占位', 'ok', 'B5'),
       R('行内审查(悬停接受 / 撤销)', '改动行悬停接受写入审查状态 ok、撤销走 revertHunk', 'ok', 'B5'),
-      R('括号配对竖线 / 着色', '竖线接 NoIndentGuides;着色用括号深度染色(MyGo 无 tree-sitter 应用层 API,已取舍)', 'ok', 'B5'),
+      R('括号配对竖线 / 着色', '竖线接 NoIndentGuides;着色是括号字符本身按嵌套深度换字色、不加背景:包装 Language.Highlighter 把括号 Token 按深度改成借来的种类,每标签主题里配色(ide_brackets.go);字符串 / 注释里的括号跳过;未测试', 'part', 'B5'),
       R('多光标', '状态栏「N 个光标」芯片 + 菜单、⌘D / ⇧⌘L / ⌥⌘↑↓ / ⇧⌥I 接线、1000 上限提示、只读 / 差异 / 预览置灰并写明原因、命令面板同名项、-ed multicursor(ide_multicursor.go)。库自带键位与「一次撤销整批」、Esc 回单光标、⌥点击上限都没有实测;差异标签不区分可编辑侧;未测试', 'part', 'B5'),
       R('转到行(⌃G)', 'ide_goto.go 自建浮条:正常 / 超界夹末行并提示 / 非数字红描边 / 行:列 / 空文件五态,与 ⌘P :行号 共用解析;-ed gotoline:<文本>;状态栏仍写「行 / 列」而非 Ln / Col;未测试', 'ok', 'B5'),
       R('块注释(⌥⇧A)', '⌥⇧A 切换块注释,多光标逐选区处理;语言无块注释时退回行注释并在顶栏说明,完全无法注释时 toast;命令面板「块注释」、-ed blockcomment;未测试', 'ok', 'B5'),
@@ -176,7 +176,7 @@
     'ide-problems': [
       R('状态栏错误 / 警告计数 → 问题面板、按文件分组、点击跳转、未安装语言服务器的安装卡', '', 'ok'),
       R('「重新检查」按钮与「全部 / 仅错误」筛选', '刷新按钮触发工作区重检;演示模式同步筛选', 'ok', 'B5'),
-      R('工作区级诊断', 'internal/lsp 声明 diagnostic 能力并实现 workspace/diagnostic / textDocument/diagnostic(previousResultId + 流式片段),按能力选 服务器 pull / 逐文件拉取 / didOpen 扫盘 三条路径并显示来源;问题面板分段「已打开 | 工作区」、进度 + 取消($/cancelRequest)、截断(lsp.workspaceDiagLimit 默认 2000)、空 / 错误态 + 重试;-ed wsdiag:scan|done|trunc|empty|err。缺口:真实 gopls / rust-analyzer 没验证,.gitignore 只跳过硬编码目录,进项目不自动扫,协议单测已写未跑;未测试', 'part', 'B5')],
+      R('工作区级诊断', 'internal/lsp 声明 diagnostic 能力并实现 workspace/diagnostic / textDocument/diagnostic(previousResultId + 流式片段),按能力选 服务器 pull / 逐文件拉取 / didOpen 扫盘 三条路径并显示来源;问题面板分段「已打开 | 工作区」、进度 + 取消($/cancelRequest)、截断(lsp.workspaceDiagLimit 默认 2000)、空 / 错误态 + 重试;-ed wsdiag:scan|done|trunc|empty|err。阶段三实测:协议单测通过;本机 gopls 0.22 / pyright 都不声明 diagnosticProvider,rust-analyzer 在本机 initialize 即退出(rustup 代理),所以真实环境目前一律走 didOpen 扫盘兜底,pull 路径没有任何真实服务器验证。缺口:.gitignore 只跳过硬编码目录,进项目不自动扫', 'part', 'B5')],
     'ide-scm': [
       R('分支行、拉取 / 推送 / 同步、储藏、提交框(⌘↩ + AI 说明)、暂存 / 更改 / 冲突分组、悬停操作、内嵌图谱、审查入口', '', 'ok'),
       R('提交分裂按钮里的「提交并同步」', '提交后 pull --ff-only + push', 'ok', 'B3'),

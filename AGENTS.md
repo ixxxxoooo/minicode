@@ -156,7 +156,7 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 ### IDE 细节缺口补齐(代码已提交,**未测试**,待用户说「开始测」)
 
 - **编辑器**:多光标 `ide_multicursor.go`(状态栏「N 个光标」芯片 / 1000 上限 / 只读置灰,库自带 ⌘D ⇧⌘L ⌥⌘↑↓ 键位,`-ed multicursor`)、转到行浮条 `ide_goto.go`(五态,与 ⌘P `:行号` 共用 `parseLineCol`,`-ed gotoline:<文本>`)、块注释退化提示(`-ed blockcomment`)、外部修改 `ide_extmod.go`(三态 + 删除态 + 查看差异,`-ed extmod:auto|clean|dirty|deleted`)、面包屑同级下拉 `ide_crumb.go`(`-ed crumb:file|sym`)。缺口:Esc 回单光标 / 一次撤销整批 / ⌥点击上限未实测;「保留在编辑器」没有另存为;面包屑弹层标题行与符号取本地索引。
-- **问题面板**:`internal/lsp` 新增 `workspace/diagnostic` / `textDocument/diagnostic`(`previousResultId` + 流式片段),`lsp_workspace.go` 按能力选 pull / 逐文件拉取 / didOpen 扫盘并显示来源;分段「已打开 | 工作区」、进度 / 取消 / 截断(`lsp.workspaceDiagLimit` 默认 2000)/ 空 / 错误态,`-ed wsdiag:scan|done|trunc|empty|err`。缺口:真实 gopls / rust-analyzer 未验证,`.gitignore` 只跳过硬编码目录。
+- **问题面板**:`internal/lsp` 新增 `workspace/diagnostic` / `textDocument/diagnostic`(`previousResultId` + 流式片段),`lsp_workspace.go` 按能力选 pull / 逐文件拉取 / didOpen 扫盘并显示来源;分段「已打开 | 工作区」、进度 / 取消 / 截断(`lsp.workspaceDiagLimit` 默认 2000)/ 空 / 错误态,`-ed wsdiag:scan|done|trunc|empty|err`。阶段三实测:本机 gopls 0.22 / pyright 都不声明 `diagnosticProvider`,真实环境目前走 didOpen 扫盘兜底,pull 路径无真实服务器验证(`internal/lsp/real_gopls_pull_test.go` 可复测);`.gitignore` 只跳过硬编码目录。
 - **Markdown**:预览写回只重写被编辑的块(`edit_md_preserve.go`,LCS 对齐),`-ed mdkeep`;⌘V 粘贴 JPEG(10 MB 上限、去重文件名)。缺口:跨多块选区的合并写回。
 - **Git**:追溯卡 / 追溯栏、储藏展开、推送被拒「拉取并变基 / 合并」、图谱两种比较、审查一键暂存都按设计稿审查补齐(`-ed blamecard|stashfiles|cmp2|cmphead`)。缺口:合并冲突无 `git merge --abort`、追溯卡移出无延迟收起、储藏父行无右键、分组审查页按仓库的暂存钮。
 - 设计稿 `ide-nav` 新增「多光标 / 转到行 / 块注释 / 磁盘外部修改」,`ide-problems` 新增工作区分段,`ide-md` 新增「写回策略」,`ide-git` 补变基冲突 / 储藏展开 / 追溯栏 / 比较两个提交画面。
