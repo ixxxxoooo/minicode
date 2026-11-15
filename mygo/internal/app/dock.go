@@ -63,6 +63,27 @@ func permTitle(r *core.PermissionRequest) string {
 	return "允许使用 " + r.Tool.Name + " 吗?"
 }
 
+// permToolTag 是权限卡右上角的工具标签:内置工具写中文,MCP / 其他工具保留原名。
+func permToolTag(t *core.ToolCall) string {
+	switch t.Name {
+	case "Edit", "MultiEdit", "NotebookEdit":
+		return "编辑"
+	case "Write":
+		return "写入"
+	case "Read":
+		return "读取"
+	case "Bash":
+		return "命令"
+	case "WebFetch":
+		return "网页"
+	case "WebSearch":
+		return "搜索网页"
+	case "Glob", "Grep":
+		return "搜索"
+	}
+	return t.Name
+}
+
 // permDetail 是卡片里的等宽详情:命令 / 路径 / 网址。
 func (a *App) permDetail(r *core.PermissionRequest) string {
 	if r.Tool == nil {
@@ -110,7 +131,7 @@ func (a *App) permCard(c *ui.Context, r *core.PermissionRequest) {
 			ui.Spacer(c).Grow(1)
 			a.dockBadge(c)
 			if r.Tool != nil {
-				kit.Tag(c, r.Tool.Name, kit.KAc)
+				kit.Tag(c, permToolTag(r.Tool), kit.KAc)
 			}
 		})
 		if d := a.permDetail(r); d != "" {
