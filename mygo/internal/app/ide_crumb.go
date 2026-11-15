@@ -152,7 +152,7 @@ func (a *App) gotoSymbol(tb *ideTab, s symbol) {
 	tb.st.GoTo(p0)
 	endCol := s.Col
 	if s.Line < tb.buf.LineCount() {
-		_, endCol = wordAt(tb.buf.Line(s.Line), s.Col)
+		_, endCol, _ = wordAt(tb.buf.Line(s.Line), s.Col)
 		if endCol <= s.Col {
 			endCol = s.Col + len(s.Name)
 		}

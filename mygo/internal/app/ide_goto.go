@@ -23,12 +23,25 @@ func parsePathLine(q string) (p string, line, col int, ok bool) {
 		if q[i] != ':' {
 			continue
 		}
-		if n, c, ok2 := parseLineCol(strings.TrimSpace(q[i+1:])); ok2 {
-			p = strings.TrimSpace(q[:i])
-			if p != "" {
-				return p, n, c, true
+		tail := strings.TrimSpace(q[i+1:])
+		head := strings.TrimSpace(q[:i])
+		line, col, ok2 := parseLineCol(tail)
+		if !ok2 || head == "" {
+			continue
+		}
+		// 「file.rs:行:列」:末尾单独数字时,再试「路径 + 行:列」两段解析
+		if col == 0 && !strings.Contains(tail, ":") {
+			if j := strings.LastIndex(head, ":"); j >= 0 {
+				mid := strings.TrimSpace(head[j+1:]) + ":" + tail
+				if n, c, ok3 := parseLineCol(mid); ok3 {
+					p = strings.TrimSpace(head[:j])
+					if p != "" {
+						return p, n, c, true
+					}
+				}
 			}
 		}
+		return head, line, col, true
 	}
 	return "", 0, 0, false
 }

@@ -19,9 +19,9 @@ func (a *App) lspWorkspaceScan() {
 	if a.proj == "" || !a.lspOn() || !a.prefs.Bool("lsp.workspaceDiag", true) {
 		return
 	}
-	limit := a.prefs.Int("lsp.workspaceDiagLimit", 80)
+	limit := a.prefs.Int("lsp.workspaceDiagLimit", 2000)
 	if limit < 1 {
-		limit = 80
+		limit = 2000
 	}
 	includeIgnored := a.prefs.Bool("lsp.workspaceDiagGitignore", false)
 	files := a.lspWorkspaceFiles(includeIgnored, limit)
@@ -45,14 +45,15 @@ func (a *App) lspWorkspaceScan() {
 			continue
 		}
 		total := len(list)
-		if mode := a.lspWsMode(s); mode == "pull" {
+		wsMode := a.lspWsMode(s)
+		if wsMode == "pull" {
 			total = len(files) // 工作区 pull 以全项目文件数为分母
 		}
 		a.onUI(func() {
 			st := a.lspWsScanSt(key)
 			st.Scanning, st.Checked, st.Total = true, 0, total
-			st.Truncated = len(list) >= limit && mode != "pull"
-			st.Source = a.lspWsSourceLabel(mode)
+			st.Truncated = len(list) >= limit && wsMode != "pull"
+			st.Source = a.lspWsSourceLabel(wsMode)
 			st.Server = s.spec.Name
 			st.Err, st.Canceled = "", false
 		})

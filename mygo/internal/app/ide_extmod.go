@@ -71,10 +71,10 @@ func (a *App) extmodTick() {
 	}
 	focused := a.win.IsFocused()
 	d := a.ide
-	if focused && !d.extmodFocus {
+	if focused && !extHubFocus {
 		d.extmodLast = time.Time{}
 	}
-	d.extmodFocus = focused
+	extHubFocus = focused
 	now := a.now()
 	interval := extmodPollSlow
 	if focused {
@@ -112,7 +112,7 @@ func (a *App) extmodTick() {
 			st, err := os.Stat(abs)
 			if err != nil {
 				if errors.Is(err, os.ErrNotExist) {
-					if _, ok := d.diskSnaps[p]; ok && !tb.extOrphan {
+					if _, ok := d.diskSnaps[p]; ok && !extFlags(p).orphan {
 						hits = append(hits, hit{path: p, dirty: a.anyDirtyForPath(p), deleted: true})
 					}
 				}
@@ -126,10 +126,8 @@ func (a *App) extmodTick() {
 			if cur.mod.Equal(prev.mod) && cur.size == prev.size {
 				continue
 			}
-			if d.extmodAlert != nil {
-				if alerted, ok := d.extmodAlert[p]; ok && alerted.mod.Equal(cur.mod) && alerted.size == cur.size {
-					continue
-				}
+			if extAlerted(p, cur) {
+				continue
 			}
 			hits = append(hits, hit{path: p, snap: cur, dirty: a.anyDirtyForPath(p)})
 		}
@@ -185,11 +183,7 @@ func (a *App) anyDirtyForPath(p string) bool {
 }
 
 func (a *App) markExtmodAlerted(p string, s diskSnap) {
-	d := a.ide
-	if d.extmodAlert == nil {
-		d.extmodAlert = map[string]diskSnap{}
-	}
-	d.extmodAlert[p] = s
+	extMarkAlerted(p, s)
 }
 
 func (a *App) setExtBanner(p string, on bool) {
@@ -199,12 +193,17 @@ func (a *App) setExtBanner(p string, on bool) {
 }
 
 func (a *App) setExtDeleted(p string, on bool) {
-	for _, tb := range a.tabsForPath(p) {
-		tb.extDeleted = on
-		if on {
+	f := extFlags(p)
+	f.deleted = on
+	if on {
+		f.orphan = false
+		extSetFlags(p, f)
+		for _, tb := range a.tabsForPath(p) {
 			tb.extBanner = false
 		}
+		return
 	}
+	extSetFlags(p, f)
 }
 
 func (a *App) applyExtmod(tb *ideTab, snap diskSnap, dirty bool) {
@@ -220,7 +219,8 @@ func (a *App) applyExtmod(tb *ideTab, snap diskSnap, dirty bool) {
 				setKeepCursor(t, src)
 				t.saved = src
 				t.buf.MarkSaved()
-				t.extBanner, t.extKeep, t.extDeleted, t.extOrphan = false, false, false, false
+				t.extBanner = false
+				extResetFlags(tb.path)
 			}
 		}
 		a.setDiskSnap(tb.path, snap)
@@ -260,7 +260,8 @@ func (a *App) reloadTabFromDisk(tb *ideTab, user bool) {
 		setKeepCursor(t, src)
 		t.saved = src
 		t.buf.MarkSaved()
-		t.extBanner, t.extKeep, t.extDeleted, t.extOrphan = false, false, false, false
+		t.extBanner = false
+		extResetFlags(tb.path)
 	}
 	a.recordDiskSnap(tb)
 	a.ide.invalidate()
@@ -277,8 +278,10 @@ func (a *App) keepMineExtmod(tb *ideTab) {
 	}
 	for _, t := range a.tabsForPath(tb.path) {
 		t.extBanner = false
-		t.extKeep = true
 	}
+	f := extFlags(tb.path)
+	f.keep = true
+	extSetFlags(tb.path, f)
 	a.recordDiskSnap(tb)
 	extmodLog.Info("保留本地版本", "path", tb.path)
 }
@@ -289,12 +292,11 @@ func (a *App) keepOrphanExtmod(tb *ideTab) {
 	}
 	for _, t := range a.tabsForPath(tb.path) {
 		t.extBanner = false
-		t.extDeleted = false
-		t.extOrphan = true
 	}
-	if d := a.ide; d.extmodAlert != nil {
-		delete(d.extmodAlert, tb.path)
-	}
+	f := extFlags(tb.path)
+	f.deleted, f.orphan = false, true
+	extSetFlags(tb.path, f)
+	extClearAlerted(tb.path)
 	extmodLog.Info("删除后保留在编辑器", "path", tb.path)
 }
 
@@ -327,7 +329,8 @@ func (a *App) extmodBanner(c *ui.Context, tb *ideTab) {
 	}
 	t := a.tk
 	name := path.Base(tb.path)
-	if tb.extDeleted && !tb.extOrphan {
+	ef := extFlags(tb.path)
+	if ef.deleted && !ef.orphan {
 		ui.Row(c).Shrink(0).Gap(8).Padding(6, 12).Background(t.ErrSoft).BorderWidth(0, 0, 1, 0).BorderColor(t.Err).
 			AlignItems(ui.Center).FontSize(theme.FsCap).Children(func() {
 			kit.Ic(c, "errc", kit.S12).TextColor(t.Err)
@@ -370,26 +373,27 @@ func (a *App) extmodSaveIntercept() bool {
 		return false
 	}
 	name := path.Base(tb.path)
-	if tb.extOrphan {
+	ef := extFlags(tb.path)
+	if ef.orphan {
 		a.confirmDlg("保存 "+name+"?",
 			"文件已在磁盘上被删除;保存将按当前路径重新创建该文件。",
 			"保存", false, func() {
-				tb.extOrphan = false
+				ef.orphan = false
+				extSetFlags(tb.path, ef)
 				if err := a.ide.save(); err != nil {
 					a.toast = "保存失败:" + err.Error()
 				}
 			})
 		return true
 	}
-	if !tb.extKeep {
+	if !ef.keep {
 		return false
 	}
 	a.confirmDlg("用编辑器里的内容覆盖磁盘上的 "+name+"?",
 		"外部版本将被替换;可在源代码管理或访达历史里找回(若仓库有提交)。",
 		"覆盖保存", false, func() {
-			for _, t := range a.tabsForPath(tb.path) {
-				t.extKeep = false
-			}
+			ef.keep = false
+			extSetFlags(tb.path, ef)
 			if err := a.ide.save(); err != nil {
 				a.toast = "保存失败:" + err.Error()
 			}
@@ -420,17 +424,14 @@ func (a *App) dbgExtmod(arg string) {
 	case "dirty":
 		for _, t := range a.tabsForPath(tb.path) {
 			if t.buf != nil && t.saved == t.buf.String() {
-				t.buf.Insert(t.buf.Len(), "\n// local edit")
+				t.buf.Set(t.buf.String() + "\n// local edit")
 			}
 			t.extBanner = true
-			t.extDeleted = false
 		}
+		a.setExtDeleted(tb.path, false)
 		a.markExtmodAlerted(tb.path, diskSnap{mod: time.Now(), size: 1})
 	case "deleted":
-		for _, t := range a.tabsForPath(tb.path) {
-			t.extDeleted = true
-			t.extBanner = false
-		}
+		a.setExtDeleted(tb.path, true)
 	default:
 		tb.extBanner = true
 	}
