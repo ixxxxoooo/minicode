@@ -61,7 +61,7 @@
       R('设计稿有、设置页没有的行', '外观:等待动画、滚动条。模型:输出风格。运行环境:claude「检测」按钮与版本、环境变量显示 / 遮盖、连通性第三主机。隐私:诊断包「导出」、claude doctor 与结果折叠、「崩溃与卡顿」近 30 天块。高级:settings.json 导出 / 导入、会话流一次测完行高。关于:开源致谢、在 GitHub 上查看。SCM:Worktree 列表行 ◆ 第一波:settings_runtime_ui / settings_privacy_extra / settings_advanced_data 补了检测按钮、环境变量遮盖、诊断包导出、settings.json 导出导入等;外观「等待动画 / 滚动条」是否齐全待阶段三对照;未测试', 'part', 'B6'),
       R('设置里「检查器」措辞与设计稿不一致', '设计稿 v3.1 没有「检查器」,对应项是「开标签时自动展开右侧工作区」;Go 的 general.insp、快捷键列表「显示 / 隐藏检查器」、方案卡示意图仍沿用旧名(以设计稿为准,改 Go 文案) ◆ general.insp 的文案已改为「开标签时自动展开右侧工作区」;快捷键列表与方案卡示意图是否还有旧名待阶段三核对', 'part', 'B6'),
       R('规则 / 环境变量 / 语言服务器 / 项目信任', '规则 allow/deny/ask 与环境变量 claudecfg 真实读写(空态 / 读失败);语言服务器 settings_lsp 后台检测 lsp.Specs + 单服务器偏好 lsp.server.*、复制/终端安装;项目信任合并 ~/.claude.json 与注册表 hasTrustDialogAccepted 原子写、MINI_SET_TRUST=empty|fail|writefile;均未测试', 'part', 'B6'),
-      R('服务商自定义与预设', 'prov_settings.go + claudecfg.Presets:6 预设 + 自定义、Bearer / x-api-key、模型列表地址、连通性测试、providers.json + 0600 provider-keys.json 已接线,单测 + 界面测试通过;真实 DeepSeek 密钥联调因密钥无效(401)未能验证', 'part', 'B6'),
+      R('服务商自定义与预设', 'prov_settings.go + claudecfg.Presets:6 预设 + 自定义、Bearer / x-api-key、模型列表地址、连通性测试、providers.json + 0600 provider-keys.json 已接线,单测 + 界面测试通过;真实 DeepSeek 已联调(ProbeProvider 真实 GET /v1/models):FetchModels 返回 deepseek-flash / deepseek-v4-pro,连通性约 190 ms 成功,错误密钥得 401 可行动文案;设置页界面未测', 'part', 'B6'),
       R('获取模型列表与勾选', 'claudecfg.FetchModels + provInventory:骨架 / 空 / 失败 / 不支持 / 缺密钥、手动添加、过滤 / 全选 / 清空已接线,未测试;演示只覆盖部分场景(设计稿原型规则 example.com / legacy 未全部对应)', 'part', 'B6'),
       R('模型映射下拉', 'claudecfg.Slots / MappingStatus / Env:五个槽位与生效状态已接线;回合运行中 pvPushEnv 跳过注入(与设计「运行中不受影响」一致)。未测试,需真 claude 验证环境变量确实生效', 'part', 'B6'),
       R('会话内按服务商选模型', 'prov_picker.go cfgModels + popups.go cfgPopup + 状态栏分组、「管理服务商…」入口已接线;切换 toast 缺「新会话 / 下一条消息起生效」副句;官方模型子选型仍走 a.st.Models。用真实 claude + 本机桩服务验证过「映射 → 环境变量 → 请求」与中途换服务商(MINI_REAL_CLAUDE=1)', 'part', 'B6'),
@@ -107,7 +107,7 @@
       R('任务输出标签:跟随输出、停止任务', '', 'ok'),
       R('「在终端面板中打开」', '展开底部面板并选中只读 cmd: 标签(与命令卡「在终端面板查看」同路径)', 'ok', 'B4'),
       R('重启任务 / 显示 pid', '演示 CmdRestartTask;真实 claude 置灰+原因;run id / pid 行内显示', 'ok', 'B4'),
-      R('正常运行时注入任务', 'translate task_* + 任务坞;未测试', 'part', 'B4')],
+      R('正常运行时注入任务', 'translate task_* + 任务坞;后端已用真实 DeepSeek 验证(TestRealBackgroundTaskAndSubagent:任务启动 / 状态流转 / 通知);界面任务坞与通知行只有 ui.Tester,未做真实端到端', 'part', 'B4')],
     flow: [
       R('步骤行(进行 / 错误 / 拒绝)、探索分组、工具展开 diff / 终端、待办、权限 / 提问 / 计划卡、提示三级', '', 'ok'),
       R('长输出限高折叠(12 行 → 196px,展开 480px)', '工具 / 终端 / 文本与 Markdown 代码块', 'ok', 'B4'),
