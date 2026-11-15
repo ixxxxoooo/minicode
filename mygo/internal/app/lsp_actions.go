@@ -154,16 +154,57 @@ func (a *App) gotoKind(kind string) {
 	})
 }
 
+// lspEditorWhy 解释语言服务器菜单项为何不可用("" = 可用)。
+func (a *App) lspEditorWhy(tb *ideTab) string {
+	if tb == nil || tb.buf == nil {
+		return "没有打开的文件"
+	}
+	if tb.diff || tb.virt != "" {
+		return "差异 / 虚拟标签没有语言服务器"
+	}
+	if !a.lspOn() {
+		return "设置里已关闭语言服务器"
+	}
+	if a.proj == "" {
+		return "演示模式不启动真实语言服务器"
+	}
+	s := a.lspFor(tb.path)
+	if s == nil {
+		return "没有适用于此文件的语言服务器"
+	}
+	switch s.state {
+	case lspReady:
+		return ""
+	case lspStarting:
+		return "语言服务器正在启动…"
+	case lspFailed:
+		if s.err != "" {
+			return s.err
+		}
+		return "语言服务器启动失败"
+	default:
+		return "语言服务器未就绪"
+	}
+}
+
 // editorMenu 是编辑器右键菜单里追加的项(复制 / 粘贴 / 全选编辑器自带),分组与顺序对标 VS Code。
 func (a *App) editorMenu(tb *ideTab, m *ui.Menu) {
+	why := a.lspEditorWhy(tb)
+	lspOff := why != ""
 	m.Separator()
 	if m.Item("转到定义  F12").Chosen() {
 		a.goDef()
 	}
-	if m.Item("转到类型定义").Chosen() {
+	it := m.Item("转到类型定义")
+	if lspOff {
+		it.Disabled(true).Tooltip(why)
+	} else if it.Chosen() {
 		a.gotoKind("转到类型定义")
 	}
-	if m.Item("转到实现").Chosen() {
+	it = m.Item("转到实现")
+	if lspOff {
+		it.Disabled(true).Tooltip(why)
+	} else if it.Chosen() {
 		a.gotoKind("转到实现")
 	}
 	if m.Item("查找所有引用  ⇧F12").Chosen() {
@@ -173,13 +214,25 @@ func (a *App) editorMenu(tb *ideTab, m *ui.Menu) {
 		a.openPeek()
 	}
 	m.Separator()
-	if m.Item("重命名符号…  F2").Chosen() {
+	it = m.Item("重命名符号…  F2")
+	if lspOff {
+		it.Disabled(true).Tooltip(why)
+	} else if it.Chosen() {
 		a.openRename()
 	}
 	if m.Item("格式化文档  ⇧⌥F").Chosen() {
 		a.formatDoc()
 	}
-	if m.Item("源代码操作…  ⌘.").Chosen() {
+	selFmt := m.Item("格式化选定内容")
+	if lspOff {
+		selFmt.Disabled(true).Tooltip(why)
+	} else if selFmt.Chosen() {
+		a.formatSelection()
+	}
+	it = m.Item("源代码操作…  ⌘.")
+	if lspOff {
+		it.Disabled(true).Tooltip(why)
+	} else if it.Chosen() {
 		a.openActs()
 	}
 	m.Separator()

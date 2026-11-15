@@ -131,12 +131,7 @@ func (a *App) workspace(c *ui.Context) {
 	default:
 		a.crumbs(c, cur)
 		if cur.buf != nil && isMarkdownFile(cur.path) && !a.mdSource(cur) {
-			if cur.reveal != nil { // 要跳到某一行 / 某段:只有源码能定位
-				cur.mdMode = mdSource
-				a.codeView(c, cur)
-			} else {
-				a.mdView(c, cur)
-			}
+			a.mdView(c, cur)
 		} else {
 			a.codeView(c, cur)
 		}

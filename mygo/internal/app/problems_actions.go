@@ -21,6 +21,7 @@ func (a *App) recheckProblems() {
 		}
 	}
 	if a.prefs.Bool("lsp.workspaceDiag", true) {
+		a.lspH.workspaceGen++
 		a.lspWorkspaceScan()
 	}
 	for _, tb := range a.ide.tabs {

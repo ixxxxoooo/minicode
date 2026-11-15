@@ -15,8 +15,8 @@ var nwLog = diag.L("newwindow")
 
 const kRecentProjects = "general.recentProjects"
 
-// ParseArgs 解析进程参数,返回是否从属新窗口与初始项目路径。
-func ParseArgs() (secondary bool, project string) {
+// ParseArgs 解析进程参数,返回是否从属新窗口、初始项目路径与虚拟标签说明(plan:ref)。
+func ParseArgs() (secondary bool, project, virt string) {
 	args := os.Args[1:]
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -27,9 +27,17 @@ func ParseArgs() (secondary bool, project string) {
 				i++
 				project = args[i]
 			}
+		case "--virt":
+			if i+1 < len(args) {
+				i++
+				virt = args[i]
+			}
 		}
 	}
-	return secondary, project
+	if virt == "" {
+		virt = os.Getenv("MINI_VIRT")
+	}
+	return secondary, project, virt
 }
 
 // SpawnNewWindow 再起一个本应用进程(⇧⌘N)。

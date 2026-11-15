@@ -35,6 +35,7 @@ func (t *Term) handleOsc133(payload string) {
 	switch kind {
 	case "A", "D": // Prompt / prompt end
 		t.cmdRunning.Store(false)
+		t.pruneCmdBlocks()
 	case "B": // Command start
 		t.cmdRunning.Store(true)
 		row := t.currentRow()
@@ -62,6 +63,27 @@ func (t *Term) handleOsc133(payload string) {
 func (t *Term) currentRow() int {
 	pos := t.em.CursorPosition()
 	return pos.Y + t.em.ScrollbackLen()
+}
+
+// pruneCmdBlocks 丢掉已滚出可视回看区的命令块(清屏 / 大段输出后装饰不错位)。
+func (t *Term) pruneCmdBlocks() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	n := t.em.ScrollbackLen()
+	keep := t.cmdBlocks[:0]
+	for _, b := range t.cmdBlocks {
+		if b.EndRow == 0 || b.EndRow >= n-200 {
+			keep = append(keep, b)
+		}
+	}
+	t.cmdBlocks = keep
+}
+
+// ClearCmdBlocks 清屏后重置全部命令块记录。
+func (t *Term) ClearCmdBlocks() {
+	t.mu.Lock()
+	t.cmdBlocks = nil
+	t.mu.Unlock()
 }
 
 // CmdRunning 前台是否有命令在跑(依赖 shell 集成;未注入时恒为 false)。
@@ -99,22 +121,37 @@ func IntegrationCmd(shell string) string {
 
 const zshIntegration = `# MiniCode shell integration (OSC 133)
 __mc_osc() { printf '\033]133;%s\007' "$1"; }
-precmd() { __mc_osc A; __mc_osc D; }
-preexec() { __mc_osc B; }
+__mc_precmd() {
+  local ec=$?
+  __mc_osc A
+  __mc_osc D
+  __mc_osc "C;$ec"
+}
+__mc_preexec() { __mc_osc B; }
 if typeset -f add-zsh-hook >/dev/null 2>&1; then
-  add-zsh-hook precmd precmd
-  add-zsh-hook preexec preexec
+  add-zsh-hook precmd __mc_precmd
+  add-zsh-hook preexec __mc_preexec
 fi
 `
 
 const bashIntegration = `# MiniCode shell integration (OSC 133)
 __mc_osc() { printf '\033]133;%s\007' "$1"; }
-__mc_prompt() {
+__mc_skip_dbg() {
+  case "$BASH_COMMAND" in
+  __mc_*|trap*|PROMPT_COMMAND*) return 0;;
+  esac
+  __mc_osc B
+}
+__mc_prompt_end() {
   local ec=$?
-  __mc_osc "A"
-  __mc_osc "D"
+  __mc_osc A
+  __mc_osc D
   __mc_osc "C;$ec"
 }
-PROMPT_COMMAND="__mc_prompt"
-trap '__mc_osc B' DEBUG
+trap '__mc_skip_dbg' DEBUG
+if [[ -n "$PROMPT_COMMAND" && "$PROMPT_COMMAND" != *'__mc_prompt_end'* ]]; then
+  PROMPT_COMMAND="__mc_prompt_end; $PROMPT_COMMAND"
+else
+  PROMPT_COMMAND="__mc_prompt_end"
+fi
 `

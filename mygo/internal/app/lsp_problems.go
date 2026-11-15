@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -95,7 +96,12 @@ func (a *App) realProblems(c *ui.Context) {
 // lspCard 是问题面板顶部的服务器状态卡:没装 / 启动中 / 失败。
 func (a *App) lspCard(c *ui.Context, s *lspSess) {
 	t := a.tk
-	ui.Row(c).Key("lc-"+s.spec.ID).MinHeight(36).Padding(6, 10).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Background(t.Fill1).Margin(0, 0, 4, 0).Children(func() {
+	card := ui.Row(c).Key("lc-"+s.spec.ID).MinHeight(36).Padding(6, 10).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Background(t.Fill1).Margin(0, 0, 4, 0)
+	if s.uiAt.IsZero() {
+		s.uiAt = time.Now()
+	}
+	card = kit.PopIn(card, s.uiAt)
+	card.Children(func() {
 		switch s.state {
 		case lspStarting:
 			kit.Spin(c, t.Tx3)

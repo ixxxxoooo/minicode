@@ -137,16 +137,10 @@ func (a *App) tabMenu(m *ui.Menu, tb *ideTab) {
 	if m.Item("固定标签").Disabled(!tb.preview).Chosen() {
 		tb.preview = false
 	}
-	side := m.Item("在侧边打开")
-	if a.ide.splitDir == 0 {
-		side.Disabled(true).Tooltip("先拆分编辑器组")
-	} else if side.Chosen() {
+	if m.Item("在侧边打开").Chosen() {
 		a.openSide(tb.path, true)
 	}
-	prev := m.Item("在侧边预览")
-	if a.ide.splitDir == 0 {
-		prev.Disabled(true).Tooltip("先拆分编辑器组")
-	} else if prev.Chosen() {
+	if m.Item("在侧边预览").Chosen() {
 		a.openSide(tb.path, false)
 	}
 	if m.Item("关闭已保存").Chosen() {

@@ -9,16 +9,18 @@ func (a *App) termCmdClick(tp *termPanel, p cellPos) bool {
 	if tp.t == nil || tp.scr == nil {
 		return false
 	}
+	absRow := tp.scr.LineBase + p.row
 	for _, b := range tp.t.CommandBlocks() {
-		if p.row != b.StartRow || p.col > 2 {
+		if absRow != b.StartRow || p.col > 2 {
 			continue
 		}
-		end := b.EndRow
-		if end <= b.StartRow || end > len(tp.scr.Lines) {
-			end = len(tp.scr.Lines)
+		endAbs := b.EndRow
+		if endAbs <= b.StartRow {
+			endAbs = b.StartRow + 1
 		}
+		startY, endY := b.StartRow-tp.scr.LineBase, endAbs-tp.scr.LineBase
 		var rows []string
-		for y := b.StartRow; y < end && y < len(tp.scr.Lines); y++ {
+		for y := startY; y < endY && y >= 0 && y < len(tp.scr.Lines); y++ {
 			rows = append(rows, lineString(tp.scr.Lines[y]))
 		}
 		if len(rows) == 0 {

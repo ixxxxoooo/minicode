@@ -56,9 +56,15 @@ func (a *App) mdSource(tb *ideTab) bool {
 // setMdMode 手动切换视图(切到源码时顺便把光标交还编辑器)。
 func (a *App) setMdMode(tb *ideTab, src bool) {
 	if src {
+		if tb.md != nil && tb.md.doc != nil {
+			tb.md.doc.BreakUndoCoalescing()
+		}
 		tb.mdMode = mdSource
 	} else {
 		tb.mdMode = mdWysiwyg
+		if tb.md != nil && tb.md.doc != nil {
+			tb.md.doc.BreakUndoCoalescing()
+		}
 	}
 	uxLog.Info("切换 Markdown 视图", "path", tb.path, "源码", src)
 }
@@ -183,7 +189,9 @@ func (a *App) mdWrite(tb *ideTab, md *mdState) {
 	if body != "" {
 		out += body + "\n"
 	}
-	if out == tb.buf.String() {
+	orig := tb.buf.String()
+	out = mdPreserveRoundTrip(orig, out)
+	if out == orig {
 		return
 	}
 	tb.buf.Set(out)
@@ -244,6 +252,7 @@ func (a *App) mdView(c *ui.Context, tb *ideTab) {
 		}
 		a.mdFront(c, md.front)
 		a.mdFormatBar(c, md.doc)
+		a.mdApplyReveal(tb, md)
 		ui.Row(c).Grow(1).MinHeight(0).Justify(ui.Center).AlignItems(ui.Stretch).Children(func() {
 			ui.Column(c).Grow(1).MinWidth(0).MaxWidth(900).Padding(10, 30, 6, 30).Children(func() {
 				ed := richtext.EditorBase(c.Key("md-"+tb.id), md.doc, richtext.EditorOptions{
@@ -252,6 +261,14 @@ func (a *App) mdView(c *ui.Context, tb *ideTab) {
 					Font:        ui.Font{Size: 14},
 					Theme:       a.rtTheme(),
 					OnLink:      a.openMdLink,
+					OnKey: func(key ui.Key, mods ui.Modifiers) bool {
+						if mods == ui.Cmd && key == ui.KeyV {
+							if a.mdTryPasteImage(c, tb, md) {
+								return true
+							}
+						}
+						return false
+					},
 				}).Fill()
 				if ed.Changed() {
 					a.mdWrite(tb, md)

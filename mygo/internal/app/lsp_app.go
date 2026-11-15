@@ -46,6 +46,7 @@ type lspSess struct {
 	docs     map[string]*lspDoc // 项目相对路径 → 同步状态
 	work     string             // 服务器正在做的事(索引进度)
 	restarts int                // 自动重启次数
+	uiAt     time.Time          // 安装卡入场动画起点
 
 	qmu sync.Mutex
 	q   chan func() // 串行发送通道:保证 didOpen / didChange / 请求按序
@@ -82,11 +83,12 @@ func (s *lspSess) barrier() {
 }
 
 type lspHub struct {
-	sess    map[string]*lspSess
-	diags   map[string][]lsp.Diagnostic // 项目相对路径 → 诊断
-	gen     int                         // 诊断变化计数
-	noted   map[string]bool             // 已提示过「没装」的服务器
-	outline map[string]outlineEntry     // 文件 → LSP 大纲缓存
+	sess         map[string]*lspSess
+	diags        map[string][]lsp.Diagnostic // 项目相对路径 → 诊断
+	gen          int                         // 诊断变化计数
+	workspaceGen int                         // 工作区扫盘代次(取消旧任务)
+	noted        map[string]bool             // 已提示过「没装」的服务器
+	outline      map[string]outlineEntry     // 文件 → LSP 大纲缓存
 }
 
 // onUI 回到界面线程执行(没有窗口的测试里直接执行)。

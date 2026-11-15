@@ -30,6 +30,15 @@ var shortcutTable = []shortcutSpec{
 	{id: "symbols", title: "转到符号", group: "编辑器", def: "⇧ ⌘ O"},
 	{id: "save", title: "保存", group: "编辑器", def: "⌘ S"},
 	{id: "comment", title: "行注释", group: "编辑器", def: "⌘ /"},
+	{id: "format", title: "格式化文档", group: "编辑器", def: "⇧ ⌥ F"},
+	{id: "codeAction", title: "源代码操作", group: "编辑器", def: "⌘ ."},
+	{id: "goDef", title: "转到定义", group: "编辑器", def: "F12"},
+	{id: "findRefs", title: "查找所有引用", group: "编辑器", def: "⇧ F12"},
+	{id: "splitRight", title: "向右拆分", group: "编辑器", def: "⌘ \\"},
+	{id: "wrap", title: "切换自动换行", group: "编辑器", def: "⌥ Z"},
+	{id: "reopenTab", title: "重新打开已关闭标签", group: "编辑器", def: "⇧ ⌘ T"},
+	{id: "termFind", title: "终端查找", group: "终端", def: "⌘ F"},
+	{id: "termClear", title: "终端清屏", group: "终端", def: "⌘ K"},
 	{id: "guide", title: "立即引导", group: "对话", def: "⌘ ⏎"},
 }
 

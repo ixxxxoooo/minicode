@@ -505,9 +505,9 @@ func (a *App) editorShortcuts(c *ui.Context) bool {
 		return false
 	}
 	switch {
-	case c.Shortcut(0, ui.KeyF12):
+	case a.shortcutHit(c, "goDef", 0, ui.KeyF12):
 		a.goDef()
-	case c.Shortcut(ui.Shift, ui.KeyF12):
+	case a.shortcutHit(c, "findRefs", ui.Shift, ui.KeyF12):
 		a.showRefs(a.cursorWord())
 	case c.Shortcut(ui.Alt, ui.KeyF12):
 		a.openPeek()
@@ -517,15 +517,15 @@ func (a *App) editorShortcuts(c *ui.Context) bool {
 		} else {
 			a.openRename()
 		}
-	case c.Shortcut(ui.Shift|ui.Alt, ui.KeyF):
+	case a.shortcutHit(c, "format", ui.Shift|ui.Alt, ui.KeyF):
 		a.formatDoc()
-	case c.Shortcut(ui.Cmd|ui.Shift, ui.KeyT):
+	case a.shortcutHit(c, "reopenTab", ui.Cmd|ui.Shift, ui.KeyT):
 		a.reopenClosed()
-	case c.Shortcut(ui.Alt, ui.KeyZ):
+	case a.shortcutHit(c, "wrap", ui.Alt, ui.KeyZ):
 		a.toggleWrap()
-	case c.Shortcut(ui.Cmd, ui.KeyBackslash):
+	case a.shortcutHit(c, "splitRight", ui.Cmd, ui.KeyBackslash):
 		a.splitEditor(1)
-	case c.Shortcut(ui.Cmd, ui.KeyPeriod):
+	case a.shortcutHit(c, "codeAction", ui.Cmd, ui.KeyPeriod):
 		a.openActs()
 	case c.Shortcut(ui.Cmd, ui.KeyL):
 		a.askClaude("问")

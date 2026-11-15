@@ -144,7 +144,9 @@ func (a *App) realTerminal(c *ui.Context) {
 			log.Error("启动终端失败", "err", err)
 		} else {
 			tp.t, tp.focusIt = tm, true
-			tm.SendText(term.IntegrationCmd(shellName()))
+			if a.prefs.Bool(pTermIntegrate, true) {
+				tm.SendText(term.IntegrationCmd(shellName()))
+			}
 			if tp.initCmd != "" {
 				tm.SendText(tp.initCmd + "\n")
 				tp.initCmd = ""
@@ -214,9 +216,11 @@ func (a *App) realTerminal(c *ui.Context) {
 				}
 			})
 		})
-		if tp.find.open {
+		if tp.find.open || !tp.find.closingAt.IsZero() {
 			a.termFindBar(c, tp)
-			a.termFindMarks(c, tp, body)
+			if tp.find.open {
+				a.termFindMarks(c, tp, body)
+			}
 		}
 		atBottom := tp.st.MaxY <= 0 || tp.st.Y >= tp.st.MaxY-8
 		if !atBottom && tp.t != nil {

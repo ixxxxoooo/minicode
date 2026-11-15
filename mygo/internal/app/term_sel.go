@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -37,15 +38,17 @@ type termHit struct{ row, c0, c1 int }
 
 // termFind 是终端内搜索的状态。
 type termFind struct {
-	open  bool
-	query string
-	cs    bool // 区分大小写
-	word  bool // 全词
-	re    bool // 正则
-	hits  []termHit
-	cur   int
-	key   string // 上次计算命中时的「查询|大小写|画面版本」
-	focus bool   // 下一帧把焦点给搜索框
+	open      bool
+	openedAt  time.Time
+	closingAt time.Time
+	query     string
+	cs        bool // 区分大小写
+	word      bool // 全词
+	re        bool // 正则
+	hits      []termHit
+	cur       int
+	key       string // 上次计算命中时的「查询|大小写|画面版本」
+	focus     bool   // 下一帧把焦点给搜索框
 }
 
 // termLink 是一处可点击的链接。
@@ -421,7 +424,8 @@ func (a *App) openTermFind() {
 	if tp == nil {
 		return
 	}
-	tp.find.open, tp.find.focus = true, true
+	tp.find.open, tp.find.focus, tp.find.openedAt = true, true, a.now()
+	tp.find.closingAt = time.Time{}
 	if tp.sel.on { // 选中了文字:作为初始查询(同 VS Code)
 		if s := tp.selectedText(); s != "" && !strings.Contains(s, "\n") {
 			tp.find.query = s
@@ -432,7 +436,16 @@ func (a *App) openTermFind() {
 
 func (a *App) closeTermFind() {
 	tp := a.ide.tpc()
-	tp.find.open = false
+	if tp.find.open && tp.find.closingAt.IsZero() {
+		tp.find.closingAt = a.now()
+		a.frameSoon()
+	}
+	if tp.find.closingAt.IsZero() || time.Since(tp.find.closingAt) >= kit.DurFast {
+		tp.find.open = false
+		tp.find.openedAt, tp.find.closingAt = time.Time{}, time.Time{}
+		tp.focusIt = true
+		return
+	}
 	tp.focusIt = true
 }
 
@@ -441,8 +454,18 @@ func (a *App) termFindBar(c *ui.Context, tp *termPanel) {
 	t := a.tk
 	f := &tp.find
 	tp.refreshFind()
-	ui.Row(c).Key("tfind").Absolute().Top(6).Right(16).Height(30).Padding(0, 4, 0, 8).Gap(4).AlignItems(ui.Center).
-		Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd2).Children(func() {
+	if !f.open && f.closingAt.IsZero() {
+		return
+	}
+	bar := ui.Row(c).Key("tfind").Absolute().Top(6).Right(16).Height(30).Padding(0, 4, 0, 8).Gap(4).AlignItems(ui.Center).
+		Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd2)
+	if !f.closingAt.IsZero() {
+		bar = kit.PopOut(bar, f.closingAt)
+		a.frameSoon()
+	} else {
+		bar = kit.PopIn(bar, f.openedAt)
+	}
+	bar.Children(func() {
 		in := ui.TextInputBase(c.Key("tfind-in"), &f.query).Width(150).FontSize(theme.FsBody).Placeholder("在终端中查找").PlaceholderColor(t.Tx4)
 		if f.focus {
 			in.Focus()
@@ -500,9 +523,10 @@ func (a *App) rowDeco(tp *termPanel, row, cols int) rowDeco {
 	if tp.link != nil && tp.hoverOn && tp.hover.row == row {
 		d.link = [2]int{tp.link.c0, tp.link.c1}
 	}
-	if tp.t != nil {
+	if tp.t != nil && tp.scr != nil {
+		abs := tp.scr.LineBase + row
 		for _, b := range tp.t.CommandBlocks() {
-			if b.StartRow == row {
+			if b.StartRow == abs {
 				if b.ExitOK {
 					d.cmd = 1
 				} else {
@@ -574,7 +598,7 @@ func (a *App) termShortcuts(c *ui.Context) bool {
 		a.closeTermFind()
 	case tp.find.open && c.Shortcut(ui.Shift, ui.KeyEnter):
 		a.findStep(tp, -1)
-	case (a.termHasFocus || tp.find.open) && c.Shortcut(ui.Cmd, ui.KeyF):
+	case (a.termHasFocus || tp.find.open) && a.shortcutHit(c, "termFind", ui.Cmd, ui.KeyF):
 		a.openTermFind()
 	case a.termHasFocus && c.Shortcut(ui.Cmd, ui.KeyEqual), a.termHasFocus && c.Shortcut(ui.Cmd|ui.Shift, ui.KeyEqual):
 		a.setTermFont(a.prefs.Int(pTermFont, 12) + 1)

@@ -99,6 +99,7 @@ func (a *App) termMoreMenu(m *ui.Menu) {
 	live := tp != nil && tp.t != nil
 	why := map[bool]string{true: "终端还没启动"}[!live]
 	if m.Item("清屏").Trailing("⌘K").Disabled(!live).Tooltip(why).Chosen() {
+		tp.t.ClearCmdBlocks()
 		tp.t.SendText("\x0c")
 	}
 	if m.Item("查找…").Trailing("⌘F").Disabled(!live).Tooltip(why).Chosen() {
@@ -193,6 +194,13 @@ func (a *App) virtMenu(m *ui.Menu, tb *ideTab) {
 	if m.Item("复制内容").Disabled(txt == "").Tooltip(why).Chosen() {
 		a.copyOut(txt, "内容")
 	}
+	virtWin := m.Item("在新窗口中打开")
+	if why2 := a.virtNewWindowWhy(tb.virt); why2 != "" {
+		virtWin.Disabled(true).Tooltip(why2)
+	} else if virtWin.Chosen() {
+		a.SpawnVirtWindow(tb)
+	}
+	m.Separator()
 	if m.Item("引用到对话").Disabled(txt == "").Tooltip(why).Chosen() {
 		q := txt
 		if r := []rune(q); len(r) > 1500 {

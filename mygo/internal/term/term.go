@@ -322,6 +322,7 @@ type Line []Run
 type Screen struct {
 	Lines        []Line
 	Cols, Rows   int
+	LineBase     int // Lines[0] 在全局历史里的绝对行号
 	ScreenTop    int // Lines 里当前屏幕第一行的下标(之前是历史)
 	CursorX      int
 	CursorY      int // 相对 Lines 的行下标
@@ -346,6 +347,7 @@ func (t *Term) Snapshot(history int) *Screen {
 	if !s.Alt && history > 0 {
 		n := t.em.ScrollbackLen()
 		from := max(0, n-history)
+		s.LineBase = from
 		for y := from; y < n; y++ {
 			s.Lines = append(s.Lines, t.line(cols, func(x int) *uv.Cell { return t.em.ScrollbackCellAt(x, y) }))
 		}
