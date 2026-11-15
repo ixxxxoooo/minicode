@@ -107,6 +107,11 @@ func Guard(where string, fn func()) (ok bool) {
 	return true
 }
 
+// Report 记录一次 panic(日志 + 崩溃记录,含调用栈)但不拦截:调用方随后应原样 panic。
+// 用在「吞掉会让状态错乱」的位置(如界面构建:控件树做到一半),保证崩溃前留下线索。
+// 必须在 defer 的函数里调用,这样调用栈里才有 panic 现场。
+func Report(where string, v any) { handlePanic(where, v) }
+
 func handlePanic(where string, v any) {
 	stack := string(debug.Stack())
 	msg := fmt.Sprint(v)

@@ -575,6 +575,14 @@ type layMem struct {
 // View 是窗口的根视图。
 func (a *App) View(c *ui.Context) {
 	defer diag.SpanSlow("app", "构建界面", 33*time.Millisecond)()
+	// 界面构建中 panic:不能吞(控件树做到一半会错乱),但崩溃前必须把调用栈写进日志与 crashes/,
+	// 否则只剩一条「上次运行异常退出」,无从排查(审查页空指针闪退就是这样静默消失的)。
+	defer func() {
+		if v := recover(); v != nil {
+			diag.Report("界面构建", v)
+			panic(v)
+		}
+	}()
 	c.SetTheme(a.tk.UITheme())
 	// 右键菜单与输入框编辑菜单一律画在窗口里、跟随当前主题(而不是系统原生菜单),
 	// 圆角 / 描边 / 阴影 / 悬停色与应用内其它弹层一致。
