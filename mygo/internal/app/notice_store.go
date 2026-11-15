@@ -55,6 +55,19 @@ func (a *App) postNotice(level, title, body string, actions []noticeAction) {
 	log.Info("通知", "level", level, "title", title)
 }
 
+// postNoticeQuiet 只记进通知中心(已读、不弹浮层):事件本身已经在眼前(如会话里的权限卡)时用,
+// 避免浮层盖住要操作的卡片,同时历史里仍查得到。
+func (a *App) postNoticeQuiet(level, title, body string, actions []noticeAction) {
+	a.noticeInit()
+	it := noticeItem{id: a.nt.nextID, level: level, title: title, body: body, at: a.now(), actions: actions, read: true}
+	a.nt.nextID++
+	a.nt.items = append([]noticeItem{it}, a.nt.items...)
+	if len(a.nt.items) > noticeCap {
+		a.nt.items = a.nt.items[:noticeCap]
+	}
+	log.Info("通知(静默)", "level", level, "title", title)
+}
+
 func (a *App) noticeInfo(title, body string) { a.postNotice("info", title, body, nil) }
 func (a *App) noticeOK(title, body string)   { a.postNotice("ok", title, body, nil) }
 func (a *App) noticeWarn(title, body string, act []noticeAction) {

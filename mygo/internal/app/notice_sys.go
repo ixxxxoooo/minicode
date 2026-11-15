@@ -67,6 +67,11 @@ func (a *App) onNeedsApproval(what string) {
 	}
 	act := []noticeAction{{"打开会话", func() { a.screen = ScreenWork }}}
 	if a.appInForeground() {
+		if a.screen == ScreenWork {
+			// 正在看会话:权限卡 / 问答卡就在输入框上方,不再弹浮层遮挡它
+			a.postNoticeQuiet("warn", what, "已在会话中显示", act)
+			return
+		}
 		a.postNotice("warn", what, "点开会话处理", act)
 		return
 	}
