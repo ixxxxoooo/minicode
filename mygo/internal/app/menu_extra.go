@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/projects"
 )
@@ -220,4 +221,34 @@ func (a *App) stepAbs(p string) string {
 		return p
 	}
 	return a.absPath(a.wsRel(p))
+}
+
+// askEchoMenu 回答卡片的右键菜单。
+func (a *App) askEchoMenu(m *ui.Menu, q *core.QuestionRequest) {
+	if menuItem(m, "复制回答").Chosen() {
+		log.Info("复制回答", "id", q.ID, "题数", len(q.Questions))
+		a.copyOut(askAnswersText(q), "回答")
+	}
+}
+
+// askAnswersText 把「问题 → 回答」拼成纯文本,供复制。
+func askAnswersText(q *core.QuestionRequest) string {
+	var b strings.Builder
+	for i, qu := range q.Questions {
+		if i > 0 {
+			b.WriteByte('\n')
+		}
+		b.WriteString(qu.Question)
+		b.WriteString(" → ")
+		ans := []string(nil)
+		if i < len(q.Answers) {
+			ans = q.Answers[i]
+		}
+		if len(ans) == 0 {
+			b.WriteString("已跳过")
+		} else {
+			b.WriteString(strings.Join(ans, ", "))
+		}
+	}
+	return b.String()
 }

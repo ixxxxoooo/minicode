@@ -106,6 +106,9 @@ func (a *App) askCard(c *ui.Context, q *core.QuestionRequest) {
 	active := !a.paletteOn && a.screen == ScreenWork
 	if active && c.Shortcut(0, ui.KeyEnter) {
 		advance()
+	} else if active && c.Shortcut(0, ui.KeyEscape) {
+		log.Info("跳过提问", "题", s.cur+1, "共", n)
+		skip()
 	}
 	// ← → 切题:只在没有文字输入框抢方向键时生效
 	if active && n > 1 && !s.wantsFreeInput(qu) {
@@ -220,6 +223,8 @@ func (a *App) askCard(c *ui.Context, q *core.QuestionRequest) {
 					} else {
 						ui.Text(c, "下一题")
 					}
+					kit.Kbd(c, "esc")
+					ui.Text(c, "跳过")
 				})
 			}
 			kit.Btn(c, "跳过", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(skip)
@@ -242,10 +247,12 @@ func (a *App) askEcho(c *ui.Context, q *core.QuestionRequest) {
 			skipped++
 		}
 	}
-	box := ui.Column(c).Key("qa-done-"+q.ID).Background(t.Raised).Radius(t.RMd()).Padding(8, 11).Gap(7)
+	lbl := "已回答 " + itoa(len(q.Questions)) + " 个问题"
+	box := ui.Column(c).Key("qa-done-"+q.ID).Background(t.Raised).Radius(t.RMd()).Padding(8, 11).Gap(7).Label(lbl)
 	for _, s := range t.Shadow1() {
 		box.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
+	box.ContextMenu(func(m *ui.Menu) { a.askEchoMenu(m, q) })
 	box.Children(func() {
 		ui.Row(c).Gap(7).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "check", kit.S12).TextColor(t.Ok)
