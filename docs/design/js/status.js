@@ -134,7 +134,8 @@
       R('输入框「+」添加附件与斜杠命令', '「+」按钮没有点击处理(composer.go),输入框没有 / 命令补全与发送展开;拖入图片与 @ 引用已有 ◆ 第一波:composer_attach.go(+ 菜单 / 附件 chip)与 composer_slash.go(/ 命令补全);未测试,发送展开 / 命令来源待核', 'part', 'B4'),
       R('审批多张排队「1 / 3」与处理后输入框淡入、恢复草稿', 'pendingDock 只取第一项,没有队列指示;处理完没有 120 ms 输入框淡入与草稿恢复(设计稿 task-spec) ◆ 第一波:dock_pending.go(1 / N 指示 + 处理后淡入与草稿恢复);未测试', 'part', 'B4'),
       R('排队卡「停止并发送」', '设计稿 F.queue 三个动作;Go queueCard 只有引导 / 删除 ◆ 第一波:composer_queue.go;未测试', 'part', 'B4'),
-      R('提示卡的动作(重试 / 压缩)与权限「你拒绝了…」专用行', '设计稿 F.notice 的错误卡带按钮;flow.go notice 没有动作,已拒绝的权限复用工具行样式', 'todo', 'B4'),
+      R('排队消息带图片', '排队项保留草稿图片语法;卡上缩略图 chip;退回编辑还原;发送经 submitPrompt 带 Images;演示 b4-queue-img。未测试', 'part', 'B4'),
+      R('提示卡的动作(重试 / 压缩)与权限「你拒绝了…」专用行', '错误/警告卡 noticeActions 有重试·压缩;已拒绝权限:工具行 deny+lock 与 flow_note permissionDenyNote(shield 灰字)。不可重试。未测试', 'part', 'B4'),
       R('会话流内 Mermaid 图表卡与全屏查看', '助手回复里的 mermaid 围栏按普通代码块显示;设计稿是图表卡 + 全屏查看器。排版引擎也没有(画布页只有简版方框布局)', 'todo', 'B7'),
       R('task-spec 页实现状态表', 'specs2 待办 / 尾读 / 通知 / 分叉四行', 'ok', 'B0')],
     overlays: [
@@ -144,7 +145,7 @@
       R('上下文弹层(输入框圆环 / 状态栏;分类明细 / 阈值刻度 / 账户限额 / 刷新 / 压缩;常态 / 接近阈值 / 压缩中 / 加载 / 无限额 / 失败)', 'get_context_usage+失败重试;get_usage 限额', 'part', 'B4'),
       R('更新进度胶囊四态', '下载/校验/解包/替换脚本;开发版 dev.sh;正式包退出后 ditto', 'part', 'B4'),
       R('确认框(模式切换 / 未保存 / 删除)', '通用确认框已用于会话删除 / 移除项目 / 切换模式', 'ok', 'B2'),
-      R('账号菜单的真实身份与用量', 'popups.go acctPopup 里用户名、$12.40、38% 进度是写死的,真实模式没有账户数据来源', 'part', 'B6'),
+      R('账号菜单的真实身份与用量', '真实:claudecfg.ReadOAuthProfile + UsageScanner 本月费用 + get_usage 五小时%;演示 demo.AcctMenuDemo;无数据/加载中状态。未测试', 'part', 'B6'),
       R('上下文弹层的「查询失败」独立状态', '失败时有重试条,但 ctxState() 没有独立的 err 状态,与设计稿六态标签没完全对齐', 'part', 'B4')],
     'ide-editor': [
       R('迷你地图(语法色块、滑块拖动)、Git / 搜索 / 同词 / 诊断 / 光标刻度、概览标尺、同词高亮、窄档藏地图', '', 'ok'),
