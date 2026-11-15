@@ -8,7 +8,6 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/claudecfg"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/kit"
-	"github.com/ixxxxoooo/minicode/internal/lsp"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
@@ -25,11 +24,25 @@ func (a *App) permLayer() claudecfg.Layer {
 
 func (a *App) rulesBody(a2 *App, c *ui.Context) {
 	layer := a2.permLayer()
-	rules, err := claudecfg.ReadRules(layer, a2.proj)
+	var rules claudecfg.PermRules
 	if a2.demoWs() {
 		rules = demo.SettingDemoRules()
-	} else if err != nil || len(rules.Allow)+len(rules.Ask)+len(rules.Deny) == 0 {
-		rules = claudecfg.DemoRules()
+	} else {
+		var err error
+		rules, err = claudecfg.ReadRules(layer, a2.proj)
+		if err != nil {
+			a2.set.rulesErr = "无法读取权限规则"
+			setLog.Warn("读取权限规则失败", "err", err)
+		} else {
+			a2.set.rulesErr = ""
+		}
+	}
+	if a2.set.rulesErr != "" {
+		rowBox(a2, c, true, 44).Children(func() {
+			ui.Text(c, a2.set.rulesErr).FontSize(theme.FsCap).TextColor(a2.tk.Err).Grow(1)
+		})
+		a2.rulesAddRow(a2, c)
+		return
 	}
 	drawRuleGroup(a2, c, "allow", "允许", kit.KOk, rules.Allow, 0)
 	drawRuleGroup(a2, c, "ask", "询问", kit.KWarn, rules.Ask, 1)
@@ -70,44 +83,6 @@ func (a *App) deleteRuleWithUndo(kind, rule string) {
 	}
 }
 
-func (a *App) trustBody(a2 *App, c *ui.Context) {
-	var rows []claudecfg.TrustEntry
-	if a2.demoWs() {
-		rows = demo.DemoTrust()
-	} else {
-		paths := make([]string, 0, len(a2.projects))
-		for _, pi := range a2.projects {
-			if len(paths) >= 8 {
-				break
-			}
-			paths = append(paths, pi.Path)
-		}
-		if len(paths) == 0 && a2.proj != "" {
-			paths = []string{a2.proj}
-		}
-		rows = claudecfg.ListTrust(paths)
-	}
-	for i, p := range rows {
-		p := p
-		rowBox(a2, c, i == 0, 44).Children(func() {
-			iconBox(a2, c, "folder")
-			titled(a2, c, filepathBase(p.Path), tildePath(p.Path), true)
-			ui.Text(c, "钩子").FontSize(theme.FsCap).TextColor(a2.tk.Tx3)
-			if kit.Tog(c, p.HookOK, "trust-h-"+itoa(i)) {
-				_ = claudecfg.SetTrust(p.Path, p.Trusted, !p.HookOK, p.McpOK)
-			}
-			ui.Text(c, "MCP").FontSize(theme.FsCap).TextColor(a2.tk.Tx3)
-			if kit.Tog(c, p.McpOK, "trust-m-"+itoa(i)) {
-				_ = claudecfg.SetTrust(p.Path, p.Trusted, p.HookOK, !p.McpOK)
-			}
-			ui.Text(c, "信任").FontSize(theme.FsCap).TextColor(a2.tk.Tx3)
-			if kit.Tog(c, p.Trusted, "trust-t-"+itoa(i)) {
-				_ = claudecfg.SetTrust(p.Path, !p.Trusted, p.HookOK, p.McpOK)
-			}
-		})
-	}
-}
-
 func filepathBase(p string) string {
 	if p == "" {
 		return "项目"
@@ -124,11 +99,27 @@ func (a *App) envBody(a2 *App, c *ui.Context) {
 	var err error
 	if a2.demoWs() {
 		rows = demo.DemoEnv()
+		a2.set.envErr = ""
 	} else {
 		rows, err = claudecfg.ReadEnvRows(a2.proj)
 		if err != nil {
-			rows = claudecfg.DemoEnv()
+			a2.set.envErr = "无法读取环境变量"
+			setLog.Warn("读取环境变量失败", "err", err)
+		} else {
+			a2.set.envErr = ""
 		}
+	}
+	if a2.set.envErr != "" {
+		rowBox(a2, c, true, 44).Children(func() {
+			ui.Text(c, a2.set.envErr).FontSize(theme.FsCap).TextColor(a2.tk.Err).Grow(1)
+		})
+		a2.envAddRow(a2, c)
+		return
+	}
+	if len(rows) == 0 {
+		rowBox(a2, c, true, 40).Children(func() {
+			ui.Text(c, "没有已配置的环境变量").FontSize(theme.FsCap).TextColor(a2.tk.Tx3)
+		})
 	}
 	for i, e := range rows {
 		e := e
@@ -150,61 +141,6 @@ func (a *App) deleteEnvWithUndo(name string) {
 		_ = claudecfg.SetEnv(name, "••••••••", layer, a.proj)
 	})
 	_ = claudecfg.RemoveEnv(name, layer, a.proj)
-}
-
-func (a *App) lspBody(a2 *App, c *ui.Context) {
-	if a2.demoWs() {
-		for i, row := range demo.LSPDemoRows() {
-			r := row
-			rowBox(a2, c, i == 0, 32).Children(func() {
-				if r.OK {
-					kit.Ic(c, "okc", kit.S12).TextColor(a2.tk.Ok)
-				} else {
-					kit.Ic(c, "alert", kit.S12).TextColor(a2.tk.Warn)
-				}
-				ui.Text(c, r.Name).FontWeight(500).Grow(1)
-				ui.Text(c, r.Status).FontSize(theme.FsCap).TextColor(a2.tk.Tx3).SingleLine()
-			})
-		}
-		return
-	}
-	show := []string{"rust-analyzer", "Pyright", "gopls", "typescript-language-server"}
-	for i, name := range show {
-		var sp *lsp.Spec
-		for j := range lsp.Specs {
-			if lsp.Specs[j].Name == name {
-				sp = &lsp.Specs[j]
-				break
-			}
-		}
-		ok, status := false, "未安装"
-		if sp != nil {
-			if _, found := sp.Find(); found {
-				ok, status = true, "已就绪"
-			} else {
-				status = "未安装 · " + sp.Install
-			}
-		}
-		s := struct {
-			n, st string
-			ok    bool
-		}{name, status, ok}
-		rowBox(a2, c, i == 0, 32).Children(func() {
-			if s.ok {
-				kit.Ic(c, "okc", kit.S12).TextColor(a2.tk.Ok)
-			} else {
-				kit.Ic(c, "alert", kit.S12).TextColor(a2.tk.Warn)
-			}
-			ui.Text(c, s.n).FontWeight(500).Grow(1)
-			ui.Text(c, s.st).FontSize(theme.FsCap).TextColor(a2.tk.Tx3).SingleLine()
-			if !s.ok && sp != nil {
-				kit.Btn(c, "复制安装命令", kit.BtnOpt{Small: true, Icon: "copy"}).OnClick(func() {
-					c.WriteClipboard(sp.Install)
-					c.Toast("已复制安装命令")
-				})
-			}
-		})
-	}
 }
 
 func (a *App) netCheckBody(a2 *App, c *ui.Context) {

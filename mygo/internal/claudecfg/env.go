@@ -42,9 +42,6 @@ func ReadEnvRows(project string) ([]EnvRow, error) {
 			}
 		}
 	}
-	if len(out) == 0 {
-		return DemoEnv(), nil
-	}
 	return out, nil
 }
 
