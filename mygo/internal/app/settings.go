@@ -365,12 +365,12 @@ func (a *App) settingsGroup(c *ui.Context, g setGroup, index int) {
 			card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
 		card.Children(func() {
-			if g.body != nil {
-				g.body(a, c)
-				return
-			}
+			// 同一分组既有行又有自定义块时,先画行再画块(原先有块就丢掉了行)。
 			for i, r := range g.rows {
 				a.settingsRow(c, r, i == 0)
+			}
+			if g.body != nil {
+				g.body(a, c)
 			}
 		})
 	})

@@ -51,14 +51,7 @@ func (a *App) settingsScrollY(tabID, rowKey string) float32 {
 		if g.title != "" {
 			y += grpTitle
 		}
-		if g.body != nil {
-			// 自定义块:按分组标题匹配时滚到块头
-			if rowKey == g.title {
-				return y
-			}
-			y += 120 // 估算自定义块高度
-			continue
-		}
+		// 先是行,后是自定义块(与渲染顺序一致)
 		for _, r := range g.rows {
 			if rowFlashID(r) == rowKey {
 				return y
@@ -67,6 +60,13 @@ func (a *App) settingsScrollY(tabID, rowKey string) float32 {
 				return y
 			}
 			y += rowH
+		}
+		if g.body != nil {
+			// 自定义块:按分组标题匹配时滚到块头
+			if rowKey == g.title {
+				return y
+			}
+			y += 120 // 估算自定义块高度
 		}
 		y += grpPad
 	}

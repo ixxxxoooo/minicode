@@ -110,3 +110,13 @@ func TestSettingsAllTabsRender(t *testing.T) {
 		t.Fatalf("应有 14 个分类,实际 %d", len(settingsTabs))
 	}
 }
+
+// 分组既有行又有自定义块时两者都要画出来(原先有块就丢掉了行)。
+func TestSettingsGroupRowsAndBodyBothRender(t *testing.T) {
+	_, tt, _ := settingsApp(t, "privacy")
+	for _, want := range []string{"日志级别", "诊断包", "崩溃与卡顿"} {
+		if !tt.HasText(want) {
+			t.Fatalf("隐私页缺少 %q", want)
+		}
+	}
+}
