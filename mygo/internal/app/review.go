@@ -33,6 +33,7 @@ type reviewState struct {
 	draft      string
 	side       bool            // 左右对比(默认行内)
 	grpClosed  map[string]bool // 多仓库分组是否折叠(键 g<序号>)
+	revAt      map[string]int  // 块撤销时「改动前文本」写进文件的字节位置(「重新应用」按它校验后写回)
 }
 
 func (r *reviewState) init() {
@@ -154,13 +155,45 @@ func (a *App) revertHunk(f chFile, i int) {
 		a.toast = "这一块已被改动过,无法自动撤销"
 		return
 	}
-	if err := a.ide.fs.Write(rel, strings.Replace(cur, d.New, d.Old, 1)); err != nil {
+	at := strings.Index(cur, d.New)
+	if err := a.ide.fs.Write(rel, cur[:at]+d.Old+cur[at+len(d.New):]); err != nil {
 		a.toast = "撤销失败:" + err.Error()
 		return
 	}
-	a.rv.hunk[hunkKey(f.path, i)] = "rev"
+	k := hunkKey(f.path, i)
+	a.rv.hunk[k] = "rev"
+	if a.rv.revAt == nil {
+		a.rv.revAt = map[string]int{}
+	}
+	a.rv.revAt[k] = at
 	a.ide.reloadOpen()
 	log.Info("撤销改动块", "path", rel, "hunk", i)
+}
+
+// reapplyHunk 把已撤销的块重新应用(出口:误点撤销可以回头)。
+// 只有撤销时记下的位置上仍是「改动前文本」才写回,文件已被改过就如实提示,不乱改别处。
+func (a *App) reapplyHunk(f chFile, i int) {
+	d := f.blocks[i]
+	k := hunkKey(f.path, i)
+	rel := a.wsRel(d.Path)
+	cur, err := a.ide.fs.Read(rel)
+	if err != nil {
+		a.toast = "无法读取 " + rel
+		return
+	}
+	at, ok := a.rv.revAt[k]
+	if !ok || at < 0 || at+len(d.Old) > len(cur) || cur[at:at+len(d.Old)] != d.Old {
+		a.toast = "这一块在撤销后又被改动过,无法重新应用"
+		return
+	}
+	if err := a.ide.fs.Write(rel, cur[:at]+d.New+cur[at+len(d.Old):]); err != nil {
+		a.toast = "重新应用失败:" + err.Error()
+		return
+	}
+	delete(a.rv.hunk, k)
+	delete(a.rv.revAt, k)
+	a.ide.reloadOpen()
+	log.Info("重新应用改动块", "path", rel, "hunk", i)
 }
 
 // wsRel 把改动里的路径换成相对项目根的路径(真实模式的工具调用带绝对路径)。
@@ -405,6 +438,7 @@ func (a *App) reviewHunk(c *ui.Context, f chFile, i int, d *core.DiffBlock) {
 			kit.Tag(c, "已接受", kit.KOk)
 		case "rev":
 			kit.Tag(c, "已撤销", kit.KErr)
+			kit.Btn(c, "重新应用", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "refresh"}).OnClick(func() { a.reapplyHunk(f, i) })
 		default:
 			kit.Btn(c, "评论", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "chat"}).OnClick(func() {
 				if a.rv.commenting == k {
