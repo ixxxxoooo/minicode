@@ -24,6 +24,7 @@ const (
 	pEdFont        = "editor.fontSize"
 	pEdIndent      = "editor.indent"
 	pEdAutosave    = "editor.autosave"
+	pEdSyntax      = "editor.syntax"
 	pMinimap       = "editor.minimap"
 	pMmSlider      = "editor.minimapSlider"
 	pMmWidth       = "editor.minimapWidth"
@@ -151,6 +152,18 @@ func (a *App) applyEditorPrefs(tb *ideTab) {
 		if st.Theme.MatchingBracket != ui.Transparent {
 			th := *st.Theme // 值拷贝:不改动共享的缓存配色
 			th.MatchingBracket = ui.Transparent
+			st.Theme = &th
+		}
+	}
+	// 语法高亮关闭:词法着色全部取正文色(语言仍在,注释 / 括号 / 缩进行为不受影响)
+	if !a.prefs.Bool(pEdSyntax, true) {
+		if st.Theme == nil {
+			st.Theme = a.editorTheme()
+		}
+		var none [len(st.Theme.Tokens)]editor.TokenStyle
+		if st.Theme.Tokens != none {
+			th := *st.Theme
+			th.Tokens = none
 			st.Theme = &th
 		}
 	}
