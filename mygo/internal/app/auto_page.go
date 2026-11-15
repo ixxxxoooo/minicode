@@ -72,7 +72,7 @@ func (a *App) currentProjectName() string {
 	if n := a.projectName(); n != "" {
 		return n
 	}
-	return "router-demo"
+	return a.projLabel()
 }
 
 func (a *App) autoWeek(c *ui.Context, items []automation.Automation) {

@@ -13,6 +13,9 @@ import (
 
 // filesView 是 IDE 左栏的「文件」:区块标题 + 文件树 + 折叠的「大纲 / 时间线」。
 func (a *App) filesView(c *ui.Context) {
+	if a.proj != "" {
+		a.scmTick() // 真实项目:树上的 Git 状态色靠它定时刷新
+	}
 	t := a.tk
 	d := a.ide
 	ui.Scroll(c).Key("files").Grow(1).Children(func() {

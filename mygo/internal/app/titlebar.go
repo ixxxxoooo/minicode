@@ -101,7 +101,7 @@ func (a *App) crumb(c *ui.Context) {
 	}
 	ui.Row(c).Gap(5).PaddingStart(4).MinWidth(0).TextColor(t.Tx3).Children(func() {
 		kit.Ic(c, "folder", kit.S12)
-		ui.Text(c, "router-demo").SingleLine()
+		ui.Text(c, a.projLabel()).SingleLine()
 		kit.Ic(c, "chevR", kit.S12)
 		ui.Text(c, title).SingleLine().FontWeight(500).TextColor(t.Tx1)
 	})

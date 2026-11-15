@@ -397,10 +397,21 @@ var settingsTabs = []setTabDef{
 		{title: "每次询问", body: func(a *App, c *ui.Context) { ruleRows(a, c, "ask", []string{"Bash(git push:*)"}) }},
 		{title: "始终拒绝", body: func(a *App, c *ui.Context) { ruleRows(a, c, "deny", []string{"Read(.env)", "Bash(rm -rf:*)"}) }},
 		{title: "项目信任", body: func(a *App, c *ui.Context) {
-			for i, p := range []struct {
+			type trustRow struct {
 				n, path   string
 				hook, mcp bool
-			}{{"router-demo", "~/Projects/router-demo", true, true}, {"web-dashboard", "~/Projects/web-dashboard", true, false}, {"docs-site", "~/Projects/docs-site", false, false}} {
+			}
+			rows := []trustRow{{"router-demo", "~/Projects/router-demo", true, true}, {"web-dashboard", "~/Projects/web-dashboard", true, false}, {"docs-site", "~/Projects/docs-site", false, false}}
+			if a.proj != "" { // 真实模式:列出侧栏里的真实项目(信任状态尚未接入,按「未信任」显示)
+				rows = nil
+				for _, pi := range a.projects {
+					if len(rows) >= 6 {
+						break
+					}
+					rows = append(rows, trustRow{n: pi.Name, path: tildePath(pi.Path)})
+				}
+			}
+			for i, p := range rows {
 				p := p
 				rowBox(a, c, i == 0, 44).Children(func() {
 					iconBox(a, c, "folder")

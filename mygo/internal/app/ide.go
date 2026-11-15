@@ -94,6 +94,7 @@ func newIDE() *ide {
 func (d *ide) useFS(fs workspace.FS, git map[string]string, head func(string) (string, bool)) {
 	d.fs, d.git, d.headOf = fs, git, head
 	d.tabs, d.active, d.sel = nil, "", ""
+	d.filesCache, d.listCache = nil, nil
 }
 
 // tab 返回 id 对应的标签(没有则 nil)。

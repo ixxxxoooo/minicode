@@ -1,6 +1,8 @@
 package app
 
 import (
+	"path/filepath"
+
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
@@ -20,6 +22,9 @@ var starters = []starter{
 
 // projectName 当前会话所在项目名。
 func (a *App) projectName() string {
+	if a.proj != "" {
+		return filepath.Base(a.proj)
+	}
 	for _, p := range a.projects {
 		for _, s := range p.Sessions {
 			if s.ID == a.curSess {
@@ -46,7 +51,7 @@ func (a *App) welcome(c *ui.Context) {
 				kit.Ic(c, "mark", 12).TextColor(t.OnAc)
 			})
 			ui.Text(c, "今天想在 "+a.projectName()+" 里做点什么?").FontSize(theme.FsHead).FontWeight(700)
-			ui.Text(c, a.branch+" · 3 项未提交改动 · 上次会话 5 分钟前").TextColor(t.Tx3)
+			ui.Text(c, a.welcomeStatus()).TextColor(t.Tx3)
 		})
 		ui.Column(c).Width(600).Shrink(1).MinWidth(0).MaxWidth(600).Margin(0, 20).Children(func() {
 			a.welcomeFocus = true

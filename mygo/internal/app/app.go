@@ -133,6 +133,7 @@ type App struct {
 	// 测试 / 截图用:没有系统红绿灯时自己画
 	fakeLights bool
 	devBadge   string
+	proj       string // 真实项目目录(演示模式为空)
 	demoExtra  bool   // 演示:工作区里还有一个本会话没碰过的未提交文件
 	update     string // 状态栏更新提示文案(空 = 不显示)
 }

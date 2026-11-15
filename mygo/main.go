@@ -69,7 +69,8 @@ func resolveDemo(dev bool) bool {
 type realSetup struct {
 	mu     sync.Mutex
 	ix     *claude.Index
-	curCwd string // 新会话的工作目录:最近打开的会话所在目录
+	curCwd string       // 新会话的工作目录:最近打开的会话所在目录
+	onCwd  func(string) // 打开会话后目录变了(切到别的项目)的回调,在主线程调用
 }
 
 func (r *realSetup) refresh() *claude.Index {
@@ -85,13 +86,17 @@ func (r *realSetup) refresh() *claude.Index {
 // open 为会话 id 造后端:已有会话 = 恢复并回放历史,空 id = 新会话。
 func (r *realSetup) open(id string) backend.Backend {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	cfg := claude.Config{Cwd: r.curCwd}
 	if loc, ok := r.ix.Locate(id); ok && id != "" {
 		cfg.Cwd, cfg.SessionID, cfg.HistoryPath = loc.Cwd, id, loc.Path
 		r.curCwd = loc.Cwd
 	}
+	cb := r.onCwd
+	r.mu.Unlock()
 	log.Info("打开会话", "id", id, "cwd", cfg.Cwd)
+	if cb != nil {
+		cb(cfg.Cwd)
+	}
 	return claude.New(cfg)
 }
 
@@ -134,9 +139,9 @@ func main() {
 		opts.DevBadge = map[bool]string{true: "演示模式", false: "开发版"}[demoMode]
 	}
 	a := app.New(opts)
-	a.SetRepo(demo.Repo())
 	var rs *realSetup
 	if demoMode {
+		a.SetRepo(demo.Repo())
 		a.SetProjects(demo.Projects(), "fixbug")
 	} else {
 		claude.SetCacheFile(filepath.Join(diag.Home(), "session-index-go.json"))
@@ -145,6 +150,8 @@ func main() {
 		rs.curCwd = initialCwd(ix)
 		log.Info("真实模式", "projects", len(ix.Projects), "cwd", rs.curCwd)
 		a.SetProjects(ix.Projects, "")
+		a.SetProject(rs.curCwd)
+		rs.onCwd = a.SetProject
 	}
 
 	mygo.App.WhenReady(func() {

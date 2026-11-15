@@ -216,12 +216,12 @@ func (a *App) sessionsB(c *ui.Context) {
 	ui.Scroll(c).Key("sessb").Grow(1).Children(func() {
 		ui.Column(c).Children(func() {
 			ui.Row(c).Gap(4).Padding(0, 0, 6, 0).Children(func() {
-				kit.Chip(c, "router-demo", kit.ChipOpt{Icon: "folder", Line: true, Car: true}).Height(26).Grow(1)
+				kit.Chip(c, a.projLabel(), kit.ChipOpt{Icon: "folder", Line: true, Car: true}).Height(26).Grow(1)
 				kit.Ib(c, "edit", kit.IbOpt{Tip: "新对话 ⌘N"}).Size(26, 26).OnClick(a.NewSession)
 			})
 			cur := ""
 			for _, p := range a.projects {
-				if p.ID != "router-demo" {
+				if !a.isCurProject(p) {
 					continue
 				}
 				for _, ss := range p.Sessions {
