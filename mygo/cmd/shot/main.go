@@ -17,7 +17,6 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/app"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/diag"
-	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
 
 func main() {
@@ -38,6 +37,7 @@ func main() {
 	squery := flag.String("squery", "", "设置页搜索词")
 	state := flag.String("state", "", "会话状态:welcome(空会话)/ perm / ask / plan / queue(权限·提问·计划·排队)")
 	quick := flag.String("quick", "", "快速选择浮层:history / branch,可带预填查询,如 branch:feat")
+	scm := flag.String("scm", "", "IDE 左栏源代码管理:[提交说明][|展开的提交哈希],如 |b7d02e4")
 	srch := flag.String("search", "", "IDE 左栏搜索:查询[|替换文本],如 match_path|find_route")
 	flag.Parse()
 
@@ -51,7 +51,7 @@ func main() {
 	}
 	a := app.New(app.Options{Palette: *pal, Scheme: *scheme, Mode: m, Screen: app.Screen(*screen), FakeLights: true})
 	a.SetProjects(demo.Projects(), "fixbug")
-	a.SetRepo(vcs.NewMem())
+	a.SetRepo(demo.Repo())
 	a.SeedDemoExtras()
 	switch *state {
 	case "welcome":
@@ -84,6 +84,13 @@ func main() {
 		q, r, hasR := strings.Cut(*srch, "|")
 		a.OpenSearch()
 		a.SetSearch(q, r, hasR)
+		tt.Frame()
+	}
+	if *scm != "" {
+		msg, rev, _ := strings.Cut(*scm, "|")
+		a.OpenSCM()
+		a.SetSCM(msg, rev)
+		tt.Frame()
 		tt.Frame()
 	}
 	if *quick != "" {

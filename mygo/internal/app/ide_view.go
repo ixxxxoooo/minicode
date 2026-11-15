@@ -272,7 +272,7 @@ func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 	ui.Row(c).Height(30).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		kit.Ic(c, "diff", kit.S12)
 		ui.Text(c, path.Base(tb.path)).FontWeight(600)
-		ui.Text(c, "HEAD ↔ 工作区").TextColor(t.Tx3)
+		ui.Text(c, tb.diffLabel()).TextColor(t.Tx3)
 		kit.Tag(c, "+"+itoa(adds)+" −"+itoa(dels), kit.KOk)
 		ui.Spacer(c).Grow(1)
 		kit.Ib(c, "chevU", kit.IbOpt{Small: true, Tip: "上一处差异"})

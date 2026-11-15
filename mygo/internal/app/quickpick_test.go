@@ -6,13 +6,12 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/backend"
 	"github.com/ixxxxoooo/minicode/internal/demo"
-	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
 
 func quickApp(t *testing.T) (*App, *ui.Tester) {
 	t.Helper()
 	a, tt := newTestApp(t)
-	a.SetRepo(vcs.NewMem())
+	a.SetRepo(demo.Repo())
 	a.SetSessionOpener(func(id string) backend.Backend { return demo.Session(id, 0.01) })
 	tt.Frame()
 	return a, tt

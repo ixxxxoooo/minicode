@@ -29,6 +29,12 @@ func Open(dir string) (*CLI, error) {
 // git 运行一条 git 命令。读命令一律带 --no-optional-locks(否则 git status 会改写 index,
 // 触发文件监视形成反馈环),且禁止交互式认证提示。
 func (r *CLI) git(timeout time.Duration, args ...string) (string, error) {
+	out, err := r.gitRaw(timeout, args...)
+	return strings.TrimRight(out, "\n"), err
+}
+
+// gitRaw 同 git,但保留输出末尾的换行(取文件内容时要原样)。
+func (r *CLI) gitRaw(timeout time.Duration, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "git", append([]string{"--no-optional-locks"}, args...)...)
@@ -47,7 +53,7 @@ func (r *CLI) git(timeout time.Duration, args ...string) (string, error) {
 		log.Debug("git 失败", "args", args, "err", msg)
 		return "", fmt.Errorf("%s", msg)
 	}
-	return strings.TrimRight(out.String(), "\n"), nil
+	return out.String(), nil
 }
 
 func (r *CLI) Current() string {

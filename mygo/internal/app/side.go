@@ -64,6 +64,8 @@ func (a *App) side(c *ui.Context) {
 					a.filesView(c)
 				case "search":
 					a.searchView(c)
+				case "scm":
+					a.scmView(c)
 				default:
 					ui.Text(c, navTitle(a.NavID())).TextColor(t.Tx3).Margin(8)
 				}

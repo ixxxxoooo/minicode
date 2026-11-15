@@ -19,7 +19,8 @@ type ideTab struct {
 	id      string // 文件 = 相对路径;对比 = "diff:" + 相对路径
 	path    string // 相对项目根的路径
 	diff    bool
-	preview bool // 预览标签(斜体,下一次单击会被替换)
+	label   string // 对比标签的说明,如「HEAD ↔ 工作区」「a3f9c21 的改动」
+	preview bool   // 预览标签(斜体,下一次单击会被替换)
 	buf     *editor.Buffer
 	st      *editor.State
 	dv      *editor.DiffState
@@ -30,9 +31,16 @@ type ideTab struct {
 
 func (t *ideTab) dirty() bool { return !t.diff && t.buf != nil && t.buf.String() != t.saved }
 
+func (t *ideTab) diffLabel() string {
+	if t.label != "" {
+		return t.label
+	}
+	return "HEAD ↔ 工作区"
+}
+
 func (t *ideTab) title() string {
 	if t.diff {
-		return path.Base(t.path) + " (HEAD ↔ 工作区)"
+		return path.Base(t.path) + " (" + t.diffLabel() + ")"
 	}
 	return path.Base(t.path)
 }
@@ -169,11 +177,28 @@ func (d *ide) openDiff(p string, pin bool) {
 	if err != nil {
 		cur = ""
 	}
+	d.addDiffTab(id, p, "", head, cur, pin)
+}
+
+// openRevDiff 打开某次提交里某个文件的对比标签(父提交 ↔ 该提交)。
+func (d *ide) openRevDiff(short, p, old, nw string, pin bool) {
+	id := "diff:rev-" + short + ":" + p
+	if t := d.tab(id); t != nil {
+		if pin {
+			t.preview = false
+		}
+		d.active = id
+		return
+	}
+	d.addDiffTab(id, p, short+" 的改动", old, nw, pin)
+}
+
+func (d *ide) addDiffTab(id, p, label, oldSrc, newSrc string, pin bool) {
 	lang := editor.LanguageFor(path.Base(p))
-	old, nw := editor.NewBuffer(head), editor.NewBuffer(cur)
+	old, nw := editor.NewBuffer(oldSrc), editor.NewBuffer(newSrc)
 	old.SetLanguage(lang)
 	nw.SetLanguage(lang)
-	t := &ideTab{id: id, path: p, diff: true, preview: !pin,
+	t := &ideTab{id: id, path: p, diff: true, label: label, preview: !pin,
 		dv: &editor.DiffState{Old: old, New: nw, ContextLines: 4}}
 	d.addTab(t)
 }

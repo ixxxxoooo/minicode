@@ -86,7 +86,7 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 	switch g {
 	case "M":
 		r.TextColor(t.Warn)
-	case "A":
+	case "A", "U":
 		r.TextColor(t.Ok)
 	}
 	if r.Clicked() {

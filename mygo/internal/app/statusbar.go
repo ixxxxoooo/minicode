@@ -31,7 +31,17 @@ func (a *App) statusbar(c *ui.Context) {
 		if a.branch != "" {
 			a.sbItem(c, "branch", func() { kit.Ic(c, "branch", kit.S12); ui.Text(c, a.branch) }).OnClick(func() { a.OpenQuick("branch", "") })
 		}
-		a.sbItem(c, "sync", func() { kit.Ic(c, "refresh", kit.S12); ui.Text(c, "↑1") })
+		a.sbItem(c, "sync", func() {
+			kit.Ic(c, "refresh", kit.S12)
+			txt := "↑1" // 仓库状态读到之前沿用设计稿的示例
+			if a.sc.loaded {
+				txt = "↑" + itoa(a.sc.ahead)
+				if a.sc.behind > 0 {
+					txt += " ↓" + itoa(a.sc.behind)
+				}
+			}
+			ui.Text(c, txt)
+		}).OnClick(func() { a.OpenSCM() })
 		a.sbItem(c, "diag", func() {
 			kit.Ic(c, "errc", kit.S12)
 			ui.Text(c, "0")
