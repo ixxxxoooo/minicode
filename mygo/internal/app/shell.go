@@ -32,6 +32,11 @@ func (a *App) root(c *ui.Context) {
 		}
 		a.statusbar(c)
 		a.paletteView(c)
+		a.quickView(c)
+		if a.toast != "" {
+			c.Toast(a.toast)
+			a.toast = ""
+		}
 	})
 }
 

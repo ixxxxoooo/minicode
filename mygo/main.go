@@ -14,6 +14,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/prefs"
+	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
 
 // 构建时可用 -ldflags "-X main.version=..." 覆盖。
@@ -52,6 +53,7 @@ func main() {
 	}
 	a := app.New(opts)
 	a.SetProjects(demo.Projects(), "fixbug")
+	a.SetRepo(vcs.NewMem())
 
 	mygo.App.WhenReady(func() {
 		w, h := 1280, 800

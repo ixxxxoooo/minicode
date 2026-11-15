@@ -28,7 +28,9 @@ func (a *App) statusbar(c *ui.Context) {
 		r.BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2)
 	}
 	r.Children(func() {
-		a.sbItem(c, "branch", func() { kit.Ic(c, "branch", kit.S12); ui.Text(c, "main") })
+		if a.branch != "" {
+			a.sbItem(c, "branch", func() { kit.Ic(c, "branch", kit.S12); ui.Text(c, a.branch) }).OnClick(func() { a.OpenQuick("branch", "") })
+		}
 		a.sbItem(c, "sync", func() { kit.Ic(c, "refresh", kit.S12); ui.Text(c, "↑1") })
 		a.sbItem(c, "diag", func() {
 			kit.Ic(c, "errc", kit.S12)

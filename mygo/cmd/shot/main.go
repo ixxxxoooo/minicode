@@ -17,6 +17,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/app"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/diag"
+	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
 
 func main() {
@@ -36,6 +37,7 @@ func main() {
 	tab := flag.String("tab", "", "设置页分类(配合 -screen settings)")
 	squery := flag.String("squery", "", "设置页搜索词")
 	state := flag.String("state", "", "会话状态:welcome(空会话)/ perm / ask / plan / queue(权限·提问·计划·排队)")
+	quick := flag.String("quick", "", "快速选择浮层:history / branch,可带预填查询,如 branch:feat")
 	flag.Parse()
 
 	home := "/tmp/minicode-shot-home"
@@ -48,6 +50,7 @@ func main() {
 	}
 	a := app.New(app.Options{Palette: *pal, Scheme: *scheme, Mode: m, Screen: app.Screen(*screen), FakeLights: true})
 	a.SetProjects(demo.Projects(), "fixbug")
+	a.SetRepo(vcs.NewMem())
 	a.SeedDemoExtras()
 	switch *state {
 	case "welcome":
@@ -74,6 +77,11 @@ func main() {
 	}
 	if *top {
 		a.ScrollFlowTop()
+		tt.Frame()
+	}
+	if *quick != "" {
+		kind, q, _ := strings.Cut(*quick, ":")
+		a.OpenQuick(kind, q)
 		tt.Frame()
 	}
 	if *palette != "" {

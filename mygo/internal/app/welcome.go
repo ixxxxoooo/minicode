@@ -38,7 +38,7 @@ func (a *App) welcome(c *ui.Context) {
 	ui.Row(c).Height(theme.HTab).Padding(0, 8, 0, 14).Gap(6).Shrink(0).AlignItems(ui.Center).Children(func() {
 		ui.Text(c, "新对话").FontWeight(600).SingleLine()
 		ui.Spacer(c).Grow(1)
-		kit.Ib(c, "history", kit.IbOpt{Small: true, Tip: "历史会话"})
+		kit.Ib(c, "history", kit.IbOpt{Small: true, Tip: "历史会话"}).OnClick(func() { a.OpenQuick("history", "") })
 	})
 	ui.Column(c).Grow(1).MinHeight(0).AlignItems(ui.Center).Justify(ui.Center).Padding(0, 0, 48, 0).Gap(16).Children(func() {
 		ui.Column(c).Gap(3).AlignItems(ui.Center).Children(func() {
@@ -46,7 +46,7 @@ func (a *App) welcome(c *ui.Context) {
 				kit.Ic(c, "mark", 12).TextColor(t.OnAc)
 			})
 			ui.Text(c, "今天想在 "+a.projectName()+" 里做点什么?").FontSize(theme.FsHead).FontWeight(700)
-			ui.Text(c, "main · 3 项未提交改动 · 上次会话 5 分钟前").TextColor(t.Tx3)
+			ui.Text(c, a.branch+" · 3 项未提交改动 · 上次会话 5 分钟前").TextColor(t.Tx3)
 		})
 		ui.Column(c).Width(600).Shrink(1).MinWidth(0).MaxWidth(600).Margin(0, 20).Children(func() {
 			a.welcomeFocus = true

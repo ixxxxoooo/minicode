@@ -15,6 +15,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/prefs"
 	"github.com/ixxxxoooo/minicode/internal/theme"
+	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
 
 var log = diag.L("app")
@@ -100,6 +101,10 @@ type App struct {
 
 	// 输入框
 	draft        string
+	qp           *qpState            // 快速选择浮层(历史会话 / 分支),nil = 关闭
+	repo         vcs.Repo            // 当前项目的仓库(演示为内存实现)
+	branch       string              // 当前分支名(缓存,避免每帧查 git)
+	toast        string              // 待显示的一条轻提示(渲染时消费)
 	welcomeFocus bool                // 欢迎页的输入框自动聚焦
 	q            promptQueue         // 排队的消息
 	qa           map[string]*qaState // 提问向导的本地进度
@@ -197,6 +202,18 @@ func (a *App) afterEvent(ev core.Event) {
 		a.drainQueue()
 	}
 }
+
+// SetRepo 设置当前项目的仓库;nil 表示不是 Git 仓库(分支显示为空)。
+func (a *App) SetRepo(r vcs.Repo) {
+	a.repo = r
+	a.branch = ""
+	if r != nil {
+		a.branch = r.Current()
+	}
+}
+
+// BranchName 当前分支名。
+func (a *App) BranchName() string { return a.branch }
 
 // SetSessionOpener 注入「按会话 id 造后端」的工厂(演示 / 真实各一个)。
 func (a *App) SetSessionOpener(f func(id string) backend.Backend) { a.opener = f }

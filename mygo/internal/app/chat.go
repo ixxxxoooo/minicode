@@ -50,9 +50,11 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 func (a *App) chatHead(c *ui.Context) {
 	ui.Row(c).Height(theme.HTab).Padding(0, 8, 0, 14).Gap(6).Shrink(0).AlignItems(ui.Center).Children(func() {
 		ui.Text(c, a.st.Title).FontWeight(600).SingleLine().Shrink(1)
-		kit.Chip(c, "main", kit.ChipOpt{Icon: "branch"})
+		if a.branch != "" {
+			kit.Chip(c, a.branch, kit.ChipOpt{Icon: "branch", Tip: "切换分支"}).OnClick(func() { a.OpenQuick("branch", "") })
+		}
 		ui.Spacer(c).Grow(1)
-		kit.Ib(c, "history", kit.IbOpt{Small: true, Tip: "历史会话"})
+		kit.Ib(c, "history", kit.IbOpt{Small: true, Tip: "历史会话"}).OnClick(func() { a.OpenQuick("history", "") })
 		kit.Ib(c, "more", kit.IbOpt{Small: true})
 	})
 }
