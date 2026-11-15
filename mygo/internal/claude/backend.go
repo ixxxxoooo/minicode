@@ -176,6 +176,13 @@ func (b *Backend) Send(cmd core.Command) {
 
 func (b *Backend) Close() { b.once.Do(func() { close(b.done) }) }
 
+// KillChildForTest 结束当前 claude 子进程(仅集成测试验证崩溃恢复)。
+func (b *Backend) KillChildForTest() {
+	if b.p != nil && b.p.cmd != nil && b.p.cmd.Process != nil {
+		_ = b.p.cmd.Process.Kill()
+	}
+}
+
 func (b *Backend) emit(evs ...core.Event) {
 	for _, e := range evs {
 		b.sink(e)
@@ -751,9 +758,13 @@ func (b *Backend) onControlResponse(v obj) {
 	case rkContext:
 		if ev, ok := b.tr.ContextBreakdown(body, success); ok {
 			b.emit(ev)
-		} else if !success {
+		} else {
 			msg := strings.TrimSpace(errText)
-			if msg == "" {
+			if success {
+				if msg == "" {
+					msg = "当前后端未返回上下文分类明细"
+				}
+			} else if msg == "" {
 				msg = "控制请求失败"
 			}
 			u := b.tr.UsageSnapshot()
