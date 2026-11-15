@@ -101,15 +101,17 @@ type App struct {
 
 	// 输入框
 	draft        string
-	sr           searchState         // 项目内搜索
-	sc           scmState            // 源代码管理
-	qp           *qpState            // 快速选择浮层(历史会话 / 分支),nil = 关闭
-	repo         vcs.Repo            // 当前项目的仓库(演示为内存实现)
-	branch       string              // 当前分支名(缓存,避免每帧查 git)
-	toast        string              // 待显示的一条轻提示(渲染时消费)
-	welcomeFocus bool                // 欢迎页的输入框自动聚焦
-	q            promptQueue         // 排队的消息
-	qa           map[string]*qaState // 提问向导的本地进度
+	sr           searchState                    // 项目内搜索
+	sc           scmState                       // 源代码管理
+	use          usageState                     // 用量页
+	usageSrc     func(rng int) core.UsageReport // 用量数据源(nil = 演示数据)
+	qp           *qpState                       // 快速选择浮层(历史会话 / 分支),nil = 关闭
+	repo         vcs.Repo                       // 当前项目的仓库(演示为内存实现)
+	branch       string                         // 当前分支名(缓存,避免每帧查 git)
+	toast        string                         // 待显示的一条轻提示(渲染时消费)
+	welcomeFocus bool                           // 欢迎页的输入框自动聚焦
+	q            promptQueue                    // 排队的消息
+	qa           map[string]*qaState            // 提问向导的本地进度
 
 	// 测试 / 截图用:没有系统红绿灯时自己画
 	fakeLights bool

@@ -78,7 +78,9 @@ func (a *App) stage(c *ui.Context) {
 	gap := t.Scheme.GapPane
 	ui.Row(c).Grow(1).MinWidth(0).AlignItems(ui.Stretch).Children(func() {
 		if a.screen != ScreenWork && a.screen != ScreenWelcome {
-			a.pagePlaceholder(c)
+			if !a.page(c) {
+				a.pagePlaceholder(c)
+			}
 			return
 		}
 		a.editorPane(c, gap)
