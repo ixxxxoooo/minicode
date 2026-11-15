@@ -275,6 +275,17 @@ func (a *App) autoRunView(c *ui.Context) {
 			body = lv.snapshot()
 		}
 		if ok {
+			// 刚跑完:弹窗还停在「实时」键上,实时记录已收掉 → 改看最新一条记录,
+			// 不能落到空记录(否则会显示「运行失败,未产生会话 / 没有输出」)
+			if !live && s.runView == liveKey(id) && len(it.Runs) > 0 {
+				latest := it.Runs[0]
+				for _, r := range it.Runs[1:] {
+					if r.At.After(latest.At) {
+						latest = r
+					}
+				}
+				s.runView = autoRunKey(id, latest)
+			}
 			for _, r := range it.Runs {
 				if r.Key == s.runView || (r.Key == "" && fmt.Sprintf("auto:%d:%d", id, r.At.Unix()) == s.runView) {
 					rec = r
@@ -316,6 +327,14 @@ func (a *App) autoRunView(c *ui.Context) {
 }
 
 func liveKey(id int) string { return fmt.Sprintf("auto:%d:live", id) }
+
+// autoRunKey 一条运行记录在 runView 里的键(有 Key 用 Key,旧记录按时间戳)。
+func autoRunKey(id int, r automation.Run) string {
+	if r.Key != "" {
+		return r.Key
+	}
+	return fmt.Sprintf("auto:%d:%d", id, r.At.Unix())
+}
 
 func parseRunView(k string) (id int, rest string) {
 	if strings.HasPrefix(k, "auto:") {
