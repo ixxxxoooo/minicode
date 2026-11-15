@@ -69,7 +69,7 @@
       ['启动中', '状态栏转圈「rust-analyzer 索引中 42%」(来自 $/progress)', '期间悬停 / 跳转可用但可能不全,用本地索引兜底'],
       ['就绪', '状态栏「rust-analyzer ✓」;诊断波浪线、悬停、补全、跳转、引用、重命名、格式化可用', '编辑后 250ms 去抖发 didChange(整篇文本);请求前先补同步'],
       ['崩溃', '状态栏「… 已停止 · 正在重启」;退避自动重启最多 3 次,仍失败则停并提示看日志', '日志在「输出 → 语言服务」通道']]))}
-    ${sec('设置 → 编辑器与语言服务', '每种语言一行:服务器名、路径(可覆盖)、状态、操作。自动安装不静默执行,所有安装都经由可见终端。', `<div class="spec" style="padding:4px 10px">${langRow('Rust', 'rust-analyzer · ~/.rustup/…/bin/rust-analyzer', tag('就绪', 'ok'), btn('重启', 'sm ghost'))}${langRow('Go', 'gopls · ~/go/bin/gopls', tag('就绪', 'ok'), btn('重启', 'sm ghost'))}${langRow('Python', 'pyright-langserver', tag('未安装', 'warn'), btn('安装…', 'sm soft'))}${langRow('Lua', 'lua-language-server', tag('未安装', 'warn'), btn('安装…', 'sm soft'))}${langRow('TypeScript', 'typescript-language-server', tag('就绪', 'ok'), btn('重启', 'sm ghost'))}</div>`)}
+    ${sec('设置 → 编辑器与语言服务', '每种语言一行:服务器名、路径(可覆盖)、状态、操作。自动安装不静默执行,所有安装都经由可见终端。Go: settings_lsp.go 后台扫 lsp.Specs + 偏好 lsp.server.* / editor.lsp,未测试。', `<div class="spec" style="padding:4px 10px">${langRow('Rust', 'rust-analyzer · ~/.rustup/…/bin/rust-analyzer', tag('就绪', 'ok'), btn('重启', 'sm ghost'))}${langRow('Go', 'gopls · ~/go/bin/gopls', tag('就绪', 'ok'), btn('重启', 'sm ghost'))}${langRow('Python', 'pyright-langserver', tag('未安装', 'warn'), btn('安装…', 'sm soft'))}${langRow('Lua', 'lua-language-server', tag('未安装', 'warn'), btn('安装…', 'sm soft'))}${langRow('TypeScript', 'typescript-language-server', tag('就绪', 'ok'), btn('重启', 'sm ghost'))}</div>`)}
     ${sec('安装命令', '只给官方推荐的一条,不替用户选包管理器之外的方案。', tbl([['语言', 100], ['命令', 380], ['备注']], [
       ['Rust', '<span class="mono">rustup component add rust-analyzer</span>', '随工具链,版本与 rustc 匹配'],
       ['Go', '<span class="mono">go install golang.org/x/tools/gopls@latest</span>', '需要 GOBIN 在 PATH'],
@@ -137,4 +137,24 @@
       ['后台命令 [查看输出]', '右侧工作区「任务输出」标签', '底部面板「终端」里的只读标签(IDE 里有现成终端区)'],
       ['改动卡 [审查]', '右侧工作区「审查」标签', '编辑区「审查」标签;左栏切到源代码管理'],
       ['文件链接', '右侧工作区编辑器标签', '编辑区标签']]))}</div>`;
+
+  /* ───────── 问题面板 ───────── */
+  const probRow = (lv, msg, src, ln) => `<div class="row">${ic(lv === 'err' ? 'errc' : 'alert', 's12 ' + (lv === 'err' ? 'c-err' : 'c-warn'))}<span class="ell">${msg}</span><span class="t4 fs-cap nw">${src}</span><span class="aux">${ln}</span></div>`;
+  const probHead = (scope, o = {}) => `<div class="tabs"><span class="tab ${scope === 'open' ? 'on' : ''}">问题 · 已打开 ${cnt(o.open || 3, scope === 'open' ? 'ac' : '')}</span><span class="tab ${scope === 'ws' ? 'on' : ''}">工作区 ${cnt(o.ws || 12, scope === 'ws' ? 'ac' : '')}</span><span class="tab">输出</span><span class="grow"></span><span class="f ai g1">${scope === 'ws' ? `${chip('全部', 'filter', 'on')}${chip('仅错误', 'filter')}${ib('refresh', 'sm', '重新检查')}${o.scan ? btn('取消', 'sm ghost') : ''}` : `${chip('全部', 'filter', 'on')}${ib('refresh', 'sm', '重新检查')}`}${ib('max', 'sm')}${ib('x', 'sm', '收起 ⌘J')}</span></div>`;
+  const probBody = (rows) => `<div class="grow scroll" style="padding:2px 6px;min-height:120px">${rows}</div>`;
+  P['ide-problems'] = () => `<div class="ds" style="max-width:1240px">${head('问题面板', '底部面板「问题」= 语言服务器诊断的家;状态栏错误 / 警告计数点击同一面板。默认只看「已打开」文件的诊断;开启工作区级扫描后扩大范围。')}
+    ${sec('已打开 · 工作区分段', '分段切换不清空筛选;点击行跳转并定位(保持面板开)。分组折叠状态记忆到 state.json。', grid(
+      cell('已打开(默认)', '', box(`<div class="bpanel tall" style="height:auto;box-shadow:none">${probHead('open')}<div class="grow scroll" style="padding:2px 6px"><div class="grp-h">${ic('chevD', 's12')}${ic('code', 's12')}<span class="grow">router.rs</span>${cnt(2)}</div>${probRow('warn', '`fallback` 字段从未被读取', 'rust-analyzer', '行 5')}${probRow('warn', '未使用的变量:`h`', 'rust-analyzer', '行 11')}
+        <div class="grp-h">${ic('chevD', 's12')}${ic('code', 's12')}<span class="grow">router_test.rs</span>${cnt(1)}</div>${probRow('err', '找不到函数 `normalize`', 'rust-analyzer', '行 8')}</div></div>`, 220), '仅已打开且已同步的语言服务会话;未打开文件不出现在此分段。'),
+      cell('工作区 · 扫描中', '', box(`<div class="bpanel tall" style="height:auto;box-shadow:none">${probHead('ws', { ws: 0, scan: 1 })}<div class="t3 fs-cap" style="padding:4px 12px;display:flex;align-items:center;gap:8px"><span class="grow">已检查 <b>128</b> / 640 个文件</span><span>23%</span></div><div class="prog-scan"><i></i></div>${probBody('<div class="t3" style="padding:20px;text-align:center">扫描中… 已发现的诊断会边扫边出现</div>')}</div>`, 180), '取消 = 停止当前代次,保留已收集结果;新一次「重新检查」递增代次号。'),
+      cell('工作区 · 完成', '', box(`<div class="bpanel tall" style="height:auto;box-shadow:none">${probHead('ws', { ws: 12 })}<div class="t3 fs-cap" style="padding:2px 12px 6px">共检查 640 个文件 · 来源:服务器 pull</div>${probBody(`<div class="grp-h">${ic('chevD', 's12')}${ic('code', 's12')}<span class="grow">handlers/mod.rs</span>${cnt(1)}</div>${probRow('warn', '未使用的 import', 'rust-analyzer', '行 3')}`)}</div>`, 200), '服务器支持 <span class="mono">workspace/diagnostic</span> 时标注「来源:服务器 pull」;否则「来源:逐个打开扫描」,且只含实际扫过的文件。'),
+      cell('截断', '', box(`<div class="bpanel tall" style="height:auto;box-shadow:none">${probHead('ws', { ws: 2000 })}<div class="notice warn" style="margin:0;border-radius:0;padding:6px 12px">${ic('alert', 'c-warn')}<span class="grow t2">已达上限 2000 个文件,只显示前 2000 个</span>${btn('调高上限…', 'sm ghost', 'sliders', 'data-act="settab" data-tab="editor" data-goto="settings"')}</div></div>`, 150), '链到 设置 → 编辑器与语言服务 的扫描上限;调高后需手动「重新检查」。'),
+      cell('空态', '', box(`<div class="bpanel tall" style="height:auto;box-shadow:none">${probHead('ws', { ws: 0 })}${probBody('<div class="t3" style="padding:28px;text-align:center">没有发现问题</div>')}</div>`, 130), '工作区与已打开两种分段各自独立空态。'),
+      cell('错误态', '', box(`<div class="bpanel tall" style="height:auto;box-shadow:none">${probHead('ws', { ws: 0 })}<div class="notice err" style="margin:0;border-radius:0;padding:8px 12px">${ic('errc', 'c-err')}<span class="grow"><b>rust-analyzer 没有响应</b><span class="t3"> · 超时 30 s</span></span>${btn('重试', 'sm pri')}</div></div>`, 120), '崩溃 / 超时 / 用户取消都走通知条 + 可重试;重试清空错误条并重新排队扫描。'))}
+    ${sec('设置与规则', '', `<div class="spec" style="padding:8px 10px;margin-bottom:12px"><div class="set-row"><span class="m grow">工作区级诊断</span>${tog(1)}</div><div class="set-row"><span class="m grow">工作区扫描文件上限</span><span class="sel"><span class="grow">2000</span>${ic('chevD', 's12 car')}</span></div><div class="set-row"><span class="m grow">扫描时包含被 gitignore 的文件</span>${tog(0)}</div></div>
+      ${tbl([['项', 200], ['规则', 520]], [
+        ['重新检查', '工作区分段下刷新 = 新扫描;已打开分段 = 对已打开文档 <span class="mono">didOpen</span> 同步 + 请求诊断'],
+        ['筛选', '「全部 / 仅错误」只影响列表,不改状态栏计数(计数始终错误 + 警告)'],
+        ['跳转', '点击行 → 编辑器开/切换文件并定位;若文件未打开则先打开再跳'],
+        ['未安装服务器', '该语言的行显示安装卡(与状态栏同源),不占工作区扫描配额']])}`)}</div>`;
 })();
