@@ -123,6 +123,7 @@ type ide struct {
 	blameCardShow  bool                // 提交卡已显示
 	blameCardPin   bool                // 调试 -ed blamecard 钉住提交卡(不随鼠标移开收起,便于截图)
 	blameCardHover bool                // 鼠标在提交卡上
+	blameLeaveAt   time.Time           // 鼠标离开追溯文字 / 提交卡的起始时刻(满 250ms 才收起)
 	textCache      map[string]string   // 读盘缓存(引用 / 定义索引用)
 	symCache       map[string]symEntry // 符号缓存
 

@@ -15,6 +15,7 @@ import (
 const (
 	pBlameGutter     = "editor.blameGutter"
 	blameHoverDelay  = 300 * time.Millisecond
+	blameCloseDelay  = 250 * time.Millisecond // 移出后延迟收起,够鼠标从追溯文字移进提交卡
 	blameGutterHintH = 22
 )
 
@@ -50,6 +51,7 @@ func (a *App) resetBlameCard() {
 	a.ide.blameCardShow = false
 	a.ide.blameHoverAt = time.Time{}
 	a.ide.blameCardHover = false
+	a.ide.blameLeaveAt = time.Time{}
 }
 
 func (a *App) blameCommitFor(hash string) vcs.Commit {
@@ -102,19 +104,34 @@ func (a *App) blameCardOverlay(c *ui.Context, tb *ideTab) {
 		Cursor(ui.CursorPointer).Opacity(0.01)
 	if hit.Hovered() {
 		a.ide.blameLine = line
+		a.ide.blameLeaveAt = time.Time{}
 		if a.ide.blameHoverAt.IsZero() {
 			a.ide.blameHoverAt = time.Now()
 		}
 		if time.Since(a.ide.blameHoverAt) >= blameHoverDelay {
 			a.ide.blameCardShow = true
+		} else {
+			a.frameSoon() // 等满 300ms 再出卡
 		}
-	} else if !a.ide.blameCardHover && !a.ide.blameCardPin {
+	} else if a.ide.blameCardHover || a.ide.blameCardPin {
+		a.ide.blameLeaveAt = time.Time{}
+	} else if a.ide.blameCardShow && a.blameKeepOpen() {
+		a.frameSoon() // 延迟收起期间要持续出帧,到点才能收
+	} else {
 		a.resetBlameCard()
 	}
 	if !a.ide.blameCardShow {
 		return
 	}
 	a.drawCommitCard(c, tb, bl, a.mmWidth()+mmRulW+20, y+rowH+4)
+}
+
+// blameKeepOpen 鼠标已离开追溯文字与提交卡:从离开那一刻起再保持 blameCloseDelay,期间返回 true。
+func (a *App) blameKeepOpen() bool {
+	if a.ide.blameLeaveAt.IsZero() {
+		a.ide.blameLeaveAt = time.Now()
+	}
+	return time.Since(a.ide.blameLeaveAt) < blameCloseDelay
 }
 
 func (a *App) drawCommitCard(c *ui.Context, tb *ideTab, bl vcs.BlameLine, right, top float32) {

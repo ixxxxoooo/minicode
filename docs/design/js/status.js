@@ -201,7 +201,7 @@
       R('图谱菜单「与 HEAD 比较」与「选中两个提交比较」', 'scm_compare.go / scm_graph_picks.go:多选提示条 + 取消、双选后「比较」、相同提交 toast、取活动仓库;-ed cmp2 / cmphead。空文件列表仍只有 toast;未测试', 'ok', 'B3'),
       R('推送被拒:「拉取并变基 / 拉取并合并」分按钮', 'git_push_actions.go:两个分按钮,进行中转圈 + 禁用;变基冲突走 SCM 冲突分组并可「中止变基」;vcs.SetMergeConflict + Mem.PullMerge 造演示冲突。合并冲突:SCM 顶部「正在合并」条 + 打开冲突 / 中止合并(vcs.MergeAbort = git merge --abort;OpState 读 .git 里 MERGE_HEAD / rebase-merge,重启后也能接上;go test 含真实 git 冲突仓库;-ed mergeconflict)。缺口:退出码与 stderr 摘要只在通用日志里;界面未用 Computer Use 实测', 'part', 'B3'),
       R('审查 → 一键暂存已接受的改动', 'review_stage.go:多仓库按 repoAt 暂存,部分失败提示 + 撤销条只覆盖成功数,无已接受改动时置灰并说明;缺口:分组审查页还没有按仓库各放一颗暂存钮;未测试', 'ok', 'B3'),
-      R('行内追溯的悬停提交卡', 'ide_blame_ui.go:悬停 300 ms 出卡(头像缩写 / 作者 / 相对时间 / 说明 / 短哈希 / 影响文件数 / 查看提交 · 差异 · 复制哈希),未提交行按钮置灰,卡片可悬停保持,-ed blamecard。缺口:移出后无延迟收起,未提交行的「差异」未直接开 HEAD ↔ 工作区;未测试', 'part', 'B3'),
+      R('行内追溯的悬停提交卡', 'ide_blame_ui.go:悬停 300 ms 出卡(头像缩写 / 作者 / 相对时间 / 说明 / 短哈希 / 影响文件数 / 查看提交 · 差异 · 复制哈希),未提交行按钮置灰,卡片可悬停保持,移出追溯文字 / 卡片后延迟 250 ms 才收起(可从文字移进卡片),换行立即收起,-ed blamecard。缺口:未提交行的「差异」未直接开 HEAD ↔ 工作区;延迟收起只有单测,未用 Computer Use 实测(悬停动作 AX 点不到)', 'part', 'B3'),
       R('储藏条目展开看各文件差异', 'scm_stash_expand.go + vcs/stash_diff.go:展开读取中 / 空储藏 / >8 个文件折叠「还有 N 个…」、文件右键「打开差异 / 复制路径」、-ed stashfiles;缺口:储藏父行本身没有右键;未测试', 'ok', 'B3')],
     automation: [
       R('周历(翻周 / 今天)、卡片列表筛选与启停、右侧编辑抽屉、新建 / 删除、真实落盘', '', 'ok'),
