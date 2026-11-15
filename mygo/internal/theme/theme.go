@@ -90,9 +90,13 @@ const (
 // 行高令牌(设计稿 --lh-*)。
 const (
 	LhTight = 1.3
+	LhDense = 1.35
+	LhUI    = 1.4
 	LhBody  = 1.5
-	LhRead  = 1.65
 	LhCap   = 1.45 // 说明文字常用
+	LhChat  = 1.55
+	LhMono  = 1.6
+	LhRead  = 1.65
 )
 
 // 间距刻度 --sp-1 … --sp-8。

@@ -8,6 +8,7 @@ import (
 
 // overlayLayer 在根上绘制窄窗浮层:Agent 工作区、IDE 对话栏、导航抽屉。
 func (a *App) overlayLayer(c *ui.Context) {
+	a.syncOverlayMotion()
 	if a.useSideDrawer() && a.sideOpen {
 		a.sideDrawerOverlay(c)
 	}
@@ -36,7 +37,7 @@ func (a *App) wsOverlay(c *ui.Context) {
 			for _, s := range t.Shadow3() {
 				col.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 			}
-			col.Transition(ui.ElementTransition{Position: true, Duration: kit.DurMorph, Ease: kit.EaseMorph})
+			kit.DrawerSlide(col, a.wsOvlAt, true, a.frameSoon)
 			col.Children(func() { a.workspace(c) })
 		})
 }
@@ -66,6 +67,7 @@ func (a *App) dockOverlay(c *ui.Context) {
 		Children(func() {
 			col := ui.Column(c).Absolute().Right(0).Top(0).Bottom(0).Width(w).
 				Background(t.BG).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1)
+			kit.DrawerSlide(col, a.dockOvlAt, true, a.frameSoon)
 			col.Children(func() { a.chatPane(c, 0) })
 		})
 }
@@ -77,29 +79,30 @@ func (a *App) sideDrawerOverlay(c *ui.Context) {
 		Background(t.Scrim).
 		OnClick(func() { a.sideOpen = false }).
 		Children(func() {
-			ui.Column(c).Absolute().Left(0).Top(0).Bottom(0).Width(w).
-				Background(t.Chrome).BorderWidth(0, 1, 0, 0).BorderColor(t.Bd2).
-				Children(func() {
-					innerW := w
-					ui.Column(c).Width(innerW).Grow(1).MinHeight(0).Children(func() {
-						a.sideTop(c)
-						ui.Column(c).Grow(1).MinHeight(0).PaddingX(6).Clip().Children(func() {
-							switch a.NavID() {
-							case "chat":
-								a.sessions(c)
-							case "files":
-								a.filesView(c)
-							case "search":
-								a.searchView(c)
-							case "scm":
-								a.scmView(c)
-							}
-						})
-						if a.tk.Scheme.ID != "c" {
-							a.sideFoot(c)
+			drawer := ui.Column(c).Absolute().Left(0).Top(0).Bottom(0).Width(w).
+				Background(t.Chrome).BorderWidth(0, 1, 0, 0).BorderColor(t.Bd2)
+			kit.DrawerSlide(drawer, a.sideOvlAt, false, a.frameSoon)
+			drawer.Children(func() {
+				innerW := w
+				ui.Column(c).Width(innerW).Grow(1).MinHeight(0).Children(func() {
+					a.sideTop(c)
+					ui.Column(c).Grow(1).MinHeight(0).PaddingX(6).Clip().Children(func() {
+						switch a.NavID() {
+						case "chat":
+							a.sessions(c)
+						case "files":
+							a.filesView(c)
+						case "search":
+							a.searchView(c)
+						case "scm":
+							a.scmView(c)
 						}
 					})
+					if a.tk.Scheme.ID != "c" {
+						a.sideFoot(c)
+					}
 				})
+			})
 		})
 }
 

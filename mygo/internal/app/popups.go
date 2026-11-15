@@ -293,6 +293,30 @@ func (a *App) openSettings(tab string) {
 	a.set.query = ""
 }
 
+// dialogOpen 把居中对话框的 open 与 DialogOut 退场挂钩:关时先播动画再卸。
+func (a *App) dialogOpen(key string, wantOpen bool, fn func(open *bool)) {
+	if a.dlgClosing == key && time.Since(a.dlgCloseAt) >= kit.DurFast {
+		a.dlgClosing, a.dlgSeen = "", ""
+	}
+	hold := wantOpen
+	if a.dlgClosing == key && time.Since(a.dlgCloseAt) < kit.DurFast {
+		hold = true
+		a.frameSoon()
+	} else if !wantOpen && a.dlgSeen == key && a.dlgClosing == "" {
+		a.dlgClosing, a.dlgCloseAt = key, time.Now()
+		hold = true
+		a.frameSoon()
+	}
+	if hold && a.dlgSeen != key {
+		a.dlgSeen, a.dlgAt = key, time.Now()
+	}
+	fn(&hold)
+	if !hold && wantOpen && a.dlgClosing == "" {
+		a.dlgClosing, a.dlgCloseAt = key, time.Now()
+		a.frameSoon()
+	}
+}
+
 // dialogIn 是居中浮层(命令面板、快速选择)的入场 / 退场动画。
 func (a *App) dialogIn(key string, backdrop, panel ui.Element) {
 	if a.dlgClosing == key && time.Since(a.dlgCloseAt) < kit.DurFast {

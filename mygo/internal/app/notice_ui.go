@@ -104,7 +104,7 @@ func (a *App) noticeRow(c *ui.Context, it noticeItem) {
 			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 				ui.Text(c, it.title).FontWeight(500).SingleLine()
 				if it.body != "" {
-					ui.Text(c, it.body).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.45)
+					ui.Text(c, it.body).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(theme.LhCap)
 				}
 				if len(it.actions) > 0 {
 					ui.Row(c).Gap(6).Margin(4, 0, 0, 0).Children(func() {
@@ -147,7 +147,9 @@ func (a *App) noticeToasts(c *ui.Context) {
 	ui.Column(c).Absolute().Right(12).Bottom(12 + theme.HStatus).Gap(8).Width(280).Children(func() {
 		for i, it := range live {
 			icon, col := noticeIcon(t, it.level)
-			ui.Row(c).Key("toast-"+itoa(i)).Gap(8).Padding(10, 12).Radius(t.RLg()).Background(t.Raised).Border(1, t.Bd1).Children(func() {
+			card := ui.Row(c).Key("toast-"+itoa(i)).Gap(8).Padding(10, 12).Radius(t.RLg()).Background(t.Raised).Border(1, t.Bd1)
+			card = kit.ToastSlide(card, it.at, a.frameSoon)
+			card.Children(func() {
 				for _, s := range t.Shadow2() {
 					_ = s
 				}

@@ -3,6 +3,7 @@ package app
 import (
 	"sort"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/egoist/mygo/ui"
@@ -27,6 +28,7 @@ type palState struct {
 	listSt   ui.ScrollState
 	preview  string // 文件预览缓存的路径
 	previewT string
+	palAt    time.Time // 列表 stagger 起点
 }
 
 // palItem 是列表里的一项。
@@ -58,6 +60,7 @@ const (
 func (a *App) openPalette() {
 	a.pq = palState{lastSel: -1}
 	a.paletteOn = true
+	a.pq.palAt = time.Now()
 	log.Debug("打开命令面板")
 }
 
@@ -67,7 +70,6 @@ func (a *App) closePalette() {
 		a.previewPalette(a.pq.origPal) // 取消:还原(偏好没动过,不必写)
 	}
 	a.paletteOn = false
-	a.pq = palState{}
 }
 
 // previewPalette 临时套用主题(命令面板里上下移动时预览),不写偏好。
@@ -357,11 +359,18 @@ func palRowY(items []palItem, i int) (top, h float32) {
 
 // paletteView 渲染面板(浮层)。
 func (a *App) paletteView(c *ui.Context) {
-	if !a.paletteOn {
+	if a.dlgClosing == "palette" && time.Since(a.dlgCloseAt) >= kit.DurFast {
+		a.dlgClosing, a.dlgSeen = "", ""
+		a.pq = palState{}
+		return
+	}
+	if !a.paletteOn && a.dlgClosing != "palette" {
 		return
 	}
 	t := a.tk
-	open := true
+	if a.paletteOn && a.pq.palAt.IsZero() {
+		a.pq.palAt = time.Now()
+	}
 	// 上下 / 回车只在面板开着时处理;输入框不吃 Up / Down
 	items := a.palItems()
 	if a.pq.sel >= len(items) {
@@ -398,53 +407,52 @@ func (a *App) paletteView(c *ui.Context) {
 		a.previewPalette(items[a.pq.sel].theme)
 		t = a.tk
 	}
-	ui.DialogBase(c, &open, func(backdrop, panel ui.Element) {
-		backdrop.Background(t.Scrim).Justify(ui.Start).AlignItems(ui.Center).Padding(96, 0, 0, 0)
-		pw := float32(620)
-		if a.winW > 0 && a.winW < palHidePrv {
-			pw = min(520, a.winW-24)
-			if pw < 280 {
-				pw = max(280, a.winW-24)
-			}
-		}
-		panel.Width(pw).Background(t.Raised).Radius(t.RXl()).Clip().Column()
-		for _, s := range t.Shadow3() {
-			panel.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
-		}
-		panel.Border(1, t.Bd1)
-		a.dialogIn("palette", backdrop, panel)
-		panel.Children(func() {
-			// 输入行
-			ui.Row(c).Height(44).PaddingX(14).Gap(10).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
-				kit.Ic(c, "search", kit.S16).TextColor(t.Tx3)
-				in := ui.TextInputBase(c.Key("pal-in"), &a.pq.query).Grow(1).FontSize(theme.FsTitle).AutoFocus().
-					Placeholder(map[bool]string{true: "筛选主题…", false: "搜索命令、会话与文件"}[a.pq.sub == "theme"]).PlaceholderColor(t.Tx4)
-				in.OnSubmit(func() { run(a.pq.sel) })
-				// 单行输入框会自己吃 ↑↓(跳到行首 / 行尾),所以挂在输入框自己的快捷键上
-				in.OnShortcut(0, ui.KeyDown, func() { move(1) })
-				in.OnShortcut(0, ui.KeyUp, func() { move(-1) })
-				in.OnShortcut(ui.Ctrl, ui.KeyN, func() { move(1) })
-				in.OnShortcut(ui.Ctrl, ui.KeyP, func() { move(-1) })
-			})
-			ui.Row(c).Height(palListH).AlignItems(ui.Stretch).Children(func() {
-				a.palList(c, items, run)
-				if a.winW >= palHidePrv || a.winW <= 0 {
-					a.palPreview(c, items)
+	a.dialogOpen("palette", a.paletteOn, func(open *bool) {
+		ui.DialogBase(c, open, func(backdrop, panel ui.Element) {
+			backdrop.Background(t.Scrim).Justify(ui.Start).AlignItems(ui.Center).Padding(96, 0, 0, 0)
+			pw := float32(620)
+			if a.winW > 0 && a.winW < palHidePrv {
+				pw = min(520, a.winW-24)
+				if pw < 280 {
+					pw = max(280, a.winW-24)
 				}
-			})
-			ui.Row(c).Height(28).PaddingX(12).Gap(12).AlignItems(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx3).
-				BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
-				ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() { kit.Kbd(c, "↑", "↓"); ui.Text(c, "选择") })
-				ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() { kit.Kbd(c, "⏎"); ui.Text(c, "执行") })
-				ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() { kit.Kbd(c, "esc"); ui.Text(c, "关闭") })
-				ui.Spacer(c).Grow(1)
-				ui.Text(c, "共 "+itoa(len(items))+" 项")
+			}
+			panel.Width(pw).Background(t.Raised).Radius(t.RXl()).Clip().Column()
+			for _, s := range t.Shadow3() {
+				panel.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+			}
+			panel.Border(1, t.Bd1)
+			a.dialogIn("palette", backdrop, panel)
+			panel.Children(func() {
+				// 输入行
+				ui.Row(c).Height(44).PaddingX(14).Gap(10).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+					kit.Ic(c, "search", kit.S16).TextColor(t.Tx3)
+					in := ui.TextInputBase(c.Key("pal-in"), &a.pq.query).Grow(1).FontSize(theme.FsTitle).AutoFocus().
+						Placeholder(map[bool]string{true: "筛选主题…", false: "搜索命令、会话与文件"}[a.pq.sub == "theme"]).PlaceholderColor(t.Tx4)
+					in.OnSubmit(func() { run(a.pq.sel) })
+					// 单行输入框会自己吃 ↑↓(跳到行首 / 行尾),所以挂在输入框自己的快捷键上
+					in.OnShortcut(0, ui.KeyDown, func() { move(1) })
+					in.OnShortcut(0, ui.KeyUp, func() { move(-1) })
+					in.OnShortcut(ui.Ctrl, ui.KeyN, func() { move(1) })
+					in.OnShortcut(ui.Ctrl, ui.KeyP, func() { move(-1) })
+				})
+				ui.Row(c).Height(palListH).AlignItems(ui.Stretch).Children(func() {
+					a.palList(c, items, run)
+					if a.winW >= palHidePrv || a.winW <= 0 {
+						a.palPreview(c, items)
+					}
+				})
+				ui.Row(c).Height(28).PaddingX(12).Gap(12).AlignItems(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx3).
+					BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
+					ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() { kit.Kbd(c, "↑", "↓"); ui.Text(c, "选择") })
+					ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() { kit.Kbd(c, "⏎"); ui.Text(c, "执行") })
+					ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() { kit.Kbd(c, "esc"); ui.Text(c, "关闭") })
+					ui.Spacer(c).Grow(1)
+					ui.Text(c, "共 "+itoa(len(items))+" 项")
+				})
 			})
 		})
 	})
-	if !open {
-		a.closePalette()
-	}
 }
 
 // palList 是左侧分组列表(可滚动,键盘移动时保证选中项可见)。
@@ -480,6 +488,7 @@ func (a *App) palList(c *ui.Context, items []palItem, run func(int)) {
 				}
 				i, it := i, it
 				row := ui.ButtonBase(c).Key("pal-" + itoa(i)).Height(palRowH).PaddingX(8).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).Cursor(ui.CursorDefault)
+				kit.StaggerRise(row, i, a.pq.palAt, a.frameSoon)
 				switch {
 				case i == a.pq.sel:
 					row.Background(t.AcSoft).TextColor(t.AcTx)

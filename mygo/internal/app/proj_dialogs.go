@@ -240,41 +240,38 @@ func (a *App) projDialogs(c *ui.Context) {
 
 // dlgFrame 是这几个对话框共用的外壳:遮罩 + 卡片 + 标题行。
 func (a *App) dlgFrame(c *ui.Context, key string, w float32, title string, body func()) {
+	if a.dlgClosing == key && time.Since(a.dlgCloseAt) >= kit.DurFast {
+		a.dlgClosing, a.dlgSeen = "", ""
+		a.closeProjDlg()
+		return
+	}
+	want := a.pd.kind == key
 	t := a.tk
-	open := true
-	ui.DialogBase(c, &open, func(backdrop, panel ui.Element) {
-		backdrop.Background(t.Scrim).Justify(ui.Center).AlignItems(ui.Center)
-		panel.Width(w).Background(t.Raised).Radius(t.RXl()).Column().Border(1, t.Bd1).Padding(14, 16).Gap(6)
-		for _, sh := range t.Shadow3() {
-			panel.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
-		}
-		a.dialogIn(key, backdrop, panel)
-		panel.Children(func() {
-			ui.Row(c).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, title).FontSize(theme.FsHead).FontWeight(700).Grow(1)
-				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭 Esc"}).OnClick(a.closeProjDlg)
+	a.dialogOpen(key, want, func(open *bool) {
+		ui.DialogBase(c, open, func(backdrop, panel ui.Element) {
+			backdrop.Background(t.Scrim).Justify(ui.Center).AlignItems(ui.Center)
+			panel.Width(w).Background(t.Raised).Radius(t.RXl()).Column().Border(1, t.Bd1).Padding(14, 16).Gap(6)
+			for _, sh := range t.Shadow3() {
+				panel.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
+			}
+			a.dialogIn(key, backdrop, panel)
+			panel.Children(func() {
+				ui.Row(c).AlignItems(ui.Center).Children(func() {
+					ui.Text(c, title).FontSize(theme.FsHead).FontWeight(700).Grow(1)
+					kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭 Esc"}).OnClick(func() { *open = false })
+				})
+				body()
 			})
-			body()
 		})
 	})
-	if !open {
-		a.closeProjDlg()
-	}
 }
 
-// dlgInput 是单行输入框(带描边,聚焦时强调色)。
+// dlgInput 是单行输入框(统一 kit.Field:错误描边 + 抖动)。
 func (a *App) dlgInput(c *ui.Context, key string, v *string, ph string, autoFocus bool, submit func()) {
-	t := a.tk
 	d := &a.pd
-	box := ui.Row(c).Key(key+"-box").Grow(1).MinWidth(0).Height(28).PaddingX(8).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Border(1, t.Bd2)
-	if d.err != "" {
-		box.BorderColor(t.Err)
-		kit.ShakeInput(box, &d.shakeAt)
-	} else if box.FocusWithin() {
-		box.BorderColor(t.Ac)
-	}
-	box.Children(func() {
-		in := ui.TextInputBase(c.Key(key), v).Grow(1).MinWidth(0).FontSize(theme.FsBody).Placeholder(ph).PlaceholderColor(t.Tx4)
+	kit.Field(c, key, kit.FieldOpt{Err: d.err, ShakeAt: &d.shakeAt}, func(box ui.Element) {
+		box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(26)
+		in := ui.TextInputBase(c.Key(key), v).Grow(1).MinWidth(0).FontSize(theme.FsBody).Placeholder(ph).PlaceholderColor(a.tk.Tx4)
 		if autoFocus {
 			in.AutoFocus()
 		}
