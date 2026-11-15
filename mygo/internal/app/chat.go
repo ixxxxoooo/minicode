@@ -47,8 +47,12 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		}
 		a.chatHead(c, a.st.Title)
 		// 会话流:停在底部时随新内容跟随,用户上滑后不再抢滚动位置
-		if a.flowSt.MaxY-a.flowSt.Y > 32 {
+		if a.flowNoFollow && a.flowSt.MaxY-a.flowSt.Y < 8 { // 手动滚回底部:恢复跟随
+			a.flowNoFollow = false
+		}
+		if !a.flowNoFollow && a.flowSt.MaxY-a.flowSt.Y > 32 {
 			a.flowNoFollow = true
+			a.flowAwayLen = flowTailMark(a.st.Items) // 记下离开时的末尾,之后有变化就点亮「有新内容」
 		}
 		if !a.flowNoFollow && a.flowSt.Y >= a.flowSt.MaxY-8 {
 			a.flowSt.Y = math.MaxFloat32

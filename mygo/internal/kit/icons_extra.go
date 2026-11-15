@@ -3,6 +3,7 @@ package kit
 // 设计稿图标表之外补充的图标(同样 24×24 画布、描边 1.7),init 时并入 iconPaths。
 func init() {
 	for k, v := range map[string]string{
+		"arrowDown": `<path d="M12 5v14M6 13l6 6 6-6"/>`,
 		"min":       `<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>`,
 		"dockR":     `<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M14 5v14"/>`,
 		"dockB":     `<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 14h16"/>`,

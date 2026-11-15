@@ -162,6 +162,7 @@ type App struct {
 	planOpened   map[string]bool      // 已因流式自动打开过的计划
 	userEd       userEdit             // 正在就地编辑的用户消息
 	flowNoFollow bool                 // 会话流:用户上滑后停止贴底
+	flowAwayLen  int                  // 离开底部时的末尾标记(flowTailMark),变了 = 回到最新按钮出现「有新内容」圆点
 
 	// Markdown 选项(随主题重建)
 	md         *markdown.Options
