@@ -269,7 +269,7 @@ func (a *App) usageModels(c *ui.Context, u core.UsageReport) {
 				ui.Box(c).Grow(1).Height(6).Radius(3).Background(t.Fill2).Clip().Children(func() {
 					ui.Box(c).HeightPercent(100).WidthPercent(float32(m.Fraction * 100)).Radius(3).Background(col)
 				})
-				ui.Text(c, core.FormatMoney(m.Cost)).Width(58).TextColor(t.Tx3).FontFeatures("tnum").TextAlign(ui.End)
+				ui.Text(c, usageModelCost(m.Name, m.Cost)).Width(58).TextColor(t.Tx3).FontFeatures("tnum").TextAlign(ui.End)
 			})
 		}
 	})
@@ -333,13 +333,15 @@ func (a *App) usageDrawer(c *ui.Context, u core.UsageReport) {
 			msg = "演示模式:限额为示例数据。"
 		} else if a.be == nil {
 			msg = "还没有打开会话,无法查询账户限额。请先在工作台打开一个会话,或稍后再试。"
-		} else if a.use.limitsState == core.LimitsUnavailable && a.use.limitsAt != 0 {
-			msg = "查询账户限额失败。请确认会话仍连接并重试。"
 		} else if a.use.limitsState == core.LimitsChecking {
 			msg = "正在查询账户限额…"
+		} else if a.use.limitsState == core.LimitsUnavailable && a.use.limitsAt != 0 {
+			msg = "当前服务商不提供账户限额(例如 DeepSeek 等第三方网关)。本页仍会显示本机会话 token 与费用估算;无价目表的模型显示为「未知费用」。"
+		} else if a.use.limitsState == core.LimitsUnavailable {
+			msg = "查询账户限额失败。请确认会话仍连接并重试。"
 		}
 		ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Tx4).LineHeight(1.45)
-		if !a.cuDemo() && a.use.limitsState == core.LimitsUnavailable {
+		if !a.cuDemo() && a.use.limitsState == core.LimitsUnavailable && a.use.limitsAt == 0 {
 			kit.Btn(c, "重试", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() { a.usageRefreshLimits(true) })
 		}
 	}

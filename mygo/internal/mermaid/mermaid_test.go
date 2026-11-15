@@ -36,13 +36,31 @@ func TestFlowBasic(t *testing.T) {
 }
 
 func TestUnsupported(t *testing.T) {
-	_, err := Render("gantt\n title x")
-	if err == nil {
-		t.Fatal("应不支持 gantt")
+	for _, src := range []struct {
+		src, kind string
+	}{
+		{"gantt\n title x", "gantt"},
+		{"erDiagram\n  A ||--o{ B : has", "erDiagram"},
+		{"classDiagram\n  Animal <|-- Duck", "classDiagram"},
+	} {
+		_, err := Render(src.src)
+		if err == nil {
+			t.Fatalf("%s 应不支持", src.kind)
+		}
+		re, ok := err.(RenderError)
+		if !ok || re.Kind != ErrUnsupported || re.Arg != src.kind {
+			t.Fatalf("%s 错误类型 %v", src.kind, err)
+		}
 	}
-	re, ok := err.(RenderError)
-	if !ok || re.Kind != ErrUnsupported {
-		t.Fatalf("错误类型 %v", err)
+}
+
+func TestClassInFlowchartStillFlow(t *testing.T) {
+	s, err := Render("graph TD\n  A[开始] --> B[结束]\n  classDef ok fill:#dfd\n  class A ok")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Width < 40 {
+		t.Fatalf("流程图 class 样式应有有效布局:%vx%v", s.Width, s.Height)
 	}
 }
 

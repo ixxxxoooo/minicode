@@ -78,6 +78,73 @@ func parseMCPList(s string) []mcpLine {
 	return lines
 }
 
+// RunMCPAdd 调用 claude mcp add(临时 HOME 测试时在环境里设 HOME=…)。
+func RunMCPAdd(name, transport, spec, proj string) error {
+	path, ok := claude.FindClaude("")
+	if !ok {
+		return fmt.Errorf("没有找到 claude 命令")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	args := []string{"mcp", "add"}
+	if transport == "http" || transport == "sse" {
+		args = append(args, "--transport", "http", name, spec)
+	} else {
+		parts := strings.Fields(spec)
+		if len(parts) == 0 {
+			return fmt.Errorf("stdio 服务器需要 command")
+		}
+		args = append(args, name, "--", parts[0])
+		args = append(args, parts[1:]...)
+	}
+	cmd := exec.CommandContext(ctx, path, args...)
+	if proj != "" {
+		cmd.Dir = proj
+	}
+	cmd.Env = os.Environ()
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	err := cmd.Run()
+	if err != nil {
+		msg := strings.TrimSpace(out.String())
+		if msg == "" {
+			msg = err.Error()
+		}
+		return fmt.Errorf("%s", msg)
+	}
+	alog.Info("mcp add", "name", name, "proj", proj)
+	return nil
+}
+
+// RunMCPRemove 调用 claude mcp remove。
+func RunMCPRemove(name, proj string) error {
+	path, ok := claude.FindClaude("")
+	if !ok {
+		return fmt.Errorf("没有找到 claude 命令")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, path, "mcp", "remove", name)
+	if proj != "" {
+		cmd.Dir = proj
+	}
+	cmd.Env = os.Environ()
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	err := cmd.Run()
+	if err != nil {
+		msg := strings.TrimSpace(out.String())
+		if msg == "" {
+			msg = err.Error()
+		}
+		return fmt.Errorf("%s", msg)
+	}
+	alog.Info("mcp remove", "name", name, "proj", proj)
+	return nil
+}
+
 func scopeLabel(s string) string {
 	switch strings.ToLower(s) {
 	case "project":

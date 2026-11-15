@@ -16,6 +16,18 @@ import (
 
 func (a *App) cuDemo() bool { return a.demoWs() || a.demoExtra }
 
+func shellQuote(s string) string {
+	if s == "" {
+		return "''"
+	}
+	if strings.IndexFunc(s, func(r rune) bool {
+		return r > ' ' && r != '/' && r != '-' && r != '_' && r != '.' && r != '@'
+	}) < 0 {
+		return s
+	}
+	return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
+}
+
 func (a *App) cuDisk() *customize.DiskStore {
 	if a.cuDemo() {
 		return nil
@@ -101,41 +113,21 @@ func (a *App) cuOpenPath(p string) {
 }
 
 func (a *App) cuAuthReal(it *customize.Item) {
-	if a.cuDemo() {
-		it.Authorize()
-		a.toast = "已授权「" + it.Name + "」"
+	path, ok := claude.FindClaude("")
+	if !ok {
+		a.toast = "没有找到 claude 命令"
 		return
 	}
-	a.bg("MCP授权", func() func() {
-		path, ok := claude.FindClaude("")
-		if !ok {
-			return func() { a.toast = "没有找到 claude 命令" }
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-		defer cancel()
-		cmd := exec.CommandContext(ctx, path, "mcp", "login", it.Name)
-		if a.proj != "" {
-			cmd.Dir = a.proj
-		}
-		out, err := cmd.CombinedOutput()
-		msg := strings.TrimSpace(string(out))
-		if r := []rune(msg); len(r) > 200 {
-			msg = string(r[len(r)-200:])
-		}
-		if err != nil {
-			if msg == "" {
-				msg = err.Error()
-			}
-			return func() { a.toast = msg }
-		}
-		name := it.Name
-		return func() {
-			if ds := a.cuDisk(); ds != nil {
-				ds.RefreshMCPStatus()
-			}
-			a.toast = "已授权「" + name + "」"
-		}
-	})
+	line := path + " mcp login " + shellQuote(it.Name)
+	if a.proj != "" {
+		line = "cd " + shellQuote(a.proj) + " && " + line
+	}
+	a.mode = ModeIDE
+	a.screen = ScreenWork
+	a.ide.bottomTab = "term"
+	a.ide.tpc().initCmd = line
+	a.toast = "已在终端面板填入授权命令,在终端里执行并完成登录"
+	log.Info("MCP授权", "name", it.Name)
 }
 
 func (a *App) cuReconnectReal(it *customize.Item) {
@@ -359,9 +351,13 @@ func (a *App) usageLimitsFromSession() {
 		return
 	}
 	u := a.st.Usage
+	prev := a.use.limitsState
 	a.use.limits = limitsFromUsage(u)
 	a.use.limitsAt = u.LimitsAt
 	a.use.limitsState = u.LimitsState
+	if u.LimitsState == core.LimitsUnavailable && u.LimitsAt == 0 && prev == core.LimitsChecking {
+		a.use.limitsAt = time.Now().Unix()
+	}
 }
 
 func limitsFromUsage(u core.Usage) (out []core.Limit) {
