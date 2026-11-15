@@ -179,7 +179,8 @@ func (a *App) finishConflict(tb *ideTab, s *confState) {
 	}
 	a.ide.invalidate()
 	delete(a.cf, p)
-	a.scmAct("标记为已解决", func(r vcs.Repo) error { return r.Stage(p) }, func() {
+	rel := a.focusRepoOf(p)
+	a.scmAct("标记为已解决", func(r vcs.Repo) error { return r.Stage(rel) }, func() {
 		a.toast = "已解决冲突并暂存 " + p
 		a.ide.closeTab(tb.id)
 	})

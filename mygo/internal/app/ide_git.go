@@ -27,7 +27,8 @@ func (a *App) headKey() string {
 
 // gitInfoFor 取文件的追溯与历史;没有或过期就在后台读(读完后下一帧生效)。
 func (a *App) gitInfoFor(p string) *gitInfo {
-	if a.repo == nil || p == "" {
+	repo, rel := a.repoAt(p)
+	if repo == nil || p == "" {
 		return nil
 	}
 	if a.gi == nil {
@@ -43,10 +44,9 @@ func (a *App) gitInfoFor(p string) *gitInfo {
 		a.gi[p] = g
 	}
 	g.key, g.busy = key, true
-	repo := a.repo
 	a.bg("git.file", func() func() {
-		lg, _ := repo.FileLog(p, 40)
-		bl, err := repo.Blame(p)
+		lg, _ := repo.FileLog(rel, 40)
+		bl, err := repo.Blame(rel)
 		return func() {
 			g.busy = false
 			g.log = lg

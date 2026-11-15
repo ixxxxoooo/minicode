@@ -23,6 +23,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/prefs"
+	"github.com/ixxxxoooo/minicode/internal/projects"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
@@ -115,6 +116,12 @@ type App struct {
 	projects []core.ProjectInfo
 	curSess  string
 	projOpen map[string]bool
+	reg      *projects.Store     // 手动添加的项目与工作区(真实:~/.minicode/workspaces.json;演示:内存)
+	ws       *projects.Workspace // 当前激活的工作区(nil = 单项目)
+	repos    []*repoEntry        // 多根时每个顶层文件夹一项
+	repoAct  int                 // 活动仓库(源代码管理里正在操作的那个)
+	solo     *soloState          // 进入工作区前的单项目现场(退出时还原)
+	pd       projDlg             // 添加项目 / 工作区对话框状态
 	sessMore map[string]bool
 
 	// 会话流的折叠状态:条目 id → 是否展开(没有记录就用默认)
@@ -297,6 +304,7 @@ func (a *App) SetSessionOpener(f func(id string) backend.Backend) { a.opener = f
 // OpenSession 切到某个会话:关掉旧后端、清空状态与排队、接上新后端(空 id = 新会话)。
 func (a *App) OpenSession(id string) {
 	log.Info("切换会话", "from", a.curSess, "to", id)
+	a.maybeLeaveWorkspace(id)
 	a.recordSess(id)
 	a.parkOrClose()
 	if lv := a.live[id]; lv != nil && id != "" { // 回到一个在后台跑着的会话:接回它的后端与状态
@@ -393,11 +401,12 @@ func (a *App) View(c *ui.Context) {
 	c.SetTheme(a.tk.UITheme())
 	a.winW, a.winH = c.Size()
 	a.fitPanels()
+	a.reposTick()
 	a.shortcuts(c)
 	if a.popup == "" {
 		a.popSeen = ""
 	}
-	if !a.paletteOn && a.qp == nil {
+	if !a.paletteOn && a.qp == nil && a.pd.kind == "" {
 		a.dlgSeen = ""
 	}
 	a.autosave()
@@ -432,6 +441,7 @@ func (a *App) SeedDemoExtras() {
 	a.auto = automation.NewStore(demo.Automations(a.now()))
 	a.au.sel = 2 // 设计稿里选中的是第二张卡
 	a.ide.seedDemo()
+	a.seedDemoRegistry()
 	a.seedWorkspace()
 	a.update = "更新 42%"
 }

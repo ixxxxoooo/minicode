@@ -21,6 +21,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/prefs"
+	"github.com/ixxxxoooo/minicode/internal/projects"
 )
 
 // 构建时可用 -ldflags "-X main.version=..." 覆盖。
@@ -75,6 +76,7 @@ type realSetup struct {
 	ix     *claude.Index
 	curCwd string       // 新会话的工作目录:最近打开的会话所在目录
 	onCwd  func(string) // 打开会话后目录变了(切到别的项目)的回调,在主线程调用
+	reg    *projects.Store
 }
 
 func (r *realSetup) refresh() *claude.Index {
@@ -103,6 +105,13 @@ func (r *realSetup) open(id string) backend.Backend {
 	}
 	cb := r.onCwd
 	r.mu.Unlock()
+	// 工作区的主文件夹启动会话时:其余文件夹用 --add-dir 授权,可选让 Claude 读取它们的 CLAUDE.md
+	if w, ok := r.reg.ByPrimary(cfg.Cwd); ok {
+		cfg.AddDirs = w.Extra()
+		if w.LoadMD {
+			cfg.Env = append(cfg.Env, core.EnvVar{Key: projects.LoadMDEnv, Value: "1"})
+		}
+	}
 	log.Info("打开会话", "id", id, "cwd", cfg.Cwd)
 	if cb != nil {
 		cb(cfg.Cwd)
@@ -198,9 +207,15 @@ func main() {
 	if demoMode {
 		a.SetRepo(demo.Repo())
 		a.SetProjects(demo.Projects(), "fixbug")
+		a.SeedDemoRegistry()
+		if os.Getenv("MINI_WS") != "" { // 调试 / 截图:启动即进入演示工作区
+			a.ActivateWorkspace("ws-fullstack")
+		}
 	} else {
 		claude.SetCacheFile(filepath.Join(diag.Home(), "session-index-go.json"))
-		rs = &realSetup{}
+		reg := projects.Open(filepath.Join(diag.Home(), "workspaces.json"))
+		a.SetRegistry(reg)
+		rs = &realSetup{reg: reg}
 		ix := rs.refresh()
 		rs.curCwd = initialCwd(ix)
 		log.Info("真实模式", "projects", len(ix.Projects), "cwd", rs.curCwd)

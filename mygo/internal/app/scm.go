@@ -118,13 +118,27 @@ func sortChanges(cs []vcs.Change) {
 // syncTreeGit 把改动同步给文件树的状态色(暂存与工作区合并;删除不在树里)。
 func (a *App) syncTreeGit() {
 	m := map[string]string{}
-	for _, c := range a.sc.changes {
-		if c.Status == 'D' {
-			continue
+	add := func(prefix string, cs []vcs.Change) {
+		for _, c := range cs {
+			if c.Status == 'D' {
+				continue
+			}
+			k := prefix + c.Path
+			if _, ok := m[k]; !ok || !c.Staged {
+				m[k] = string(c.Status)
+			}
 		}
-		if _, ok := m[c.Path]; !ok || !c.Staged {
-			m[c.Path] = string(c.Status)
+	}
+	if a.multiRoot() { // 多根:每个仓库的改动加上文件夹名前缀
+		for i, e := range a.repos {
+			cs := e.changes
+			if i == a.repoAct && a.sc.loaded {
+				cs = a.sc.changes
+			}
+			add(e.name+"/", cs)
 		}
+	} else {
+		add("", a.sc.changes)
 	}
 	a.ide.git = m
 }

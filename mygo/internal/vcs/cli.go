@@ -151,3 +151,12 @@ func (r *CLI) Create(name string) error {
 	_, err := r.git(15*time.Second, "switch", "-c", name)
 	return err
 }
+
+// Init 在 dir 里 `git init`(源代码管理里「初始化仓库」),成功后返回该仓库。
+func Init(dir string) (*CLI, error) {
+	r := &CLI{Dir: dir}
+	if _, err := r.git(10*time.Second, "init"); err != nil {
+		return nil, err
+	}
+	return r, nil
+}

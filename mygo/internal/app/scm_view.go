@@ -22,6 +22,21 @@ func (a *App) scmView(c *ui.Context) {
 	if s.folded == nil {
 		s.folded = map[string]bool{}
 	}
+	if a.multiRoot() { // 工作区:顶部仓库总览 + 活动仓库的完整源代码管理
+		ui.Column(c).Grow(1).MinHeight(0).Children(func() {
+			a.repoOverview(c)
+			if a.repo == nil {
+				ui.Column(c).Grow(1).Gap(8).Padding(24, 12).AlignItems(ui.Center).Children(func() {
+					kit.Ic(c, "branch", 20).TextColor(t.Tx4)
+					ui.Text(c, a.activeRepo().name+" 还不是 Git 仓库").TextColor(t.Tx3)
+					kit.Btn(c, "初始化仓库", kit.BtnOpt{Variant: kit.BtnSoft, Icon: "branch"}).OnClick(func() { a.initRepo(a.repoAct) })
+				})
+				return
+			}
+			a.scmBody(c)
+		})
+		return
+	}
 	if a.repo == nil {
 		ui.Column(c).Grow(1).Gap(8).Padding(24, 12).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "branch", 20).TextColor(t.Tx4)
@@ -29,6 +44,13 @@ func (a *App) scmView(c *ui.Context) {
 		})
 		return
 	}
+	a.scmBody(c)
+}
+
+// scmBody 是活动仓库的源代码管理主体:分支行、提交框、各分组、储藏、图谱。
+func (a *App) scmBody(c *ui.Context) {
+	t := a.tk
+	s := &a.sc
 	a.scmTick()
 	staged, work := s.split()
 	var conf []vcs.Change // 合并冲突单独成组,排在最前
@@ -42,6 +64,13 @@ func (a *App) scmView(c *ui.Context) {
 	}
 	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
 		a.scmHead(c)
+		if e := a.activeRepo(); e != nil { // 多仓库:提交前再确认一眼作用在哪个仓库
+			ui.Row(c).Height(18).PaddingX(4).Gap(4).AlignItems(ui.Center).Shrink(0).FontSize(theme.FsMicro).TextColor(t.Tx3).Children(func() {
+				ui.Text(c, "提交到").Shrink(0)
+				ui.Text(c, e.name).FontWeight(600).TextColor(t.Tx1).SingleLine().Shrink(1).MinWidth(0)
+				ui.Text(c, "· "+a.branch).SingleLine().Shrink(0)
+			})
+		}
 		a.scmCommitBox(c, len(staged))
 		a.scmReviewRow(c)
 		ui.Scroll(c).Key("scm").Grow(1).MinHeight(0).Children(func() {
@@ -267,7 +296,7 @@ func (a *App) scmFile(c *ui.Context, grp string, ch vcs.Change) {
 		}
 		ui.Spacer(c).Grow(1)
 		if hov {
-			kit.Ib(c, "file", kit.IbOpt{Small: true, Tip: "打开文件"}).OnClick(func() { a.ide.openFile(ch.Path, true) })
+			kit.Ib(c, "file", kit.IbOpt{Small: true, Tip: "打开文件"}).OnClick(func() { a.ide.openFile(a.treePath(ch.Path), true) })
 			if grp == "changes" {
 				kit.Ib(c, "undo", kit.IbOpt{Small: true, Tip: "放弃更改"}).OnClick(func() { a.scmDiscard(ch.Path) })
 				kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "暂存"}).OnClick(func() { a.scmStage(ch.Path) })
@@ -485,10 +514,10 @@ func grpDiffKind(grp string) string {
 // scmOpenFile 点 SCM 里的文件:冲突 = 打开三方合并标签,其余 = 对应来源的差异标签。
 func (a *App) scmOpenFile(grp string, ch vcs.Change, pin bool) {
 	if grp == "merge" {
-		a.OpenWorkspaceTab(vConflict, ch.Path)
+		a.OpenWorkspaceTab(vConflict, a.treePath(ch.Path))
 		return
 	}
-	a.openDiffKind(grpDiffKind(grp), ch.Path, pin)
+	a.openDiffKind(grpDiffKind(grp), a.treePath(ch.Path), pin)
 }
 
 // scmStashes 是「储藏」分组:应用(保留)/ 弹出(应用并删除)/ 删除。

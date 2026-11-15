@@ -44,7 +44,8 @@
     ${field('名称', '全栈工作区')}
     <div class="t3 fs-cap">文件夹(2–12 个)</div>
     ${wrow('router-demo', '~/Code/router-demo', 1, 'main · 3 项改动')}${wrow('web-dashboard', '~/Code/web-dashboard', 0, 'feat/charts · 2 项改动')}${wrow('docs-site', '~/Code/docs-site', 0, 'main · 干净')}
-    <div class="f g2">${btn('从已有项目添加', 'sm', 'plus')}${btn('选择文件夹…', 'sm', 'folder')}</div>
+    <div class="f g2"><div class="inp grow"><span class="t4">粘贴文件夹路径后回车添加</span></div>${btn('浏览…', '', 'folder')}</div>
+    <div class="f g2">${btn('从已有项目添加', 'sm', 'plus')}</div>
     <div class="f ai g3" style="margin-top:6px">${tog(1)}<span class="t2">让 Claude 同时读取附加文件夹里的 CLAUDE.md 与规则</span></div>
     <div class="f g2" style="margin-top:8px"><span class="t3 fs-cap grow">保存到 ${mono('~/.minicode/workspaces.json')},不会往项目里写文件</span>${btn('取消', 'ghost')}${btn('创建工作区', 'pri')}</div></div>`;
   const tree = `<div style="padding:6px 8px">${gh('全栈工作区(工作区)', undefined, ib('plus', 'sm', '添加文件夹'))}
@@ -54,7 +55,7 @@
     <div class="row" style="height:24px;font-weight:600">${ic('chevD', 's12')}${ic('folder', 's12')}<span class="grow">web-dashboard</span><span class="g gm">2</span></div>
     <div class="row" style="height:22px;padding-left:30px">${ic('chevR', 's12')}${ic('folder', 's12')}<span>src</span></div>
     <div class="row" style="height:24px;font-weight:600">${ic('chevR', 's12')}${ic('folder', 's12')}<span class="grow">docs-site</span></div>
-    <div class="row" style="height:24px;font-weight:600;color:var(--tx-3)">${ic('chevR', 's12')}${ic('folder', 's12')}<span class="grow">design-assets</span>${tag('非仓库', '')}</div></div>`;
+    </div>`;
   P['proj-ws'] = () => `<div class="ds" style="max-width:1240px">${head('项目与工作区 · 添加、组织、使用', '先分清三个词:<b>项目</b> = 一个文件夹(Claude 会话的工作目录);<b>工作区</b> = 一组命名的文件夹(一个主文件夹 + 若干附加文件夹),对标 VS Code 的多根工作区;<b>仓库</b> = 文件夹里的 Git 仓库(一个文件夹至多一个,也可以没有)。会话永远属于「主文件夹」,附加文件夹通过 Claude 的 <span class="mono">--add-dir</span> 授权,不是把它们拷进来。')}
     ${sec('侧栏怎么呈现', '项目与工作区在同一列表里,标题行「+」是唯一入口(菜单:添加项目… / 新建工作区… / 打开最近)。工作区行用叠层图标与「N 个文件夹」,展开后先是成员文件夹(小号、可点、可右键),再是会话。', grid(
       cell('侧栏(会话分栏)', '', box(side, 330, 300), '项目按最近活动排序;工作区置顶。非仓库的文件夹显示灰色「非仓库」标签,不隐藏。'),
@@ -72,12 +73,12 @@
       cell('项目行', '', menu(230, [['plus', '在此项目新对话'], ['layers', '加入工作区…'], ['edit', '重命名显示名'], ['-'], ['folder', '在访达中显示'], ['copy', '复制路径'], ['-'], ['archive', '归档该项目的会话'], ['trash', '从列表移除项目', '', 'danger']]), '项目被某个工作区引用时,移除前提示「它属于 1 个工作区」。')))}
     ${sec('Git 与工作区的关系', '工作区本身不是仓库。每个成员文件夹各自是(或不是)一个仓库,SCM、图谱、分支、同步全部按仓库独立工作 —— 详见「多仓库 Git」页。', '')}
     ${sec('实现状态', '', tbl([['能力', 220], ['说明', 440], ['状态']], [
-      ['侧栏「+」入口与添加项目对话框', '路径输入 + 最近 / 发现 + 校验;真实模式浏览按钮走系统文件夹选择器', st('todo')],
-      ['工作区存储', '~/.minicode/workspaces.json,原子落盘;项目列表 ~/.minicode/projects.json(手动添加的)', st('todo')],
-      ['侧栏的工作区行与成员行', '含右键菜单、拖拽排序(后续)', st('todo')],
-      ['多根文件树 / 多根搜索', '虚拟顶层目录 = 文件夹名;路径加文件夹前缀', st('todo')],
-      ['Claude 附加目录', '启动 claude 时追加 --add-dir;CLAUDE.md 加载开关', st('todo')],
-      ['演示数据', '演示模式内置「全栈工作区」(3 个文件夹,其中 1 个非仓库)与多个仓库状态', st('todo')]]))}</div>`;
+      ['侧栏「+」入口与添加项目对话框', '路径输入 + 最近 / 发现 + 校验;真实模式浏览按钮走系统文件夹选择器;路径不存在时给出相近路径建议', st('ok')],
+      ['工作区存储', '~/.minicode/workspaces.json 一个文件同时存手动添加的项目与工作区,原子落盘;损坏时改名留底不丢数据', st('ok')],
+      ['侧栏的工作区行与成员行', '工作区行 / 成员行 / 项目行右键菜单已做;成员文件夹折进工作区;拖拽排序未做', st('part')],
+      ['多根文件树 / 多根搜索', '虚拟顶层目录 = 文件夹名(workspace.Multi),路径加文件夹前缀,顶层行带「主 / 改动数 / 非仓库」;搜索按前缀路径工作,「仅某文件夹」范围筛选未做', st('part')],
+      ['Claude 附加目录', '主文件夹启动会话时追加 --add-dir(附加文件夹),开关打开时设置 CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1', st('ok')],
+      ['演示数据', '演示模式内置「全栈工作区」(router-demo / web-dashboard / docs-site 各有自己的分支与改动)+ 一个手动添加的非仓库项目 design-assets', st('ok')]]))}</div>`;
 
   /* ───────── 多仓库 Git ───────── */
   const repoRow = (n, br, sync, changes, on, extra = '') => `<div class="row ${on ? 'on' : ''}" style="height:32px">${ic('branch', 's12')}<div class="grow" style="min-width:0"><div class="ell"><b>${n}</b> <span class="t3">${br}</span></div></div><span class="t3 fs-cap mono">${sync}</span>${changes ? cnt(changes, on ? 'ac' : '') : '<span class="t4 fs-cap">干净</span>'}${extra}</div>`;
@@ -95,19 +96,19 @@
       cell('活动仓库模式(默认)', '', box(scmMulti, 520, 330), '总览里每行 10 秒在后台读一次状态(只读 git status,带 --no-optional-locks);活动仓库照常 4 秒 + 文件监视刷新。'),
       cell('总览行右键 / 悬停动作', '', box(`<div style="padding:10px 12px" class="fc g3"><div class="row" style="height:32px;background:var(--fill-1);border-radius:6px">${ic('branch', 's12')}<div class="grow"><b>web-dashboard</b> <span class="t3">feat/charts</span></div><span class="acts">${ib('refresh', 'sm', '拉取')}${ib('sync', 'sm', '同步')}${ib('branch', 'sm', '切换分支…')}${ib('more', 'sm')}</span></div>${menu(240, [['arrow', '设为活动仓库'], ['download', '拉取'], ['upload', '推送'], ['sync', '同步'], ['branch', '切换分支…'], ['-'], ['fork', '在图谱中查看'], ['layers', '储藏所有更改'], ['-'], ['folder', '在访达中显示'], ['terminal', '在此处打开终端']])}</div>`, 400, 330), '每个动作只作用于这一行的仓库,与是否为活动仓库无关。')))}
     ${sec('一次操作涉及多个仓库时', '', tbl([['场景', 200], ['怎么做'], ['状态']], [
-      ['提交', '只提交活动仓库的暂存区;提交按钮文案写明仓库名;其它仓库的暂存区在总览行用小圆点提示「有已暂存未提交」', st('todo')],
-      ['全部同步 / 全部拉取', '总览头部按钮,逐个仓库顺序执行,每行显示转圈 → 成功 / 失败;失败的一行出现「重试」,不中断其余仓库', st('todo')],
-      ['切换分支', '状态栏分支名 = 活动仓库的分支,点它切换的就是活动仓库;总览行的「切换分支…」切换那一个', st('todo')],
+      ['提交', '只提交活动仓库的暂存区;提交按钮文案写明仓库名;其它仓库的暂存区在总览行用小圆点提示「有已暂存未提交」', st('part')],
+      ['全部同步 / 全部拉取', '总览头部按钮,逐个仓库顺序执行,每行显示转圈 → 成功 / 失败;失败的一行出现「重试」,不中断其余仓库', st('part')],
+      ['切换分支', '状态栏分支名 = 活动仓库的分支,点它切换的就是活动仓库;总览行的「切换分支…」切换那一个', st('ok')],
       ['Claude 本轮改动(审查标签)', '按文件所属仓库分组,分组标题 = 仓库名 + 分支;「在源代码管理里暂存」只暂存该仓库内的文件', st('todo')],
       ['同一次回合改了 2 个仓库', '审查标签顶部提示「改动涉及 2 个仓库,提交需分别进行」,并给出「逐个提交」向导(依次切活动仓库、预填说明)', st('todo')],
-      ['路径显示', '多根时路径前缀文件夹名(web-dashboard/src/api.ts);单根与现在一致', st('todo')]]))}
+      ['路径显示', '多根时路径前缀文件夹名(web-dashboard/src/api.ts);单根与现在一致', st('ok')]]))}
     ${sec('图谱、冲突、储藏', '', tbl([['能力', 200], ['怎么做'], ['状态']], [
       ['Git 图谱', '整页虚拟标签 vGraph 显示活动仓库;标题行有仓库下拉可切换;标签名带仓库名「图谱 · router-demo」', st('todo')],
       ['合并冲突', 'SCM 顶部「合并冲突」分组出现在对应仓库的区块内;总览行显示红色冲突徽标(阻止「全部同步」)', st('part')],
       ['储藏', '每个仓库各自的储藏区;总览行「储藏所有更改」只作用该仓库', st('part')],
-      ['文件树状态色', '所有仓库的改动一起上色(M 橙 / A 绿 / U 灰),按文件路径前缀归属;文件夹节点右侧显示仓库改动数', st('todo')],
+      ['文件树状态色', '所有仓库的改动一起上色(M 橙 / A 绿 / U 灰),按文件路径前缀归属;文件夹节点右侧显示仓库改动数', st('ok')],
       ['嵌套仓库(子模块 / 仓库里的仓库)', '按文件夹最近的 .git 归属;子模块作为独立行显示「子模块」标签', st('todo')],
-      ['非仓库文件夹', '总览里灰行 + 「初始化仓库」;初始化走 git init 并在输出面板记录', st('todo')]]))}
+      ['非仓库文件夹', '总览里灰行 + 「初始化仓库」;初始化走 git init 并在输出面板记录', st('ok')]]))}
     ${sec('状态栏与标题栏', '', grid(
       cell('状态栏', '', box(`<div class="f ai g4" style="padding:12px 14px">${chip('router-demo · main', 'branch')}<span class="t3">↑1</span><span class="t3">⚠ 1</span><span class="grow"></span><span class="t3">全栈工作区 · 3 个文件夹</span></div><div class="t3" style="padding:0 14px;line-height:1.7">分支胶囊写「仓库名 · 分支」;点开分支选择器,顶部一行显示作用的仓库,可切换;窄窗口只留分支名。</div>`, 130, 560), '仓库名在多仓库时才出现;单仓库保持现在的「分支」。'),
       cell('分支选择器(带仓库)', '', box(`<div class="pop" style="width:380px;margin:12px auto"><div class="f ai g2" style="padding:6px 8px">${chip('router-demo', 'folder', 'on')}${chip('web-dashboard', 'folder', 'line')}${chip('docs-site', 'folder', 'line')}</div><div class="inp fill" style="margin:3px;height:28px"><span class="t4">切换或新建分支…</span></div>${mi('branch', 'main', '', 'on')}${mi('branch', 'feat/auth')}${mi('plus', '创建并切换到 “fix/case”')}</div>`, 200, 560), '顶部 chip 选仓库,下面是该仓库的分支;输入不存在的名字出现「创建并切换」。')))}
@@ -144,15 +145,15 @@
     ${sec('实现状态', '', tbl([['范围', 220], ['说明', 440], ['状态']], [
       ['会话流步骤行 / 命令卡 / 差异卡 / 链接动作', '本页「会话流里的动作」整张表', st('ok')],
       ['文件 / 文件夹 / 标签 / 编辑器 / SCM / 图谱 / 终端菜单', '已有的菜单,按本页顺序与命名对齐;缺的项逐个补', st('part')],
-      ['会话行 / 项目行 / 工作区行菜单', '置顶、归档、复制 Markdown 等', st('todo')],
+      ['会话行 / 项目行 / 工作区行菜单', '置顶、归档、复制 Markdown 等', st('part')],
       ['搜索结果 / 问题 / 输出 / 虚拟标签菜单', '', st('todo')]]))}</div>`;
 
   /* ───────── 缺口总表 ───────── */
   P['gaps'] = () => `<div class="ds" style="max-width:1240px">${head('缺口总表 · 设计稿 ↔ Go 实现', '这一页是「现在还差什么」的唯一清单,每做完一项就把状态改成已实现。按优先级分组:P0 影响主流程,P1 完整度,P2 打磨。')}
     ${sec('P0 · 主流程', '', tbl([['项', 220], ['现状', 360], ['计划', 200], ['状态']], [
-      ['添加项目 / 工作区', '侧栏没有任何入口;项目只来自会话目录', '本页「项目与工作区」', st('todo')],
-      ['多根文件树与搜索', '只有单根', '虚拟顶层目录', st('todo')],
-      ['多仓库 SCM', '只有一个活动仓库,无总览', '总览行 + 活动仓库切换', st('todo')],
+      ['添加项目 / 工作区', '已有:侧栏「+」→ 对话框 / 校验 / 右键菜单', '—', st('ok')],
+      ['多根文件树与搜索', '文件树多根已做;搜索范围筛选未做', '搜索「仅某文件夹」', st('part')],
+      ['多仓库 SCM', '总览行 + 活动仓库切换 + 全部拉取 / 同步 + 初始化仓库已做;审查按仓库分组 / 图谱仓库下拉 / 逐个提交向导未做', '补齐 multi-git 页「待做」行', st('part')],
       ['窗口自适应收起', '已按宽度自动收起 / 恢复导航栏与右侧栏', '—', st('ok')],
       ['差异左右 / 统一', '差异标签与审查标签都已生效,视图选择会记住', '—', st('ok')],
       ['会话流动作', '文件图标、跳转、复制、终端面板、链接都可用', '—', st('ok')]]))}

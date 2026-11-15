@@ -33,7 +33,8 @@ Go 1.27、`github.com/egoist/mygo` v0.9.0,模块名 `github.com/ixxxxoooo/minico
 | `internal/claude` | 真实后端:stream-json 协议(`protocol.go`)、翻译器(`translate.go`)、惰性启动与崩溃自动 `--resume` 重启(`backend.go`)、历史回放(`history.go`)、会话索引与增量磁盘缓存(`index.go`) |
 | `internal/demo` | 演示后端:脚本化场景、沙盒项目(`sandbox.go`)、演示仓库 |
 | `internal/vcs` | Git 访问(`CLI` 走 git 命令行、`Mem` 供测试 / 演示),所有读命令带 `--no-optional-locks` |
-| `internal/workspace` | 文件系统抽象(`OS` / `Mem`),IDE 文件树与搜索读它 |
+| `internal/workspace` | 文件系统抽象(`OS` / `Mem` / `Multi`),IDE 文件树与搜索读它;`Multi` 把多个文件夹拼成一棵树(顶层 = 文件夹名,重名加后缀) |
+| `internal/projects` | 手动添加的项目与工作区存储(`~/.minicode/workspaces.json`,原子落盘,损坏改名留底):校验、去重、`ByPrimary`、`Extra()`(给 `--add-dir`) |
 | `internal/lsp` | 语言服务器客户端内核(不依赖界面):Content-Length 帧、JSON-RPC 配对、服务端请求自动应答、UTF-16 ↔ 字节列换算(`position.go`)、按扩展名选服务器与查找安装(`servers.go`,rust-analyzer 跳过 rustup 代理)、Hover / Definition / References / Completion / Rename / Formatting、`ApplyEdits` |
 | `internal/term` | 终端内核:`creack/pty` 起登录 shell + `charmbracelet/x/vt` 仿真器,输出画面快照(样式段、光标、历史),不依赖界面 |
 | `internal/app` | 全部界面:`app.go` 状态与事件、`shell.go` 外壳、`chat/flow/composer/dock` 会话、`ide*.go` IDE、`term_panel.go` 终端面板、`project.go` 真实项目上下文、`scm*.go` 源代码管理、`settings*.go` 设置、`palette.go` 命令面板等 |
@@ -100,6 +101,16 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 - **彩色文件图标**:`ide_tree.go` 的 `fileTint` / `fileIc`,偏好 `appearance.fileIcons`(默认开)。
 - 设计稿 `docs/design` v3.2 新增五页(`js/specs2.js`):布局 · 拖拽与面板停靠、终端 · 能力与主题、语言服务 · 识别与安装、画布 / 浏览器 / 自定义 · 业界做法、会话流 · 待办 / 审批 / 后台任务;每页都有「实现状态」列,与代码保持一致。
 - 设计稿 `docs/design` v3.3 新增「图标与品牌 · 应用 / 托盘」页(`js/brand-spec.js`,规范组首项):图标生成器 `js/brand.js`(`U.brand`:六种应用图标样式 × 浅 / 深 / 透明 / 着色外观 × 六套主题配色,五种菜单栏模板图标 × 八种状态 × 彩色徽标,织纹按「压 / 穿」切段、不靠背景色挖洞,≤ 28px 自动换 2×2「经纬」)、样式 `css/brand.css`、交互 `js/brand-act.js`;设置 → 外观新增「应用图标 / 菜单栏图标」两组(`settings.js::brandGroups`),选择实时刷新全稿里的图标(Dock、⌘Tab、通知、关于、查看器标题栏等)。Go 分支尚未实现 Dock 图标换装与托盘,实现状态表如实标注;`assets/icon/` 目前只有浅 / 深两套 `.icns` 与四张托盘 PNG。
+
+### 项目与工作区、多仓库(v3.3 补充,设计稿 `proj-ws` / `multi-git` / `menus` / `gaps` 页)
+
+- **概念**:项目 = 一个文件夹;工作区 = 一组命名文件夹(第一个是主文件夹 = 会话 cwd,其余经 `--add-dir` 授权,`LoadMD` 开时设 `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1`);仓库 = 文件夹里的 Git 仓库(可没有)。数据 `App.reg *projects.Store`(真实落盘,演示 `projects.NewMem()` + `seedDemoRegistry`)。
+- **侧栏**(`side_ws.go`):标题行「+」(添加项目… / 新建工作区…);工作区行置顶,展开 = 成员文件夹行(「主」/「非仓库」标签)+ 主文件夹的会话;成员文件夹不再单独列;手动添加但没有会话的项目补在列表里。工作区 / 成员 / 项目三种行都有右键菜单(重命名、编辑文件夹、加入工作区、移出、在访达显示、复制路径、移除并确认)。方案 B 的项目下拉暂未接工作区。
+- **对话框**(`proj_dialogs.go`):添加项目(路径输入 + 浏览 + 最近 / 发现 + 校验:找不到 → 相近路径建议、是文件 → 用所在文件夹、重复 → 切换过去)、新建 / 编辑工作区(≥2 个文件夹、设为主、移出、从已有项目添加、路径 / 浏览、CLAUDE.md 开关、权限提示)、通用确认框。系统文件夹选择器 `mygo.Dialog.Open`,演示模式没有。入场动画按**真实时钟**计时,截图 / 测试要 `time.Sleep` 一下再 `Frame`。
+- **多根**(`workspaces.go`):`ActivateWorkspace` 把 `a.ide.fs` 换成 `workspace.Multi`,`a.repos` 每个文件夹一项(`repoEntry`:分支 / 领先落后 / 最近状态 / 提交说明草稿);**`a.repo` / `a.sc` 始终是「活动仓库」的**,`setActiveRepo` 切换并重读;文件树路径 = `文件夹名/相对路径`,`a.treePath(rel)` 是仓库内 → 树路径,`a.repoAt(p)` 是树路径 → 仓库 + 相对路径(HEAD / Index / 追溯 / 暂存块都走它),`a.focusRepoOf(p)` 在会改仓库的操作前切到该文件所属仓库;`syncTreeGit` 合并所有仓库的改动(带前缀);非活动仓库每 8 秒后台轻量刷新(`reposTick`)。真实模式 `a.proj = 主文件夹`,每个文件夹后台探测是不是仓库;非仓库在总览里有「初始化仓库」(`vcs.Init`)。`leaveWorkspace` 还原进入前的单项目现场;打开不属于成员的会话会自动退出(演示在 `OpenSession`,真实在 `SetProject`)。
+- **源代码管理**(`scm_repos.go`):多根时顶部「仓库」总览(分支 · ↑↓ · 改动数,点击切换活动仓库,全部拉取 / 同步),提交框上方写明「提交到 <仓库> · <分支>」,状态栏显示「仓库 · 分支」。
+- **调试**:`MINI_WS=1` 启动即进入演示工作区;`cmd/shot -ws [-repo N]`、`-dlg add|ws|wsedit|confirm|add:<路径>`。演示数据 `internal/demo/wsdemo.go`(`WorkspaceFolders` / `Discovered`)。
+- **未做**:审查页按仓库分组与「逐个提交」向导、图谱仓库下拉、嵌套仓库 / 子模块、搜索「仅某文件夹」范围、拖拽排序、会话行右键菜单。
 
 ### 已知缺口(真实模式)
 

@@ -237,6 +237,9 @@ func (a *App) absPath(rel string) string {
 	if a.proj == "" {
 		return rel
 	}
+	if a.multiRoot() {
+		return a.ide.fs.Abs(rel)
+	}
 	return filepath.Join(a.proj, rel)
 }
 

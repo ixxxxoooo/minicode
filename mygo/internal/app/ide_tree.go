@@ -22,7 +22,16 @@ func (a *App) filesView(c *ui.Context) {
 		ui.Column(c).Children(func() {
 			ui.Row(c).Height(24).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Children(func() {
 				kit.Ic(c, "chevD", kit.S12)
-				ui.Text(c, strings.ToUpper(d.fs.Name())).Grow(1).SingleLine()
+				title := strings.ToUpper(d.fs.Name())
+				if a.multiRoot() {
+					title = strings.ToUpper(a.ws.Name) + "(工作区)"
+				}
+				ui.Text(c, title).Grow(1).SingleLine()
+				if a.multiRoot() {
+					kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "添加文件夹"}).OnClick(func() {
+						a.pickFolders(true, func(ps []string) { a.wsAddFolders(a.ws.ID, ps) })
+					})
+				}
 				kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建文件"})
 				kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache, d.filesCache = nil, nil })
 			})
@@ -118,7 +127,11 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 			ui.Box(c).Size(12, 12).Shrink(0)
 			a.fileIc(c, e.Name)
 		}
-		ui.Text(c, e.Name).Grow(1).SingleLine()
+		nm := ui.Text(c, e.Name).Grow(1).SingleLine()
+		if depth == 0 && e.Dir && a.multiRoot() { // 多根:顶层是各个文件夹,加粗并标注主文件夹 / 改动数 / 非仓库
+			nm.FontWeight(600)
+			a.rootBadges(c, e.Name)
+		}
 		if g != "" && !e.Dir {
 			ui.Text(c, g).FontSize(10).FontWeight(700).Shrink(0)
 		}

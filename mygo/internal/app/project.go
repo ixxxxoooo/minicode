@@ -27,6 +27,12 @@ func (a *App) projLabel() string {
 // Git;不是 Git 仓库时分支为空、源代码管理显示「还不是 Git 仓库」。目录没变时什么都不做。
 // 打开仓库要跑 git,放后台;窗口还没建好(启动阶段、测试)时同步执行。
 func (a *App) SetProject(dir string) {
+	if a.ws != nil { // 工作区里打开成员文件夹的会话:留在工作区;别处的会话:退出工作区
+		if a.ws.Has(dir) {
+			return
+		}
+		a.leaveWorkspaceKeep()
+	}
 	if dir == "" || dir == a.proj {
 		return
 	}
@@ -55,10 +61,11 @@ func (a *App) SetProject(dir string) {
 
 // headOfRepo 取 HEAD 里某文件的内容(没有仓库或文件不在 HEAD 里时 ok=false)。
 func (a *App) headOfRepo(p string) (string, bool) {
-	if a.repo == nil {
+	r, rel := a.repoAt(p)
+	if r == nil {
 		return "", false
 	}
-	return a.repo.Show("HEAD", p)
+	return r.Show("HEAD", rel)
 }
 
 // welcomeStatus 是欢迎页问候下面的状态行。演示模式保持设计稿里的文案,真实模式读仓库。

@@ -150,6 +150,10 @@ func (a *App) revertHunk(f chFile, i int) {
 
 // wsRel 把改动里的路径换成相对项目根的路径(真实模式的工具调用带绝对路径)。
 func (a *App) wsRel(p string) string {
+	if a.multiRoot() {
+		r, _ := a.wsRelMulti(p)
+		return r
+	}
 	if a.proj != "" {
 		return strings.TrimPrefix(strings.TrimPrefix(p, a.proj), "/")
 	}

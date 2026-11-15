@@ -212,6 +212,9 @@ func (a *App) quickView(c *ui.Context) {
 	switch s.kind {
 	case "branch":
 		ph, ic = "切换或创建分支", "branch"
+		if e := a.activeRepo(); e != nil {
+			ph = "切换或创建 " + e.name + " 的分支"
+		}
 	case "symbols":
 		ph, ic = "转到符号", "cube"
 	}

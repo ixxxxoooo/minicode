@@ -103,7 +103,7 @@ func (a *App) sideTop(c *ui.Context) {
 	r.Children(func() {
 		if t.Scheme.ID == "c" {
 			ui.Text(c, navTitle(a.NavID())).FontWeight(600).PaddingStart(6).Grow(1)
-			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建"})
+			a.addMenuButton(c)
 			return
 		}
 		items := make([]kit.SegItem, len(navs))
@@ -154,17 +154,8 @@ func (a *App) sessions(c *ui.Context) {
 					kit.Kbd(c, "⌘", "N")
 				})
 			}
-			for _, p := range a.projects {
-				a.projRow(c, p)
-				if a.projOpen[p.ID] {
-					for i, s := range p.Sessions {
-						if i >= 4 {
-							break
-						}
-						a.sessRow(c, s, true)
-					}
-				}
-			}
+			a.projectsHeader(c)
+			a.projectsList(c)
 		})
 	})
 }
@@ -175,6 +166,7 @@ func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 	r := kit.RowEl(c, false).Key("proj-" + p.ID).Gap(5).TextColor(t.Tx1).FontWeight(500)
 	hov := r.Hovered()
 	r.OnClick(func() { a.projOpen[p.ID] = !open })
+	r.ContextMenu(func(m *ui.Menu) { a.projMenu(m, p) })
 	r.Children(func() {
 		rot := float32(0)
 		if open {
@@ -186,6 +178,8 @@ func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 		ui.Text(c, p.Name).Grow(1).SingleLine()
 		if hov {
 			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "在此项目新建会话"}).Margin(0, -4, 0, 0).OnClick(func() { a.NewSessionIn(p) })
+		} else if a.registry().HasProject(p.Path) && !a.isRepoDir(p.Path) {
+			kit.Tag(c, "非仓库")
 		} else {
 			ui.Text(c, itoa(p.Count)).FontSize(theme.FsMicro).FontWeight(400).TextColor(t.Tx4).FontFeatures("tnum")
 		}

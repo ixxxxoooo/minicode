@@ -29,7 +29,7 @@ func (a *App) statusbar(c *ui.Context) {
 	}
 	r.Children(func() {
 		if a.branch != "" {
-			a.sbItem(c, "branch", func() { kit.Ic(c, "branch", kit.S12); ui.Text(c, a.branch) }).OnClick(func() { a.OpenQuick("branch", "") })
+			a.sbItem(c, "branch", func() { kit.Ic(c, "branch", kit.S12); ui.Text(c, a.repoBranchLabel()) }).OnClick(func() { a.OpenQuick("branch", "") })
 		}
 		a.sbItem(c, "sync", func() {
 			kit.Ic(c, "refresh", kit.S12)

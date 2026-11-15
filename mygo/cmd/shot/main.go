@@ -41,6 +41,9 @@ func main() {
 	scm := flag.String("scm", "", "IDE 左栏源代码管理:[提交说明][|展开的提交哈希],如 |b7d02e4")
 	srch := flag.String("search", "", "IDE 左栏搜索:查询[|替换文本],如 match_path|find_route")
 	ed := flag.String("ed", "", "编辑器动作:cursor:17:20,select:11:1-13:20,find:查询,scroll:行,peek,rename,acts,inline,refs,def,hover:行:列")
+	wsFlag := flag.Bool("ws", false, "进入演示工作区「全栈工作区」(多根文件树 / 多仓库源代码管理)")
+	dlg := flag.String("dlg", "", "打开项目对话框:add / ws / wsedit / confirm;add:路径 = 预填并提交")
+	repoIx := flag.Int("repo", -1, "多根时把第 N 个仓库设为源代码管理的活动仓库")
 	flag.Parse()
 
 	home := "/tmp/minicode-shot-home"
@@ -56,6 +59,12 @@ func main() {
 	a.SetRepo(demo.Repo())
 	a.SetClock(func() time.Time { return time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC) }) // 与设计稿的「今天」一致
 	a.SeedDemoExtras()
+	if *wsFlag {
+		a.ActivateWorkspace("ws-fullstack")
+		if *repoIx >= 0 {
+			a.SetActiveRepoIndex(*repoIx)
+		}
+	}
 	switch *state {
 	case "welcome":
 	case "perm":
@@ -98,6 +107,16 @@ func main() {
 		a.OpenSCM()
 		a.SetSCM(msg, rev)
 		tt.Frame()
+		tt.Frame()
+	}
+	if *dlg != "" {
+		kind, p, _ := strings.Cut(*dlg, ":")
+		a.OpenProjDialog(kind)
+		if p != "" {
+			a.SetAddProjectPath(p)
+		}
+		tt.Frame()
+		time.Sleep(300 * time.Millisecond) // 弹层入场动画按真实时钟计时
 		tt.Frame()
 	}
 	if *quick != "" {

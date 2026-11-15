@@ -51,8 +51,8 @@ func (a *App) openDiffKind(kind, p string, pin bool) {
 	head := func() string { s, _ := d.headOf(p); return s }
 	work := func() string { s, _ := d.fs.Read(p); return s }
 	index := func() string {
-		if a.repo != nil {
-			if s, ok := a.repo.Index(p); ok {
+		if r, rel := a.repoAt(p); r != nil {
+			if s, ok := r.Index(rel); ok {
 				return s
 			}
 		}
@@ -110,7 +110,7 @@ func (a *App) hunkBar(c *ui.Context, bar ui.Element, act *editor.DiffHunkActions
 			ui.Text(c, text)
 		})
 	}
-	if t.dk == dkWork && a.repo != nil {
+	if r, _ := a.repoAt(t.path); t.dk == dkWork && r != nil {
 		btn("stage", "plus", "暂存此块", false, func() { a.stageHunk(t, act.Index) })
 	}
 	if t.dk == dkStaged {
@@ -124,14 +124,14 @@ func (a *App) hunkBar(c *ui.Context, bar ui.Element, act *editor.DiffHunkActions
 // stageHunk 只暂存这一块:Keep 之后 Old 就是「暂存区 + 这一块」,整份写成暂存区的版本。
 func (a *App) stageHunk(t *ideTab, i int) {
 	t.dv.Accept(i)
-	content, p := t.dv.Old.String(), t.path
+	content, p := t.dv.Old.String(), a.focusRepoOf(t.path)
 	a.scmAct("暂存此块", func(r vcs.Repo) error { return r.StageContent(p, content) }, func() { a.toast = "已暂存这一块" })
 }
 
 // unstageHunk 取消暂存这一块:把这块在暂存区一侧还原,整份写回暂存区。
 func (a *App) unstageHunk(t *ideTab, i int) {
 	t.dv.Revert(i)
-	content, p := t.dv.New.String(), t.path
+	content, p := t.dv.New.String(), a.focusRepoOf(t.path)
 	a.scmAct("取消暂存此块", func(r vcs.Repo) error { return r.StageContent(p, content) }, func() { a.toast = "已取消暂存这一块" })
 }
 

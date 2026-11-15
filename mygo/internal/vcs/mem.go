@@ -16,6 +16,7 @@ type Mem struct {
 	head    map[string]string   // 路径 → HEAD 里的内容
 	msgs    []string            // 提交说明(演示:提交后把暂存区清掉并加一条)
 	ahead   int
+	behind  int
 	index   map[string]string // 路径 → 暂存区里的内容(没有记录 = 与 HEAD 相同)
 	stash   []Stash
 }
@@ -204,6 +205,22 @@ func (m *Mem) Show(rev, p string) (string, bool) {
 	return s, ok
 }
 
-func (m *Mem) AheadBehind() (int, int) { m.mu.Lock(); defer m.mu.Unlock(); return m.ahead, 0 }
+func (m *Mem) AheadBehind() (int, int) { m.mu.Lock(); defer m.mu.Unlock(); return m.ahead, m.behind }
 func (m *Mem) Pull() error             { return nil }
 func (m *Mem) Push() error             { m.mu.Lock(); defer m.mu.Unlock(); m.ahead = 0; return nil }
+
+// SetBranch 演示用:把当前分支设成 name(不存在就加一个),并设定落后数。
+func (m *Mem) SetBranch(name string, behind int) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	found := false
+	for _, b := range m.br {
+		if !b.Remote && b.Name == name {
+			found = true
+		}
+	}
+	if !found {
+		m.br = append(m.br, Branch{Name: name, When: "刚刚"})
+	}
+	m.cur, m.behind = name, behind
+}
