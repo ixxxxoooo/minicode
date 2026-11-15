@@ -231,7 +231,12 @@ func main() {
 		opts.DevBadge = map[bool]string{true: "演示模式", false: "开发版"}[demoMode]
 	}
 	a := app.New(opts)
+	a.SetRunDemo(demoMode)
 	var rs *realSetup
+	startSess := ""
+	if !secondary {
+		startSess = a.ApplySavedRuntime()
+	}
 	if demoMode {
 		a.SetRepo(demo.Repo())
 		a.SetProjects(demo.Projects(), "fixbug")
@@ -308,6 +313,7 @@ func main() {
 			Content:              ui.View(a.View),
 		})
 		a.SetWindow(win)
+		a.WireMainWindowClose(win)
 		a.InstallAppMenu()
 		a.InitBrand()
 		if nwVirt != "" {
@@ -315,6 +321,7 @@ func main() {
 		}
 		win.OnClosed(func() {
 			a.SaveLayMemToPrefs()
+			a.SaveRuntimeState()
 			a.CloseTerminals()
 			diag.CleanExit("关闭窗口")
 		})
@@ -341,12 +348,19 @@ func main() {
 				}
 				return demo.Session(id, speed)
 			})
-			a.Attach(demo.New(func() []demo.Step { return demo.FixBug(true) }, speed))
+			switch {
+			case startSess != "":
+				a.Attach(demo.Session(startSess, speed))
+			case a.RestoreEnabled():
+				a.Attach(demo.New(func() []demo.Step { return demo.FixBug(true) }, speed))
+			default:
+				a.Attach(demo.Session("", speed))
+			}
 			a.SetAutomationRunnerCtx(demo.RunAutomationDemo)
 			return
 		}
 		a.SetSessionOpener(rs.open)
-		a.Attach(rs.open(""))
+		a.Attach(rs.open(startSess))
 		a.SetUsageSource(startUsage(rs, win))
 		// 自动化:持久化到 ~/.minicode/automations.json,每半分钟检查一次到点的并用 claude -p 运行
 		if home, err := os.UserHomeDir(); err == nil {
@@ -389,7 +403,12 @@ func main() {
 			}
 		}()
 	})
-	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) { a.CloseTerminals(); diag.CleanExit("退出") })
+	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) {
+		a.SaveLayMemToPrefs()
+		a.SaveRuntimeState()
+		a.CloseTerminals()
+		diag.CleanExit("退出")
+	})
 	if err := mygo.App.Run(); err != nil {
 		log.Error("运行失败", "err", err)
 		os.Exit(1)
