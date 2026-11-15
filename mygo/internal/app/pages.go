@@ -18,6 +18,8 @@ func (a *App) page(c *ui.Context) bool {
 	switch a.screen {
 	case ScreenUsage:
 		a.usagePage(c)
+	case ScreenAutomation:
+		a.autoPage(c)
 	default:
 		return false
 	}

@@ -9,8 +9,10 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/markdown"
+	"github.com/ixxxxoooo/minicode/internal/automation"
 	"github.com/ixxxxoooo/minicode/internal/backend"
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/prefs"
@@ -103,6 +105,9 @@ type App struct {
 	draft        string
 	sr           searchState                    // 项目内搜索
 	sc           scmState                       // 源代码管理
+	auto         *automation.Store              // 自动化清单
+	au           autoState                      // 自动化页状态
+	clock        func() time.Time               // 当前时间(测试 / 截图注入固定时间)
 	use          usageState                     // 用量页
 	usageSrc     func(rng int) core.UsageReport // 用量数据源(nil = 演示数据)
 	qp           *qpState                       // 快速选择浮层(历史会话 / 分支),nil = 关闭
@@ -133,6 +138,7 @@ type Options struct {
 // New 创建应用状态(不开窗口)。
 func New(o Options) *App {
 	a := &App{
+		auto:       automation.NewStore(nil),
 		st:         core.NewState(),
 		pal:        theme.Find(o.Palette),
 		sch:        theme.FindScheme(o.Scheme),
@@ -308,9 +314,21 @@ func evName(ev core.Event) string {
 	return "other"
 }
 
+// SetClock 注入「当前时间」(测试与截图用,让相对时间可复现)。
+func (a *App) SetClock(f func() time.Time) { a.clock = f }
+
+func (a *App) now() time.Time {
+	if a.clock != nil {
+		return a.clock()
+	}
+	return time.Now()
+}
+
 // SeedDemoExtras 演示 / 截图用:补上设计稿里工作区的附加状态(额外未提交文件、更新提示)。
 func (a *App) SeedDemoExtras() {
 	a.demoExtra = true
+	a.auto = automation.NewStore(demo.Automations(a.now()))
+	a.au.sel = 2 // 设计稿里选中的是第二张卡
 	a.ide.seedDemo()
 	a.update = "更新 42%"
 }

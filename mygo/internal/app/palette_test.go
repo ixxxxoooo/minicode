@@ -2,6 +2,7 @@ package app
 
 import (
 	"testing"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/demo"
@@ -12,6 +13,7 @@ func newTestApp(t *testing.T) (*App, *ui.Tester) {
 	t.Helper()
 	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true})
 	a.SetProjects(demo.Projects(), "fixbug")
+	a.SetClock(func() time.Time { return time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC) })
 	a.SeedDemoExtras()
 	demo.Replay(a.State(), demo.FixBug(false))
 	tt := ui.NewTester(a.View, 1280, 800)
