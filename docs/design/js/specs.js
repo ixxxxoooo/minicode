@@ -53,7 +53,7 @@
   /* ───────── 设计令牌 ───────── */
   const sw = (v, name) => `<div class="sw"><i style="background:var(${v})"></i><span>${name}</span><code>${v}</code></div>`;
   const swg = (title, items) => `<div class="spec"><div class="lb">${title}</div><div class="sw-g">${items.map(([v, n]) => sw(v, n)).join('')}</div></div>`;
-  P.tokens = (st) => `<div class="ds">${head('设计令牌', '三层:原始色板(每套主题 14 个颜色)→ 语义令牌(组件只认这一层)→ 方案倍率(圆角 / 间隙 / 行高)。换主题、换方案都不动组件。')}
+  P.tokens = (st) => `<div class="ds">${head('设计令牌', '三层:原始色板(每套主题 13 个颜色)→ 语义令牌(组件只认这一层)→ 方案倍率(圆角 / 间隙 / 行高)。换主题、换方案都不动组件。')}
     ${sec('主题', '六套主题,点一下整份设计稿跟着换。每套只定义 5 个表面 / 墨色 + 1 个强调色 + 7 个色相,其余全部由 color-mix 推导。', `<div class="spec">${W.themeCards(st.theme)}</div>`)}
     ${sec('色彩 · 语义层', '下面是当前主题算出来的值。', `<div class="grid3">
       ${swg('表面', [['--bg-chrome', '窗口底'], ['--bg', '内容区'], ['--bg-raised', '卡片 / 弹层'], ['--bg-sunken', '代码 / 凹槽']])}
@@ -82,7 +82,7 @@
     ['布局变形 morph', '--dur-morph · --ease-morph · 点击切换', () => `<div class="mini" data-act="mini" data-mode="agent"><i class="s"></i><i class="e"></i><i class="c"></i><i class="r"></i></div>`, 1],
   ];
   P.demo = (k) => `<div class="demo ${P.demos[k][3] ? '' : 'replay'}" ${P.demos[k][3] ? '' : `data-act="demo" data-i="${k}"`}><div class="lb"><span>${P.demos[k][0]}</span><span class="grow"></span>${P.demos[k][3] ? '' : ic('refresh', 's12')}</div><div class="demo-st">${P.demos[k][2]()}</div><div class="t3 fs-cap">${P.demos[k][1]}</div></div>`;
-  P.motion = () => `<div class="ds">${head('动效', '动效只做三件事:说明「它从哪来」、提示「正在进行」、确认「已经完成」。时长 6 档、曲线 5 条,组件里不出现裸数字。')}
+  P.motion = () => `<div class="ds">${head('动效', '动效只做三件事:说明「它从哪来」、提示「正在进行」、确认「已经完成」。时长 5 档(另有 1 个循环档)、曲线 5 条,组件里不出现裸数字。')}
     ${sec('时长与曲线', `所有过渡都是「一个时长令牌 + 一条曲线令牌」。${btn('重放', 'sm soft', 'play', 'data-act="tracks" style="margin-left:6px"')}`,
       `<div class="grid2"><div class="spec tracks">${[['--dur-instant', '80ms', '按压 / 勾选'], ['--dur-fast', '120ms', '悬停 / 收起'], ['--dur-base', '180ms', '弹层 / 行进入 / 滑块'], ['--dur-slow', '260ms', '折叠 / 抽屉'], ['--dur-morph', '440ms', 'Agent ⇄ IDE']].map(([n, v, u]) => track(`${n}<span class="t3 fs-cap" style="font-weight:400;margin-left:6px">${u}</span>`, v, `var(${n})`, 'var(--ease-out)')).join('')}</div>
       <div class="spec tracks">${[['--ease-out', '进入'], ['--ease-in', '离开'], ['--ease-io', '位移'], ['--ease-spring', '滑块 / 勾选'], ['--ease-morph', '布局变形']].map(([n, u]) => track(`${n}<span class="t3 fs-cap" style="font-weight:400;margin-left:6px">${u}</span>`, '900ms', '900ms', `var(${n})`)).join('')}</div></div>`)}

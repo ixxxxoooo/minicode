@@ -159,7 +159,7 @@
 
     ${sec('实现状态', '如实标出 Go 版(feat/mygo 分支)现在做到哪一步,避免设计稿与代码对不上。', tbl([['能力', 240], ['现状'], ['状态']], [
       ['应用图标:织纹 浅 / 深 + .icns', '资源已生成并随包;Go 版打包脚本沿用', stt('ok')],
-      ['运行时 Dock 图标随主题 / 系统深浅切换', '旧 Rust 版有(<span class="kcode">app_icon.rs</span>),Go 版尚未接', stt('todo')],
+      ['运行时 Dock 图标随主题 / 系统深浅切换', '旧 Rust 版有;Go 版 <span class="kcode">assets/icon/</span> 只有浅 / 深两套 .icns 与四张托盘 PNG,运行时不换图标,也没有托盘', stt('todo')],
       ['图标样式 / 外观 / 配色的选择与偏好', '设计稿已定;偏好键 <span class="kcode">appearance.appIcon / appIconMode / appIconTint</span> 待加', stt('todo')],
       ['Dock 角标 / 弹跳 / 进度', '需 cgo 调 <span class="kcode">NSApp.dockTile</span>;进度自绘', stt('todo')],
       ['菜单栏图标(<span class="kcode">general.tray</span> 开关)', '偏好已有、界面有开关;<span class="kcode">NSStatusItem</span> 桥待做,四张托盘资源已有', stt('part')],

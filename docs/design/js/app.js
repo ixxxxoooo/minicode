@@ -37,7 +37,7 @@
   const save = () => { try { const { setQ, cuQ, ...keep } = st; localStorage.setItem('mc-design-v3c', JSON.stringify(keep)); } catch (e) { /* 隐私模式下忽略 */ } };
   const st = load();
   /** 交互层(behave.js)通过它拿到状态与重渲染入口;hooks 在每次整页渲染后运行 */
-  const APP = window.APP = { st, hooks: [] };
+  const APP = window.APP = { st, hooks: [], pages: PAGES };
 
   /* ───────── 渲染 ───────── */
   const frame = (scheme, screen, mode) => `<div class="fit"><div class="frame" data-scheme="${scheme}">${W.win({ scheme, mode, screen, theme: st.theme, setTab: st.setTab, setQ: st.setQ, cust: st.cust, cuSel: st.cuSel, cuScope: st.cuScope, cuTab: st.cuTab, cuQ: st.cuQ, auSel: st.auSel, auF: st.auF, wkOff: st.wkOff, useR: st.useR, ws: st.ws, ov: st.ov, right: st.right, panel: st.panel, panelKind: st.panelKind, unified: st.unified, staged: st.staged, sel: st.sel, scroll: st.scroll, sticky: st.sticky, cmenu: st.cmenu })}</div></div>`;
@@ -55,6 +55,7 @@
   const renderMain = () => {
     const m = $('#vmain'), p = st.page;
     m.innerHTML = p === 'overview' ? overview() : P[p] ? P[p](st) : `<div class="stage-wrap">${frame(st.scheme, p, st.mode)}<div class="hint">${(HINTS[p] || []).map(h => `<span>${h}</span>`).join('')}</div></div>`;
+    if (window.STATUS_BLOCK && p !== 'overview') m.insertAdjacentHTML('beforeend', STATUS_BLOCK(p));
     m.scrollTop = 0; fit(); tick(); $$('.tracks', m).forEach(t => t.classList.add('play'));
     APP.hooks.forEach(f => f());
   };
