@@ -129,6 +129,7 @@ type App struct {
 	rawProj  []core.ProjectInfo    // 未套用整理信息的项目与会话(a.projects 是套用后的)
 	sessDel  func(id string) error // 真实模式:删除会话的磁盘文件(演示为空)
 	ren      sessRename            // 侧栏正在行内重命名的会话
+	fo       fileOp                // 文件树正在进行的行内新建 / 重命名
 
 	// 会话流的折叠状态:条目 id → 是否展开(没有记录就用默认)
 	folds map[string]bool

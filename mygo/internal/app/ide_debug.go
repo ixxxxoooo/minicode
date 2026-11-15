@@ -8,7 +8,7 @@ import (
 )
 
 // EditorDemo 按「动作:参数」驱动编辑器进入某个状态(cmd/shot 截图用,多个动作用逗号隔开):
-// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签)、expand:路径、rename:会话id、archived:项目id、scm、syncall、repobusy:N、search:查询、scope:文件夹、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容。
+// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签)、expand:路径、newfile|newdir:文件夹:名字、renamef:路径:名字、foerr、delask:路径、rename:会话id、archived:项目id、scm、syncall、repobusy:N、search:查询、scope:文件夹、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容。
 func (a *App) EditorDemo(spec string) {
 	for _, act := range strings.Split(spec, ",") {
 		name, arg, _ := strings.Cut(act, ":")
@@ -60,6 +60,27 @@ func (a *App) EditorDemo(spec string) {
 				a.ide.open[q] = true
 			}
 			a.nav, a.sideOpen = "files", true
+			continue
+		case "newfile", "newdir": // newfile:<文件夹>:<已输入的名字> 文件树行内新建(根用空)
+			dir, buf, _ := strings.Cut(arg, ":")
+			a.SetMode(ModeIDE)
+			a.beginNew(dir, name == "newdir")
+			a.fo.buf = buf
+			continue
+		case "renamef": // renamef:<树路径>:<已输入的名字> 文件树行内重命名
+			p, buf, _ := strings.Cut(arg, ":")
+			a.SetMode(ModeIDE)
+			a.beginRenameFile(p)
+			if buf != "" {
+				a.fo.buf = buf
+			}
+			continue
+		case "foerr": // 提交当前行内输入(用来到达「已存在同名」的错误态)
+			a.commitFileOp()
+			continue
+		case "delask": // delask:<树路径> 弹出「移到废纸篓」确认框
+			a.SetMode(ModeIDE)
+			a.askDelete(arg, strings.HasSuffix(arg, "/") || len(a.ide.listing(arg)) > 0)
 			continue
 		case "rename": // rename:<会话 id> 侧栏行内重命名
 			a.nav, a.sideOpen = "", true

@@ -18,7 +18,7 @@
   const model = (w) => { const e = $('.ws-in', w); return e ? { tabs: e.dataset.tabs ? e.dataset.tabs.split(',') : [], active: e.dataset.active, panel: e.dataset.pk || undefined } : { tabs: [], active: '' }; };
   const render = (w, m) => { const ws = $('.ws', w), body = $('.ws-body', ws), tabs = m.tabs;
     if (!ws) return;
-    ws.innerHTML = tabs.length ? WS.html({ tabs, active: m.active, panel: m.panel }) : `<div class="ws-in" data-tabs="" data-active=""><div class="etabs"></div><div class="ws-body"><div class="ws-empty"><div><div class="fs-title m t2">没有打开的标签</div><div class="t3" style="margin-top:4px">从文件树、源代码管理或会话流里打开内容</div></div></div></div>${IDE.bpanel(m.panel)}</div>`;
+    ws.innerHTML = tabs.length ? WS.html({ tabs, active: m.active, panel: m.panel }) : `<div class="ws-in" data-tabs="" data-active=""><div class="etabs"></div><div class="ws-body">${WS.empty()}</div>${IDE.bpanel(m.panel)}</div>`;
     const ps = $('.ws-in', ws); if (ps && m.panel) ps.dataset.pk = m.panel;
     /* 激活的标签滚进可视区(标签多、放不下时) */
     const on = $('.etabs .on, .etabs [aria-selected=true]', ws); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'nearest' }); };

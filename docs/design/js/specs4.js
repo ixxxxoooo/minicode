@@ -107,10 +107,24 @@
       ${M('终端标签条 ···', [['trash', '清屏', '⌘K'], ['search', '查找…', '⌘F'], ['-'], ['plus', '新建终端'], ['x', '关闭终端'], ['-'], ['gear', '终端设置…']])}
       ${M('自定义详情 ···', [['copy', '复制名称'], ['folder', '在访达中显示文件'], ['edit', '用编辑器打开'], ['-'], ['trash', '删除…', '', 'danger']])}
     </div>`)}
+    ${sec('文件操作 · 新建 / 重命名 / 删除', '会改磁盘的三个动作。入口:文件树标题「···」/ 文件夹右键(新建)、文件与文件夹右键(重命名 F2、删除 ⌘⌫)。输入走文件树里的行内输入框,不弹对话框;删除是「移到废纸篓」,走确认框。', grid(
+      cell('新建 · 行内输入', '', box(`<div style="padding:8px"><div class="row" style="height:22px">${ic('chevD', 's12')}${ic('folder', 's12')}<span class="grow">src</span></div>
+        <div class="row on" style="height:24px;padding-left:30px">${ic('file', 's12')}<div class="inp focus grow" style="height:20px"><span class="v caret">handlers.rs</span></div></div>
+        <div class="row" style="height:22px;padding-left:30px">${ic('code', 's12')}<span class="grow">main.rs</span></div>
+        <div class="row" style="height:22px;padding-left:30px">${ic('code', 's12')}<span class="grow">router.rs</span></div>
+        <div class="t3 fs-cap" style="padding:8px 4px;line-height:1.7">· 在文件夹里新建:文件夹自动展开,输入行插在它的子项最前;在文件上右键「新建文件…」= 建在同级<br>· ⏎ 创建并(文件)在编辑器打开、树里选中;Esc / 点别处取消<br>· 输入 <span class="mono">a/b.rs</span> 会连同中间的文件夹一起建</div></div>`, 230, 330), '创建失败(已存在 / 没权限)不关闭输入行,行下方显示红色原因,可改名重试。'),
+      cell('重命名 · 行内输入', '', box(`<div style="padding:8px"><div class="row" style="height:22px;padding-left:30px">${ic('code', 's12')}<span class="grow">main.rs</span></div>
+        <div class="row on" style="height:24px;padding-left:30px">${ic('code', 's12')}<div class="inp focus grow" style="height:20px"><span class="v"><span style="background:var(--ac-soft)">router</span>.rs</span></div></div>
+        <div class="err-line fs-cap" style="padding:2px 6px 0 52px;color:var(--err)">已存在同名文件「router.rs」</div>
+        <div class="t3 fs-cap" style="padding:8px 4px;line-height:1.7">· F2 / 菜单进入,文件只选中不含扩展名的部分<br>· 名字不能为空、不能含 <span class="mono">/</span>、不能与同级重名<br>· 已打开的标签、最近文件、编辑器里的路径同步改名;有未保存修改的标签保留修改</div></div>`, 230, 330), '重命名不改文件内容,只改名;Git 会把它当作「删除 + 新增」,SCM 里的改名检测由 git 自己做。'),
+      cell('删除 · 确认', '', box(`<div style="padding:12px 14px" class="fc g3"><div class="f ai g3"><span class="dlg-i err">${ic('trash')}</span><b class="fs-title">把 handlers.rs 移到废纸篓?</b></div><div class="t3" style="line-height:1.55">可以在访达的废纸篓里放回原处。已打开的标签会关闭;有未保存修改的标签会先询问。</div><div class="f g2" style="justify-content:flex-end">${btn('取消', 'ghost')}${btn('移到废纸篓', 'danger')}</div>
+        <div class="sep"></div><div class="t3 fs-cap" style="line-height:1.7">· 文件夹:写明「连同里面的 N 个文件」<br>· 工作区顶层文件夹没有这个菜单项(用「从工作区移出」)<br>· 演示模式没有废纸篓:直接从内存项目里移除,提示「演示数据」</div></div>`, 230, 330), '真实模式经 Finder(osascript)移到废纸篓以便「放回原处」;失败给出原因,不退回永久删除。'),
+      cell('菜单(补全后)', '', box(menu(220, [['plus', '新建文件…'], ['folder', '新建文件夹…'], ['-'], ['edit', '重命名…', 'F2'], ['trash', '移到废纸篓…', '⌘⌫', 'danger']]) + `<div class="t3 fs-cap" style="padding:8px 4px;line-height:1.7">文件、文件夹右键与文件树标题 ··· 都用同一组;位置按「主要动作 → 导航 → 复制 / 访达 → 危险操作」放在原有项之间(新建在最前,重命名与删除在复制路径之前)。</div>`, 230, 330), '多根时顶层文件夹行只有「新建…」。')))}
     ${sec('实现状态', '', tbl([['范围', 240], ['说明', 440], ['状态']], [
+      ['文件操作 · 新建 / 重命名 / 移到废纸篓', '文件树行内输入(新建文件 / 文件夹、重命名,重名 / 非法名行下报错,Esc / 点别处取消)、移到废纸篓确认框(文件夹写明文件数、有未保存修改会提示)、重命名后标签路径同步且保留修改;真实模式经 Finder 移到废纸篓,演示是内存项目;已知缺口:F2 / ⌘⌫ 快捷键未接(F2 与编辑器「重命名符号」冲突)、重命名时全选而非只选不含扩展名的部分、跨文件夹拖动移动文件', st('part')],
       ['拖拽到对话(文件树 / 标签 / SCM / 访达)', '落点高亮 + 插入 @ 引用 + 聚焦输入框', st('ok')],
       ['编辑器标签条 ··· 与标签右键菜单', '关闭 / 其他 / 右侧 / 已保存 / 全部、引用到对话、复制路径、在访达中显示、在文件树中定位、Markdown 默认视图、自动换行、⇧⌘T 重开(最近 20 个);向右拆分、固定标签、在新窗口中打开 没有实现,菜单里暂不放', st('part')],
-      ['文件 / 文件夹右键菜单、文件树标题 ···', '文件:打开 / 引用到对话 / 显示文件历史 / 复制路径 / 访达;文件夹:在文件夹中搜索 / 在此处打开终端 / 引用;标题 ···:刷新 / 全部折叠 / 在访达中显示项目。新建 / 重命名 / 删除等会改磁盘的项待补确认对话框,没放;「在侧边打开」没有实现', st('part')],
+      ['文件 / 文件夹右键菜单、文件树标题 ···', '文件:打开 / 引用到对话 / 显示文件历史 / 复制路径 / 访达;文件夹:在文件夹中搜索 / 在此处打开终端 / 引用;标题 ···:刷新 / 全部折叠 / 在访达中显示项目。新建 / 重命名 / 移到废纸篓已实现(见上方「文件操作」一节);「在侧边打开」没有实现', st('part')],
       ['对话栏头部 ··· 与会话行 ···(右键同)', '打开 / 重命名 / 置顶 / 归档 / 复制会话 ID / 复制标题 / 复制为 Markdown / 删除会话 / 历史会话 已做(整理信息存本机 session-meta.json);「复制会话链接」「分叉会话…」后端未接,置灰并写明原因', st('part')],
       ['差异标签 ···、SCM 标题 ···、终端标签条 ···、自定义详情 ···', '本页已定稿,实现排在后面', st('todo')]]))}</div>`;
 })();

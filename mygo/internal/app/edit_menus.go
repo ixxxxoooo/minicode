@@ -162,6 +162,19 @@ func (a *App) revealInTree(rel string) {
 
 // treeMenu 是文件树里一个文件 / 文件夹的右键菜单。会改磁盘的动作(新建 / 重命名 / 删除)待补确认对话框,先不放。
 func (a *App) treeMenu(m *ui.Menu, rel string, dir bool) {
+	_, ro := a.mutable()
+	into := rel // 文件夹里新建;文件上右键 = 建在同级
+	if !dir {
+		into = parentDir(rel)
+	}
+	top := !strings.Contains(rel, "/") && a.multiRoot() // 多根时顶层是工作区文件夹,只能在里面新建
+	if m.Item("新建文件…").Disabled(ro != "").Tooltip(ro).Chosen() {
+		a.beginNew(into, false)
+	}
+	if m.Item("新建文件夹…").Disabled(ro != "").Tooltip(ro).Chosen() {
+		a.beginNew(into, true)
+	}
+	m.Separator()
 	if !dir {
 		if m.Item("打开").Trailing("⏎").Chosen() {
 			a.ide.openFile(rel, true)
@@ -199,6 +212,15 @@ func (a *App) treeMenu(m *ui.Menu, rel string, dir bool) {
 		a.nav, a.sideOpen = "files", true
 	}
 	m.Separator()
+	if !top {
+		if m.Item("重命名…").Disabled(ro != "").Tooltip(ro).Chosen() {
+			a.beginRenameFile(rel)
+		}
+		if m.Item("移到废纸篓…").Disabled(ro != "").Tooltip(ro).Danger().Chosen() {
+			a.askDelete(rel, dir)
+		}
+		m.Separator()
+	}
 	a.pathMenu(m, rel)
 }
 
@@ -212,6 +234,14 @@ func (a *App) openTermAt(rel string) {
 
 // treeHeadMenu 是文件树标题「···」:刷新、全部折叠、在访达中显示项目。
 func (a *App) treeHeadMenu(m *ui.Menu) {
+	_, ro := a.mutable()
+	if m.Item("新建文件…").Disabled(ro != "").Tooltip(ro).Chosen() {
+		a.beginNew(a.newTargetDir(), false)
+	}
+	if m.Item("新建文件夹…").Disabled(ro != "").Tooltip(ro).Chosen() {
+		a.beginNew(a.newTargetDir(), true)
+	}
+	m.Separator()
 	if m.Item("刷新").Chosen() {
 		a.ide.listCache, a.ide.filesCache = nil, nil
 	}

@@ -286,3 +286,11 @@
 .win[data-mode="ide"][data-chatmax="on"] .ws { width: 0; opacity: 0; }
 .win[data-mode="ide"][data-chatmax="on"] .chat { margin-left: 0; }
 .win[data-side="off"] .chat-head .only-narrow { display: inline-flex; }
+
+/* ───────── 工作区起始页(见 js/wsempty.js):三组左对齐列表,同设置页分组卡风格 ───────── */
+.ws-empty2 { flex: 1; min-height: 0; overflow: auto; padding: 22px 20px; } .we-col { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.we-cap { font-size: 10.5px; color: var(--tx-3); font-weight: var(--fw-medium); letter-spacing: .03em; padding: 0 4px 5px; }
+.we-card { border-radius: var(--r-md); background: var(--bg-raised); box-shadow: inset 0 0 0 1px var(--bd-1); overflow: hidden; }
+.we-row { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 12px; cursor: default; transition: background var(--dur-fast); } .we-row + .we-row { box-shadow: inset 0 1px var(--bd-1); }
+.we-row:hover { background: var(--fill-1); } .we-row:focus-visible { outline: none; box-shadow: var(--ring); } .we-row .ic { color: var(--tx-2); flex: none; } .we-row .m { flex: none; }
+.we-none { padding: 10px 12px; color: var(--tx-3); font-size: var(--fs-cap); }

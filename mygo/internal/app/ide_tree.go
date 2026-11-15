@@ -32,7 +32,7 @@ func (a *App) filesView(c *ui.Context) {
 						a.pickFolders(true, func(ps []string) { a.wsAddFolders(a.ws.ID, ps) })
 					})
 				}
-				kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建文件"})
+				kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建文件"}).OnClick(func() { a.beginNew(a.newTargetDir(), false) })
 				kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache, d.filesCache = nil, nil })
 				kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.treeHeadMenu)
 			})
@@ -82,7 +82,17 @@ func (d *ide) listing(dir string) []workspace.Entry {
 }
 
 func (a *App) treeDir(c *ui.Context, dir string, depth int) {
+	if o := a.fo; (o.kind == "new" || o.kind == "newdir") && o.dir == dir && !(dir == "" && a.multiRoot()) {
+		a.fileOpInput(c, depth, o.kind == "newdir", "file") // 新建:输入行插在这个文件夹子项的最前
+	}
 	for _, e := range a.ide.listing(dir) {
+		if a.fo.kind == "rename" && a.fo.path == e.Path { // 重命名:这一行换成输入框
+			a.fileOpInput(c, depth, e.Dir, fileIcon(e.Name))
+			if e.Dir && a.ide.open[e.Path] {
+				a.treeDir(c, e.Path, depth+1)
+			}
+			continue
+		}
 		a.treeRow(c, e, depth)
 		if e.Dir && a.ide.open[e.Path] {
 			a.treeDir(c, e.Path, depth+1)
