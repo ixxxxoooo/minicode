@@ -124,3 +124,15 @@
 .ctx-hint.warn { background: var(--warn-soft); color: var(--warn); } .ctx-hint.err { background: var(--err-soft); color: var(--err); align-items: center; } .ctx-none { color: var(--tx-3); }
 .ctx-skel .skel { display: block; }
 .ctx-foot { padding-top: 7px; box-shadow: inset 0 1px var(--bd-1); margin: 0 -12px -4px; padding-inline: 12px 8px; }
+
+/* ───────── 用户消息吸顶(见 js/sticky.js):提问卡 sticky 固定在会话流顶部,下一条提问从下方盖住并接替 ───────── */
+.flow .msg-u { position: sticky; top: 0; z-index: 4; }
+.flow .msg-u.stuck { box-shadow: var(--sh-2), inset 0 0 0 1px var(--bd-1); }
+.flow .msg-u.stuck::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 14px; background: linear-gradient(var(--bg), transparent); pointer-events: none; border-radius: 0; }
+/* 吸顶卡必须不透明:方案 B / C 的底色是半透明叠色,垫一层 --bg */
+[data-scheme="b"] .flow .msg-u { background: linear-gradient(var(--ac-soft), var(--ac-soft)), var(--bg); }
+[data-scheme="c"] .flow .msg-u { background: linear-gradient(var(--fill-1), var(--fill-1)), var(--bg); }
+/* 开启吸顶时,会话流顶部不再做淡出遮罩(卡片贴着顶边) */
+body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 16px), transparent); }
+.no-sticky-user .flow .msg-u { position: static; } .no-sticky-user .flow .msg-u::after { display: none; }
+.sdemo { border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--bd-1); background: var(--bg); overflow: hidden; } .sdemo .flow-wrap { overflow: auto; }
