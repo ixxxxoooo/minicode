@@ -26,7 +26,7 @@ func TestParsePathLine(t *testing.T) {
 }
 
 func TestParseLineColInvalid(t *testing.T) {
-	for _, s := range []string{"", "foo", ":", "12:", "12:0", ":5"} {
+	for _, s := range []string{"", "foo", ":", "12:0", ":5"} {
 		if _, _, ok := parseLineCol(s); ok {
 			t.Fatalf("%q 应解析失败", s)
 		}

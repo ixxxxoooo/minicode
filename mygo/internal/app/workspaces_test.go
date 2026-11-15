@@ -128,6 +128,11 @@ func TestSubmitWorkspace(t *testing.T) {
 	}
 	a.addWsFolder("/demo/docs-site")
 	a.submitWorkspace()
+	// 首次保存会先出「附加文件夹权限」提示卡,选「我知道了」(读写)后才真正保存
+	if a.pd.kind != "ws-perm" {
+		t.Fatalf("首次保存应先弹权限提示卡:%q", a.pd.kind)
+	}
+	a.wsPermChoose(false)
 	if a.pd.kind != "" {
 		t.Fatalf("应保存成功:%q", a.pd.err)
 	}

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ixxxxoooo/minicode/internal/claudecfg"
+	"github.com/ixxxxoooo/minicode/internal/projects"
 )
 
 func TestAcctMenuThirdPartyEmpty(t *testing.T) {
@@ -24,6 +25,9 @@ func TestAcctMenuThirdPartyEmpty(t *testing.T) {
 
 func TestAcctMenuDataLoading(t *testing.T) {
 	a, _ := newTestApp(t)
+	// 演示模式返回演示账号数据,不反映 loading;换成落盘注册表走真实路径
+	a.SetRegistry(projects.Open(filepath.Join(t.TempDir(), "ws.json")))
+	a.demoExtra = false
 	a.acct.loading = true
 	d := a.acctMenuData()
 	if !d.loading {

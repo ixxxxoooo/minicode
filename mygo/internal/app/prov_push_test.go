@@ -1,16 +1,20 @@
 package app
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/ixxxxoooo/minicode/internal/claudecfg"
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/projects"
 )
 
 func TestPvPushEnvSkipsWhenRunning(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("MINI_HOME", home)
 	a, _ := newTestApp(t)
+	// 演示模式(内存注册表)下 pvPushEnv 直接返回,这里换成落盘注册表走真实路径
+	a.SetRegistry(projects.Open(filepath.Join(t.TempDir(), "ws.json")))
 	be := &sinkBE{}
 	a.Attach(be)
 	p := a.pvLoad()

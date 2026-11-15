@@ -4,12 +4,14 @@ import (
 	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/automation"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"path/filepath"
 	"sync"
 	"testing"
 
 	"github.com/ixxxxoooo/minicode/internal/backend"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/demo"
+	"github.com/ixxxxoooo/minicode/internal/projects"
 )
 
 // sinkBE 记录收到的命令与是否被关闭,并保留 sink 让测试能「从后端推事件」。
@@ -119,6 +121,8 @@ func TestRunAutomationWithRunner(t *testing.T) {
 	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true})
 	a.SetProjects([]core.ProjectInfo{{ID: "p", Name: "demo", Path: "/tmp/demo"}}, "")
 	a.SetAutomations(automation.NewStore(nil))
+	// 注册表是内存的(演示)时会走演示运行器、忽略注入的 runner;换成落盘注册表走真实路径
+	a.SetRegistry(projects.Open(filepath.Join(t.TempDir(), "ws.json")))
 	it := a.auto.Add("demo")
 	var gotDir, gotPrompt string
 	a.SetAutomationRunner(func(it automation.Automation, dir string) (string, error) {
