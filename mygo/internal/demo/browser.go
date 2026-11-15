@@ -2,9 +2,6 @@ package demo
 
 import "github.com/ixxxxoooo/minicode/internal/browser"
 
-// BrowserSource 是演示用的网页数据源:两篇固定文章,其余地址都「尚未接入网页抓取」。
-type BrowserSource struct{}
-
 // BrowserHome 是演示浏览器的起始页。
 const BrowserHome = "docs.rs/axum/latest/axum/routing"
 
@@ -34,15 +31,4 @@ var service = browser.Page{
 	},
 	Summary: []string{"Service 是异步的请求 → 响应函数", "先 poll_ready 确认可用,再 call", "中间件通过包装 Service 组合"},
 	Links:   []browser.Link{{Title: "axum::Router", Host: "docs.rs", URL: BrowserHome}},
-}
-
-// Fetch 实现 browser.Source。
-func (BrowserSource) Fetch(u string) (browser.Page, error) {
-	switch u {
-	case routing.URL:
-		return routing, nil
-	case service.URL:
-		return service, nil
-	}
-	return browser.Page{}, browser.ErrNoFetch
 }

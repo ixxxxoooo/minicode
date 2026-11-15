@@ -1,29 +1,21 @@
 package app
 
 import (
-	"os/exec"
 	"strings"
 
 	"github.com/ixxxxoooo/minicode/internal/core"
 )
 
-// maybeSystemNotify 应用在后台且偏好开启时,发一条 macOS 系统通知(osascript)。
+// maybeSystemNotify 应用在后台且偏好开启时,发一条 macOS 系统通知。
+// Darwin+cgo 走 UserNotifications(点击回会话需系统委托,当前为 part);否则 osascript。
 func (a *App) maybeSystemNotify(title, body, sessID string) {
 	if a.appInForeground() || !a.prefs.Bool("general.notify", true) {
 		return
 	}
 	sessID = strings.TrimSpace(sessID)
-	script := `display notification "` + escOSA(body) + `" with title "` + escOSA(title) + `" subtitle "MiniCode"`
-	if sessID != "" {
-		script += ` sound name "Submarine"`
-	}
-	a.bg("osascript-notify", func() func() {
-		err := exec.Command("osascript", "-e", script).Run()
-		return func() {
-			if err != nil {
-				log.Warn("系统通知失败", "err", err)
-			}
-		}
+	t, b, sid := title, body, sessID
+	a.bg("system-notify", func() func() {
+		return func() { a.notifyMacNative(t, b, sid) }
 	})
 }
 
@@ -63,9 +55,7 @@ func (a *App) onTurnFinished() {
 	if body == "" {
 		body = "可以查看结果"
 	}
-	if a.mode == ModeIDE {
-		a.noticeOK(title, body)
-	}
+	a.postNotice("ok", title, body, nil)
 	a.maybeSystemNotify(title, body, a.curSess)
 }
 
@@ -73,14 +63,13 @@ func (a *App) onNeedsApproval(what string) {
 	if !a.prefs.Bool("general.notifyAsk", true) {
 		return
 	}
-	if a.appInForeground() && a.mode == ModeIDE {
-		a.noticeWarn(what, "点开会话处理", []noticeAction{{"打开", func() { a.screen = ScreenWork }}})
+	act := []noticeAction{{"打开会话", func() { a.screen = ScreenWork }}}
+	if a.appInForeground() {
+		a.postNotice("warn", what, "点开会话处理", act)
 		return
 	}
 	a.maybeSystemNotify(what, core.ShortTitle(a.st.Title), a.curSess)
-	if a.mode == ModeIDE {
-		a.noticeWarn(what, "会话在后台等待你", nil)
-	}
+	a.postNotice("warn", what, "会话在后台等待你", act)
 }
 
 func (a *App) onTaskDone(id, summary string) {
@@ -90,8 +79,15 @@ func (a *App) onTaskDone(id, summary string) {
 		name = tk.Description
 	}
 	title := "后台任务完成"
-	if a.mode == ModeIDE {
-		a.noticeOK(title, name)
-	}
+	a.postNotice("ok", title, name, nil)
 	a.maybeSystemNotify(title, name, a.curSess)
+}
+
+func (a *App) ingestCompactNotice(text string) {
+	if strings.Contains(text, "正在压缩") {
+		a.ctxCompacting = true
+	}
+	if strings.Contains(text, "已压缩") {
+		a.ctxCompacting = false
+	}
 }

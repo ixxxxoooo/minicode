@@ -132,14 +132,7 @@ func (a *App) mcpRow(c *ui.Context, r mcpView) {
 	})
 	if exp && len(r.ToolsList) > 0 {
 		for _, tl := range r.ToolsList {
-			ui.Row(c).Padding(4, 8, 4, 28).Gap(6).FontSize(theme.FsCap).Children(func() {
-				ui.Text(c, tl.Tool).Grow(1).SingleLine()
-				if tl.Loaded {
-					ui.Text(c, fmtTok(tl.Tokens)).TextColor(t.Tx3).FontFeatures("tnum")
-				} else {
-					ui.Text(c, "按需加载").TextColor(t.Tx4)
-				}
-			})
+			a.mcpToolRow(c, r.Name, tl)
 		}
 	}
 }

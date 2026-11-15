@@ -3,7 +3,6 @@ package demo
 import (
 	"fmt"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/ixxxxoooo/minicode/internal/core"
 )
@@ -136,7 +135,6 @@ func genRunOn(chars int) string {
 		return ""
 	}
 	unit := "0123456789abcdef中英混排αβγ"
-	reps := (chars / utf8.RuneCountInString(unit)) + 1
 	var b strings.Builder
 	b.Grow(chars + 8)
 	for b.Len() < chars {

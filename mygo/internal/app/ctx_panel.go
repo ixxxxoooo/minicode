@@ -314,19 +314,14 @@ func (a *App) requestCompact() {
 	log.Info("请求压缩上下文")
 	a.ctxCompacting = true
 	if a.be != nil && a.be.Name() == "demo" {
-		a.bg("ctx-compact-demo", func() func() {
-			time.Sleep(1200 * time.Millisecond)
-			u := a.st.Usage
-			u.ContextUsed = u.ContextUsed * 6 / 10
-			return func() {
-				a.ctxCompacting = false
-				a.st.Usage = u
-				a.noticeInfo("已压缩上下文", "占用已更新(演示)")
-			}
-		})
+		a.send(core.CmdCompact{})
 		return
 	}
-	a.toast = "已请求压缩(等待 Claude 处理)"
+	if a.be != nil && a.be.Name() == "claude" {
+		a.send(core.CmdCompact{})
+		return
+	}
+	a.toast = "当前模式不支持压缩"
 	a.ctxCompacting = false
 }
 

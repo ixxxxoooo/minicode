@@ -84,12 +84,8 @@ func (a *App) titlebar(c *ui.Context) {
 				rt = "对话栏 ⌥⌘B"
 			}
 			kit.Ib(c, "panelR", kit.IbOpt{Tip: rt, On: a.rightOn}).OnClick(a.toggleRight)
-			if a.mode == ModeIDE {
-				bell := a.noticeBell(c)
-				a.noticePanel(c, bell)
-			} else {
-				kit.Ib(c, "bell", kit.IbOpt{Tip: "通知(IDE 形态可用)"})
-			}
+			bell := a.noticeBell(c)
+			a.noticePanel(c, bell)
 			if t.Scheme.ID == "b" {
 				av := a.avatar(c).Margin(0, 0, 0, 4)
 				av.OnClick(func() { a.togglePop("acct@avatar") })

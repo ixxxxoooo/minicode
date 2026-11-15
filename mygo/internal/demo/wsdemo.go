@@ -68,7 +68,10 @@ func WorkspaceFolders() []WsFolder {
 
 	// 子模块 packages/ui(有 1 项改动)与没有 .gitmodules 的嵌套仓库 vendor-kit/tool(干净)
 	uiRepo := vcs.NewMem()
-	uiRepo.SetState([]vcs.Change{{Path: "src/Button.tsx", Status: 'M', Add: 3, Del: 1}},
+	uiRepo.SetState([]vcs.Change{
+		{Path: "src/Button.tsx", Status: 'M', Add: 3, Del: 1},
+		{Path: "src/theme.ts", Status: 'U', Add: 5},
+	},
 		[]vcs.Commit{
 			{Hash: "5d4c3b2", Subject: "feat(button): 支持 loading 状态", Author: "Lin", When: "2 天", Parents: []string{"1a2b3c4"}, Refs: []string{"HEAD", "main"}},
 			{Hash: "1a2b3c4", Subject: "chore: 初始化组件库", Author: "Lin", When: "上周"},
@@ -100,16 +103,17 @@ func WorkspaceFolders() []WsFolder {
 	})
 
 	router := Sandbox()
-	return []WsFolder{
+	folders := []WsFolder{
 		{Name: "router-demo", Path: "/demo/router-demo", FS: router, Repo: Repo(), Git: GitStatus(), Head: HeadOf},
 		{Name: "web-dashboard", Path: "/demo/web-dashboard", FS: dash, Repo: dashRepo,
-			Git:    map[string]string{"src/charts.ts": "M", "src/components/Card.tsx": "A"},
+			Git:    map[string]string{"src/charts.ts": "M", "src/components/Card.tsx": "A", "packages/ui": "M"},
 			Head:   func(p string) (string, bool) { return dashRepo.Show("HEAD", p) },
 			Nested: []WsNested{{Rel: "packages/ui", Kind: "子模块", Repo: uiRepo}, {Rel: "vendor-kit/tool", Kind: "嵌套", Repo: toolRepo}}},
-		{Name: "docs-site", Path: "/demo/docs-site", FS: docs, Repo: docsRepo, Git: map[string]string{},
+		{Name: "docs-site", Path: "/demo/docs-site", FS: docs, Repo: docsRepo, Git: map[string]string{"config.yaml": "C"},
 			Head: func(p string) (string, bool) { return docsRepo.Show("HEAD", p) }},
 		{Name: "design-assets", Path: "/demo/design-assets", FS: assets},
 	}
+	return append(folders, wsExtraFolders()...)
 }
 
 // Found 是「添加项目」对话框里「最近 · 发现」列表的一项(演示数据)。

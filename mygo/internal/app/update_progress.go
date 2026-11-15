@@ -13,10 +13,15 @@ type updPhase int
 
 const (
 	updNone updPhase = iota
+	updChecking
+	updLatest
+	updFound
 	updDownload
 	updVerify
 	updUnpack
 	updReady
+	updFail
+	updNetErr
 )
 
 type updState struct {
@@ -30,6 +35,12 @@ func (a *App) updLabel() string {
 		return a.update // 兼容旧的演示字符串
 	}
 	switch a.updSt.Phase {
+	case updChecking:
+		return "检查更新…"
+	case updLatest:
+		return "已是最新"
+	case updFound:
+		return "发现新版本"
 	case updDownload:
 		return fmt.Sprintf("下载更新 %d%%", a.updSt.Percent)
 	case updVerify:
@@ -38,6 +49,10 @@ func (a *App) updLabel() string {
 		return "解包中…"
 	case updReady:
 		return "重启更新"
+	case updFail:
+		return "下载失败"
+	case updNetErr:
+		return "网络错误"
 	}
 	return ""
 }
@@ -51,20 +66,27 @@ func (a *App) updSidebarCapsule(c *ui.Context) {
 	row := ui.ButtonBase(c).Key("upd-cap").Height(26).PaddingX(8).Gap(6).Radius(t.RSm()).Background(t.AcSoft).AlignItems(ui.Center).Margin(4, 0, 0, 0).Cursor(ui.CursorPointer)
 	row.OnClick(func() {
 		if a.updSt.Phase == updReady {
-			a.toast = "更新已就绪(开发版需手动替换包)"
+			a.applyUpdateRestart()
 			return
+		}
+		if a.updSt.Phase == updNone && a.upd == nil {
+			a.checkUpdateAsync()
 		}
 		a.togglePop("upd")
 	})
 	row.Children(func() {
 		ic := "download"
 		switch a.updSt.Phase {
+		case updChecking, updLatest:
+			ic = "refresh"
 		case updVerify:
 			ic = "shieldCk"
 		case updUnpack:
 			ic = "cube"
 		case updReady:
 			ic = "refresh"
+		case updFail, updNetErr:
+			ic = "alert"
 		}
 		kit.Ic(c, ic, kit.S12).TextColor(t.Ac)
 		ui.Text(c, lbl).TextColor(t.Ac).Grow(1).SingleLine()
@@ -83,13 +105,32 @@ func (a *App) updPopup(c *ui.Context, anchor ui.Element) {
 			if ver == "" {
 				ver = "0.2.1"
 			}
+			title := "发现新版本 " + ver
+			switch a.updSt.Phase {
+			case updChecking:
+				title = "正在检查更新…"
+			case updLatest:
+				title = "已是最新版本"
+			case updFail:
+				title = "下载失败"
+			case updNetErr:
+				title = "网络错误"
+			}
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, "发现新版本 "+ver).FontWeight(600).Grow(1)
+				ui.Text(c, title).FontWeight(600).Grow(1)
 				if a.updSt.Phase == updDownload {
 					kit.Tag(c, itoa(a.updSt.Percent)+"%", kit.KAc)
 				}
 			})
 			switch a.updSt.Phase {
+			case updChecking:
+				kit.Meter(c, 30)
+				ui.Text(c, "正在查询 appcast…").FontSize(theme.FsCap).TextColor(t.Tx3)
+			case updLatest:
+				ui.Text(c, "当前版本已是最新。").FontSize(theme.FsCap).TextColor(t.Tx3)
+			case updFound:
+				kit.Meter(c, 5)
+				ui.Text(c, "发现 "+ver+",准备下载…").FontSize(theme.FsCap).TextColor(t.Tx3)
 			case updDownload:
 				kit.Meter(c, float32(a.updSt.Percent))
 				ui.Text(c, "正在后台下载,完成后提示重启。").FontSize(theme.FsCap).TextColor(t.Tx3)
@@ -101,9 +142,12 @@ func (a *App) updPopup(c *ui.Context, anchor ui.Element) {
 				ui.Text(c, "正在解包到临时目录…").FontSize(theme.FsCap).TextColor(t.Tx3)
 			case updReady:
 				ui.Text(c, "更新已准备好,重启后生效。").FontSize(theme.FsCap).TextColor(t.Tx3)
-				kit.Btn(c, "重启更新", kit.BtnOpt{Variant: kit.BtnPri, Small: true, Icon: "refresh"}).OnClick(func() {
-					a.toast = "开发版请用 scripts/dev.sh 重新编译"
-				})
+				kit.Btn(c, "重启更新", kit.BtnOpt{Variant: kit.BtnPri, Small: true, Icon: "refresh"}).OnClick(a.applyUpdateRestart)
+			case updFail:
+				ui.Text(c, "校验失败,安装包可能损坏。").FontSize(theme.FsCap).TextColor(t.Err)
+				kit.Btn(c, "重试", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() { a.SeedUpdateDemo("download", 0) })
+			case updNetErr:
+				ui.Text(c, "网络连接丢失,稍后再试。").FontSize(theme.FsCap).TextColor(t.Err)
 			default:
 				kit.Meter(c, 42)
 				ui.Text(c, "正在后台下载,完成后提示重启。").FontSize(theme.FsCap).TextColor(t.Tx3)
@@ -112,17 +156,59 @@ func (a *App) updPopup(c *ui.Context, anchor ui.Element) {
 	})
 }
 
-// SeedUpdateDemo 演示四态(截图 / 调试)。
+// updAboutHint 关于页版本卡下的更新状态文案(演示 / 真实更新流程共用)。
+func (a *App) updAboutHint() (txt string, ok bool) {
+	if a.updSt.Phase == updNone {
+		return "", false
+	}
+	switch a.updSt.Phase {
+	case updChecking:
+		return "正在检查更新…", true
+	case updLatest:
+		return "已是最新", true
+	case updDownload:
+		return fmt.Sprintf("正在下载 %d%%", a.updSt.Percent), true
+	case updVerify:
+		return "校验中…", true
+	case updUnpack:
+		return "解包中…", true
+	case updReady:
+		return "可重启更新", true
+	case updFail:
+		return "下载失败", true
+	case updNetErr:
+		return "网络错误", true
+	case updFound:
+		return "发现新版本 " + a.updSt.Version, true
+	}
+	return "", false
+}
+
+// SeedUpdateDemo 演示更新各阶段(截图 / 调试 / 命令面板)。
 func (a *App) SeedUpdateDemo(phase string, pct int) {
+	ver := "0.3.1"
 	switch phase {
+	case "check":
+		a.updSt = updState{Phase: updChecking, Version: ver}
+	case "latest":
+		a.updSt = updState{Phase: updLatest, Version: ver}
+	case "found":
+		a.updSt = updState{Phase: updFound, Version: ver}
 	case "verify":
-		a.updSt = updState{Phase: updVerify, Version: "0.2.1"}
+		a.updSt = updState{Phase: updVerify, Version: ver}
 	case "unpack":
-		a.updSt = updState{Phase: updUnpack, Version: "0.2.1"}
+		a.updSt = updState{Phase: updUnpack, Version: ver}
 	case "ready":
-		a.updSt = updState{Phase: updReady, Version: "0.2.1"}
+		a.updSt = updState{Phase: updReady, Version: ver}
+	case "fail":
+		a.updSt = updState{Phase: updFail, Version: ver}
+	case "neterr", "network":
+		a.updSt = updState{Phase: updNetErr, Version: ver}
 	default:
-		a.updSt = updState{Phase: updDownload, Percent: pct, Version: "0.2.1"}
+		if pct <= 0 {
+			pct = 42
+		}
+		a.updSt = updState{Phase: updDownload, Percent: pct, Version: ver}
 	}
 	a.update = a.updLabel()
 }

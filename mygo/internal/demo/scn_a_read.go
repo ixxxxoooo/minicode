@@ -1,8 +1,6 @@
 package demo
 
 import (
-	"time"
-
 	"github.com/ixxxxoooo/minicode/internal/core"
 )
 
@@ -104,6 +102,3 @@ func buildScnToolsRead() []Step {
 	s.End(u, 38, core.StopEndTurn, DefaultStats(7))
 	return s.Steps()
 }
-
-// 避免未使用导入
-var _ = time.Second

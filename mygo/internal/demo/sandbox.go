@@ -57,22 +57,9 @@ fn normalize(path: &str) -> String {
 }
 `
 
-// HeadOf 返回演示项目里某个文件在 HEAD 的内容(没有记录 = 与工作区相同)。
-func HeadOf(path string) (string, bool) {
-	switch path {
-	case "src/router.rs":
-		return routerHead, true
-	case "tests/router_test.rs":
-		return "use router_demo::router::Router;\n", true
-	case "tests/case_test.rs":
-		return "", true
-	}
-	return "", false
-}
-
 // Sandbox 返回演示用的沙盒项目 router-demo(内存文件系统)。
 func Sandbox() *workspace.Mem {
-	m := workspace.NewMem("router-demo", map[string]string{
+	files := map[string]string{
 		"src/router.rs": routerSrc,
 		"src/main.rs": `mod router;
 mod server;
@@ -111,12 +98,25 @@ axum = "0.8"
 `,
 		"CLAUDE.md": "# router-demo\n\n- 用 `cargo test` 跑测试\n- 路径匹配统一走 `normalize`\n",
 		"README.md": "# router-demo\n\n一个很小的路由库,用来演示 MiniCode。\n",
-	})
-	m.Prefer = []string{"src", "tests", "docs"} // 设计稿里的摆放顺序
+	}
+	for k, v := range gitSandboxExtraFiles() {
+		files[k] = v
+	}
+	for k, v := range editorSandboxFiles() {
+		if _, ok := files[k]; !ok {
+			files[k] = v
+		}
+	}
+	m := workspace.NewMem("router-demo", files, editorEmptyDirs()...)
+	m.Prefer = []string{"src", "tests", "docs", "demo", "samples", "edge", "data", "assets", "bulk", "deep"}
 	return m
 }
 
 // GitStatus 是演示项目的工作区状态(与「改动」标签一致)。
 func GitStatus() map[string]string {
-	return map[string]string{"src/router.rs": "M", "tests/router_test.rs": "M", "tests/case_test.rs": "A"}
+	st := GitStatusLite()
+	for k, v := range ExtraGitStatus() {
+		st[k] = v
+	}
+	return st
 }

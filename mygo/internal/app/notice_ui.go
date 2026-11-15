@@ -30,9 +30,6 @@ func (a *App) noticeBell(c *ui.Context) ui.Element {
 	on := a.nt != nil && a.nt.panelOn
 	w := ui.ButtonBase(c).Key("sb-bell").Height(18).PaddingX(5).Shrink(0).Cursor(ui.CursorPointer)
 	w.OnClick(func() {
-		if a.mode != ModeIDE {
-			return
-		}
 		if a.nt == nil {
 			a.nt = &noticeStore{}
 		}
@@ -55,7 +52,7 @@ func (a *App) noticeBell(c *ui.Context) ui.Element {
 
 // noticePanel 通知历史(锚在铃铛下)。
 func (a *App) noticePanel(c *ui.Context, anchor ui.Element) {
-	if a.nt == nil || !a.nt.panelOn || a.mode != ModeIDE {
+	if a.nt == nil || !a.nt.panelOn {
 		return
 	}
 	t := a.tk
@@ -132,7 +129,7 @@ func (a *App) noticeRow(c *ui.Context, it noticeItem) {
 
 // noticeToasts 右下角叠放(最后几条自动消失)。
 func (a *App) noticeToasts(c *ui.Context) {
-	if a.nt == nil || len(a.nt.toasts) == 0 || a.mode != ModeIDE {
+	if a.nt == nil || len(a.nt.toasts) == 0 {
 		return
 	}
 	t := a.tk

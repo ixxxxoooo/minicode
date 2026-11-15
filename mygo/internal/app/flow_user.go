@@ -137,23 +137,6 @@ func (a *App) beginUserEdit(u *core.User) {
 
 func (a *App) cancelUserEdit() { a.userEd = userEdit{} }
 
-func (a *App) submitUserEdit() {
-	id := a.userEd.id
-	txt := strings.TrimSpace(a.userEd.draft)
-	a.cancelUserEdit()
-	if id == "" || txt == "" {
-		if txt == "" {
-			a.toast = "消息不能为空"
-		}
-		return
-	}
-	if _, ok := a.st.TruncateFromUser(id); !ok {
-		return
-	}
-	a.send(core.CmdPrompt{Text: txt})
-	log.Info("编辑并发送用户消息", "id", id)
-}
-
 func (a *App) userMsg(c *ui.Context, u *core.User) {
 	t := a.tk
 	style := a.prefs.Int(pFlowStyle, 0)
@@ -236,15 +219,4 @@ func (a *App) userMsgBody(c *ui.Context, u *core.User) {
 		spans = append(spans, ui.Span{Text: txt[last:]})
 	}
 	ui.RichText(c, spans...).FontSize(theme.FsRead).LineHeight(1.55).TextColor(t.Tx1)
-}
-
-func (a *App) userEditCard(c *ui.Context, u *core.User) {
-	t := a.tk
-	ui.Column(c).Key("user-ed-"+u.ID).Background(t.Raised).Radius(t.RMd()).Padding(8, 10).Gap(6).Border(1, t.Ac).Children(func() {
-		ui.TextInput(c.Key("uedit"), &a.userEd.draft).Grow(1).MinHeight(80).MaxHeight(200).FontSize(theme.FsRead).AutoFocus()
-		ui.Row(c).Gap(6).Justify(ui.End).Children(func() {
-			kit.Btn(c, "取消", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(a.cancelUserEdit)
-			kit.Btn(c, "发送", kit.BtnOpt{Small: true, Variant: kit.BtnPri, Icon: "send"}).OnClick(a.submitUserEdit)
-		})
-	})
 }

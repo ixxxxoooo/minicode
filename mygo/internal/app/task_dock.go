@@ -134,10 +134,14 @@ func (a *App) taskDockRow(c *ui.Context, tk *core.BackgroundTask) {
 				a.viewTaskInPanel(tk)
 			})
 		}
-		if tk.Status == core.TaskRunning {
-			kit.Btn(c, "重启", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "refresh"}).OnClick(func() {
-				a.toast = "重启任务需由 Claude 重新发起(演示模式仅提示)"
-			})
+		if tk.Status == core.TaskRunning || tk.Status == core.TaskStopped || tk.Status == core.TaskFailed {
+			dis := a.be != nil && a.be.Name() == "claude"
+			btn := kit.Btn(c, "重启", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "refresh"})
+			if dis {
+				btn.Opacity(0.4)
+			} else {
+				btn.OnClick(func() { a.send(core.CmdRestartTask{TaskID: tk.TaskID}) })
+			}
 		}
 	})
 }

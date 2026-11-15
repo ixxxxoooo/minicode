@@ -29,6 +29,7 @@ func Projects() []core.ProjectInfo {
 		{ID: "docs-site", Name: "docs-site", Path: "/demo/docs-site", Count: 6},
 		{ID: "scenario-lab", Name: "scenario-lab", Path: "/demo/scenario-lab"},
 	}
+	ps = append(ps, ExtraProjects()...)
 	// 把登记的场景并入侧栏:id 已在基础列表里的只换剧本;其余按 Project 归入对应项目(默认场景实验室)
 	have := map[string]bool{}
 	for _, p := range ps {
