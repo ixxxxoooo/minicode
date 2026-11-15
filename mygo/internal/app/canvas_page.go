@@ -124,7 +124,7 @@ func (a *App) canvasPage(c *ui.Context) {
 		drawer := func() { a.canvasDrawer(c, s) }
 		if narrow {
 			ui.Column(c).Grow(1).MinHeight(0).Children(func() {
-				ui.Row(c).Grow(1).MinHeight(0).Children(func() {
+				ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
 					if !a.demoExtra || len(a.cvLib().IDs()) > 1 {
 						a.canvasList(c)
 					}
@@ -135,7 +135,7 @@ func (a *App) canvasPage(c *ui.Context) {
 				ui.Column(c).Key("cv-drawer-b").MaxHeight(220).Padding(12, 16).Gap(8).BorderWidth(1, 0, 0, 0).BorderColor(a.tk.Bd1).Children(drawer)
 			})
 		} else {
-			ui.Row(c).Grow(1).MinHeight(0).Children(func() {
+			ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
 				if !a.demoExtra || len(a.cvLib().IDs()) > 1 {
 					a.canvasList(c)
 				}

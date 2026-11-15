@@ -56,7 +56,7 @@ func (a *App) cvLib() *canvas.Library {
 func (a *App) canvasList(c *ui.Context) {
 	t := a.tk
 	l := a.cvLib()
-	ui.Column(c).Width(200).Shrink(0).Padding(0, 12, 0, 0).Gap(8).BorderWidth(0, 1, 0, 0).BorderColor(t.Bd1).Children(func() {
+	ui.Column(c).Width(216).Shrink(0).Padding(12, 12, 0, 16).Gap(8).BorderWidth(0, 1, 0, 0).BorderColor(t.Bd1).Children(func() {
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 			ui.Text(c, "画布").FontWeight(600).Grow(1)
 			if kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建"}).Clicked() {
