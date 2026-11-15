@@ -112,3 +112,32 @@ func TestPermCardShowsDiffPreview(t *testing.T) {
 		t.Fatal("权限卡的路径应是相对项目根的 sub/main.go")
 	}
 }
+
+// 编辑经过权限卡后,列表里的 ToolCall 被 PermissionRequest 替换(工具挂在 Tool 字段),
+// 改动统计与回合折叠摘要仍要算上它;被拒绝的、还在等待的不算。(实机发现:允许一次后改动卡 / 本轮 / 审查全空)
+func TestChangedFilesThroughPermission(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true})
+	a.proj = "/tmp/mc-e2e"
+	a.st.Apply(core.EvAppend{Item: &core.User{ID: "u1", Text: "加 sub"}})
+	mk := func(id, opt string) {
+		tc := core.NewToolCall(id, "Edit", "编辑 main.go").
+			WithContent(&core.DiffBlock{Path: "/private/tmp/mc-e2e/" + id + ".go", Old: "a", New: "b", Line: 1})
+		a.st.Apply(core.EvAppend{Item: tc})
+		req := &core.PermissionRequest{ID: "p-" + id, Tool: tc, Options: []core.PermissionOption{
+			{ID: "allow", Label: "允许一次", Kind: core.AllowOnce}, {ID: "reject", Label: "拒绝", Kind: core.RejectOnce}}}
+		a.st.Apply(core.EvPromoteToPermission{Request: req})
+		if opt != "" {
+			a.st.Apply(core.EvPermissionResolved{ID: req.ID, Option: opt})
+		}
+	}
+	mk("ok", "allow")
+	mk("no", "reject")
+	mk("wait", "")
+	fs := a.changedFiles()
+	if len(fs) != 1 || !strings.HasSuffix(fs[0].path, "ok.go") {
+		t.Fatalf("只有已允许的编辑算改动,实际 %+v", fs)
+	}
+	if _, n := turnFoldSummary(a.st.Items[1:]); n != 2 { // 已允许 + 已拒绝(工具本身带 diff),等待中的不算
+		t.Fatalf("折叠摘要文件数=%d,期望 2", n)
+	}
+}

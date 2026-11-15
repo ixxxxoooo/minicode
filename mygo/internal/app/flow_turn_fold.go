@@ -92,8 +92,7 @@ func turnFoldSummary(steps []core.Item) (nSteps int, nFiles int) {
 	seen := map[string]bool{}
 	for _, it := range steps {
 		nSteps++
-		switch v := it.(type) {
-		case *core.ToolCall:
+		if v := doneToolOf(it); v != nil {
 			for _, ct := range v.Content {
 				if d, ok := ct.(*core.DiffBlock); ok && d.Path != "" && !seen[d.Path] {
 					seen[d.Path] = true

@@ -61,11 +61,15 @@ func (a *App) changedFiles() []chFile {
 	visit = func(items []core.Item) {
 		for _, it := range items {
 			switch v := it.(type) {
-			case *core.ToolCall:
-				if v.Status.Unsuccessful() { // 失败 / 被拒绝 / 被中断的编辑并没有真正落盘,不计入改动
+			case *core.ToolCall, *core.PermissionRequest:
+				tc := doneToolOf(it)
+				if tc == nil {
 					continue
 				}
-				for _, ct := range v.Content {
+				if tc.Status.Unsuccessful() { // 失败 / 被拒绝 / 被中断的编辑并没有真正落盘,不计入改动
+					continue
+				}
+				for _, ct := range tc.Content {
 					d, ok := ct.(*core.DiffBlock)
 					if !ok {
 						continue
@@ -74,7 +78,7 @@ func (a *App) changedFiles() []chFile {
 					i, seen := idx[d.Path]
 					if !seen {
 						st := "M"
-						if v.Kind == core.KindWrite {
+						if tc.Kind == core.KindWrite {
 							st = "A"
 						}
 						idx[d.Path] = len(out)
@@ -100,6 +104,21 @@ func (a *App) changedFiles() []chFile {
 	}
 	out = append(out, a.demoRepoFiles()...) // 演示工作区:另外两个文件夹也各有一轮改动
 	return out
+}
+
+// doneToolOf 取时间线条目里「真正执行过的工具」。
+// 权限请求会把列表里的 ToolCall 整个替换成 PermissionRequest(工具挂在它的 Tool 字段上),
+// 所以经过权限卡的编辑只在后者里;还在等待回答的请求代表工具没执行,返回 nil。
+func doneToolOf(it core.Item) *core.ToolCall {
+	switch v := it.(type) {
+	case *core.ToolCall:
+		return v
+	case *core.PermissionRequest:
+		if v.Resolved != "" {
+			return v.Tool
+		}
+	}
+	return nil
 }
 
 // fileDecided 文件的所有块是否都已处理。
