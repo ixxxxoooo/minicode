@@ -71,6 +71,8 @@ type App struct {
 	ux         uxState         // 拖拽引用 / Markdown 所见即所得等编辑体验的零散状态(edit_ux.go)
 	edTheme    *editor.Theme
 	edThemeKey string
+	brTheme    *editor.Theme // 带括号深度色的编辑器配色(ide_brackets.go)
+	brThemeKey string
 	flowSt     ui.ScrollState // 会话流滚动状态(跟随底部)
 	win        *mygo.Window
 

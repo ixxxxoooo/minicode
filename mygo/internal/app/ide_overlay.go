@@ -72,6 +72,7 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 	t := a.tk
 	st := tb.st
 	st.Theme = a.editorTheme()
+	a.syncBracketLang(tb) // 括号按深度染字色;适用时把 st.Theme 换成带括号色的那份
 	st.Font = ui.Font{Family: "monospace", Size: 12}
 	st.LineHeight = 20.0 / 12.0
 	st.NoScrollbars = true
@@ -179,7 +180,6 @@ func (a *App) decorate(tb *ideTab) {
 		}
 		st.SetDiagnostics(tb.buf.Version(), ds)
 	}
-	tbs = append(tbs, a.bracketDecorate(tb)...)
 	st.TextBackgrounds = tbs
 	a.applyEditorPrefs(tb)
 	if a.proj != "" {

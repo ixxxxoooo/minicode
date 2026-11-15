@@ -145,9 +145,13 @@ func (a *App) applyEditorPrefs(tb *ideTab) {
 	st.NoFolding = !a.prefs.Bool(pEdFolding, true)
 	st.NoIndentGuides = !a.prefs.Bool(pBracketGuide, true)
 	if !a.prefs.Bool(pBracketMatch, true) {
-		st.Theme = a.editorTheme()
-		if st.Theme != nil {
-			st.Theme.MatchingBracket = ui.Transparent
+		if st.Theme == nil {
+			st.Theme = a.editorTheme()
+		}
+		if st.Theme.MatchingBracket != ui.Transparent {
+			th := *st.Theme // 值拷贝:不改动共享的缓存配色
+			th.MatchingBracket = ui.Transparent
+			st.Theme = &th
 		}
 	}
 }
