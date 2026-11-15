@@ -95,7 +95,7 @@
       ['多根文件树 / 多根搜索', '虚拟顶层目录 = 文件夹名(workspace.Multi),路径加文件夹前缀,顶层行带「主 / 改动数 / 非仓库」;搜索按前缀路径工作,搜索条有「范围」chip 与文件夹右键「仅在此文件夹搜索」', st('ok')],
       ['Claude 附加目录', '主文件夹启动会话时追加 --add-dir(附加文件夹),开关打开时设置 CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1', st('ok')],
       ['演示数据', '演示模式内置「全栈工作区」(router-demo / web-dashboard / docs-site 各有自己的分支与改动)+ 一个手动添加的非仓库项目 design-assets', st('ok')],
-      ['附加文件夹权限提示卡(我知道了 / 只读授权)', '设计稿「权限提示」:创建与启动会话时各提示一次,可选只读授权。Go 对话框里只有文案与开关,没有这张卡与「只读授权」分支', st('todo')]]))}</div>`;
+      ['附加文件夹权限提示卡(我知道了 / 只读授权)', '设计稿「权限提示」:创建与启动会话时各提示一次,可选只读授权。第一波:ws_perm.go 补了这张卡与「只读授权」分支(ExtraReadOnly,启动时在系统提示声明只读);未测试,「只读」只是提示词约束、不是系统级隔离', st('part')]]))}</div>`;
 
   /* ───────── 多仓库 Git ───────── */
   const repoRow = (n, br, sync, changes, on, extra = '') => `<div class="row ${on ? 'on' : ''}" style="height:32px">${ic('branch', 's12')}<div class="grow" style="min-width:0"><div class="ell"><b>${n}</b> <span class="t3">${br}</span></div></div><span class="t3 fs-cap mono">${sync}</span>${changes ? cnt(changes, on ? 'ac' : '') : '<span class="t4 fs-cap">干净</span>'}${extra}</div>`;
@@ -152,7 +152,7 @@
       ['文件树状态色', '所有仓库的改动一起上色(M 橙 / A 绿 / U 灰),按文件路径前缀归属;文件夹节点右侧显示仓库改动数', st('ok')],
       ['嵌套仓库(子模块 / 仓库里的仓库)', '按文件夹最近的 .git 归属;子模块作为独立行显示「子模块」标签;总览缩进 + 文件树目录行带标签和改动数;SCM 提示行「子模块有未提交改动」+ 父仓库指针变更(M)条目', st('ok')],
       ['非仓库文件夹', '总览里灰行 + 「初始化仓库」;初始化走 git init 并在输出面板记录', st('ok')],
-      ['「全部展开」模式(设置项:每个仓库一个区块都铺开)', '设计稿正文写了这个设置项;Go 只有「活动仓库 + 总览行」一种模式,没有对应偏好与每仓一块的布局', st('todo')],
+      ['「全部展开」模式(设置项:每个仓库一个区块都铺开)', '设计稿正文写了这个设置项;第一波:设置 → 源代码管理 scm.expandAll + scm_expand_all.go 每仓一块;未测试,每块内的图谱 / 储藏沿用活动仓库', st('part')],
       ['逐个提交向导的单仓失败行(如 pre-commit 钩子失败)', '设计稿有失败样例;Go 靠提交框 commitErr 提示,向导条上没有专用的失败行与「重试 / 跳过」', st('part')],
       ['真实多仓工作区的嵌套发现', 'discoverNested / findNested 只有单测,没有对真实多仓库工作区做过端到端验证', st('part')]]))}
     ${sec('状态栏与标题栏', '', grid(

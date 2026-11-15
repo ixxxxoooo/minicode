@@ -71,7 +71,7 @@
       ['Markdown 预览 / 源码切换', '格式条 / YAML 头 / 只读预览 / 拖入与 ⌘V 粘贴 PNG 到 editor.mdAssets;围栏语言标注保守补回;段内换行仍可能规范化(提示条)', st('part')],
       ['自动换行 / 格式化(顶部条 · 菜单 · 快捷键)', '服务器优先,内置格式化器兜底', st('ok')],
       ['保存时格式化 / 去行尾空白', '源码保存可走内置格式化;WYSIWYG 保存不整理(以免冲光标);LSP 异步不参与保存', st('ok')],
-      ['⌘V 粘贴 JPEG 图片', 'edit_md_paste.go 只读剪贴板里的 PNG;从浏览器 / 截图工具复制出的 JPEG 粘不进来', st('todo')]]))}</div>`;
+      ['⌘V 粘贴 JPEG 图片', 'edit_md_paste.go 先读 PNG、读不到再读 image/jpeg 并存成 .jpg;未测试', st('part')]]))}</div>`;
 
   /* ───────── 拖拽引用与「···」菜单 ───────── */
   const chatDrop = `<div style="position:relative;height:100%;background:var(--bg);display:flex;flex-direction:column"><div style="padding:10px 14px;font-weight:700;border-bottom:1px solid var(--bd-1)">完整修复一个 Bug:路由大小写</div><div style="flex:1;padding:12px 14px;color:var(--tx-3)">……上一条回复……</div>
