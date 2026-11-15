@@ -1,0 +1,123 @@
+/* MiniCode 设计稿 v3 · 整页功能与细节:设置、自动化、画布、浏览器、自定义、IDE 差异 / 搜索 / 图谱、浮层与面板
+   全部只引用语义令牌(--bg / --tx / --ac / --r-* / --sh-* / --dur-*),换主题与方案不用改任何一行。
+   @author ixxxxoooo */
+
+/* ───────── 通用:整页骨架 ───────── */
+.page { flex: 1 1 0; }
+.pg-h { display: flex; align-items: center; gap: 12px; padding: 14px 20px 10px; flex: none; }
+.pg-split { flex: 1; min-height: 0; display: flex; }
+.pg-main { flex: 1; min-width: 0; padding: 4px 20px 20px; }
+.drawer { width: 300px; flex: none; padding: 12px 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: inset 1px 0 var(--bd-1); overflow: hidden; }
+.si-box { width: 26px; height: 26px; border-radius: var(--r-sm); background: var(--fill-2); color: var(--tx-2); display: grid; place-items: center; flex: none; }
+.fld { height: 24px; padding: 0 8px; border-radius: var(--r-sm); background: var(--bg-raised); box-shadow: inset 0 0 0 1px var(--bd-2); display: inline-flex; align-items: center; color: var(--tx-1); white-space: nowrap; overflow: hidden; flex: none; }
+.fld.mono { font: 11.5px var(--font-mono); } .fld.t4 { color: var(--tx-4); }
+.ta { min-height: 76px; padding: 8px 10px; border-radius: var(--r-md); background: var(--bg-raised); box-shadow: inset 0 0 0 1px var(--bd-2); line-height: 1.6; white-space: pre-wrap; color: var(--tx-1); }
+.ta.mono, .ta .mono { font: 11.5px/1.6 var(--font-mono); }
+.kv { display: grid; grid-template-columns: 72px 1fr; gap: 6px 10px; font-size: var(--fs-cap); line-height: 1.5; }
+
+/* ───────── 设置 ───────── */
+.set-main { overflow: auto; scrollbar-width: none; } .set-main::-webkit-scrollbar { display: none; }
+.set-col { padding-bottom: 28px; }
+.set-grp { display: flex; flex-direction: column; gap: 5px; }
+.set-grp .gt { padding: 0 4px; font-size: var(--fs-cap); font-weight: var(--fw-bold); color: var(--tx-3); letter-spacing: .02em; }
+.stp { display: inline-flex; align-items: center; gap: 2px; height: 24px; padding: 0 2px; border-radius: var(--r-sm); background: var(--bg-raised); box-shadow: inset 0 0 0 1px var(--bd-2); flex: none; }
+.stp button { width: 20px; height: 20px; border-radius: var(--r-xs); color: var(--tx-3); display: grid; place-items: center; transition: background var(--dur-fast), color var(--dur-fast); }
+.stp button:hover { background: var(--fill-2); color: var(--tx-1); } .stp b { min-width: 26px; text-align: center; font-weight: var(--fw-medium); }
+.swatch { width: 16px; height: 16px; border-radius: 50%; flex: none; transition: transform var(--dur-base) var(--ease-spring), box-shadow var(--dur-fast); cursor: pointer; }
+.swatch:hover { transform: scale(1.18); } .swatch.on { box-shadow: 0 0 0 2px var(--bg-raised), 0 0 0 3.5px var(--tx-1); }
+.stat-c { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; background: var(--bg-raised); border-radius: var(--r-md); box-shadow: var(--sh-1); }
+.stat-c b { font-size: 20px; letter-spacing: -.01em; }
+.spk { width: 120px; height: 26px; margin-left: auto; } .spk polyline { fill: none; stroke: var(--ac); stroke-width: 1.6; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.set-row[data-act] { transition: background var(--dur-fast); } .set-row[data-act]:hover { background: var(--fill-1); }
+
+/* 界面布局三选一:每张卡里是该方案的示意缩略图(同样只用令牌) */
+.lay-card { flex: 1; min-width: 0; padding: 5px 5px 7px; border-radius: var(--r-md); cursor: pointer; display: flex; flex-direction: column; gap: 4px; box-shadow: inset 0 0 0 1px var(--bd-2); transition: box-shadow var(--dur-fast), transform var(--dur-instant), background var(--dur-fast); }
+.lay-card:hover { box-shadow: inset 0 0 0 1px var(--bd-3); background: var(--fill-1); } .lay-card.on { box-shadow: inset 0 0 0 1.5px var(--ac); background: var(--ac-soft); } .lay-card:active { transform: scale(.98); }
+.lay-prev { height: 70px; border-radius: var(--r-sm); background: var(--bg-chrome); display: flex; padding: 4px; gap: 1px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--bd-1); }
+.lay-prev i { display: block; background: var(--bg); border-radius: 1px; }
+.lay-prev .rl { display: none; width: 8px; background: transparent; box-shadow: inset -1px 0 var(--bd-2); border-radius: 0; margin-right: 2px; }
+.lay-prev .sd { width: 24%; } .lay-prev .rt { width: 22%; } .lay-prev .mn { flex: 1; padding: 5px 5px; display: flex; flex-direction: column; gap: 3px; }
+.lay-prev .mn b { display: block; height: 3px; border-radius: 2px; background: var(--fill-3); } .lay-prev .mn b:first-child { width: 60%; background: var(--ac); } .lay-prev .mn b:last-child { width: 75%; }
+.lay-prev[data-lay="b"] { gap: 3px; } .lay-prev[data-lay="b"] i { border-radius: 5px; box-shadow: var(--sh-1); }
+.lay-prev[data-lay="b"] .sd { background: transparent; box-shadow: none; }
+.lay-prev[data-lay="c"] .rl { display: block; } .lay-prev[data-lay="c"] .sd { width: 20%; }
+.lay-prev[data-lay="a"] .sd { background: transparent; box-shadow: inset -1px 0 var(--bd-2); border-radius: 0; } .lay-prev[data-lay="a"] .rt { box-shadow: inset 1px 0 var(--bd-2); background: transparent; border-radius: 0; }
+
+/* ───────── 自动化 ───────── */
+.wk { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.wk-d { min-height: 104px; padding: 6px; border-radius: var(--r-md); background: var(--bg-raised); box-shadow: var(--sh-1); display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.wk-d.today { box-shadow: 0 0 0 1.5px var(--ac), var(--sh-1); } .wk-d.today .wk-h b { color: var(--ac); }
+.wk-h { display: flex; align-items: baseline; justify-content: space-between; padding: 0 2px 2px; } .wk-h b { font-size: var(--fs-title); }
+.wk-s { height: 22px; padding: 0 6px; border-radius: var(--r-sm); background: var(--ac-soft); color: var(--ac-tx); display: flex; align-items: center; gap: 5px; font-size: 11px; min-width: 0; transition: transform var(--dur-fast) var(--ease-out); }
+.wk-s:hover { transform: translateY(-1px); } .wk-s.err { background: var(--err-soft); color: var(--err); } .wk-s.off { opacity: .5; text-decoration: line-through; }
+.au-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.au { padding: 10px 12px; border-radius: var(--r-md); background: var(--bg-raised); box-shadow: var(--sh-1); display: flex; flex-direction: column; gap: 9px; transition: box-shadow var(--dur-base), transform var(--dur-base) var(--ease-out); cursor: default; }
+.au:hover { transform: translateY(-1px); box-shadow: var(--sh-2); } .au.on { box-shadow: 0 0 0 1.5px var(--ac-line), var(--sh-1); }
+
+/* ───────── 画布 ───────── */
+.cv-top { height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 16px; flex: none; box-shadow: inset 0 -1px var(--bd-1); }
+.cv-doc { max-width: 620px; margin: 10px auto 0; } .cv-doc h1 { font-size: 24px; margin: 8px 0 6px; letter-spacing: -.02em; } .cv-doc h2 { font-size: var(--fs-title); margin: 20px 0 8px; }
+.cv-doc .lead { color: var(--tx-2); font-size: var(--fs-read); line-height: 1.7; margin: 0; }
+.cv-card { margin: 4px 0; border-radius: var(--r-md); background: var(--bg-sunken); box-shadow: inset 0 0 0 1px var(--bd-1); overflow: hidden; }
+.cv-ch { height: 28px; padding: 0 4px 0 10px; display: flex; align-items: center; gap: 6px; color: var(--tx-3); font-size: var(--fs-cap); box-shadow: inset 0 -1px var(--bd-1); }
+.dg { width: 100%; display: block; padding: 6px 10px; } .dgn rect { fill: var(--bg-raised); stroke: var(--bd-3); } .dgn text { fill: var(--tx-1); font: 11.5px var(--font-ui); }
+.dgn.hot rect { fill: var(--ac-soft); stroke: var(--ac); } .dga { fill: none; stroke: var(--tx-3); stroke-width: 1.4; } .dgh { fill: var(--tx-3); }
+.cv-tb { width: 100%; border-collapse: collapse; } .cv-tb th { text-align: left; color: var(--tx-3); font-size: var(--fs-cap); font-weight: var(--fw-medium); padding: 5px 6px; }
+.cv-tb td { padding: 7px 6px; box-shadow: inset 0 1px var(--bd-1); }
+.cv-side { width: 280px; }
+
+/* ───────── 浏览器 ───────── */
+.br-bar { height: 40px; display: flex; align-items: center; gap: 4px; padding: 0 10px; flex: none; box-shadow: inset 0 -1px var(--bd-1); }
+.reader { max-width: 640px; margin: 12px auto 0; font-size: var(--fs-read); line-height: 1.75; }
+.reader h1 { font-size: 26px; letter-spacing: -.02em; margin: 6px 0 10px; } .reader h2 { font-size: 15px; margin: 18px 0 6px; } .reader p { margin: 0 0 8px; color: var(--tx-1); }
+.reader code { font: 11.5px var(--font-mono); background: var(--fill-2); padding: 1px 4px; border-radius: var(--r-xs); } .reader ul { padding-left: 18px; margin: 0; } .reader li::marker { color: var(--tx-4); }
+
+/* ───────── 自定义 ───────── */
+.cu { flex: 1; display: flex; min-height: 0; }
+.cu-rail { width: 178px; flex: none; padding: 8px 8px; display: flex; flex-direction: column; gap: 1px; box-shadow: inset -1px 0 var(--bd-1); }
+.cu-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cu-list { padding: 3px; display: flex; flex-direction: column; }
+.cu-row { min-height: 44px; padding: 5px 8px; border-radius: var(--r-sm); display: flex; align-items: center; gap: 10px; transition: background var(--dur-fast); }
+.cu-row:hover { background: var(--fill-1); } .cu-row.on { background: var(--fill-2); } .cu-row + .cu-row { box-shadow: inset 0 1px var(--bd-1); }
+
+/* ───────── IDE:差异 / 搜索 / 图谱 / 问题 ───────── */
+.dv-bar { height: 30px; padding: 0 8px 0 12px; display: flex; align-items: center; gap: 7px; flex: none; box-shadow: inset 0 -1px var(--bd-1); }
+.dv-wrap { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+.dv { flex: 1; min-width: 0; overflow: hidden; font: 12px/20px var(--font-mono); }
+.dv-head { display: grid; grid-template-columns: 1fr 1fr; height: 22px; align-items: center; font: var(--fs-cap)/1 var(--font-ui); color: var(--tx-3); box-shadow: inset 0 -1px var(--bd-1); }
+.dv-head span { padding: 0 12px; } .dv-head span + span, .dvr .dvc + .dvc { border-left: 1px solid var(--bd-1); }
+.dvr { display: grid; grid-template-columns: 1fr 1fr; } .dvc { height: 20px; display: flex; white-space: pre; min-width: 0; overflow: hidden; }
+.dvc .no { width: 36px; text-align: right; padding-right: 9px; color: var(--tx-4); flex: none; } .dvc .tx { flex: 1; min-width: 0; overflow: hidden; }
+.dvc.add { background: var(--diff-add); box-shadow: inset 2px 0 var(--ok); } .dvc.del { background: var(--diff-del); box-shadow: inset 2px 0 var(--err); }
+.dvc.e { background: repeating-linear-gradient(135deg, transparent 0 4px, var(--fill-1) 4px 5px); }
+.dv-fold { height: 22px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--fill-1); color: var(--tx-3); font: var(--fs-cap)/1 var(--font-ui); cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
+.dv-fold:hover { background: var(--fill-2); color: var(--tx-1); }
+.tgl { min-width: 20px; height: 18px; padding: 0 4px; border-radius: var(--r-xs); display: inline-grid; place-items: center; font: 10.5px/1 var(--font-mono); color: var(--tx-3); flex: none; cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
+.tgl:hover { background: var(--fill-2); color: var(--tx-1); } .tgl.on { background: var(--ac-soft); color: var(--ac-tx); box-shadow: inset 0 0 0 1px var(--ac-line); }
+mark.hit { background: var(--warn-soft); color: inherit; border-radius: 2px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--warn) 38%, transparent); }
+.hitrow del { color: var(--err); background: var(--err-soft); text-decoration: line-through; border-radius: 2px; } .hitrow ins { color: var(--ok); background: var(--ok-soft); text-decoration: none; border-radius: 2px; margin-left: 2px; }
+.graph .gr { height: 28px; padding: 0 8px 0 0; gap: 2px; } .gl { flex: none; } .gl path { fill: none; stroke-width: 1.6; } .gl .n { fill: var(--bg-chrome); stroke-width: 2; }
+.gl .l0 { stroke: var(--ac); } .gl .l1 { stroke: var(--info); } .gr-detail { padding: 2px 4px 8px 30px; }
+.bpanel.tall { height: 236px; }
+
+/* ───────── 浮层与面板 ───────── */
+.nt { display: flex; align-items: flex-start; gap: 9px; padding: 9px 11px; } .nt + .nt { box-shadow: inset 0 1px var(--bd-1); } .nt > svg { margin-top: 2px; }
+.upd { height: 26px; padding: 0 9px; border-radius: var(--r-md); display: flex; align-items: center; gap: 7px; background: var(--bg-raised); box-shadow: inset 0 0 0 1px var(--bd-2); color: var(--tx-2); font-size: 11.5px; transition: background var(--dur-fast); }
+.upd:hover { background: var(--fill-1); } .upd.ready { background: var(--ac-soft); color: var(--ac-tx); font-weight: var(--fw-medium); box-shadow: inset 0 0 0 1px var(--ac-line); }
+.dlg { background: var(--bg-raised); border-radius: var(--r-xl); box-shadow: var(--sh-3); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; width: 340px; max-width: 100%; }
+.dlg-i { width: 28px; height: 28px; border-radius: var(--r-md); display: grid; place-items: center; background: var(--ac-soft); color: var(--ac-tx); flex: none; }
+.dlg-i.warn { background: var(--warn-soft); color: var(--warn); } .dlg-i.err { background: var(--err-soft); color: var(--err); }
+.ctxbar { height: 6px; border-radius: 3px; background: var(--fill-2); display: flex; gap: 1px; overflow: hidden; } .ctxbar i { display: block; height: 100%; }
+.empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 16px 12px; }
+.skel { height: 10px; border-radius: 5px; background: var(--fill-2); animation: skel var(--dur-loop) ease-in-out infinite; } @keyframes skel { 50% { opacity: .4; } }
+.clamp { position: relative; max-height: 116px; overflow: hidden; }
+.clamp .fade { position: absolute; left: 0; right: 0; bottom: 0; height: 44px; background: linear-gradient(transparent, var(--_u, var(--bg-raised))); }
+[data-scheme="b"] .clamp { --_u: var(--ac-soft); }
+.thumb-img { width: 56px; height: 56px; border-radius: var(--r-md); background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--bd-2); display: grid; place-items: center; position: relative; }
+.thumb-img .x { position: absolute; top: -4px; right: -4px; width: 14px; height: 14px; border-radius: 50%; background: var(--tx-1); color: var(--bg); display: grid; place-items: center; }
+.thumb-img .x svg { width: 9px; height: 9px; }
+
+/* 方案差异:整页与抽屉跟随方案的圆角与分隔 */
+[data-scheme="b"] .drawer { box-shadow: none; } [data-scheme="b"] .cu-rail { box-shadow: none; }
+[data-scheme="b"] .au, [data-scheme="b"] .wk-d { box-shadow: var(--sh-1); }
+[data-scheme="c"] .cu-row.on { background: var(--ac-soft); }

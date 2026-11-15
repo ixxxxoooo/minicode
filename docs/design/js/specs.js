@@ -88,5 +88,6 @@
       <div class="spec tracks">${[['--ease-out', '进入'], ['--ease-in', '离开'], ['--ease-io', '位移'], ['--ease-spring', '滑块 / 勾选'], ['--ease-morph', '布局变形']].map(([n, u]) => track(`${n}<span class="t3 fs-cap" style="font-weight:400;margin-left:6px">${u}</span>`, '900ms', '900ms', `var(${n})`)).join('')}</div></div>`)}
     ${sec('动效模式', '组件只引用模式名(a-rise / a-pop / shimmer…),不直接写关键帧。点卡片重放。', `<div class="grid3">${P.demos.map((_, k) => P.demo(k)).join('')}</div>`)}</div>`;
 
+  P.h = { tok, spec, sec, head };
   window.P = P;
 })();

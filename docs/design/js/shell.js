@@ -5,19 +5,25 @@
   const { ic, btn, ib, chip, tag, cnt, kbd, seg, tog, THEMES } = U;
   const W = {};
   const NAVS = [['chat', 'chat', '会话'], ['files', 'folder', '文件'], ['search', 'search', '搜索'], ['scm', 'branch', '源代码管理']];
-  const PAGES = [['timer', '自动化'], ['canvas', '画布'], ['globe', '浏览器'], ['plug', '自定义']];
+  /** 整页功能:图标、名称、屏幕 id(与查看器页面 id 同名) */
+  const PAGES = [['timer', '自动化', 'automation'], ['canvas', '画布', 'canvas'], ['globe', '浏览器', 'browser'], ['plug', '自定义', 'customize']];
+  /** 整页屏幕:替换工作台的编辑区 / 对话栏 / 检查器 */
+  const PG = PAGES.map(p => p[2]);
+  /** IDE 细节屏幕:固定为 IDE 模式,并带上该屏幕要展示的导航与编辑区状态 */
+  const IDE_SCREENS = { 'ide-search': { nav: 'search', hl: 1, rep: 1 }, 'ide-scm': { nav: 'scm', graph: 1 }, 'ide-diff': { nav: 'scm', diff: 1 }, 'ide-problems': { nav: 'files', panel: 'problems' } };
+  const CRUMB = { automation: '自动化', canvas: '画布', browser: '浏览器', customize: '自定义' };
 
   /* ───────── 标题栏 ───────── */
   const modeSeg = (st) => seg([`${ic('bot', 's12')}Agent`, `${ic('code', 's12')}IDE`], st.mode === 'ide' ? 1 : 0, 'lg', 'mode');
   const cmdk = `<div class="cmdk" data-act="palette">${ic('search', 's12')}<span class="grow">搜索会话、文件与命令</span>${kbd('⌘', 'K')}</div>`;
-  const crumb = `<div class="crumb">${ic('folder', 's12')}<span>router-demo</span>${ic('chevR', 's12')}<b class="ell">路由大小写匹配</b></div>`;
+  const crumb = (st) => `<div class="crumb">${ic('folder', 's12')}<span>router-demo</span>${ic('chevR', 's12')}<b class="ell">${CRUMB[st.screen] || '路由大小写匹配'}</b></div>`;
   const titlebar = (st) => {
     const lead = `<span class="lights"><i></i><i></i><i></i></span>${ib('panelL', '', '导航栏 ⌘B', 'data-act="side"')}`;
     const tools = `${ib('panelB', 'only-ide', '终端 ⌃`')}${ib('panelR', 'only-agent', '检查器 ⌥⌘B', 'data-act="insp"')}${ib('bell', '', '通知')}`;
     const parts = {
-      a: [lead + crumb, modeSeg(st), cmdk + tools],
+      a: [lead + crumb(st), modeSeg(st), cmdk + tools],
       b: [lead + modeSeg(st), cmdk, tools + '<span class="avatar" style="margin-left:4px">L</span>'],
-      c: [lead + crumb, modeSeg(st) + cmdk, tools],
+      c: [lead + crumb(st), modeSeg(st) + cmdk, tools],
     }[st.scheme];
     return `<div class="tbar"><div class="l">${parts[0]}</div><div class="c">${parts[1]}</div><div class="r">${parts[2]}</div></div>`;
   };
@@ -26,7 +32,7 @@
   const rail = (st) => `<div class="rail">
     ${NAVS.map(([id, n, t]) => `<button class="ri tip-r ${W.navOf(st) === id ? 'on' : ''}" data-act="nav" data-nav="${id}" data-tip="${t}">${ic(n, 's16')}${id === 'scm' ? cnt(3, 'ac') : ''}</button>`).join('')}
     <span class="sep" style="width:20px;margin:6px 0"></span>
-    ${PAGES.map(([n, t]) => `<button class="ri tip-r" data-tip="${t}">${ic(n, 's16')}</button>`).join('')}
+    ${PAGES.map(([n, t, id]) => `<button class="ri tip-r ${st.screen === id ? 'on' : ''}" data-act="screen" data-screen="${id}" data-tip="${t}">${ic(n, 's16')}</button>`).join('')}
     <span class="grow"></span><button class="ri tip-r" data-act="screen" data-screen="settings" data-tip="设置 ⌘,">${ic('gear', 's16')}</button><span class="avatar" style="margin-top:4px">L</span></div>`;
 
   /* ───────── 导航栏 ───────── */
@@ -42,15 +48,15 @@
     : `${newChat}<div class="stagger">${proj('router-demo', 4, 1)}${sess('完整修复一个 Bug:路由大小写匹配', '刚刚', 1)}${sess('权限请求:修改配置与执行命令', '5 分钟')}${sess('文件读写:梳理并整理路由层', '1 小时')}${sess('Markdown 与代码高亮:发布说明', '昨天')}
       ${proj('web-dashboard', 2, 1)}${sess('内置浏览器:排查指标看板报错', '2 小时')}${sess('子 Agent:代码审查与调研', '昨天')}
       ${proj('docs-site', 6)}${proj('scenario-lab', 61)}</div>`;
-  W.panel = (nav, scheme) => `<div class="a-swap">${nav === 'chat' ? sessions(scheme) : nav === 'files' ? IDE.tree() : nav === 'search' ? IDE.search() : IDE.scm()}</div>`;
+  W.panel = (nav, scheme, o = {}) => `<div class="a-swap">${nav === 'chat' ? sessions(scheme) : nav === 'files' ? IDE.tree() : nav === 'search' ? IDE.search(o) : IDE.scm(o)}</div>`;
   W.navOf = (st) => st.nav || (st.mode === 'ide' ? 'files' : 'chat');
   const side = (st) => {
     const nav = W.navOf(st), k = NAVS.findIndex(n => n[0] === nav);
     return `<aside class="side"><div class="side-in">
       <div class="side-top"><div class="navseg grow">${seg(NAVS.map(n => ic(n[1])), k, 'icons', 'nav')}</div>
         <span class="side-title grow">${NAVS[k][2]}</span><span class="only-c">${ib('plus', 'sm', '新建')}</span></div>
-      <div class="side-body">${W.panel(nav, st.scheme)}</div>
-      <div class="side-foot">${PAGES.map(([n, t]) => ib(n, 'tip-u', t)).join('')}<span class="grow"></span>${ib('gear', 'tip-u', '设置 ⌘,', 'data-act="screen" data-screen="settings"')}</div>
+      <div class="side-body">${W.panel(nav, st.scheme, st.io)}</div>
+      <div class="side-foot">${PAGES.map(([n, t, id]) => ib(n, 'tip-u ' + (st.screen === id ? 'on' : ''), t, `data-act="screen" data-screen="${id}"`)).join('')}<span class="grow"></span>${ib('gear', 'tip-u', '设置 ⌘,', 'data-act="screen" data-screen="settings"')}</div>
     </div></aside>`;
   };
 
@@ -86,16 +92,7 @@
     <span class="grow"></span><span class="it">${ic('shield', 's12')}逐项确认</span><span class="it">Sonnet 5.5</span><span class="it num">上下文 38%</span><span class="it">${ic('download', 's12 c-ac')}<span class="c-ac">更新 42%</span></span></div>`;
 
   /* ───────── 页面:设置 / 命令面板 ───────── */
-  const navi = (n, t, on) => `<div class="row ${on ? 'on' : ''}">${ic(n, 's12')}<span>${t}</span></div>`;
-  const setRow = (t, d, ctl) => `<div class="set-row"><div class="grow"><div class="m">${t}</div><div class="d">${d}</div></div>${ctl}</div>`;
   W.themeCards = (cur) => `<div class="f g3 wrap">${THEMES.map(t => `<div class="th-card ${t.id === cur ? 'on' : ''}" data-act="theme" data-theme-id="${t.id}"><div class="th-prev" data-theme="${t.id}"><i class="s"></i><div class="m"><i></i><i style="width:90%"></i><i style="width:70%"></i></div></div><div class="f ai jb" style="padding:5px 3px 1px"><b>${t.name}</b><span class="t4 fs-micro">${t.dark ? '深' : '浅'}</span></div></div>`).join('')}</div>`;
-  const settings = (st) => `<div class="set"><div class="set-nav fc g1"><div class="grp-h">客户端</div>${navi('sliders', '通用')}${navi('palette', '外观', 1)}${navi('code', '编辑器')}${navi('terminal', '终端')}
-      <div class="grp-h" style="margin-top:6px">CLAUDE CODE</div>${navi('cpu', '模型与服务商')}${navi('shield', '权限')}${navi('plug', 'MCP')}${navi('bolt', '钩子')}
-      <div class="grp-h" style="margin-top:6px">其他</div>${navi('activity', '诊断')}${navi('info', '关于')}<span class="grow"></span>${btn('返回', 'ghost', 'chevL', 'data-act="screen" data-screen="work"')}</div>
-    <div class="set-main"><div class="set-col a-rise"><div><div class="fs-head b">外观</div><div class="t3">主题、密度与动效。所有选项都落在设计令牌上,即改即生效。</div></div>
-      <div class="card" style="padding:10px 12px"><div class="m" style="margin-bottom:8px">主题</div>${W.themeCards(st.theme)}</div>
-      <div class="card">${setRow('跟随系统深浅色', '浅色用「宣纸」,深色用「墨夜」', tog(0))}${setRow('界面密度', '行高令牌 --h-row:紧凑 22 / 标准 24 / 宽松 26', seg(['紧凑', '标准', '宽松'], 1))}${setRow('圆角', '圆角倍率 --r-k', seg(['利落', '适中', '圆润'], 1))}</div>
-      <div class="card">${setRow('动效', '流光、滑入与布局变形;关闭后所有时长令牌归零', tog(1))}${setRow('界面字号', '正文 12 · 阅读 13 · 标题 14', seg(['小', '默认', '大'], 1))}${setRow('代码字体', 'SF Mono 12 / 行高 20', chip('SF Mono', '', 'line'))}</div></div></div></div>`;
   const pi = (n, t, r, on) => `<div class="mi ${on ? 'on' : ''}" style="height:28px">${ic(n, 's12')}<span class="grow ell">${t}</span><span class="t3 fs-cap">${r}</span></div>`;
   const palette = () => `<div class="scrim" data-act="screen" data-screen="work"></div><div class="palette a-pop">
     <div class="pal-in">${ic('search', 's16 t3')}<span class="caret">主题</span></div>
@@ -104,10 +101,16 @@
       <div class="pal-prev"><b>主题:切换…</b><div class="t3 fs-cap" style="margin:4px 0 10px;line-height:1.5">展开主题列表。上下移动时即时预览,回车确认,Esc 还原。</div>${U.THEMES.map(t => `<div class="f ai g3 fs-cap" style="height:20px"><span class="dot" data-theme="${t.id}" style="background:var(--c-accent)"></span>${t.name}<span class="t4">${t.sub}</span></div>`).join('')}</div></div>
     <div class="pal-foot"><span class="f ai g2">${kbd('↑', '↓')}选择</span><span class="f ai g2">${kbd('⏎')}执行</span><span class="f ai g2">${kbd('esc')}关闭</span><span class="grow"></span><span>共 6 项</span></div></div>`;
 
-  /** 整个窗口。st 见文件头 */
-  W.win = (st) => `<div class="win" data-mode="${st.mode}" data-side="on" data-insp="on">${titlebar(st)}
-    ${st.screen === 'settings' ? settings(st) : `<div class="body">${rail(st)}${side(st)}<div class="stage"><section class="pane ed">${IDE.editor()}</section><section class="pane chat">${chat(st)}</section>${insp()}</div></div>`}
+  /** 整个窗口。st 见文件头;screen 可取 work / welcome / palette / settings / 四个整页 / 四个 IDE 细节屏幕 */
+  W.win = (st) => {
+    const io = IDE_SCREENS[st.screen], pg = PG.includes(st.screen);
+    st = { ...st, io, mode: io ? 'ide' : pg ? 'agent' : st.mode, nav: st.nav || (io && io.nav) };
+    const stage = pg ? `<section class="pane page">${W.pages[st.screen](st)}</section>`
+      : `<section class="pane ed">${IDE.editor(io)}</section><section class="pane chat">${chat(st)}</section>${insp()}`;
+    return `<div class="win" data-mode="${st.mode}" data-side="on" data-insp="on">${titlebar(st)}
+    ${st.screen === 'settings' ? W.settings(st) : `<div class="body">${rail(st)}${side(st)}<div class="stage">${stage}</div></div>`}
     ${sbar()}${st.screen === 'palette' ? palette() : ''}</div>`;
+  };
 
   window.W = W;
 })();
