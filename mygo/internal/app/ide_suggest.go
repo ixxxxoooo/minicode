@@ -31,12 +31,23 @@ func (a *App) suggestTick(tb *ideTab) {
 	if sel.Anchor != sel.Head {
 		return
 	}
-	line := tb.buf.Line(tb.buf.Pos(cur).Line)
+	pos := tb.buf.Pos(cur)
+	line := tb.buf.Line(pos.Line)
 	if strings.TrimSpace(line) == "" {
 		return
 	}
-	w, _, _ := wordUnder(tb, cur)
+	// 幽灵文字只在光标后面没有内容时出现(行尾),否则会盖住光标右侧的已有文字
+	if col := pos.Col; col >= 0 && col < len(line) && strings.TrimSpace(line[col:]) != "" {
+		tb.st.SetSuggestion(0, "")
+		return
+	}
+	w, _, wEnd := wordUnder(tb, cur)
 	if len(w) < 2 {
+		return
+	}
+	// 光标在单词中间时不给建议:幽灵文字会插进词里(Handl|handler|er),只在词尾 / 行尾补全
+	if cur < wEnd {
+		tb.st.SetSuggestion(0, "")
 		return
 	}
 	key := tb.id + "|" + w + "|" + line
