@@ -472,7 +472,7 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 			sp = append(sp, mk(hit, hc, true, ign))
 		}
 		sp = append(sp, mk(post, col, false, false))
-		ui.RichText(c, sp...).Font("monospace").FontSize(11.5).NoWrap().Clip().Grow(1).MinWidth(0)
+		ui.RichText(c, sp...).Font("monospace").FontSize(11.5).NoWrap().Clip().Grow(1).Shrink(1).MinWidth(0)
 		if !row.Hovered() {
 			ui.Text(c, itoa(m.Line+1)).FontSize(theme.FsMicro).TextColor(t.Tx4).FontFeatures("tnum").Shrink(0)
 		} else {
