@@ -375,9 +375,13 @@ func (a *App) autoDrawer(c *ui.Context) {
 			kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(func() { a.cancelAutoRun(it.ID) })
 		}
 		kit.Btn(c, "删除", kit.BtnOpt{Variant: kit.BtnDangerGhost, Icon: "trash"}).OnClick(func() {
-			a.auto.Delete(it.ID)
-			s.draftID = 0
-			a.toast = "已删除「" + it.Name + "」"
+			// 删除不可恢复(运行记录一并丢掉),先确认;已产生的会话在 Claude 那边,不受影响
+			a.confirmDlg("删除「"+it.Name+"」?", "会同时删除它的运行记录,不可恢复。它已产生的会话不会被删除。", "删除", true, func() {
+				a.auto.Delete(it.ID)
+				s.draftID = 0
+				a.toast = "已删除「" + it.Name + "」"
+				log.Info("删除自动化", "id", it.ID, "name", it.Name)
+			})
 		})
 		ui.Spacer(c).Grow(1)
 		save := kit.Btn(c, "保存", kit.BtnOpt{Variant: kit.BtnPri})

@@ -114,6 +114,12 @@ func TestAutomationPage(t *testing.T) {
 		t.Fatal(err)
 	}
 	tt.Frame()
+	// 删除先弹确认框,确认前不能少
+	if a.pd.kind != "confirm" || len(a.auto.List()) != 5 {
+		t.Fatalf("应先弹确认框且未删除:kind=%q n=%d", a.pd.kind, len(a.auto.List()))
+	}
+	a.pd.ok()
+	tt.Frame()
 	if len(a.auto.List()) != 4 {
 		t.Fatalf("应已删除:%d", len(a.auto.List()))
 	}
