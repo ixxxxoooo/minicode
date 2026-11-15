@@ -39,7 +39,7 @@ func (lv *autoLive) snapshot() string {
 func (a *App) openAutoNewDlg() {
 	s := &a.au
 	s.newDlg = true
-	s.newErr, s.newErrAt = "", ""
+	s.newErr, s.newErrAt, s.newErrVal = "", "", ""
 	log.Info("打开新建自动化对话框")
 	s.newName, s.newPrompt, s.newTime = "新的自动化", "", "09:00"
 	s.newDays, s.newPerm = "每天", autoPerms[0]
@@ -56,21 +56,21 @@ func (a *App) closeAutoNewDlg() {
 func (a *App) submitAutoNew() {
 	s := &a.au
 	if strings.TrimSpace(s.newName) == "" {
-		s.newErr, s.newErrAt = "请填写名称", "name"
+		s.newErr, s.newErrAt, s.newErrVal = "请填写名称", "name", s.newName
 		return
 	}
 	if strings.TrimSpace(s.newPrompt) == "" {
-		s.newErr, s.newErrAt = "请写下要做什么", "prompt"
+		s.newErr, s.newErrAt, s.newErrVal = "请写下要做什么", "prompt", s.newPrompt
 		return
 	}
 	if !automation.ValidTime(s.newTime) {
-		s.newErr, s.newErrAt = "时间格式如 09:30", "time"
+		s.newErr, s.newErrAt, s.newErrVal = "时间格式如 09:30", "time", s.newTime
 		return
 	}
 	n := a.auto.Add(s.newProj)
 	n.Name, n.Prompt, n.Time, n.Days, n.Perm, n.Project = strings.TrimSpace(s.newName), strings.TrimSpace(s.newPrompt), s.newTime, s.newDays, s.newPerm, s.newProj
 	if err := a.auto.Update(n); err != nil {
-		s.newErr, s.newErrAt = err.Error(), "name"
+		s.newErr, s.newErrAt, s.newErrVal = err.Error(), "name", s.newName
 		return
 	}
 	s.sel, s.draftID, s.focusName = n.ID, 0, false
@@ -121,11 +121,16 @@ func (a *App) autoNewDlg(c *ui.Context) {
 		t := a.tk
 		s := &a.au
 		lbl := func(text string) { ui.Text(c, text).FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3) }
+		// 错误只在对应字段还没被改动时显示:用户一动手修改就收起,不再残留「请写下要做什么」
 		errOf := func(at string) string {
-			if s.newErrAt == at {
-				return s.newErr
+			if s.newErrAt != at {
+				return ""
 			}
-			return ""
+			cur := map[string]string{"name": s.newName, "prompt": s.newPrompt, "time": s.newTime}[at]
+			if cur != s.newErrVal {
+				return ""
+			}
+			return s.newErr
 		}
 		kit.Field(c, "aun-name", kit.FieldOpt{Label: "名称", Err: errOf("name")}, func(box ui.Element) {
 			box.Height(30)

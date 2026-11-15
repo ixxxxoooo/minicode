@@ -57,3 +57,25 @@ func TestAutomationNewValidate(t *testing.T) {
 		t.Fatal("重新打开应清掉上次的错误")
 	}
 }
+
+// 提示词错误只在字段没被改动时显示:用户一输入就应收起,不能残留「请写下要做什么」。
+func TestAutomationNewErrorClearsOnEdit(t *testing.T) {
+	a, tt := newTestApp(t)
+	a.SetAutomations(automation.NewStore(nil))
+	a.screen = ScreenAutomation
+	tt.Frame()
+	a.openAutoNewDlg()
+	a.submitAutoNew()
+	time.Sleep(250 * time.Millisecond)
+	tt.Frame()
+	tt.Frame()
+	if !tt.HasText("请写下要做什么") {
+		t.Fatalf("提交空提示词后应显示错误:%v", tt.Texts())
+	}
+	a.au.newPrompt = "检查依赖"
+	tt.Frame()
+	tt.Frame()
+	if tt.HasText("请写下要做什么") {
+		t.Fatal("修改提示词后错误应收起")
+	}
+}

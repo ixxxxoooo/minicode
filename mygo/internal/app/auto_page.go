@@ -34,6 +34,7 @@ type autoState struct {
 	newDays, newPerm, newProj   string
 	newErr                      string
 	newErrAt                    string // 错误属于哪个字段:name / prompt / time
+	newErrVal                   string // 出错时该字段的内容;内容变了错误就不再显示
 }
 
 var autoPerms = []string{"只读 · 计划模式", "逐项确认", "自动编辑"}
