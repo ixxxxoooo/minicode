@@ -43,3 +43,14 @@ func TestTermRenameIdleByDefault(t *testing.T) {
 		t.Fatal("提交后应退出重命名")
 	}
 }
+
+// 起始页的终端列表与标签条同名(含用户重命名)。
+func TestTermEntriesFollowRename(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a"})
+	a.proj = "/tmp/x"
+	a.ide.tps = []*termPanel{{label: "build"}, {}}
+	es := a.termEntries()
+	if len(es) != 2 || es[0].Name != "build" || es[1].Name != a.termDefaultName(1) {
+		t.Fatalf("名称不一致:%+v", es)
+	}
+}

@@ -30,10 +30,7 @@ func (a *App) termEntries() []termEntry {
 	}
 	var out []termEntry
 	for i, tp := range a.ide.tps {
-		name := shellName()
-		if i > 0 {
-			name += " " + itoa(i+1)
-		}
+		name := a.termDisplayName(i) // 与标签条一致(含用户重命名)
 		cur := a.ide.termSel == "" && a.ide.tpSel == i
 		sub := "后台运行"
 		switch {
