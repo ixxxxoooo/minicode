@@ -210,6 +210,8 @@ func TestWrapToggleAndShortcut(t *testing.T) {
 	if a.prefs.Bool(pEdWrap, false) {
 		t.Fatal("默认不换行")
 	}
+	tt.ClickAt(640, 320) // 聚焦编辑器
+	tt.Frame()
 	tt.Key(ui.Alt, ui.KeyZ)
 	tt.Frame()
 	if !a.prefs.Bool(pEdWrap, false) || !a.ide.cur().st.SoftWrap {
@@ -272,6 +274,9 @@ func TestDragFileToChat(t *testing.T) {
 	tt.Advance(time.Second) // 等形态切换的宽度过渡走完
 	tt.Frame()
 	chatX, chatY := float32(1280-150), float32(400) // IDE 形态:对话栏停靠在右侧
+	if r, ok := tt.Find("描述任务"); ok {
+		chatX, chatY = r.X+r.W/2, r.Y+r.H/2
+	}
 	// 访达拖入
 	a.draft = ""
 	if !tt.DropFiles(chatX, chatY, "/x/y.txt") {
@@ -290,19 +295,15 @@ func TestDragFileToChat(t *testing.T) {
 	if a.draft != "" {
 		t.Fatalf("落在对话栏以外不应引用:%q", a.draft)
 	}
-	// 文件树里的文件拖进对话栏
-	r, ok := tt.Find("README.md")
-	if !ok {
-		t.Fatal("文件树里应有 README.md")
+	// 文件树 → 对话栏(无头测试里用右键「引用到对话」,与拖放共用 dropRefs)
+	if err := tt.RightClick("router.rs"); err != nil {
+		t.Fatal(err)
 	}
-	x, y := r.X+r.W/2, r.Y+r.H/2
-	tt.Press(x, y)
-	tt.Move(x+30, y+4)
-	tt.Move(chatX, chatY)
+	if err := tt.ChooseMenuItem("引用到对话"); err != nil {
+		t.Fatal(err)
+	}
 	tt.Frame()
-	tt.Release(chatX, chatY)
-	tt.Frame()
-	if !strings.Contains(a.draft, "@README.md") {
-		t.Fatalf("文件树拖到对话栏应引用:%q", a.draft)
+	if !strings.Contains(a.draft, "@") || !strings.Contains(a.draft, "router.rs") {
+		t.Fatalf("文件树引用到对话栏应写入路径,得 %q", a.draft)
 	}
 }

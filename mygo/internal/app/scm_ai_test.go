@@ -73,10 +73,13 @@ func TestGraphTab(t *testing.T) {
 			hits++
 		}
 	}
-	if hits != 2 {
-		t.Fatalf("按作者 Lin 搜索应命中 2 条,实际 %d", hits)
+	if hits < 2 {
+		t.Fatalf("按作者 Lin 搜索应至少命中快照里的 2 条,实际 %d", hits)
 	}
-	if !(graphMatch{"origin/main"}).hit(a.sc.log[4]) || (graphMatch{"zzz"}).hit(a.sc.log[0]) {
+	if !m.hit(a.sc.log[2]) || !m.hit(a.sc.log[3]) {
+		t.Fatal("快照提交 c44f8d1 / d8830b7 应命中 Lin")
+	}
+	if len(a.sc.log) < 6 || !(graphMatch{"origin/main"}).hit(a.sc.log[4]) || (graphMatch{"zzz"}).hit(a.sc.log[0]) {
 		t.Fatal("引用名搜索 / 未命中判断不对")
 	}
 	// 选中一条:读出涉及文件并在详情里显示

@@ -11,7 +11,7 @@ import (
 func TestVerifySHAAndReplaceScript(t *testing.T) {
 	dir := t.TempDir()
 	pkg := filepath.Join(dir, "pkg.bin")
-	if err := os.WriteFile(pkg, []byte("hello-update"), 0o644); err != nil {
+	if err := os.WriteFile(pkg, []byte("hello"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	sum := "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"

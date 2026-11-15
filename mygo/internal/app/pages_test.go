@@ -86,8 +86,14 @@ func TestAutomationPage(t *testing.T) {
 	if got, _ := a.auto.Get(3); got.Time != "18:00" || got.Name != "周报(新)" || a.au.errMsg != "" {
 		t.Fatalf("保存没生效:%+v %q", got, a.au.errMsg)
 	}
-	// 新建 → 选中新项并聚焦名称
+	// 新建(模态填完提示词) → 选中新项
 	if err := tt.Click("新建自动化"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	a.au.newPrompt = "每周整理笔记"
+	tt.Frame()
+	if err := tt.Click("创建"); err != nil {
 		t.Fatal(err)
 	}
 	tt.Frame()
@@ -327,7 +333,7 @@ func TestCustomizePage(t *testing.T) {
 	}
 	// 在输入框试用 → 回对话并填好命令
 	tt.Frame()
-	if err := tt.Click("在输入框试用"); err != nil {
+	if err := tt.Click("填进输入框"); err != nil {
 		t.Fatal(err)
 	}
 	if a.screen != ScreenWork || !strings.HasPrefix(a.draft, "/review2") {

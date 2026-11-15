@@ -3,11 +3,19 @@ package app
 import (
 	"strings"
 	"testing"
+
+	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
 
 // SCM 文件行右键「放弃更改…」先确认,确认前什么都不丢。
 func TestSCMFileMenuDiscardConfirm(t *testing.T) {
-	a, tt := scmApp(t)
+	m := vcs.NewMem()
+	m.SetState([]vcs.Change{{Path: "tests/case_test.rs", Status: 'A', Add: 2}}, nil, nil, nil, 0)
+	a, tt := newTestApp(t)
+	a.SetRepo(m)
+	a.OpenSCM()
+	tt.Frame()
+	tt.Frame()
 	_, before := a.sc.split()
 	if err := tt.RightClick("case_test.rs"); err != nil {
 		t.Fatal(err)

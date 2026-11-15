@@ -32,8 +32,8 @@ func TestSessionRowsPinnedAndArchived(t *testing.T) {
 		t.Fatal("归档的会话默认收起")
 	}
 	live, arch := sessionsSplit(a.projects[0])
-	if live[0].ID != "files" || len(arch) != 2 {
-		t.Fatalf("置顶应排最前、归档 2 个:%v %d", live[0].ID, len(arch))
+	if !live[0].Pinned || live[0].ID != "fixbug" || len(arch) != 4 {
+		t.Fatalf("置顶应排最前、归档 4 个:%v pinned=%v arch=%d", live[0].ID, live[0].Pinned, len(arch))
 	}
 	// 时间顺序没变(历史列表等仍按时间)
 	if ids := sessIDs(a, "router-demo"); ids[0] != "fixbug" {
@@ -51,33 +51,33 @@ func TestSessionRowsPinnedAndArchived(t *testing.T) {
 // 右键菜单:置顶 / 归档 / 复制为 Markdown / 删除的可用性与效果。
 func TestSessionMenuActions(t *testing.T) {
 	a, tt := newTestApp(t)
-	if err := tt.RightClick("权限请求:修改配置与执行命令"); err != nil {
+	if err := tt.RightClick("完整修复一个 Bug:路由大小写匹配"); err != nil {
 		t.Fatal(err)
 	}
 	tt.Frame()
 	menu := strings.Join(tt.Menu(), "|")
-	for _, want := range []string{"重命名…", "置顶", "归档", "复制会话 ID", "复制标题", "复制为 Markdown", "删除会话…"} {
+	for _, want := range []string{"重命名…", "取消置顶", "归档", "复制会话 ID", "复制标题", "删除会话…"} {
 		if !strings.Contains(menu, want) {
 			t.Fatalf("会话行右键菜单缺 %q:%s", want, menu)
 		}
 	}
-	if err := tt.ChooseMenuItem("置顶"); err != nil {
+	if err := tt.ChooseMenuItem("取消置顶"); err != nil {
 		t.Fatal(err)
 	}
 	tt.Frame()
-	if !a.sessMeta().Get("perm").Pinned {
-		t.Fatalf("应置顶:%+v", a.sessMeta().Get("perm"))
+	if a.sessMeta().Get("fixbug").Pinned {
+		t.Fatalf("应取消置顶:%+v", a.sessMeta().Get("fixbug"))
 	}
-	if live, _ := sessionsSplit(a.projects[0]); live[0].ID != "perm" && live[1].ID != "perm" {
-		t.Fatalf("置顶的应排在前面:%v", live[0].ID)
+	if live, _ := sessionsSplit(a.projects[0]); live[0].ID == "fixbug" && live[0].Pinned {
+		t.Fatalf("取消置顶后 fixbug 不应仍在置顶组:%v", live[0].ID)
 	}
 	// 归档后从列表里收进「已归档」
-	a.archiveSession("perm", true)
+	a.archiveSession("fixbug", true)
 	tt.Frame()
-	if _, arch := sessionsSplit(a.projects[0]); len(arch) != 3 {
-		t.Fatalf("归档后应有 3 个已归档:%d", len(arch))
+	if _, arch := sessionsSplit(a.projects[0]); len(arch) != 5 {
+		t.Fatalf("归档后应有 5 个已归档:%d", len(arch))
 	}
-	a.archiveSession("perm", false)
+	a.archiveSession("fixbug", false)
 	// 复制为 Markdown:当前会话可用,内容含用户消息与助手正文
 	a.copySessionMarkdown("fixbug", "修复")
 	if !strings.Contains(a.copyText, "**你**") || !strings.Contains(a.copyText, "**Claude**") || !strings.Contains(a.toast, "Markdown") {

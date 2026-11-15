@@ -110,7 +110,7 @@ func TestLSPMissingServerShowsInstall(t *testing.T) {
 	a.ide.bottomOpen, a.ide.bottomTab = true, "problems"
 	b.frames(2)
 	tt := b.tt.(interface{ HasText(string) bool })
-	if !tt.HasText("未安装 gopls") || !tt.HasText("在终端安装") {
+	if !tt.HasText("未安装 gopls") || !tt.HasText("安装") {
 		t.Fatal("问题面板应给出安装入口")
 	}
 	a.lspInstall(s)

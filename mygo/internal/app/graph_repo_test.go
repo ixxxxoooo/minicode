@@ -46,8 +46,11 @@ func TestBranchPickerRepoChips(t *testing.T) {
 		t.Fatal("分支列表应换成 web-dashboard 的")
 	}
 	a.switchBranchNamed("main")
+	if a.pd.kind == "branch-dirty" && a.pd.branchFn != nil {
+		a.pd.branchFn()
+	}
 	tt.Frame()
-	if a.branch != "main" || a.repos[0].branch != "main" {
-		t.Fatalf("切分支只作用于 web-dashboard:%s", a.branch)
+	if a.branch != "main" || a.repoAct != 1 || a.repos[1].branch != "main" {
+		t.Fatalf("切分支只作用于 web-dashboard:branch=%s act=%d repos[1]=%s", a.branch, a.repoAct, a.repos[1].branch)
 	}
 }

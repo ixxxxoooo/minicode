@@ -13,7 +13,7 @@ func TestDockIconPathFallback(t *testing.T) {
 	if p == "" {
 		t.Fatal("应有默认图标路径")
 	}
-	if !endsWithAny(p, "MiniCode.icns", "app-light.png") {
+	if !endsWithAny(p, "MiniCode.icns", "app-light.png", "app-logo.png") {
 		t.Fatalf("意外路径 %s", p)
 	}
 }

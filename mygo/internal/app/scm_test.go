@@ -17,14 +17,29 @@ func scmApp(t *testing.T) (*App, *ui.Tester) {
 	return a, tt
 }
 
+func scmHasSplit(cs []vcs.Change, staged bool, path string) bool {
+	for _, c := range cs {
+		if c.Path == path && c.Staged == staged {
+			return true
+		}
+	}
+	return false
+}
+
 func TestSCMLoadsAndGroups(t *testing.T) {
 	a, _ := scmApp(t)
 	st, wk := a.sc.split()
-	if !a.sc.loaded || len(st) != 1 || len(wk) != 2 || st[0].Path != "src/router.rs" {
-		t.Fatalf("分组不对:loaded=%v staged=%+v work=%+v", a.sc.loaded, st, wk)
+	if !a.sc.loaded || len(st) < 60 || len(wk) < 150 {
+		t.Fatalf("分组不对:loaded=%v staged=%d work=%d", a.sc.loaded, len(st), len(wk))
 	}
-	if len(a.sc.log) != 6 || len(a.sc.rows) != 6 || a.sc.ahead != 1 {
+	if !scmHasSplit(st, true, "src/router.rs") || !scmHasSplit(wk, false, "tests/router_test.rs") || !scmHasSplit(wk, false, "tests/case_test.rs") {
+		t.Fatalf("router-demo 核心改动应在正确分组:staged=%+v work=%+v", st, wk)
+	}
+	if len(a.sc.log) < 6 || len(a.sc.rows) != len(a.sc.log) || a.sc.ahead != 3 {
 		t.Fatalf("图谱不对:log=%d rows=%d ahead=%d", len(a.sc.log), len(a.sc.rows), a.sc.ahead)
+	}
+	if a.sc.log[0].Hash != "a3f9c21" || a.sc.log[5].Hash != "f5521ab" {
+		t.Fatalf("快照提交仍在顶端:%s … %s", a.sc.log[0].Hash, a.sc.log[5].Hash)
 	}
 	// 文件树的状态色随改动同步
 	if a.ide.git["tests/case_test.rs"] != "A" || a.ide.git["src/router.rs"] != "M" {
@@ -34,16 +49,17 @@ func TestSCMLoadsAndGroups(t *testing.T) {
 
 func TestSCMStageUnstageCommit(t *testing.T) {
 	a, tt := scmApp(t)
+	stN, wkN := a.sc.split()
 	a.scmStage("tests/router_test.rs")
 	tt.Frame()
 	st, wk := a.sc.split()
-	if len(st) != 2 || len(wk) != 1 {
-		t.Fatalf("暂存后应 2/1:%d/%d", len(st), len(wk))
+	if len(st) != len(stN)+1 || len(wk) != len(wkN)-1 || !scmHasSplit(st, true, "tests/router_test.rs") {
+		t.Fatalf("暂存后应 +1 staged −1 work:%d/%d (原 %d/%d)", len(st), len(wk), len(stN), len(wkN))
 	}
 	a.scmUnstage("tests/router_test.rs")
 	tt.Frame()
-	if st, _ := a.sc.split(); len(st) != 1 {
-		t.Fatalf("取消暂存后应只剩 1 个:%d", len(st))
+	if st, wk := a.sc.split(); len(st) != len(stN) || len(wk) != len(wkN) {
+		t.Fatalf("取消暂存后应恢复:%d/%d 原 %d/%d", len(st), len(wk), len(stN), len(wkN))
 	}
 	// 没写说明不能提交
 	a.scmCommit(false)
@@ -55,8 +71,8 @@ func TestSCMStageUnstageCommit(t *testing.T) {
 	tt.Frame()
 	tt.Frame()
 	st, _ = a.sc.split()
-	if len(st) != 0 || a.sc.msg != "" || len(a.sc.log) != 7 || a.sc.log[0].Subject != "fix: 测试提交" || a.sc.ahead != 2 {
-		t.Fatalf("提交后状态不对:staged=%d msg=%q log=%d", len(st), a.sc.msg, len(a.sc.log))
+	if len(st) != 0 || a.sc.msg != "" || a.sc.log[0].Subject != "fix: 测试提交" || a.sc.ahead != 4 {
+		t.Fatalf("提交后状态不对:staged=%d msg=%q head=%q ahead=%d", len(st), a.sc.msg, a.sc.log[0].Subject, a.sc.ahead)
 	}
 	// 提交并推送 → ahead 归零
 	a.scmStage("tests/router_test.rs")
@@ -72,10 +88,11 @@ func TestSCMStageUnstageCommit(t *testing.T) {
 
 func TestSCMDiscardAndCommitFiles(t *testing.T) {
 	a, tt := scmApp(t)
+	_, wkN := a.sc.split()
 	a.scmDiscard("tests/case_test.rs")
 	tt.Frame()
-	if _, wk := a.sc.split(); len(wk) != 1 {
-		t.Fatalf("放弃后应剩 1 个更改:%d", len(wk))
+	if _, wk := a.sc.split(); len(wk) != len(wkN)-1 || scmHasSplit(wk, false, "tests/case_test.rs") {
+		t.Fatalf("放弃后应少 1 个 work 文件:%d→%d", len(wkN), len(wk))
 	}
 	a.SetSCM("", "a3f9c21")
 	tt.Frame()

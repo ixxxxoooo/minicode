@@ -42,8 +42,8 @@ func TestDemoWorkspaceLifecycle(t *testing.T) {
 	if s, ok := a.headOfRepo("router-demo/src/router.rs"); !ok || !strings.Contains(s, "self.routes.get(path)") {
 		t.Fatal("非活动仓库的文件也应能读到 HEAD")
 	}
-	if _, _, _, n := a.repoSummary(0); n != 3 {
-		t.Fatalf("router-demo 总览行应显示 3 项改动:%d", n)
+	if _, _, _, n := a.repoSummary(0); n < 300 {
+		t.Fatalf("router-demo 总览行应含 bulk 等多项改动(≥300):%d", n)
 	}
 	// 非仓库文件夹没有仓库
 	if r, _ := a.repoAt("nope/x"); r != nil {

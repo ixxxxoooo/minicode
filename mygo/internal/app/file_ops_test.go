@@ -84,8 +84,8 @@ func TestFileTreeRename(t *testing.T) {
 	tb.buf.Set("// 改过\n" + tb.buf.String())
 	a.beginRenameFile("src/router.rs")
 	tt.Frame()
-	if a.fo.buf != "router.rs" {
-		t.Fatalf("输入框应预填原名:%q", a.fo.buf)
+	if a.fo.buf != "router" || a.fo.ext != ".rs" {
+		t.Fatalf("输入框应预填不含扩展名的原名:%q ext=%q", a.fo.buf, a.fo.ext)
 	}
 	a.fo.buf = "main.rs"
 	a.commitFileOp()

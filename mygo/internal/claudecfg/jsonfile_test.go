@@ -1,7 +1,6 @@
 package claudecfg
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 )
@@ -12,12 +11,16 @@ func TestWriteJSONAtomic(t *testing.T) {
 	if err := writeJSON(p, map[string]any{"a": 1}); err != nil {
 		t.Fatal(err)
 	}
+	if err := writeJSON(p, map[string]any{"a": 2}); err != nil {
+		t.Fatal(err)
+	}
 	v, err := readJSON(p)
-	if err != nil || v["a"] != float64(1) {
+	if err != nil || v["a"] != float64(2) {
 		t.Fatalf("读回失败:%v %v", v, err)
 	}
-	if _, err := os.Stat(p + ".mini-backup"); err != nil {
-		t.Fatal("应有备份")
+	bak, err := readJSON(p + ".mini-backup")
+	if err != nil || bak["a"] != float64(1) {
+		t.Fatalf("备份应保留上一版:%v %v", bak, err)
 	}
 }
 

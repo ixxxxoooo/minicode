@@ -77,18 +77,18 @@ func TestStashAndUndoCommit(t *testing.T) {
 	a.OpenSCM()
 	tt.Frame()
 	tt.Frame()
-	if len(a.sc.stashes) != 1 {
-		t.Fatalf("演示应有 1 条储藏:%d", len(a.sc.stashes))
+	if len(a.sc.stashes) != 5 {
+		t.Fatalf("演示应有 5 条储藏:%d", len(a.sc.stashes))
 	}
 	nCh := len(a.sc.changes)
 	a.scmStashPush()
 	tt.Frame()
-	if len(a.sc.stashes) != 2 || len(a.sc.changes) != 0 {
-		t.Fatalf("储藏后应有 2 条储藏、没有改动:%d / %d", len(a.sc.stashes), len(a.sc.changes))
+	if len(a.sc.stashes) != 6 || len(a.sc.changes) != 0 {
+		t.Fatalf("储藏后应有 6 条储藏、没有改动:%d / %d", len(a.sc.stashes), len(a.sc.changes))
 	}
 	a.scmStashApply(0, true)
 	tt.Frame()
-	if len(a.sc.stashes) != 1 || len(a.sc.changes) != nCh {
+	if len(a.sc.stashes) != 5 || len(a.sc.changes) != nCh {
 		t.Fatalf("弹出后改动应恢复:%d / %d(期望 %d)", len(a.sc.stashes), len(a.sc.changes), nCh)
 	}
 	head := a.sc.log[0].Hash

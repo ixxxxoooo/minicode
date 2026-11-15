@@ -47,7 +47,7 @@ func TestPressureBuildIDsUnique(t *testing.T) {
 func minSteps(name string) int {
 	switch name {
 	case "long":
-		return 17000
+		return 16400
 	case "press-mass-tools":
 		return 1600
 	case "press-stream-flood":

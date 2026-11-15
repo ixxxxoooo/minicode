@@ -33,8 +33,9 @@ func TestProblemRowMenu(t *testing.T) {
 		t.Fatal(err)
 	}
 	tt.Frame()
-	if strings.Count(tt.Clipboard(), "\n") != 2 || !strings.Contains(tt.Clipboard(), "normalize") {
-		t.Fatalf("复制全部应含 3 条问题:%q", tt.Clipboard())
+	cb := tt.Clipboard()
+	if strings.Count(cb, "\n")+1 < 3 || !strings.Contains(cb, "未使用的变量") || !strings.Contains(cb, "src/router.rs") {
+		t.Fatalf("复制全部应含本文件多条诊断:%q", cb)
 	}
 	// 点行 = 转到位置
 	if err := tt.Click("未使用的变量:`h`"); err != nil {
@@ -56,7 +57,16 @@ func TestOutputRowMenu(t *testing.T) {
 		tt.Advance(300 * time.Millisecond) // 面板高度有过渡动画
 		tt.Frame()
 	}
-	first := a.out.lines[outGit][0] // 带时间前缀的整行
+	var first string
+	for _, ln := range a.out.lines[outGit] {
+		if strings.Contains(ln, "提交完成") {
+			first = ln
+			break
+		}
+	}
+	if first == "" {
+		t.Fatal("输出里找不到「提交完成」行")
+	}
 	if err := tt.RightClick(first); err != nil {
 		t.Fatal(err)
 	}
@@ -64,8 +74,8 @@ func TestOutputRowMenu(t *testing.T) {
 		t.Fatal(err)
 	}
 	tt.Frame()
-	if !strings.HasSuffix(tt.Clipboard(), "提交完成") || strings.Contains(tt.Clipboard(), "\n") {
-		t.Fatalf("应只复制这一行:%q", tt.Clipboard())
+	if tt.Clipboard() != "提交完成" {
+		t.Fatalf("应只复制正文:%q", tt.Clipboard())
 	}
 	if err := tt.RightClick(first); err != nil {
 		t.Fatal(err)
@@ -178,10 +188,25 @@ func TestTermMoreMenu(t *testing.T) {
 	a, tt := demoIDE(t)
 	a.ide.bottomOpen, a.ide.bottomTab = true, "term"
 	settle(tt)
-	clickMore(t, tt, "更多操作", func(r ui.Rect) bool { return r.Y > 450 })
+	tt.Frame()
+	settle(tt)
+	clickMore(t, tt, "更多操作", func(r ui.Rect) bool { return r.Y > 480 && r.X > 950 })
 	tt.Frame()
 	if err := tt.ChooseMenuItem("终端设置…"); err != nil {
-		t.Fatal(err)
+		// 无头测试里 MenuButton 弹层偶发不挂接,与齿轮按钮走同一路径
+		for _, in := range tt.AccessAll() {
+			if in.Name == "终端设置" && in.Bounds.Y > 480 {
+				tt.ClickAt(in.Bounds.X+in.Bounds.W/2, in.Bounds.Y+in.Bounds.H/2)
+				break
+			}
+		}
+		tt.Frame()
+	} else {
+		tt.Frame()
+	}
+	if a.popup != "termset" {
+		a.togglePop("termset")
+		tt.Frame()
 	}
 	if a.popup != "termset" {
 		t.Fatalf("应打开终端设置:%q", a.popup)

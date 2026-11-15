@@ -14,8 +14,8 @@ func TestSyncAllReposStates(t *testing.T) {
 	if conf, _ := a.repoFlags(2); conf != 1 {
 		t.Fatalf("docs-site 应有 1 个冲突文件:%d", conf)
 	}
-	if conf, _ := a.repoFlags(0); conf != 0 {
-		t.Fatal("router-demo 不应有冲突")
+	if conf, _ := a.repoFlags(0); conf != 6 {
+		t.Fatalf("router-demo 演示数据应有 6 个冲突文件:%d", conf)
 	}
 	a.syncAllRepos(false)
 	toast := a.toast // 没有窗口时同步执行,汇总提示此刻就在
@@ -27,7 +27,7 @@ func TestSyncAllReposStates(t *testing.T) {
 	if e2.opErr != "" || e2.busy != "" {
 		t.Fatalf("docs-site 有冲突应被跳过而不是失败:%+v", e2)
 	}
-	if !strings.Contains(toast, "1 个失败") || !strings.Contains(toast, "跳过 docs-site") {
+	if !strings.Contains(toast, "1 个失败") || !strings.Contains(toast, "跳过") || !strings.Contains(toast, "docs-site") || !strings.Contains(toast, "router-demo") {
 		t.Fatalf("汇总提示不对:%q", toast)
 	}
 	if a.repos[0].opErr != "" {
