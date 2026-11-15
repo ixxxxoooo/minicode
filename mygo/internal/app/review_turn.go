@@ -34,7 +34,7 @@ func (a *App) reviewFooterText(files []chFile) string {
 	if d, ok := a.st.Durations[uid]; ok && d > 0 {
 		parts = append(parts, core.FormatElapsed(int64(d)*1000))
 	}
-	parts = append(parts, a.clock().Format("1月2日 15:04"))
+	parts = append(parts, a.now().Format("1月2日 15:04"))
 	return strings.Join(parts, " · ")
 }
 
