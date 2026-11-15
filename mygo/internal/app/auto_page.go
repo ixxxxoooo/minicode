@@ -33,6 +33,7 @@ type autoState struct {
 	newName, newPrompt, newTime string
 	newDays, newPerm, newProj   string
 	newErr                      string
+	newErrAt                    string // 错误属于哪个字段:name / prompt / time
 }
 
 var autoPerms = []string{"只读 · 计划模式", "逐项确认", "自动编辑"}

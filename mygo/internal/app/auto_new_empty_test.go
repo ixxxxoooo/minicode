@@ -30,3 +30,30 @@ func TestAutomationNewFromEmpty(t *testing.T) {
 		t.Fatalf("对话框内容没画出来:%v", tt.Texts())
 	}
 }
+
+// 新建对话框:错误按字段定位,填全后创建成功并关闭。
+func TestAutomationNewValidate(t *testing.T) {
+	a, tt := newTestApp(t)
+	a.SetAutomations(automation.NewStore(nil))
+	a.screen = ScreenAutomation
+	tt.Frame()
+	a.openAutoNewDlg()
+	a.submitAutoNew()
+	if a.au.newErrAt != "prompt" || a.au.newErr == "" {
+		t.Fatalf("空提示词的错误应落在提示词:at=%q err=%q", a.au.newErrAt, a.au.newErr)
+	}
+	a.au.newPrompt, a.au.newTime = "检查依赖", "9点"
+	a.submitAutoNew()
+	if a.au.newErrAt != "time" {
+		t.Fatalf("坏时间的错误应落在时间:%q", a.au.newErrAt)
+	}
+	a.au.newTime = "09:30"
+	a.submitAutoNew()
+	if a.au.newDlg || len(a.auto.List()) != 1 {
+		t.Fatalf("应创建成功并关闭:dlg=%v n=%d", a.au.newDlg, len(a.auto.List()))
+	}
+	a.openAutoNewDlg()
+	if a.au.newErr != "" {
+		t.Fatal("重新打开应清掉上次的错误")
+	}
+}

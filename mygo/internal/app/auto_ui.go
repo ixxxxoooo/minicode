@@ -39,6 +39,7 @@ func (lv *autoLive) snapshot() string {
 func (a *App) openAutoNewDlg() {
 	s := &a.au
 	s.newDlg = true
+	s.newErr, s.newErrAt = "", ""
 	log.Info("打开新建自动化对话框")
 	s.newName, s.newPrompt, s.newTime = "新的自动化", "", "09:00"
 	s.newDays, s.newPerm = "每天", autoPerms[0]
@@ -55,21 +56,21 @@ func (a *App) closeAutoNewDlg() {
 func (a *App) submitAutoNew() {
 	s := &a.au
 	if strings.TrimSpace(s.newName) == "" {
-		s.newErr = "请填写名称"
+		s.newErr, s.newErrAt = "请填写名称", "name"
 		return
 	}
 	if strings.TrimSpace(s.newPrompt) == "" {
-		s.newErr = "请写下要做什么"
+		s.newErr, s.newErrAt = "请写下要做什么", "prompt"
 		return
 	}
 	if !automation.ValidTime(s.newTime) {
-		s.newErr = "时间格式如 09:30"
+		s.newErr, s.newErrAt = "时间格式如 09:30", "time"
 		return
 	}
 	n := a.auto.Add(s.newProj)
 	n.Name, n.Prompt, n.Time, n.Days, n.Perm, n.Project = strings.TrimSpace(s.newName), strings.TrimSpace(s.newPrompt), s.newTime, s.newDays, s.newPerm, s.newProj
 	if err := a.auto.Update(n); err != nil {
-		s.newErr = err.Error()
+		s.newErr, s.newErrAt = err.Error(), "name"
 		return
 	}
 	s.sel, s.draftID, s.focusName = n.ID, 0, false
@@ -120,13 +121,25 @@ func (a *App) autoNewDlg(c *ui.Context) {
 		t := a.tk
 		s := &a.au
 		lbl := func(text string) { ui.Text(c, text).FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3) }
-		kit.Field(c, "aun-name", kit.FieldOpt{Label: "名称", Err: s.newErr}, func(box ui.Element) {
-			box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(28)
+		errOf := func(at string) string {
+			if s.newErrAt == at {
+				return s.newErr
+			}
+			return ""
+		}
+		kit.Field(c, "aun-name", kit.FieldOpt{Label: "名称", Err: errOf("name")}, func(box ui.Element) {
+			box.Height(30)
 			ui.TextInputBase(c.Key("aun-name"), &s.newName).Grow(1).FontSize(theme.FsBody)
 		})
 		ui.Column(c).Gap(4).Children(func() {
 			lbl("提示词")
 			ui.TextArea(c.Key("aun-prompt"), &s.newPrompt).Height(72)
+			if e := errOf("prompt"); e != "" {
+				ui.Row(c).Gap(5).AlignItems(ui.Center).Children(func() {
+					kit.Ic(c, "alert", kit.S12).TextColor(t.Err)
+					ui.Text(c, e).FontSize(10.5).TextColor(t.Err)
+				})
+			}
 		})
 		kinds := []string{"每天", "工作日", "每周一", "Cron"}
 		cur := 0
@@ -143,8 +156,8 @@ func (a *App) autoNewDlg(c *ui.Context) {
 		if i := kit.Seg(c, []kit.SegItem{{Text: kinds[0]}, {Text: kinds[1]}, {Text: kinds[2]}, {Text: kinds[3]}}, cur, kit.SegOpt{Key: "aun-kind", Fill: true}); i >= 0 {
 			s.newDays = []string{"每天", "工作日", "周一", "0 9 * * *"}[i]
 		}
-		kit.Field(c, "aun-time", kit.FieldOpt{Label: "时间"}, func(box ui.Element) {
-			box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(28).Width(120).Shrink(0)
+		kit.Field(c, "aun-time", kit.FieldOpt{Label: "时间", Err: errOf("time")}, func(box ui.Element) {
+			box.Height(30).Width(120).Grow(0).Shrink(0)
 			ui.TextInputBase(c.Key("aun-time"), &s.newTime).Grow(1).FontSize(theme.FsBody)
 		})
 		ui.Column(c).Gap(4).Children(func() {
