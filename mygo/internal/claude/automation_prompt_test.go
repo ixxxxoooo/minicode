@@ -29,6 +29,7 @@ case " $* " in
 esac
 echo '{"type":"system","subtype":"init","session_id":"sess-1"}'
 echo '{"type":"assistant","message":{"content":[{"type":"text","text":"没有未使用的函数"}]}}'
+echo '{"type":"result","result":"没有未使用的函数"}'
 `)
 	res, err := RunAutomationPromptStreamCtx(context.Background(), t.TempDir(), "检查", "plan", 5*time.Second, nil)
 	if err != nil {
@@ -36,6 +37,9 @@ echo '{"type":"assistant","message":{"content":[{"type":"text","text":"没有未
 	}
 	if res.SessionID != "sess-1" || !strings.Contains(res.Output, "没有未使用的函数") {
 		t.Fatalf("结果不对:%+v", res)
+	}
+	if n := strings.Count(res.Output, "没有未使用的函数"); n != 1 {
+		t.Fatalf("assistant 与 result 是同一段文本,不能重复:出现 %d 次:%q", n, res.Output)
 	}
 }
 

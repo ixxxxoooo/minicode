@@ -119,7 +119,12 @@ func RunAutomationPromptModelStreamCtx(ctx context.Context, cwd, prompt, permMod
 				}
 			}
 		case "result":
-			if s := str(v, "result"); s != "" {
+			// result 事件的文本和前面 assistant 事件里的是同一段,只在一个字都没收到时当兜底,
+			// 否则输出会重复两遍
+			mu.Lock()
+			have := out.Len() > 0
+			mu.Unlock()
+			if s := str(v, "result"); s != "" && !have {
 				appendText(s)
 			}
 		}
