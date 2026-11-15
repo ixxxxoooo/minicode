@@ -258,6 +258,7 @@ func (a *App) diffLayout(tb *ideTab, narrow bool) editor.DiffLayout {
 func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 	t := a.tk
 	dv := tb.dv
+	a.scmTick() // 差异标签可见时也要定时重读仓库状态,暂存 / 外部修改后标签才会刷新(refreshDiffTabs)
 	a.syncDiffAnns(tb)
 	dv.Theme = a.editorTheme()
 	dv.Font = ui.Font{Family: "monospace", Size: 12}
