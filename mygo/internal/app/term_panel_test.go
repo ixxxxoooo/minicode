@@ -29,11 +29,22 @@ func TestRealTerminalPanel(t *testing.T) {
 		t.Fatalf("等不到:%s;当前文字 %v", what, tt.Texts())
 	}
 	pump(func() bool { return a.ide.tp.t != nil }, "终端启动")
-	pump(func() bool { return tt.HasText("$ ") || tt.HasText("sh-3.2$ ") }, "出现提示符")
+	pump(func() bool { return containsText(tt.Texts(), "$") }, "出现提示符")
 
 	tt.Type("printf 'ab%s' cd")
 	tt.Key(0, ui.KeyEnter)
 	pump(func() bool { return tt.HasText("abcd") }, "命令输出 abcd")
+
+	// 没有文字事件的打字键(只有 KeyDown / KeyUp)按美式键盘补发
+	tt.Key(0, ui.KeyE)
+	tt.Key(0, ui.KeyC)
+	tt.Key(0, ui.KeyH)
+	tt.Key(0, ui.KeyO)
+	tt.Key(0, ui.KeySpace)
+	tt.Key(ui.Shift, ui.KeyX)
+	tt.Key(ui.Shift, ui.KeyY)
+	tt.Key(0, ui.KeyEnter)
+	pump(func() bool { return tt.HasText("XY") }, "补发的按键输出 XY")
 
 	// Ctrl-D 让 shell 退出,界面提示可重新开始
 	tt.Key(ui.Ctrl, ui.KeyD)

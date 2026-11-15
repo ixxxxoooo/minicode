@@ -16,7 +16,7 @@ func (a *App) bottomPanel(c *ui.Context) {
 	ui.Column(c).Key("bpanel").Height(h).Shrink(0).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2).Transition(morph).Children(func() {
 		items := []kit.TabItem{
 			{ID: "term", Text: "终端", Icon: "terminal"},
-			{ID: "problems", Text: "问题", Count: 3},
+			{ID: "problems", Text: "问题", Count: map[bool]int{true: 0, false: 3}[a.proj != ""]},
 			{ID: "output", Text: "输出"},
 		}
 		if id := kit.Tabs(c, items, a.ide.bottomTab, 28, func() {
@@ -99,6 +99,13 @@ type problem struct {
 
 func (a *App) problems(c *ui.Context) {
 	t := a.tk
+	if a.proj != "" { // 真实模式:语言服务器尚未接入,没有诊断可显示
+		ui.Column(c).Grow(1).Padding(8, 12).Gap(4).Children(func() {
+			ui.Text(c, "没有检测到问题").TextColor(t.Tx2)
+			ui.Text(c, "诊断来自语言服务器,目前尚未接入。").FontSize(theme.FsCap).TextColor(t.Tx4)
+		})
+		return
+	}
 	data := []struct {
 		file  string
 		items []problem

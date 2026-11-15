@@ -4,7 +4,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"strings"
+	"time"
 
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
@@ -29,8 +29,13 @@ type termPanel struct {
 	err     string // 启动失败的原因
 	cellW   float32
 	st      ui.ScrollState
-	waits   int  // 等待量出大小的帧数(防止面板根本没有尺寸时空转)
-	focusIt bool // 下一帧把键盘焦点给终端(刚启动 / 刚重启)
+	waits   int    // 等待量出大小的帧数(防止面板根本没有尺寸时空转)
+	pend    ui.Key // 按下了会打出字的键,还在等 InputText
+	pendSeq int    // pend 的代号(超时补发时认它,免得补发后来的键)
+	pendSh  bool
+	compose bool   // 输入法正在组字
+	preedit string // 组字中的文字(显示在光标处,提交时由 InputText 送入)
+	focusIt bool   // 下一帧把键盘焦点给终端(刚启动 / 刚重启)
 }
 
 // redraw 让窗口重画一帧(终端输出到达时由内核的通知调用,任意 goroutine)。
@@ -130,9 +135,7 @@ func (a *App) realTerminal(c *ui.Context) {
 					if y == scr.CursorY && !scr.CursorHidden && !exited {
 						cx = scr.CursorX
 					}
-					ui.Row(c).Height(termLineH).Shrink(0).AlignItems(ui.Center).Children(func() {
-						ui.RichText(c, termSpans(t, ln, cx, focused)...).NoWrap()
-					})
+					a.termRow(c, ln, cx, focused, tp.cellW, tp.preedit)
 				}
 				if exited {
 					ui.Row(c).Height(termLineH).Margin(4, 0, 0, 0).Gap(8).AlignItems(ui.Center).TextColor(t.Tx3).Children(func() {
@@ -165,10 +168,15 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 	}
 	switch ev.Kind {
 	case ui.InputText:
+		tp.pend, tp.compose, tp.preedit = ui.KeyUnknown, false, ""
 		if s := printable(ev.Text); s != "" {
 			tp.t.SendText(s)
 			return true
 		}
+	case ui.InputCompose:
+		tp.compose, tp.preedit = ev.Text != "", ev.Text
+		tp.pend = ui.KeyUnknown
+		return true
 	case ui.InputCommand:
 		if ev.Text == "paste" {
 			if s := c.ReadClipboard(); s != "" {
@@ -177,15 +185,84 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 			return true
 		}
 	case ui.InputKeyDown:
-		if ev.Mods&ui.Super != 0 {
-			return false // ⌘ 组合留给窗口快捷键
+		if ev.Mods&ui.Super != 0 || tp.compose {
+			return false // ⌘ 组合留给窗口快捷键;组字期间的按键(回车提交、退格、选词)留给输入法
 		}
 		if code, text, ok := termKey(ev.Key, ev.Mods); ok {
 			tp.t.SendKey(code, text, termMods(ev.Mods))
 			return true
 		}
+		if ev.Mods&(ui.Ctrl|ui.Alt) == 0 {
+			if _, ok := typedChar(ev.Key, false); ok {
+				tp.pend, tp.pendSh = ev.Key, ev.Mods&ui.Shift != 0
+				a.flushPendLater()
+			}
+		}
+	case ui.InputKeyUp:
+		// 系统没给文字事件的打字键(合成按键、个别输入源):按美式键盘补发。组字期间不补。
+		if k := tp.pend; k != ui.KeyUnknown && k == ev.Key {
+			tp.pend = ui.KeyUnknown
+			if !tp.compose {
+				if ch, ok := typedChar(k, tp.pendSh); ok {
+					tp.t.SendText(string(ch))
+					return true
+				}
+			}
+		}
 	}
 	return false
+}
+
+// flushPendLater 安排一次超时补发:系统正常会在按键之后立刻给文字事件(清掉 pend);
+// 40 ms 后还没来(合成按键、没有文字事件的输入源),就按美式键盘补发这个字符。
+func (a *App) flushPendLater() {
+	tp := &a.ide.tp
+	tp.pendSeq++
+	if a.win == nil {
+		return // 测试里没有窗口:靠 KeyUp 补发
+	}
+	seq := tp.pendSeq
+	time.AfterFunc(40*time.Millisecond, func() {
+		a.win.Update(func() {
+			tp := &a.ide.tp
+			if tp.t == nil || tp.pend == ui.KeyUnknown || tp.pendSeq != seq || tp.compose {
+				return
+			}
+			k := tp.pend
+			tp.pend = ui.KeyUnknown
+			if ch, ok := typedChar(k, tp.pendSh); ok {
+				tp.t.SendText(string(ch))
+			}
+		})
+	})
+}
+
+// typedChar 是美式键盘上某个键(带或不带 Shift)打出的字符。
+func typedChar(k ui.Key, shift bool) (rune, bool) {
+	switch {
+	case k >= ui.KeyA && k <= ui.KeyZ:
+		if shift {
+			return 'A' + rune(k-ui.KeyA), true
+		}
+		return 'a' + rune(k-ui.KeyA), true
+	case k >= ui.Key0 && k <= ui.Key9:
+		if shift {
+			return rune(")!@#$%^&*("[k-ui.Key0]), true
+		}
+		return '0' + rune(k-ui.Key0), true
+	}
+	pairs := map[ui.Key][2]rune{
+		ui.KeySpace: {' ', ' '}, ui.KeyMinus: {'-', '_'}, ui.KeyEqual: {'=', '+'}, ui.KeyComma: {',', '<'},
+		ui.KeyPeriod: {'.', '>'}, ui.KeySlash: {'/', '?'}, ui.KeySemicolon: {';', ':'}, ui.KeyQuote: {'\'', '"'},
+		ui.KeyBracketLeft: {'[', '{'}, ui.KeyBracketRight: {']', '}'}, ui.KeyBackslash: {'\\', '|'}, ui.KeyBackquote: {'`', '~'},
+	}
+	if p, ok := pairs[k]; ok {
+		if shift {
+			return p[1], true
+		}
+		return p[0], true
+	}
+	return 0, false
 }
 
 // printable 去掉控制字符(回车、退格等由按键事件处理,免得重复发送)。
@@ -298,67 +375,63 @@ func termColor(t *theme.Tokens, c term.Color, def ui.Color) ui.Color {
 	return def
 }
 
-// termSpans 把一行的样式段变成富文本片段;cx >= 0 时在该列画光标(块状,越过行尾补空格)。
-func termSpans(t *theme.Tokens, ln term.Line, cx int, focused bool) []ui.Span {
-	var out []ui.Span
-	mk := func(r term.Run, text string) ui.Span {
-		fg, bg := termColor(t, r.Fg, t.Tx1), termColor(t, r.Bg, ui.Color{})
-		if r.Reverse { // 反色:前景取原背景(默认背景用面板底色),背景取原前景
-			fg, bg = termColor(t, r.Bg, t.BG), termColor(t, r.Fg, t.Tx1)
+// termRow 画一行:先是每段的背景色块(绝对定位,按列对齐,整行高度),再是文字,最后是光标块。
+// 背景不用文字片段自带的 Background(它只贴着字形,上下有缝,反色整行的状态栏会很难看)。
+func (a *App) termRow(c *ui.Context, ln term.Line, cx int, focused bool, cellW float32, preedit string) {
+	t := a.tk
+	ui.Row(c).Height(termLineH).Shrink(0).AlignItems(ui.Center).Children(func() {
+		col := 0
+		for _, r := range ln {
+			w := ansi.StringWidth(r.Text)
+			if bg, ok := runBackground(t, r); ok {
+				ui.Box(c).Absolute().Left(float32(col)*cellW).Top(0).Size(float32(w)*cellW, termLineH).Background(bg)
+			}
+			col += w
+		}
+		ui.RichText(c, termSpans(t, ln)...).NoWrap()
+		if cx >= 0 && preedit != "" { // 输入法组字:盖在光标处,带下划线
+			ui.RichText(c, ui.Span{Text: preedit, Font: "monospace", Size: termFont, Color: t.Tx1, Underline: true}).NoWrap().
+				Absolute().Left(float32(cx) * cellW).Top(0).Height(termLineH).Background(t.Raised)
+		} else if cx >= 0 {
+			bg := t.Tx1
+			if !focused {
+				bg = ui.RGBA(t.Tx1.R, t.Tx1.G, t.Tx1.B, 0.35)
+			} else {
+				bg = ui.RGBA(t.Tx1.R, t.Tx1.G, t.Tx1.B, 0.55)
+			}
+			ui.Box(c).Absolute().Left(float32(cx)*cellW).Top(0).Size(cellW, termLineH).Background(bg)
+		}
+	})
+}
+
+// runBackground 是一段的背景色(反色时取前景);默认背景返回 false。
+func runBackground(t *theme.Tokens, r term.Run) (ui.Color, bool) {
+	if r.Reverse {
+		return termColor(t, r.Fg, t.Tx1), true
+	}
+	if r.Bg.Kind == 0 {
+		return ui.Color{}, false
+	}
+	return termColor(t, r.Bg, ui.Color{}), true
+}
+
+// termSpans 把一行的样式段变成富文本片段(只管文字与前景色)。
+func termSpans(t *theme.Tokens, ln term.Line) []ui.Span {
+	out := make([]ui.Span, 0, len(ln)+1)
+	for _, r := range ln {
+		fg := termColor(t, r.Fg, t.Tx1)
+		if r.Reverse { // 反色:前景取原背景(默认背景用面板底色)
+			fg = termColor(t, r.Bg, t.BG)
 		}
 		if r.Dim {
 			fg.A = uint8(float32(fg.A) * 0.6)
 		}
-		sp := ui.Span{Text: text, Font: "monospace", Size: termFont, Color: fg, Background: bg,
+		sp := ui.Span{Text: r.Text, Font: "monospace", Size: termFont, Color: fg,
 			Italic: r.Italic, Underline: r.Underline, Strikethrough: r.Strike}
 		if r.Bold {
 			sp.Weight = 700
 		}
-		return sp
-	}
-	cursor := func(base term.Run, text string) ui.Span {
-		sp := mk(base, text)
-		sp.Background, sp.Color = t.Tx1, t.BG
-		if !focused {
-			sp.Background = ui.RGBA(t.Tx1.R, t.Tx1.G, t.Tx1.B, 0.35)
-		}
-		return sp
-	}
-	col, drawn := 0, false
-	for _, r := range ln {
-		if cx < 0 || drawn || col+ansi.StringWidth(r.Text) <= cx {
-			out = append(out, mk(r, r.Text))
-			col += ansi.StringWidth(r.Text)
-			continue
-		}
-		// 光标落在这一段里:拆成「前 / 光标字符 / 后」
-		var pre, cur, post strings.Builder
-		for _, ch := range r.Text {
-			w := ansi.StringWidth(string(ch))
-			switch {
-			case col+w <= cx:
-				pre.WriteRune(ch)
-			case col <= cx && !drawn:
-				cur.WriteRune(ch)
-				drawn = true
-			default:
-				post.WriteRune(ch)
-			}
-			col += w
-		}
-		if pre.Len() > 0 {
-			out = append(out, mk(r, pre.String()))
-		}
-		out = append(out, cursor(r, cur.String()))
-		if post.Len() > 0 {
-			out = append(out, mk(r, post.String()))
-		}
-	}
-	if cx >= 0 && !drawn {
-		if pad := cx - col; pad > 0 {
-			out = append(out, mk(term.Run{}, strings.Repeat(" ", pad)))
-		}
-		out = append(out, cursor(term.Run{}, " "))
+		out = append(out, sp)
 	}
 	if len(out) == 0 {
 		out = append(out, ui.Span{Text: " ", Font: "monospace", Size: termFont})

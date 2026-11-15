@@ -34,6 +34,9 @@ func (a *App) statusbar(c *ui.Context) {
 		a.sbItem(c, "sync", func() {
 			kit.Ic(c, "refresh", kit.S12)
 			txt := "↑1" // 仓库状态读到之前沿用设计稿的示例
+			if a.proj != "" {
+				txt = "↑0"
+			}
 			if a.sc.loaded {
 				txt = "↑" + itoa(a.sc.ahead)
 				if a.sc.behind > 0 {
@@ -46,7 +49,7 @@ func (a *App) statusbar(c *ui.Context) {
 			kit.Ic(c, "errc", kit.S12)
 			ui.Text(c, "0")
 			kit.Ic(c, "alert", kit.S12)
-			ui.Text(c, "1")
+			ui.Text(c, map[bool]string{true: "0", false: "1"}[a.proj != ""]) // 真实模式没有语言服务器诊断
 		})
 		if a.mode == ModeIDE {
 			if tab := a.ide.cur(); tab != nil && !tab.diff && tab.st != nil {
