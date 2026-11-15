@@ -64,7 +64,7 @@ func brandAppBody(a *App, c *ui.Context) {
 	ui.Column(c).Padding(10, 12).Gap(6).Children(func() {
 		a.brandPreviewDock(c)
 	})
-	a.settingsRow(c, setRow{key: pAppStyle, title: "图标样式", desc: "六选一;立即换 Dock 图标", kind: kNone, right: func(a *App, c *ui.Context) {
+	a.settingsRow(c, setRow{key: pAppStyle, def: 0, title: "图标样式", desc: "六选一;立即换 Dock 图标", kind: kNone, right: func(a *App, c *ui.Context) {
 		ui.Column(c).Gap(6).Children(func() {
 			ui.Text(c, appStyles[a.prefs.Int(pAppStyle, 0)]).FontWeight(600).TextColor(a.tk.Tx2)
 			a.brandAppStylePick(c)
@@ -85,7 +85,7 @@ func brandAppBody(a *App, c *ui.Context) {
 
 func brandTrayBody(a *App, c *ui.Context) {
 	a.settingsRow(c, rTog("general.tray", "在菜单栏显示图标", "关闭后可在本页重新打开", true), true)
-	a.settingsRow(c, setRow{key: pTrayStyle, title: "图标样式", desc: "五选一,单色模板图,随菜单栏深浅自动变色", kind: kNone, right: func(a *App, c *ui.Context) {
+	a.settingsRow(c, setRow{key: pTrayStyle, def: 0, title: "图标样式", desc: "五选一,单色模板图,随菜单栏深浅自动变色", kind: kNone, right: func(a *App, c *ui.Context) {
 		ui.Column(c).Gap(4).Children(func() {
 			ui.Text(c, trayStyles[a.prefs.Int(pTrayStyle, 0)]).FontWeight(600)
 			a.brandTrayStylePick(c)
