@@ -165,6 +165,15 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 - **Git**:追溯卡 / 追溯栏、储藏展开、推送被拒「拉取并变基 / 合并」、图谱两种比较、审查一键暂存都按设计稿审查补齐(`-ed blamecard|stashfiles|cmp2|cmphead`)。缺口:合并冲突无 `git merge --abort`、追溯卡移出无延迟收起、储藏父行无右键、分组审查页按仓库的暂存钮。
 - 设计稿 `ide-nav` 新增「多光标 / 转到行 / 块注释 / 磁盘外部修改」,`ide-problems` 新增工作区分段,`ide-md` 新增「写回策略」,`ide-git` 补变基冲突 / 储藏展开 / 追溯栏 / 比较两个提交画面。
 
+### 终端实测踩坑(Computer Use,真实 zsh,已修)
+
+- **叠在终端正文上的控件**(Nerd 提示条按钮、⌘F 搜索条、「↓ 回到底部」):正文的 `HandleInput` 会吃掉按下事件(用来开始选择),控件永远点不到。这些控件构造时要 `tp.addOverlay(el.Bounds())`,`termInput` 对落在覆盖区里的指针事件直接 `return false`;新增同类控件照此办。Tester 里这类按钮「没有可见区域」点不了,只能测输入逻辑(`TestTermOverlayPassesPointer`),真点击靠实机。
+- **vt 仿真器的锁**:`SafeEmulator.Write` 持写锁,OSC 等处理器里只能用内嵌的无锁 `*Emulator`(`t.em.Emulator.CursorPosition()` 等),调带锁的包装会死锁(测试会卡住 120 s)。OSC 处理器的 `data` 带命令编号前缀(`"133;B"`)。OSC 133 的 zsh 脚本需要 `autoload -Uz add-zsh-hook`。命令块语义:B = 输出首行,C;<退出码> = 提示符返回,清屏丢弃旧块。
+- **命令装饰点**画在行左边距(`padXTerm` = 10px,Absolute),点击由 `termInput` 判断 `ev.X < padXTerm` 复制输出,不要再用覆盖整行的热区(会抢提示符行的点击)。
+- **鼠标上报**:vt 的 `SendMouse` 不按模式过滤移动事件,`internal/term/mouse.go` 的 `mouseWanted` 负责过滤(只要点击的程序不收移动)。
+- **Nerd Font**:`term_fonts.go` 后台扫 `/Library/Fonts`、`~/Library/Fonts`;`termFontFamily` 只在「选了 Nerd 字体且确认未安装」时回退等宽;提示条 `nerdWarning` 分「没装 / 已装未选用」两种文案。
+- 调试:`MINI_TERM_CMD='clear; seq 1 120; ls'` 启动后在第一个终端自动输入命令;Computer Use 的字母键会走输入法(首次回车被组字吃掉),终端正文不能 `computer_type`,滚轮可用,不能带修饰键点击(⌘点击链接只能靠单测)。
+
 ### 已知缺口(真实模式)
 
 - **真实模式实测第五轮(同上环境,Computer Use,SCM 提交回路)**:**开会话会往用户仓库里写 `.claude/settings.json` 与 `.mini-backup`**(`SyncClaudeSettingsFromPrefs` 每次都重写 + 换备份),现在内容没变不写,项目里没有该文件且用户没改过相关偏好时不创建;图谱 HEAD 提交右键的「检出此提交 / 与 HEAD 比较」置灰(检出当前提交会无故让 HEAD 游离);Git 操作失败的 toast / 提交框 / 推送被拒引导条改用 `friendlyGitErr`(无远程 / 无上游 / 认证 / 网络 / 被拒 / 未设用户 / 锁文件翻成一句中文加下一步,认不出取首行并截断),完整原文仍进输出面板与日志;**AI 提交说明等一次性 `claude -p`(`RunPromptModelCtx`)此前会在 `~/.claude/projects` 留下「你是 Git 提交说明助手…」会话污染历史列表**,现加 `--no-session-persistence`(自动化流式运行故意保留会话,「查看会话」要用);**真实后端的编辑块 `DiffBlock.Line` 一直是 0**(审查页「第 1–4 行」、编辑器「Claude 改动」叠层都标在第 1 行),现 `BuildTool` 按文件内容定位(实时找 old、回放找 new,>1 MiB 放弃);审查页文件标题不再露绝对目录、改动已提交后说明写「已经提交到 Git」。**均有 go test,并已在开发版实机走过**(暂存 → AI 提交说明 → 提交 → 图谱右键 → 推送无远程 → 审查页行号 → 命令面板 / 主题预览与切换)。已知:Computer Use 的 AX 点击对弹出菜单项无效(菜单项没有 press 动作),菜单只能点头部等价按钮或用坐标点击;「审查本轮改动」入口在改动已提交后仍显示「待审查」(审查页内已如实说明);此前已生成的一次性会话不会自动清理。
