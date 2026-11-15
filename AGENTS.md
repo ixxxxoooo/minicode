@@ -1,5 +1,66 @@
 # MiniCode 开发约定
 
+> **分支 `feat/mygo`:界面已用 [MyGo](https://mygo.run/zh)(Go 原生 UI,无 WebView)重写,代码在 `mygo/`。**
+> 本分支上以下「MyGo 重写」一节为准;其后的 Rust 约定(crate 表、各功能细节)是旧实现的设计记录,
+> 移植时当作行为规格参考,不再对应这个分支里的代码。
+
+## MyGo 重写(`mygo/`)
+
+Go 1.27、`github.com/egoist/mygo` v0.9.0,模块名 `github.com/ixxxxoooo/minicode`。界面对标 `docs/design` 设计稿(Agent / IDE 是同一个窗口的两种形态,共用一份会话 / 编辑器 / 终端)。
+
+| 包 | 职责 |
+| --- | --- |
+| `internal/core` | 与界面无关的数据模型:时间线条目、`Event` / `Command`、`State.Apply` 归约器、模式 / 用量 / 回合统计 |
+| `internal/backend` | `Backend` 抽象(`Start(sink)` / `Send(cmd)` / `Close()`) |
+| `internal/claude` | 真实后端:stream-json 协议(`protocol.go`)、翻译器(`translate.go`)、惰性启动与崩溃自动 `--resume` 重启(`backend.go`)、历史回放(`history.go`)、会话索引与增量磁盘缓存(`index.go`) |
+| `internal/demo` | 演示后端:脚本化场景、沙盒项目(`sandbox.go`)、演示仓库 |
+| `internal/vcs` | Git 访问(`CLI` 走 git 命令行、`Mem` 供测试 / 演示),所有读命令带 `--no-optional-locks` |
+| `internal/workspace` | 文件系统抽象(`OS` / `Mem`),IDE 文件树与搜索读它 |
+| `internal/term` | 终端内核:`creack/pty` 起登录 shell + `charmbracelet/x/vt` 仿真器,输出画面快照(样式段、光标、历史),不依赖界面 |
+| `internal/app` | 全部界面:`app.go` 状态与事件、`shell.go` 外壳、`chat/flow/composer/dock` 会话、`ide*.go` IDE、`term_panel.go` 终端面板、`project.go` 真实项目上下文、`scm*.go` 源代码管理、`settings*.go` 设置、`palette.go` 命令面板等 |
+| `internal/kit`、`internal/theme` | 控件与设计令牌(6 套主题 × 3 种布局) |
+| `internal/diag` | 日志(`~/.minicode/logs/minicode.log`)、慢操作计时、崩溃与卡死看门狗 |
+| `cmd/shot` | 无窗口截图(`go run ./cmd/shot -scheme a -theme paper -mode agent -screen work -o /tmp/x.png`),与 `/tmp/proto-*.png` 的设计稿截图对照 |
+
+数据流:`Backend` → `core.Event` → `core.State.Apply` → 界面;界面交互转成 `core.Command` 交回后端。演示与真实后端共用同一套界面。
+
+### 运行与开发流程
+
+```sh
+cd mygo && unset GOROOT          # 每次执行 Go 命令前(环境里残留的 GOROOT 会让工具链对不上)
+gofmt -l . ; go vet ./... && go test ./...
+scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/MiniCode Dev.app 里启动唯一的新实例
+```
+
+- 运行模式优先级:`--demo` / `--real` / `MINI_DEMO=1|0` > 开发版记住的上次选择(`~/.minicode/dev-mode`)> 真实。开发版左下角徽章:演示模式显示「演示模式」,真实模式显示「开发版」。
+- 调试环境变量:`MINI_MODE=ide`(启动进 IDE)、`MINI_PROJECT=<目录>`(真实模式的初始项目)、`MINI_THEME` / `MINI_SCHEME`、`MINI_SCREEN`、`MINI_WIN_W/H`、`MINI_DEMO_SLOW`、`MINI_CLAUDE_PATH`;真实 claude 集成测试用 `MINI_REAL_CLAUDE=1 go test ./internal/claude -run Real`。
+- 提交:中文 Conventional Commits,一个功能一个提交,`go vet` + `go test` 通过后 `git push origin HEAD`(本分支推到 `feat/mygo`)。不提交 `target` / `dist`;不读取、不输出密钥,环境变量只展示名称。
+- 日志一律用 `diag.L("包名")`,不用 `fmt.Println` / `log`;新增耗时操作用 `diag.SpanSlow` 包起来。
+
+### MyGo 使用要点(踩过的坑)
+
+- `ButtonBase` 与 `kit.RowEl` 默认居中且固定高度;`c.Key(...)` 要在构造输入控件之前;`Element.Bounds()` 是**上一帧**的矩形(第一帧为空);`ui.ScrollState` 用 `TrackScroll(&st)` 绑定,滚动会被夹在内容范围内,`st.Y = math.MaxFloat32` = 滚到底。
+- 异步一律 `a.bg(name, work)`:后台线程算完返回「应用结果」闭包,经 `a.win.Update` 回主线程执行;`a.win == nil`(测试、启动阶段)时同步执行。后端事件同理,且会丢弃已被替换的旧后端的事件。
+- `go vet` 不接受其他包结构体的无键字面量,一律写键名。
+- 截图对照:Read 工具会缓存图片,每次换新文件名。
+
+### 真实模式的数据来源
+
+- 会话:`claude.BuildIndex` 扫 `~/.claude/projects`(增量 + 磁盘缓存 `session-index-go.json`),侧栏每 20 秒重扫;打开会话 = 关掉旧后端(结束它的 claude 进程)、`claude.New` 造惰性后端(第一次发消息才启动进程)、回放历史。
+- 项目:打开会话时 `App.SetProject(cwd)` 切项目——IDE 文件树读磁盘(`workspace.NewOS`)、仓库换成 `vcs.Open(cwd)`(非仓库则分支为空)、旧终端结束。新会话的目录 = 最近打开的会话所在目录(`MINI_PROJECT` 优先)。
+- 终端:IDE 底部「终端」面板首次显示时在项目目录起 `$SHELL -l`;面板量出列 / 行数后调 `Resize`;按键经 `uv.KeyPressEvent` 交给仿真器编码(应用光标键等);输入法组字显示在光标处(组字期间的按键留给输入法);shell 退出后按回车重开;切项目与退出时结束整个进程组。
+
+### 已知缺口(真实模式)
+
+- 设置页多数控件只存偏好,没有真正驱动行为;快捷键录制、服务商 / 规则 / 环境变量 / LSP 行是演示数据;「项目信任」只列项目,不读写信任状态。
+- 语言服务器(LSP)未接入:问题面板与状态栏诊断计数在真实模式下恒为 0;没有悬停 / 补全 / 跳转。
+- 终端:只有一个终端标签(「+」= 重启);没有鼠标选择复制、鼠标上报、超链接、搜索;Nerd Font 图标字形无字体时显示成方框;改项目会结束旧终端。
+- 会话:切换会话会结束旧会话的 claude 进程(后台会话不保活);前台命令的实时输出尾读、`get_usage` 账户限额、上下文分类明细的界面尚未接入,用量页仍是演示数据;右栏「改动」仍由会话 diff 推导。
+- 自动化没有运行器、不落盘;画布「让 Claude 修改」只把提示填进输入框,没有图表全屏查看器;浏览器页只有演示源,没有真实抓取;自定义页只在内存里。
+- 动效:只有步骤文字呼吸、旋转、折叠箭头、面板宽度过渡;文字流光、折叠展开动画、流底部渐隐遮罩未做。
+- 新会话没有按项目的「新会话」按钮;模型 / 思考强度的选择没有写回偏好。
+
+
 Rust + gpui-kit 0.8 的 Claude Code 工作台。只支持 Claude Code,直连本机 `claude` 的 stream-json 控制协议(不走 ACP、不依赖 Node)。
 
 ## 目录结构
