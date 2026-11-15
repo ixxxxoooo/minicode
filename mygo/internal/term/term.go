@@ -38,6 +38,7 @@ type Options struct {
 	Cwd        string   // 工作目录
 	Cols, Rows int      // 初始大小(字符数)
 	Env        []string // 额外环境变量(KEY=VALUE)
+	Scrollback int      // 历史行数;0 = ScrollbackLines
 	Notify     func()   // 画面变化 / 进程退出时调用(任意 goroutine,已合并节流)
 }
 
@@ -61,6 +62,10 @@ type Term struct {
 	cache    *Screen
 	cacheVer uint64
 	cacheSB  int
+
+	mouseModes atomic.Uint32 // 鼠标上报模式是否开启(见 mouse.go)
+	cmdRunning atomic.Bool   // OSC 133:命令是否在运行
+	cmdBlocks  []CmdBlock    // 命令块装饰(行号 + 成败)
 }
 
 // Start 起 shell。登录 shell(-l)才有完整的 PATH(从访达启动的应用只继承很短的环境)。
@@ -86,13 +91,21 @@ func Start(o Options) (*Term, error) {
 	if err != nil {
 		return nil, fmt.Errorf("启动终端失败:%w", err)
 	}
+	scroll := o.Scrollback
+	if scroll <= 0 {
+		scroll = ScrollbackLines
+	}
 	t := &Term{em: vt.NewSafeEmulator(o.Cols, o.Rows), ptmx: ptmx, cmd: cmd, notify: o.Notify, cols: o.Cols, rows: o.Rows}
-	t.em.SetScrollbackSize(ScrollbackLines)
-	t.em.SetCallbacks(vt.Callbacks{Title: func(s string) {
+	t.em.SetScrollbackSize(scroll)
+	cb := vt.Callbacks{Title: func(s string) {
 		t.mu.Lock()
 		t.title = s
 		t.mu.Unlock()
-	}})
+	}}
+	cb.EnableMode = func(m ansi.Mode) { t.onMouseMode(m, true) }
+	cb.DisableMode = func(m ansi.Mode) { t.onMouseMode(m, false) }
+	t.em.SetCallbacks(cb)
+	t.installShellIntegration(shell)
 	log.Info("终端已启动", "shell", shell, "cwd", o.Cwd, "pid", cmd.Process.Pid, "size", fmt.Sprintf("%dx%d", o.Cols, o.Rows))
 
 	go t.readLoop()

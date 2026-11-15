@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/egoist/mygo/ui"
 
+	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/term"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -76,6 +77,9 @@ func (a *App) newTerm() {
 	a.ide.tps = append(a.ide.tps, &termPanel{cellW: cw, focusIt: true})
 	a.ide.tpSel = len(a.ide.tps) - 1
 	a.ide.termSel = ""
+	a.ide.bottomOpen, a.ide.bottomTab = true, "term"
+	a.panelFlashAt = time.Now()
+	log.Info("新建终端标签", "index", a.ide.tpSel)
 	a.redraw()
 }
 
@@ -87,7 +91,11 @@ func (a *App) closeTermTab(i int) {
 	if tp := a.ide.tps[i]; tp.t != nil {
 		tp.t.Close()
 	}
+	cw := a.ide.tpc().cellW
 	a.ide.tps = append(a.ide.tps[:i:i], a.ide.tps[i+1:]...)
+	if len(a.ide.tps) == 0 {
+		a.ide.tps = []*termPanel{{cellW: cw}}
+	}
 	if a.ide.tpSel >= len(a.ide.tps) {
 		a.ide.tpSel = len(a.ide.tps) - 1
 	}
@@ -95,6 +103,7 @@ func (a *App) closeTermTab(i int) {
 		a.ide.tpSel = 0
 	}
 	a.ide.tpc().focusIt = true
+	log.Info("关闭终端标签", "remaining", len(a.ide.tps))
 	a.redraw()
 }
 
@@ -127,12 +136,14 @@ func (a *App) realTerminal(c *ui.Context) {
 	rows := int((b.H - 2*padY) / termLineH)
 
 	if tp.t == nil && tp.err == "" && cols >= 4 && rows >= 1 {
-		tm, err := term.Start(term.Options{Cwd: cmp.Or(tp.cwd, a.proj), Cols: cols, Rows: rows, Notify: a.redraw})
+		sb := a.termScrollback()
+		tm, err := term.Start(term.Options{Cwd: cmp.Or(tp.cwd, a.proj), Cols: cols, Rows: rows, Scrollback: sb, Notify: a.redraw})
 		if err != nil {
 			tp.err = err.Error()
 			log.Error("启动终端失败", "err", err)
 		} else {
 			tp.t, tp.focusIt = tm, true
+			tm.SendText(term.IntegrationCmd(shellName()))
 			if tp.initCmd != "" {
 				tm.SendText(tp.initCmd + "\n")
 				tp.initCmd = ""
@@ -203,6 +214,12 @@ func (a *App) realTerminal(c *ui.Context) {
 		})
 		if tp.find.open {
 			a.termFindBar(c, tp)
+			a.termFindMarks(c, tp, body)
+		}
+		atBottom := tp.st.MaxY <= 0 || tp.st.Y >= tp.st.MaxY-8
+		if !atBottom && tp.t != nil {
+			kit.Btn(c, "↓ 回到底部", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).Absolute().Right(12).Bottom(10).
+				OnClick(func() { tp.st.Y = math.MaxFloat32; a.redraw() })
 		}
 	})
 }
@@ -232,11 +249,20 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 	}
 	switch ev.Kind {
 	case ui.InputPointerDown:
+		if tp.t.MouseTracking() && ev.Mods&ui.Alt == 0 {
+			if a.termPointerToMouse(tp, ev) {
+				tp.focusIt = true
+				return true
+			}
+		}
 		if ev.Button != 0 {
 			return false // 右键交给上下文菜单
 		}
 		tp.focusIt = true
 		p := a.termCell(tp, ev.X, ev.Y)
+		if a.termCmdClick(tp, p) {
+			return true
+		}
 		if ev.Mods&ui.Super != 0 {
 			if l := a.linkAt(tp, p); l != nil {
 				a.openLink(l)
@@ -253,6 +279,11 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 		}
 		return true
 	case ui.InputPointerMove:
+		if tp.t.MouseTracking() && ev.Mods&ui.Alt == 0 {
+			if a.termPointerToMouse(tp, ev) {
+				return true
+			}
+		}
 		p := a.termCell(tp, ev.X, ev.Y)
 		tp.hover, tp.hoverOn, tp.hoverMods = p, true, ev.Mods
 		tp.link = nil
@@ -266,6 +297,11 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 		}
 		return false
 	case ui.InputPointerUp:
+		if tp.t.MouseTracking() && ev.Mods&ui.Alt == 0 {
+			if a.termPointerToMouse(tp, ev) {
+				return true
+			}
+		}
 		if tp.sel.drag {
 			tp.sel.drag = false
 			return true
@@ -509,6 +545,12 @@ func (a *App) termRow(c *ui.Context, ln term.Line, cx int, focused bool, cellW f
 		// 选区 / 搜索命中 / 链接下划线盖在背景之上、文字之下
 		if deco.sel[1] > deco.sel[0] {
 			ui.Box(c).Absolute().Left(float32(deco.sel[0])*cellW).Top(0).Size(float32(deco.sel[1]-deco.sel[0])*cellW, termLineH).Background(t.Ac.Alpha(.32))
+		}
+		switch deco.cmd {
+		case 1:
+			ui.Box(c).Absolute().Left(0).Top(termLineH/2-3).Size(6, 6).Radius(3).Background(t.Ok)
+		case -1:
+			ui.Box(c).Absolute().Left(0).Top(termLineH/2-3).Size(6, 6).Radius(3).Background(t.Err)
 		}
 		for _, h := range deco.hits {
 			col := t.Warn.Alpha(.38)

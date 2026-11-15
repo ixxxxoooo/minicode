@@ -22,6 +22,7 @@ func (a *App) bottomPanel(c *ui.Context) {
 		a.ide.panelTop = b.Y // 上一帧量到的面板上缘(测试与浮层定位用)
 	}
 	box.Children(func() {
+		a.panelFlash(c, box)
 		def := float32(172)
 		if a.ide.bottomTab == "problems" || a.ide.bottomTab == "refs" {
 			def = 236
@@ -58,8 +59,11 @@ func (a *App) bottomPanel(c *ui.Context) {
 						ui.Text(c, "「"+r.word+"」").Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx3).Margin(0, 6, 0, 0)
 					}
 				} else if a.ide.bottomTab == "problems" {
-					kit.Chip(c, "全部", kit.ChipOpt{Icon: "filter", On: true})
-					kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "重新检查"})
+					kit.Chip(c, "全部", kit.ChipOpt{Icon: "filter", On: !a.ide.probErr}).OnClick(func() { a.ide.probErr = false })
+					kit.Chip(c, "仅错误", kit.ChipOpt{On: a.ide.probErr}).OnClick(func() { a.ide.probErr = true })
+					if kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "重新检查"}).Clicked() {
+						a.recheckProblems()
+					}
 				} else {
 					if a.proj != "" {
 						n := len(a.ide.tps)
@@ -78,7 +82,7 @@ func (a *App) bottomPanel(c *ui.Context) {
 								a.ide.tpc().focusIt = true
 							})
 							if on && n > 1 {
-								kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭这个终端"}).OnClick(func() { a.closeTermTab(i) })
+								kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭这个终端"}).OnClick(func() { a.askCloseTermTab(i) })
 							}
 						}
 					} else {
@@ -203,6 +207,9 @@ func (a *App) problems(c *ui.Context) {
 				})
 				for _, p := range g.items {
 					p := p
+					if a.ide.probErr && p.level != "err" {
+						continue
+					}
 					file := g.file
 					row := kit.RowEl(c, false).Key("dp-" + file + itoa(p.line)).Gap(6)
 					row.ContextMenu(func(m *ui.Menu) {

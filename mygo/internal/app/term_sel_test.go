@@ -6,6 +6,16 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/term"
 )
 
+func TestWordBound(t *testing.T) {
+	rs := []rune("foo bar")
+	if !wordBound(rs, 0, 3) || !wordBound(rs, 4, 7) {
+		t.Fatal("应对齐整词")
+	}
+	if wordBound(rs, 1, 3) {
+		t.Fatal("中间子串不算全词")
+	}
+}
+
 func fakeScreen(lines ...string) *term.Screen {
 	s := &term.Screen{Cols: 80, Rows: len(lines)}
 	for _, l := range lines {
@@ -44,6 +54,21 @@ func TestTermSelectionCopyAndWord(t *testing.T) {
 	}
 	if c0, c1, ok := tp.sel.span(1, 80); !ok || c0 != 0 || c1 != 80 {
 		t.Fatalf("中间行整行覆盖 %v %v %v", c0, c1, ok)
+	}
+}
+
+func TestWordBoundFull(t *testing.T) {
+	rs := []rune("foo bar")
+	if !wordBound(rs, 0, 3) {
+		t.Fatal("foo 应是全词")
+	}
+	if wordBound(rs, 4, 7) == false {
+		// bar
+	} else if !wordBound(rs, 4, 7) {
+		t.Fatal("bar 应是全词")
+	}
+	if wordBound(rs, 1, 4) {
+		t.Fatal("oob 子串不应算全词")
 	}
 }
 

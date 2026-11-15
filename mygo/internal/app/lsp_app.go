@@ -37,14 +37,15 @@ type lspDoc struct {
 
 // lspSess 是一个(项目根 + 服务器)会话。
 type lspSess struct {
-	spec  *lsp.Spec
-	root  string
-	state lspState
-	err   string
-	c     *lsp.Client
-	cmd   *exec.Cmd
-	docs  map[string]*lspDoc // 项目相对路径 → 同步状态
-	work  string             // 服务器正在做的事(索引进度)
+	spec     *lsp.Spec
+	root     string
+	state    lspState
+	err      string
+	c        *lsp.Client
+	cmd      *exec.Cmd
+	docs     map[string]*lspDoc // 项目相对路径 → 同步状态
+	work     string             // 服务器正在做的事(索引进度)
+	restarts int                // 自动重启次数
 
 	qmu sync.Mutex
 	q   chan func() // 串行发送通道:保证 didOpen / didChange / 请求按序
@@ -81,10 +82,11 @@ func (s *lspSess) barrier() {
 }
 
 type lspHub struct {
-	sess  map[string]*lspSess
-	diags map[string][]lsp.Diagnostic // 项目相对路径 → 诊断
-	gen   int                         // 诊断变化计数
-	noted map[string]bool             // 已提示过「没装」的服务器
+	sess    map[string]*lspSess
+	diags   map[string][]lsp.Diagnostic // 项目相对路径 → 诊断
+	gen     int                         // 诊断变化计数
+	noted   map[string]bool             // 已提示过「没装」的服务器
+	outline map[string]outlineEntry     // 文件 → LSP 大纲缓存
 }
 
 // onUI 回到界面线程执行(没有窗口的测试里直接执行)。
@@ -208,12 +210,11 @@ func (a *App) lspStart(key string, s *lspSess) {
 			}
 			s.c, s.cmd, s.state = c, cmd, lspReady
 			a.outAppend(outLSP, s.spec.Name+" 已启动("+s.root+")")
-			go func() { // 服务器退出:标成失败,允许「重新检测」
+			go func() { // 服务器退出:自动重启(带退避)
 				<-c.Done()
 				a.onUI(func() {
-					if hub.sess[key] == s && s.state == lspReady {
-						s.state, s.err = lspFailed, "服务器进程已退出"
-						a.outAppend(outLSP, s.spec.Name+" 已退出")
+					if hub.sess[key] == s {
+						a.lspOnCrash(key, s)
 					}
 				})
 			}()
@@ -289,6 +290,7 @@ func (a *App) lspTick(tb *ideTab) {
 		}
 	}
 	a.lspApplyDiags(tb)
+	a.lspInlayTick(tb)
 }
 
 // lspSaved 文件保存后通知服务器(先把挂起的修改发出去)。

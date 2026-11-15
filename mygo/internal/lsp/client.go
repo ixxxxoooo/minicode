@@ -334,6 +334,7 @@ func (c *Client) Initialize(rootURI, rootName string, timeout time.Duration) err
 				"definition":         map[string]any{"linkSupport": false},
 				"references":         map[string]any{},
 				"documentSymbol":     map[string]any{"hierarchicalDocumentSymbolSupport": true},
+				"inlayHint":          map[string]any{},
 				"completion": map[string]any{"completionItem": map[string]any{
 					"snippetSupport": false, "documentationFormat": []string{"markdown", "plaintext"},
 				}},
@@ -560,6 +561,34 @@ func (c *Client) DocumentSymbols(uri string) ([]DocSymbol, error) {
 	return convSyms(items), nil
 }
 
+// InlayHint 表示一条内联提示。
+type InlayHint struct {
+	Position Position
+	Label    string
+	Kind     int
+}
+
+// InlayHint 查询某范围内的内联提示。
+func (c *Client) InlayHint(uri string, rng Range) ([]InlayHint, error) {
+	var raw []struct {
+		Position Position `json:"position"`
+		Label    any      `json:"label"`
+		Kind     int      `json:"kind"`
+	}
+	err := c.Call("textDocument/inlayHint", map[string]any{
+		"textDocument": map[string]any{"uri": uri},
+		"range":        rng,
+	}, &raw, 5*time.Second)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]InlayHint, 0, len(raw))
+	for _, h := range raw {
+		out = append(out, InlayHint{Position: h.Position, Label: markupText(h.Label), Kind: h.Kind})
+	}
+	return out, nil
+}
+
 // ───────── 编辑类请求 ─────────
 
 // TextEdit 是一处文本替换。
@@ -604,6 +633,33 @@ func (c *Client) Rename(uri string, p Position, newName string) (map[string][]Te
 		}
 	}
 	return out, nil
+}
+
+// CodeAction 是 LSP 快速修复 / 重构项。
+type CodeAction struct {
+	Title  string `json:"title"`
+	Kind   string `json:"kind"`
+	IsPref *bool  `json:"isPreferred"`
+	Edit   *struct {
+		Changes map[string][]TextEdit `json:"changes"`
+	} `json:"edit"`
+}
+
+// CodeAction 请求光标附近的代码操作。
+func (c *Client) CodeAction(uri string, rng Range) ([]CodeAction, error) {
+	params := map[string]any{
+		"textDocument": map[string]any{"uri": uri},
+		"range":        rng,
+		"context": map[string]any{
+			"diagnostics": []any{},
+			"only":        []string{"quickfix", "refactor", "source"},
+		},
+	}
+	var actions []CodeAction
+	if err := c.Call("textDocument/codeAction", params, &actions, 12*time.Second); err != nil {
+		return nil, err
+	}
+	return actions, nil
 }
 
 // ApplyEdits 把一组编辑应用到文本上(位置按 UTF-16 列解释),返回新文本。重叠的编辑返回错误。

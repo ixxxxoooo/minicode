@@ -1,7 +1,9 @@
 package app
 
 import (
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -33,6 +35,15 @@ func (a *App) scmHeadMenu(m *ui.Menu) {
 	noStash := len(s.stashes) == 0
 	if m.Item("弹出最近的储藏").Disabled(noStash).Tooltip(map[bool]string{true: "没有储藏"}[noStash]).Chosen() {
 		a.scmStashApply(0, true)
+	}
+	m.Separator()
+	tree := a.scmViewMode() == "tree"
+	lbl := "切换为树形视图"
+	if tree {
+		lbl = "切换为列表视图"
+	}
+	if m.Item(lbl).Trailing(map[bool]string{true: "✓"}[tree]).Chosen() {
+		a.toggleScmViewMode()
 	}
 	m.Separator()
 	if m.Item("刷新").Chosen() {
@@ -72,6 +83,14 @@ func (a *App) diffMoreMenu(m *ui.Menu, tb *ideTab) {
 		a.ide.sections["时间线"] = true
 		a.nav, a.sideOpen = "files", true
 	}
+	m.Separator()
+	ign := "忽略空白差异"
+	if a.diffIgnoreWS() {
+		ign = "显示空白差异"
+	}
+	if m.Item(ign).Chosen() {
+		a.toggleDiffIgnoreWS(tb)
+	}
 }
 
 // termMoreMenu 是终端标签条「···」:清屏 / 查找 / 新建 / 关闭 / 设置。
@@ -90,7 +109,7 @@ func (a *App) termMoreMenu(m *ui.Menu) {
 		a.newTerm()
 	}
 	if m.Item("关闭终端").Disabled(len(a.ide.tps) < 2).Tooltip(map[bool]string{true: "至少保留一个终端"}[len(a.ide.tps) < 2]).Chosen() {
-		a.closeTermTab(a.ide.tpSel)
+		a.askCloseTermTab(a.ide.tpSel)
 	}
 	m.Separator()
 	if m.Item("终端设置…").Chosen() {
@@ -192,12 +211,30 @@ func (a *App) cuMoreMenu(m *ui.Menu, st *customize.Store, it *customize.Item) {
 	if m.Item("复制名称").Chosen() {
 		a.copyOut(it.Name, "名称")
 	}
-	real := it.Path != "" && !a.demoWs() && a.proj != ""
-	why := map[bool]string{true: "这一项没有对应的文件(或在演示数据里)"}[!real]
+	real := it.Path != "" && !a.cuDemo()
+	why := "这一项没有对应的文件(或在演示数据里)"
+	canEdit := real && a.cuOpenOK(it)
 	if m.Item("在访达中显示文件").Disabled(!real).Tooltip(why).Chosen() {
-		a.revealInFinder(it.Path)
+		p := it.Path
+		if strings.HasPrefix(p, "~") {
+			if h, err := os.UserHomeDir(); err == nil {
+				p = filepath.Join(h, strings.TrimPrefix(p, "~/"))
+			}
+		} else if a.proj != "" && !filepath.IsAbs(p) {
+			p = filepath.Join(a.proj, p)
+		}
+		if a.cuCat() == customize.Skills {
+			p = filepath.Join(p, "SKILL.md")
+		}
+		a.revealInFinder(p)
 	}
-	m.Item("用编辑器打开").Disabled(true).Tooltip("文件通常在项目之外,编辑器只打开项目里的文件")
+	editWhy := why
+	if !canEdit {
+		editWhy = "没有可打开的源文件"
+	}
+	if m.Item("用编辑器打开").Disabled(!canEdit).Tooltip(editWhy).Chosen() {
+		a.cuOpenPath(it.Path)
+	}
 	m.Separator()
 	verb := "删除"
 	if a.cuCat() == customize.Plugins {

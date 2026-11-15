@@ -64,6 +64,9 @@ func (a *App) realProblems(c *ui.Context) {
 				})
 				for i, d := range ds {
 					d := d
+					if !problemSeverityPass(d.Severity, a.ide.probErr) {
+						continue
+					}
 					icon, col := "alert", t.Warn
 					switch d.Severity {
 					case 1:
