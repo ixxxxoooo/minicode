@@ -302,6 +302,7 @@ var settingsTabs = []setTabDef{
 		{title: "通知与菜单栏", rows: []setRow{
 			rTog("general.notify", "任务完成时通知", "回合结束且 MiniCode 不在前台时发送系统通知", true),
 			rTog("general.notifyAsk", "需要确认时提醒", "权限请求、提问在后台出现时弹通知", true),
+			rTog("general.pauseNotify", "暂停通知", "暂停后不发系统通知、不播提示音,菜单栏图标变为半透明暂停态;通知中心照常记录", false),
 			rSeg("general.sound", "通知声音", "", 1, "静音", "轻提示"),
 			rTog("general.tray", "菜单栏图标", "在系统菜单栏显示 MiniCode 图标", true),
 		}},

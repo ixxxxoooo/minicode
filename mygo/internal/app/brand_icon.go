@@ -7,74 +7,73 @@ import (
 	"github.com/egoist/mygo"
 )
 
-// dockIconPath 按偏好 appearance.appIcon* 与无障碍回退选择 Dock 图标文件。
-func (a *App) dockIconPath(dark bool) string {
-	if a.prefs == nil {
-		if dark {
-			return iconAssetPath("MiniCode-dark.icns")
-		}
-		return iconAssetPath("MiniCode.icns")
+// dockIconSuffix 按外观偏好(0 自动 1 浅色 2 深色 3 透明 4 着色)与无障碍设置,得出素材后缀与是否深色。
+func (a *App) dockIconSuffix(dark bool) (suffix string, isDark bool) {
+	mode := 0 // 默认「自动」,与设置页一致
+	if a.prefs != nil {
+		mode = a.prefs.Int(pAppMode, 0)
 	}
-	style := a.prefs.Int(pAppStyle, 0)
-	mode := a.prefs.Int(pAppMode, 1) // 0 自动 1 浅色 2 深色 3 透明 4 着色
-	if mode == 2 {
+	switch mode {
+	case 2:
 		dark = true
-	} else if mode == 1 {
+	case 1:
 		dark = false
 	}
-	suffix := map[bool]string{true: "-dark", false: ""}[dark]
-	if mode == 3 {
-		if a11yReduceTransparency() || a11yIncreaseContrast() {
-			suffix = map[bool]string{true: "-dark", false: ""}[dark]
-		} else {
-			suffix = "-clear"
-		}
-	} else if mode == 4 {
-		if a11yReduceTransparency() || a11yIncreaseContrast() {
-			suffix = map[bool]string{true: "-dark", false: ""}[dark]
-		} else {
-			suffix = "-tint"
-		}
+	suffix = map[bool]string{true: "-dark", false: ""}[dark]
+	reduced := a11yReduceTransparency() || a11yIncreaseContrast() // 透明 / 着色在这两种无障碍设置下退回实色
+	switch {
+	case mode == 3 && !reduced:
+		suffix = "-clear"
+	case mode == 4 && !reduced:
+		suffix = "-tint"
 	}
-	cand := []string{
-		"app-style" + itoa(style) + suffix + ".icns",
-		"app-style" + itoa(style) + suffix + ".png",
+	return suffix, dark
+}
+
+// dockIconData 按偏好 appearance.appIcon* 选 Dock 图标,返回 PNG 字节。
+// 顺序:内嵌的 512px 样式图 → 磁盘上的样式 icns / PNG → 包内默认织纹。
+func (a *App) dockIconData(dark bool) []byte {
+	style := 0
+	if a.prefs != nil {
+		style = a.prefs.Int(pAppStyle, 0)
 	}
-	if style == 2 {
-		cand = append(cand, map[bool]string{true: "MiniCode-dark.icns", false: "MiniCode.icns"}[dark])
+	if style < 0 || style >= len(appStyles) {
+		style = 0
 	}
-	cand = append(cand,
-		map[bool]string{true: "app-dark.png", false: "app-light.png"}[dark],
-		"app-logo.png",
+	suffix, dark := a.dockIconSuffix(dark)
+	base := "app-style" + itoa(style) + suffix
+	if b, ok := embeddedIcon(base + ".png"); ok {
+		return b
+	}
+	for _, c := range []string{
+		base + ".icns", base + ".png",
 		map[bool]string{true: "MiniCode-dark.icns", false: "MiniCode.icns"}[dark],
-	)
-	for _, c := range cand {
-		if p := iconAssetPath(c); p != "" {
-			return p
+		map[bool]string{true: "app-dark.png", false: "app-light.png"}[dark],
+	} {
+		p := iconAssetPath(c)
+		if p == "" {
+			continue
+		}
+		if strings.HasSuffix(p, ".icns") {
+			if png, ok := loadIcnsAsPNG(p); ok {
+				return png
+			}
+			continue
+		}
+		if b, err := os.ReadFile(p); err == nil && len(b) > 0 {
+			return b
 		}
 	}
-	return ""
+	return nil
 }
 
 func (a *App) setDockIconFromPrefs(dark bool) {
-	p := a.dockIconPath(dark)
-	if p == "" {
-		a.setDockIcon(dark)
+	data := a.dockIconData(dark)
+	if len(data) == 0 {
+		brandLog.Warn("没有找到可用的 Dock 图标素材,保持包内默认图标")
 		return
 	}
-	data, err := os.ReadFile(p)
-	if err != nil {
-		a.setDockIcon(dark)
-		return
-	}
-	if strings.HasSuffix(p, ".icns") {
-		if png, ok := loadIcnsAsPNG(p); ok {
-			data = png
-		}
-	}
-	if len(data) > 0 {
-		if err := mygo.App.Dock.SetIcon(data); err != nil {
-			brandLog.Warn("设置 Dock 图标失败", "err", err)
-		}
+	if err := mygo.App.Dock.SetIcon(data); err != nil {
+		brandLog.Warn("设置 Dock 图标失败", "err", err)
 	}
 }

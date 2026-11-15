@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"testing"
 
@@ -26,6 +25,10 @@ type brand struct {
 	lastBadge string
 	lastA11y  string
 	bounceID  int
+	// 用户不在前台时发生的「回合出错 / 回合完成」:回到前台(或开始新回合)即清除,驱动托盘 error / unread 状态
+	trayErr, trayUnread bool
+	// 缺图标只警告一次,避免每次同步刷屏
+	warnedMissing bool
 }
 
 func (a *App) initBrand() {
@@ -45,7 +48,7 @@ func (a *App) syncBrand() {
 		a.setDockIconFromPrefs(dark)
 	}
 	if a.prefs != nil {
-		if mode := a.prefs.Int(pAppMode, 1); mode == 0 {
+		if mode := a.prefs.Int(pAppMode, 0); mode == 0 {
 			if sysDark := systemIsDark(); sysDark != a.brand.dockDark {
 				a.brand.dockDark = sysDark
 				a.setDockIconFromPrefs(sysDark)
@@ -57,36 +60,16 @@ func (a *App) syncBrand() {
 	a.syncDockProgress()
 }
 
-func (a *App) setDockIcon(dark bool) {
-	p := iconAssetPath(map[bool]string{true: "MiniCode-dark.icns", false: "MiniCode.icns"}[dark])
-	if p == "" {
-		// 退回 PNG
-		p = iconAssetPath(map[bool]string{true: "app-dark.png", false: "app-light.png"}[dark])
-	}
-	data, err := os.ReadFile(p)
-	if err != nil {
-		brandLog.Debug("读取 Dock 图标失败", "path", p, "err", err)
-		return
-	}
-	if strings.HasSuffix(p, ".icns") {
-		if png, ok := loadIcnsAsPNG(p); ok {
-			data = png
-		}
-	}
-	if len(data) > 0 {
-		if err := mygo.App.Dock.SetIcon(data); err != nil {
-			brandLog.Warn("设置 Dock 图标失败", "err", err)
-		}
-	}
-}
-
 func iconAssetPath(name string) string {
 	candidates := []string{
 		filepath.Join("assets", "icon", name),
 		filepath.Join("..", "assets", "icon", name),
 	}
 	if exe, err := os.Executable(); err == nil {
-		root := filepath.Join(filepath.Dir(exe), "..", "..", "..")
+		dir := filepath.Dir(exe)
+		// .app 包:Contents/MacOS/minicode → Contents/Resources(从访达 / open 启动时工作目录是 /,只能靠这个找到)
+		candidates = append(candidates, filepath.Join(dir, "..", "Resources", name))
+		root := filepath.Join(dir, "..", "..", "..")
 		candidates = append(candidates, filepath.Join(root, "assets", "icon", name))
 	}
 	if wd, err := os.Getwd(); err == nil {
@@ -145,20 +128,18 @@ func (a *App) syncTray(dark bool) {
 		return
 	}
 	sum := a.brandSummarize()
-	path := a.trayIconPath(sum)
-	data, err := os.ReadFile(path)
+	data, template, err := a.trayIconData(sum)
 	if err != nil {
-		brandLog.Debug("托盘图标未找到", "path", path, "err", err)
+		if !a.brand.warnedMissing {
+			a.brand.warnedMissing = true
+			brandLog.Warn("托盘图标未找到,菜单栏将不显示托盘", "name", a.trayAssetName(sum, 0), "err", err)
+		}
 		return
 	}
 	a11y := a.trayA11yLabel(sum)
 	tip := a11y
 	if sum.title != "" {
 		tip = sum.title + " · " + a11y
-	}
-	template := a.prefs == nil || !a.prefs.Bool(pTrayColor, true) || a11yIncreaseContrast() || a11yReduceTransparency()
-	if sum.mode != "idle" && sum.mode != "running" {
-		template = true
 	}
 	clickMenu := a.prefs == nil || a.prefs.Int(pTrayClick, 0) == 0
 	if a.brand.tray == nil {
@@ -179,6 +160,9 @@ func (a *App) syncTray(dark bool) {
 		}
 		a.brand.tray = tr
 		a.brand.trayMode = sum.mode
+		// 彩色徽标依赖菜单栏深浅:创建后按真实外观重画一次,之后随外观变化(壁纸 / 系统切换)自动重画
+		a.refreshTrayIcon()
+		tr.OnAppearanceChange(func() { a.refreshTrayIcon() })
 		if a11y != a.brand.lastA11y {
 			a.brand.lastA11y = a11y
 			postA11yAnnouncement(a11y)

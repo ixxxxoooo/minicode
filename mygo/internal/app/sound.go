@@ -11,6 +11,7 @@ var soundLog = diag.L("sound")
 
 const (
 	pNotifySound = "general.sound"
+	pNotifyPause = "general.pauseNotify"
 	pTurnDing    = "chat.ding"
 )
 
@@ -32,7 +33,7 @@ func (a *App) turnDingOn() bool {
 
 // playTurnDing 回合结束时播放短提示音(前台 audible,与系统通知无关)。
 func (a *App) playTurnDing() {
-	if !a.turnDingOn() {
+	if !a.turnDingOn() || a.notifyPaused() {
 		return
 	}
 	a.playSystemSound("Tink")
@@ -54,4 +55,9 @@ func (a *App) playSystemSound(name string) {
 			}
 		}
 	})
+}
+
+// notifyPaused 「暂停通知」(托盘菜单与 设置 → 通用):暂停后不发系统通知、不播提示音,应用内通知中心照常记录。
+func (a *App) notifyPaused() bool {
+	return a != nil && a.prefs != nil && a.prefs.Bool(pNotifyPause, false)
 }

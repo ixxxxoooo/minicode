@@ -9,7 +9,7 @@ import (
 // maybeSystemNotify 应用在后台且偏好开启时,发一条 macOS 系统通知。
 // Darwin+cgo 且在 .app 包内走 UserNotifications(点击 sess 回会话);否则 osascript(无点击回调)。
 func (a *App) maybeSystemNotify(title, body, sessID string) {
-	if a.appInForeground() || !a.prefs.Bool("general.notify", true) {
+	if a.appInForeground() || !a.prefs.Bool("general.notify", true) || a.notifyPaused() {
 		return
 	}
 	sessID = strings.TrimSpace(sessID)
@@ -30,6 +30,9 @@ func (a *App) afterEventNotify(ev core.Event) {
 	case core.EvTurnEnded:
 		if e.Reason == core.StopEndTurn {
 			a.onTurnFinished()
+		}
+		if e.Reason == core.StopError && !a.appInForeground() {
+			a.brand.trayErr = true // 托盘显示出错徽标,回到前台后清除
 		}
 	case core.EvAppend:
 		if _, ok := e.Item.(*core.PermissionRequest); ok {
@@ -57,6 +60,9 @@ func (a *App) onTurnFinished() {
 		body = "可以查看结果"
 	}
 	a.postNotice("ok", title, body, nil)
+	if !a.appInForeground() {
+		a.brand.trayUnread = true // 托盘显示「已完成」徽标,回到前台后清除
+	}
 	a.playTurnDing()
 	a.maybeSystemNotify(title, body, a.curSess)
 }

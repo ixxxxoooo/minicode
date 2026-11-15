@@ -592,6 +592,9 @@ func (a *App) View(c *ui.Context) {
 	a.winW, a.winH = c.Size()
 	a.fitPanels()
 	a.reposTick()
+	if (a.brand.trayErr || a.brand.trayUnread) && a.appInForeground() {
+		a.syncBrand() // 回到前台:托盘的「出错 / 已完成」徽标算已读
+	}
 	a.shortcuts(c)
 	if a.popup == "" {
 		a.popSeen = ""
