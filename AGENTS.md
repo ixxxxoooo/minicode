@@ -123,6 +123,18 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 
 - **其余「···」与右键菜单**(`more_menus.go`,设计稿 `menus` / `drag-more` 页):SCM 标题 ···(`scmHeadMenu`:拉取 / 推送 / 同步 / 储藏所有更改 / 弹出最近的储藏 / 刷新)、差异标签 ···(`diffMoreMenu`)、终端标签条 ···(`termMoreMenu`)、问题行与输出行右键(`problemMenu` / `outputMenu`,「让 Claude 修复」把诊断填进输入框)、计划 / 子 Agent / 任务虚拟标签右键(`virtMenu`:复制内容 / 引用到对话)、自定义详情 ···(`cuMoreMenu`:复制名称 / 在访达中显示 / 删除带确认)。测试用 `clickMore` 按位置点同名「更多操作」按钮。缺口:SCM 标题的列表 / 树切换(B3)、「在新窗口中打开」、自定义详情「用编辑器打开」。
 
+### 集中补缺口一轮(B3–B7,代码已提交但**尚未测试**,待用户通知后集中测)
+
+- **Git / 差异**:冲突标签按「冲突 k/N」单卡展示,结果区可编辑(`conflict.go`);差异注解条常驻块头 + 行级暂存(`ide_diff_extra.go`、`vcs/lines.go`);`scm.viewMode` 列表 / 树(`scm_tree.go`)、`scm.ignoreWs` 忽略空白;提交并同步、推送被拒引导(`PushForce` = `--force-with-lease`)、切分支储藏三选一(`git_dialogs.go`);审查页 `-ed review:empty`、页脚回退本回合(`review_turn.go`);子模块提示行(`scm_nested_hint.go`)。
+- **会话流**:`flow_user.go` 按回合渲染(用户卡吸顶 / 折叠 / 就地编辑,`appearance.flowStyle`);`flow_fold.go` 的 `foldBody` 统一长输出限高;`flow_group.go` 探索组「最新一步」;回合操作条 `flow_turn.go`,分叉 `claude/fork.go`(`OpenSession("fork:<父>:<新>")`);改动卡撤销 `chg_undo.go`;`flow_tail.go` 尾读任务 `output_file` 进 `termLive`。
+- **输入框 / 任务 / 通知**:`composer_mcp.go`(`CmdRefreshMcp`)、`ctx_panel.go`(输入框圆环与状态栏共用)、`task_dock.go` + `core.GroupTasks` 六类胶囊、`notice_*.go`(IDE 通知中心 + `general.notify*` 系统通知)、`update_progress.go`、`proj_pick.go`(方案 B 项目下拉)、`session_fork.go`(`minicode://session/<id>` 链接与分叉入口)。
+- **编辑器**:Git 行号竖条靠 `syncDiffBase`(`ide_gutter.go`);`editor.minimapSlider/Width/Git`;CodeLens 为自绘叠层(测试数是占位);括号着色 `ide_brackets.go`;拆分 `ide_split.go`(`tabs2` / `splitDir` / `splitFrac`,同路径共享 `*editor.Buffer`);`lsp_codeaction.go` ⌘.、`ide_inline.go` ⌘I、`ide_suggest.go` ✦(启发式占位);文件树 F2 / ⌘⌫ / 拖移。
+- **终端 / 语言服务**:多终端 `ide.tps/tpSel`,关到最后一个留空白壳;搜索 `Aa/ab/.*` + 刻度;`term.scrollback`;鼠标上报 `term_mouse.go`(按住 ⌥ 回选择,滚轮未编码);OSC 133 集成脚本在 `~/.minicode/shell/`;LSP 大纲 / inlayHint / 崩溃退避重启 / 工作区轻量诊断(`lsp_outline.go` 等)。语义高亮无库 API,未做。
+- **设置**:`jumpSettingRow`、`restartForSettings`(自启 + 退出)、`shortcuts.<id>` 录制(`settings_shortcuts.go`)、`internal/claudecfg` 读写服务商 / 规则 / 信任 / 环境变量(密钥 0600 文件)、`kit/feedback.go`(`UndoSlot` / `ShakeInput`)、`kit.SystemReduceMotion()`。
+- **外壳**:`responsive.go` + `overlays.go`(1100 / 900 / 720 断点、浮层 / 抽屉 / 图标条)、`layout_mem.go`(`layout.memAgent/memIDE`)、`morph.go`、`newwindow.go`(`--new-window`,从属进程不落盘)、`brand.go` + `mac_brand_darwin.go`(Dock 图标 / 角标 / 托盘,cgo 用 `-x objective-c`);main 经 `InstallAppMenu / InitBrand / SaveLayMemToPrefs` 接入。
+- **整页**:自动化 `automation.ParseCron` + 运行记录;画布 `canvas.OpenLibrary(~/.minicode/canvases)` + `ApplyClaudeReply`;浏览器 `browser.HTTPSource`(`browser.fetch` 可关);自定义 `customize.OpenDisk`(原子写 + 备份)、`claude mcp/plugin` 子进程;用量限额经活动会话 `CmdRefreshUsage`。
+- **本轮已知缺口**:⌥点击多光标、标签跨组拖动、真实 Haiku 行内补全、MD 图片附件;用户消息编辑只做本地截断、计划选中批注未接选区;演示 Bash 无增量输出剧本;MCP 工具级热开关、系统通知点击回会话、真实 updater 重启;终端滚轮上报、Nerd Font 缺字形检测;画布全屏无平移与列表删除 / 重命名;自动化运行中无流式输出、取消不杀子进程;浏览器框选元素;MCP / 插件表单未写回 JSON;Dock / 托盘缺动画帧与 error/update/paused/demo 图;`shortcutRecordCapture` 透明层可能挡点击(待测)。
+
 ### 已知缺口(真实模式)
 
 - 设置页:快捷键录制、服务商 / 规则 / 环境变量 / LSP 行是演示数据;「项目信任」只列项目,不读写信任状态;除上面列出的偏好外,其它控件只存偏好。
