@@ -118,7 +118,10 @@ func (a *App) scmGroupMenu(m *ui.Menu, id string, cs []vcs.Change) {
 
 // commitMenu 是图谱 / SCM 里提交行的右键菜单。
 func (a *App) commitMenu(m *ui.Menu, cm vcs.Commit) {
-	if menuItem(m, "检出此提交").Chosen() {
+	// 当前提交(HEAD)上:检出 / 与 HEAD 比较都没有意义,置灰并写明原因(检出还会让 HEAD 游离)
+	isHead := len(a.sc.log) > 0 && cm.Hash == a.sc.log[0].Hash
+	headWhy := map[bool]string{true: "这就是当前提交(HEAD)", false: ""}[isHead]
+	if menuItem(m, "检出此提交").Disabled(isHead).Tooltip(headWhy).Chosen() {
 		a.scmCommitOp(cm, "checkout")
 	}
 	if menuItem(m, "从此提交创建分支…").Chosen() {
@@ -135,7 +138,7 @@ func (a *App) commitMenu(m *ui.Menu, cm vcs.Commit) {
 	if menuItem(m, "与工作区比较…").Chosen() {
 		a.scmCompareWork(cm)
 	}
-	if menuItem(m, "与 HEAD 比较…").Chosen() {
+	if menuItem(m, "与 HEAD 比较…").Disabled(isHead).Tooltip(headWhy).Chosen() {
 		a.scmCompareHead(cm)
 	}
 	picks := a.graphPicks()
