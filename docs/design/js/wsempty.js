@@ -4,10 +4,10 @@
      终端 —— 每个已开的终端一行(点 = 切到它并展开底部面板),末尾「新建终端」;一个都没开时只有「打开终端」一行
      打开 —— 文件 / 源代码管理 / 搜索 / 命令面板(都只是跳转,右侧是快捷键)
    终端的「家」仍是底部面板:标签条 zsh · zsh 2 · …(+ 新建、选中的带 × 关闭);起始页的终端行与面板标签是同一份状态(APP.st.terms / termSel)。
-   WS.empty(o) / IDE.termChips(o) 供渲染与规范页复用;o.terms 终端个数、o.sel 当前、o.files / o.plan / o.tasks 本轮内容。
+   本文件只有构建函数(规范页加载时就要用,所以排在 ws.js 之后);交互在 wsempty-act.js。WS.empty(o) / IDE.termChips(o):o.terms 终端个数、o.sel 当前、o.files / o.plan / o.tasks 本轮内容。
    @author ixxxxoooo */
 (function () {
-  const A = window.APP, ACT = A.ACT, { $, $$ } = A, { ic, kbd } = U;
+  const { ic, kbd } = U, S = () => (window.APP && window.APP.st) || {};
   const name = (i) => i ? 'zsh ' + (i + 1) : 'zsh';
   const row = (icon, t, sub, right, attr = '', off = false) => `<div class="we-row ${off ? 'off' : ''}" ${off ? '' : `tabindex="0" ${attr}`}>${ic(icon, 's16')}<span class="m">${t}</span><span class="t3 fs-cap grow ell">${sub}</span>${right}</div>`;
   const go = ic('chevR', 's12 t4');
@@ -15,7 +15,7 @@
   /** 起始页内容。默认:2 个待审查文件、1 份计划、1 个运行中的任务、1 个终端 */
   WS.empty = (o = {}) => {
     const files = o.files == null ? 2 : o.files, plan = o.plan == null ? 1 : o.plan, tasks = o.tasks == null ? 1 : o.tasks;
-    const n = o.terms == null ? ((A.st && A.st.terms) || 1) : o.terms, sel = o.sel == null ? ((A.st && A.st.termSel) || 0) : o.sel;
+    const n = o.terms == null ? (S().terms || 1) : o.terms, sel = o.sel == null ? (S().termSel || 0) : o.sel;
     const turn = [files ? row('eye', '审查本轮改动', files + ' 个文件待审查', go, 'data-act="we-open" data-tab="review"') : '',
       plan ? row('list', '计划', '最新一份计划', go, 'data-act="we-open" data-tab="plan"') : '',
       tasks ? row('activity', '子 Agent 与任务', tasks + ' 个运行中', go, 'data-act="we-open" data-tab="task:watch"') : ''].join('');
@@ -31,21 +31,7 @@
 
   /** 底部面板「终端」分段里的终端标签:每个终端一个胶囊,选中的带 ×(只剩一个时不给关),末尾是只读的会话命令与「+」 */
   IDE.termChips = (o = {}) => {
-    const n = o.terms == null ? ((A.st && A.st.terms) || 1) : o.terms, sel = o.sel == null ? ((A.st && A.st.termSel) || 0) : o.sel;
+    const n = o.terms == null ? (S().terms || 1) : o.terms, sel = o.sel == null ? (S().termSel || 0) : o.sel;
     return Array.from({ length: n }, (_, i) => U.chip(name(i), 'prompt', i === sel ? 'on' : '', `data-act="term-pick" data-i="${i}"`) + (n > 1 && i === sel ? U.ib('x', 'sm', '关闭这个终端', `data-act="term-close" data-i="${i}"`) : '')).join('')
       + U.chip('cargo test router', 'lock', 'ro', 'data-tip="来自会话的命令(只读)"') + U.ib('plus', 'sm', '新建终端', 'data-act="term-new"'); };
-
-  /** 状态变了:起始页(若正显示)与底部面板一起重画;focus = true 时展开面板并闪一下 */
-  const sync = (w, focus) => { if (!w) return; const e = $('.ws-empty2', w); if (e) e.outerHTML = WS.empty();
-    const cur = $('.bpanel', w), pk = ($('.ws-in', w) || { dataset: {} }).dataset.pk || 'term';
-    if (cur && pk === 'term') { const t = document.createElement('div'); t.innerHTML = IDE.bpanel('term'); cur.replaceWith(t.firstElementChild); }
-    if (focus) { w.dataset.panel = 'on'; A.syncBars(w); const p = $('.bpanel', w); if (p) { p.classList.remove('a-flash'); void p.offsetWidth; p.classList.add('a-flash'); }
-      if (w.dataset.mode === 'agent' && w.dataset.right === 'off') { w.dataset.right = 'on'; A.syncBars(w); } } };
-  const W0 = () => $('#vmain .win');
-  const pick = (i, focus) => { A.st.termSel = i; sync(W0(), focus); };
-  ACT['we-term'] = (el) => pick(+el.dataset.i, true);
-  ACT['term-pick'] = (el) => pick(+el.dataset.i, false);
-  ACT['we-term-new'] = ACT['term-new'] = (el) => { const n = A.st.terms == null ? 1 : A.st.terms; A.st.terms = n + 1; A.st.termSel = n; sync(W0(), el.dataset.act === 'we-term-new'); };
-  ACT['term-close'] = (el) => { const n = A.st.terms || 1; if (n <= 1) return; A.st.terms = n - 1; A.st.termSel = Math.min(+el.dataset.i, A.st.terms - 1); sync(W0(), false); };
-  ACT['we-open'] = (el, w) => A.openTab(w, el.dataset.tab);
 })();
