@@ -210,6 +210,7 @@ func main() {
 		runMode = "demo"
 	}
 	diag.Init(diag.Options{Version: version, Mode: runMode, Mirror: dev && os.Getenv("MINI_MIRROR") != ""})
+	diag.WatchSignals()
 	log.Info("启动", "version", version, "mode", runMode, "dev", dev)
 
 	prefStore := prefs.Open(filepath.Join(diag.Home(), "settings.json"))
