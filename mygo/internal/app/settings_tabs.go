@@ -697,9 +697,10 @@ func aboutCard(a *App, c *ui.Context) {
 				ui.Text(c, hint).FontSize(theme.FsCap).TextColor(col)
 			})
 		} else {
+			// 还没检查过:不能说「已是最新」,如实提示并引导点「检查更新」。
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Height(16).Children(func() {
-				kit.Ic(c, "okc", kit.S12).TextColor(t.Ok)
-				ui.Text(c, "已是最新").FontSize(theme.FsCap).TextColor(t.Ok)
+				kit.Ic(c, "info", kit.S12).TextColor(t.Tx3)
+				ui.Text(c, "尚未检查更新").FontSize(theme.FsCap).TextColor(t.Tx3)
 			})
 		}
 		ui.Row(c).Gap(8).Margin(6, 0, 0, 0).Children(func() {
