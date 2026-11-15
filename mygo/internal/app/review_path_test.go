@@ -141,3 +141,25 @@ func TestChangedFilesThroughPermission(t *testing.T) {
 		t.Fatalf("折叠摘要文件数=%d,期望 2", n)
 	}
 }
+
+// 被拒绝的命令没有执行过,命令卡不能显示红色「退出码 1」(后端的拒绝信号);实机发现。
+func TestDeniedCommandCardNoExitCode(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true})
+	a.st.Apply(core.EvAppend{Item: &core.User{ID: "u1", Text: "跑一下"}})
+	one := 1
+	tc := core.NewToolCall("t1", "Bash", "运行 rm -rf x").
+		WithContent(&core.TerminalBlock{Command: "rm -rf x", Output: "用户拒绝了此次操作", ExitCode: &one})
+	tc.Status = core.ToolDenied
+	a.st.Apply(core.EvAppend{Item: tc})
+	a.st.Apply(core.EvAppend{Item: &core.Assistant{ID: "a1", Text: "好的"}})
+	a.st.Apply(core.EvTurnEnded{})
+	a.folds["turnfold:u1"] = true // 过程区展开
+	tt := ui.NewTester(a.View, 1280, 800)
+	tt.Frame()
+	if tt.HasText("退出码 1") {
+		t.Fatal("被拒绝的命令不该显示退出码")
+	}
+	if !tt.HasText("未执行") {
+		t.Fatal("被拒绝的命令卡应显示「未执行」")
+	}
+}
