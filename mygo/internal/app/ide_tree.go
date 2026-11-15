@@ -1,0 +1,130 @@
+package app
+
+import (
+	"strings"
+
+	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/diag"
+	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/theme"
+	"github.com/ixxxxoooo/minicode/internal/workspace"
+)
+
+// filesView 是 IDE 左栏的「文件」:区块标题 + 文件树 + 折叠的「大纲 / 时间线」。
+func (a *App) filesView(c *ui.Context) {
+	t := a.tk
+	d := a.ide
+	ui.Scroll(c).Key("files").Grow(1).Children(func() {
+		ui.Column(c).Children(func() {
+			ui.Row(c).Height(24).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Children(func() {
+				kit.Ic(c, "chevD", kit.S12)
+				ui.Text(c, strings.ToUpper(d.fs.Name())).Grow(1).SingleLine()
+				kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建文件"})
+				kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache = nil })
+			})
+			a.treeDir(c, "", 0)
+			ui.Box(c).Height(1).Margin(8, 2).Background(t.Bd1)
+			for _, name := range []string{"大纲", "时间线"} {
+				open := d.sections[name]
+				r := ui.ButtonBase(c).Key("sec-" + name).Height(24).PaddingX(8).Justify(ui.Start).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).
+					FontSize(10.5).FontWeight(700).Cursor(ui.CursorDefault)
+				if r.Clicked() {
+					d.sections[name] = !open
+				}
+				r.Children(func() {
+					icon := "chevR"
+					if open {
+						icon = "chevD"
+					}
+					kit.Ic(c, icon, kit.S12)
+					ui.Text(c, name)
+				})
+				if open {
+					ui.Text(c, "暂无内容").FontSize(theme.FsCap).TextColor(t.Tx4).Margin(2, 8, 6, 28)
+				}
+			}
+		})
+	})
+}
+
+// listing 带缓存地列目录:界面每帧都在画树,不能每帧读磁盘。刷新按钮 / 文件变化清缓存。
+func (d *ide) listing(dir string) []workspace.Entry {
+	if d.listCache == nil {
+		d.listCache = map[string][]workspace.Entry{}
+	}
+	if es, ok := d.listCache[dir]; ok {
+		return es
+	}
+	es, err := d.fs.List(dir)
+	if err != nil {
+		diag.L("ide").Warn("列目录失败", "dir", dir, "err", err)
+	}
+	d.listCache[dir] = es
+	return es
+}
+
+func (a *App) treeDir(c *ui.Context, dir string, depth int) {
+	for _, e := range a.ide.listing(dir) {
+		a.treeRow(c, e, depth)
+		if e.Dir && a.ide.open[e.Path] {
+			a.treeDir(c, e.Path, depth+1)
+		}
+	}
+}
+
+func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
+	t := a.tk
+	d := a.ide
+	on := !e.Dir && d.sel == e.Path
+	r := kit.RowEl(c, on).Key("tr-" + e.Path).PaddingStart(6 + float32(depth)*12).Gap(5)
+	g := d.fileGit(e.Path)
+	if e.Dir {
+		g = ""
+		r.TextColor(t.Tx1) // 目录名不随子文件的改动染色(设计稿如此)
+	}
+	switch g {
+	case "M":
+		r.TextColor(t.Warn)
+	case "A":
+		r.TextColor(t.Ok)
+	}
+	if r.Clicked() {
+		if e.Dir {
+			d.open[e.Path] = !d.open[e.Path]
+		} else {
+			d.openFile(e.Path, false)
+		}
+	}
+	if r.DoubleClicked() && !e.Dir {
+		d.openFile(e.Path, true)
+	}
+	r.Children(func() {
+		if e.Dir {
+			icon := "chevR"
+			if d.open[e.Path] {
+				icon = "chevD"
+			}
+			kit.Ic(c, icon, kit.S12).TextColor(t.Tx4)
+			kit.Ic(c, "folder", kit.S12)
+		} else {
+			ui.Box(c).Size(12, 12).Shrink(0)
+			kit.Ic(c, fileIcon(e.Name), kit.S12)
+		}
+		ui.Text(c, e.Name).Grow(1).SingleLine()
+		if g != "" && !e.Dir {
+			ui.Text(c, g).FontSize(10).FontWeight(700).Shrink(0)
+		}
+	})
+}
+
+// fileIcon 按扩展名挑图标(设计稿:源码 code、配置 gear、其余 fileText)。
+func fileIcon(name string) string {
+	switch {
+	case strings.HasSuffix(name, ".rs"), strings.HasSuffix(name, ".go"), strings.HasSuffix(name, ".ts"),
+		strings.HasSuffix(name, ".js"), strings.HasSuffix(name, ".py"):
+		return "code"
+	case strings.HasSuffix(name, ".toml"), strings.HasSuffix(name, ".json"), strings.HasSuffix(name, ".yaml"), strings.HasSuffix(name, ".yml"):
+		return "gear"
+	}
+	return "fileText"
+}

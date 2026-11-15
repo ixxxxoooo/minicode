@@ -42,6 +42,7 @@ func (a *App) composer(c *ui.Context) {
 		})
 		a.composerBar(c)
 	})
+	a.cfgPopup(c, "cfg", box, false)
 }
 
 // submit 发送一条消息。
@@ -90,13 +91,7 @@ func (a *App) cfgChip(c *ui.Context, wide bool) {
 	if b.Hovered() || a.popup == "cfg" {
 		b.Background(t.Fill2).TextColor(t.Tx1)
 	}
-	b.OnClick(func() {
-		if a.popup == "cfg" {
-			a.popup = ""
-		} else {
-			a.popup = "cfg"
-		}
-	})
+	b.OnClick(func() { a.togglePop("cfg") })
 	b.Children(func() {
 		div := func() { ui.Box(c).Size(1, 10).Background(t.Bd3).Shrink(0) }
 		kit.Ic(c, modeIcon(a.st.Mode), kit.S12)
@@ -147,7 +142,7 @@ func (a *App) modelName() string {
 			return m.Name
 		}
 	}
-	return "Sonnet 5.5"
+	return core.TurnStats{Model: a.st.Model}.ModelLabel() // 认不出的原样显示
 }
 
 // ring 是 16px 的圆环进度(上下文占用):底圈 fill-3,进度弧强调色,从 12 点钟起顺时针。

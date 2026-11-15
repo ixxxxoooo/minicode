@@ -50,9 +50,9 @@ func (a *App) rail(c *ui.Context) {
 			}
 		}
 		ui.Spacer(c).Grow(1)
-		if ri("gear", "账号与设置", false, 0).Clicked() {
-			a.popup = "acct"
-		}
+		g := ri("gear", "账号与设置", a.popup == "acct@gear", 0)
+		g.OnClick(func() { a.togglePop("acct@gear") })
+		a.acctPopup(c, "gear", g)
 		a.avatar(c).Margin(4, 0, 0, 0)
 	})
 }

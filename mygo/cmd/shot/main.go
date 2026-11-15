@@ -29,6 +29,9 @@ func main() {
 	h := flag.Int("h", 800, "高(DIP)")
 	scale := flag.Float64("scale", 2, "像素倍率")
 	top := flag.Bool("top", true, "会话流停在顶部(设计稿的截图就是这样)")
+	popup := flag.String("popup", "", "打开某个弹层:cfg / sbcfg / ctx / upd / acct")
+	clicks := flag.String("click", "", "截图前依次点击,形如 IDE;100,200(文字或 DIP 坐标);每次点击后推进 -step 毫秒")
+	step := flag.Int("step", 600, "每次点击后推进的毫秒数")
 	flag.Parse()
 
 	home := "/tmp/minicode-shot-home"
@@ -48,11 +51,25 @@ func main() {
 	tt := ui.NewTester(a.View, *w, *h)
 	tt.SetScale(float32(*scale))
 	tt.SetDark(strings.Contains("ink graphite aurora", *pal))
+	a.SetPopup(*popup)
 	if *top {
 		a.ScrollFlowTop()
 		tt.Frame()
 	}
 	tt.Advance(800 * time.Millisecond)
+	for _, cl := range strings.Split(*clicks, ";") {
+		if cl == "" {
+			continue
+		}
+		var x, y float32
+		if _, err := fmt.Sscanf(cl, "%f,%f", &x, &y); err == nil {
+			tt.ClickAt(x, y)
+		} else if err := tt.Click(cl); err != nil { // 非坐标:按文字 / 标签点击
+			fmt.Fprintln(os.Stderr, "点击失败:", err)
+			os.Exit(2)
+		}
+		tt.Advance(time.Duration(*step) * time.Millisecond)
+	}
 	img := tt.Image()
 	f, err := os.Create(*out)
 	if err != nil {

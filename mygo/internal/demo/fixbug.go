@@ -50,7 +50,7 @@ func FixBug(withPermission bool) []Step {
 	var s []Step
 	add := func(after time.Duration, ev core.Event) { s = append(s, Step{after, ev}) }
 
-	add(0, core.EvReady{SessionID: "demo-fixbug", Models: core.DefaultModels(), Model: "claude-sonnet-5-5", Mode: core.ModeDefault})
+	add(0, core.EvReady{SessionID: "demo-fixbug", Models: core.DefaultModels(), Model: "sonnet", Mode: core.ModeDefault})
 	add(0, core.EvTitleChanged{Title: fixTitle})
 	add(0, core.EvAppend{Item: &core.User{ID: "u1", Text: fixUser, Files: []string{"src/router.rs"}}})
 	add(ms(300), core.EvTurnStarted{})

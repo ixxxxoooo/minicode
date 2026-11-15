@@ -60,6 +60,8 @@ func (a *App) side(c *ui.Context) {
 				switch a.NavID() {
 				case "chat":
 					a.sessions(c)
+				case "files":
+					a.filesView(c)
 				default:
 					ui.Text(c, navTitle(a.NavID())).TextColor(t.Tx3).Margin(8)
 				}
@@ -112,7 +114,9 @@ func (a *App) sideFoot(c *ui.Context) {
 			kit.Ib(c, p.icon, kit.IbOpt{Tip: p.name, On: a.screen == p.screen}).OnClick(func() { a.screen = p.screen })
 		}
 		ui.Spacer(c).Grow(1)
-		kit.Ib(c, "gear", kit.IbOpt{Tip: "账号与设置"}).OnClick(func() { a.popup = "acct" })
+		g := kit.Ib(c, "gear", kit.IbOpt{Tip: "账号与设置", On: a.popup == "acct@gear"})
+		g.OnClick(func() { a.togglePop("acct@gear") })
+		a.acctPopup(c, "gear", g)
 		if a.devBadge != "" {
 			// 开发版徽章(设计稿之外的开发辅助:主题色小标签)
 			kit.Tag(c, a.devBadge, kit.KAc)

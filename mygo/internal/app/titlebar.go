@@ -56,7 +56,9 @@ func (a *App) titlebar(c *ui.Context) {
 			}
 			kit.Ib(c, "bell", kit.IbOpt{Tip: "通知"})
 			if t.Scheme.ID == "b" {
-				a.avatar(c).Margin(0, 0, 0, 4)
+				av := a.avatar(c).Margin(0, 0, 0, 4)
+				av.OnClick(func() { a.togglePop("acct@avatar") })
+				a.acctPopup(c, "avatar", av)
 			}
 		})
 	})

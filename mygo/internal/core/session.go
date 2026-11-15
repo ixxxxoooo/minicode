@@ -57,7 +57,7 @@ func NewState() *State {
 	return &State{
 		Title:     "新会话",
 		Models:    DefaultModels(),
-		Model:     "default",
+		Model:     "sonnet",
 		Effort:    EffortMedium,
 		Durations: map[string]uint64{},
 		TurnStats: map[string]TurnStats{},

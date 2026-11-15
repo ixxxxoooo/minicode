@@ -12,9 +12,12 @@ import (
 // chatPane 是对话栏:标题行 + 会话流 + 任务坞 + 输入框。
 func (a *App) chatPane(c *ui.Context, gap float32) {
 	t := a.tk
-	p := a.pane(c).Key("chat").Grow(1).Basis(0)
+	p := a.pane(c).Key("chat").Transition(morph)
 	if a.mode == ModeIDE {
-		p.Margin(0, 0, 0, gap)
+		// IDE 形态:对话栏停靠在右侧,固定宽度
+		p.Width(theme.WDock).Shrink(0).Margin(0, 0, 0, gap)
+	} else {
+		p.Grow(1).Basis(0)
 	}
 	p.Children(func() {
 		a.chatHead(c)

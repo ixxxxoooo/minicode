@@ -83,9 +83,8 @@ type ModelInfo struct {
 // DefaultModels 是内置的模型别名列表(真实模式下由 claude 初始化响应覆盖)。
 func DefaultModels() []ModelInfo {
 	return []ModelInfo{
-		{"default", "默认", "由 Claude Code 选择"},
-		{"opus", "Opus", "最强推理,适合复杂任务"},
-		{"sonnet", "Sonnet", "速度与能力均衡"},
-		{"haiku", "Haiku", "最快,适合简单任务"},
+		{"opus", "Opus 5.5", "最强推理,适合复杂任务"},
+		{"sonnet", "Sonnet 5.5", "速度与能力均衡"},
+		{"haiku", "Haiku 5.5", "最快,适合简单任务"},
 	}
 }

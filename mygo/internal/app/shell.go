@@ -71,6 +71,7 @@ func (a *App) stage(c *ui.Context) {
 			a.pagePlaceholder(c)
 			return
 		}
+		a.editorPane(c, gap)
 		a.chatPane(c, gap)
 		a.inspector(c, gap)
 	})

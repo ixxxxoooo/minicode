@@ -43,16 +43,23 @@ func (a *App) statusbar(c *ui.Context) {
 			a.sbItem(c, "lsp", func() { kit.Ic(c, "okc", kit.S12).TextColor(t.Ok); ui.Text(c, "rust-analyzer") })
 		}
 		ui.Spacer(c).Grow(1)
-		a.sbItem(c, "mode", func() { kit.Ic(c, modeIcon(a.st.Mode), kit.S12); ui.Text(c, a.st.Mode.Label()) }).OnClick(func() { a.popup = "cfg" })
-		a.sbItem(c, "model", func() { ui.Text(c, a.modelName()) }).OnClick(func() { a.popup = "cfg" })
-		a.sbItem(c, "ctx", func() {
+		mode := a.sbItem(c, "mode", func() { kit.Ic(c, modeIcon(a.st.Mode), kit.S12); ui.Text(c, a.st.Mode.Label()) })
+		mode.OnClick(func() { a.togglePop("sbcfg") })
+		a.cfgPopup(c, "sbcfg", mode, true)
+		model := a.sbItem(c, "model", func() { ui.Text(c, a.modelName()) })
+		model.OnClick(func() { a.togglePop("sbcfg") })
+		ctx := a.sbItem(c, "ctx", func() {
 			ui.Text(c, "上下文 "+itoa(int(a.st.Usage.ContextRatio()*100+.5))+"%").FontFeatures("tnum")
-		}).OnClick(func() { a.popup = "ctx" })
+		})
+		ctx.OnClick(func() { a.togglePop("ctx") })
+		a.ctxPopup(c, ctx)
 		if a.update != "" {
-			a.sbItem(c, "upd", func() {
+			upd := a.sbItem(c, "upd", func() {
 				kit.Ic(c, "download", kit.S12).TextColor(t.Ac)
 				ui.Text(c, a.update).TextColor(t.Ac)
-			}).OnClick(func() { a.popup = "upd" })
+			})
+			upd.OnClick(func() { a.togglePop("upd") })
+			a.updPopup(c, upd)
 		}
 		if a.devBadge != "" && t.Scheme.ID != "x" {
 			kit.Tag(c, a.devBadge, kit.KAc)

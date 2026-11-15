@@ -3,6 +3,7 @@
 package app
 
 import (
+	"github.com/egoist/mygo/ui/editor"
 	"time"
 
 	"github.com/egoist/mygo"
@@ -48,8 +49,11 @@ const (
 
 // App 是整个应用的状态。只在主线程读写(后端事件经 win.Update 切回主线程)。
 type App struct {
-	flowSt ui.ScrollState // 会话流滚动状态(跟随底部)
-	win    *mygo.Window
+	ide        *ide // IDE 形态独有的状态(编辑器标签、文件树、底部面板)
+	edTheme    *editor.Theme
+	edThemeKey string
+	flowSt     ui.ScrollState // 会话流滚动状态(跟随底部)
+	win        *mygo.Window
 
 	// 会话:当前显示的会话状态与它的后端
 	st *core.State
@@ -70,6 +74,7 @@ type App struct {
 	inspTab   string // changes / files / term / plan / tasks
 	popup     string // 状态栏 / 输入框弹层:cfg / ctx / upd / acct
 	paletteOn bool
+	setTab    string // 设置页当前分类
 
 	// 侧栏数据
 	projects []core.ProjectInfo
@@ -118,6 +123,7 @@ func New(o Options) *App {
 		projOpen:   map[string]bool{},
 		sessMore:   map[string]bool{},
 		folds:      map[string]bool{},
+		ide:        newIDE(),
 		fakeLights: o.FakeLights,
 		devBadge:   o.DevBadge,
 	}
@@ -193,6 +199,7 @@ func (a *App) SetMode(m Mode) {
 func (a *App) View(c *ui.Context) {
 	defer diag.SpanSlow("app", "构建界面", 33*time.Millisecond)()
 	c.SetTheme(a.tk.UITheme())
+	a.shortcuts(c)
 	a.root(c)
 }
 
@@ -211,6 +218,7 @@ func evName(ev core.Event) string {
 // SeedDemoExtras 演示 / 截图用:补上设计稿里工作区的附加状态(额外未提交文件、更新提示)。
 func (a *App) SeedDemoExtras() {
 	a.demoExtra = true
+	a.ide.seedDemo()
 	a.update = "更新 42%"
 }
 
@@ -218,4 +226,36 @@ func (a *App) SeedDemoExtras() {
 func (a *App) ScrollFlowTop() {
 	a.flowSt.Y = 0
 	a.flowSt.MaxY = 1e9 // 让「停在底部才跟随」的判断先不成立,下一帧会按真实高度重算
+}
+
+// SetPopup 直接打开某个弹层(截图 / 调试用:cfg / sbcfg / ctx / upd / acct)。
+func (a *App) SetPopup(k string) { a.popup = k }
+
+// shortcuts 是窗口级快捷键(与设计稿一致):⌘B 导航栏、⌥⌘B 检查器、⌘E 切换形态、⌘K 命令面板、
+// ⌘J 底部面板、⌘S 保存、⌘, 设置。输入框里的 Enter 等由各自控件处理,这里只放带 ⌘ 的组合键。
+func (a *App) shortcuts(c *ui.Context) {
+	switch {
+	case c.Shortcut(ui.Cmd, ui.KeyB):
+		a.sideOpen = !a.sideOpen
+	case c.Shortcut(ui.Cmd|ui.Alt, ui.KeyB):
+		a.inspOpen = !a.inspOpen
+	case c.Shortcut(ui.Cmd, ui.KeyE):
+		if a.mode == ModeAgent {
+			a.SetMode(ModeIDE)
+		} else {
+			a.SetMode(ModeAgent)
+		}
+	case c.Shortcut(ui.Cmd, ui.KeyK):
+		a.paletteOn = !a.paletteOn
+	case c.Shortcut(ui.Cmd, ui.KeyJ):
+		a.ide.bottomOpen = !a.ide.bottomOpen
+	case c.Shortcut(ui.Cmd, ui.KeyS):
+		if a.mode == ModeIDE {
+			if err := a.ide.save(); err != nil {
+				log.Error("保存失败", "err", err)
+			}
+		}
+	case c.Shortcut(ui.Cmd, ui.KeyComma):
+		a.openSettings("general")
+	}
 }
