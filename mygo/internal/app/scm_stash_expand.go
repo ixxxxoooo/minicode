@@ -81,7 +81,6 @@ func (a *App) scmOpenStashDiff(i int, ch vcs.Change) {
 }
 
 func (a *App) scmStashFileMenu(m *ui.Menu, i int, ch vcs.Change) {
-	ch = ch
 	if menuItem(m, "打开差异").Chosen() {
 		a.scmOpenStashDiff(i, ch)
 	}

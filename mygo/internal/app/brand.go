@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"testing"
 
 	"github.com/egoist/mygo"
 	"github.com/ixxxxoooo/minicode/internal/core"
@@ -35,7 +36,7 @@ func (a *App) initBrand() {
 }
 
 func (a *App) syncBrand() {
-	if a.secondary {
+	if a.secondary || testing.Testing() { // 单测里没有主循环,Dock / 托盘调用会永久阻塞
 		return
 	}
 	dark := a.tk != nil && a.tk.Palette.Dark
