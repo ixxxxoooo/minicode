@@ -9,7 +9,7 @@ import (
 
 // 整页屏幕在面包屑里的名字。
 var crumbName = map[Screen]string{
-	ScreenAutomation: "自动化", ScreenCanvas: "画布", ScreenBrowser: "浏览器", ScreenCustomize: "自定义", ScreenUsage: "用量与成本",
+	ScreenAutomation: "自动化", ScreenCanvas: "画布", ScreenBrowser: "浏览器", ScreenCustomize: "自定义", ScreenUsage: "用量与成本", ScreenSettings: "设置",
 }
 
 // titlebar 是标题栏(36 高):三套方案的左 / 中 / 右内容不同,但 Agent|IDE 分段始终居中或居左。

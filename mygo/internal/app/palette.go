@@ -62,22 +62,22 @@ func (a *App) openPalette() {
 // closePalette 关闭面板;还在主题预览中就还原。
 func (a *App) closePalette() {
 	if a.pq.sub == "theme" && a.pq.origPal != "" && a.pal.ID != a.pq.origPal {
-		a.setPalette(a.pq.origPal)
+		a.previewPalette(a.pq.origPal) // 取消:还原(偏好没动过,不必写)
 	}
 	a.paletteOn = false
 	a.pq = palState{}
 }
 
-// setPalette / setScheme 换主题与布局方案(命令面板、设置页共用)。
-func (a *App) setPalette(id string) {
+// previewPalette 临时套用主题(命令面板里上下移动时预览),不写偏好。
+func (a *App) previewPalette(id string) {
 	a.pal = theme.Find(id)
+	a.accent = accentOf(a.pal, a.prefs.Int(kAccent, 0))
 	a.retheme()
 }
 
-func (a *App) setScheme(id string) {
-	a.sch = theme.FindScheme(id)
-	a.retheme()
-}
+// setPalette / setScheme 换主题与布局方案并记进偏好(命令面板确认、设置页共用)。
+func (a *App) setPalette(id string) { a.prefs.Set(kTheme, id); a.applyPrefs() }
+func (a *App) setScheme(id string)  { a.prefs.Set(kScheme, id); a.applyPrefs() }
 
 // fuzzy 是子序列模糊匹配:返回得分(越大越好),不匹配为 -1。
 // 连续命中、词首命中与靠前命中加分,与 VS Code 的快速打开手感接近。
@@ -321,7 +321,7 @@ func (a *App) paletteView(c *ui.Context) {
 	}
 	// 主题列表里上下移动即时预览
 	if a.pq.sub == "theme" && len(items) > 0 && items[a.pq.sel].theme != a.pal.ID {
-		a.setPalette(items[a.pq.sel].theme)
+		a.previewPalette(items[a.pq.sel].theme)
 		t = a.tk
 	}
 	ui.DialogBase(c, &open, func(backdrop, panel ui.Element) {

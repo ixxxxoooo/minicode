@@ -1,0 +1,112 @@
+package app
+
+import (
+	"path/filepath"
+	"testing"
+
+	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/demo"
+	"github.com/ixxxxoooo/minicode/internal/prefs"
+)
+
+func settingsApp(t *testing.T, tab string) (*App, *ui.Tester, string) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "settings.json")
+	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true, Prefs: prefs.Open(path)})
+	a.SetProjects(demo.Projects(), "fixbug")
+	demo.Replay(a.State(), demo.FixBug(false))
+	a.SetSettings(tab, "")
+	tt := ui.NewTester(a.View, 1280, 800)
+	tt.Frame()
+	return a, tt, path
+}
+
+// 点主题卡立即换主题并落盘;「恢复默认」把它还原。
+func TestSettingsThemeCardAppliesAndPersists(t *testing.T) {
+	a, tt, path := settingsApp(t, "appearance")
+	if err := tt.Click("雾霭"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if a.pal.ID != "mist" {
+		t.Fatalf("应换成雾霭,得到 %s", a.pal.ID)
+	}
+	if got := prefs.Open(path).Str(kTheme, ""); got != "mist" {
+		t.Fatalf("主题应落盘,读到 %q", got)
+	}
+}
+
+// 密度与圆角实时改变令牌。
+func TestSettingsDensityRadius(t *testing.T) {
+	a, tt, _ := settingsApp(t, "appearance")
+	base := a.tk.Scheme.RowH
+	if err := tt.Click("紧凑"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if a.density != 0 || a.tk.Scheme.RowH != base-2 {
+		t.Fatalf("紧凑应让行高 -2:density=%d RowH=%v base=%v", a.density, a.tk.Scheme.RowH, base)
+	}
+	rk := a.tk.Scheme.RK
+	if err := tt.Click("利落"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if a.tk.Scheme.RK >= rk {
+		t.Fatalf("利落应缩小圆角倍率:%v → %v", rk, a.tk.Scheme.RK)
+	}
+}
+
+// 搜索命中跨分类;点结果跳到对应分类并清空搜索。
+func TestSettingsSearchJump(t *testing.T) {
+	a, tt, _ := settingsApp(t, "appearance")
+	hs := a.settingsHits("代理")
+	if len(hs) == 0 {
+		t.Fatal("「代理」应有命中")
+	}
+	found := false
+	for _, h := range hs {
+		found = found || h.tab == "runtime"
+	}
+	if !found {
+		t.Fatal("「代理」应命中运行环境")
+	}
+	a.set.query = "代理"
+	tt.Frame()
+	if err := tt.Click("代理模式"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if a.setTab != "runtime" || a.set.query != "" {
+		t.Fatalf("应跳到运行环境并清空搜索:tab=%s q=%q", a.setTab, a.set.query)
+	}
+}
+
+// 需重启的项被改动后出现「需重启」条,值等于默认时消失。
+func TestSettingsRestartBar(t *testing.T) {
+	a, tt, _ := settingsApp(t, "permissions")
+	r := setRow{key: "perm.sandbox", def: false, restart: true, kind: kTog}
+	a.setPref(r, true)
+	tt.Frame()
+	if len(a.set.restart) != 1 {
+		t.Fatal("应记下一项需重启")
+	}
+	a.setPref(r, false)
+	if len(a.set.restart) != 0 {
+		t.Fatal("改回默认后不再需要重启")
+	}
+}
+
+// 每个分类都能渲染(不 panic),且至少有一个分组。
+func TestSettingsAllTabsRender(t *testing.T) {
+	for _, tab := range settingsTabs {
+		a, tt, _ := settingsApp(t, tab.id)
+		tt.Frame()
+		if a.setTab != tab.id || len(tab.groups) == 0 {
+			t.Fatalf("分类 %s 异常", tab.id)
+		}
+	}
+	if len(settingsTabs) != 14 {
+		t.Fatalf("应有 14 个分类,实际 %d", len(settingsTabs))
+	}
+}

@@ -303,5 +303,8 @@ func (a *App) avatarSized(c *ui.Context, size, font float32) ui.Element {
 // openSettings 打开设置并跳到某个分类。
 func (a *App) openSettings(tab string) {
 	a.screen = ScreenSettings
-	a.setTab = tab
+	if tab != "" {
+		a.setTab = tab
+	}
+	a.set.query = ""
 }

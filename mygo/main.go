@@ -3,6 +3,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/app"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/diag"
+	"github.com/ixxxxoooo/minicode/internal/prefs"
 )
 
 // 构建时可用 -ldflags "-X main.version=..." 覆盖。
@@ -39,6 +41,7 @@ func main() {
 		Scheme:  env("MINI_SCHEME", "a"),
 		Mode:    app.ModeAgent,
 		Screen:  app.Screen(env("MINI_SCREEN", "work")),
+		Prefs:   prefs.Open(filepath.Join(diag.Home(), "settings.json")),
 	}
 	if env("MINI_MODE", "agent") == "ide" {
 		opts.Mode = app.ModeIDE

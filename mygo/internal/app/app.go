@@ -13,6 +13,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/prefs"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
@@ -77,6 +78,10 @@ type App struct {
 	paletteOn bool
 	pq        palState // 命令面板状态
 	setTab    string   // 设置页当前分类
+	set       settingsState
+	prefs     *prefs.Store // 用户偏好(~/.minicode/settings.json)
+	density   int          // 界面密度:0 紧凑 / 1 标准 / 2 宽松
+	radius    int          // 圆角:0 利落 / 1 适中 / 2 圆润
 
 	// 侧栏数据
 	projects []core.ProjectInfo
@@ -106,6 +111,7 @@ type Options struct {
 	Mode                    Mode
 	Screen                  Screen
 	FakeLights              bool
+	Prefs                   *prefs.Store // 空 = 只在内存
 	DevBadge                string
 }
 
@@ -126,19 +132,31 @@ func New(o Options) *App {
 		sessMore:   map[string]bool{},
 		folds:      map[string]bool{},
 		ide:        newIDE(),
+		prefs:      o.Prefs,
+		density:    1,
+		radius:     1,
 		fakeLights: o.FakeLights,
 		devBadge:   o.DevBadge,
 	}
 	if a.screen == "" {
 		a.screen = ScreenWork
 	}
-	a.retheme()
+	if a.prefs == nil {
+		a.prefs = prefs.Memory()
+	}
+	if o.Mode == ModeAgent && a.setTab == "" {
+		a.setTab = "appearance"
+	}
+	a.applyPrefs()
 	return a
 }
 
 // retheme 重新解析令牌(换主题 / 方案 / 强调色后调用)。
 func (a *App) retheme() {
-	a.tk = theme.Resolve(a.pal, a.sch, a.accent)
+	sch := a.sch
+	sch.RK *= [3]float32{.55, 1, 1.35}[a.radius] // 圆角倍率
+	sch.RowH += float32(a.density-1) * 2         // 行高 ±2
+	a.tk = theme.Resolve(a.pal, sch, a.accent)
 	kit.Use(a.tk)
 	a.md = nil
 	log.Debug("主题", "palette", a.pal.ID, "scheme", a.sch.ID)
@@ -263,6 +281,8 @@ func (a *App) shortcuts(c *ui.Context) {
 			}
 		}
 	case c.Shortcut(ui.Cmd, ui.KeyComma):
-		a.openSettings("general")
+		a.openSettings(a.setTab)
+	case a.screen == ScreenSettings && !a.paletteOn && a.set.query == "" && c.Shortcut(0, ui.KeyEscape):
+		a.closeSettings()
 	}
 }

@@ -33,6 +33,8 @@ func main() {
 	clicks := flag.String("click", "", "截图前依次点击,形如 IDE;100,200(文字或 DIP 坐标);每次点击后推进 -step 毫秒")
 	step := flag.Int("step", 600, "每次点击后推进的毫秒数")
 	palette := flag.String("palette", "", "打开命令面板并预填查询(用 _ 表示空查询)")
+	tab := flag.String("tab", "", "设置页分类(配合 -screen settings)")
+	squery := flag.String("squery", "", "设置页搜索词")
 	flag.Parse()
 
 	home := "/tmp/minicode-shot-home"
@@ -53,6 +55,9 @@ func main() {
 	tt.SetScale(float32(*scale))
 	tt.SetDark(strings.Contains("ink graphite aurora", *pal))
 	a.SetPopup(*popup)
+	if *screen == "settings" {
+		a.SetSettings(*tab, *squery)
+	}
 	if *top {
 		a.ScrollFlowTop()
 		tt.Frame()

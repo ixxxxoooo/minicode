@@ -25,7 +25,11 @@ func (a *App) root(c *ui.Context) {
 	}
 	root.Children(func() {
 		a.titlebar(c)
-		a.body(c)
+		if a.screen == ScreenSettings {
+			a.settingsPage(c) // 设置是整窗页面:没有导航栏与舞台
+		} else {
+			a.body(c)
+		}
 		a.statusbar(c)
 		a.paletteView(c)
 	})
