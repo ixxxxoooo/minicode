@@ -337,6 +337,7 @@ func (a *App) paletteView(c *ui.Context) {
 			panel.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
 		panel.Border(1, t.Bd1)
+		a.dialogIn("palette", backdrop, panel)
 		panel.Children(func() {
 			// 输入行
 			ui.Row(c).Height(44).PaddingX(14).Gap(10).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {

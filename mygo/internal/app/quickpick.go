@@ -221,6 +221,7 @@ func (a *App) quickView(c *ui.Context) {
 		for _, sh := range t.Shadow3() {
 			panel.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
 		}
+		a.dialogIn("quick", backdrop, panel)
 		panel.Children(func() {
 			ui.Row(c).Height(36).PaddingX(14).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 				kit.Ic(c, ic, kit.S12).TextColor(t.Tx3)

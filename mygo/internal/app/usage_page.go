@@ -255,3 +255,14 @@ func (a *App) redrawSoon() {
 		a.win.Update(func() { a.redrawPending = false })
 	})
 }
+
+// frameSoon 请求下一帧(入场动画推进用,约 16 ms 后重绘一次)。
+func (a *App) frameSoon() {
+	if a.win == nil || a.framePending {
+		return
+	}
+	a.framePending = true
+	time.AfterFunc(16*time.Millisecond, func() {
+		a.win.Update(func() { a.framePending = false })
+	})
+}

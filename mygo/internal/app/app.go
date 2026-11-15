@@ -119,35 +119,41 @@ type App struct {
 	autoSeen      time.Time                                                  // 上次检查定时的时间
 	autoBusy      map[int]bool                                               // 正在运行的自动化
 	live          map[string]*liveSess                                       // 切走时还在跑的会话:后端继续保活,事件归约到自己的状态
-	redrawPending bool                                                       // redrawSoon 已排了定时重画
-	pickOnReady   bool                                                       // 新会话握手后应用已记住的模型 / 思考强度
-	cf            map[string]*confState                                      // 合并冲突标签的状态(按文件)
-	sc            scmState                                                   // 源代码管理
-	auto          *automation.Store                                          // 自动化清单
-	au            autoState                                                  // 自动化页状态
-	clock         func() time.Time                                           // 当前时间(测试 / 截图注入固定时间)
-	canv          *canvas.Store                                              // 画布文档(首次打开页面时建立)
-	cv            canvasState                                                // 画布页状态
-	br            *browser.Browser                                           // 内置浏览器(首次打开页面时建立)
-	brs           browserState                                               // 浏览器页状态
-	cust          *customize.Store                                           // 自定义页数据(首次打开页面时建立)
-	cu            custState                                                  // 自定义页状态
-	cuNoMem       bool                                                       // 自定义页:「加载 CLAUDE.md 记忆文件」被关掉(只是界面状态,尚未接入 env)
-	use           usageState                                                 // 用量页
-	usageSrc      func(rng int) core.UsageReport                             // 用量数据源(nil = 演示数据)
-	qp            *qpState                                                   // 快速选择浮层(历史会话 / 分支),nil = 关闭
-	repo          vcs.Repo                                                   // 当前项目的仓库(演示为内存实现)
-	branch        string                                                     // 当前分支名(缓存,避免每帧查 git)
-	copyText      string                                                     // 待写入剪贴板的文字(需要 ui.Context 才能写,下一帧消费)
-	toast         string                                                     // 待显示的一条轻提示(渲染时消费)
-	welcomeFocus  bool                                                       // 欢迎页的输入框自动聚焦
-	cardHov       bool                                                       // 当前这张工具卡是否被悬停(卡片内容里的悬停按钮用)
-	hist          histState                                                  // 历史会话弹层的搜索词
-	rv            reviewState                                                // 审查标签状态
-	taskSt        ui.ScrollState                                             // 任务输出标签的滚动
-	taskNoFollow  bool                                                       // 任务输出:关闭「跟随输出」
-	q             promptQueue                                                // 排队的消息
-	qa            map[string]*qaState                                        // 提问向导的本地进度
+	framePending  bool                                                       // frameSoon 已排队
+	foldAt        map[string]time.Time                                       // 步骤行展开的时刻(入场动画)
+	dlgSeen       string                                                     // 已开始计时入场动画的居中浮层
+	dlgAt         time.Time
+	popSeen       string                         // 已开始计时入场动画的弹层
+	popAt         time.Time                      // 该弹层打开的时刻
+	redrawPending bool                           // redrawSoon 已排了定时重画
+	pickOnReady   bool                           // 新会话握手后应用已记住的模型 / 思考强度
+	cf            map[string]*confState          // 合并冲突标签的状态(按文件)
+	sc            scmState                       // 源代码管理
+	auto          *automation.Store              // 自动化清单
+	au            autoState                      // 自动化页状态
+	clock         func() time.Time               // 当前时间(测试 / 截图注入固定时间)
+	canv          *canvas.Store                  // 画布文档(首次打开页面时建立)
+	cv            canvasState                    // 画布页状态
+	br            *browser.Browser               // 内置浏览器(首次打开页面时建立)
+	brs           browserState                   // 浏览器页状态
+	cust          *customize.Store               // 自定义页数据(首次打开页面时建立)
+	cu            custState                      // 自定义页状态
+	cuNoMem       bool                           // 自定义页:「加载 CLAUDE.md 记忆文件」被关掉(只是界面状态,尚未接入 env)
+	use           usageState                     // 用量页
+	usageSrc      func(rng int) core.UsageReport // 用量数据源(nil = 演示数据)
+	qp            *qpState                       // 快速选择浮层(历史会话 / 分支),nil = 关闭
+	repo          vcs.Repo                       // 当前项目的仓库(演示为内存实现)
+	branch        string                         // 当前分支名(缓存,避免每帧查 git)
+	copyText      string                         // 待写入剪贴板的文字(需要 ui.Context 才能写,下一帧消费)
+	toast         string                         // 待显示的一条轻提示(渲染时消费)
+	welcomeFocus  bool                           // 欢迎页的输入框自动聚焦
+	cardHov       bool                           // 当前这张工具卡是否被悬停(卡片内容里的悬停按钮用)
+	hist          histState                      // 历史会话弹层的搜索词
+	rv            reviewState                    // 审查标签状态
+	taskSt        ui.ScrollState                 // 任务输出标签的滚动
+	taskNoFollow  bool                           // 任务输出:关闭「跟随输出」
+	q             promptQueue                    // 排队的消息
+	qa            map[string]*qaState            // 提问向导的本地进度
 
 	// 测试 / 截图用:没有系统红绿灯时自己画
 	fakeLights bool
@@ -182,6 +188,7 @@ func New(o Options) *App {
 		projOpen:   map[string]bool{},
 		sessMore:   map[string]bool{},
 		folds:      map[string]bool{},
+		foldAt:     map[string]time.Time{},
 		ide:        newIDE(),
 		prefs:      o.Prefs,
 		density:    1,
@@ -367,6 +374,12 @@ func (a *App) View(c *ui.Context) {
 	defer diag.SpanSlow("app", "构建界面", 33*time.Millisecond)()
 	c.SetTheme(a.tk.UITheme())
 	a.shortcuts(c)
+	if a.popup == "" {
+		a.popSeen = ""
+	}
+	if !a.paletteOn && a.qp == nil {
+		a.dlgSeen = ""
+	}
 	a.autosave()
 	a.root(c)
 }

@@ -2,6 +2,7 @@ package app
 
 import (
 	"math"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
@@ -13,6 +14,9 @@ import (
 // 返回 open 指针给 Popover,Popover 因点外部 / Esc 关闭时回写成空。
 func (a *App) popOpen(key string, fn func(open *bool)) {
 	open := a.popup == key
+	if open && a.popSeen != key {
+		a.popSeen, a.popAt = key, time.Now() // 刚打开:从此刻起算弹出动画
+	}
 	fn(&open)
 	if !open && a.popup == key {
 		a.popup = ""
@@ -35,7 +39,21 @@ func (a *App) popPanel(panel ui.Element, w float32) ui.Element {
 	for _, s := range t.Shadow2() {
 		panel.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
-	return panel
+	return a.popIn(panel)
+}
+
+// popIn 是弹层的入场动画(设计稿 pop:透明度 0→1 并从 4px 下方升起,约 120 ms);动效关闭时直接到位。
+func (a *App) popIn(panel ui.Element) ui.Element {
+	if !kit.MotionOn() || a.popAt.IsZero() {
+		return panel
+	}
+	p := float32(time.Since(a.popAt)) / float32(kit.DurFast)
+	if p >= 1 {
+		return panel
+	}
+	a.frameSoon()
+	p = 1 - (1-p)*(1-p) // 缓出
+	return panel.Opacity(p).Translate(0, (1-p)*4)
 }
 
 // mi 是菜单项(.mi:26 高,选中 ac-soft 底 + ac-tx 字 + 对勾)。
@@ -305,4 +323,23 @@ func (a *App) openSettings(tab string) {
 		a.setTab = tab
 	}
 	a.set.query = ""
+}
+
+// dialogIn 是居中浮层(命令面板、快速选择)的入场动画(设计稿 modal:遮罩淡入,卡片从上方 8px 落下并轻微放大,约 180 ms)。
+// key 区分不同浮层;浮层关闭后下次再开重新计时。
+func (a *App) dialogIn(key string, backdrop, panel ui.Element) {
+	if a.dlgSeen != key {
+		a.dlgSeen, a.dlgAt = key, time.Now()
+	}
+	if !kit.MotionOn() {
+		return
+	}
+	p := float32(time.Since(a.dlgAt)) / float32(kit.DurBase)
+	if p >= 1 {
+		return
+	}
+	a.frameSoon()
+	p = 1 - (1-p)*(1-p)*(1-p)
+	backdrop.Opacity(p)
+	panel.Translate(0, (p-1)*8).Scale(.97+.03*p, .97+.03*p)
 }

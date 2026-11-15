@@ -3,6 +3,7 @@ package app
 import (
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
@@ -179,7 +180,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 		row.Background(t.Fill1)
 	}
 	if body != nil && sp.hasBody {
-		row.OnClick(func() { a.folds[sp.id] = !open })
+		row.OnClick(func() { a.folds[sp.id] = !open; a.foldAt[sp.id] = time.Now() })
 	}
 	tone := a.famColor(sp.fam)
 	row.Children(func() {
@@ -239,7 +240,17 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 		})
 	})
 	if body != nil && sp.hasBody && open {
-		ui.Column(c).Key("fold-"+sp.id).Margin(3, 0, 7, theme.FlowInset).Children(body)
+		bx := ui.Column(c).Key("fold-"+sp.id).Margin(3, 0, 7, theme.FlowInset)
+		// 展开入场:淡入并从上方 4px 落到位(设计稿 grow-y 的近似,高度不插值以免挤动下方内容)
+		if at, ok := a.foldAt[sp.id]; ok && kit.MotionOn() {
+			if p := float32(time.Since(at)) / float32(kit.DurBase); p < 1 {
+				a.frameSoon()
+				bx.Opacity(p).Translate(0, (p-1)*4)
+			} else {
+				delete(a.foldAt, sp.id)
+			}
+		}
+		bx.Children(body)
 	}
 }
 
