@@ -1,0 +1,250 @@
+package app
+
+import (
+	"strings"
+	"unicode"
+
+	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/theme"
+)
+
+// 用户消息卡:长消息折叠、吸顶、就地编辑;会话样式(flowStyle)。
+
+const (
+	pFlowStyle  = "appearance.flowStyle"
+	pStickyUser = "chat.stickyUser"
+	userFoldMax = 6
+	userFoldExp = 24
+)
+
+type userEdit struct {
+	id, draft string
+}
+
+// flowRounds 按「回合」渲染会话流(一轮 = 用户消息 + 后续条目直到下一条用户消息)。
+func (a *App) flowRounds(c *ui.Context) {
+	items := a.st.Items
+	i := 0
+	for i < len(items) {
+		u, ok := items[i].(*core.User)
+		if !ok {
+			a.flowTail(c, items, i)
+			i++
+			continue
+		}
+		j := i + 1
+		for j < len(items) {
+			if _, ok := items[j].(*core.User); ok {
+				break
+			}
+			j++
+		}
+		a.flowRound(c, u, items[i+1:j])
+		i = j
+	}
+}
+
+func (a *App) flowTail(c *ui.Context, items []core.Item, i int) {
+	if isStepItem(items[i]) {
+		j := i
+		for j < len(items) && isStepItem(items[j]) {
+			j++
+		}
+		a.stepGroup(c, items[i:j])
+		return
+	}
+	switch v := items[i].(type) {
+	case *core.Assistant:
+		a.assistant(c, v)
+	case *core.Notice:
+		a.notice(c, v)
+	case *core.PlanApproval:
+		a.planCard(c, v)
+	case *core.QuestionRequest:
+		if v.Answered {
+			a.askEcho(c, v)
+		}
+	}
+}
+
+func turnEndRound(rest []core.Item, i int, uid string) (string, bool) {
+	if i+1 < len(rest) {
+		return "", false
+	}
+	return uid, true
+}
+
+func (a *App) flowRound(c *ui.Context, u *core.User, rest []core.Item) {
+	ui.Column(c).Key("round-" + u.ID).Gap(8).AlignItems(ui.Stretch).Children(func() {
+		a.userMsg(c, u)
+		for i := 0; i < len(rest); {
+			last := i
+			if isStepItem(rest[i]) {
+				j := i
+				for j < len(rest) && isStepItem(rest[j]) {
+					j++
+				}
+				a.stepGroup(c, rest[i:j])
+				last = j - 1
+			} else {
+				a.flowTail(c, rest, i)
+				last = i
+			}
+			if uid, ok := turnEndRound(rest, last, u.ID); ok {
+				if last == len(rest)-1 && a.st.Phase != core.PhaseRunning {
+					a.changesCard(c)
+				}
+				a.turnFooterActions(c, uid)
+			}
+			i = last + 1
+		}
+	})
+}
+
+func estimatedUserLines(text string, col int) int {
+	if col < 20 {
+		col = 44
+	}
+	lines := 0
+	for _, para := range strings.Split(text, "\n") {
+		w := 0
+		for _, r := range para {
+			w += map[bool]int{true: 2, false: 1}[r > 127 || unicode.Is(unicode.Han, r)]
+			if w >= col {
+				lines++
+				w = 0
+			}
+		}
+		if w > 0 || para == "" {
+			lines++
+		}
+	}
+	if lines == 0 {
+		lines = 1
+	}
+	return lines
+}
+
+func (a *App) userExpanded(id string) bool {
+	return a.outFold != nil && a.outFold["user:"+id]
+}
+
+func (a *App) beginUserEdit(u *core.User) {
+	a.userEd = userEdit{id: u.ID, draft: u.Text}
+}
+
+func (a *App) cancelUserEdit() { a.userEd = userEdit{} }
+
+func (a *App) submitUserEdit() {
+	id := a.userEd.id
+	txt := strings.TrimSpace(a.userEd.draft)
+	a.cancelUserEdit()
+	if id == "" || txt == "" {
+		if txt == "" {
+			a.toast = "消息不能为空"
+		}
+		return
+	}
+	if _, ok := a.st.TruncateFromUser(id); !ok {
+		return
+	}
+	a.send(core.CmdPrompt{Text: txt})
+	log.Info("编辑并发送用户消息", "id", id)
+}
+
+func (a *App) userMsg(c *ui.Context, u *core.User) {
+	t := a.tk
+	style := a.prefs.Int(pFlowStyle, 0)
+	sticky := a.prefs.Bool(pStickyUser, true)
+	lines := estimatedUserLines(u.Text, 44)
+	clamp := lines > userFoldMax
+	exp := a.userExpanded(u.ID)
+	editing := a.userEd.id == u.ID
+	if editing {
+		a.userEditCard(c, u)
+		return
+	}
+	card := ui.ButtonBase(c).Key("user-"+u.ID).Background(t.Raised).Radius(t.RMd()).Padding(7, 11).AlignItems(ui.Stretch).Vertical()
+	if sticky {
+		card = card.Sticky().Top(0).ZIndex(2)
+	}
+	switch style {
+	case 1:
+		card.AlignSelf(ui.End).MaxWidthPercent(86).Background(t.AcSoft).Radius(t.RLg(), t.RLg(), t.RXs(), t.RLg())
+	case 2:
+		card.AlignSelf(ui.Stretch).MaxWidthPercent(100)
+	default:
+		for _, s := range t.Shadow1() {
+			card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+		}
+		if t.Scheme.ID == "b" {
+			card.AlignSelf(ui.End).MaxWidthPercent(86).Background(t.AcSoft).Radius(t.RLg(), t.RLg(), t.RXs(), t.RLg())
+		}
+		if t.Scheme.ID == "c" {
+			card.Background(t.Fill1).Radius(0, t.RSm(), t.RSm(), 0)
+		}
+	}
+	card.OnClick(func() { a.beginUserEdit(u) }).Cursor(ui.CursorPointer)
+	card.Children(func() {
+		if clamp && exp && lines > userFoldExp {
+			ui.Scroll(c).MaxHeight(float32(userFoldExp) * theme.FsRead * 1.55).Key("user-scroll-" + u.ID).Children(func() {
+				a.userMsgBody(c, u)
+			})
+		} else {
+			body := ui.Column(c)
+			if clamp && !exp {
+				body = body.MaxHeight(float32(userFoldMax)*theme.FsRead*1.55 + 8).Clip()
+			}
+			body.Children(func() { a.userMsgBody(c, u) })
+		}
+		if clamp {
+			ui.Row(c).Gap(6).Margin(4, 0, 0, 0).Children(func() {
+				lbl := "展开"
+				if exp {
+					lbl = "收起"
+				}
+				kit.Btn(c, lbl, kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() {
+					if a.outFold == nil {
+						a.outFold = map[string]bool{}
+					}
+					a.outFold["user:"+u.ID] = !exp
+				})
+			})
+		}
+	})
+}
+
+func (a *App) userMsgBody(c *ui.Context, u *core.User) {
+	t := a.tk
+	var spans []ui.Span
+	txt := u.Text
+	last := 0
+	for _, m := range userTok.FindAllStringSubmatchIndex(txt, -1) {
+		if m[0] > last {
+			spans = append(spans, ui.Span{Text: txt[last:m[0]]})
+		}
+		if m[2] >= 0 {
+			spans = append(spans, ui.Span{Text: txt[m[2]:m[3]], Font: "monospace", Size: 12, Background: t.Fill2, Radius: t.RXs(), PaddingX: 3})
+		} else {
+			spans = append(spans, ui.Span{Text: " " + baseName(txt[m[4]:m[5]]) + " ", Size: 11.5, Color: t.Info, Background: t.InfoSoft, Radius: t.RXs(), PaddingX: 4})
+		}
+		last = m[1]
+	}
+	if last < len(txt) {
+		spans = append(spans, ui.Span{Text: txt[last:]})
+	}
+	ui.RichText(c, spans...).FontSize(theme.FsRead).LineHeight(1.55).TextColor(t.Tx1)
+}
+
+func (a *App) userEditCard(c *ui.Context, u *core.User) {
+	t := a.tk
+	ui.Column(c).Key("user-ed-"+u.ID).Background(t.Raised).Radius(t.RMd()).Padding(8, 10).Gap(6).Border(1, t.Ac).Children(func() {
+		ui.TextInput(c.Key("uedit"), &a.userEd.draft).Grow(1).MinHeight(80).MaxHeight(200).FontSize(theme.FsRead).AutoFocus()
+		ui.Row(c).Gap(6).Justify(ui.End).Children(func() {
+			kit.Btn(c, "取消", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(a.cancelUserEdit)
+			kit.Btn(c, "发送", kit.BtnOpt{Small: true, Variant: kit.BtnPri, Icon: "send"}).OnClick(a.submitUserEdit)
+		})
+	})
+}

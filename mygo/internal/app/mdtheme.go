@@ -10,7 +10,7 @@ import (
 func (a *App) mdTheme() *markdown.Theme {
 	t := a.tk
 	th := markdown.DefaultTheme(t.UITheme())
-	th.FontSize = theme.FsRead
+	th.FontSize = theme.FsRead * a.ChatFontScale()
 	th.LineHeight = 1.65
 	th.Text, th.Strong, th.Muted = t.Tx1, t.Tx1, t.Tx3
 	th.Link = t.AcTx
@@ -32,8 +32,11 @@ func (a *App) mdTheme() *markdown.Theme {
 
 // mdOptions 返回(并缓存)会话流用的 Markdown 选项;换主题时清掉。
 func (a *App) mdOptions() *markdown.Options {
-	if a.md == nil {
-		a.md = &markdown.Options{Theme: a.mdTheme(), OnLink: a.openMdLink, LinkMenu: a.linkMenu}
+	th := a.mdTheme()
+	if a.md == nil || a.mdThemeKey != a.pal.ID+"|"+itoa(a.prefs.Int(pFontScale, 100)) {
+		a.mdThemeKey = a.pal.ID + "|" + itoa(a.prefs.Int(pFontScale, 100))
+		a.md = &markdown.Options{Theme: th, OnLink: a.openMdLink, LinkMenu: a.linkMenu}
+		a.hookMDFold(a.md)
 	}
 	return a.md
 }

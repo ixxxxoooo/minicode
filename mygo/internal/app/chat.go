@@ -14,9 +14,13 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 	switch {
 	case a.mode == ModeAgent || a.chatMax:
 		p.Grow(1).Basis(0)
-	case a.rightOn:
+	case a.rightOn && !a.useDockRail():
 		// IDE 形态:对话栏停靠在右侧,固定 352 宽(设计稿 --w-dock)
 		p.Width(a.dockW()).Shrink(0).Margin(0, 0, 0, gap)
+	case a.useDockRail():
+		p.Width(0).Shrink(0).Opacity(0)
+		p.Children(func() {})
+		return
 	default:
 		p.Width(0).Shrink(0).Opacity(0)
 		p.Children(func() {})
@@ -39,7 +43,10 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		}
 		a.chatHead(c, a.st.Title)
 		// 会话流:停在底部时随新内容跟随,用户上滑后不再抢滚动位置
-		if a.flowSt.Y >= a.flowSt.MaxY {
+		if a.flowSt.MaxY-a.flowSt.Y > 32 {
+			a.flowNoFollow = true
+		}
+		if !a.flowNoFollow && a.flowSt.Y >= a.flowSt.MaxY-8 {
 			a.flowSt.Y = math.MaxFloat32
 		}
 		ui.Scroll(c).Key("flow").TrackScroll(&a.flowSt).Grow(1).MinHeight(0).Children(func() {
@@ -47,6 +54,7 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 				a.flowCol(c, func() { a.flow(c) })
 			})
 		})
+		a.flowScrollBtn(c)
 		ui.Column(c).Padding(4, 0, 10, 0).Shrink(0).AlignItems(ui.Center).Children(func() {
 			a.flowCol(c, func() {
 				a.taskDock(c)

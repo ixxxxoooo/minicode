@@ -21,44 +21,10 @@ func (a *App) flowCol(c *ui.Context, inner func()) {
 	ui.Column(c).WidthPercent(100).MaxWidth([]float32{640, theme.WCol, 860}[a.prefs.Int("appearance.width", 1)%3]).PaddingX(pad).Children(inner)
 }
 
-// flow 渲染整条时间线:用户消息、步骤组(思考 / 工具 / 待办 / 子 Agent)、助手正文、回合尾部。
+// flow 渲染整条时间线:按回合分组(用户消息吸顶),步骤组、助手正文、回合尾部。
 func (a *App) flow(c *ui.Context) {
-	items := a.st.Items
 	ui.Column(c).Gap(8).Padding(12, 0, 18, 0).Children(func() {
-		for i := 0; i < len(items); {
-			last := i
-			if isStepItem(items[i]) {
-				j := i
-				for j < len(items) && isStepItem(items[j]) {
-					j++
-				}
-				a.stepGroup(c, items[i:j])
-				last = j - 1
-			} else {
-				switch v := items[i].(type) {
-				case *core.User:
-					a.userMsg(c, v)
-				case *core.Assistant:
-					a.assistant(c, v)
-				case *core.Notice:
-					a.notice(c, v)
-				case *core.PlanApproval:
-					a.planCard(c, v)
-				case *core.QuestionRequest:
-					if v.Answered {
-						a.askEcho(c, v)
-					}
-				}
-			}
-			// 回合尾部操作条:每个已结束回合的最后一项之后(进行中的回合还没有统计,自然不显示)
-			if uid, ok := turnEnd(items, last); ok {
-				if last == len(items)-1 && a.st.Phase != core.PhaseRunning {
-					a.changesCard(c)
-				}
-				a.turnFooter(c, uid)
-			}
-			i = last + 1
-		}
+		a.flowRounds(c)
 	})
 }
 
@@ -119,7 +85,11 @@ func (a *App) exploreGroup(c *ui.Context, g []*core.ToolCall) {
 	if running {
 		verb, obj, state = "正在探索", "项目代码", "run"
 	}
-	sp := step{id: id, icon: "layers", verb: verb, obj: obj, fam: famExplore, state: state, hasBody: true, open: !a.prefs.Bool(pGroupFold, true)}
+	open := !a.prefs.Bool(pGroupFold, true)
+	if set, ok := a.folds[id]; ok {
+		open = set
+	}
+	sp := step{id: id, icon: "layers", verb: verb, obj: obj, fam: famExplore, state: state, hasBody: true, open: open}
 	a.stepRow(c, sp, func() {
 		a.nest(c, func() {
 			for _, tc := range g {
@@ -127,6 +97,11 @@ func (a *App) exploreGroup(c *ui.Context, g []*core.ToolCall) {
 			}
 		})
 	})
+	if !open && running {
+		if tc := lastOpenTool(g); tc != nil {
+			a.groupLatest(c, id, tc)
+		}
+	}
 }
 
 func (a *App) stepItem(c *ui.Context, it core.Item) {
@@ -482,77 +457,23 @@ func (a *App) termCard(c *ui.Context, tc *core.ToolCall, tb *core.TerminalBlock)
 			a.copyOut("$ "+tb.Command+"\n"+strings.TrimRight(tb.Output, "\n"), "命令与输出")
 		})
 	}, func() {
-		ui.Column(c).Padding(6, 10).Children(func() {
-			lines := strings.Split(strings.TrimRight(tb.Output, "\n"), "\n")
-			for i, ln := range lines {
-				ui.Row(c).Key(i).Height(monoLH).AlignItems(ui.Center).Children(func() {
-					ui.RichText(c, a.termLine(ln)...).NoWrap().Clip()
-					if live && i == len(lines)-1 {
-						kit.Caret(c)
-					}
-				})
-			}
+		out := a.liveTermOut(tc.ID, tb)
+		a.foldBody(c, foldKey("term", tc.ID), out, live, true, func() {
+			a.copyOut("$ "+tb.Command+"\n"+strings.TrimRight(out, "\n"), "命令与输出")
 		})
 	})
 }
 
 func (a *App) textCard(c *ui.Context, text string) {
-	t := a.tk
+	key := foldKey("text", itoa(int(a.st.Rev))+":"+itoa(len(text)))
 	a.card(c, nil, func() {
-		ui.Column(c).Padding(6, 10).Children(func() {
-			for i, ln := range strings.Split(strings.TrimRight(text, "\n"), "\n") {
-				if i >= 12 {
-					break
-				}
-				ui.Text(c, ln).Key(i).Font("monospace").FontSize(11.5).TextColor(t.Tx1).NoWrap()
-			}
-		})
+		a.foldBody(c, key, text, false, true, func() { a.copyOut(text, "输出") })
 	})
 }
 
-// ───────── 用户消息 / 助手正文 / 提示 ─────────
+// ───────── 提示 ─────────
 
 var userTok = regexp.MustCompile("`([^`]+)`|@\\{([^}]+)\\}")
-
-// userMsg 是用户消息卡:行内代码与 @{文件} 引用标记。
-func (a *App) userMsg(c *ui.Context, u *core.User) {
-	t := a.tk
-	card := ui.Column(c).Background(t.Raised).Radius(t.RMd()).Padding(7, 11)
-	switch t.Scheme.ID {
-	case "b":
-		card.AlignSelf(ui.End).MaxWidthPercent(86).Background(t.AcSoft).Radius(t.RLg(), t.RLg(), t.RXs(), t.RLg())
-	case "c":
-		card.Background(t.Fill1).Radius(0, t.RSm(), t.RSm(), 0)
-		card.Border(0, ui.Transparent)
-	default:
-		for _, s := range t.Shadow1() {
-			card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
-		}
-	}
-	card.Children(func() {
-		if t.Scheme.ID == "c" {
-			ui.Box(c).Absolute().Left(0).Top(0).Bottom(0).Width(2).Background(t.Ac)
-		}
-		var spans []ui.Span
-		txt := u.Text
-		last := 0
-		for _, m := range userTok.FindAllStringSubmatchIndex(txt, -1) {
-			if m[0] > last {
-				spans = append(spans, ui.Span{Text: txt[last:m[0]]})
-			}
-			if m[2] >= 0 {
-				spans = append(spans, ui.Span{Text: txt[m[2]:m[3]], Font: "monospace", Size: 12, Background: t.Fill2, Radius: t.RXs(), PaddingX: 3})
-			} else {
-				spans = append(spans, ui.Span{Text: " " + baseName(txt[m[4]:m[5]]) + " ", Size: 11.5, Color: t.Info, Background: t.InfoSoft, Radius: t.RXs(), PaddingX: 4})
-			}
-			last = m[1]
-		}
-		if last < len(txt) {
-			spans = append(spans, ui.Span{Text: txt[last:]})
-		}
-		ui.RichText(c, spans...).FontSize(theme.FsRead).LineHeight(1.55).TextColor(t.Tx1)
-	})
-}
 
 func (a *App) notice(c *ui.Context, n *core.Notice) {
 	t := a.tk

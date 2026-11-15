@@ -31,6 +31,7 @@ func (a *App) changesCard(c *ui.Context) {
 			ui.Text(c, "+"+itoa(add)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Ok)
 			ui.Text(c, "−"+itoa(del)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Err)
 			ui.Spacer(c).Grow(1)
+			a.changesCardUndoBtn(c)
 			kit.Btn(c, "审查", kit.BtnOpt{Variant: kit.BtnSoft, Small: true, Icon: "eye"}).OnClick(a.OpenReview)
 		})
 		for i, f := range files {
