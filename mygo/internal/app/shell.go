@@ -27,6 +27,7 @@ func (a *App) root(c *ui.Context) {
 		a.titlebar(c)
 		a.body(c)
 		a.statusbar(c)
+		a.paletteView(c)
 	})
 }
 

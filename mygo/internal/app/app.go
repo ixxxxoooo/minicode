@@ -70,12 +70,13 @@ type App struct {
 	screen    Screen
 	sideOpen  bool
 	inspOpen  bool
-	nav       string // chat / files / search / scm
+	nav       string    // chat / files / search / scm
 	navBy     [2]string // 各形态各自记住的左栏分段(切回来还停在原处)
-	inspTab   string // changes / files / term / plan / tasks
-	popup     string // 状态栏 / 输入框弹层:cfg / ctx / upd / acct
+	inspTab   string    // changes / files / term / plan / tasks
+	popup     string    // 状态栏 / 输入框弹层:cfg / ctx / upd / acct
 	paletteOn bool
-	setTab    string // 设置页当前分类
+	pq        palState // 命令面板状态
+	setTab    string   // 设置页当前分类
 
 	// 侧栏数据
 	projects []core.ProjectInfo
@@ -248,7 +249,11 @@ func (a *App) shortcuts(c *ui.Context) {
 			a.SetMode(ModeAgent)
 		}
 	case c.Shortcut(ui.Cmd, ui.KeyK):
-		a.paletteOn = !a.paletteOn
+		if a.paletteOn {
+			a.closePalette()
+		} else {
+			a.openPalette()
+		}
 	case c.Shortcut(ui.Cmd, ui.KeyJ):
 		a.ide.bottomOpen = !a.ide.bottomOpen
 	case c.Shortcut(ui.Cmd, ui.KeyS):

@@ -56,7 +56,8 @@ type ide struct {
 
 	sections map[string]bool // 资源管理器区块折叠(大纲 / 时间线)
 
-	listCache map[string][]workspace.Entry // 目录列表缓存
+	filesCache []string                     // allFiles 的缓存
+	listCache  map[string][]workspace.Entry // 目录列表缓存
 }
 
 // termLine 是终端面板里的一行(带色段)。

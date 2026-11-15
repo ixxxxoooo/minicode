@@ -123,7 +123,7 @@ func (a *App) cmdk(c *ui.Context) {
 	default:
 		b.Background(t.Fill1)
 	}
-	b.Transition(kit.Fade).OnClick(func() { a.paletteOn = true })
+	b.Transition(kit.Fade).OnClick(a.openPalette)
 	b.Children(func() {
 		kit.Ic(c, "search", kit.S12)
 		ui.Text(c, "搜索会话、文件与命令").Grow(1).SingleLine()

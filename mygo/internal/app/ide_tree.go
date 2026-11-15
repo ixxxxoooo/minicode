@@ -2,6 +2,7 @@ package app
 
 import (
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/diag"
@@ -20,7 +21,7 @@ func (a *App) filesView(c *ui.Context) {
 				kit.Ic(c, "chevD", kit.S12)
 				ui.Text(c, strings.ToUpper(d.fs.Name())).Grow(1).SingleLine()
 				kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建文件"})
-				kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache = nil })
+				kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache, d.filesCache = nil, nil })
 			})
 			a.treeDir(c, "", 0)
 			ui.Box(c).Height(1).Margin(8, 2).Background(t.Bd1)
@@ -127,4 +128,37 @@ func fileIcon(name string) string {
 		return "gear"
 	}
 	return "fileText"
+}
+
+// allFiles 递归列出项目里的全部文件(相对路径,已排序),命令面板的文件搜索用;
+// 跳过隐藏项与常见产物目录,总数封顶 5000,结果缓存到文件树刷新。
+func (d *ide) allFiles() []string {
+	if d.filesCache != nil {
+		return d.filesCache
+	}
+	defer diag.SpanSlow("ide", "枚举项目文件", 50*time.Millisecond)()
+	out := []string{}
+	var walk func(dir string)
+	walk = func(dir string) {
+		if len(out) >= 5000 {
+			return
+		}
+		es, err := d.fs.List(dir)
+		if err != nil {
+			return
+		}
+		for _, e := range es {
+			if strings.HasPrefix(e.Name, ".") || e.Name == "target" || e.Name == "node_modules" {
+				continue
+			}
+			if e.Dir {
+				walk(e.Path)
+			} else {
+				out = append(out, e.Path)
+			}
+		}
+	}
+	walk("")
+	d.filesCache = out
+	return out
 }

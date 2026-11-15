@@ -32,6 +32,7 @@ func main() {
 	popup := flag.String("popup", "", "打开某个弹层:cfg / sbcfg / ctx / upd / acct")
 	clicks := flag.String("click", "", "截图前依次点击,形如 IDE;100,200(文字或 DIP 坐标);每次点击后推进 -step 毫秒")
 	step := flag.Int("step", 600, "每次点击后推进的毫秒数")
+	palette := flag.String("palette", "", "打开命令面板并预填查询(用 _ 表示空查询)")
 	flag.Parse()
 
 	home := "/tmp/minicode-shot-home"
@@ -54,6 +55,14 @@ func main() {
 	a.SetPopup(*popup)
 	if *top {
 		a.ScrollFlowTop()
+		tt.Frame()
+	}
+	if *palette != "" {
+		q := *palette
+		if q == "_" {
+			q = ""
+		}
+		a.OpenPalette(q)
 		tt.Frame()
 	}
 	tt.Advance(800 * time.Millisecond)
