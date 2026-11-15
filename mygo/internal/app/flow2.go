@@ -91,6 +91,7 @@ func (a *App) subagentCard(c *ui.Context, s *core.SubagentCard) {
 			if s.Summary != "" {
 				ui.Text(c, s.Summary).PaddingStart(22).FontSize(theme.FsCap).TextColor(t.Tx3)
 			}
+			a.subagentTimeline(c, s.Children)
 		})
 	})
 }
