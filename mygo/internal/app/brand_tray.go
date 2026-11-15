@@ -283,6 +283,18 @@ func (a *App) brandSummarize() traySum {
 	case sum.mode == "idle":
 		sum.title = "MiniCode"
 	}
+	// 调试:MINI_TRAY=waiting|error|unread|update|paused|running|demo|idle 固定托盘状态,方便在真实菜单栏里逐态查看
+	if m := os.Getenv("MINI_TRAY"); m != "" {
+		switch m {
+		case "waiting", "error", "unread", "update", "paused", "running", "demo", "idle":
+			sum.mode = m
+			sum.title = "MiniCode · 调试状态 " + m
+			if m == "waiting" && sum.pending == 0 {
+				sum.pending = 2
+				sum.badge = 2
+			}
+		}
+	}
 	return sum
 }
 
