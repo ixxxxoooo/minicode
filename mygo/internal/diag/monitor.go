@@ -45,7 +45,9 @@ func Init(o Options) {
 		write(LevelWarn, "diag", "补记了异常退出记录", []any{"条数", n, "目录", CrashDir()})
 	}
 	writeMarker(started)
-	captureStderr()
+	if os.Getenv("MINI_KEEP_STDERR") == "" { // 命令行工具(截图)设它,崩溃信息直接打在终端上
+		captureStderr()
+	}
 	go heartbeatLoop(started)
 	StartSampler()
 }

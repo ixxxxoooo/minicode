@@ -25,7 +25,7 @@
 
   /** 读取上次的选择(存不了就用默认值) */
   const load = () => {
-    const d = { page: 'overview', scheme: 'a', theme: 'paper', mode: 'agent', setTab: 'appearance', cust: 'mcp', cuSel: 0, cuScope: 'all', cuTab: '', auSel: 1, auF: 0, wkOff: 0, useR: 1 };
+    const d = { page: 'overview', scheme: 'a', theme: 'paper', mode: 'agent', setTab: 'appearance', cust: 'mcp', cuSel: 0, cuScope: 'all', cuTab: '', auSel: 1, auF: 0, wkOff: 0, useR: 1, bare: 0 };
     try { Object.assign(d, JSON.parse(localStorage.getItem('mc-design-v3c') || '{}')); } catch (e) { /* 读不到就用默认值 */ }
     // 地址栏 #page=work&scheme=b&theme=ink&mode=ide 可直达某个状态,方便分享与截图
     new URLSearchParams(location.hash.slice(1)).forEach((v, k) => { if (k in d) d[k] = v; });
@@ -57,8 +57,8 @@
   };
   /** 按主区可用空间给每个画框算缩放比 */
   const fit = () => { const m = $('#vmain'), w = m.clientWidth, h = m.clientHeight;
-    $$('.fit', m).forEach(f => f.style.setProperty('--s', Math.max(.3, f.closest('.ov-row') ? Math.min(.68, (w - 64 - 328) / 1280) : Math.min(1, (w - 48) / 1280, (h - 96) / 800)))); };
-  const apply = () => { document.body.dataset.theme = st.theme; document.body.dataset.scheme = st.scheme; };
+    $$('.fit', m).forEach(f => f.style.setProperty('--s', +st.bare === 1 ? 1 : Math.max(.3, f.closest('.ov-row') ? Math.min(.68, (w - 64 - 328) / 1280) : Math.min(1, (w - 48) / 1280, (h - 96) / 800)))); };
+  const apply = () => { document.body.dataset.theme = st.theme; document.body.dataset.scheme = st.scheme; document.body.classList.toggle('bare', +st.bare === 1); };
   const renderAll = () => { apply(); renderBar(); renderNav(); renderMain(); save(); };
   const go = (page) => { st.page = page; renderNav(); renderMain(); save(); };
 

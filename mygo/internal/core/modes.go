@@ -22,7 +22,7 @@ const (
 var AllModes = [...]PermissionMode{ModeDefault, ModeAcceptEdits, ModePlan, ModeAuto, ModeDontAsk, ModeBypassPermissions}
 
 var modeCLI = [...]string{"default", "acceptEdits", "plan", "auto", "dontAsk", "bypassPermissions"}
-var modeLabel = [...]string{"默认", "接受编辑", "计划", "自动", "不再询问", "绕过权限"}
+var modeLabel = [...]string{"逐项确认", "自动接受编辑", "计划模式", "自动模式", "不再询问", "跳过权限确认"}
 
 // CLI 返回传给 `claude --permission-mode` 的参数值。
 func (m PermissionMode) CLI() string { return modeCLI[m] }

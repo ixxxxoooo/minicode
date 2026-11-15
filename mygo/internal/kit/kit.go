@@ -1,0 +1,89 @@
+// Package kit 是设计稿 docs/design/css/base.css 里基础组件的原生实现:按钮、图标按钮、胶囊、徽标、
+// 分段控件、开关、列表行、标签条等。全部只读语义令牌(theme.Tokens),所以换主题 / 方案不用改组件。
+//
+// 每个组件都是「返回 ui.Element 的函数」,可以继续链式调整尺寸 / 间距;需要点击时用返回值的 Clicked()。
+package kit
+
+import (
+	"sync"
+	"time"
+
+	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/theme"
+)
+
+// T 是当前令牌。窗口只在主线程读它;换主题时由应用整体替换(见 Use)。
+var T = theme.Resolve(theme.Palettes[0], theme.Schemes[0], "")
+
+// Use 设置当前令牌。
+func Use(t *theme.Tokens) { T = t }
+
+// 动效时长(设计稿 tokens.css 的 --dur-*)。
+const (
+	DurInstant = 80 * time.Millisecond
+	DurFast    = 120 * time.Millisecond
+	DurBase    = 180 * time.Millisecond
+	DurSlow    = 260 * time.Millisecond
+	DurMorph   = 440 * time.Millisecond
+)
+
+// 缓动曲线(--ease-*):cubic-bezier 的四个控制点。
+var (
+	EaseOut    = ui.CubicBezier(.16, 1, .3, 1)
+	EaseIn     = ui.CubicBezier(.5, 0, .9, .3)
+	EaseIO     = ui.CubicBezier(.65, 0, .35, 1)
+	EaseSpring = ui.CubicBezier(.34, 1.4, .64, 1)
+	EaseMorph  = ui.CubicBezier(.3, 0, .1, 1)
+)
+
+// Fade 是悬停类的颜色过渡(120 ms)。
+var Fade = ui.ElementTransition{Colors: true, Duration: DurFast}
+
+// ───────── 图标 ─────────
+
+var (
+	iconMu    sync.Mutex
+	iconCache = map[string]*ui.SVG{}
+)
+
+// svgOf 取得(并缓存)某个图标的 SVG。设计稿的图标是 24 格线性图标,描边 1.7。
+func svgOf(name string) *ui.SVG {
+	iconMu.Lock()
+	defer iconMu.Unlock()
+	if s, ok := iconCache[name]; ok {
+		return s
+	}
+	body, ok := iconPaths[name]
+	if !ok {
+		body = iconPaths["x"]
+	}
+	src := `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">` + body + `</svg>`
+	s := ui.MustParseSVG([]byte(src))
+	iconCache[name] = s
+	return s
+}
+
+// 图标尺寸:对应设计稿 svg.ic 的默认 14px 与 .s12 / .s16 / .s20。
+const (
+	S12 = 12
+	S14 = 14
+	S16 = 16
+	S20 = 20
+)
+
+// Ic 画一个图标,颜色继承文字色(用 TextColor 改)。
+func Ic(c *ui.Context, name string, size float32) ui.Element {
+	return ui.Icon(c, svgOf(name)).Size(size, size)
+}
+
+// ───────── 文字 ─────────
+
+// Txt 是带颜色与字号的单行文字。
+func Txt(c *ui.Context, s string, size float32, col ui.Color) ui.Element {
+	return ui.Text(c, s).FontSize(size).TextColor(col)
+}
+
+// Mono 是等宽文字(设计稿 .mono:11.5px)。
+func Mono(c *ui.Context, s string, col ui.Color) ui.Element {
+	return ui.Text(c, s).Font("monospace").FontSize(11.5).TextColor(col)
+}

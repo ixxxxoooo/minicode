@@ -64,3 +64,9 @@ body { margin: 0; display: grid; grid-template-columns: 208px 1fr; grid-template
 .mini i { display: block; height: 100%; border-radius: 5px; box-shadow: inset 0 0 0 2px var(--bg); transition: width var(--dur-morph) var(--ease-morph), opacity var(--dur-slow); }
 .mini .s { width: 40px; background: var(--fill-2); } .mini .e { width: 0; opacity: 0; background: var(--info-soft); } .mini .c { flex: 1; background: var(--ac-soft); } .mini .r { width: 56px; background: var(--fill-2); }
 .mini[data-mode="ide"] .e { width: 122px; opacity: 1; } .mini[data-mode="ide"] .r { width: 0; opacity: 0; }
+
+/* 截图 / 对照用:#bare=1 隐藏查看器外框,画框 1:1 铺在左上角(Go 版一比一对照用) */
+body.bare { display: block; background: transparent; overflow: auto; }
+body.bare #vbar, body.bare #vnav { display: none; }
+body.bare .stage-wrap { padding: 0; align-items: flex-start; justify-content: flex-start; }
+body.bare .frame { border-radius: 0; box-shadow: none; }

@@ -83,7 +83,10 @@ type ToolContent interface{ toolContent() }
 type TextBlock struct{ Text string }
 
 // DiffBlock 是文件改动。
-type DiffBlock struct{ Path, Old, New string }
+type DiffBlock struct {
+	Path, Old, New string
+	Line           int // Old 第一行在文件里的行号(从 1 起);0 = 未知,按 1 计
+}
 
 // TerminalBlock 是终端命令与输出;ExitCode 为 nil 表示命令还在运行(实时输出)。
 type TerminalBlock struct {
