@@ -64,6 +64,9 @@ func (a *App) openDiffKind(kind, p string, pin bool) {
 		old, nw, label = index(), work(), "暂存区 ↔ 工作区"
 	case dkStaged:
 		old, nw, label = head(), index(), "HEAD ↔ 暂存区"
+		if nw == old { // 演示仓库没有真正的暂存区内容:用工作区的版本代替(真实 git 里暂存的改动不会与 HEAD 相同)
+			nw = work()
+		}
 	default:
 		old, nw, label = head(), work(), "HEAD ↔ 工作区"
 	}

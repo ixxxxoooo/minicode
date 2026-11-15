@@ -2,6 +2,7 @@
 package main
 
 import (
+	_ "github.com/egoist/mygo/locales/zh-Hans" // 控件自带文案的简体中文译文
 	"os"
 	"path/filepath"
 	"strconv"
@@ -209,6 +210,7 @@ func main() {
 	}
 
 	mygo.App.WhenReady(func() {
+		mygo.App.SetLocale("zh-Hans") // 界面是中文:控件自带文案(差异折叠条、菜单、对话框)也按简体中文
 		w, h := 1280, 800
 		if v, err := strconv.Atoi(os.Getenv("MINI_WIN_W")); err == nil {
 			w = v

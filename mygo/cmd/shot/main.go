@@ -8,6 +8,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	_ "github.com/egoist/mygo/locales/zh-Hans" // 控件自带文案的简体中文译文
 	"image/png"
 	"os"
 	"strings"
@@ -72,6 +73,7 @@ func main() {
 	}
 
 	tt := ui.NewTester(a.View, *w, *h)
+	tt.SetLocale("zh-Hans")
 	tt.SetScale(float32(*scale))
 	tt.SetDark(strings.Contains("ink graphite aurora", *pal))
 	a.SetPopup(*popup)
