@@ -38,6 +38,7 @@ func (a *App) gitDebug(name, arg string) bool {
 			a.ide.blameLine = tb.st.CursorPos().Line
 			a.ide.blameHoverAt = time.Now().Add(-400 * time.Millisecond)
 			a.ide.blameCardShow = true
+			a.ide.blameCardPin = true
 		}
 		return true
 	case "stashfiles":

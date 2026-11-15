@@ -65,6 +65,12 @@ func (a *App) wsScanProgress() (checked, total int) {
 	if a.wsDiagDemo == "scan" {
 		return 128, 640
 	}
+	if a.wsDiagDemo == "trunc" {
+		return 2000, 2000
+	}
+	if a.wsDiagDemo == "done" {
+		return 640, 640
+	}
 	for _, st := range a.lspH.wsScan {
 		if st == nil {
 			continue

@@ -108,7 +108,7 @@ func (a *App) blameCardOverlay(c *ui.Context, tb *ideTab) {
 		if time.Since(a.ide.blameHoverAt) >= blameHoverDelay {
 			a.ide.blameCardShow = true
 		}
-	} else if !a.ide.blameCardHover {
+	} else if !a.ide.blameCardHover && !a.ide.blameCardPin {
 		a.resetBlameCard()
 	}
 	if !a.ide.blameCardShow {

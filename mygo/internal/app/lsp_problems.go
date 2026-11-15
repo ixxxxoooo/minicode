@@ -51,7 +51,9 @@ func (a *App) realProblems(c *ui.Context) {
 					if scope == "ws" {
 						padY, padX = 28, 28
 					}
-					ui.Text(c, msg).TextColor(t.Tx3).Padding(padY, padX).TextAlign(ui.Center)
+					if !(scope == "ws" && errMsg != "") { // 出错时只留红色错误条,不再写「没有发现问题」(设计稿错误态)
+						ui.Text(c, msg).TextColor(t.Tx3).Padding(padY, padX).TextAlign(ui.Center)
+					}
 					for _, s := range sessions {
 						if s.state == lspReady && scope == "open" {
 							ui.Row(c).Gap(5).AlignItems(ui.Center).Padding(0, 4).Children(func() {
@@ -142,7 +144,7 @@ func (a *App) problemWsChrome(c *ui.Context) {
 		})
 	}
 	if a.wsScanTruncated() {
-		limit := a.prefs.Int("lsp.workspaceDiagLimit", 80)
+		limit := a.prefs.Int("lsp.workspaceDiagLimit", 2000)
 		ui.Row(c).MinHeight(32).Padding(6, 12).Gap(8).Background(t.Warn.Mix(t.BG, .88)).Children(func() {
 			kit.Ic(c, "alert", kit.S14).TextColor(t.Warn)
 			ui.Text(c, "已达上限 "+itoa(limit)+" 个文件,只显示前 "+itoa(limit)+" 个").Grow(1).FontSize(theme.FsCap)
