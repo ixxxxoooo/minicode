@@ -91,12 +91,13 @@ func TestWorkspaceEntries(t *testing.T) {
 	for _, it := range a.st.Items {
 		_ = it
 	}
+	n0 := len(a.ide.cmds)
 	a.viewInPanel(&coreTerm)
-	if a.ide.termSel == "" || !a.ide.bottomOpen || len(a.ide.cmds) != 1 {
+	if a.ide.termSel == "" || !a.ide.bottomOpen || len(a.ide.cmds) != n0+1 {
 		t.Fatalf("命令输出入口:sel=%q open=%v cmds=%d", a.ide.termSel, a.ide.bottomOpen, len(a.ide.cmds))
 	}
 	a.viewInPanel(&coreTerm)
-	if len(a.ide.cmds) != 1 {
+	if len(a.ide.cmds) != n0+1 {
 		t.Fatalf("同一条命令只开一个标签")
 	}
 }

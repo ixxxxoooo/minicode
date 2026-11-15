@@ -1,7 +1,6 @@
 package app
 
 import (
-	"math"
 	"path"
 	"strings"
 
@@ -24,6 +23,25 @@ func (a *App) crumbs(c *ui.Context, tb *ideTab) {
 			x := ui.Text(c, p)
 			if i == len(parts)-1 {
 				x.TextColor(t.Tx1).FontWeight(500)
+			}
+		}
+		// 光标所在的符号链:impl Router › match_path(点击打开符号选择器)
+		if tb.st != nil && tb.buf != nil {
+			syms := a.ide.fileSyms(tb.path)
+			for _, k := range enclosing(syms, tb.st.CursorPos().Line) {
+				kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
+				b := ui.ButtonBase(c).Key("crumb-sym-" + itoa(k)).Height(18).PaddingX(3).Gap(3).Radius(t.RXs()).AlignItems(ui.Center).Cursor(ui.CursorPointer)
+				if b.Hovered() {
+					b.Background(t.Fill1)
+				}
+				if b.Clicked() {
+					a.OpenQuick("symbols", "")
+				}
+				sy := syms[k]
+				b.Children(func() {
+					kit.Ic(c, "cube", kit.S12).TextColor(t.AcTx)
+					ui.Text(c, sy.Name)
+				})
 			}
 		}
 	})
@@ -65,73 +83,6 @@ func (a *App) editorTheme() *editor.Theme {
 	set(editor.TokenMeta, t.SynMac, false)
 	a.edTheme, a.edThemeKey = th, a.pal.ID
 	return th
-}
-
-// codeView 是代码区:编辑器 + 右侧迷你地图。
-func (a *App) codeView(c *ui.Context, tb *ideTab) {
-	t := a.tk
-	st := tb.st
-	st.Theme = a.editorTheme()
-	st.Font = ui.Font{Family: "monospace", Size: 12}
-	st.LineHeight = 20.0 / 12.0
-	st.NoScrollbars = true
-	if r := tb.reveal; r != nil { // 搜索结果 / 跳转:选中命中处并滚到可见
-		tb.reveal = nil
-		p0 := editor.Pos{Line: r[0], Col: r[1]}
-		st.GoTo(p0)
-		st.Select(tb.buf.Offset(p0), tb.buf.Offset(editor.Pos{Line: r[0], Col: r[2]}))
-	}
-	ui.Row(c).Grow(1).MinHeight(0).Children(func() {
-		editor.View(c.Key("ed-"+tb.id), st).Grow(1).MinWidth(0).FillHeight()
-		a.minimap(c, tb)
-	})
-	_ = t
-}
-
-// minimap 是迷你地图:每行一条细线,视口滑块,点击 / 拖动滚动。
-func (a *App) minimap(c *ui.Context, tb *ideTab) {
-	t := a.tk
-	st := tb.st
-	n := tb.buf.LineCount()
-	lines := make([]int, 0, n)
-	for i := 0; i < n && i < 2000; i++ {
-		lines = append(lines, len(strings.TrimRight(tb.buf.Line(i), " \t")))
-	}
-	box := ui.Box(c).Key("mm-"+tb.id).Width(64).FillHeight().Shrink(0).BorderWidth(0, 0, 0, 1).BorderColor(t.Bd1)
-	total := float32(st.LineTop(n))
-	view := float32(st.ViewportHeight())
-	scroll := float32(st.ScrollY())
-	if box.Pressed() || box.Dragging() {
-		if x, y, ok := box.PointerPosition(); ok && total > 0 {
-			_ = x
-			h := box.Bounds().H
-			rowH := float32(3.5)
-			content := rowH * float32(len(lines))
-			if content < 1 {
-				content = 1
-			}
-			_ = h
-			// 指针所在的行 → 把那一行放到视口中央
-			target := y / content * total
-			st.SetScrollY(float64(target - view/2))
-		}
-	}
-	box.Draw(func(p *ui.Painter, r ui.Rect) {
-		rowH := float32(3.5) // 2px 线 + 1.5px 间距
-		y0 := r.Y + 4
-		if total > 0 && view > 0 {
-			vy := y0 + scroll/total*rowH*float32(len(lines))
-			vh := view / total * rowH * float32(len(lines))
-			p.Fill(ui.Rect{X: r.X, Y: vy, W: r.W, H: float32(math.Max(float64(vh), 8))}, t.Fill2, 0)
-		}
-		for i, l := range lines {
-			if l == 0 {
-				continue
-			}
-			w := float32(math.Min(float64(l)*2.1, 100)) / 100 * (r.W - 12)
-			p.Fill(ui.Rect{X: r.X + 6, Y: y0 + float32(i)*rowH, W: w, H: 2}, t.Tx3.Alpha(.32), 1)
-		}
-	})
 }
 
 // ───────── 对比标签 ─────────

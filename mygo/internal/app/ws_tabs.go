@@ -171,6 +171,8 @@ func (a *App) latestPlan() *core.PlanApproval {
 
 // seedWorkspace 演示 / 截图:摆出设计稿里工作区的初始状态(router.rs / router_test.rs / Cargo.toml / 审查)。
 func (a *App) seedWorkspace() {
+	// 终端面板里默认挂着 Claude 刚跑过的那条命令(只读标签,设计稿的 cargo test router)
+	a.ide.cmds = append(a.ide.cmds, cmdView{id: "cmd:cargo test router", title: "cargo test router", output: "   Compiling router-demo v0.3.1\n    Running tests/router_test.rs\ntest result: ok. 12 passed; 0 failed"})
 	if n := len(a.ide.tabs); n > 0 {
 		a.ide.active = a.ide.tabs[n-1].id // 审查标签排在末尾(设计稿的默认顺序)
 	}

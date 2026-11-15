@@ -25,6 +25,20 @@ func (a *App) titlebar(c *ui.Context) {
 		ui.Row(c).Grow(1).Basis(0).MinWidth(0).Gap(4).Children(func() {
 			a.lights(c, bar.Left)
 			kit.Ib(c, "panelL", kit.IbOpt{Tip: "导航栏 ⌘B", On: false}).OnClick(func() { a.sideOpen = !a.sideOpen })
+			if a.mode == ModeIDE { // 跳转历史:转到定义 / 搜索命中 / 引用都会入栈
+				dim := func(on bool) ui.Color {
+					if on {
+						return t.Tx2
+					}
+					return t.Tx4
+				}
+				if kit.Ib(c, "arrowL", kit.IbOpt{Tip: "后退 ⌃-", Color: dim(a.ide.canBack())}).Clicked() {
+					a.navGo(-1)
+				}
+				if kit.Ib(c, "arrow", kit.IbOpt{Tip: "前进 ⌃⇧-", Color: dim(a.ide.canForward())}).Clicked() {
+					a.navGo(1)
+				}
+			}
 			switch t.Scheme.ID {
 			case "b":
 				a.modeSeg(c)

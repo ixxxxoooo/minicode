@@ -76,11 +76,15 @@ func (a *App) submit(text string) {
 
 func (a *App) composerBar(c *ui.Context) {
 	t := a.tk
-	wide := a.mode == ModeAgent // IDE 对话栏窄:省略「思考」与百分比
+	wide := a.chatTier() != tierNarrow // 窄档:省略「思考」、百分比与 MCP 字样
 	ui.Row(c).Padding(3, 5, 5, 5).Gap(2).AlignItems(ui.Center).Children(func() {
 		kit.Ib(c, "plus", kit.IbOpt{Tip: "添加附件"})
 		a.cfgChip(c, wide)
-		kit.Chip(c, "MCP "+itoa(len(a.st.Mcp)+3), kit.ChipOpt{Icon: "plug"})
+		mcp := itoa(len(a.st.Mcp) + 3)
+		if wide {
+			mcp = "MCP " + mcp
+		}
+		kit.Chip(c, mcp, kit.ChipOpt{Icon: "plug", Tip: "MCP 服务器"})
 		ui.Spacer(c).Grow(1)
 		// 上下文环
 		pct := int(a.st.Usage.ContextRatio()*100 + .5)

@@ -338,7 +338,12 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 	if row.Hovered() {
 		row.Background(t.Fill1)
 	}
-	row.OnClick(func() { a.ide.openAt(m.Path, m.Line, m.Col, m.End, false); a.ide.sel = m.Path })
+	row.OnClick(func() {
+		a.ide.navMark()
+		a.ide.openAt(m.Path, m.Line, m.Col, m.End, false)
+		a.ide.sel = m.Path
+		a.ide.navPush(navPos{m.Path, m.Line, m.Col})
+	})
 	pre, hit, post := search.Preview(m, 60)
 	row.Children(func() {
 		col := t.Tx2

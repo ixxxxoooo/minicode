@@ -39,6 +39,7 @@ func main() {
 	quick := flag.String("quick", "", "快速选择浮层:history / branch,可带预填查询,如 branch:feat")
 	scm := flag.String("scm", "", "IDE 左栏源代码管理:[提交说明][|展开的提交哈希],如 |b7d02e4")
 	srch := flag.String("search", "", "IDE 左栏搜索:查询[|替换文本],如 match_path|find_route")
+	ed := flag.String("ed", "", "编辑器动作:cursor:17:20,select:11:1-13:20,find:查询,scroll:行,peek,rename,acts,inline,refs,def,hover:行:列")
 	flag.Parse()
 
 	home := "/tmp/minicode-shot-home"
@@ -111,6 +112,11 @@ func main() {
 		tt.Frame()
 	}
 	tt.Advance(800 * time.Millisecond)
+	if *ed != "" {
+		a.EditorDemo(*ed)
+		tt.Frame()
+		tt.Advance(500 * time.Millisecond)
+	}
 	for _, cl := range strings.Split(*clicks, ";") {
 		if cl == "" {
 			continue

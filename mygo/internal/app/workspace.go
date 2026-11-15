@@ -149,10 +149,32 @@ func (a *App) etabs(c *ui.Context) {
 		bar.BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1)
 	}
 	bar.Children(func() {
-		ui.Row(c).Grow(1).MinWidth(0).ClipX().AlignItems(ui.Stretch).Children(func() {
-			for _, tb := range a.ide.tabs {
-				a.etab(c, tb)
+		d := a.ide
+		strip := ui.ScrollHorizontal(c).Key("etabs-scroll").TrackScroll(&d.tabSt).Grow(1).MinWidth(0).AlignItems(ui.Stretch)
+		if w := strip.Bounds().W; w > 0 && d.tabSeen != d.active { // 当前标签变了:滚到可见(用上一帧量到的位置)
+			var left, wid float32
+			for _, tb := range d.tabs {
+				if tb.id == d.active {
+					wid = d.tabW[tb.id]
+					break
+				}
+				left += d.tabW[tb.id]
 			}
+			switch {
+			case wid == 0:
+			case left < d.tabSt.X:
+				d.tabSt.X = left
+			case left+wid > d.tabSt.X+w:
+				d.tabSt.X = left + wid - w
+			}
+			d.tabSeen = d.active
+		}
+		strip.Children(func() {
+			ui.Row(c).AlignItems(ui.Stretch).Children(func() {
+				for _, tb := range d.tabs {
+					a.etab(c, tb)
+				}
+			})
 		})
 		ui.Row(c).Gap(1).PaddingX(6).AlignItems(ui.Center).Shrink(0).Children(func() {
 			kit.Ib(c, "cols", kit.IbOpt{Small: true, Tip: "向右拆分 ⌘\\"})
@@ -181,6 +203,12 @@ func (a *App) etab(c *ui.Context, tb *ideTab) {
 		if on {
 			el.Background(t.Fill2)
 		}
+	}
+	if w := el.Bounds().W; w > 0 {
+		if a.ide.tabW == nil {
+			a.ide.tabW = map[string]float32{}
+		}
+		a.ide.tabW[tb.id] = w
 	}
 	if el.Clicked() {
 		a.ide.active = tb.id

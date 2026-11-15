@@ -1,6 +1,7 @@
 package app
 
 import (
+	"path"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
@@ -22,6 +23,7 @@ type qpState struct {
 	lastSel  int
 	branches []vcs.Branch // 分支选择器打开时读一次
 	loadErr  string
+	symFile  string // 符号选择器:要列符号的文件
 }
 
 type qpRow struct {
@@ -48,6 +50,11 @@ func (a *App) OpenQuick(kind, query string) {
 		}
 		s.branches = bs
 	}
+	if kind == "symbols" {
+		if tb := a.ide.cur(); tb != nil && !tb.isVirt() && !tb.diff {
+			s.symFile = tb.path
+		}
+	}
 	a.qp = s
 	log.Debug("打开快速选择", "kind", kind)
 }
@@ -73,6 +80,24 @@ func (a *App) qpRows() []qpRow {
 						run: func() { a.OpenSession(id) }})
 				}
 			}
+		}
+	case "symbols":
+		syms := a.ide.fileSyms(s.symFile)
+		for _, sy := range syms {
+			if q != "" && fuzzy(q, sy.Name) < 0 {
+				continue
+			}
+			depth := 0
+			for k := sy.Parent; k >= 0; k = syms[k].Parent {
+				depth++
+			}
+			line, col, name := sy.Line, sy.Col, sy.Name
+			icon := "cube"
+			if sy.Kind == "h" {
+				icon = "fileText"
+			}
+			rows = append(rows, qpRow{group: path.Base(s.symFile) + " 中的符号", icon: icon, title: strings.Repeat("  ", depth) + name, right: itoa(line + 1),
+				run: func() { a.jumpTo(s.symFile, line, col, col+len(name)) }})
 		}
 	case "branch":
 		exact := false
@@ -179,8 +204,11 @@ func (a *App) quickView(c *ui.Context) {
 		f()
 	}
 	ph, ic := "搜索历史会话", "history"
-	if s.kind == "branch" {
+	switch s.kind {
+	case "branch":
 		ph, ic = "切换或创建分支", "branch"
+	case "symbols":
+		ph, ic = "转到符号", "cube"
 	}
 	ui.DialogBase(c, &open, func(backdrop, panel ui.Element) {
 		backdrop.Background(t.Scrim).Justify(ui.Start).AlignItems(ui.Center).Padding(96, 0, 0, 0)

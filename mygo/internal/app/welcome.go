@@ -49,33 +49,54 @@ func (a *App) welcome(c *ui.Context) {
 			ui.Text(c, "今天想在 "+a.projectName()+" 里做点什么?").FontSize(theme.FsHead).FontWeight(700)
 			ui.Text(c, a.welcomeStatus()).TextColor(t.Tx3)
 		})
-		ui.Column(c).Width(600).Shrink(1).MinWidth(0).MaxWidth(600).Margin(0, 20).Children(func() {
+		ui.Column(c).WidthPercent(100).MaxWidth(600).PaddingX(20).Children(func() {
 			a.welcomeFocus = true
 			a.composer(c)
 			a.welcomeFocus = false
 		})
-		ui.Row(c).Gap(6).Children(func() {
-			for _, s := range starters {
-				a.starterCard(c, s)
-			}
-		})
+		if a.chatTier() == tierNarrow { // 窄档:起手卡单列,只留图标与标题
+			ui.Column(c).Gap(6).WidthPercent(100).PaddingX(20).Children(func() {
+				for _, s := range starters {
+					a.starterCard(c, s)
+				}
+			})
+		} else {
+			ui.Row(c).Gap(6).Children(func() {
+				for _, s := range starters {
+					a.starterCard(c, s)
+				}
+			})
+		}
 	})
 }
 
 func (a *App) starterCard(c *ui.Context, s starter) {
 	t := a.tk
-	b := ui.ButtonBase(c).Key(s.title).Width(150).Padding(9, 10).Radius(t.RMd()).Background(t.Raised).Gap(3).Cursor(ui.CursorPointer).
+	narrow := a.chatTier() == tierNarrow
+	b := ui.ButtonBase(c).Key(s.title).Radius(t.RMd()).Background(t.Raised).Cursor(ui.CursorPointer).
 		Transition(ui.ElementTransition{Position: true, Shadows: true, Duration: kit.DurBase, Ease: kit.EaseOut})
+	if narrow {
+		b.WidthPercent(100).Height(32).PaddingX(10).Gap(8).AlignItems(ui.Center).Justify(ui.Start)
+	} else {
+		b.Width(150).Padding(9, 10).Gap(3)
+	}
 	sh := t.Shadow1()
 	if b.Hovered() {
 		sh = t.Shadow2()
-		b.Translate(0, -2)
+		if !narrow {
+			b.Translate(0, -2)
+		}
 	}
 	for _, x := range sh {
 		b.Shadow(x.X, x.Y, x.Blur, x.Spread, x.Color)
 	}
 	b.OnClick(func() { a.draft = s.prompt })
 	b.Children(func() {
+		if narrow {
+			kit.Ic(c, s.icon, kit.S12).TextColor(t.AcTx)
+			ui.Text(c, s.title).FontWeight(700)
+			return
+		}
 		ui.Column(c).Gap(3).Grow(1).Children(func() {
 			kit.Ic(c, s.icon, 14).TextColor(t.AcTx)
 			ui.Text(c, s.title).FontWeight(700)

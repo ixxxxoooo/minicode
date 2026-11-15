@@ -44,7 +44,11 @@ func (a *App) filesView(c *ui.Context) {
 					ui.Text(c, name)
 				})
 				if open {
-					ui.Text(c, "暂无内容").FontSize(theme.FsCap).TextColor(t.Tx4).Margin(2, 8, 6, 28)
+					if name == "大纲" {
+						a.outlineRows(c)
+					} else {
+						a.timelineRows(c)
+					}
 				}
 			}
 		})
@@ -164,4 +168,48 @@ func (d *ide) allFiles() []string {
 	walk("")
 	d.filesCache = out
 	return out
+}
+
+// outlineRows 是左栏「大纲」:当前文件的符号树(来自文本符号索引,Markdown 取标题),点击跳转并高亮光标所在项。
+func (a *App) outlineRows(c *ui.Context) {
+	t := a.tk
+	tb := a.ide.cur()
+	if tb == nil || tb.isVirt() || tb.diff || tb.st == nil || tb.buf == nil {
+		ui.Text(c, "打开一个文件查看大纲").FontSize(theme.FsCap).TextColor(t.Tx4).Margin(2, 8, 6, 28)
+		return
+	}
+	syms := a.ide.fileSyms(tb.path)
+	if len(syms) == 0 {
+		ui.Text(c, "这个文件没有可识别的符号").FontSize(theme.FsCap).TextColor(t.Tx4).Margin(2, 8, 6, 28)
+		return
+	}
+	cur := -1
+	if ch := enclosing(syms, tb.st.CursorPos().Line); len(ch) > 0 {
+		cur = ch[len(ch)-1]
+	}
+	for i, s := range syms {
+		depth := 0
+		for k := s.Parent; k >= 0; k = syms[k].Parent {
+			depth++
+		}
+		i, s := i, s
+		r := kit.RowEl(c, i == cur).Key("ol-" + itoa(i)).PaddingStart(22 + float32(depth)*12).Gap(5)
+		if r.Clicked() {
+			a.jumpTo(tb.path, s.Line, s.Col, s.Col)
+		}
+		r.Children(func() {
+			icon := "cube"
+			if s.Kind == "h" {
+				icon = "fileText"
+			}
+			kit.Ic(c, icon, kit.S12).TextColor(t.AcTx)
+			ui.Text(c, s.Name).Grow(1).SingleLine()
+			ui.Text(c, itoa(s.Line+1)).FontSize(theme.FsMicro).TextColor(t.Tx4)
+		})
+	}
+}
+
+// timelineRows 是左栏「时间线」:当前文件的提交历史(g5 接入)。
+func (a *App) timelineRows(c *ui.Context) {
+	ui.Text(c, "暂无内容").FontSize(theme.FsCap).TextColor(a.tk.Tx4).Margin(2, 8, 6, 28)
 }

@@ -379,6 +379,9 @@ func (a *App) SetPopup(k string) { a.popup = k }
 // shortcuts 是窗口级快捷键(与设计稿一致):⌘B 导航栏、⌥⌘B 右侧栏、⌘E 切换形态、⌘K 命令面板、
 // ⌘J 底部面板、⌘S 保存、⌘, 设置。输入框里的 Enter 等由各自控件处理,这里只放带 ⌘ 的组合键。
 func (a *App) shortcuts(c *ui.Context) {
+	if a.editorShortcuts(c) {
+		return
+	}
 	switch {
 	case c.Shortcut(ui.Cmd, ui.KeyB):
 		a.sideOpen = !a.sideOpen
@@ -402,6 +405,8 @@ func (a *App) shortcuts(c *ui.Context) {
 		a.OpenSearch()
 	case c.Shortcut(ui.Ctrl|ui.Shift, ui.KeyG):
 		a.OpenSCM()
+	case c.Shortcut(ui.Cmd|ui.Shift, ui.KeyO):
+		a.OpenQuick("symbols", "")
 	case c.Shortcut(ui.Cmd, ui.KeyJ):
 		a.ide.bottomOpen = !a.ide.bottomOpen
 	case c.Shortcut(ui.Cmd, ui.KeyS):

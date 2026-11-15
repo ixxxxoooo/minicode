@@ -29,6 +29,12 @@ type ideTab struct {
 	reveal  *[3]int // 待选中的范围:行、起止列(下一次渲染时应用)
 	virt    string  // 虚拟标签的种类(review / plan / sub / task / conflict),空 = 文件或对比
 	ref     string  // 虚拟标签引用的对象 id(子 Agent / 任务 id、冲突文件路径)
+
+	hooked  bool    // 已接上悬停 / 转到定义 / 补全
+	diagSet bool    // 演示诊断已装
+	fq      *string // 编辑器查找条的查询词(迷你地图画命中刻度)
+	fcs     *bool   // 查找是否区分大小写
+	mm      *mmInfo // 迷你地图叠加数据缓存
 }
 
 func (t *ideTab) dirty() bool { return !t.diff && t.buf != nil && t.buf.String() != t.saved }
@@ -70,6 +76,16 @@ type ide struct {
 
 	sections map[string]bool // 资源管理器区块折叠(大纲 / 时间线)
 
+	tabSt     ui.ScrollState      // 标签条的横向滚动
+	tabSeen   string              // 已滚动到可见的标签
+	tabW      map[string]float32  // 各标签上一帧的宽度
+	nav       []navPos            // 导航历史(位置栈)
+	ni        int                 // 历史里当前项的下标
+	refs      *refsState          // 底部「引用」分段的内容
+	ov        ideOv               // 代码区浮层
+	textCache map[string]string   // 读盘缓存(引用 / 定义索引用)
+	symCache  map[string]symEntry // 符号缓存
+
 	filesCache []string                     // allFiles 的缓存
 	listCache  map[string][]workspace.Entry // 目录列表缓存
 }
@@ -100,6 +116,8 @@ func (d *ide) useFS(fs workspace.FS, git map[string]string, head func(string) (s
 	d.fs, d.git, d.headOf = fs, git, head
 	d.tabs, d.active, d.sel = nil, "", ""
 	d.filesCache, d.listCache = nil, nil
+	d.nav, d.ni, d.refs, d.ov = nil, 0, nil, ideOv{}
+	d.invalidate()
 }
 
 // tab 返回 id 对应的标签(没有则 nil)。
@@ -268,6 +286,7 @@ func (d *ide) save() error {
 	}
 	t.saved = s
 	t.buf.MarkSaved()
+	d.invalidate()
 	ideLog.Info("已保存", "path", t.path, "bytes", len(s))
 	return nil
 }
