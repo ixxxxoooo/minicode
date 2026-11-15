@@ -179,7 +179,15 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
   - Git:`scm_compare.go` / `scm_graph_picks.go`(与 HEAD / 两提交比较)、`git_push_actions.go`(拉取并变基 / 合并,`vcs/sync.go`)、`review_stage.go`(一键暂存已接受改动)、`ide_blame_ui.go`(追溯栏 + 悬停卡)、`scm_stash_expand.go`(储藏展开,`vcs/stash_diff.go`)、`scm_expand_all.go`(多仓库全部展开,设置 → 源代码管理 `scm.expandAll`);Diff 大小上限在 `openDiffKind` 弹确认(「仍然显示」,会话内记住)。
   - 设置:`settings_wire.go` 等接了运行环境 / 代理 / 隐私诊断 / 高级项;`scm.fetch` 节拍在 main.go 常开、由 `ScmFetchTick` 按偏好执行。`adv.flowMeasure`(一次测完行高)MyGo 没有对应 API,**只存偏好**。
   - kit:`Btn / Ib / Tog` 的 Disabled / Loading / Error、按下缩放、聚焦环(近似)、加载 400 ms 延迟、`Card`、`SpinStyled`;`OkPop / IndetMeter / FoldHeight` 已在自动化页接线,`GrowY / Crossfade` 仍无调用点。自动化「查看会话」`auto_runner.go`。
-  - **仍未做**:Mermaid 图表卡与排版引擎、语义高亮(无库 API)、定时自动化回写会话 id、文件夹剪切 / 粘贴、图片排队、账号菜单真实数据(`popups.go` 在另一会话手里)等。
+  - **仍未做(第一波时的清单,第二波已处理其中大部分,见下)**:Mermaid 图表卡与排版引擎、语义高亮(无库 API)、定时自动化回写会话 id、文件夹剪切 / 粘贴、图片排队、账号菜单真实数据。
+- **第二波补缺口(代码已写、仅 `go build` 通过,**未测试**)**:缺口总表 359 点 / 已实现 238 / 部分 120 / 待做 1(只剩语义高亮,MyGo 无前景着色 API,明确不做)。
+  - Mermaid:`internal/mermaid`(解析 + 分层布局 + Scene,移植自旧 `mini-mermaid`,支持流程 / 时序 / 饼 / 状态图,其余返回 `ErrUnsupported` 回退源码卡)、`flow_mermaid.go`(图表卡,后台排版按源码哈希缓存)、`mermaid_viewer.go`(全屏:适应 / 100% / ± / 拖拽 / Esc);演示会话 `mermaid-samples`。未做:gantt / class / ER 等、画布页接新引擎、滚轮以光标为中心缩放。
+  - 输入框与账号:排队卡保留并发送图片(`CmdPrompt.Images`),`claudecfg.ReadOAuthProfile` 只读 `~/.claude.json` 的 `oauthAccount` 非密钥字段,账号菜单用量取 `usageSrc` 与 `FiveHourPct`,没数据显示「暂无数据」。
+  - 自动化与动效:定时 / 立即运行统一走 `runAutomationCore`,成功 / 失败 / 取消都回写 `Run.SessionID`,「查看会话」可用(索引未命中先 `BuildIndex` 重扫);`kit.GrowY` 接用量柱状图、`kit.Crossfade` 接用量骨架 → 内容。
+  - 偏好接线:`general.restore` / `general.close` / `general.sound` / `chat.ding` / `chat.queueAtt` / `chat.queuePause` / `models.thinking`(写回 `alwaysThinkingEnabled`)/ `models.compact|compactAt`(应用内 `CmdCompact`,**不写** claude 设置)/ `general.paste`(超长粘贴存 `~/.minicode/paste/*.txt` 以 `@` 引用,发送时展开,无「展开为文本」chip);`perm.sandbox` 仍只存偏好;`adv.flowMeasure` 在设置行里写明「Go 版暂不生效」。
+  - 设置真实化:项目信任读写 `~/.claude.json` 的 `hasTrustDialogAccepted`(原子写 + 备份)、语言服务器行后台检测(`settings_lsp.go`,偏好 `lsp.server.<id>`)、规则 / 环境变量去掉演示回退(环境变量只显示名称)。已知:`writeJSON` 不保证 `~/.claude.json` 顶层键顺序;环境变量删除撤销固定走用户层。
+  - 外壳与命令:整页窄窗(自定义 / 用量 / 自动化,断点读 `winW` 而不是容器宽)、命令面板高频命令 + ⇧Tab 循环权限模式(`perm_cycle.go`)、时间线字号 `FlowFontSize` 等、形态切换分轨淡入(`morph_content.go`,未做标题栏形态滑块分轨)。
+  - 提醒:第二波中途曾有提交引用了未提交的 `pageNarrowMid` 定义使远端 HEAD 编不过(`2ab7164` 已补),`specs2.js` 缺括号使缺口总表脚本整页不加载(`71be730` 已修)。**并行子代理 / 多会话提交务必用干净检出验证 HEAD:`git worktree add --detach /tmp/wt HEAD && cd /tmp/wt/mygo && go build ./...`。**
 
 - **服务商与模型映射(`prov_*.go`,`claudecfg/providers*.go`,设计稿 `js/providers.js`,未测试)**:`~/.minicode/providers.json` = `{providers, mapping}`(兼容旧数组格式),密钥在 0600 的 `provider-keys.json`;设置 → 服务商可新建自定义 / 预设、「获取模型列表」(`FetchModels` 依次试 `/v1/models` 等候选,全 404 = 不支持,可手动添加)、勾选要用的模型;模型映射 5 个槽位(默认 / Opus / Sonnet / Haiku / 子 Agent)只能从该服务商已勾选的模型里下拉选;输入框配置弹层(`cfgModels`)按「Claude 官方 + 各服务商」分组直接选模型,切换经 `core.CmdSetEnv`(后端只合并受管理的环境变量,回合进行中不推送),新会话启动时由 `claudecfg.ProviderEnv()` 注入。演示模式只改内存、不落盘。缺口:真实连通性只做 HEAD 探测;未做 go test。
 - 设置页:快捷键录制、规则 / 环境变量 / LSP 行是演示数据;「项目信任」只列项目,不读写信任状态;除上面列出的偏好外,其它控件只存偏好。
