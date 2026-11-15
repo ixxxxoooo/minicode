@@ -41,8 +41,8 @@ func (b *Backend) Start(sink backend.Sink) {
 	steps := b.script()
 	go func() {
 		defer diag.Recover("demo.play")
-		end := diag.Span("demo", "播放剧本", "steps", len(steps))
-		defer end()
+		started := time.Now()
+		defer func() { diag.L("demo").Debug("剧本播放结束", "steps", len(steps), "耗时", time.Since(started)) }()
 		for _, st := range steps {
 			if st.After > 0 {
 				t := time.NewTimer(time.Duration(float64(st.After) * b.speed))

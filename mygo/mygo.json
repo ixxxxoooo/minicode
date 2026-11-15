@@ -1,0 +1,6 @@
+{
+  "name": "MiniCode",
+  "identifier": "dev.minicode.app",
+  "version": "0.2.0",
+  "out": "build"
+}

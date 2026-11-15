@@ -1,0 +1,16 @@
+#!/bin/bash
+# 批量出「Go 版 / 设计稿」两份截图,放在 /tmp/cmp/ 下并排对照。
+# 用法:scripts/compare.sh <页面> <形态> <方案:主题> [<方案:主题>…]
+# 例:scripts/compare.sh work agent a:paper b:mist c:ink
+set -e
+root="$(cd "$(dirname "$0")/.." && pwd)"
+page=$1; mode=$2; shift 2
+mkdir -p /tmp/cmp
+unset GOROOT
+(cd "$root/mygo" && go build -o /tmp/cmp/shot ./cmd/shot)
+for v in "$@"; do
+  s=${v%%:*}; t=${v##*:}
+  MINI_KEEP_STDERR=1 /tmp/cmp/shot $SHOTFLAGS -scheme "$s" -theme "$t" -mode "$mode" -screen "$page" -o "/tmp/cmp/go-$page-$mode-$s-$t.png" >/dev/null
+  "$root/scripts/proto-shot.sh" "$page" "$s" "$t" "$mode" "/tmp/cmp/proto-$page-$mode-$s-$t.png" >/dev/null
+  echo "/tmp/cmp/{go,proto}-$page-$mode-$s-$t.png"
+done

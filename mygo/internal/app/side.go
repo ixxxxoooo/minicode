@@ -25,6 +25,9 @@ func (a *App) SetProjects(p []core.ProjectInfo, current string) {
 	a.projects = p
 	a.curSess = current
 	for _, pr := range p {
+		if pr.ID == "web-dashboard" { // 演示:设计稿里 web-dashboard 默认展开
+			a.projOpen[pr.ID] = true
+		}
 		for _, s := range pr.Sessions {
 			if s.ID == current {
 				a.projOpen[pr.ID] = true
@@ -137,7 +140,10 @@ func (a *App) sessions(c *ui.Context) {
 			for _, p := range a.projects {
 				a.projRow(c, p)
 				if a.projOpen[p.ID] {
-					for _, s := range p.Sessions {
+					for i, s := range p.Sessions {
+						if i >= 4 {
+							break
+						}
 						a.sessRow(c, s, true)
 					}
 				}
@@ -201,32 +207,23 @@ func (a *App) sessionsB(c *ui.Context) {
 				kit.Chip(c, "router-demo", kit.ChipOpt{Icon: "folder", Line: true, Car: true}).Height(26).Grow(1)
 				kit.Ib(c, "edit", kit.IbOpt{Tip: "新对话 ⌘N"}).Size(26, 26)
 			})
-			groups := []struct {
-				name  string
-				items []core.SessionInfo
-			}{
-				{"今天", sl(a.projects, "router-demo", 0, 3)},
-				{"昨天", sl(a.projects, "router-demo", 3, 4)},
-			}
-			for _, g := range groups {
-				kit.Grp(c, g.name)
-				for _, s := range g.items {
-					a.sessRow(c, s, false)
+			cur := ""
+			for _, p := range a.projects {
+				if p.ID != "router-demo" {
+					continue
+				}
+				for _, ss := range p.Sessions {
+					if ss.Group != cur {
+						cur = ss.Group
+						kit.Grp(c, cur)
+					}
+					ss.Label = ss.Clock
+					a.sessRow(c, ss, false)
 				}
 			}
 			_ = t
 		})
 	})
-}
-
-// sl 取某项目的第 [i, j) 条会话。
-func sl(ps []core.ProjectInfo, id string, i, j int) []core.SessionInfo {
-	for _, p := range ps {
-		if p.ID == id {
-			return p.Sessions[min(i, len(p.Sessions)):min(j, len(p.Sessions))]
-		}
-	}
-	return nil
 }
 
 func itoa(n int) string {

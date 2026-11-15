@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -92,7 +93,7 @@ func (a *App) modeSeg(c *ui.Context) {
 // crumb 是面包屑:项目名 › 当前会话 / 页面名。
 func (a *App) crumb(c *ui.Context) {
 	t := a.tk
-	title := a.st.Title
+	title := core.ShortTitle(a.st.Title)
 	if n, ok := crumbName[a.screen]; ok {
 		title = n
 	}

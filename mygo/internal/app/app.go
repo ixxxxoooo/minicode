@@ -213,3 +213,9 @@ func (a *App) SeedDemoExtras() {
 	a.demoExtra = true
 	a.update = "更新 42%"
 }
+
+// ScrollFlowTop 把会话流滚到最上面(截图与设计稿对照用:设计稿的流停在顶部)。
+func (a *App) ScrollFlowTop() {
+	a.flowSt.Y = 0
+	a.flowSt.MaxY = 1e9 // 让「停在底部才跟随」的判断先不成立,下一帧会按真实高度重算
+}

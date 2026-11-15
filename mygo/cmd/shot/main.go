@@ -28,6 +28,7 @@ func main() {
 	w := flag.Int("w", 1280, "宽(DIP)")
 	h := flag.Int("h", 800, "高(DIP)")
 	scale := flag.Float64("scale", 2, "像素倍率")
+	top := flag.Bool("top", true, "会话流停在顶部(设计稿的截图就是这样)")
 	flag.Parse()
 
 	home := "/tmp/minicode-shot-home"
@@ -47,6 +48,10 @@ func main() {
 	tt := ui.NewTester(a.View, *w, *h)
 	tt.SetScale(float32(*scale))
 	tt.SetDark(strings.Contains("ink graphite aurora", *pal))
+	if *top {
+		a.ScrollFlowTop()
+		tt.Frame()
+	}
 	tt.Advance(800 * time.Millisecond)
 	img := tt.Image()
 	f, err := os.Create(*out)

@@ -18,9 +18,9 @@ func (a *App) assistant(c *ui.Context, m *core.Assistant) {
 	box := ui.Column(c).Key("asst-" + m.ID)
 	box.Children(func() {
 		if m.Streaming {
-			markdown.Stream(c, m.Text, a.mdOptions())
+			markdown.Stream(c, padCode(m.Text), a.mdOptions())
 		} else {
-			markdown.View(c, m.Text, a.mdOptions())
+			markdown.View(c, padCode(m.Text), a.mdOptions())
 		}
 	})
 }
@@ -97,4 +97,37 @@ func (a *App) subagentCard(c *ui.Context, s *core.SubagentCard) {
 			ui.Text(c, s.Summary).PaddingStart(22).FontSize(theme.FsCap).TextColor(t.Tx3)
 		}
 	})
+}
+
+// padCode 给行内代码两侧各补一个窄空格,让底色比文字宽出一点(设计稿的行内代码有 1×5 px 内边距,
+// Markdown 组件没有这个选项)。围栏代码块里的反引号不处理;窄空格不会被 CommonMark 当作可裁掉的空白。
+func padCode(src string) string {
+	const thin = "\u2009"
+	var b strings.Builder
+	fenced := false
+	for _, line := range strings.SplitAfter(src, "\n") {
+		if strings.HasPrefix(strings.TrimLeft(line, " "), "```") {
+			fenced = !fenced
+			b.WriteString(line)
+			continue
+		}
+		if fenced || !strings.Contains(line, "`") {
+			b.WriteString(line)
+			continue
+		}
+		in := false
+		for _, r := range line {
+			if r == '`' {
+				if !in {
+					b.WriteString("`" + thin)
+				} else {
+					b.WriteString(thin + "`")
+				}
+				in = !in
+				continue
+			}
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
