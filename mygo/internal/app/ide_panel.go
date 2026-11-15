@@ -25,8 +25,12 @@ func (a *App) bottomPanel(c *ui.Context) {
 					kit.Chip(c, "全部", kit.ChipOpt{Icon: "filter", On: true})
 					kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "重新检查"})
 				} else {
-					kit.Chip(c, "zsh", kit.ChipOpt{Icon: "terminal", On: true})
-					kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建终端"})
+					kit.Chip(c, shellName(), kit.ChipOpt{Icon: "terminal", On: true})
+					kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: map[bool]string{true: "重启终端", false: "新建终端"}[a.proj != ""]}).OnClick(func() {
+						if a.proj != "" {
+							a.restartTerm()
+						}
+					})
 					kit.Ib(c, "cols", kit.IbOpt{Small: true})
 					kit.Ib(c, "gear", kit.IbOpt{Small: true, Tip: "终端设置"})
 				}
@@ -49,6 +53,10 @@ func (a *App) bottomPanel(c *ui.Context) {
 }
 
 func (a *App) terminal(c *ui.Context) {
+	if a.proj != "" {
+		a.realTerminal(c)
+		return
+	}
 	t := a.tk
 	ui.Scroll(c).Key("term").TrackScroll(&a.ide.termSt).Grow(1).Children(func() {
 		ui.Column(c).Padding(6, 10).Children(func() {

@@ -62,6 +62,7 @@ type ide struct {
 	bottomTab  string // term / problems / output
 	termLines  []termLine
 	termSt     ui.ScrollState
+	tp         termPanel // 真实终端(真实模式)
 
 	sections map[string]bool // 资源管理器区块折叠(大纲 / 时间线)
 

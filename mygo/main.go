@@ -173,7 +173,7 @@ func main() {
 			Content:       ui.View(a.View),
 		})
 		a.SetWindow(win)
-		win.OnClosed(func() { diag.CleanExit("关闭窗口") })
+		win.OnClosed(func() { a.CloseTerminals(); diag.CleanExit("关闭窗口") })
 
 		// 主线程卡死看门狗:每 500 ms 让主线程回一次执行
 		diag.Watchdog(func(done func()) { mygo.RunOnMain(done) }, 400*time.Millisecond, 3*time.Second)
@@ -198,7 +198,7 @@ func main() {
 			}
 		}()
 	})
-	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) { diag.CleanExit("退出") })
+	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) { a.CloseTerminals(); diag.CleanExit("退出") })
 	if err := mygo.App.Run(); err != nil {
 		log.Error("运行失败", "err", err)
 		os.Exit(1)

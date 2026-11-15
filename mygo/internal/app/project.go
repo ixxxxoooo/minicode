@@ -36,6 +36,7 @@ func (a *App) SetProject(dir string) {
 	a.sc = scmState{gen: a.sc.gen + 1}
 	a.ide.useFS(workspace.NewOS(dir), map[string]string{}, a.headOfRepo)
 	a.ide.termLines = nil
+	a.closeTerm() // 终端跟着项目走:旧目录里的 shell 结束,下次打开面板在新目录重开
 	a.bg("open-repo", func() func() {
 		cli, err := vcs.Open(dir)
 		return func() {
