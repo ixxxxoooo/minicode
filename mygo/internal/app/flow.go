@@ -362,6 +362,12 @@ func (a *App) card(c *ui.Context, head func(), body func()) { a.cardM(c, head, n
 
 // cardM 是带头部右键菜单的卡片(差异卡 / 命令卡头部:复制、跳转;menu 为 nil 就没有右键菜单)。
 func (a *App) cardM(c *ui.Context, head func(), menu func(m *ui.Menu), body func()) {
+	a.cardHead(c, head, menu, body, false)
+}
+
+// cardHead 是 cardM 的底层:top 为真时头部允许多行(最小 24 高、随内容长高),右侧按钮顶部对齐;
+// 否则头部固定 24 高、垂直居中。命令卡的命令按宽度换行用 top。
+func (a *App) cardHead(c *ui.Context, head func(), menu func(m *ui.Menu), body func(), top bool) {
 	t := a.tk
 	bg := t.Sunken
 	if t.Scheme.ID == "b" {
@@ -373,6 +379,10 @@ func (a *App) cardM(c *ui.Context, head func(), menu func(m *ui.Menu), body func
 		if head != nil {
 			hr := ui.Row(c).Height(24).Padding(0, 4, 0, 9).Gap(6).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.FsCap).
 				BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1)
+			if top {
+				hr = ui.Row(c).MinHeight(24).Padding(3, 4, 3, 9).Gap(6).AlignItems(ui.Start).TextColor(t.Tx3).FontSize(theme.FsCap).
+					BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1)
+			}
 			if menu != nil {
 				hr.ContextMenu(menu)
 			}
@@ -473,19 +483,20 @@ func deniedOutput(out string) bool {
 func (a *App) termCard(c *ui.Context, tc *core.ToolCall, tb *core.TerminalBlock) {
 	t := a.tk
 	live := tb.ExitCode == nil
-	a.cardM(c, func() {
-		kit.Ic(c, "prompt", kit.S12)
-		// 命令按 shell 语法高亮(命令名 / 子命令 / 标志 / 字符串 / 变量 / 管道),超出宽度裁掉
-		ui.RichText(c, a.shellSpans(tb.Command, a.FlowMonoSize())...).NoWrap().Clip().Grow(1).MinWidth(0)
+	a.cardHead(c, func() {
+		kit.Ic(c, "prompt", kit.S12).Margin(3, 0, 0, 0).Shrink(0)
+		// 命令按 shell 语法高亮(命令名 / 子命令 / 标志 / 字符串 / 变量 / 管道),按宽度换行;
+		// 不含空格的超长词(长路径)没处可断,ClipX 兜底,不压到右侧按钮
+		ui.RichText(c, a.shellSpans(tb.Command, a.FlowMonoSize())...).LineHeight(1.5).ClipX().Grow(1).MinWidth(0)
 		if !live {
 			if (tc != nil && tc.Status == core.ToolDenied) || deniedOutput(tb.Output) {
 				// 用户拒绝了这条命令:根本没跑过,后端回的「退出码 1」只是拒绝信号,不当作失败显示
 				// (历史回放没有权限事件,状态是 Failed,只能按拒绝文案识别)
-				ui.Text(c, "未执行").TextColor(t.Tx3)
+				ui.Text(c, "未执行").TextColor(t.Tx3).Margin(3, 0, 0, 0).Shrink(0)
 			} else if *tb.ExitCode == 0 {
-				ui.Text(c, "通过").TextColor(t.Ok)
+				ui.Text(c, "通过").TextColor(t.Ok).Margin(3, 0, 0, 0).Shrink(0)
 			} else {
-				ui.Text(c, "退出码 "+itoa(*tb.ExitCode)).TextColor(t.Err)
+				ui.Text(c, "退出码 "+itoa(*tb.ExitCode)).TextColor(t.Err).Margin(3, 0, 0, 0).Shrink(0)
 			}
 		}
 		kit.Ib(c, "terminal", kit.IbOpt{Small: true, Tip: "在终端面板查看"}).OnClick(func() { a.viewInPanel(tb) })
@@ -508,7 +519,7 @@ func (a *App) termCard(c *ui.Context, tc *core.ToolCall, tb *core.TerminalBlock)
 		a.foldBody(c, foldKey("term", tc.ID), out, live, true, func() {
 			a.copyOut("$ "+tb.Command+"\n"+strings.TrimRight(out, "\n"), "命令与输出")
 		})
-	})
+	}, true)
 }
 
 func (a *App) textCard(c *ui.Context, text string) {
