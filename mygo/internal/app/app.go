@@ -618,6 +618,10 @@ func (a *App) State() *core.State { return a.st }
 // send 把界面命令交给后端。
 func (a *App) send(cmd core.Command) {
 	if a.be == nil {
+		if _, ok := cmd.(core.CmdPrompt); ok { // 没有后端时发不出去,别让提示词无声消失
+			a.toast = "还没有连接到会话,消息没有发出"
+			log.Warn("没有后端,丢弃提示词")
+		}
 		return
 	}
 	if p, ok := cmd.(core.CmdPrompt); ok {

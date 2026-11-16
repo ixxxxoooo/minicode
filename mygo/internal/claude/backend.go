@@ -85,6 +85,8 @@ const (
 	rkMcpToggle
 	rkRewind
 	rkResumeAt
+	rkEnvModel // 热应用环境后同步会话模型(ANTHROPIC_MODEL 只在启动时读);失败同 rkEnv
+	rkEnv      // 热应用环境变量(apply_flag_settings.env);失败退回「结束进程、下条消息重启」
 )
 
 type req struct {
@@ -105,12 +107,17 @@ type Backend struct {
 	cfg  Config
 	sink backend.Sink
 	cmds chan core.Command
-	msgs chan msg
-	done chan struct{}
-	once sync.Once
+
+	ovMu      sync.Mutex     // 保护 overflow / ovRunning
+	overflow  []core.Command // 通道满时暂存的命令(按序补投)
+	ovRunning bool
+	msgs      chan msg
+	done      chan struct{}
+	once      sync.Once
 
 	// 以下只在 run 循环里访问
 	p          *proc
+	envStale   bool // 环境变量变了但进程没能热应用:下一条消息发出前重启
 	tr         *Translator
 	turnActive bool
 	reqs       map[string]req
@@ -175,11 +182,43 @@ func (b *Backend) Start(sink backend.Sink) {
 	}()
 }
 
+// Send 投递界面命令,从不丢弃(此前队列满了会静默丢掉,包括用户的提示词)。
+// 队列未满走通道;满了(或已有溢出的命令在排队,为保持顺序)放进溢出队列,由一个后台 goroutine 按序补投。
 func (b *Backend) Send(cmd core.Command) {
-	select {
-	case b.cmds <- cmd:
-	default:
-		log.Warn("命令队列已满,丢弃命令", "cmd", fmt.Sprintf("%T", cmd))
+	b.ovMu.Lock()
+	defer b.ovMu.Unlock()
+	if len(b.overflow) == 0 {
+		select {
+		case b.cmds <- cmd:
+			return
+		default:
+		}
+	}
+	b.overflow = append(b.overflow, cmd)
+	log.Warn("命令队列已满,放入溢出队列", "cmd", fmt.Sprintf("%T", cmd), "排队", len(b.overflow))
+	if !b.ovRunning {
+		b.ovRunning = true
+		go b.drainOverflow()
+	}
+}
+
+func (b *Backend) drainOverflow() {
+	defer diag.Recover("claude.drainOverflow")
+	for {
+		b.ovMu.Lock()
+		if len(b.overflow) == 0 {
+			b.ovRunning = false
+			b.ovMu.Unlock()
+			return
+		}
+		cmd := b.overflow[0]
+		b.overflow = b.overflow[1:]
+		b.ovMu.Unlock()
+		select {
+		case b.cmds <- cmd:
+		case <-b.done:
+			return
+		}
 	}
 }
 
@@ -406,19 +445,24 @@ func (b *Backend) restartConfig() {
 	}
 }
 
-func (b *Backend) write(v obj) {
+func (b *Backend) write(v obj) { _ = b.writeOK(v) }
+
+// writeOK 写一行到 claude 的 stdin,返回是否写成功(进程已死时写入会失败,随后 EOF 会处理善后)。
+func (b *Backend) writeOK(v obj) bool {
 	if b.p == nil {
-		return
+		return false
 	}
 	data, err := json.Marshal(v)
 	if err != nil {
 		log.Error("序列化失败", "err", err)
-		return
+		return false
 	}
 	data = append(data, '\n')
-	if _, err := b.p.stdin.Write(data); err != nil { // 进程已死时写入会失败,随后 EOF 会处理善后
+	if _, err := b.p.stdin.Write(data); err != nil {
 		log.Debug("写入 claude 失败", "err", err)
+		return false
 	}
+	return true
 }
 
 func (b *Backend) request(r req, build func(id string) obj) {
@@ -603,11 +647,7 @@ func (b *Backend) onCommand(c core.Command) {
 			b.request(req{kind: rkMcpToggle}, func(id string) obj { return McpToggleReq(id, c.Name, c.Enabled) })
 		}
 	case core.CmdSetEnv:
-		b.cfg.Env = mergeManagedEnv(b.cfg.Env, c.Env)
-		if b.p != nil { // 环境变量只能在启动时注入:结束当前进程,下一条提示用新环境恢复会话
-			b.shutdown("环境变量变化")
-			b.restartConfig()
-		}
+		b.onSetEnv(c)
 	case core.CmdForkSession:
 		log.Info("分叉会话", "parent", c.ParentID, "new", c.NewID, "at", c.AtUser)
 		b.emit(core.EvForkSession{ParentID: c.ParentID, NewID: c.NewID, Cwd: b.cfg.Cwd, AtUser: c.AtUser})
@@ -651,13 +691,33 @@ func (b *Backend) onPrompt(c core.CmdPrompt) {
 		b.carry = append(b.carry, now)
 		b.emit(core.EvTurnStarted{}, core.EvTurnPhase{Kind: core.StageQueued, At: now, TurnStart: now})
 	}
+	if b.envStale && b.p != nil && !steering {
+		b.envStale = false
+		b.shutdown("环境变量变化")
+		b.restartConfig()
+	}
 	if !b.ensureProc() {
 		return
 	}
 	if !steering && b.stages.connected(time.Now()) { // 冷启动的握手结束:「连接」→「本地准备」
 		b.emitStage(nil)
 	}
-	b.write(UserMessageCtx(c.Text, c.Images, steering, uuid, c.Context))
+	msgObj := UserMessageCtx(c.Text, c.Images, steering, uuid, c.Context)
+	if !b.writeOK(msgObj) {
+		// 进程在两条消息之间悄悄死了(被系统杀 / 空闲回收竞争):结束旧进程、--resume 重启后再写一次,不让提示词丢掉
+		log.Warn("写入提示失败,重启进程后重发", "pid", b.p.pid)
+		b.shutdown("写入失败")
+		b.restartConfig()
+		if !b.ensureProc() || !b.writeOK(msgObj) {
+			if b.turnActive {
+				b.turnActive = false
+				b.stages.off()
+				b.carry = nil
+				b.emit(notice(core.NoticeError, "消息没能发送给 Claude(进程无法写入),请重试"), core.EvTurnEnded{Reason: core.StopError})
+			}
+			return
+		}
+	}
 	if !steering {
 		log.Info("提示已写入 claude", "冷启动", b.turnCold, "写入耗时", time.Since(b.turnT0).Round(time.Millisecond), "pid", b.p.pid)
 	}
@@ -925,6 +985,23 @@ func (b *Backend) onControlResponse(v obj) {
 		b.finishResumeAt(success, errText)
 	case rkUsage:
 		b.emit(b.tr.AccountUsage(body, success))
+	case rkEnvModel:
+		if !success {
+			log.Warn("热应用环境后同步模型失败,改为重启进程", "err", errText)
+			b.envStale = true
+		}
+	case rkEnv:
+		if success {
+			log.Info("环境变量已热应用(进程与提示缓存保留)")
+		} else { // 这个 claude 不认 flag 里的 env:退回重启,下一条消息 --resume 接着聊
+			log.Warn("热应用环境变量失败,改为重启进程", "err", errText)
+			if b.p != nil && !b.turnActive {
+				b.shutdown("环境变量变化")
+				b.restartConfig()
+			} else {
+				b.envStale = true
+			}
+		}
 	case rkOther:
 		if !success && r.what == "中断" { // 中断失败时撤销取消标记,避免下一个回合被误判为已取消
 			b.tr.Interrupted = false
@@ -1069,4 +1146,55 @@ func callsCacheSummary(calls []core.CallInfo) string {
 		fmt.Fprintf(&sb, "#%d %s", i+1, t)
 	}
 	return sb.String()
+}
+
+// managedEnvMap 受管环境变量的有效取值(没设的键 = 空串,即「未设置」)。
+func managedEnvMap(env []core.EnvVar) map[string]string {
+	m := map[string]string{}
+	for _, k := range claudecfg.ManagedEnvKeys() {
+		m[k] = ""
+	}
+	for _, e := range env {
+		if _, ok := m[e.Key]; ok {
+			m[e.Key] = e.Value
+		}
+	}
+	return m
+}
+
+// onSetEnv 切换服务商 / 模型映射。实测 claude 2.1.x 的 `apply_flag_settings` 带 `env` 可以热切换
+// ANTHROPIC_BASE_URL 等变量(下一次 API 请求就用新值),所以不再结束进程:提示缓存、后台任务和
+// 已加载的 MCP 都保留。取值没变直接忽略;空串等于未设置(回到官方)。
+func (b *Backend) onSetEnv(c core.CmdSetEnv) {
+	oldM := managedEnvMap(b.cfg.Env)
+	b.cfg.Env = mergeManagedEnv(b.cfg.Env, c.Env)
+	newM := managedEnvMap(b.cfg.Env)
+	changed := false
+	for k, v := range newM {
+		if oldM[k] != v {
+			changed = true
+			break
+		}
+	}
+	if !changed {
+		log.Debug("环境变量没有变化,不重启")
+		return
+	}
+	if b.p == nil {
+		return // 还没有进程:启动时自然带上新环境
+	}
+	env := obj{}
+	for k, v := range newM {
+		env[k] = v
+	}
+	log.Info("热应用环境变量", "键数", len(env))
+	b.request(req{kind: rkEnv, what: "切换服务商"}, func(id string) obj { return ApplyEnv(id, env) })
+	// ANTHROPIC_MODEL 只在启动时读进会话,热应用后还要把会话模型对齐到新映射的默认模型(没有 = 回到默认)
+	if oldM["ANTHROPIC_MODEL"] != newM["ANTHROPIC_MODEL"] {
+		target := newM["ANTHROPIC_MODEL"]
+		if target == "" {
+			target = "default"
+		}
+		b.request(req{kind: rkEnvModel, what: "同步模型"}, func(id string) obj { return SetModel(id, target) })
+	}
 }

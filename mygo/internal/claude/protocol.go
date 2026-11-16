@@ -96,6 +96,11 @@ func SetModel(id, model string) obj {
 func SetPermissionMode(id string, m core.PermissionMode) obj {
 	return controlRequest(id, obj{"subtype": "set_permission_mode", "mode": m.CLI()})
 }
+
+// ApplyEnv 热更新进程环境变量(settings.env);空串 = 清除。
+func ApplyEnv(id string, env obj) obj {
+	return controlRequest(id, obj{"subtype": "apply_flag_settings", "settings": obj{"env": env}})
+}
 func SetEffort(id string, e core.Effort) obj {
 	return controlRequest(id, obj{"subtype": "apply_flag_settings", "settings": obj{"effortLevel": e.CLI()}})
 }
