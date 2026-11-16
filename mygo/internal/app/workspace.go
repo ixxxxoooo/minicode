@@ -157,7 +157,7 @@ func (a *App) etabs(c *ui.Context) {
 	}
 	bar.Children(func() {
 		d := a.ide
-		strip := ui.ScrollHorizontal(c).Key("etabs-scroll").TrackScroll(&d.tabSt).Grow(1).MinWidth(0).AlignItems(ui.Stretch)
+		strip := kit.ApplyNativeScroll(ui.ScrollHorizontal(c).Key("etabs-scroll").TrackScroll(&d.tabSt).Grow(1).MinWidth(0).AlignItems(ui.Stretch), "etabs-scroll", &d.tabSt, true, false)
 		if w := strip.Bounds().W; w > 0 && d.tabSeen != d.active { // 当前标签变了:滚到可见(用上一帧量到的位置)
 			var left, wid float32
 			for _, tb := range d.tabs {
@@ -258,7 +258,7 @@ func (a *App) etabPane(c *ui.Context, tb *ideTab, pane int8) {
 			nm.Italic()
 		}
 		if a.isExternalTab(tb) {
-			a.externalChip(c)
+			a.externalChip(c, tb)
 		}
 		if tb.extDeleted && !tb.extOrphan {
 			nm.TextColor(t.Tx4).Strikethrough()

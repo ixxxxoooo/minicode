@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
 
 // 各处「···」与右键菜单(设计稿 drag-more「···」菜单盘点)。
@@ -165,7 +166,10 @@ func (a *App) tabMenu(m *ui.Menu, tb *ideTab) {
 		a.dropRefs(refText(tb.path, false))
 	}
 	a.pathMenu(m, tb.path)
-	if menuItem(m, "在文件树中定位").Chosen() {
+	it := menuItem(m, "在文件树中定位")
+	if workspace.IsExternalPath(tb.path) {
+		it.Disabled(true).Tooltip("工作区外的文件不在文件树里")
+	} else if it.Chosen() {
 		a.revealInTree(tb.path)
 	}
 	m.Separator()
@@ -181,11 +185,18 @@ func (a *App) pathMenu(m *ui.Menu, rel string) {
 		a.copyText = a.absPath(rel)
 		a.toast = "已复制路径"
 	}
-	if menuItem(m, "复制相对路径").Chosen() {
+	it := menuItem(m, "复制相对路径")
+	if workspace.IsExternalPath(rel) {
+		it.Disabled(true).Tooltip("已是绝对路径")
+	} else if it.Chosen() {
 		a.copyText = rel
 		a.toast = "已复制相对路径"
 	}
-	if menuItem(m, "在访达中显示").Disabled(a.proj == "").Tooltip(map[bool]string{true: "演示模式没有真实目录"}[a.proj == ""]).Chosen() {
+	dis := a.proj == ""
+	if workspace.IsExternalPath(rel) {
+		dis = false
+	}
+	if menuItem(m, "在访达中显示").Disabled(dis).Tooltip(map[bool]string{true: "演示模式没有真实目录"}[a.proj == "" && !workspace.IsExternalPath(rel)]).Chosen() {
 		a.revealInFinder(a.absPath(rel))
 	}
 }

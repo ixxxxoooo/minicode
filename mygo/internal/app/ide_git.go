@@ -5,6 +5,7 @@ import (
 	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 	"github.com/ixxxxoooo/minicode/internal/vcs"
+	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
 
 // 文件级 Git 信息:行内追溯(blame)与左栏「时间线」(文件历史)。
@@ -27,6 +28,9 @@ func (a *App) headKey() string {
 
 // gitInfoFor 取文件的追溯与历史;没有或过期就在后台读(读完后下一帧生效)。
 func (a *App) gitInfoFor(p string) *gitInfo {
+	if workspace.IsExternalPath(p) {
+		return nil
+	}
 	repo, rel := a.repoAt(p)
 	if repo == nil || p == "" {
 		return nil

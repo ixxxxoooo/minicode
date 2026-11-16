@@ -8,6 +8,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
+	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
 
 // bottomPanel 是编辑区底部面板:终端 / 问题 / 输出。
@@ -132,7 +133,7 @@ func (a *App) terminal(c *ui.Context) {
 		return
 	}
 	t := a.tk
-	ui.Scroll(c).Key("term").TrackScroll(&a.ide.termSt).Grow(1).Children(func() {
+	kit.VScroll(c).Key("term").TrackScroll(&a.ide.termSt).Grow(1).Children(func() {
 		ui.Column(c).Padding(6, 10).Children(func() {
 			for _, ln := range a.ide.termLines {
 				var spans []ui.Span
@@ -189,7 +190,7 @@ func (a *App) problems(c *ui.Context) {
 		g := &data[len(data)-1]
 		g.items = append(g.items, problem{p.Level, p.Msg, p.Source, p.Line})
 	}
-	ui.Scroll(c).Key("probs").Grow(1).Children(func() {
+	kit.VScroll(c).Key("probs").Grow(1).Children(func() {
 		ui.Column(c).Padding(2, 6).Children(func() {
 			for _, g := range data {
 				ui.Row(c).Height(24).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Children(func() {
@@ -235,7 +236,7 @@ func (a *App) problems(c *ui.Context) {
 // cmdOutput 显示一条只读命令的输出(Claude 在会话里运行的命令)。
 func (a *App) cmdOutput(c *ui.Context, v cmdView) {
 	t := a.tk
-	ui.Scroll(c).Key("cmdout-" + v.id).Grow(1).Children(func() {
+	kit.VScroll(c).Key("cmdout-" + v.id).Grow(1).Children(func() {
 		ui.Column(c).Padding(6, 10).Children(func() {
 			ui.Row(c).MinHeight(monoLH).AlignItems(ui.Center).Children(func() {
 				ui.RichText(c, ui.Span{Text: "$ ", Font: "monospace", Size: 11.5, Color: t.Ok}, ui.Span{Text: v.title, Font: "monospace", Size: 11.5, Color: t.Tx1, Weight: 600}).NoWrap()
@@ -262,7 +263,7 @@ func (a *App) refsPanel(c *ui.Context) {
 		})
 		return
 	}
-	ui.Scroll(c).Key("refs").Grow(1).Children(func() {
+	kit.VScroll(c).Key("refs").Grow(1).Children(func() {
 		ui.Column(c).Padding(2, 6).Children(func() {
 			last := ""
 			for i, it := range r.items {
@@ -274,10 +275,14 @@ func (a *App) refsPanel(c *ui.Context) {
 							n++
 						}
 					}
+					disp := it.path
+					if workspace.IsExternalPath(it.path) {
+						disp = a.pathDisplay(it.path)
+					}
 					ui.Row(c).Key("rg-" + it.path).Height(24).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Children(func() {
 						kit.Ic(c, "chevD", kit.S12)
 						a.fileIc(c, path.Base(it.path))
-						ui.Text(c, it.path).Grow(1)
+						ui.Text(c, disp).Grow(1)
 						kit.Cnt(c, itoa(n), false)
 					})
 				}

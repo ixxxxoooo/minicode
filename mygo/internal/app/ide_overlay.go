@@ -311,7 +311,7 @@ func (a *App) openPeek() {
 // openRename F2:原地输入新名字。
 func (a *App) openRename() {
 	tb := a.ide.cur()
-	if tb == nil || tb.st == nil || tb.buf == nil {
+	if tb == nil || tb.st == nil || tb.buf == nil || tb.diskRO {
 		return
 	}
 	w, _, _ := wordUnder(tb, tb.st.Cursor())

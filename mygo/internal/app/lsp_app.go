@@ -12,6 +12,7 @@ import (
 	"github.com/egoist/mygo/ui/editor"
 	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/diag"
+	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/lsp"
 	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
@@ -470,7 +471,7 @@ func (a *App) lspDefinition(tb *ideTab, off int, fallback func()) bool {
 			rel, in := a.locRel(l)
 			switch {
 			case !in:
-				a.toast = "定义在项目外:" + rel + ":" + itoa(l.Range.Start.Line+1)
+				a.jumpToLSP(rel, l.Range)
 			case rel == here && l.Range.Start.Line == pos.Line && l.Range.Start.Character <= pos.Character && pos.Character <= l.Range.End.Character:
 				a.showRefs(a.cursorWord()) // 已经在定义上:改成列出引用
 			default:
@@ -479,24 +480,6 @@ func (a *App) lspDefinition(tb *ideTab, off int, fallback func()) bool {
 		}
 	})
 	return true
-}
-
-// jumpToLSP 跳到 LSP 范围(列换成字节列需要文本;先读文本)。
-func (a *App) jumpToLSP(rel string, r lsp.Range) {
-	text, _ := a.ide.fileText(rel)
-	lines := strings.Split(text, "\n")
-	col := func(line, u16 int) int {
-		if line >= 0 && line < len(lines) {
-			return lsp.ColFromUTF16(lines[line], u16)
-		}
-		return 0
-	}
-	c0 := col(r.Start.Line, r.Start.Character)
-	c1 := c0
-	if r.End.Line == r.Start.Line {
-		c1 = col(r.End.Line, r.End.Character)
-	}
-	a.jumpTo(rel, r.Start.Line, c0, c1)
 }
 
 // lspReferences 列出引用到底部「引用」分段。
@@ -512,16 +495,25 @@ func (a *App) lspReferences(tb *ideTab, off int, word string, fallback func()) b
 		var items []refItem
 		for _, l := range locs {
 			rel, in := a.locRelNoUI(l)
-			if !in {
+			if in {
+				text, _ := a.ide.fileTextBG(rel)
+				lines := strings.Split(text, "\n")
+				ln := ""
+				if l.Range.Start.Line < len(lines) {
+					ln = lines[l.Range.Start.Line]
+				}
+				items = append(items, refItem{path: rel, line: l.Range.Start.Line, col: lsp.ColFromUTF16(ln, l.Range.Start.Character), text: strings.TrimSpace(ln)})
 				continue
 			}
-			text, _ := a.ide.fileTextBG(rel)
-			lines := strings.Split(text, "\n")
-			ln := ""
-			if l.Range.Start.Line < len(lines) {
-				ln = lines[l.Range.Start.Line]
+			abs := rel
+			if abs == "" {
+				abs = filepath.Clean(lsp.URIToPath(l.URI))
 			}
-			items = append(items, refItem{path: rel, line: l.Range.Start.Line, col: lsp.ColFromUTF16(ln, l.Range.Start.Character), text: strings.TrimSpace(ln)})
+			if abs == "" {
+				continue
+			}
+			ln, body := a.refLineTextBG(abs, l.Range.Start.Line)
+			items = append(items, refItem{path: abs, line: l.Range.Start.Line, col: lsp.ColFromUTF16(ln, l.Range.Start.Character), text: strings.TrimSpace(body)})
 		}
 		sort.SliceStable(items, func(i, j int) bool {
 			if items[i].path != items[j].path {
@@ -561,7 +553,7 @@ func (a *App) lspHover(tb *ideTab, req editor.HoverRequest, start, end int, fall
 			}
 			tb.st.ShowHover(start, end, "", func(c *ui.Context) {
 				ui.Column(c).Width(380).MaxHeight(280).Children(func() {
-					ui.Scroll(c).Key("lsp-hover").Children(func() {
+					kit.VScroll(c).Key("lsp-hover").Children(func() {
 						markdown.View(c, text, a.mdOptions())
 					})
 				})

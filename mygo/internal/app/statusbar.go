@@ -79,6 +79,9 @@ func (a *App) statusbar(c *ui.Context) {
 					}).OnClick(a.resetEditorFont)
 				}
 				a.mcStatusChip(c, tab)
+				if tab.diskRO {
+					a.sbItem(c, "ro", func() { ui.Text(c, "只读") })
+				}
 				a.sbItem(c, "enc", func() { ui.Text(c, "UTF-8") })
 				lang := "纯文本"
 				if l := tab.buf.Language(); l != nil {

@@ -56,7 +56,7 @@ func (a *App) lspRename(tb *ideTab, off int, word, to string, fallback func()) b
 	if s == nil {
 		return false
 	}
-	uri := lsp.PathToURI(filepath.Join(a.proj, tb.path))
+	uri := lsp.PathToURI(a.absPath(tb.path))
 	pos := lspPos(tb, off)
 	a.lspJob("rename", s, func() func() {
 		changes, err := s.c.Rename(uri, pos, to)
@@ -82,7 +82,7 @@ func (a *App) lspRename(tb *ideTab, off int, word, to string, fallback func()) b
 // formatDoc 格式化当前文档:服务器没有就提示。
 func (a *App) formatDoc() {
 	tb := a.ide.cur()
-	if tb == nil || tb.buf == nil || tb.st == nil {
+	if tb == nil || tb.buf == nil || tb.st == nil || tb.diskRO {
 		return
 	}
 	s := a.lspReadyFor(tb.path)
@@ -90,7 +90,7 @@ func (a *App) formatDoc() {
 		a.formatBuiltin(tb) // 没有可用的语言服务器:用内置格式化兜底
 		return
 	}
-	uri := lsp.PathToURI(filepath.Join(a.proj, tb.path))
+	uri := lsp.PathToURI(a.absPath(tb.path))
 	tabSize, spaces := tb.st.TabSize, true
 	if tabSize == 0 {
 		tabSize = 4
@@ -132,7 +132,7 @@ func (a *App) gotoKind(kind string) {
 		a.toast = "需要语言服务器:" + kind + "只有服务器能回答"
 		return
 	}
-	uri := lsp.PathToURI(filepath.Join(a.proj, tb.path))
+	uri := lsp.PathToURI(a.absPath(tb.path))
 	pos := lspPos(tb, tb.st.Cursor())
 	a.lspJob("goto", s, func() func() {
 		var locs []lsp.Location
@@ -147,11 +147,8 @@ func (a *App) gotoKind(kind string) {
 				a.toast = "没有找到" + strings.TrimPrefix(kind, "转到")
 				return
 			}
-			if rel, in := a.locRel(locs[0]); in {
-				a.jumpToLSP(rel, locs[0].Range)
-			} else {
-				a.toast = kind + "在项目外:" + rel
-			}
+			rel, _ := a.locRel(locs[0])
+			a.jumpToLSP(rel, locs[0].Range)
 		}
 	})
 }

@@ -77,6 +77,7 @@ func (a *App) ToolDetailLevel() int {
 func (a *App) applyBehavior() {
 	on := a.prefs.Bool(pMotion, true) && !kit.SystemReduceMotion()
 	kit.SetMotion(on)
+	kit.SetScrollbarMode(a.prefs.Int(pScrollbar, 1))
 	kit.SetShimmer(a.prefs.Int(pShimmer, 0))
 	// 形态切换动画:流畅 = 440 ms;简化 = 160 ms;无 = 立即(动效整体关闭时也是立即)
 	d := kit.DurMorph
@@ -168,6 +169,12 @@ func (a *App) applyEditorPrefs(tb *ideTab) {
 			st.Theme = &th
 		}
 	}
+	switch a.prefs.Int(pScrollbar, 1) {
+	case kit.ScrollbarAlways:
+		st.KeepScrollbars = true
+	default:
+		st.KeepScrollbars = false
+	}
 }
 
 // autosave 自动保存:「延时」= 最后一次修改 1.5 秒后写盘;「失焦」= 切到别的标签时写盘。
@@ -177,7 +184,7 @@ func (a *App) autosave() {
 	mode := a.prefs.Int(pEdAutosave, 1)
 	cur := d.cur()
 	if mode == 2 && d.lastActive != "" && (cur == nil || cur.id != d.lastActive) {
-		if prev := d.tab(d.lastActive); prev != nil && prev.dirty() && !prev.diff && prev.virt == "" && !prev.extKeep && !prev.extOrphan {
+		if prev := d.tab(d.lastActive); prev != nil && prev.dirty() && !prev.diff && prev.virt == "" && !prev.extKeep && !prev.extOrphan && !prev.diskRO {
 			a.saveTab(prev)
 		}
 	}
@@ -186,7 +193,7 @@ func (a *App) autosave() {
 	} else {
 		d.lastActive = ""
 	}
-	if mode != 1 || cur == nil || cur.diff || cur.virt != "" || cur.buf == nil || cur.extKeep || cur.extOrphan {
+	if mode != 1 || cur == nil || cur.diff || cur.virt != "" || cur.buf == nil || cur.extKeep || cur.extOrphan || cur.diskRO {
 		return
 	}
 	v := cur.buf.Version()

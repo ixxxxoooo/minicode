@@ -164,7 +164,7 @@ func firstLine(s string) string {
 // beforeSave 是保存前的整理(设置:保存时格式化 / 保存时去掉行尾空白)。
 // 所见即所得里的 Markdown 以文档为准,保存前不再整理,免得自动保存把正在输入的光标冲掉。
 func (a *App) beforeSave(tb *ideTab) {
-	if tb == nil || tb.diff || tb.buf == nil || tb.virt != "" {
+	if tb == nil || tb.diff || tb.buf == nil || tb.virt != "" || tb.diskRO {
 		return
 	}
 	if isMarkdownFile(tb.path) && !a.mdSource(tb) {

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"path"
 	"strings"
 	"time"
@@ -58,6 +59,7 @@ type ideTab struct {
 	extKeep    bool // 用户选择保留编辑器版本
 	extOrphan  bool // 文件在磁盘上已不存在
 	extDeleted bool // 用户确认已删除
+	diskRO     bool // 工作区外只读(语言服务器跳转开的标准库 / 依赖,不可保存)
 }
 
 func (t *ideTab) dirty() bool { return !t.diff && t.buf != nil && t.buf.String() != t.saved }
@@ -279,8 +281,9 @@ func (d *ide) loadText(t *ideTab) {
 		t.buf = editor.NewBuffer(src)
 		t.buf.SetLanguage(editor.LanguageFor(path.Base(p)))
 		t.saved = src
-		t.st = &editor.State{Buffer: t.buf, WrapGuides: nil}
-		if head, ok := d.headOf(p); ok {
+		ro := workspace.IsExternalPath(p) && t.diskRO
+		t.st = &editor.State{Buffer: t.buf, ReadOnly: ro, WrapGuides: nil}
+		if head, ok := d.headOf(p); ok && !ro {
 			t.st.DiffBase = editor.NewBuffer(head) // 行号栏的改动色条
 		}
 	}
@@ -394,7 +397,7 @@ func (d *ide) closeOnPane(id string, tabs *[]*ideTab, active *string) {
 			continue
 		}
 		*tabs = append((*tabs)[:i], (*tabs)[i+1:]...)
-		if isFileTab(t) && !t.diff {
+		if isFileTab(t) && !t.diff && !(workspace.IsExternalPath(t.path) && t.diskRO) {
 			d.closed = append(d.closed, t.path)
 			if len(d.closed) > 20 {
 				d.closed = d.closed[len(d.closed)-20:]
@@ -428,6 +431,9 @@ func (d *ide) save() error {
 	}
 	if t == nil || t.diff || t.buf == nil {
 		return nil
+	}
+	if workspace.IsExternalPath(t.path) && t.diskRO {
+		return errors.New("只读文件不能保存")
 	}
 	end := diag.SpanSlow("ide", "保存文件", 100*time.Millisecond, "path", t.path)
 	defer end()

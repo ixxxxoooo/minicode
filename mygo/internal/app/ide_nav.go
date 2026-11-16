@@ -9,6 +9,7 @@ import (
 	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
+	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
 
 // 编辑器的「跳转」能力:转到定义、引用、悬停、补全、重命名、前进后退。
@@ -80,6 +81,10 @@ func (a *App) navGo(dir int) {
 
 // jumpTo 是所有「跳转」的出口:先记下现在的位置,打开目标,再把目标压入历史。
 func (a *App) jumpTo(p string, line, col, end int) {
+	if workspace.IsExternalPath(p) {
+		a.jumpToExternalPos(p, line, col, end)
+		return
+	}
 	d := a.ide
 	d.navMark()
 	d.openAt(p, line, col, end, true)

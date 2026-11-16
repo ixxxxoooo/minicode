@@ -19,32 +19,36 @@ func (a *App) crumbs(c *ui.Context, tb *ideTab) {
 	}
 	t := a.tk
 	ui.Row(c).Height(24).Shrink(0).PaddingX(14).Gap(8).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(11.5).Children(func() {
-		ui.Row(c).Grow(1).MinWidth(0).Gap(3).AlignItems(ui.Center).Clip().Children(func() {
-			if a.isExternalTab(tb) {
-				a.fileIc(c, filepath.Base(tb.path))
-				ui.Text(c, a.pathDisplay(tb.path)).SingleLine().TextColor(t.Tx2).FontSize(11.5)
-				a.externalChip(c)
-				return
-			}
-			sep := "/"
-			if workspace.IsExternalPath(tb.path) {
-				sep = string(filepath.Separator)
-			}
-			parts := strings.Split(tb.path, sep)
-			for i, p := range parts {
-				if i > 0 {
-					kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
+		kit.HScroll(c).Key("crumb-scroll").Grow(1).MinWidth(0).Children(func() {
+			ui.Row(c).Gap(3).AlignItems(ui.Center).Children(func() {
+				if a.isExternalTab(tb) {
+					a.fileIc(c, filepath.Base(tb.path))
+					ui.Text(c, a.pathDisplay(tb.path)).SingleLine().TextColor(t.Tx2).FontSize(11.5)
+					if !tb.diskRO {
+						a.externalChip(c, tb)
+					}
+					return
 				}
-				a.crumbSegment(c, tb, p, i, i == len(parts)-1)
-			}
-			// 光标所在的符号链:impl Router › match_path(点击打开符号选择器)
-			if tb.st != nil && tb.buf != nil {
-				syms := a.ide.fileSyms(tb.path)
-				for _, k := range enclosing(syms, tb.st.CursorPos().Line) {
-					kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
-					a.crumbSymSegment(c, tb, syms, k)
+				sep := "/"
+				if workspace.IsExternalPath(tb.path) {
+					sep = string(filepath.Separator)
 				}
-			}
+				parts := strings.Split(tb.path, sep)
+				for i, p := range parts {
+					if i > 0 {
+						kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
+					}
+					a.crumbSegment(c, tb, p, i, i == len(parts)-1)
+				}
+				// 光标所在的符号链:impl Router › match_path(点击打开符号选择器)
+				if tb.st != nil && tb.buf != nil {
+					syms := a.ide.fileSyms(tb.path)
+					for _, k := range enclosing(syms, tb.st.CursorPos().Line) {
+						kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
+						a.crumbSymSegment(c, tb, syms, k)
+					}
+				}
+			})
 		})
 		a.crumbTools(c, tb)
 	})
