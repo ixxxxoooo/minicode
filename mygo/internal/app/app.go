@@ -80,9 +80,9 @@ type App struct {
 	win        *mygo.Window
 
 	// 会话:当前显示的会话状态与它的后端
-	st     *core.State
-	be     backend.Backend
-	warmBe backend.Backend // 已为它发过预热命令的后端(换会话 = 换后端,会再预热一次)
+	st   *core.State
+	be   backend.Backend
+	warm warmCtl // 连接预热与空闲释放的状态(见 warm.go)
 
 	// 外观
 	pal    theme.Palette
@@ -387,6 +387,7 @@ func (a *App) retheme() {
 // win 为 nil 时(测试)直接在调用线程归约。
 func (a *App) Attach(be backend.Backend) {
 	a.be = be
+	a.warmAttach(be)
 	be.Start(func(ev core.Event) {
 		apply := func() {
 			if a.be != be {
@@ -409,6 +410,7 @@ func (a *App) Attach(be backend.Backend) {
 // afterEvent 归约之后的界面侧反应:回合结束时处理排队。
 func (a *App) afterEvent(ev core.Event) {
 	a.onSessLoadEvent(ev)
+	a.warmOnEvent(ev)
 	// 新会话的 id 在握手后才知道:记下来,侧栏就能高亮它(演示后端的占位 id 不记)
 	if e, ok := ev.(core.EvReady); ok {
 		if a.pickOnReady {
@@ -504,6 +506,7 @@ func (a *App) OpenSession(id string) {
 	if lv := a.live[id]; lv != nil && id != "" { // 回到一个在后台跑着的会话:接回它的后端与状态
 		delete(a.live, id)
 		a.be, a.st = lv.be, lv.st
+		a.warmAdopt(lv.be)
 		a.sessLoad = sessLoadState{}
 		a.q.reset()
 		a.qa = nil
@@ -588,6 +591,9 @@ func (a *App) send(cmd core.Command) {
 	if a.be == nil {
 		return
 	}
+	if _, ok := cmd.(core.CmdPrompt); ok {
+		a.noteActive()
+	}
 	if c, ok := cmd.(core.CmdSetMode); ok && c.Mode == core.ModeBypassPermissions && a.NoBypassPermissions() {
 		a.toast = "已禁止绕过权限模式"
 		return
@@ -642,6 +648,7 @@ func (a *App) View(c *ui.Context) {
 	// 圆角 / 描边 / 阴影 / 悬停色与应用内其它弹层一致。
 	c.SetMenuPresentation(ui.PopoverMenus)
 	a.winW, a.winH = c.Size()
+	a.warmTick() // 到点预热 / 回前台补预热 / 空闲释放(每帧只比几个时间,很便宜)
 	a.fitPanels()
 	a.reposTick()
 	if (a.brand.trayErr || a.brand.trayUnread) && a.appInForeground() {

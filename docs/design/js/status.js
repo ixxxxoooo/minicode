@@ -160,6 +160,7 @@
       R('IDE 通知中心(铃铛 / 历史 / 右下角叠放)', 'notice_ui.go 铃铛/面板/noticeToasts(shell.go);.app 内 mac_notify OpenSessionFromNotify;测试/裸二进制无 UN 点击回会话;未测试', 'part'),
       R('任务坞停滞 / 已结束 / 监听 / 工作流胶囊', 'chat.go taskDock(task_dock.go)六类胶囊+停滞/停止;flow_test TestTaskDockCapsules;未测试', 'ok'),
       R('上下文弹层(输入框圆环 / 状态栏;分类明细 / 阈值刻度 / 账户限额 / 刷新 / 压缩;常态 / 接近阈值 / 压缩中 / 加载 / 无限额 / 失败)', 'ctx_panel+history 估算+点开才 get_context_usage(3s 防抖)+启动并查询;限额单独 CmdRefreshUsage.Limits;未测试', 'part'),
+      R('Claude 连接预热与空闲释放(状态栏「连接中 / 已连接 / 未连接 / 连接失败」)', 'core.EvConn/ConnState;claude/backend.go warmup(失败 60 秒退避)/release(回合 / 请求 / 后台任务时拒绝)/空闲回收后重连不提示「已重新启动」;app/warm.go 策略:Attach 去抖 0.35 秒预热、窗口在前台才预热、输入与回前台补预热、空闲 chat.idle 分钟释放(窗口在后台 ⅓);设置 通用 → 连接 chat.warm / chat.idle;单测 + 真实 claude 剖析(real_profile_test);未测试', 'part'),
       R('更新进度胶囊四态', 'update_progress.go+update_engine.go;statusbar 胶囊只在检查中 / 有新版本 / 下载 / 校验 / 解包 / 待重启 / 失败时出现,「已是最新」不占状态栏(只在设置 → 关于里显示);开发版 dev.sh 重启;未测试', 'ok'),
       R('确认框(模式切换 / 未保存 / 删除)', '通用确认框已用于会话删除 / 移除项目 / 切换模式', 'ok', 'B2'),
       R('账号菜单的真实身份与用量', 'popups.go acctPopup+acct_popup.go ReadOAuthProfile/用量;演示 demo.AcctMenuDemo;未测试', 'ok'),

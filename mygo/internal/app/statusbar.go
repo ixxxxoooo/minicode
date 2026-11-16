@@ -96,6 +96,7 @@ func (a *App) statusbar(c *ui.Context) {
 			}
 		}
 		ui.Spacer(c).Grow(1)
+		a.connChip(c)
 		mode := a.sbItem(c, "mode", func() {
 			kit.Ic(c, modeIcon(a.st.Mode), kit.S12).TextColor(a.modeTint(a.st.Mode))
 			ui.Text(c, a.st.Mode.Label())

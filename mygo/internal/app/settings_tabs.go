@@ -280,6 +280,10 @@ var settingsTabs = []setTabDef{
 			rSeg("general.busy", "回合进行中再发消息", "Enter = 排队;⌘Enter = 立即引导", 0, "排队", "立即引导"),
 			rTog("general.paste", "粘贴长文本时折叠为附件", "超过 2000 字时作为文本附件加入,不撑开输入框", true),
 		}},
+		{title: "连接", rows: []setRow{
+			rSeg("chat.warm", "预热 Claude 连接", "打开会话时 = 切到该会话就提前连接,发送不用再等启动;输入时 = 只在开始打字时连接;不预热 = 第一条消息才启动。状态栏会显示连接状态", 0, "打开会话时", "输入时", "不预热"),
+			rSeg("chat.idle", "空闲后释放连接", "闲置超过这个时间就结束 claude 进程省内存,会话保留,再发送自动接着聊;回合进行中或有后台任务时不释放;窗口在后台时用三分之一的时间", 1, "5 分钟", "10 分钟", "30 分钟", "不释放"),
+		}},
 		{title: "通知与菜单栏", rows: []setRow{
 			rTog("general.notify", "任务完成时通知", "回合结束且 MiniCode 不在前台时发送系统通知", true),
 			rTog("general.notifyAsk", "需要确认时提醒", "权限请求、提问在后台出现时弹通知", true),

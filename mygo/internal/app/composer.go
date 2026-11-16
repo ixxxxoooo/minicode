@@ -2,7 +2,6 @@ package app
 
 import (
 	"math"
-	"strings"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
@@ -38,7 +37,7 @@ func (a *App) composer(c *ui.Context) {
 		in := ui.TextArea(c.Key("draft"), &a.draft).Lines(1, 8).Placeholder(a.composerHint()).
 			PlaceholderColor(t.Tx3).Background(ui.Transparent).BorderWidth(0).Padding(9, 12, 3, 12).FontSize(a.FlowFontSize()).LineHeight(1.55).
 			MinHeight(36).TextColor(t.Tx1).FocusRing(false)
-		a.warmIfTyping()
+		a.warmTypingSignal()
 		if a.welcomeFocus {
 			in.AutoFocus()
 		}
@@ -281,16 +280,4 @@ func (a *App) composerHint() string {
 		return "Claude 正在工作 · ⏎ " + e + ",⌘⏎ " + m
 	}
 	return "描述任务,@ 引用文件,/ 调用命令"
-}
-
-// warmIfTyping 用户在输入框里敲下第一个字时,让真实后端先把 claude 进程拉起来:
-// 冷启动 + 握手(恢复长会话更久)原本发生在「点发送」之后,是发完消息迟迟没有反馈的主要来源;
-// 打字的这几秒足够它在后台完成。演示后端没有进程,忽略;每个后端只预热一次。
-func (a *App) warmIfTyping() {
-	if a.be == nil || a.warmBe == a.be || strings.TrimSpace(a.draft) == "" || a.be.Name() == "demo" {
-		return
-	}
-	a.warmBe = a.be
-	log.Info("输入中,预热后端")
-	a.be.Send(core.CmdWarmup{})
 }

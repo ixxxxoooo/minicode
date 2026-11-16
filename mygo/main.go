@@ -400,6 +400,13 @@ func main() {
 				win.Update(func() { a.AutomationTick(time.Now()) })
 			}
 		}()
+		// 连接预热 / 空闲释放的节拍:界面空闲时没有帧,靠它推进「闲置超时」的判断
+		go func() {
+			defer diag.Recover("连接空闲检查")
+			for range time.Tick(15 * time.Second) {
+				win.Update(func() { a.WarmTick() })
+			}
+		}()
 		// 侧栏定时重扫:别处(终端里的 claude、本应用刚写盘的新会话)产生的会话也能出现
 		go func() {
 			defer diag.Recover("会话索引刷新")
