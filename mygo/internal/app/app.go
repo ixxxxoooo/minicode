@@ -89,11 +89,12 @@ type App struct {
 	sch            theme.Scheme
 	accent         string
 	tk             *theme.Tokens
-	rtOpen         bool      // 状态行是否展开阶段清单(回合结束丢弃)
-	stRunning      bool      // 上一帧回合是否在进行(用来捕捉「刚结束」)
-	stEnd          time.Time // 回合结束的时刻;状态行据此淡出并收折
-	frameInPending bool      // frameIn 的合并标记
-	rtPop          string    // 脚注瀑布弹卡对应的回合(用户消息 id)
+	rtOpen         bool            // 状态行是否展开阶段清单(回合结束丢弃)
+	stRunning      bool            // 上一帧回合是否在进行(用来捕捉「刚结束」)
+	stEnd          time.Time       // 回合结束的时刻;状态行据此淡出并收折
+	frameInPending bool            // frameIn 的合并标记
+	sessUnread     map[string]bool // 后台跑完、还没打开看过的会话(侧栏行首小圆点)
+	rtPop          string          // 脚注瀑布弹卡对应的回合(用户消息 id)
 
 	// 窗口形态与布局
 	mode         Mode
@@ -509,6 +510,7 @@ func (a *App) OpenSession(id string) {
 	a.maybeLeaveWorkspace(id)
 	a.recordSess(id)
 	a.parkOrClose()
+	delete(a.sessUnread, id)                     // 打开 = 看过了
 	if lv := a.live[id]; lv != nil && id != "" { // 回到一个在后台跑着的会话:接回它的后端与状态
 		delete(a.live, id)
 		a.be, a.st = lv.be, lv.st
@@ -872,9 +874,10 @@ func (a *App) applySavedPicks() {
 
 // liveSess 是被切到后台、回合仍在进行的会话。
 type liveSess struct {
-	be backend.Backend
-	st *core.State
-	id string
+	be        backend.Backend
+	st        *core.State
+	id        string
+	idleSince time.Time // 回合结束的时刻(进行中为零):后台会话跑完后不立刻结束进程,闲置超过时限才回收
 }
 
 // parkOrClose 离开当前会话时:回合正在进行的后端留在后台继续跑(完成后自动结束),其余直接结束。
@@ -898,21 +901,59 @@ func (a *App) parkOrClose() {
 	be.Close()
 }
 
-// applyParked 把后台会话的事件归约到它自己的状态;回合结束后结束它的后端(历史已落盘,再打开时回放)。
+// applyParked 把后台会话的事件归约到它自己的状态。
+// 回合结束后不立刻结束它的进程:留在后台打「已结束未查看」标记,闲置超过时限才由 reapParked 回收
+// (用户刚切走不等于不需要了,马上切回来应该零等待接回)。进程自己退出了就直接清掉。
 func (a *App) applyParked(be backend.Backend, ev core.Event) {
 	for id, lv := range a.live {
 		if lv.be != be {
 			continue
 		}
 		lv.st.Apply(ev)
-		if lv.st.Phase != core.PhaseRunning {
-			if _, ok := ev.(core.EvTurnEnded); ok {
-				log.Info("后台会话已结束,释放后端", "id", id)
+		switch e := ev.(type) {
+		case core.EvTurnStarted:
+			lv.idleSince = time.Time{}
+		case core.EvTurnEnded:
+			if lv.st.Phase != core.PhaseRunning {
+				lv.idleSince = a.now()
+				if a.sessUnread == nil {
+					a.sessUnread = map[string]bool{}
+				}
+				a.sessUnread[id] = true
+				log.Info("后台会话已结束,留在后台待回收", "id", id)
+			}
+		case core.EvConn:
+			if (e.State == core.ConnNone || e.State == core.ConnFailed) && lv.st.Phase != core.PhaseRunning {
+				log.Info("后台会话的进程已退出,清理", "id", id)
 				delete(a.live, id)
 				be.Close()
 			}
 		}
 		return
+	}
+}
+
+// reapParked 回收闲置够久的后台会话进程(同「设置 → 连接 → 闲置释放」;窗口在后台时按 ⅓ 计)。
+// 不回收:回合进行中 / 有存活的后台任务 / 有待处理的权限、提问、计划。
+func (a *App) reapParked() {
+	limit := a.idleLimit()
+	if limit == 0 || len(a.live) == 0 {
+		return
+	}
+	if !a.warmFg() {
+		limit /= warmBgDivisor
+	}
+	now := a.now()
+	for id, lv := range a.live {
+		if lv.st == nil || lv.st.Phase == core.PhaseRunning || lv.idleSince.IsZero() || now.Sub(lv.idleSince) < limit {
+			continue
+		}
+		if lv.st.AwaitingUser() || len(lv.st.RunningTasks()) > 0 {
+			continue
+		}
+		log.Info("回收闲置的后台会话", "id", id, "闲置", now.Sub(lv.idleSince).Round(time.Second))
+		delete(a.live, id)
+		lv.be.Close()
 	}
 }
 

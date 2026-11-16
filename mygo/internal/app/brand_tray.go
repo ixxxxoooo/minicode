@@ -146,9 +146,17 @@ func (a *App) brandSessions() []traySess {
 		add(a.curSess, a.sessionTitle(a.curSess), a.projectName(), kind)
 	}
 	for id, lv := range a.live {
-		kind := "run"
-		if lv.st != nil && lv.st.AwaitingUser() {
+		kind := ""
+		switch {
+		case lv.st != nil && lv.st.AwaitingUser():
 			kind = "wait"
+		case lv.st != nil && lv.st.Phase == core.PhaseRunning:
+			kind = "run"
+		case a.sessUnread[id]:
+			kind = "unread" // 跑完留在后台、还没看过
+		}
+		if kind == "" {
+			continue
 		}
 		add(id, a.sessionTitle(id), brandPathBase(lv.id), kind)
 	}
@@ -356,8 +364,10 @@ func (a *App) countRunningSessions() int {
 	if a.st != nil && a.st.Phase == core.PhaseRunning {
 		n++
 	}
-	for range a.live {
-		n++
+	for _, lv := range a.live { // 只数真正在跑的:回合结束后留在后台待回收的不算
+		if lv.st != nil && lv.st.Phase == core.PhaseRunning {
+			n++
+		}
 	}
 	return n
 }

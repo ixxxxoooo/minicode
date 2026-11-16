@@ -62,8 +62,12 @@ func (a *App) warmAttach(be backend.Backend) {
 	now := a.now()
 	a.warm = warmCtl{be: be, lastAct: now, fgWas: a.warmFg(), fgHook: a.warm.fgHook}
 	if a.warmEligible() && a.warmPolicy() == 0 {
-		a.warm.due = now.Add(warmDebounce)
-		a.armWarmTimer(warmDebounce)
+		// 打开会话 = 立刻连接(不再去抖):被切走的空闲进程会随即结束,同一时刻最多一个空闲进程。
+		// 窗口不在前台就排期,回前台再起(别给没人看的窗口起进程)。
+		a.warm.due = now
+		if a.warmFg() {
+			a.warmFire("打开会话")
+		}
 	}
 }
 
@@ -126,7 +130,10 @@ func (a *App) warmTypingSignal() {
 }
 
 // WarmTick 供 main 的节拍调用。
-func (a *App) WarmTick() { a.warmTick() }
+func (a *App) WarmTick() {
+	a.warmTick()
+	a.reapParked()
+}
 
 // warmTick 每帧(很便宜)+ 定时器 + 15 秒节拍调用:到点预热、回前台补预热、空闲释放。
 func (a *App) warmTick() {

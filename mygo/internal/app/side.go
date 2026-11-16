@@ -237,6 +237,17 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 			// 方案 A:选中行左侧一道强调色竖线
 			ui.Box(c).Absolute().Left(0).Top(5).Bottom(5).Width(2).Radius(2).Background(t.Ac)
 		}
+		state := a.sessState(s.ID)
+		ui.Row(c).Width(14).Height(14).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).Margin(0, -2, 0, 0).Children(func() {
+			switch state {
+			case "run":
+				a.glyph(c, t.Ac)
+			case "wait":
+				ui.Box(c).Size(6, 6).Radius(3).Background(t.Warn)
+			case "unread":
+				ui.Box(c).Size(6, 6).Radius(3).Background(t.Ac)
+			}
+		})
 		if s.Pinned {
 			kit.Ic(c, "pin", kit.S12).TextColor(t.Ac).Tooltip("已置顶")
 		}
@@ -247,7 +258,14 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 		if hov {
 			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Margin(0, -4, 0, 0).Menu(func(m *ui.Menu) { a.sessionMenu(m, s.ID, s.Title, false) })
 		} else {
-			ui.Text(c, s.Label).FontSize(theme.FsMicro).TextColor(t.Tx4).FontFeatures("tnum").SingleLine()
+			lbl := s.Label
+			switch state {
+			case "run":
+				lbl = "运行中"
+			case "wait":
+				lbl = "待确认"
+			}
+			ui.Text(c, lbl).FontSize(theme.FsMicro).TextColor(t.Tx4).FontFeatures("tnum").SingleLine()
 		}
 	})
 }

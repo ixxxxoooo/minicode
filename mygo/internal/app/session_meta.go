@@ -245,11 +245,36 @@ func (a *App) sessionRunning(id string) bool {
 	if id == "" {
 		return false
 	}
-	if id == a.curSess && a.st.Phase == core.PhaseRunning {
-		return true
+	if id == a.curSess {
+		return a.st != nil && a.st.Phase == core.PhaseRunning
 	}
-	_, ok := a.live[id]
-	return ok
+	lv, ok := a.live[id]
+	return ok && lv.st != nil && lv.st.Phase == core.PhaseRunning
+}
+
+// sessState 侧栏会话行的标识(设计稿 sess-live 页):"wait" 待确认 · "run" 运行中 · "unread" 已结束未查看 · "" 无。
+func (a *App) sessState(id string) string {
+	if id == "" {
+		return ""
+	}
+	var st *core.State
+	if id == a.curSess {
+		st = a.st
+	} else if lv, ok := a.live[id]; ok {
+		st = lv.st
+	}
+	if st != nil {
+		switch {
+		case st.AwaitingUser():
+			return "wait"
+		case st.Phase == core.PhaseRunning:
+			return "run"
+		}
+	}
+	if a.sessUnread[id] && id != a.curSess {
+		return "unread"
+	}
+	return ""
 }
 
 // deleteSessionAsk 弹确认框,确认后删除会话。
