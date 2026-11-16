@@ -104,6 +104,28 @@ func TestFileTreeRename(t *testing.T) {
 	}
 }
 
+// 回归:输入框里是完整文件名,改扩展名 / 去掉扩展名都按输入原样改,不再自动补回原扩展名
+// (此前 router.rs → router.md 会变成 router.md.rs)。
+func TestFileTreeRenameChangesExtension(t *testing.T) {
+	a, tt := demoIDE(t)
+	a.beginRenameFile("src/router.rs")
+	tt.Frame()
+	a.fo.buf = "router.md"
+	a.commitFileOp()
+	tt.Frame()
+	if !hasPath(a, "src/router.md") || hasPath(a, "src/router.md.rs") || hasPath(a, "src/router.rs") {
+		t.Fatal("改扩展名应得到 router.md")
+	}
+	a.beginRenameFile("src/router.md")
+	tt.Frame()
+	a.fo.buf = "router"
+	a.commitFileOp()
+	tt.Frame()
+	if !hasPath(a, "src/router") || hasPath(a, "src/router.md") {
+		t.Fatal("应能去掉扩展名")
+	}
+}
+
 // 删除:确认框写明文件夹里的文件数,确认后关掉受影响的标签。
 func TestFileTreeDelete(t *testing.T) {
 	a, tt := demoIDE(t)

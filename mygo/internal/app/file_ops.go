@@ -130,10 +130,9 @@ func (a *App) commitFileOp() {
 			a.fo.err = opErrText(err, name)
 			return
 		}
+		// 输入框里就是完整文件名(默认只选中主名部分):输入什么就是什么,不再自动补回原扩展名,
+		// 否则 main.go → main.rs 会变成 main.rs.go,也没法把扩展名去掉
 		fullName := name
-		if o.ext != "" && !strings.HasSuffix(name, o.ext) {
-			fullName = name + o.ext
-		}
 		if fullName == path.Base(o.path) {
 			a.fo = fileOp{}
 			return
