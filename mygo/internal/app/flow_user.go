@@ -251,24 +251,24 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 			card.Background(t.Fill1.Over(t.BG)).Radius(0, t.RSm(), t.RSm(), 0)
 		}
 	}
+	// 与背景分开:默认轻阴影+细描边;吸顶时加深。
 	if stuck {
-		// 固定在顶部时:卡片正下方一小道短阴影 + 一圈细边,与下面滚动的内容分开。
-		// (不用大偏移的 Shadow2,也不再叠下沿渐隐,那两层叠起来会在整行下面拖出长暗带。)
 		for _, s := range t.ShadowStuck() {
 			card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
 		card.Shadow(0, 0, 0, 1, t.Bd1)
-	} else if style == 0 && t.Scheme.ID != "b" {
+	} else {
 		for _, s := range t.Shadow1() {
 			card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
+		card.Shadow(0, 0, 0, 1, t.Bd1.Alpha(.7))
 	}
 	hov := card.Hovered()
 	card.OnClick(func() { a.userCardClick(u, stuck) }).Cursor(ui.CursorPointer)
 	card.Children(func() {
 		if clamp && exp && lines > userFoldExp {
 			fs := a.FlowFontSize()
-			ui.Scroll(c).MaxHeight(float32(userFoldExp) * fs * 1.55).Key("user-scroll-" + u.ID).Children(func() {
+			kit.VScroll(c).MaxHeight(float32(userFoldExp) * fs * 1.55).Key("user-scroll-" + u.ID).Children(func() {
 				a.userMsgBody(c, u, false)
 			})
 		} else {

@@ -28,7 +28,7 @@ func (a *App) titlebar(c *ui.Context) {
 			if a.useSideDrawer() {
 				tip = "打开导航抽屉"
 			}
-			kit.Ib(c, "panelL", kit.IbOpt{Tip: tip, On: a.sideOpen && a.useSideDrawer()}).OnClick(func() { a.sideOpen = !a.sideOpen })
+			kit.Ib(c, "panelL", kit.IbOpt{Tip: tip, On: a.sideOpen, Toggle: true}).OnClick(func() { a.sideOpen = !a.sideOpen })
 			// 前进 / 后退两个形态都在:IDE = 跳转历史(转到定义 / 搜索命中 / 引用入栈),Agent = 打开过的会话
 			dim := func(on bool) ui.Color {
 				if on {
@@ -78,12 +78,12 @@ func (a *App) titlebar(c *ui.Context) {
 			} else if t.Scheme.ID == "a" {
 				a.cmdk(c)
 			}
-			kit.Ib(c, "panelB", kit.IbOpt{Tip: "底部面板 ⌘J", On: a.ide.bottomOpen}).OnClick(func() { a.ide.bottomOpen = !a.ide.bottomOpen })
+			kit.Ib(c, "panelB", kit.IbOpt{Tip: "底部面板 ⌘J", On: a.ide.bottomOpen, Toggle: true}).OnClick(func() { a.ide.bottomOpen = !a.ide.bottomOpen })
 			rt := "工作区 ⌥⌘B"
 			if a.mode == ModeIDE {
 				rt = "对话栏 ⌥⌘B"
 			}
-			kit.Ib(c, "panelR", kit.IbOpt{Tip: rt, On: a.rightOn}).OnClick(a.toggleRight)
+			kit.Ib(c, "panelR", kit.IbOpt{Tip: rt, On: a.rightOn, Toggle: true}).OnClick(a.toggleRight)
 			bell := a.noticeBell(c)
 			a.noticePanel(c, bell)
 			if t.Scheme.ID == "b" {

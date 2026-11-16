@@ -14,6 +14,7 @@ import (
 // IbOpt 是图标按钮的可选项。
 type IbOpt struct {
 	On       bool   // 选中态(fill-2)
+	Toggle   bool   // 面板开关类选中:AcSoft + AcTx
 	Small    bool   // .sm:20×20
 	Tip      string // 悬停提示
 	Color    ui.Color
@@ -45,8 +46,13 @@ func Ib(c *ui.Context, icon string, o ...IbOpt) ui.Element {
 	}
 	switch {
 	case op.On:
-		b.Background(T.Fill2)
-		col = T.Tx1
+		if op.Toggle {
+			b.Background(T.AcSoft)
+			col = T.AcTx
+		} else {
+			b.Background(T.Fill2)
+			col = T.Tx1
+		}
 	case b.Hovered() && !op.NoHover && !op.Disabled && !op.Loading:
 		b.Background(T.Fill1)
 		col = T.Tx1
