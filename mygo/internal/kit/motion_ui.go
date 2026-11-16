@@ -40,6 +40,26 @@ func TextShimmer(e ui.Element) ui.Element {
 	return e.Opacity(bright)
 }
 
+const dockGlowPeriod = 2200 * time.Millisecond
+
+// DockGlow 权限 / 提问交互卡的描边呼吸(设计稿 a-glow,2.2s)。
+func DockGlow(e ui.Element, frame func()) ui.Element {
+	if !MotionOn() {
+		return e
+	}
+	x := e.Loop("dock-glow", dockGlowPeriod, ui.Linear)
+	tri := 1 - float32(math.Abs(float64(2*x-1)))
+	e.Border(1, T.AcLine.Mix(T.Ac, tri*.55))
+	e.Shadow(0, 0, 0, 3+tri*2, T.Ac.Mix(ui.Transparent, .88-tri*.08))
+	for _, s := range T.Shadow2() {
+		e.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+	}
+	if frame != nil {
+		frame()
+	}
+	return e
+}
+
 // DrawerSlide 抽屉自侧边滑入(22px)+淡入。
 func DrawerSlide(panel ui.Element, openedAt time.Time, fromRight bool, frame func()) {
 	if !MotionOn() || openedAt.IsZero() {

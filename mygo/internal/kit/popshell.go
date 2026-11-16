@@ -7,6 +7,23 @@ import (
 	"github.com/egoist/mygo/ui"
 )
 
+// PopUpIn 自下而上的卡片入场(设计稿 a-pop-up:scale .97 + translateY 8px,120ms,DurBase)。
+func PopUpIn(panel ui.Element, openedAt time.Time, frame func()) ui.Element {
+	if !MotionOn() || openedAt.IsZero() {
+		return panel
+	}
+	p := float32(time.Since(openedAt)) / float32(DurBase)
+	if p >= 1 {
+		return panel
+	}
+	if frame != nil {
+		frame()
+	}
+	ease := 1 - (1-p)*(1-p)
+	sc := .97 + .03*ease
+	return panel.Opacity(ease).Scale(sc, sc).Translate(0, (1-ease)*8)
+}
+
 // PopIn 弹层入场(透明度 + 自下方 4px 升起,120ms)。
 func PopIn(panel ui.Element, openedAt time.Time) ui.Element {
 	if !MotionOn() || openedAt.IsZero() {
