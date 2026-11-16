@@ -3,7 +3,6 @@ package app
 import (
 	"strings"
 	"testing"
-
 )
 
 func TestSiblingSymbols(t *testing.T) {
@@ -34,4 +33,3 @@ func TestCrumbPathMenuTitle(t *testing.T) {
 		t.Fatalf("文件段标题=%q", got)
 	}
 }
-
