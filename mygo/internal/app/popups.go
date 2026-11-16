@@ -17,9 +17,6 @@ func (a *App) popOpen(key string, fn func(open *bool)) {
 	if a.popClosing == key && time.Since(a.popCloseAt) >= kit.DurFast {
 		a.popClosing, a.popSeen = "", ""
 	}
-	if a.popClosing == key && time.Since(a.popCloseAt) >= kit.DurFast {
-		a.popClosing, a.popSeen = "", ""
-	}
 	hold := a.popup == key
 	if a.popClosing == key && time.Since(a.popCloseAt) < kit.DurFast {
 		hold = true
@@ -74,7 +71,7 @@ func (a *App) mi(c *ui.Context, key, icon, text, right string, on bool) ui.Eleme
 func (a *App) miTint(c *ui.Context, key, icon string, tint *ui.Color, text, right string, on bool) ui.Element {
 	t := a.tk
 	b := ui.ButtonBase(c).Key("mi-" + key).Height(theme.Px(26)).PaddingX(8).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).Justify(ui.Start).
-		Cursor(ui.CursorDefault).Transition(kit.Fade)
+		Cursor(ui.CursorPointer).Transition(kit.Fade)
 	switch {
 	case on:
 		b.Background(t.AcSoft).TextColor(t.AcTx)

@@ -124,7 +124,7 @@
       R('字体阶梯 v4(10.5 / 11.5 / 12 / 13 / 14 / 17 / 22,默认界面大小 100%,正文 13 / 阅读 14)', 'theme.go 阶梯与 DefaultUIScale=100,预设 90/95、100/100、110/105、125/115;已用 cmd/shot 对照设计稿,未跑 go test / go vet、未用 computer use 实测', 'part', 'B6'),
       R('字重规范:只用 400 / 500 / 600,工具行对象不加粗(动词 Tx3 → 对象 Tx2 → 结果 Tx4)', '全应用移除 700,卡片 / 列表标题 500,大标题与强调数字 600(提交 638f9c2);已用 cmd/shot 对照,未测试', 'part', 'B8'),
       R('工具调用详细程度三档:精简(相邻调用合并为一行摘要)/ 标准(仅探索类合并)/ 详细(逐条展开)', 'flow_merge.go + present.applyToolDefaultOpen;进行中/失败/窄档短句与详细档探索组默认展开已接线;仅 cmd/shot 截图,未 computer use', 'part', 'B4'),
-      R('设置页外观预览(字号 / 宽度 / 详细程度 / 流光 / 等待字符与指示动画)', 'settings_preview.go + 设计稿 settings-pv.js;仅 cmd/shot 看过静态画面,动画未实机验证', 'part', 'B6'),
+      R('设置页外观预览(字号 / 宽度 / 详细程度 / 流光 / 等待字符与指示动画)', 'settings_preview.go 六块与 settings-pv.js 结构对齐;cmd/shot settings motion+chat 静态核对,动画未实机验证', 'part', 'B6'),
       R('字号预设(紧凑 / 标准 / 舒适 / 大字 / 自定义)与会话 / 设置页内容宽度多档', 'typography_prefs.go;预设联动界面大小与正文字号、还原联动、会话宽 6 档、设置页宽 5 档;已用 computer use 实测设置页预设联动与宽度档位(会话宽「占满」仅在窄窗口里点过,未在宽屏对照);未做 appearance.dockW(IDE 对话栏预设宽)', 'part', 'B6'),
       R('折叠的思考流式预览(跑马灯)与等待沙漏', 'flow_think_marquee.go:标题常驻+跑马灯 flex(最大 52% 行宽、<96px 隐藏)、无 Spacer 抢位;cmd/shot welcome+thinking 宽/中/窄对照 flow-detail;流式用时未接;未 computer use', 'part', 'B6'),
       R('终端标题自适应截断与竖向标签列表', 'term_title.go / term_tabs.go;已用 computer use 在开发版(真实模式)走过:≥2 个终端出竖列(贴顶、状态点、选中行 ✕)、窄面板自动横向、默认标题只留路径、同名加序号;未做:前台进程名作标题(PTY 层未接)、列表拖拽排序', 'part', 'B6'),
@@ -278,8 +278,8 @@
     comps: [
       R('按钮 / 图标按钮 / 胶囊 / 标签 / 计数 / 分段 / 开关 / 标签条 / 列表行 / Spin / Meter / Chk / Dot / Kbd', '', 'ok'),
       R('按钮 disabled / loading 态', 'kit.Btn Disabled/Loading;提交/安装/重试等接线(仅按钮;图标按钮 / 开关 / 胶囊的禁用与加载态见 states 页)', 'ok', 'B8'),
-      R('图标按钮 / 开关的 disabled 与 error 态', 'kit.IbOpt/TogOpt 已有 Disabled/Loading/Error;业务侧很少传 Disabled;未测试', 'ok'),
-      R('输入框统一封装与错误描边', 'kit.Field:设置单行、项目/工作区/自动化/自定义新建对话框(提交框除外)', 'ok', 'B8'),
+      R('图标按钮 / 开关的 disabled 与 error 态', 'kit.IbOpt/TogOpt:禁用时 42% 透明;业务侧很少传 Disabled;未测试', 'ok'),
+      R('输入框统一封装与错误描边', 'kit.Field:高 26、raised 底 + 聚焦 --ring/--ac-line;设置单行、项目/工作区/自动化/自定义新建对话框(提交框除外);未测试', 'ok', 'B8'),
       R('菜单 / 弹层壳', 'PopIn/PopOut/DialogIn/DialogOut;dialogOpen 接 palette/自动化/自定义/项目框;画布/Mermaid 仍 DialogBase;未测试', 'ok'),
       R('进度环、骨架占位', 'kit.Ring/SkelRows;用量加载/侧栏重扫', 'ok', 'B8')],
     states: [
@@ -289,7 +289,7 @@
       R('快捷键录制与冲突、连通性测试四态', 'settings_shortcuts+ConnTestRow;冲突与四态画面未全核对;未测试', 'part', 'B8'),
       R('减弱动态联动系统设置', 'applyBehavior:偏好动效 ∧ ¬SystemReduceMotion', 'ok', 'B8'),
       R('统一按下态(缩到 96% + 弹簧)', 'kit.clickPressScale 接 Btn/Ib/Tog;未测试', 'ok'),
-      R('键盘聚焦环(鼠标点击不出环)', 'kit.clickFocusRing 用 FocusVisible(Btn/Ib/Tog);与设计 3px 外环仍有差;未测试', 'part', 'B8'),
+      R('键盘聚焦环(鼠标点击不出环)', 'kit.clickFocusRing:FocusVisible + T.Ring() 外环 + AcLine 内描边,接 Btn/Ib/Tog/Chip/Card/Seg;未测试', 'part', 'B8'),
       R('加载态超过 400 ms 才显示', 'kit.btnLoadingSpin(Btn/ConnTestRow 等);有单测;未测试', 'ok'),
       R('卡片悬停上浮 1px + 阴影', 'kit.Card;自定义页 cuCard 已复用 kit.Card(custom_card_test.go);Tester 未断言位移(kit_card_test 仅渲染);未 Computer Use 实测', 'part', 'B8')],
     tokens: [
