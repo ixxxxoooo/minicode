@@ -18,6 +18,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/app"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/diag"
+	"github.com/ixxxxoooo/minicode/internal/kit"
 )
 
 func main() {
@@ -33,6 +34,7 @@ func main() {
 	popup := flag.String("popup", "", "打开某个弹层:cfg / sbcfg / ctx / upd / acct")
 	clicks := flag.String("click", "", "截图前依次点击,形如 IDE;100,200(文字或 DIP 坐标);每次点击后推进 -step 毫秒")
 	step := flag.Int("step", 600, "每次点击后推进的毫秒数")
+	noMotion := flag.Bool("nomotion", false, "关闭动效直接取终态(截图里没有窗口,frameSoon 是空操作,按真实时钟推进的入场动画如用量柱状图会停在第一帧)")
 	palette := flag.String("palette", "", "打开命令面板并预填查询(用 _ 表示空查询)")
 	tab := flag.String("tab", "", "设置页 / 自定义页分类(配合 -screen settings / customize)")
 	squery := flag.String("squery", "", "设置页搜索词")
@@ -62,6 +64,9 @@ func main() {
 	a.SetRepo(demo.Repo())
 	a.SetClock(func() time.Time { return time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC) }) // 与设计稿的「今天」一致
 	a.SeedDemoExtras()
+	if *noMotion {
+		kit.SetMotion(false) // 要放在应用创建之后,创建时会按偏好把动效重新打开
+	}
 	if *wsFlag {
 		a.ActivateWorkspace("ws-fullstack")
 		if *repoIx >= 0 {
