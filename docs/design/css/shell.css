@@ -61,8 +61,7 @@
 [data-scheme="a"] .side .row.on::before { content: ""; position: absolute; left: 0; top: 5px; bottom: 5px; width: 2px; border-radius: 2px; background: var(--ac); }
 
 /* ───────── 方案 B · 浮岛:面板是浮在底色上的圆角岛 ───────── */
-/* 光晕用固定尺寸(半径 1500px 的圆,与应用内一致):按窗口百分比算的话,窗口一放大同一位置的底色会跟着变 */
-[data-scheme="b"] .win { background: radial-gradient(circle 1500px at 0 0,color-mix(in srgb, var(--ac) 9%, var(--bg-chrome)), var(--bg-chrome) 55%); }
+[data-scheme="b"] .win { background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--ac) 9%, var(--bg-chrome)), var(--bg-chrome) 55%); }
 [data-scheme="b"] .body { padding-bottom: 0; }
 [data-scheme="b"] .pane { border-radius: var(--r-lg); box-shadow: var(--sh-1); }
 [data-scheme="b"] .sbar { box-shadow: none; height: 24px; }
