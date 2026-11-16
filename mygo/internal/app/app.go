@@ -110,6 +110,10 @@ type App struct {
 	morphUntil   time.Time                                // 形态切换期间锁定指针(设计稿 .morphing)
 	morphAt      time.Time                                // 形态切换起点(内容分轨淡入 / 淡出)
 	morphFrom    Mode                                     // 切换前的形态
+	belt0        beltGeom                                 // 切换那一刻记下的旧几何(传送带平移的起点,见 morph_belt.go)
+	belt0Ok      bool                                     // belt0 有效
+	belt         beltFrame                                // 本帧传送带摆位(只在 stage 构建期间有值)
+	stageW       float32                                  // 舞台宽度(上一帧量到的)
 	navSwapKey   string                                   // 左栏内容上一帧的「形态 + 分段」(变了就播换内容入场)
 	navSwapAt    time.Time                                // 左栏内容换内容入场的起点
 	navDropKey   string                                   // 左栏上一帧的「分段 + 形态 + 当前项目」(变了就播逐行落下,见 side_drop.go)
@@ -693,6 +697,7 @@ func (a *App) SetMode(m Mode) {
 	}
 	from := a.mode
 	log.Info("切换形态", "from", from, "to", m)
+	a.beltCapture() // 必须在模式与开合还没换之前:记下旧几何,作为传送带平移的起点
 	a.rememberLayout()
 	a.morphFrom, a.morphAt = from, time.Now()
 	a.mode = m

@@ -21,7 +21,22 @@ import (
 // (设计稿 .ws / .chat 的 order),所以内容、编辑器状态都不会重建;宽度变化走 440 ms 变形过渡。
 func (a *App) stage(c *ui.Context) {
 	gap := a.tk.Scheme.GapPane
-	ui.Row(c).Grow(1).MinWidth(0).AlignItems(ui.Stretch).Children(func() {
+	// 形态切换的传送带平移:面板仍是同一个 Row 里带 Key 的同一批元素(身份不变,输入框焦点 / 编辑器状态不丢),
+	// 只是平移期间它们改成绝对定位 + 逐帧摆位(见 morph_belt.go),Row 裁切溢出。
+	f := a.beltStep()
+	row := ui.Row(c).Grow(1).MinWidth(0).AlignItems(ui.Stretch)
+	if f.on {
+		row.Clip()
+	}
+	if w := row.Bounds().W; w > 0 && !f.on {
+		a.stageW = w
+	}
+	row.Children(func() {
+		a.belt = f
+		defer func() { a.belt = beltFrame{} }()
+		if f.on && f.ghOn {
+			a.wsGhost(c, f.ghost) // 被挤出舞台的旧工作区:最先画,新工作区后画
+		}
 		if a.screen != ScreenWork && a.screen != ScreenWelcome {
 			a.guard(c, "页面", "page:"+string(a.screen), guardCard, func() {
 				if !a.page(c) {
@@ -69,6 +84,11 @@ func (a *App) wsPane(c *ui.Context, gap float32) {
 	ide := a.mode == ModeIDE
 	p := a.pane(c).Key("ws").ClipX().Transition(noPos(a.mt()))
 	switch {
+	case a.belt.on:
+		// 形态切换的传送带平移:新工作区绝对定位 + 固定终态宽度,自与对话栏相邻的一侧移进来(morph_belt.go)
+		r := a.belt.ws
+		p.Absolute().Left(r.x).Top(0).Bottom(0).Width(max(0, r.w)).Shrink(0).Transition(noMotion)
+		active = a.belt.wsOn
 	case active && ide:
 		p.Grow(1).Basis(0)
 	case active:
@@ -76,8 +96,12 @@ func (a *App) wsPane(c *ui.Context, gap float32) {
 	default:
 		p.Width(0).Shrink(0)
 	}
-	// 透明度 260ms ease-io(设计稿 .pane);宽度走 440ms 变形曲线(上面的 Transition)。
-	p.Opacity(p.AnimateWith("op", map[bool]float32{true: 1, false: 0}[active], kit.DurSlow, kit.EaseIO))
+	// 透明度 260ms ease-io(设计稿 .pane);宽度走 440ms 变形曲线(上面的 Transition)。平移中直接到位。
+	opDur := kit.DurSlow
+	if a.belt.on {
+		opDur = time.Millisecond
+	}
+	p.Opacity(p.AnimateWith("op", map[bool]float32{true: 1, false: 0}[active], opDur, kit.EaseIO))
 	// 收起期间继续画内容,被宽度动画一点点裁掉(设计稿里内容一直在 DOM 里)
 	if !a.keepWhile("ws", active, kit.DurMorph) {
 		p.Children(func() {})

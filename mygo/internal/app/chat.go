@@ -1,6 +1,8 @@
 package app
 
 import (
+	"time"
+
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
@@ -12,6 +14,11 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 	p := a.pane(c).Key("chat").Transition(noPos(a.mt()))
 	shown := true
 	switch {
+	case a.belt.on:
+		// 形态切换的传送带平移:绝对定位 + 逐帧摆位(morph_belt.go),不走弹性布局与宽度过渡
+		r := a.belt.chat
+		p.Absolute().Left(r.x).Top(0).Bottom(0).Width(max(0, r.w)).Shrink(0).Transition(noMotion)
+		shown = r.w > .5
 	case a.mode == ModeAgent || a.chatMax:
 		p.Grow(1).Basis(0)
 	case a.rightOn && !a.useDockRail():
@@ -24,8 +31,12 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 	}
 	// 透明度 260ms ease-io(设计稿 .pane);形态切换那 440ms 里改走 chat-dock / chat-center:
 	// 整块对话栏自 ∓34% 处滑入,透明度 .4 → 1(chatSlide)。
-	p.Opacity(p.AnimateWith("op", map[bool]float32{true: 1, false: 0}[shown], kit.DurSlow, kit.EaseIO))
-	if shown {
+	opDur := kit.DurSlow
+	if a.belt.on {
+		opDur = time.Millisecond // 平移中不淡入淡出:透明度直接到位,结束后也不会再补一次淡入
+	}
+	p.Opacity(p.AnimateWith("op", map[bool]float32{true: 1, false: 0}[shown], opDur, kit.EaseIO))
+	if shown && !a.belt.on {
 		a.chatSlide(p, a.chatW)
 	}
 	// 收起期间继续画内容,被宽度动画一点点裁掉(窄窗改成图标条时对话栏在浮层里画,不能同时画两份)
