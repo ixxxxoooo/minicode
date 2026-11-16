@@ -7,10 +7,10 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/kit"
 )
 
-const (
-	morphFadeOut     = 120 * time.Millisecond
-	morphFadeInDelay = 90 * time.Millisecond
-	morphWsInDelay   = 60 * time.Millisecond // IDE→Agent 时工作区回到右侧
+var (
+	morphFadeOut     = kit.Scale(120 * time.Millisecond)
+	morphFadeInDelay = kit.Scale(90 * time.Millisecond)
+	morphWsInDelay   = kit.Scale(60 * time.Millisecond) // IDE→Agent 时工作区回到右侧
 )
 
 // morphOpacity 按设计稿 forms 页各轨道时间轴算内容透明度(动效关闭或已结束时恒为 1)。

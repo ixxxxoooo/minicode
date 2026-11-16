@@ -4,9 +4,10 @@ import (
 	"time"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/kit"
 )
 
-const morphLockDur = 470 * time.Millisecond // 对齐设计稿 .morphing
+var morphLockDur = kit.Scale(470 * time.Millisecond) // 对齐设计稿 .morphing(MINI_MOTION_SCALE 调试放慢时同比放大)
 
 // beginMorph 形态切换开始:锁定指针直至过渡结束。
 func (a *App) beginMorph() {

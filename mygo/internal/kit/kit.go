@@ -5,7 +5,9 @@
 package kit
 
 import (
+	"os"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -21,12 +23,12 @@ func Use(t *theme.Tokens) { T = t }
 
 // 动效时长(设计稿 tokens.css 的 --dur-* 与 --dur-loop)。
 var (
-	DurInstant = 80 * time.Millisecond
-	DurFast    = 120 * time.Millisecond
-	DurBase    = 180 * time.Millisecond
-	DurSlow    = 260 * time.Millisecond
+	DurInstant = Scale(80 * time.Millisecond)
+	DurFast    = Scale(120 * time.Millisecond)
+	DurBase    = Scale(180 * time.Millisecond)
+	DurSlow    = Scale(260 * time.Millisecond)
 	DurStatus  = 160 * time.Millisecond // 状态行回合结束淡出(设计稿 resp-time)
-	DurMorph   = 440 * time.Millisecond
+	DurMorph   = Scale(440 * time.Millisecond)
 	DurLoop    = 1600 * time.Millisecond // 呼吸 / 旋转等循环动画一档
 )
 
@@ -40,7 +42,7 @@ var pulseOn = true
 func SetMotion(on bool) {
 	motionOn = on
 	if on {
-		DurInstant, DurFast, DurBase, DurSlow, DurStatus, DurMorph = 80*time.Millisecond, 120*time.Millisecond, 180*time.Millisecond, 260*time.Millisecond, 160*time.Millisecond, 440*time.Millisecond
+		DurInstant, DurFast, DurBase, DurSlow, DurStatus, DurMorph = Scale(80*time.Millisecond), Scale(120*time.Millisecond), Scale(180*time.Millisecond), Scale(260*time.Millisecond), Scale(160*time.Millisecond), Scale(440*time.Millisecond)
 		DurLoop = 1600 * time.Millisecond
 	} else {
 		DurInstant, DurFast, DurBase, DurSlow, DurStatus, DurMorph = 0, 0, 0, 0, 0, 0
@@ -49,6 +51,17 @@ func SetMotion(on bool) {
 	Fade = ui.ElementTransition{Colors: true, Duration: DurFast}
 	thumbSpring = ui.Animation{Duration: DurBase, Ease: EaseSpring}
 }
+
+// motionScale 是调试用的动效放慢倍数(环境变量 MINI_MOTION_SCALE,如 8 = 慢 8 倍),方便逐帧截图核对;默认 1。
+var motionScale = func() float64 {
+	if v, err := strconv.ParseFloat(os.Getenv("MINI_MOTION_SCALE"), 64); err == nil && v >= 1 && v <= 50 {
+		return v
+	}
+	return 1
+}()
+
+// Scale 把一个设计稿时长按调试放慢倍数换算(正常运行恒等)。
+func Scale(d time.Duration) time.Duration { return time.Duration(float64(d) * motionScale) }
 
 // MotionOn 报告动效是否开着。
 func MotionOn() bool { return motionOn }
