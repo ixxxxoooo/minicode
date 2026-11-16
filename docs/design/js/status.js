@@ -63,7 +63,7 @@
       R('设计稿有、设置页没有的行', '已补:appearance.waitAnim→SpinStyled;滚动条分段(仅 UI,运行时未读 pScrollbar)、claude 检测/版本、环境变量遮盖、运行环境三主机 netCheckBody、诊断包导出、doctor 折叠、崩溃列表、settings 导入导出、Worktree 列表、关于页 GitHub 链。仍弱:输出风格无键;开源致谢非完整许可列表;服务商行内「测试」已走真实 testProvider + ProbeProvider。未测试', 'part', 'B6'),
       R('设置里「检查器」措辞与设计稿不一致', 'Go:general.insp 与快捷键分组已用「右侧工作区/右侧栏」(settings_shortcuts 无「检查器」);layout_mem 读 general.insp。缺口:Go 源码注释(pages.go)仍写检查器;设计稿 overview 方案卡示意图是否仍用旧名未在本任务核对', 'part', 'B6'),
       R('规则 / 环境变量 / 语言服务器 / 项目信任', 'settings_rules_env + claudecfg 三层规则/环境变量;settings_lsp 后台检测与 lsp.server.*;settings_trust 读写 hasTrustDialogAccepted。单测覆盖;界面未测试', 'ok'),
-      R('服务商自定义与预设', 'prov_settings.go + claudecfg:预设/自定义 CRUD、密钥 0600、ProbeProvider/FetchModels(含 Real DeepSeek 联调);官方行 meta(OAuth/演示账号)、清单空态「获取+手动添加」双按钮、演示 Mapping.Enabled 对齐 providers.js defaultState。包内单测通过;设置页全链路未测试。缺口:连通成功只在行内标签(无 toast)。未测试', 'part', 'B6'),
+      R('服务商自定义与预设', 'prov_settings.go + claudecfg:预设/自定义 CRUD、密钥 0600、ProbeProvider/FetchModels(含 Real DeepSeek 联调);官方行 meta(OAuth/演示账号)、清单空态「获取+手动添加」双按钮、演示 Mapping.Enabled 对齐 providers.js defaultState。连通测试成功/失败 toast(prov_test_connectivity_test.go);未 Computer Use 实测', 'part', 'B6'),
       R('获取模型列表与勾选', 'prov_settings provInventory:FetchModels 骨架/空/失败/不支持/缺密钥、手动添加、过滤/全选/清空;演示 demo.DemoFetchModels 覆盖 example.com/legacy。未测试', 'part', 'B6'),
       R('模型映射下拉', 'claudecfg.Slots/MappingStatus + ProviderEnv;prov_settings 五槽 UI;运行中 pvPushEnv 跳过(与设计一致)。未测试;环境变量是否进真实 claude 请求需 MINI_REAL_CLAUDE 核', 'part', 'B6'),
       R('会话内按服务商选模型', 'prov_picker cfgModels、popups cfgPopup、composer/statusbar 分组与管理入口已接;官方槽仍读 a.st.Models;切换 toast 的「下一条消息起生效」副句已有(modelSwitchToastNote);弹层 picks 已写入 providers.json 并按服务商恢复;胶囊缩写 + tooltip 已接(cfgChip/statusbar)。映射→环境变量有 MINI_REAL_CLAUDE 集成测试;界面未测试', 'part', 'B6'),
@@ -261,7 +261,7 @@
       R('统一按下态(缩到 96% + 弹簧)', 'kit.clickPressScale 接 Btn/Ib/Tog;未测试', 'ok'),
       R('键盘聚焦环(鼠标点击不出环)', 'kit.clickFocusRing 用 FocusVisible(Btn/Ib/Tog);与设计 3px 外环仍有差;未测试', 'part', 'B8'),
       R('加载态超过 400 ms 才显示', 'kit.btnLoadingSpin(Btn/ConnTestRow 等);有单测;未测试', 'ok'),
-      R('卡片悬停上浮 1px + 阴影', 'kit.Card 已定义,业务用 cuCard 等,零 kit.Card 调用;未测试', 'part', 'B8')],
+      R('卡片悬停上浮 1px + 阴影', 'kit.Card;自定义页 cuCard 已复用 kit.Card(custom_card_test.go);Tester 未断言位移(kit_card_test 仅渲染);未 Computer Use 实测', 'part', 'B8')],
     tokens: [
       R('六套色板、三种布局的圆角 / 间距 / 行高倍率、8 档间距、7 档字号、布局宽高', 'CSS 与 Go 一致', 'ok'),
       R('--dur-loop(循环档 1600 ms)', 'kit.DurLoop;Pulse/Spin 已读', 'ok', 'B8'),

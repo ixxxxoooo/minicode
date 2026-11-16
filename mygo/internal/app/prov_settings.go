@@ -412,6 +412,7 @@ func (a *App) testProvider(id string) {
 	}
 	p.busy[id] = 1
 	p.store.Providers[idx].Status = claudecfg.ProvTestIng
+	prName := p.store.Providers[idx].Name
 	base := p.store.Providers[idx].BaseURL
 	demoMode := a.demoWs()
 	a.bg("连通性测试", func() func() {
@@ -436,7 +437,9 @@ func (a *App) testProvider(id string) {
 				}
 			}
 			a.pvPersist()
-			if !res.OK {
+			if res.OK {
+				a.toast = prName + " 连接正常 · 用时 " + strconv.FormatInt(res.Ms, 10) + " ms"
+			} else {
 				a.toast = res.Detail
 			}
 		}
