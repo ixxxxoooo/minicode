@@ -34,6 +34,9 @@ type brand struct {
 	finderSig string
 	// 缺图标只警告一次,避免每次同步刷屏
 	warnedMissing bool
+	// 事件触发的同步做合并(brandSyncSoon):上次同步时间、是否已排了一次尾沿同步(只在界面线程读写)
+	lastSync    time.Time
+	syncPending bool
 }
 
 func (a *App) initBrand() {
@@ -51,6 +54,8 @@ func (a *App) syncBrand() {
 	if !mygo.App.IsReady() { // 应用就绪前创建托盘会直接 panic(New 里的 retheme 也会走到这);就绪后 InitBrand 会补一次
 		return
 	}
+	// 重建托盘菜单与重画图标并不便宜(随会话数增长,实测 25~130 ms),超过阈值要留痕
+	defer diag.SpanSlow("brand", "同步托盘与Dock", 50*time.Millisecond)()
 	dark := a.tk != nil && a.tk.Palette.Dark
 	// Dock 图标按「样式 + 外观后缀 + 深浅」的签名判断是否需要重设:
 	// 只比较深浅会让设置里改样式 / 外观(浅色、深色、透明、着色)时 Dock 图标不更新。

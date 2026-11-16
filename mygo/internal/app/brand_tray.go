@@ -10,6 +10,7 @@ import (
 
 	"github.com/egoist/mygo"
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 )
 
@@ -412,8 +413,43 @@ func (a *App) brandAfterEvent(ev core.Event) {
 		if _, ok := ev.(core.EvPromoteToPermission); ok {
 			a.maybeDockBounce()
 		}
-		a.syncBrand()
+		a.brandSyncSoon()
 	}
+}
+
+// brandSyncMinGap 事件触发的托盘 / Dock 同步的最小间隔。
+const brandSyncMinGap = 400 * time.Millisecond
+
+// brandSyncSoon 合并事件触发的 syncBrand。
+//
+// 历史回放 / 流式输出会在很短时间内连发几百个 Append,原先每个事件都整套重建托盘菜单与图标,
+// 打开长会话时界面线程被卡 400 ms 以上(日志「主线程停滞」与「归约事件 ev=Append」成串出现)。
+// 现在:距上次同步已超过间隔就立刻同步(前沿,状态变化仍然及时);间隔内的后续事件只排一次尾沿同步,
+// 在间隔结束时按最终状态补一次。托盘只看汇总状态,所以不会丢信息。
+func (a *App) brandSyncSoon() {
+	if a.win == nil { // 测试 / 启动阶段没有窗口:没有定时器可用,直接同步(syncBrand 自己会跳过)
+		a.syncBrand()
+		return
+	}
+	if a.brand.syncPending {
+		return
+	}
+	wait := brandSyncMinGap - time.Since(a.brand.lastSync)
+	if wait <= 0 {
+		a.brand.lastSync = time.Now()
+		a.syncBrand()
+		return
+	}
+	a.brand.syncPending = true
+	win := a.win
+	time.AfterFunc(wait, func() {
+		defer diag.Recover("托盘同步")
+		win.Update(func() {
+			a.brand.syncPending = false
+			a.brand.lastSync = time.Now()
+			a.syncBrand()
+		})
+	})
 }
 
 func (a *App) maybeDockBounce() {
