@@ -1,6 +1,7 @@
 package app
 
 import (
+	"regexp"
 	"strings"
 	"unicode"
 
@@ -70,11 +71,45 @@ func mdBlockSemKey(raw string) string {
 // mdBlockWouldNormalize 判断单块在整段序列化后是否与原文不同。
 func mdBlockWouldNormalize(raw string) bool {
 	trim := strings.TrimSpace(raw)
-	if trim == "" {
+	if trim == "" || mdIsThematicBreak(trim) { // 分隔线序列化会丢,但没改动的块保持原样,编辑别的段落不受影响,不算
 		return false
 	}
 	ser := strings.TrimSpace(richtext.ParseMarkdown(raw).Markdown())
-	return trim != ser
+	return mdLooseKey(trim) != mdLooseKey(ser)
+}
+
+// mdIsThematicBreak 是不是分隔线(--- / *** / ___,至少三个同种字符)。
+func mdIsThematicBreak(s string) bool {
+	if len(s) < 3 || strings.Contains(s, "\n") {
+		return false
+	}
+	c := s[0]
+	if c != '-' && c != '*' && c != '_' {
+		return false
+	}
+	return strings.Trim(strings.ReplaceAll(s, " ", ""), string(c)) == ""
+}
+
+var (
+	mdQuoteLead = regexp.MustCompile(`(?m)^[ \t]*(>[ \t]?)+`)
+	mdSpaceRun  = regexp.MustCompile(`\s+`)
+	mdOrdLead   = regexp.MustCompile(`^(\d+)[.)] `)
+)
+
+// mdLooseKey 给「写法不同但内容没变」的块算同一个键,这些差别序列化后虽然字节不同,实际不会改变文档:
+// 段落里的单个换行(软换行,等价于空格)、引用块每行的 ">"、代码围栏的语言标注(编辑时由 mdPatchFenceLangs 补回)。
+// 列表符(* → -)、强调符号这类真会被改写的写法仍然保留差异。
+func mdLooseKey(s string) string {
+	if strings.HasPrefix(s, "```") || strings.HasPrefix(s, "~~~") {
+		// 围栏块:忽略第一行的语言标注,正文逐字比较(代码里的空白有意义)
+		if i := strings.Index(s, "\n"); i >= 0 {
+			return s[:3] + "\n" + strings.TrimSpace(s[i+1:])
+		}
+		return s[:3]
+	}
+	s = mdQuoteLead.ReplaceAllString(s, "")
+	s = mdOrdLead.ReplaceAllString(s, "1. ") // 有序列表按项切块后,单独一项的编号(2. / 3.)会被序列化成 1.,是切块的副作用
+	return strings.TrimSpace(mdSpaceRun.ReplaceAllString(s, " "))
 }
 
 // mdNormalizedBlocks 统计「若编辑该段会被规范化」的非空行数(只计会变的块)。
