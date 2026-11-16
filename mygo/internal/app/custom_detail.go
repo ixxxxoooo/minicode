@@ -135,9 +135,9 @@ func (a *App) cuArea(c *ui.Context, key string, v *string, h float32, mono bool)
 	}
 }
 
-// cuCard 是带描边的小卡片(行之间不画线)。
+// cuCard 是带描边的小卡片(行之间不画线);复用 kit.Card 的悬停上浮与阴影。
 func (a *App) cuCard(c *ui.Context, body func()) {
-	a.box(c).Padding(2, 4).Children(body)
+	kit.Card(c).Cursor(ui.CursorDefault).Padding(2, 4).Children(body)
 }
 
 func (a *App) cuToggleRow(c *ui.Context, key, title, sub string, on bool, flip func()) {
