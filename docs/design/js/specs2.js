@@ -159,12 +159,12 @@
         ['未安装服务器', '该语言的行显示安装卡(与状态栏同源),不占工作区扫描配额']])}`)}</div>`;
 
   /* ───────── 滚动与滚动条 ───────── */
-  P['scroll-spec'] = () => `<div class="ds" style="max-width:960px">${head('滚动 · Shift 滚轮与滚动条', '对标 macOS overlay / VS Code / Zed:鼠标纵向滚轮 + Shift 横向滚;滚动条滚动时出现,静止约 3 秒淡出,仅悬停滑块或拖动时保持。')}
+  P['scroll-spec'] = () => `<div class="ds" style="max-width:960px">${head('滚动 · Shift 滚轮与滚动条', '对标 macOS overlay / VS Code / Zed:鼠标纵向滚轮 + Shift 横向滚;滚动条滚动时出现,静止约 3 秒隐藏,仅指针停在滚动条上或拖动时保持。')}
     ${sec('Shift + 滚轮', '触控板横向手势走系统;鼠标滚轮在任意可横向滚动区域按住 Shift 后纵向刻度转为横向。双向容器上 Shift 时只横向不纵向。', tbl([['区域', 180], ['做法', 520], ['状态']], [
       ['kit.VScroll / HScroll / XYScroll', '会话流、侧栏、设置等经 kit 封装;长行代码块用 XYScroll', st('part')],
       ['编辑器 / Diff', '库内 editor.State 自管滚动,Shift 转横向需框架支持(当前未接)', st('todo')],
       ['终端', '滚轮交给 vt 或外层列表;Shift 不特殊处理', st('part')]]))}
-    ${sec('滚动条', '设置 → 外观「滚动条」:跟随系统 = MyGo 默认(悬停内容区显示);自动隐藏 = 自绘 overlay,停止 3 秒淡出;始终显示 = KeepScrollbars。动效关闭时显隐无过渡。', tbl([['行为', 200], ['说明']], [
+    ${sec('滚动条', '设置 → 外观「滚动条」:跟随系统 = MyGo 默认(悬停内容区显示);自动隐藏 = 滚动 / 拖动 / 靠近滚动条时常驻,静止满 3 秒整条隐藏(用框架的 KeepScrollbars / Scrollbars(false) 切换,不另画、不套容器,没有淡出动画);始终显示 = KeepScrollbars。动效关闭时显隐无过渡。', tbl([['行为', 200], ['说明']], [
       ['出现', '滚轮 / 触控板滚动、把 ScrollState 滚离起点'],
       ['保持', '指针在滑块轨道或拖动拇指'],
       ['隐藏', '停止滚动约 3 秒;内容区悬停不动也隐藏'],

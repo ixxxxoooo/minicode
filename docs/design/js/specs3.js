@@ -91,7 +91,7 @@
       ['工作区存储', '~/.minicode/workspaces.json 一个文件同时存手动添加的项目与工作区,原子落盘;损坏时改名留底不丢数据', st('ok')],
       ['侧栏的工作区行与项目行', 'side_ws+side_ctx:展开列所有成员文件夹的会话;点行选中并联动聊天栏与 IDE(selectWorkspace / selectProject);编辑工作区对话框内所有文件夹平级可上移 / 下移;go test 覆盖,未用 computer use 实测', st('ok')],
       ['编辑项目对话框', 'proj_edit.go+workspaces.names/sideProjects。未测试', st('ok')],
-      ['项目 / 工作区对话框 · 关闭', '右上角 ✕ 与「取消」走 pd.open+d ialogOpen 退场(不立即清 pd.kind);Esc / 点遮罩同理;add / ws / wsedit / proj / confirm 共用 dlgFrame', st('ok')],
+      ['项目 / 工作区对话框 · 关闭', '右上角 ✕ 与「取消」走 pd.open+dialogOpen 退场(不立即清 pd.kind);Esc / 点遮罩同理;add / ws / wsedit / proj / confirm 共用 dlgFrame', st('ok')],
       ['窗口内自绘右键菜单', 'app.go PopoverMenus;menu_item.go 统一 MenuIcon;视觉未对照截图。未测试', st('ok')],
       ['多根文件树 / 多根搜索', '虚拟顶层目录 = 文件夹名(workspace.Multi),路径加文件夹前缀,顶层行带「主 / 改动数 / 非仓库」;搜索按前缀路径工作,搜索条有「范围」chip 与文件夹右键「仅在此文件夹搜索」', st('ok')],
       ['Claude 附加目录', '在任一成员文件夹启动会话时,其余文件夹追加 --add-dir(Workspace.Others),开关打开时设置 CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1', st('ok')],

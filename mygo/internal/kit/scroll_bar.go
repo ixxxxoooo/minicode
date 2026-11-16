@@ -1,7 +1,6 @@
 package kit
 
 import (
-	"math"
 	"sync"
 	"time"
 
@@ -10,28 +9,28 @@ import (
 
 // 滚动条显示策略(与设置 appearance.scrollbar 分段一致)。
 const (
-	ScrollbarFollowSystem = 0
-	ScrollbarAutoHide     = 1
+	ScrollbarFollowSystem = 0 // 沿用 MyGo 默认:鼠标在内容区上就显示
+	ScrollbarAutoHide     = 1 // 滚动 / 拖动 / 靠近滚动条时显示,静止约 3 秒后隐藏
 	ScrollbarAlways       = 2
 )
 
-const scrollFadeOut = 3 * time.Second
+// scrollIdle 是静止多久后隐藏滚动条(对标 macOS 触控板 overlay 滚动条、VS Code)。
+const scrollIdle = 3 * time.Second
 
 var (
-	scrollMu     sync.Mutex
-	scrollMode   = ScrollbarAutoHide
-	scrollNow    func() time.Time
-	scrollSlots  = map[string]*scrollSlot{}
-	scrollFadeIn = 180 * time.Millisecond
+	scrollMu    sync.Mutex
+	scrollMode  = ScrollbarAutoHide
+	scrollNow   func() time.Time
+	scrollSlots = map[string]*scrollSlot{}
 )
 
+// scrollSlot 记录一个带标识的滚动区最近一次「有动静」的时刻。
 type scrollSlot struct {
-	st       *ui.ScrollState
-	lastMove time.Time
-	dragging bool
-	barHover bool
-	horiz    bool
-	vert     bool
+	lastMove time.Time // 最近一次滚动 / 靠近滚动条 / 按下的时刻
+	edge     bool      // 指针最近一次落在滚动条轨道上
+	seen     bool
+	x, y     float64 // 上一帧的滚动偏移,用来发现键盘 / 拖动 / 程序引起的滚动
+	w, h     float32 // 上一帧的可视尺寸(输入事件的坐标相对元素左上角,要靠它判断是否在右 / 下边缘)
 }
 
 // SetScrollbarMode 设置全局滚动条策略(设置页保存后调用)。
@@ -49,7 +48,11 @@ func ScrollbarMode() int {
 }
 
 // SetScrollClock 注入当前时间(测试用)。
-func SetScrollClock(f func() time.Time) { scrollNow = f }
+func SetScrollClock(f func() time.Time) {
+	scrollMu.Lock()
+	scrollNow = f
+	scrollMu.Unlock()
+}
 
 func scrollClock() time.Time {
 	if scrollNow != nil {
@@ -58,123 +61,134 @@ func scrollClock() time.Time {
 	return time.Now()
 }
 
-func regScroll(id string, st *ui.ScrollState, horiz, vert bool) {
-	if id == "" {
-		return
-	}
-	scrollMu.Lock()
-	defer scrollMu.Unlock()
+func slotOf(id string) *scrollSlot {
 	sl, ok := scrollSlots[id]
 	if !ok {
-		sl = &scrollSlot{horiz: horiz, vert: vert}
+		sl = &scrollSlot{}
 		scrollSlots[id] = sl
 	}
-	sl.st = st
-	sl.horiz = horiz
-	sl.vert = vert
+	return sl
 }
 
+// markScrollActivity 记一次滚动活动(滚轮 / 按下滚动条)。
 func markScrollActivity(id string) {
 	if id == "" {
 		return
 	}
 	scrollMu.Lock()
 	defer scrollMu.Unlock()
-	if sl := scrollSlots[id]; sl != nil {
+	slotOf(id).lastMove = scrollClock()
+}
+
+// setScrollEdge 记录指针是否在滚动条轨道上;在轨道上就算有动静。
+func setScrollEdge(id string, on bool) {
+	if id == "" {
+		return
+	}
+	scrollMu.Lock()
+	defer scrollMu.Unlock()
+	sl := slotOf(id)
+	sl.edge = on
+	if on {
 		sl.lastMove = scrollClock()
 	}
 }
 
-func setScrollBarHover(id string, on bool) {
+// scrollShown 报告这个滚动区的滚动条此刻是否该显示。
+// hovered = 指针此刻是否还在这个滚动区里(离开后「靠近滚动条」的状态不再保持)。
+// st 不为空时,偏移相对上一帧有变化也算活动。
+func scrollShown(id string, st *ui.ScrollState, hovered bool) bool {
 	scrollMu.Lock()
 	defer scrollMu.Unlock()
-	if sl := scrollSlots[id]; sl != nil {
-		sl.barHover = on
-		if on {
-			sl.lastMove = scrollClock()
-		}
-	}
-}
-
-// scrollAlpha 返回滚动条不透明度 0–1;拖动 / 悬停滑块时保持 1。
-func scrollAlpha(id string) float32 {
-	if ScrollbarMode() != ScrollbarAutoHide {
-		return 1
-	}
-	scrollMu.Lock()
-	sl := scrollSlots[id]
-	scrollMu.Unlock()
-	if sl == nil {
-		return 0
-	}
 	now := scrollClock()
-	if sl.dragging || sl.barHover {
-		return 1
+	sl := slotOf(id)
+	if st != nil {
+		x, y := float64(st.X), float64(st.Y)
+		if sl.seen && (x != sl.x || y != sl.y) {
+			sl.lastMove = now
+		}
+		sl.x, sl.y, sl.seen = x, y, true
 	}
-	if sl.lastMove.IsZero() {
-		return 0
+	if sl.edge && hovered {
+		return true // 指针停在滚动条上:一直显示
 	}
-	elapsed := now.Sub(sl.lastMove)
-	if elapsed >= scrollFadeOut {
-		return 0
-	}
-	if !MotionOn() || scrollFadeIn <= 0 {
-		return 1
-	}
-	if elapsed < scrollFadeIn {
-		return float32(elapsed) / float32(scrollFadeIn)
-	}
-	fadeStart := scrollFadeOut - DurFast
-	if elapsed > fadeStart {
-		left := float32(scrollFadeOut - elapsed)
-		return max(0, left/float32(DurFast))
-	}
-	return 1
+	return !sl.lastMove.IsZero() && now.Sub(sl.lastMove) < scrollIdle
 }
 
-func scrollBarEdgeHit(r ui.Rect, st *ui.ScrollState, x, y float32, horiz, vert bool) (onBar bool) {
-	if st == nil {
+// ScrollFrameActive 报告是否还有滚动条处在「等待隐藏」的 3 秒里(应用据此 frameSoon,到点才能收起)。
+func ScrollFrameActive(now time.Time) bool {
+	if ScrollbarMode() != ScrollbarAutoHide {
 		return false
 	}
-	th := T.UITheme()
-	tw := th.ScrollbarStyle.Resolve(th).TrackWidth
-	if tw <= 0 {
-		tw = th.ScrollbarWidth + 6
-	}
-	viewW, viewH := r.W, r.H
-	if vert && st.MaxY+viewH > viewH+0.5 {
-		if x >= r.X+r.W-tw && y >= r.Y && y <= r.Y+r.H {
-			return true
-		}
-	}
-	if horiz && st.MaxX+viewW > viewW+0.5 {
-		if y >= r.Y+r.H-tw && x >= r.X && x <= r.X+r.W {
+	scrollMu.Lock()
+	defer scrollMu.Unlock()
+	for _, sl := range scrollSlots {
+		if !sl.lastMove.IsZero() && now.Sub(sl.lastMove) < scrollIdle+150*time.Millisecond {
 			return true
 		}
 	}
 	return false
 }
 
-func scrollOverlayPaint(p *ui.Painter, r ui.Rect, id string, st *ui.ScrollState, horiz, vert bool) {
-	a := scrollAlpha(id)
-	if a <= 0.001 || st == nil {
-		return
-	}
+// scrollSize 记录滚动区上一帧的可视尺寸。
+func scrollSize(id string, r ui.Rect) {
+	scrollMu.Lock()
+	defer scrollMu.Unlock()
+	sl := slotOf(id)
+	sl.w, sl.h = r.W, r.H
+}
+
+// scrollOnBar 判断指针(x, y 相对滚动区左上角)是否落在右 / 下边缘的滚动条轨道上。
+func scrollOnBar(id string, x, y float32, horiz, vert bool) bool {
 	th := T.UITheme()
-	style := th.ScrollbarStyle.Resolve(th)
-	viewW, viewH := r.W, r.H
-	contentW := st.MaxX + viewW
-	contentH := st.MaxY + viewH
-	if vert && contentH > viewH+0.5 {
-		bar := ui.Scrollbar{Box: r, View: viewH, Content: contentH, Offset: st.Y, Style: style}
-		thumb := style.Thumb
-		thumb.A = uint8(math.Round(float64(thumb.A) * float64(a)))
-		p.Scrollbar(bar, ui.ScrollbarState{Color: thumb})
+	tw := th.ScrollbarStyle.Resolve(th).TrackWidth
+	if tw <= 0 {
+		tw = th.ScrollbarWidth + 6
 	}
-	if horiz && contentW > viewW+0.5 {
-		bar := ui.Scrollbar{Box: r, Horizontal: true, View: viewW, Content: contentW, Offset: st.X, Style: style}
-		thumb := style.Thumb
-		thumb.A = uint8(math.Round(float64(thumb.A) * float64(a)))
-		p.Scrollbar(bar, ui.ScrollbarState{Color: thumb})
+	scrollMu.Lock()
+	sl := slotOf(id)
+	w, h := sl.w, sl.h
+	scrollMu.Unlock()
+	if w <= 0 || h <= 0 || x < 0 || x > w || y < 0 || y > h {
+		return false
 	}
+	if vert && x >= w-tw {
+		return true
+	}
+	return horiz && y >= h-tw
+}
+
+// applyScrollPolicy 按全局策略给滚动容器挂上滚动条显示规则,并记录活动:
+// 自动隐藏 = 活动期间常驻(KeepScrollbars),静止满 3 秒后整条隐藏(Scrollbars(false));
+// 没有标识的滚动区没法记时,沿用框架默认(悬停显示)。
+func applyScrollPolicy(el ui.Element, id string, st *ui.ScrollState, horiz, vert bool) ui.Element {
+	if id != "" {
+		scrollSize(id, el.Bounds())
+		el = el.HandleInput(func(ev ui.InputEvent) bool {
+			switch ev.Kind {
+			case ui.InputScroll:
+				markScrollActivity(id)
+			case ui.InputPointerMove:
+				setScrollEdge(id, scrollOnBar(id, ev.X, ev.Y, horiz, vert))
+			case ui.InputPointerDown:
+				if scrollOnBar(id, ev.X, ev.Y, horiz, vert) {
+					markScrollActivity(id)
+				}
+			}
+			return false // 只观察,不吞事件(Shift 横滚等仍由框架处理)
+		})
+	}
+	switch ScrollbarMode() {
+	case ScrollbarAlways:
+		return el.KeepScrollbars(true)
+	case ScrollbarAutoHide:
+		if id == "" {
+			return el
+		}
+		if scrollShown(id, st, el.Hovered()) {
+			return el.KeepScrollbars(true)
+		}
+		return el.Scrollbars(false)
+	}
+	return el
 }

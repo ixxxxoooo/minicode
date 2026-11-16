@@ -1,8 +1,6 @@
 package kit
 
 import (
-	"time"
-
 	"github.com/egoist/mygo/ui"
 )
 
@@ -162,110 +160,16 @@ func (b *ScrollBuilder) buildScroll() ui.Element {
 	for _, sc := range b.shortcuts {
 		el = el.OnShortcut(sc.mods, sc.key, sc.fn)
 	}
-	el = el.HandleInput(func(ev ui.InputEvent) bool {
-		noteScrollWheel(b.id, b.st, ev)
-		return false
-	})
 	h, v := b.axes()
-	regScroll(b.id, b.st, h, v)
-	switch ScrollbarMode() {
-	case ScrollbarAlways:
-		el = el.KeepScrollbars(true)
-	case ScrollbarAutoHide:
-		el = el.Scrollbars(false)
-	}
-	return el
+	return applyScrollPolicy(el, b.id, b.st, h, v)
 }
 
-func noteScrollWheel(id string, st *ui.ScrollState, ev ui.InputEvent) {
-	if ev.Kind == ui.InputScroll {
-		markScrollActivity(id)
-	}
-}
-
-func (b *ScrollBuilder) overlay(el ui.Element, h, v bool) {
-	ui.Box(b.c).Key(b.id + "-sov").Absolute().Left(0).Right(0).Top(0).Bottom(0).PassThrough().
-		HandleInput(func(ev ui.InputEvent) bool {
-			r := el.Bounds()
-			switch ev.Kind {
-			case ui.InputPointerMove:
-				setScrollBarHover(b.id, scrollBarEdgeHit(r, b.st, ev.X, ev.Y, h, v))
-			case ui.InputScroll:
-				markScrollActivity(b.id)
-			case ui.InputPointerDown:
-				if scrollBarEdgeHit(r, b.st, ev.X, ev.Y, h, v) {
-					markScrollActivity(b.id)
-				}
-			}
-			return false
-		}).
-		Draw(func(p *ui.Painter, r ui.Rect) {
-			br := el.Bounds()
-			if br.W <= 0 || br.H <= 0 {
-				return
-			}
-			scrollOverlayPaint(p, br, b.id, b.st, h, v)
-		})
-}
-
-// Children 构建滚动内容;自动隐藏模式下叠加自绘 overlay 滚动条(停止滚动约 3 秒后淡出)。
+// Children 构建滚动内容。
 func (b *ScrollBuilder) Children(fn func()) {
-	el := b.buildScroll()
-	h, v := b.axes()
-	if ScrollbarMode() != ScrollbarAutoHide {
-		el.Children(fn)
-		return
-	}
-	col := ui.Column(b.c).Key(b.id + "-swrap")
-	if b.growOn {
-		col = col.Grow(b.grow)
-	}
-	if b.minHOn {
-		col = col.MinHeight(b.minH)
-	}
-	if b.minWOn {
-		col = col.MinWidth(b.minW)
-	}
-	col.Children(func() {
-		el.Children(fn)
-		b.overlay(el, h, v)
-	})
+	b.buildScroll().Children(fn)
 }
 
-// ApplyNativeScroll 给已有的 ui.Scroll / ScrollHorizontal / ScrollBoth 挂上策略与活动追踪(需保留 Bounds 等 API 时用)。
+// ApplyNativeScroll 给已有的 ui.Scroll / ScrollHorizontal / ScrollBoth 挂上滚动条策略与活动追踪(需保留 Bounds 等 API 时用)。
 func ApplyNativeScroll(el ui.Element, id string, st *ui.ScrollState, horiz, vert bool) ui.Element {
-	regScroll(id, st, horiz, vert)
-	el = el.HandleInput(func(ev ui.InputEvent) bool {
-		noteScrollWheel(id, st, ev)
-		return false
-	})
-	switch ScrollbarMode() {
-	case ScrollbarAlways:
-		return el.KeepScrollbars(true)
-	case ScrollbarAutoHide:
-		return el.Scrollbars(false)
-	default:
-		return el
-	}
-}
-
-// ScrollFrameActive 报告是否仍有滚动条淡出动效在进行(应用据此 frameSoon)。
-func ScrollFrameActive(now time.Time) bool {
-	if ScrollbarMode() != ScrollbarAutoHide || !MotionOn() {
-		return false
-	}
-	scrollMu.Lock()
-	defer scrollMu.Unlock()
-	for _, sl := range scrollSlots {
-		if sl == nil || sl.lastMove.IsZero() {
-			continue
-		}
-		if sl.dragging || sl.barHover {
-			return true
-		}
-		if now.Sub(sl.lastMove) < scrollFadeOut+DurFast {
-			return true
-		}
-	}
-	return false
+	return applyScrollPolicy(el, id, st, horiz, vert)
 }

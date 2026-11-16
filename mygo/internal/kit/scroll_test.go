@@ -48,20 +48,68 @@ func TestShiftWheelViaScrollBoth(t *testing.T) {
 	}
 }
 
-func TestScrollBarFadeAfterIdle(t *testing.T) {
+func TestScrollBarHidesAfterIdle(t *testing.T) {
 	Use(theme.Resolve(theme.Palettes[0], theme.Schemes[0], ""))
 	SetScrollbarMode(ScrollbarAutoHide)
-	SetMotion(true)
 	base := time.Date(2026, 1, 2, 12, 0, 0, 0, time.UTC)
+	defer SetScrollClock(nil)
 	SetScrollClock(func() time.Time { return base })
-	regScroll("fade-test", &ui.ScrollState{}, false, true)
-	markScrollActivity("fade-test")
-	SetScrollClock(func() time.Time { return base.Add(200 * time.Millisecond) })
-	if scrollAlpha("fade-test") < 0.5 {
-		t.Fatalf("滚动后应显示滚动条,alpha=%v", scrollAlpha("fade-test"))
+	st := &ui.ScrollState{}
+	if scrollShown("idle-test", st, false) {
+		t.Fatal("刚出现、没有滚动过,不应显示滚动条")
 	}
-	SetScrollClock(func() time.Time { return base.Add(4 * time.Second) })
-	if scrollAlpha("fade-test") != 0 {
-		t.Fatalf("停止 4s 后应隐藏,alpha=%v", scrollAlpha("fade-test"))
+	st.Y = 40 // 偏移变化 = 有滚动(键盘 / 拖动 / 程序也算)
+	if !scrollShown("idle-test", st, false) {
+		t.Fatal("滚动后应显示滚动条")
+	}
+	SetScrollClock(func() time.Time { return base.Add(2900 * time.Millisecond) })
+	if !scrollShown("idle-test", st, false) {
+		t.Fatal("静止 2.9 秒内应仍显示")
+	}
+	if !ScrollFrameActive(base.Add(2900 * time.Millisecond)) {
+		t.Fatal("等待隐藏期间应请求续帧")
+	}
+	SetScrollClock(func() time.Time { return base.Add(3100 * time.Millisecond) })
+	if scrollShown("idle-test", st, false) {
+		t.Fatal("静止满 3 秒应隐藏")
+	}
+	// 指针停在滚动条轨道上:不论多久都保持显示;指针离开后恢复计时
+	setScrollEdge("idle-test", true)
+	SetScrollClock(func() time.Time { return base.Add(30 * time.Second) })
+	if !scrollShown("idle-test", st, true) {
+		t.Fatal("指针停在滚动条上应一直显示")
+	}
+}
+
+func TestScrollBarModeAppliesFlags(t *testing.T) {
+	Use(theme.Resolve(theme.Palettes[0], theme.Schemes[0], ""))
+	defer SetScrollbarMode(ScrollbarAutoHide)
+	var st ui.ScrollState
+	build := func(c *ui.Context) {
+		VScroll(c).Key("flag-test").TrackScroll(&st).Width(200).Height(100).Children(func() {
+			ui.Box(c).Width(100).Height(600).Shrink(0)
+		})
+	}
+	SetScrollbarMode(ScrollbarAutoHide)
+	tt := ui.NewTester(build, 200, 100)
+	tt.Frame()
+	tt.Scroll(100, 50, 0, 40)
+	tt.Frame()
+	if !scrollShown("flag-test", &st, false) {
+		t.Fatal("滚动后应进入显示期")
+	}
+	tt.Move(198, 50) // 右边缘 = 滚动条轨道
+	scrollMu.Lock()
+	edge := scrollSlots["flag-test"].edge
+	scrollMu.Unlock()
+	if !edge {
+		t.Fatal("指针移到右边缘应记为在滚动条上")
+	}
+	tt.Move(50, 50)
+	scrollMu.Lock()
+	edge = scrollSlots["flag-test"].edge
+	scrollMu.Unlock()
+	if edge {
+		t.Fatal("指针离开边缘应清除")
 	}
 }

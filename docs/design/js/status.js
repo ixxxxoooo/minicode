@@ -56,7 +56,7 @@
       R('外观 → 应用图标 / 菜单栏图标两组', '六样式×四外观 assets(内嵌)、Dock 弹跳/进度/角标、托盘五样式×八态/动画/菜单/数字/VoiceOver、应用菜单栏;访达换装已接(NSWorkspace.setIcon,签名缓存,关闭即还原),.icon 打包未接', 'part', 'B6'),
       R('快捷键:点键录制、冲突当场提示', '全局 / 编辑器 / 终端快捷键读偏好', 'ok', 'B6'),
       R('其余偏好', '启动形态、忽略规则、动效、多数编辑器/终端/SCM 键已接线;仍只存偏好或仅占位的项集中在下面「未接线」各行(含 browser.reader、输出风格占位、privacy.crash/usage)', 'part', 'B6'),
-      R('滚动 · Shift 滚轮 / 滚动条', 'kit.VScroll/HScroll/XYScroll+ApplyNativeScroll;appearance.scrollbar→SetScrollbarMode+3s overlay 淡出;会话流代码块 XYScroll、面包屑 HScroll、标签条原生横滚;编辑器自绘滚动条仍悬停整区显示、Shift 横滚未接;未测试', 'part', 'B6'),
+      R('滚动 · Shift 滚轮 / 滚动条', 'kit.VScroll/HScroll/XYScroll+ApplyNativeScroll;appearance.scrollbar→SetScrollbarMode,自动隐藏=活动期间 KeepScrollbars、静止 3 秒后 Scrollbars(false)(无淡出动画;无 Key 的滚动区沿用框架悬停显示);会话流代码块 XYScroll、面包屑 HScroll、标签条原生横滚;编辑器自绘滚动条仍悬停整区显示、Shift 横滚未接;未测试', 'part', 'B6'),
       R('偏好未接线 · 模型 / 对话', 'claude.model/effort 为源(prefs_model_sync 迁移旧 models.*);chat.fold→flow_turn_fold;perm.mode→DefaultPermMode;chat.sys→ChatSystemPrompt/FillClaudeConfig;models.thinking/compact/compactAt、general.paste 已接线;perm.sandbox 行固定关(无外部键);models 页「输出风格」仅占位;未测试', 'part', 'B6'),
       R('偏好未接线 · 权限 / 运行环境', 'FillClaudeConfig:runtime.bin→ClaudePath、perm.mode、ExtraPermDirs、RuntimeExtraEnv(代理/超时);SyncClaudeSettingsFromPrefs 写权限/思考到 claude 设置;Bash 沙盒开关无 Claude 键(置灰)。未测试;额外目录与代理是否被 claude 子进程采纳需真后端核', 'part', 'B6'),
       R('偏好未接线 · 编辑器 / 终端 / SCM / 浏览器', 'editor.syntax→applyEditorPrefs;editor.blameGutter→ide_blame_ui;TermStartOpts 读 term.login/cwd/shell/scrollback;scm.diffMax/fetch 与 ScmFetchTick;worktree 列表+新建已接(settings_scm_wire,Computer Use 实测过新建/删除)。browser.reader 仅占位(浏览器只有阅读模式,设置行已写明「暂无作用」,设计稿同步)。未测试', 'part', 'B6'),
