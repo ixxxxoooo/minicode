@@ -74,8 +74,12 @@ func (a *App) turnFooterActions(c *ui.Context, uid string) {
 			parts = append(parts, l)
 		}
 		// 响应耗时:本次运行里发出的回合用实测墙钟(含冷启动与首响应),历史回放的回合用记录时间差
+		timingIdx := -1 // 有逐段数据时,「用时」换成可点的分段条 + 瀑布弹卡
 		switch {
 		case hasTiming:
+			if len(timing.Phases) > 0 {
+				timingIdx = len(parts)
+			}
 			parts = append(parts, timing.ShortText())
 		case hasDur && dur > 0:
 			parts = append(parts, "用时 "+core.FormatElapsed(int64(dur)*1000))
@@ -90,7 +94,7 @@ func (a *App) turnFooterActions(c *ui.Context, uid string) {
 			parts = parts[:2]
 		}
 		var tips []string // 悬停明细:慢在哪一段(启动 / 首响应 / 总耗时)+ token 与费用
-		if hasTiming {
+		if hasTiming && timingIdx < 0 { // 有分段条时,明细在点开的瀑布弹卡里
 			tips = append(tips, timing.DetailText())
 		}
 		if hasStats && showStats {
@@ -104,6 +108,10 @@ func (a *App) turnFooterActions(c *ui.Context, uid string) {
 			for i, p := range parts {
 				if i > 0 {
 					ui.Text(c, "·")
+				}
+				if i == timingIdx && !(a.chatTier() == tierNarrow && len(parts) > 2 && i >= 2) {
+					a.timingChip(c, uid, timing, stats, hasStats)
+					continue
 				}
 				ui.Text(c, p).FontFeatures("tnum").SingleLine()
 			}
