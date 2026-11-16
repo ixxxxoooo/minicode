@@ -85,7 +85,11 @@ pub fn build() -> Server {
 		"tests/case_test.rs":    "#[test]\nfn upper_and_lower_match() {\n    assert!(true);\n}\n",
 		"docs/routing.md":       "# 路由匹配\n\n路径匹配忽略大小写与末尾斜杠。\n",
 		// 以下三份给 Markdown 所见即所得的各种状态用(正常 / 含表格只读预览 / 带 YAML 头的规则文件)
-		"docs/guide.md":           "# 快速上手\n\n路由库只做一件事:**把路径匹配到处理函数**,忽略大小写与末尾斜杠。\n\n## 安装\n\n- 在 `Cargo.toml` 里加入依赖\n- 运行 `cargo build`\n\n```rust\nlet r = Router::default();\n```\n\n## 待办\n\n- [x] 大小写不敏感\n- [ ] 通配符路径\n\n> 提示:详见 [路由匹配](routing.md)。\n",
+		"docs/guide.md": "# 快速上手\n\n路由库只做一件事:**把路径匹配到处理函数**,忽略大小写与末尾斜杠。\n\n## 安装\n\n- 在 `Cargo.toml` 里加入依赖\n- 运行 `cargo build`\n\n```rust\nlet r = Router::default();\n```\n\n## 待办\n\n- [x] 大小写不敏感\n- [ ] 通配符路径\n\n> 提示:详见 [路由匹配](routing.md)。\n",
+		// 非文本文件查看器的演示数据:CSV 表格(含引号 / 中文)、SVG 图片、二进制占位(带 NUL,走「二进制文件」提示)
+		"data/sales.csv":          "地区,产品,数量,单价,备注\n华东,Mini 路由,42,199.5,\"含逗号, 与引号\"\"\"\n华南,Mini 路由,18,199.5,\n华北,Mini 网关,7,899,待补货\n西南,Mini 网关,0,899,\n",
+		"docs/logo.svg":           `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="160" viewBox="0 0 240 160"><rect width="240" height="160" rx="24" fill="#E8EEFF"/><circle cx="84" cy="80" r="40" fill="#4F6BED"/><rect x="132" y="48" width="64" height="64" rx="12" fill="#F5A524"/></svg>`,
+		"data/blob.bin":           "MC\x00\x01\x02\x03",
 		"docs/api.md":             "# 接口\n\n| 方法 | 路径 | 说明 |\n| --- | --- | --- |\n| GET | /users | 用户列表 |\n| POST | /users | 新建用户 |\n\n以上接口都返回 JSON。\n",
 		".cursor/rules/style.mdc": "---\ndescription: 代码风格\nglobs: src/**/*.rs\nalwaysApply: false\n---\n\n# 风格\n\n- 公开函数写文档注释\n- 不用 `unwrap()`\n",
 		"Cargo.toml": `[package]
