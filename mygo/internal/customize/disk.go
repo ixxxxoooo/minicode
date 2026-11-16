@@ -31,13 +31,27 @@ func OpenDisk(proj string) (*DiskStore, error) {
 		home:       home,
 		claudeJSON: filepath.Join(home, ".claude.json"),
 	}
-	if mk := RunMarketplaceList(); len(mk) > 0 {
-		ds.Market = mk
-	} else {
-		ds.Market = defaultMarket()
-	}
+	// 市场列表要起 claude 子进程(最长 60 秒),而 OpenDisk 会在界面线程里被调用(输入框 MCP 芯片、斜杠命令等),
+	// 所以这里只放兜底数据;真实列表由调用方放到后台取(RunMarketplaceList),回主线程后用 SetMarket 替换。
+	ds.Market = defaultMarket()
 	ds.loadAll()
 	return ds, nil
+}
+
+// SetMarket 用真实的市场列表替换兜底数据,并按已安装的插件重新标注「已安装」。空列表忽略。
+// 只能在持有该 DiskStore 的线程(界面线程)调用。
+func (ds *DiskStore) SetMarket(mk []*Market) {
+	if len(mk) == 0 {
+		return
+	}
+	ds.Market = mk
+	for _, it := range ds.items[Plugins] {
+		for _, m := range mk {
+			if m.Name == it.Name {
+				m.Installed = true
+			}
+		}
+	}
 }
 
 func defaultMarket() []*Market {

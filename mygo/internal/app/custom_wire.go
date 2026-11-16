@@ -12,6 +12,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/claude"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/customize"
+	"github.com/ixxxxoooo/minicode/internal/diag"
 )
 
 func (a *App) cuDemo() bool { return a.demoWs() || a.demoExtra }
@@ -57,6 +58,16 @@ func (a *App) cuEnsureDisk() {
 	a.bg("刷新MCP状态", func() func() {
 		ds.RefreshMCPStatus()
 		return func() {}
+	})
+	// 市场列表要起 claude 子进程,放到后台取;回主线程后替换兜底数据(仍是同一个仓库对象才应用)
+	a.bg("读取插件市场", func() func() {
+		defer diag.SpanSlow("customize", "插件市场列表", 2*time.Second)()
+		mk := customize.RunMarketplaceList()
+		return func() {
+			if a.cu.disk == ds {
+				ds.SetMarket(mk)
+			}
+		}
 	})
 }
 
