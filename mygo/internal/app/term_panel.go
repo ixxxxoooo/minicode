@@ -353,7 +353,7 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 		tp.selFresh = false
 		if fresh && a.prefs.Bool(pTermCopyOnSelect, false) { // 选择即复制:拖选 / 双击选词 / 三击选行松手后
 			if s := tp.selectedText(); s != "" {
-				a.copyText = s
+				c.WriteClipboard(s) // 输入事件里有上下文,直接写(经 copyText 要等下一次构建,松手后没有重绘就一直不生效)
 				a.toast = "已复制选中的终端文字"
 				tp.sel.drag = false
 				return true
@@ -379,7 +379,7 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 		switch ev.Text {
 		case "copy":
 			if s := tp.selectedText(); s != "" {
-				a.copyText = s
+				c.WriteClipboard(s) // 输入事件里有上下文,直接写(经 copyText 要等下一次构建,松手后没有重绘就一直不生效)
 				a.toast = "已复制选中的终端文字"
 				return true
 			}
@@ -399,7 +399,7 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 			// ⌘C 兜底:正常由系统「拷贝」菜单变成 copy 命令;按键直接到达(合成按键、菜单没接管)时,
 			// 有选区也要复制。重复复制无副作用,所以不怕和菜单各触发一次;没选区不拦,留给窗口
 			if s := tp.selectedText(); s != "" {
-				a.copyText = s
+				c.WriteClipboard(s) // 输入事件里有上下文,直接写(经 copyText 要等下一次构建,松手后没有重绘就一直不生效)
 				a.toast = "已复制选中的终端文字"
 				return true
 			}

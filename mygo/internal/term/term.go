@@ -34,14 +34,16 @@ const ScrollbackLines = 5000
 
 // Options 是起一个终端的参数。
 type Options struct {
-	Shell       string   // 空 = $SHELL,再退回 /bin/zsh
-	Cwd         string   // 工作目录
-	Cols, Rows  int      // 初始大小(字符数)
-	Env         []string // 额外环境变量(KEY=VALUE)
-	Scrollback  int      // 历史行数;0 = ScrollbackLines
-	LoginShell  bool     // 以登录 shell 启动(-l),默认 true
-	Integration bool     // 启用 shell 集成(OSC 133);zsh 经启动文件静默注入,见 Term.Integrated
-	Notify      func()   // 画面变化 / 进程退出时调用(任意 goroutine,已合并节流)
+	Shell       string      // 空 = $SHELL,再退回 /bin/zsh
+	Cwd         string      // 工作目录
+	Cols, Rows  int         // 初始大小(字符数)
+	Env         []string    // 额外环境变量(KEY=VALUE)
+	Scrollback  int         // 历史行数;0 = ScrollbackLines
+	LoginShell  bool        // 以登录 shell 启动(-l),默认 true
+	Integration bool        // 启用 shell 集成(OSC 133);zsh 经启动文件静默注入,见 Term.Integrated
+	Notify      func()      // 画面变化 / 进程退出时调用(任意 goroutine,已合并节流)
+	FG, BG      color.Color // 终端默认前景 / 背景色(= 当前主题):程序用 OSC 10 / 11 查询时据此回答,OpenCode 等靠它判断深浅色;nil = 不设
+	Dark        bool        // 当前主题是否深色(写进 COLORFGBG)
 }
 
 // Term 是一个运行中(或已退出)的终端。
@@ -98,7 +100,7 @@ func Start(o Options) (*Term, error) {
 	if o.Cwd != "" {
 		cmd.Dir = o.Cwd
 	}
-	cmd.Env = environ(o.Env)
+	cmd.Env = environ(append(append([]string{}, o.Env...), colorFgBg(o.Dark)))
 	integrated := false
 	if o.Integration {
 		// zsh:把 ZDOTDIR 指到代理启动文件目录,集成脚本随用户自己的 .zshrc 之后静默加载,
@@ -118,6 +120,7 @@ func Start(o Options) (*Term, error) {
 	}
 	t := &Term{em: vt.NewSafeEmulator(o.Cols, o.Rows), ptmx: ptmx, cmd: cmd, notify: o.Notify, cols: o.Cols, rows: o.Rows, integrated: integrated}
 	t.em.SetScrollbackSize(scroll)
+	t.SetColors(o.FG, o.BG)
 	cb := vt.Callbacks{Title: func(s string) {
 		t.mu.Lock()
 		t.title = s
@@ -462,4 +465,24 @@ func colorOf(c color.Color) Color {
 	}
 	r, g, b, _ := c.RGBA()
 	return Color{Kind: 2, R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8)}
+}
+
+// colorFgBg 是 COLORFGBG 环境变量(「前景;背景」的 ANSI 色号):深色 15;0,浅色 0;15。
+// 不会查 OSC 11 的程序(vim、早期 CLI)靠它判断深浅。
+func colorFgBg(dark bool) string {
+	if dark {
+		return "COLORFGBG=15;0"
+	}
+	return "COLORFGBG=0;15"
+}
+
+// SetColors 设置终端的默认前景 / 背景色(换主题时再调一次):程序发 OSC 10 / 11 查询时仿真器据此应答。
+// nil 的一项保持不变。
+func (t *Term) SetColors(fg, bg color.Color) {
+	if fg != nil {
+		t.em.SetDefaultForegroundColor(fg)
+	}
+	if bg != nil {
+		t.em.SetDefaultBackgroundColor(bg)
+	}
 }

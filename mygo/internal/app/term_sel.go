@@ -161,6 +161,7 @@ func (a *App) copyCmdOutput(tp *termPanel, from, to int) {
 		return
 	}
 	a.copyText = txt
+	a.redraw() // 点圆点 / 菜单里没有上下文可直接写剪贴板,要一次重绘让 shortcuts 去写
 	a.toast = "已复制命令输出(" + itoa(strings.Count(txt, "\n")+1) + " 行)"
 	log.Info("复制命令输出", "lines", strings.Count(txt, "\n")+1)
 }
@@ -602,9 +603,12 @@ func (a *App) termMenu(c *ui.Context, body ui.Element, tp *termPanel) {
 		live := tp.t != nil
 		if menuItem(m, "复制").Trailing("⌘C").Disabled(!has).Tooltip(map[bool]string{true: "先在终端里选中文字"}[!has]).Chosen() {
 			a.copyText = tp.selectedText()
+			a.toast = "已复制选中的终端文字"
+			a.redraw()
 		}
 		if menuItem(m, "粘贴").Trailing("⌘V").Disabled(!live).Tooltip(map[bool]string{true: "终端还没启动"}[!live]).Chosen() && live {
 			a.termPasteReq = true
+			a.redraw()
 		}
 		if menuItem(m, "全选").Trailing("⌘A").Chosen() {
 			tp.selectAll()

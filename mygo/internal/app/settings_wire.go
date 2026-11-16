@@ -2,11 +2,13 @@
 package app
 
 import (
+	"image/color"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/claude"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/diag"
@@ -252,6 +254,9 @@ func themePairFor(base string, sysDark bool) string {
 // TermStartOpts 供 term_panel 调用:登录 shell、项目目录、shell 与回看(新终端生效)。
 func (a *App) TermStartOpts(cols, rows, sb int, cwd string) term.Options {
 	o := term.Options{Cols: cols, Rows: rows, Scrollback: sb, LoginShell: true, Cwd: cwd, Notify: a.redraw, Integration: true}
+	if a != nil && a.tk != nil {
+		o.FG, o.BG, o.Dark = a.termThemeColors()
+	}
 	if a == nil || a.prefs == nil {
 		return o
 	}
@@ -280,4 +285,24 @@ func modelChipIndex(id string) int {
 		}
 	}
 	return 2
+}
+
+// termThemeColors 终端默认前景 / 背景(取当前主题的正文色与底色)与深浅。
+func (a *App) termThemeColors() (fg, bg color.Color, dark bool) {
+	t := a.tk
+	rgba := func(c ui.Color) color.Color { return color.RGBA{R: c.R, G: c.G, B: c.B, A: 255} }
+	return rgba(t.Tx1), rgba(t.BG), t.Dark()
+}
+
+// syncTermColors 换主题后把新的前景 / 背景告诉所有在跑的终端(之后程序再查 OSC 11 得到的就是新的)。
+func (a *App) syncTermColors() {
+	if a.ide == nil || a.tk == nil {
+		return
+	}
+	fg, bg, _ := a.termThemeColors()
+	for _, tp := range a.ide.tps {
+		if tp != nil && tp.t != nil {
+			tp.t.SetColors(fg, bg)
+		}
+	}
 }

@@ -403,6 +403,7 @@ func (a *App) retheme() {
 	sch.RowH = theme.Px(sch.RowH) + float32(a.density-1)*2 // 行高随界面大小缩放,再按密度 ±2
 	a.tk = theme.Resolve(a.pal, sch, a.accent)
 	kit.Use(a.tk)
+	a.syncTermColors()
 	a.md = nil
 	a.ux.rt = nil
 	log.Debug("主题", "palette", a.pal.ID, "scheme", a.sch.ID)
