@@ -10,7 +10,7 @@ import (
 )
 
 // EditorDemo 按「动作:参数」驱动编辑器进入某个状态(cmd/shot 截图用,多个动作用逗号隔开):
-// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签;review:empty 空态)、expand:路径、newfile|newdir:文件夹:名字、renamef:路径:名字、foerr、discardask:路径、cmpfiles:提交、resetask:序号、delask:路径、rename:会话id、archived:项目id、scm、syncall、repobusy:N、search:查询、scope:文件夹、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、mdkeep(块写回演示样例)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容、goto:行、gotoline:行[:列]、multicursor、blockcomment、extmod[:auto|clean|dirty|deleted]、crumb[:file|sym|路径]、termrename、termtabs[:N](多终端长标题演示);
+// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签;review:empty 空态)、expand:路径、newfile|newdir:文件夹:名字、renamef:路径:名字、foerr、discardask:路径、cmpfiles:提交、resetask:序号、delask:路径、rename:会话id、archived:项目id、scm、syncall、repobusy:N、search:查询、scope:文件夹、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、mdkeep(块写回演示样例)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容、goto:行、gotoline:行[:列]、multicursor、blockcomment、extmod[:auto|clean|dirty|deleted]、crumb[:file|sym|路径]、termrename、termtabs[:N](多终端长标题演示)、treefilter[:关键字](文件树过滤条);
 // queue(排两条)、steer[:正文](登记引导)、ask[:题号](切问答卡题号,1 起)、latest[:fresh](滚离底部, fresh=有新内容圆点)、thinking(演示思考折叠跑马灯)、sub[:卡片id](子 Agent 标签)、wsdiag:scan|done|trunc|empty|err(工作区诊断各态)。
 func (a *App) EditorDemo(spec string) {
 	for _, act := range strings.Split(spec, ",") {
@@ -264,6 +264,11 @@ func (a *App) EditorDemo(spec string) {
 			if arg != "" {
 				a.ide.gotoLn.text = arg
 			}
+			continue
+		}
+		if name == "treefilter" { // treefilter[:关键字]:展开文件树过滤条并填入关键字
+			a.SetMode(ModeIDE)
+			a.ide.fltOpen, a.ide.flt = true, arg
 			continue
 		}
 		if name == "multicursor" {
