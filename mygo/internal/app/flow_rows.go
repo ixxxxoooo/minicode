@@ -76,10 +76,8 @@ func (a *App) buildFlowRows(items []core.Item) []flowRow {
 		a.addRoundRows(add, u, items[i+1:j], sticky)
 		i = j
 	}
-	if _, ok := a.waitLive(); ok { // 发送后立刻出现的等待行
-		add(flowRow{key: "rt-wait", build: plainRow(a.waitRow)})
-	} else {
-		a.rtOpen = false
+	if _, ok := a.statusVisible(); ok { // 状态行:回合进行中始终在场(设计稿 resp-time)
+		add(flowRow{key: "rt-st", build: plainRow(a.statusRow)})
 	}
 	if a.st.Rewind != nil {
 		add(flowRow{key: "rewind", build: plainRow(a.flowRewindCard)})

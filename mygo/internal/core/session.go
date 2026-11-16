@@ -42,6 +42,7 @@ type State struct {
 	TurnStats map[string]TurnStats
 	// Timings:用户消息条目 id → 本回合从「点发送」到各节点的实测耗时(只有本次运行里发出的回合才有)。
 	Timings   map[string]TurnTiming
+	TurnAt    time.Time         // 当前回合开始(点发送)的时刻;界面乐观地先置为运行中时也记下
 	Live      *LiveStage        // 进行中回合当前所处的阶段(回合结束清空)
 	LiveDone  []TimingPhase     // 本回合已结束的阶段(等待行展开时列出,回合结束清空)
 	Conn      ConnState         // claude 进程连接状态(演示后端恒为 ConnNone,界面按后端名决定是否显示)
@@ -225,6 +226,9 @@ func (s *State) Apply(ev Event) {
 	case EvConn:
 		s.Conn = e.State
 	case EvTurnStarted:
+		if s.Phase != PhaseRunning || s.TurnAt.IsZero() {
+			s.TurnAt = time.Now()
+		}
 		s.Phase = PhaseRunning
 	case EvTurnPhase:
 		if e.At.IsZero() { // 演示后端不预知时刻:按归约时的墙钟记
@@ -481,7 +485,7 @@ func (s *State) Apply(ev Event) {
 		// 分叉由界面切换会话处理,状态机不归约
 	case EvTurnEnded:
 		s.Phase = PhaseIdle
-		s.Live, s.LiveDone = nil, nil
+		s.Live, s.LiveDone, s.TurnAt = nil, nil, time.Time{}
 		r := e.Reason
 		s.LastStop = &r
 		cancelled := r == StopCancelled

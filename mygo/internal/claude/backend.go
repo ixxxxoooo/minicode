@@ -637,15 +637,17 @@ func (b *Backend) onPrompt(c core.CmdPrompt) {
 		b.stages.begin(b.turnT0, b.turnCold)
 		b.emitStage(nil)
 	}
+	// claude 不回显用户输入,这里补上时间线条目(引导消息同样)。先于进程启动发出:冷启动要几百毫秒,
+	// 用户消息不能等进程起来才出现(界面不能有空白)。id 不依赖翻译器(翻译器在进程启动时才重建)。
+	uuid := newUUID()
+	uid := "lp" + uuid[:8]
+	b.emit(core.EvAppend{Item: &core.User{ID: uid, Text: c.Text, Images: c.Images}}, core.EvUserUUID{ID: uid, UUID: uuid})
 	if !b.ensureProc() {
 		return
 	}
 	if !steering && b.stages.connected(time.Now()) { // 冷启动的握手结束:「连接」→「本地准备」
 		b.emitStage(nil)
 	}
-	// claude 不回显用户输入,这里补上时间线条目(引导消息同样)
-	uuid := newUUID()
-	b.emit(b.tr.UserPrompt(c.Text, c.Images, uuid)...)
 	b.write(UserMessage(c.Text, c.Images, steering, uuid))
 	if !steering {
 		log.Info("提示已写入 claude", "冷启动", b.turnCold, "写入耗时", time.Since(b.turnT0).Round(time.Millisecond), "pid", b.p.pid)

@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -34,25 +35,53 @@ func stageColor(t *theme.Tokens, k core.StageKind) ui.Color {
 	return t.Tx4
 }
 
-// waitLive 返回等待行该不该出现。
-func (a *App) waitLive() (core.LiveStage, bool) {
-	ls := a.st.Live
-	if ls == nil || a.st.Phase != core.PhaseRunning || len(a.st.Items) == 0 {
-		return core.LiveStage{}, false
+// 状态行(设计稿 resp-time 页「状态行:整个回合里始终在场,永不留白」):
+// 点发送的同一帧出现(界面先乐观地把回合置为运行中),直到回合结束才淡出并收折;
+// 不管模型在等、在想、在写还是在跑工具,流尾始终有一行会动的状态,不再有「看不到任何状态」的空档。
+
+// statusVisible 状态行该不该在流尾:回合进行中,或刚结束、还在淡出。
+func (a *App) statusVisible() (fading bool, ok bool) {
+	if a.st.Phase == core.PhaseRunning {
+		a.stRunning, a.stEnd = true, time.Time{}
+		return false, true
 	}
-	if as, ok := a.st.Items[len(a.st.Items)-1].(*core.Assistant); ok && as.Streaming { // 已经在出字:让位给正文
-		return core.LiveStage{}, false
+	if a.stRunning { // 刚结束:记下时刻,淡出 + 收折
+		a.stRunning, a.stEnd = false, a.now()
 	}
-	switch ls.Kind {
-	case core.StageConn, core.StagePrep, core.StageWait:
-		return *ls, true
-	case core.StageFin:
-		return *ls, a.now().Sub(ls.Since) >= core.SlowFin
+	if !kit.MotionOn() || a.stEnd.IsZero() || a.now().Sub(a.stEnd) >= kit.DurSlow {
+		return false, false
 	}
-	return core.LiveStage{}, false
+	return true, true
 }
 
-func (a *App) waitSlow(ls core.LiveStage) bool {
+// turnStartTime 本回合的开始时刻:后端阶段事件给的优先,否则界面乐观置运行中时记的。
+func (a *App) turnStartTime() time.Time {
+	if ls := a.st.Live; ls != nil && !ls.TurnStart.IsZero() {
+		return ls.TurnStart
+	}
+	return a.st.TurnAt
+}
+
+// stageWord 括号里的阶段词。
+func (a *App) stageWord() string {
+	if ls := a.st.Live; ls != nil {
+		switch ls.Kind {
+		case core.StageTool:
+			return "运行工具"
+		case core.StageNone:
+			return ""
+		}
+		return ls.Kind.Label()
+	}
+	return ""
+}
+
+// statusSlow 当前阶段是否已久到该转琥珀。
+func (a *App) statusSlow() bool {
+	ls := a.st.Live
+	if ls == nil {
+		return false
+	}
 	el := a.now().Sub(ls.Since)
 	switch ls.Kind {
 	case core.StageWait:
@@ -65,81 +94,84 @@ func (a *App) waitSlow(ls core.LiveStage) bool {
 	return false
 }
 
-func waitLabel(ls core.LiveStage) string {
-	switch ls.Kind {
-	case core.StageConn:
-		return "正在连接 Claude…"
-	case core.StageFin:
-		return "收尾中…"
-	}
-	return "等待模型响应…"
-}
-
-// elapsedText 已等时间:不到 0.5 秒不显示,之后保留一位小数,过 100 秒换成「1 分 40 秒」。
+// elapsedText 已用时间:不到 1 秒不显示,之后「5.8s」,过 60 秒写成「1m 05s」。
 func elapsedText(d time.Duration) string {
-	if d < 500*time.Millisecond {
+	switch {
+	case d < time.Second:
 		return ""
+	case d < time.Minute:
+		return fmt.Sprintf("%.1fs", d.Seconds())
 	}
-	if d >= 100*time.Second {
-		return core.FormatElapsed(d.Milliseconds())
-	}
-	return fmt.Sprintf("%.1f s", d.Seconds())
+	s := int(d.Seconds())
+	return fmt.Sprintf("%dm %02ds", s/60, s%60)
 }
 
-// waitRow 是会话流末尾的等待行。
-func (a *App) waitRow(c *ui.Context) {
-	ls, ok := a.waitLive()
+// statusRow 是会话流末尾的状态行。
+func (a *App) statusRow(c *ui.Context) {
+	fading, ok := a.statusVisible()
 	if !ok {
+		a.rtOpen = false
 		return
 	}
 	t := a.tk
-	slow := a.waitSlow(ls)
-	tone := t.Tx3
-	if slow {
-		tone = t.Warn
+	a.frameIn(100 * time.Millisecond) // 已用时 100 ms 刷新一次
+	row := ui.Row(c).Key("rt-st").Height(26).Gap(6).Margin(0, -8).PaddingX(8).Radius(t.RSm()).AlignItems(ui.Center).
+		FontSize(a.FlowCapFont()).Transition(kit.Fade)
+	switch {
+	case fading: // 回合结束:淡出 + 高度收到 0,同时脚注就位
+		kit.CollapseHide(row, a.stEnd, 26, a.frameSoon)
+	case !a.turnStartTime().IsZero():
+		kit.StaggerRise(row, 0, a.turnStartTime(), a.frameSoon) // 发送瞬间:淡入下落
 	}
-	el := a.now().Sub(ls.Since)
-	a.frameSoon() // 已用时每帧刷新
-	row := ui.Row(c).Key("rt-wait").MinHeight(26).Gap(8).Margin(0, -8).PaddingX(8).Radius(t.RSm()).AlignItems(ui.Center).
-		TextColor(tone).Cursor(ui.CursorPointer).FontSize(a.FlowCapFont()).Transition(kit.Fade)
+	if a.st.AwaitingUser() { // 等你确认:静止的「等待你的批准」,不假装在转
+		row.TextColor(t.Warn).Children(func() {
+			ui.Row(c).Width(16).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).Children(func() { kit.Ic(c, "pause", kit.S12) })
+			ui.Text(c, "等待你的批准").SingleLine()
+		})
+		return
+	}
+	slow := a.statusSlow()
+	col, meta := t.Tx3, t.Tx4
+	if slow {
+		col, meta = t.Warn, t.Warn
+	}
 	if row.Hovered() {
 		row.Background(t.Fill1)
 	}
-	row.OnClick(func() { a.rtOpen = !a.rtOpen })
-	row.Children(func() {
+	row.Cursor(ui.CursorPointer).OnClick(func() { a.rtOpen = !a.rtOpen })
+	verb := a.activeTodoVerb()
+	if verb == "" {
+		verb = spinnerVerb(a.spinner(), a.curSess+a.turnStartTime().Format(time.RFC3339Nano))
+	}
+	row.TextColor(col).Children(func() {
 		ui.Row(c).Width(16).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).Children(func() {
-			kit.Spin(c, map[bool]ui.Color{true: t.Warn, false: t.Ac}[slow])
+			a.glyph(c, map[bool]ui.Color{true: t.Warn, false: t.Ac}[slow])
 		})
-		kit.RunText(ui.Text(c, waitLabel(ls)).SingleLine().Shrink(1))
-		if s := elapsedText(el); s != "" {
-			ui.Text(c, s).FontFeatures("tnum").TextColor(map[bool]ui.Color{true: t.Warn, false: t.Tx4}[slow]).SingleLine().Shrink(0)
+		kit.RunText(ui.Text(c, verb).SingleLine().Shrink(0))
+		var parts []string
+		if e := elapsedText(a.now().Sub(a.turnStartTime())); e != "" && !a.turnStartTime().IsZero() {
+			parts = append(parts, e)
 		}
-		a.waitChips(c, ls)
+		if w := a.stageWord(); w != "" {
+			parts = append(parts, w)
+		}
+		if a.escInterrupts() {
+			parts = append(parts, "Esc 中断")
+		}
+		m := ui.Text(c, "("+strings.Join(parts, " · ")+")").FontFeatures("tnum").TextColor(meta).SingleLine().Shrink(1).MinWidth(0)
+		if ls := a.st.Live; ls != nil && kit.MotionOn() { // 阶段词换了:括号 120 ms 淡入,不整行闪
+			if p := float32(a.now().Sub(ls.Since)) / float32(120*time.Millisecond); p < 1 {
+				m.Opacity(.35 + .65*max(0, p))
+				a.frameSoon()
+			}
+		}
 	})
-	if slow && a.prefs.Bool(pSlowHint, true) {
-		a.slowHint(c, ls)
+	if ls := a.st.Live; ls != nil && slow && a.prefs.Bool(pSlowHint, true) {
+		a.slowHint(c, *ls)
 	}
-	if a.rtOpen {
-		a.waitSteps(c, ls)
+	if a.rtOpen && a.st.Live != nil {
+		a.waitSteps(c, *a.st.Live)
 	}
-}
-
-// waitChips 右侧的体量提示:本次请求带的上下文大小。
-func (a *App) waitChips(c *ui.Context, ls core.LiveStage) {
-	if ls.Kind != core.StageWait {
-		return
-	}
-	if used := a.st.Usage.ContextUsed; used > 0 {
-		kit.Tag(c, "上下文 "+fmtTok(used)).Tooltip(a.contextTip())
-	}
-}
-
-// contextTip 上下文 chip 的悬停:附加文件夹读取了规则文件时点明。
-func (a *App) contextTip() string {
-	if n := a.rtLoadedFolders(); n > 0 {
-		return fmt.Sprintf("每次请求都带着这部分上下文,其中含 %d 个附加文件夹的 CLAUDE.md", n)
-	}
-	return "每次请求都带着这部分上下文;越大,模型出第一个字越慢"
 }
 
 // rtLoadedFolders 工作区里读取了 CLAUDE.md 的附加文件夹个数(没有 / 没开 = 0)。
@@ -162,7 +194,7 @@ func (a *App) waitSteps(c *ui.Context, ls core.LiveStage) {
 			})
 		}
 		ui.Row(c).Gap(8).AlignItems(ui.Center).TextColor(t.Tx1).Children(func() {
-			ui.Row(c).Width(16).Justify(ui.Center).Shrink(0).Children(func() { kit.Spin(c, t.Ac) })
+			ui.Row(c).Width(16).Justify(ui.Center).Shrink(0).Children(func() { a.glyph(c, t.Ac) })
 			ui.Text(c, stageName(core.TimingPhase{Kind: ls.Kind, Call: ls.Call})).Grow(1).SingleLine()
 			ui.Text(c, core.FormatResp(a.now().Sub(ls.Since).Milliseconds())).FontFeatures("tnum").TextColor(t.Tx3)
 		})

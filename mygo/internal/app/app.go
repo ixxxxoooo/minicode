@@ -85,12 +85,15 @@ type App struct {
 	warm warmCtl // 连接预热与空闲释放的状态(见 warm.go)
 
 	// 外观
-	pal    theme.Palette
-	sch    theme.Scheme
-	accent string
-	tk     *theme.Tokens
-	rtOpen bool   // 等待行是否展开阶段清单(回合结束丢弃)
-	rtPop  string // 脚注瀑布弹卡对应的回合(用户消息 id)
+	pal            theme.Palette
+	sch            theme.Scheme
+	accent         string
+	tk             *theme.Tokens
+	rtOpen         bool      // 状态行是否展开阶段清单(回合结束丢弃)
+	stRunning      bool      // 上一帧回合是否在进行(用来捕捉「刚结束」)
+	stEnd          time.Time // 回合结束的时刻;状态行据此淡出并收折
+	frameInPending bool      // frameIn 的合并标记
+	rtPop          string    // 脚注瀑布弹卡对应的回合(用户消息 id)
 
 	// 窗口形态与布局
 	mode         Mode
@@ -593,8 +596,13 @@ func (a *App) send(cmd core.Command) {
 	if a.be == nil {
 		return
 	}
-	if _, ok := cmd.(core.CmdPrompt); ok {
+	if p, ok := cmd.(core.CmdPrompt); ok {
 		a.noteActive()
+		// 发送的同一帧就进入运行态:状态行立刻出现,不等后端回「回合开始」(冷启动要几百毫秒;对标主分支 mark_running)。
+		// 后端随后的 EvTurnStarted 是幂等的;启动失败会回 EvTurnEnded,自然恢复。
+		if !p.Steer && a.st.Phase != core.PhaseRunning {
+			a.st.Apply(core.EvTurnStarted{})
+		}
 	}
 	if c, ok := cmd.(core.CmdSetMode); ok && c.Mode == core.ModeBypassPermissions && a.NoBypassPermissions() {
 		a.toast = "已禁止绕过权限模式"
@@ -818,6 +826,9 @@ func (a *App) shortcuts(c *ui.Context) {
 		a.closeSettings()
 	case a.screen == ScreenUsage && !a.paletteOn && a.qp == nil && a.popup == "" && c.Shortcut(0, ui.KeyEscape):
 		a.closeUsage() // Esc:退出用量整页
+	case a.escInterrupts() && c.Shortcut(0, ui.KeyEscape):
+		a.send(core.CmdCancel{}) // Esc 中断回合(状态行写着「Esc 中断」;对标 Claude Code)
+		log.Info("Esc 中断回合")
 	}
 }
 
@@ -980,4 +991,12 @@ func (a *App) AutomationTick(now time.Time) {
 		log.Info("自动化到点", "id", it.ID, "name", it.Name)
 		a.runAutomation(it)
 	}
+}
+
+// escInterrupts Esc 是否该中断当前回合:只在 Agent 形态的会话主界面、回合进行中、没有任何浮层 / 编辑态 / 斜杠菜单时。
+// 其它地方的 Esc(关弹层、退出编辑、关查找条)优先,绝不误伤正在跑的回合。
+func (a *App) escInterrupts() bool {
+	return a.st.Phase == core.PhaseRunning && a.mode == ModeAgent && a.screen == ScreenWork &&
+		!a.paletteOn && a.qp == nil && a.popup == "" && !a.chatMax && !a.editingUser() && a.pd.kind == "" &&
+		!strings.HasPrefix(a.draft, "/")
 }
