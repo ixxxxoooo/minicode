@@ -142,6 +142,8 @@ type (
 		TurnStart time.Time
 		Call      int
 		Cache     *CacheTokens
+		// Final 最后一段回复已出完(end_turn):界面立刻按「已结束」处理,不等 claude 收尾返回 result。
+		Final bool
 	}
 	// EvCompact 压缩上下文的进度:Running 时若时间线末尾已有一张进行中的压缩卡就复用,否则追加新卡;
 	// Done / Failed 更新那张卡(没有进行中的卡时补一张,如历史回放里只有 compact_boundary)。

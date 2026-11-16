@@ -118,7 +118,8 @@ type Backend struct {
 	turnT0        time.Time
 	turnFirst     time.Duration
 	turnCold      bool
-	stages        stageClock // 本回合的分阶段计时(阶段切换时向界面发 EvTurnPhase)
+	carry         []time.Time // 收尾期间发出的提示的发送时刻:result 到达后无缝接力成下一回合
+	stages        stageClock  // 本回合的分阶段计时(阶段切换时向界面发 EvTurnPhase)
 	reqSeq        int
 	usageAsked    time.Time
 	confirmedMode core.PermissionMode
@@ -456,6 +457,7 @@ func (b *Backend) ensureProc() bool {
 		if b.turnActive {
 			b.turnActive = false
 			b.stages.off()
+			b.carry = nil
 			b.emit(core.EvTurnEnded{Reason: core.StopError})
 		}
 		return false
@@ -626,6 +628,7 @@ func (b *Backend) takePending(id string) *Pending {
 
 func (b *Backend) onPrompt(c core.CmdPrompt) {
 	steering := c.Steer && b.turnActive
+	settled := !steering && b.turnActive && b.stages.settled() // 上一回合的回复已出完,claude 还在收尾
 	if !b.turnActive {
 		b.turnActive = true
 		if b.tr != nil {
@@ -642,6 +645,11 @@ func (b *Backend) onPrompt(c core.CmdPrompt) {
 	uuid := newUUID()
 	uid := "lp" + uuid[:8]
 	b.emit(core.EvAppend{Item: &core.User{ID: uid, Text: c.Text, Images: c.Images}}, core.EvUserUUID{ID: uid, UUID: uuid})
+	if settled { // 记下发送时刻;result 到达后接力成下一回合(claude 串行处理,收尾结束才会轮到这条)
+		now := time.Now()
+		b.carry = append(b.carry, now)
+		b.emit(core.EvTurnStarted{}, core.EvTurnPhase{Kind: core.StageQueued, At: now, TurnStart: now})
+	}
 	if !b.ensureProc() {
 		return
 	}
@@ -766,6 +774,9 @@ func (b *Backend) onLine(line string) {
 	}
 	if changed, cache := b.stages.line(v, time.Now()); changed {
 		b.emitStage(cache)
+		if b.stages.settled() { // 最后一段回复出完:界面立刻结束,先给一份临时用时,result 到达再替换
+			b.emitProvisionalTiming()
+		}
 	}
 	evs := b.tr.Handle(v)
 	if b.turnFirst == 0 && !b.turnT0.IsZero() && len(evs) > 0 && (ty == "stream_event" || ty == "assistant") {
@@ -781,6 +792,28 @@ func (b *Backend) onLine(line string) {
 		}
 	}
 	b.emit(evs...)
+	if ty == "result" && len(b.carry) > 0 { // 收尾期间发的消息:紧接着开始它的回合,界面不留空档
+		t0 := b.carry[0]
+		b.carry = b.carry[1:]
+		b.turnActive = true
+		b.turnT0, b.turnFirst, b.turnCold = t0, 0, false
+		b.emit(core.EvTurnStarted{})
+		b.stages.begin(t0, false)
+		b.emitStage(nil)
+	}
+}
+
+// emitProvisionalTiming 最后一段回复出完时先给界面一份用时(到此刻为止),脚注立刻出现。
+func (b *Backend) emitProvisionalTiming() {
+	if b.turnT0.IsZero() {
+		return
+	}
+	phases, calls := b.stages.snapshot(time.Now())
+	t := core.TurnTiming{TotalMs: time.Since(b.turnT0).Milliseconds(), FirstMs: b.turnFirst.Milliseconds(), Phases: phases, Calls: calls}
+	if b.turnCold && b.p != nil && !b.p.initAt.IsZero() {
+		t.StartupMs = b.p.initAt.Sub(b.p.started).Milliseconds()
+	}
+	b.emit(core.EvTurnTiming{Timing: t})
 }
 
 func (b *Backend) onControlResponse(v obj) {
@@ -934,6 +967,7 @@ func (b *Backend) onInitTimeout() {
 	if b.turnActive {
 		b.turnActive = false
 		b.stages.off()
+		b.carry = nil
 		b.emit(core.EvTurnEnded{Reason: core.StopError})
 	}
 	b.emit(notice(core.NoticeError, text))
@@ -985,6 +1019,7 @@ func (b *Backend) onExit() {
 	if b.turnActive {
 		b.turnActive = false
 		b.stages.off()
+		b.carry = nil
 		b.emit(core.EvTurnEnded{Reason: core.StopError})
 	}
 	b.emit(notice(core.NoticeError, text), core.EvConn{State: core.ConnNone, Why: "进程退出"})

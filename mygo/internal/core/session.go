@@ -42,6 +42,7 @@ type State struct {
 	TurnStats map[string]TurnStats
 	// Timings:用户消息条目 id → 本回合从「点发送」到各节点的实测耗时(只有本次运行里发出的回合才有)。
 	Timings   map[string]TurnTiming
+	Settling  bool              // 最后一段回复已出完、claude 还在收尾(Phase 已置空闲;result 到达后清除)
 	TurnAt    time.Time         // 当前回合开始(点发送)的时刻;界面乐观地先置为运行中时也记下
 	Live      *LiveStage        // 进行中回合当前所处的阶段(回合结束清空)
 	LiveDone  []TimingPhase     // 本回合已结束的阶段(等待行展开时列出,回合结束清空)
@@ -228,9 +229,18 @@ func (s *State) Apply(ev Event) {
 	case EvTurnStarted:
 		if s.Phase != PhaseRunning || s.TurnAt.IsZero() {
 			s.TurnAt = time.Now()
+			s.Live, s.LiveDone = nil, nil // 新回合:上一回合的阶段不带过来
 		}
-		s.Phase = PhaseRunning
+		s.Phase, s.Settling = PhaseRunning, false
 	case EvTurnPhase:
+		if e.Final { // 最后一段回复出完:界面立刻结束,收尾在后台继续
+			s.Phase, s.Settling = PhaseIdle, true
+			s.Live, s.LiveDone = nil, nil
+			return
+		}
+		if s.Settling { // 收尾期间又有新活动(钩子要求继续等):退回运行中
+			s.Phase, s.Settling = PhaseRunning, false
+		}
 		if e.At.IsZero() { // 演示后端不预知时刻:按归约时的墙钟记
 			e.At = time.Now()
 		}
@@ -487,7 +497,7 @@ func (s *State) Apply(ev Event) {
 		// 分叉由界面切换会话处理,状态机不归约
 	case EvTurnEnded:
 		s.Phase = PhaseIdle
-		s.Live, s.LiveDone, s.TurnAt = nil, nil, time.Time{}
+		s.Live, s.LiveDone, s.TurnAt, s.Settling = nil, nil, time.Time{}, false
 		r := e.Reason
 		s.LastStop = &r
 		cancelled := r == StopCancelled

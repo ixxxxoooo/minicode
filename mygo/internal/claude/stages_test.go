@@ -134,3 +134,40 @@ func TestCacheVerdict(t *testing.T) {
 		}
 	}
 }
+
+// 最后一个 message_stop(end_turn)到达即算「回复出完」:Final 事件 + settled;工具调用的 message_stop 不算。
+func TestStageClockFinal(t *testing.T) {
+	t0 := time.Unix(4000, 0)
+	at := func(ms int) time.Time { return t0.Add(time.Duration(ms) * time.Millisecond) }
+	var c stageClock
+	c.begin(t0, false)
+	feed := func(ms int, s string) { c.line(jl(t, s), at(ms)) }
+	feed(50, `{"type":"system","subtype":"status","status":"requesting"}`)
+	feed(2000, `{"type":"stream_event","event":{"type":"message_start","message":{"usage":{}}}}`)
+	feed(2000, `{"type":"stream_event","event":{"type":"content_block_start","content_block":{"type":"tool_use","name":"Bash"}}}`)
+	feed(2500, `{"type":"stream_event","event":{"type":"message_delta","delta":{"stop_reason":"tool_use"}}}`)
+	feed(2500, `{"type":"stream_event","event":{"type":"message_stop"}}`)
+	if c.settled() {
+		t.Fatal("tool_use 结束不是回复出完")
+	}
+	feed(3000, `{"type":"system","subtype":"status","status":"requesting"}`)
+	feed(5000, `{"type":"stream_event","event":{"type":"message_start","message":{"usage":{}}}}`)
+	feed(5000, `{"type":"stream_event","event":{"type":"content_block_start","content_block":{"type":"text"}}}`)
+	feed(6000, `{"type":"stream_event","event":{"type":"message_delta","delta":{"stop_reason":"end_turn"}}}`)
+	feed(6000, `{"type":"stream_event","event":{"type":"message_stop"}}`)
+	if !c.settled() {
+		t.Fatal("end_turn 的 message_stop 应判为回复出完")
+	}
+	if ev := c.live(at(6000), nil); !ev.Final || ev.Kind != core.StageFin {
+		t.Fatalf("live 事件应带 Final: %+v", ev)
+	}
+	phases, _ := c.snapshot(at(6000))
+	if len(phases) == 0 || phases[len(phases)-1].Kind == core.StageFin {
+		t.Errorf("临时用时不该带 0 毫秒的收尾段: %+v", phases)
+	}
+	// 收尾期间又有新请求:退出 Final
+	feed(9000, `{"type":"system","subtype":"status","status":"requesting"}`)
+	if c.settled() {
+		t.Fatal("又有新请求后不应再是 settled")
+	}
+}

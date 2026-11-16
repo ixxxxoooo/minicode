@@ -14,15 +14,16 @@ import (
 type StageKind uint8
 
 const (
-	StageNone  StageKind = iota
-	StageConn            // 连接 Claude:进程冷启动 + 握手(本机)
-	StagePrep            // 本地准备:写入提示 → 请求发出(本机)
-	StageWait            // 等待模型:请求发出 → 第一个字节(上游),每次模型调用一段
-	StageThink           // 思考
-	StageWrite           // 生成:正文 / 组织工具调用
-	StageTool            // 工具执行(本机)
-	StageAsk             // 等你确认:权限 / 提问 / 计划,不计入模型耗时
-	StageFin             // 收尾:最后一个 message_stop → result
+	StageNone   StageKind = iota
+	StageConn             // 连接 Claude:进程冷启动 + 握手(本机)
+	StagePrep             // 本地准备:写入提示 → 请求发出(本机)
+	StageWait             // 等待模型:请求发出 → 第一个字节(上游),每次模型调用一段
+	StageThink            // 思考
+	StageWrite            // 生成:正文 / 组织工具调用
+	StageTool             // 工具执行(本机)
+	StageAsk              // 等你确认:权限 / 提问 / 计划,不计入模型耗时
+	StageFin              // 收尾:最后一个 message_stop → result
+	StageQueued           // 收尾期间又发了一条:等上一轮收尾结束 claude 才会处理它
 )
 
 // Label 阶段的中文名。
@@ -44,6 +45,8 @@ func (k StageKind) Label() string {
 		return "等你确认"
 	case StageFin:
 		return "收尾"
+	case StageQueued:
+		return "等待上一轮收尾"
 	}
 	return ""
 }

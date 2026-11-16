@@ -30,6 +30,7 @@ type stageClock struct {
 	calls    []core.CallInfo
 	curCall  int
 	curLabel string
+	final    bool // 最后一个 message_stop 的 stop_reason 是 end_turn:回复已出完
 }
 
 // begin 开始一个回合:cold = 发送时进程还没起(先是「连接」)。
@@ -52,6 +53,7 @@ func (c *stageClock) enter(k core.StageKind, now time.Time) bool {
 	}
 	c.closeSpan(now)
 	c.cur, c.curAt = k, now
+	c.final = false
 	c.curLabel = ""
 	if k == core.StageTool {
 		c.curLabel = c.toolName
@@ -79,7 +81,7 @@ func (c *stageClock) closeSpan(now time.Time) {
 
 // live 当前阶段的实时快照(给 EvTurnPhase)。
 func (c *stageClock) live(now time.Time, cache *core.CacheTokens) core.EvTurnPhase {
-	return core.EvTurnPhase{Kind: c.cur, At: now, TurnStart: c.t0, Call: c.call, Cache: cache}
+	return core.EvTurnPhase{Kind: c.cur, At: now, TurnStart: c.t0, Call: c.call, Cache: cache, Final: c.final && c.cur == core.StageFin}
 }
 
 // line 喂入 claude 的一行输出(已解析),返回(是否切换了阶段, 本次调用的缓存用量)。
@@ -136,6 +138,10 @@ func (c *stageClock) line(v obj, now time.Time) (changed bool, cache *core.Cache
 				changed = c.enter(core.StageTool, now)
 			} else {
 				changed = c.enter(core.StageFin, now)
+				if c.stop == "end_turn" && c.asks == 0 {
+					c.final = true
+					changed = true // 即使已经在「收尾」里也要再报一次 Final
+				}
 			}
 		}
 	}
@@ -184,4 +190,18 @@ func mergeSpans(in []core.TimingPhase) []core.TimingPhase {
 		out = append(out, p)
 	}
 	return out
+}
+
+// settled 最后一段回复已出完、正在等 claude 收尾返回 result。
+func (c *stageClock) settled() bool { return c.active && c.final && c.cur == core.StageFin }
+
+// snapshot 不结束计时,给出到 now 为止的逐阶段耗时(临时脚注用);当前阶段按已过时间计入。
+func (c *stageClock) snapshot(now time.Time) ([]core.TimingPhase, []core.CallInfo) {
+	if !c.active {
+		return nil, nil
+	}
+	cp := *c
+	cp.spans = append([]core.TimingPhase(nil), c.spans...)
+	cp.closeSpan(now)
+	return mergeSpans(cp.spans), append([]core.CallInfo(nil), c.calls...)
 }
