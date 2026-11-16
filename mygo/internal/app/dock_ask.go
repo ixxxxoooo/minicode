@@ -205,12 +205,12 @@ func (a *App) askCard(c *ui.Context, q *core.QuestionRequest) {
 		if s.wantsFreeInput(qu) && len(qu.Options) > 0 {
 			ui.TextInputBase(c.Key("ask-other"+itoa(s.cur)), &s.freet[s.cur]).Height(28).PaddingX(9).Radius(t.RSm()).Border(1, t.Bd2).Placeholder("其它说明…").PlaceholderColor(t.Tx4)
 		}
-		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+		ui.Row(c).Gap(6).AlignItems(ui.Center).Wrap().Children(func() {
 			if n > 1 {
 				kit.Btn(c, "上一题", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "arrowL", Disabled: s.cur == 0}).OnClick(func() { goTo(s.cur - 1) })
 			}
 			ui.Spacer(c).Grow(1)
-			if a.mode == ModeAgent {
+			if a.mode == ModeAgent && a.chatTier() != tierNarrow { // 窄档不放键位提示
 				ui.Row(c).Gap(4).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
 					if n > 1 && !s.wantsFreeInput(qu) {
 						kit.Kbd(c, "←")

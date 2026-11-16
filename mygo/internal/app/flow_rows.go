@@ -177,10 +177,7 @@ func (a *App) flowListView(c *ui.Context) {
 	st.FollowEnd = true
 	st.Key = func(i int) any { return rows[i].key }
 	st.Header = func(i int) bool { return rows[i].header }
-	pad := float32(16)
-	if a.mode == ModeIDE {
-		pad = 12
-	}
+	pad := a.flowPad()
 	c.Key("flow") // 列表的 Key 必须在构造之前给
 	list := ui.List(c, st, len(rows)).Grow(1).MinHeight(0).Gap(8).Padding(12, 0, 18, 0).TrackScroll(&a.flowSt)
 	list = kit.ApplyNativeScroll(list, "flow", &a.flowSt, false, true) // 滚动条显示策略(自动隐藏 / 常驻)与活动追踪

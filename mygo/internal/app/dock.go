@@ -151,8 +151,14 @@ func (a *App) permCard(c *ui.Context, r *core.PermissionRequest) {
 			}
 		}
 		a.permDiffPreview(c, r)
-		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+		narrow := a.chatTier() == tierNarrow
+		ui.Row(c).Gap(6).AlignItems(ui.Center).Wrap().Children(func() {
+			var more []core.PermissionOption // 窄档:既不是「允许一次」也不是拒绝的次要选项收进「更多」
 			for _, o := range r.Options {
+				if narrow && o.ID != ok && !o.Kind.Rejects() {
+					more = append(more, o)
+					continue
+				}
 				v := kit.BtnDefault
 				switch {
 				case o.ID == ok:
@@ -163,8 +169,18 @@ func (a *App) permCard(c *ui.Context, r *core.PermissionRequest) {
 				id := o.ID
 				kit.Btn(c, o.Label, kit.BtnOpt{Variant: v, Small: true}).OnClick(func() { resolve(id) })
 			}
+			if len(more) > 0 {
+				kit.Btn(c, "更多", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "chevD"}).Menu(func(m *ui.Menu) {
+					for _, o := range more {
+						o := o
+						if menuItem(m, o.Label).Chosen() {
+							resolve(o.ID)
+						}
+					}
+				})
+			}
 			ui.Spacer(c).Grow(1)
-			if a.mode == ModeAgent {
+			if a.mode == ModeAgent && !narrow {
 				ui.Row(c).Gap(4).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
 					kit.Kbd(c, "⏎")
 					ui.Text(c, "允许")
@@ -328,12 +344,23 @@ func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 			}
 		}
 		if !p.Streaming && p.Approved == nil {
-			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+			ui.Row(c).Gap(6).AlignItems(ui.Center).Wrap().Children(func() {
 				resolve := func(ok bool, m core.PermissionMode) {
 					mm := m
 					a.send(core.CmdResolvePlan{ID: p.ID, Approve: ok, Mode: &mm})
 				}
 				kit.Btn(c, "开始实施", kit.BtnOpt{Variant: kit.BtnPri, Small: true, Icon: "play"}).OnClick(func() { resolve(true, core.ModeDefault) })
+				if a.chatTier() == tierNarrow { // 窄档:次要按钮(自动模式 / 继续规划)收进「更多」
+					kit.Btn(c, "更多", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "chevD"}).Menu(func(m *ui.Menu) {
+						if menuItem(m, "自动模式").Chosen() {
+							resolve(true, core.ModeAuto)
+						}
+						if menuItem(m, "继续规划").Chosen() {
+							resolve(false, a.st.Mode)
+						}
+					})
+					return
+				}
 				kit.Btn(c, "自动模式", kit.BtnOpt{Small: true}).OnClick(func() { resolve(true, core.ModeAuto) })
 				kit.Btn(c, "继续规划", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(func() { resolve(false, a.st.Mode) })
 			})

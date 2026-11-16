@@ -58,6 +58,9 @@ func (a *App) crumbTools(c *ui.Context, tb *ideTab) {
 				a.formatDoc()
 			}
 		}
+		if a.wsNarrowMM() { // 中档(<600)起收起面包屑右侧的语言 / 编码
+			return
+		}
 		if l := langName(tb.path); l != "" {
 			ui.Text(c, l).TextColor(t.Tx4).Margin(0, 0, 0, 6)
 		}

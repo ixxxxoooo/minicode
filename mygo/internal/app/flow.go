@@ -14,17 +14,24 @@ import (
 
 // flowCol 是会话流的居中列(最宽 712,两侧 16)。
 func (a *App) flowCol(c *ui.Context, inner func()) {
-	pad := float32(16)
-	if a.mode == ModeIDE {
-		pad = 12
-	}
-	col := ui.Column(c).MaxWidth(a.flowMaxWidth()).PaddingX(pad)
+	col := ui.Column(c).MaxWidth(a.flowMaxWidth()).PaddingX(a.flowPad())
 	if w, ok := a.flowSnapWidth(); ok {
 		col.Width(w)
 	} else {
 		col.WidthPercent(100)
 	}
 	col.Children(inner)
+}
+
+// flowPad 是会话流内容列的左右内边距,按对话栏自己的宽度三档(设计稿 ws.css:宽 20 / 中 14 / 窄 10)。
+func (a *App) flowPad() float32 {
+	switch a.chatTier() {
+	case tierWide:
+		return 20
+	case tierMid:
+		return 14
+	}
+	return 10
 }
 
 // flowMaxWidth 是会话流内容列的最大宽度(偏好「内容宽度」三档)。
@@ -244,7 +251,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 		if sp.state == "deny" {
 			obj.Strikethrough().TextColor(t.Tx3)
 		}
-		if sp.meta != "" {
+		if sp.meta != "" && a.chatTier() != tierNarrow { // 窄档:附注(路径、行区间)让位
 			ui.Text(c, sp.meta).Font("monospace").FontSize(11).TextColor(t.Tx3).SingleLine().Shrink(1)
 		}
 		ui.Spacer(c).Grow(1)
@@ -261,7 +268,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 					ui.Text(c, "−"+itoa(sp.del)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Err)
 				}
 			}
-			if sp.right != "" {
+			if sp.right != "" && (a.chatTier() != tierNarrow || sp.state == "err") { // 窄档只留结果(错误仍显示)
 				col := t.Tx4
 				if sp.state == "err" {
 					col = t.Err

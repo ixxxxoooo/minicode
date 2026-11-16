@@ -77,6 +77,9 @@ func (a *App) turnFooterActions(c *ui.Context, uid string) {
 			parts = append(parts, core.FormatElapsed(int64(d)*1000))
 		}
 		parts = append(parts, strings.Split(stats.ShortText(), " · ")...)
+		if a.chatTier() == tierNarrow && len(parts) > 2 { // 窄档脚注只留模型与用时
+			parts = parts[:2]
+		}
 		ui.Row(c).Margin(0, 0, 0, 6).Gap(6).AlignItems(ui.Center).Children(func() {
 			for i, p := range parts {
 				if i > 0 {

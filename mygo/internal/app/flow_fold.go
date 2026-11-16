@@ -86,11 +86,21 @@ func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, co
 			body.Selectable()
 		}
 		body.Children(func() {
+			wrap := a.chatTier() == tierNarrow // 窄档:代码与输出折行而不是被裁掉(设计稿 pre-wrap)
 			for i, ln := range show {
-				row := ui.Row(c).Key(i).Height(a.flowMonoLH()).AlignItems(ui.Center)
+				var row ui.Element
+				if wrap {
+					row = ui.Row(c).Key(i).MinHeight(a.flowMonoLH()).AlignItems(ui.Start)
+				} else {
+					row = ui.Row(c).Key(i).Height(a.flowMonoLH()).AlignItems(ui.Center)
+				}
 				if mono {
 					row.Children(func() {
-						ui.RichText(c, a.termLineSz(ln, a.FlowMonoSize())...).NoWrap().Clip()
+						if wrap {
+							ui.RichText(c, a.termLineSz(ln, a.FlowMonoSize())...).Grow(1).MinWidth(0)
+						} else {
+							ui.RichText(c, a.termLineSz(ln, a.FlowMonoSize())...).NoWrap().Clip()
+						}
 						if live && i == len(show)-1 && !needFold {
 							kit.Caret(c)
 						}
@@ -102,7 +112,11 @@ func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, co
 		})
 	}
 	if needFold || exp {
-		kit.XYScroll(c).TrackScroll(st).MaxHeight(float32(maxH)).Key("foldout-" + key).Children(inner)
+		if a.chatTier() == tierNarrow { // 折行后不需要横向滚动
+			kit.VScroll(c).TrackScroll(st).MaxHeight(float32(maxH)).Key("foldout-" + key).Children(inner)
+		} else {
+			kit.XYScroll(c).TrackScroll(st).MaxHeight(float32(maxH)).Key("foldout-" + key).Children(inner)
+		}
 	} else {
 		ui.Column(c).Key("foldout-" + key).Children(inner)
 	}

@@ -55,6 +55,15 @@ func (a *App) bottomPanel(c *ui.Context) {
 		if r := a.ide.refs; r != nil {
 			items = append(items, kit.TabItem{ID: "refs", Text: "引用", Count: len(r.items)})
 		}
+		if a.wsNarrow() { // 窄档:底部面板只留终端 / 问题(当前所在的分段仍保留,免得看不到自己在哪)
+			keep := items[:0:0]
+			for _, it := range items {
+				if it.ID == "term" || it.ID == "problems" || it.ID == a.ide.bottomTab {
+					keep = append(keep, it)
+				}
+			}
+			items = keep
+		}
 		if id := kit.Tabs(c, items, a.ide.bottomTab, 28, func() {
 			ui.Row(c).Gap(1).AlignItems(ui.Center).Children(func() {
 				if a.ide.bottomTab == "refs" {

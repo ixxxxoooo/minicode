@@ -28,10 +28,13 @@ func (a *App) changesCard(c *ui.Context) {
 		if !a.rv.chgAll && len(files) > chgCardMax {
 			shown = files[:chgCardMax]
 		}
-		for i, f := range shown {
-			a.changesFileRow(c, i, f)
+		narrow := a.chatTier() == tierNarrow // 窄档:只留「N 个文件已改动 + 审查」,文件列表在审查页里看
+		if !narrow {
+			for i, f := range shown {
+				a.changesFileRow(c, i, f)
+			}
 		}
-		if n := len(files) - chgCardMax; n > 0 {
+		if n := len(files) - chgCardMax; n > 0 && !narrow {
 			r := kit.RowEl(c, false).Key("chg-more").Height(26).Gap(8).Cursor(ui.CursorPointer)
 			if r.Clicked() {
 				a.rv.chgAll = !a.rv.chgAll

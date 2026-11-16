@@ -85,7 +85,10 @@ func (a *App) subagentCard(c *ui.Context, s *core.SubagentCard) {
 				meta = append(meta, "疑似停滞")
 			}
 			if len(meta) > 0 {
-				ui.Text(c, strings.Join(meta, "  ")).PaddingStart(22).FontSize(a.FlowCapFont()).TextColor(t.Tx3).FontFeatures("tnum").SingleLine()
+				mt := ui.Text(c, strings.Join(meta, "  ")).PaddingStart(22).FontSize(a.FlowCapFont()).TextColor(t.Tx3).FontFeatures("tnum")
+				if a.chatTier() != tierNarrow { // 窄档允许折行(设计稿 .sub .stat flex-wrap)
+					mt.SingleLine()
+				}
 			}
 			if s.Summary != "" {
 				ui.Text(c, s.Summary).PaddingStart(22).FontSize(a.FlowCapFont()).TextColor(t.Tx3)

@@ -270,13 +270,15 @@ func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 	ui.Row(c).Height(30).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		a.fileIc(c, path.Base(tb.path))
 		ui.Text(c, path.Base(tb.path)).FontWeight(600).SingleLine().Shrink(0)
-		ui.Text(c, tb.diffLabel()).TextColor(t.Tx3).SingleLine()
+		if !narrow { // 窄档:差异栏的灰字说明与「打开文件」按钮让位(后者在「更多」里)
+			ui.Text(c, tb.diffLabel()).TextColor(t.Tx3).SingleLine()
+		}
 		kit.Tag(c, "+"+itoa(adds)+" −"+itoa(dels), kit.KOk)
 		if tb.dv.Editable {
 			kit.Tag(c, "可编辑", kit.KAc)
 		}
 		ui.Spacer(c).Grow(1)
-		if len(hunks) > 0 {
+		if len(hunks) > 0 && !narrow {
 			cur, _ := dv.CurrentHunk()
 			ui.Text(c, itoa(cur+1)+" / "+itoa(len(hunks))).FontSize(theme.FsMicro).TextColor(t.Tx4).NoWrap()
 		}
@@ -315,9 +317,11 @@ func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 		if kit.Ib(c, "filter", kit.IbOpt{Small: true, On: a.diffIgnoreWS(), Tip: ignTip}).Clicked() {
 			a.toggleDiffIgnoreWS(tb)
 		}
-		kit.Btn(c, "打开文件", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "ext"}).OnClick(func() {
-			a.jumpTo(tb.path, 0, 0, 0)
-		})
+		if !narrow {
+			kit.Btn(c, "打开文件", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "ext"}).OnClick(func() {
+				a.jumpTo(tb.path, 0, 0, 0)
+			})
+		}
 		kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(func(m *ui.Menu) { a.diffMoreMenu(m, tb) })
 	})
 	a.diffLineBar(c, tb)

@@ -344,8 +344,19 @@ func (a *App) reviewView(c *ui.Context) {
 				a.rv.side = i == 1
 			}
 		}
-		kit.Btn(c, "全部撤销", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "undo"}).OnClick(func() { a.reviewAll(files, "rev") })
-		kit.Btn(c, "全部接受", kit.BtnOpt{Variant: kit.BtnSoft, Small: true, Icon: "check"}).OnClick(func() { a.reviewAll(files, "ok") })
+		if a.wsNarrow() { // 窄档:头部只留「提交」,批量操作收进「更多」
+			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作:全部接受 / 全部撤销"}).Menu(func(m *ui.Menu) {
+				if menuItem(m, "全部接受").Chosen() {
+					a.reviewAll(files, "ok")
+				}
+				if menuItem(m, "全部撤销").Chosen() {
+					a.reviewAll(files, "rev")
+				}
+			})
+		} else {
+			kit.Btn(c, "全部撤销", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "undo"}).OnClick(func() { a.reviewAll(files, "rev") })
+			kit.Btn(c, "全部接受", kit.BtnOpt{Variant: kit.BtnSoft, Small: true, Icon: "check"}).OnClick(func() { a.reviewAll(files, "ok") })
+		}
 		kit.Btn(c, "提交…", kit.BtnOpt{Variant: kit.BtnPri, Small: true}).OnClick(a.OpenSCM)
 	})
 	kit.VScroll(c).Key("review").Grow(1).MinHeight(0).Children(func() {

@@ -199,6 +199,10 @@ func (a *App) etabPane(c *ui.Context, tb *ideTab, pane int8) {
 	on := tb.id == *d.paneActive(pane)
 	el := ui.ButtonBase(c).Key("etab-" + tb.id).PaddingX(10).Gap(6).AlignItems(ui.Center).Shrink(0).
 		TextColor(t.Tx3).Cursor(ui.CursorDefault).Transition(kit.Fade)
+	narrowWs := a.wsNarrow() // 窄档(<520):标签收紧到 130,非当前标签只留 70px 标题
+	if narrowWs {
+		el.PaddingX(8).MaxWidth(130)
+	}
 	if isFileTab(tb) {
 		dragRef(el, tb.path, false) // 拖到对话栏 = 引用这个文件
 	}
@@ -254,6 +258,9 @@ func (a *App) etabPane(c *ui.Context, tb *ideTab, pane int8) {
 			}
 		}
 		nm := ui.Text(c, a.tabTitle(tb)).SingleLine()
+		if narrowWs && !on {
+			nm.MaxWidth(70)
+		}
 		if tb.preview {
 			nm.Italic()
 		}

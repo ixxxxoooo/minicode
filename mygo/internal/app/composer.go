@@ -152,6 +152,9 @@ func (a *App) cfgChip(c *ui.Context, wide bool) {
 	if b.Hovered() || a.popup == "cfg" {
 		b.Background(t.Fill2).TextColor(t.Tx1)
 	}
+	if !wide { // 窄档:运行配置胶囊最宽 150(设计稿 .cfg)
+		b.MaxWidth(150)
+	}
 	b.OnClick(func() { a.togglePop("cfg") })
 	if tip := a.pvModelChipTip(); tip != "" {
 		b.Tooltip(tip)
