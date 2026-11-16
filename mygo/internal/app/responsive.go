@@ -8,12 +8,12 @@ var respLog = diag.L("resp")
 
 // 窗口断点(设计稿 resp / arch 页,固定 1100 / 900 / 720):
 //
-//	≥1100  默认并排
-//	900–1099  Agent 工作区改浮层;IDE 导航栏自动收起(⌘B 可展开为浮层)
-//	720–899  IDE 对话栏收成图标条 + 浮层;标题栏 ⌘K 收成图标
+//	≥1040  默认并排(右侧栏随窗口连续缩小,最小 360 / 300,主区始终 ≥ 440)
+//	900–1039  Agent 工作区改浮层;IDE 导航栏改抽屉(⌘B 展开为浮层)
+//	720–899  只剩主区:Agent 导航栏也改抽屉;IDE 对话栏收成图标条 + 浮层;标题栏 ⌘K 收成图标
 //	<720   导航栏改抽屉;形态分段收成单图标
 const (
-	bpWide     = 1100
+	bpWide     = 1040 // = 导航栏 228 + 主区 440 + 右侧栏最小 360 + 间隙
 	bpMid      = 900
 	bpNarrow   = 720
 	fitHyst    = 24
@@ -54,8 +54,12 @@ func (a *App) useDockRail() bool {
 	return a.mode == ModeIDE && !a.chatMax && a.winTier() >= 2
 }
 
+// useSideDrawer 导航栏改抽屉:Agent <900(只剩对话栏);IDE <1040(只剩工作区 + 对话栏,⌘B 展开为浮层)。
 func (a *App) useSideDrawer() bool {
-	return a.winTier() >= 3
+	if a.mode == ModeIDE {
+		return a.winTier() >= 1
+	}
+	return a.winTier() >= 2
 }
 
 func (a *App) compactTitle() bool {

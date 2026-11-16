@@ -706,6 +706,7 @@ func (a *App) View(c *ui.Context) {
 	// 圆角 / 描边 / 阴影 / 悬停色与应用内其它弹层一致。
 	c.SetMenuPresentation(ui.PopoverMenus)
 	a.winW, a.winH = c.Size()
+	a.trackLayout()
 	a.warmTick() // 到点预热 / 回前台补预热 / 空闲释放(每帧只比几个时间,很便宜)
 	a.fitPanels()
 	a.reposTick()

@@ -79,10 +79,10 @@
     ['窄', '< 520', '面包屑隐藏;非当前标签只留 70px 标题;差异自动变统一视图;审查头部只留「提交」;三方合并变上下堆叠;底部面板只留终端 / 问题'],
   ];
   const WIN = [
-    ['≥ 1100', '默认:Agent 工作区 560、IDE 对话栏 352'],
-    ['900 – 1099', 'Agent 工作区不再并排挤对话栏:改成从右侧滑入的浮层(宽 min(560, 90%)),点外部收起;IDE 导航栏自动收起(⌘B 手动展开为浮层)'],
-    ['720 – 899', 'IDE 对话栏收成右侧图标条,点开变浮层;标题栏搜索框收成图标'],
-    ['< 720', '导航栏变抽屉(标题栏最左按钮滑出);Agent / IDE 分段收成单个图标按钮'],
+    ['≥ 1040', '默认并排:导航栏 228 + 主区 + 右侧栏(Agent 工作区默认 560、IDE 对话栏默认 352)。主区始终保持 ≥ 440,右侧栏随窗口变窄连续缩小(工作区最小 360、对话栏最小 300),拖动窗口边缘时每一像素都跟手,没有分档跳变'],
+    ['900 – 1039', '右侧栏缩到最小仍放不下时整体收起:Agent 工作区变成从右侧滑入的浮层(宽 min(560, 90%)),点外部收起;IDE 导航栏变抽屉(⌘B 展开为浮层)'],
+    ['720 – 899', '只剩中间一栏:Agent 导航栏也变抽屉(标题栏最左按钮滑出);IDE 对话栏收成右侧图标条,点开变浮层;标题栏搜索框收成图标。窗口最小宽 720'],
+    ['< 720', 'Agent / IDE 分段收成单个图标按钮(窗口最小宽 720,仅从属窗口或外接显示异常时出现)'],
   ];
   const PAGE = [
     ['设置', '左侧分类导航在 < 900 收成顶部下拉;正文列宽 620 → 自适应'],
@@ -98,6 +98,9 @@
     ${sec('档位说明', '按钮与文字让位的顺序:先附注 → 再次要指标 → 最后才折叠控件;主要操作(发送、停止、批准、审查)任何档位都在。', tbl([['档', 50], ['宽度(px)', 90], ['什么时候出现', 220], ['变化']], TIER))}
     ${sec('窄栏的新会话与欢迎页', '窄栏里的欢迎页:问候 + 输入框 + 起手卡单列。头部「+」就是 ⌘N,「⏱」是历史弹层。', `<div class="rz-grid">${chatBox(352, 'welcome')}<div class="rz-cell"><div class="f ai g3"><b>历史弹层</b><span class="t3">点标题或「⏱」</span></div><div class="rz-box chat" style="width:352px;height:300px">${W.chat({ screen: 'work' }).replace('</div>\n      <div class="flow-wrap">', '</div>\n      <div class="flow-wrap">')}${F.hist()}</div></div></div>`)}
     ${sec('工作区三档', '同样按容器宽度:Agent 默认的工作区是 560(中档),IDE 主位通常 ≥ 700(宽档)。', `<div class="rz-grid">${wsBox(720, '宽', { occ: 1, hl: 0, word: 'Handler' })}${wsBox(560, '中', { word: 'Handler' })}${wsBox(440, '窄', { word: 'Handler' })}</div>${tbl([['档', 50], ['宽度(px)', 90], ['变化']], WSTIER)}`)}
+    ${sec('IDE 对话栏图标条(窗口 720 – 899)', '对话栏收起后,右缘只留<b>一个</b>「对话」图标(与导航栏「会话」分段同一个气泡图标)。不放机器人图标:机器人是标题栏 Agent 模式的标记,放在这里会被当成「切到 Agent」。图标条贴在工作区标签条<b>下方</b>的右缘,不盖住标签条右侧的拆分 / 更多按钮。', `<div class="gal">
+      ${cell('收成图标条', ['⌥', '⌘', 'B'], `<div class="snip" style="width:330px;height:150px;position:relative"><div class="f ai g2" style="height:30px;padding:0 8px;box-shadow:inset 0 -1px var(--bd-1)"><span class="m fs-ctl">router.rs</span><span class="grow"></span>${ib('cols', 'sm', '向右拆分')}${ib('rows', 'sm', '向下拆分')}${ib('more', 'sm', '更多')}</div><div style="position:absolute;right:6px;top:38px">${ib('chat', '', '对话栏 ⌥⌘B')}</div></div>`, '点击 = 对话栏以浮层从右侧滑入(宽 min(352, 92%)),点遮罩 / Esc / 再点图标收起;浮层里与平时是同一个对话栏,同一份会话。')}
+      ${cell('状态点', '', `<div class="snip f ai g4" style="width:330px;height:80px;padding:0 20px">${['空闲|', '运行中|ac', '待你确认|warn'].map(x => { const [t, k] = x.split('|'); return `<div class="fc ai g2" style="align-items:center"><span style="position:relative;display:inline-flex">${ib('chat', '', t)}${k ? `<i style="position:absolute;right:3px;top:3px;width:6px;height:6px;border-radius:50%;background:var(--${k === 'ac' ? 'ac' : 'warn'})"></i>` : ''}</span><span class="t3 fs-cap">${t}</span></div>`; }).join('')}</div>`, '图标右上角的小圆点告诉你对话栏里发生了什么:强调色 = Claude 正在运行,橙色 = 在等你批准 / 回答。关闭对话栏后不会漏掉待确认。')}</div>`)}
     ${sec('窗口宽度断点', '只处理「放不下」的区域让位,不改内容。变宽后恢复,自动收起不覆盖你手动设置的开合。', tbl([['窗口宽度', 110], ['行为']], WIN))}
     ${sec('整页功能的窄窗口行为', '整页屏幕替换工作台,自己决定怎么在窄窗口里折叠;规则都是「先叠、再藏、最后变抽屉」。', tbl([['页面', 110], ['行为']], PAGE))}</div>`;
 

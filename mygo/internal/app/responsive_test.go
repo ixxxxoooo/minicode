@@ -9,7 +9,7 @@ func TestWinTier(t *testing.T) {
 		want int
 	}{
 		{1280, 0},
-		{1050, 1},
+		{1000, 1},
 		{800, 2},
 		{640, 3},
 	} {

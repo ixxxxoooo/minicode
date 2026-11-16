@@ -30,6 +30,9 @@ type layoutSizes struct {
 	resizing              string    // 正在拖的把手(拖动期间面板的宽度过渡关闭,否则会跟不上鼠标)
 	lastDrag              time.Time // 最近一次拖动(松手后几帧内仍不开过渡)
 	panelMax              bool      // 底部面板最大化(占满工作区)
+	lastW                 float32   // 上一帧窗口宽度
+	winResizeAt, structAt time.Time // 窗口宽度最近一次变化 / 栏开合结构最近一次变化
+	sig                   layoutSig
 }
 
 func (a *App) loadLayout() {
@@ -51,11 +54,45 @@ func (a *App) sideW() float32 {
 	return clampF(orDef(a.ly.side, a.sideWidth()), 180, 420)
 }
 
-func (a *App) wsRW() float32 {
+// centerMin 是主区(Agent = 对话栏,IDE = 工作区)的最小宽度:右侧栏随窗口变窄连续缩小让给它,
+// 缩到自己的最小宽度仍放不下,才整体收起(浮层 / 图标条),最后只剩中间一栏。
+const centerMin = 440
+
+// sideOcc 是导航栏此刻在行内占的宽度(抽屉或收起时为 0)。
+func (a *App) sideOcc() float32 {
+	if a.useSideDrawer() || !a.sideOpen {
+		return 0
+	}
+	return a.sideW()
+}
+
+// inlineRoom 是主区保持 centerMin 后,右侧栏最多能拿到的宽度。
+func (a *App) inlineRoom() float32 {
+	return a.winW - a.sideOcc() - centerMin - a.tk.Scheme.GapPane*2
+}
+
+// wsPref / dockPref 是用户偏好(或默认)宽度,浮层用它;行内并排用下面会随窗口收缩的 wsRW / dockW。
+func (a *App) wsPref() float32 {
 	return clampF(orDef(a.ly.ws, theme.WWs), 360, max(360, a.winW-a.sideW()-360))
 }
 
-func (a *App) dockW() float32 { return clampF(orDef(a.ly.dock, theme.WDock), 300, 560) }
+func (a *App) dockPref() float32 { return clampF(orDef(a.ly.dock, theme.WDock), 300, 560) }
+
+func (a *App) wsRW() float32 {
+	w := a.wsPref()
+	if a.winW <= 0 {
+		return w
+	}
+	return min(w, max(360, a.inlineRoom()))
+}
+
+func (a *App) dockW() float32 {
+	w := a.dockPref()
+	if a.winW <= 0 {
+		return w
+	}
+	return min(w, max(300, a.inlineRoom()))
+}
 
 func (a *App) panelHeight() float32 {
 	def := float32(172)
@@ -73,12 +110,45 @@ func clampF(v, lo, hi float32) float32 { return min(max(v, lo), hi) }
 // 拖动分隔线时面板会落后于指针、与相邻区域错位(曾让编辑器文字透到底部面板标签条上)。
 var noMotion = ui.ElementTransition{Duration: -1}
 
-// mt 是面板宽高变化的过渡:拖动调整期间关掉(跟手),其余时候用 440 ms 变形曲线。
+// mt 是面板宽高变化的过渡:拖动分隔线或拖动窗口边缘期间关掉(跟手,不落后于指针、不分档跳变),
+// 其余时候用 440 ms 变形曲线;窗口拖到断点、某一栏被收起 / 展开的那一刻仍带动画(layoutStruct 记录)。
 func (a *App) mt() ui.ElementTransition {
-	if a.ly.resizing != "" || time.Since(a.ly.lastDrag) < 200*time.Millisecond {
+	if a.instantLayout() {
 		return noMotion
 	}
 	return morph
+}
+
+// instantLayout 此刻面板尺寸应直接跟随(不做过渡)。
+func (a *App) instantLayout() bool {
+	if a.ly.resizing != "" || time.Since(a.ly.lastDrag) < 200*time.Millisecond {
+		return true
+	}
+	// 窗口宽度正在连续变化,且没有哪一栏刚被收起 / 展开:连续缩放 = 立即跟随
+	return time.Since(a.ly.winResizeAt) < 250*time.Millisecond && time.Since(a.ly.structAt) > 500*time.Millisecond
+}
+
+// trackLayout 每帧调用:记录窗口宽度是否在变,以及栏的开合结构是否变了(变了才值得做收起 / 展开动画)。
+func (a *App) trackLayout() {
+	if a.winW != a.ly.lastW {
+		if a.ly.lastW != 0 {
+			a.ly.winResizeAt = time.Now()
+		}
+		a.ly.lastW = a.winW
+	}
+	sig := layoutSig{a.mode, a.sideOpen, a.useSideDrawer(), a.useWsOverlay(), a.useDockRail(), a.rightOn, a.chatMax, a.ly.panelMax}
+	if sig != a.ly.sig {
+		if a.ly.sig != (layoutSig{}) {
+			a.ly.structAt = time.Now()
+		}
+		a.ly.sig = sig
+	}
+}
+
+type layoutSig struct {
+	mode                             Mode
+	side, drawer, wsOvl, rail, right bool
+	chatMax, panelMax                bool
 }
 
 // resizeHandle 在面板的一条边内侧放一条拖拽把手。edge:

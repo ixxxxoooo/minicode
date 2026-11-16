@@ -1,8 +1,6 @@
 package app
 
 import (
-	"time"
-
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -320,7 +318,7 @@ func itoa(n int) string {
 
 // sideTransition 是导航栏开合的宽度过渡(拖动调整宽度期间关掉)。
 func (a *App) sideTransition() ui.ElementTransition {
-	if a.ly.resizing != "" || time.Since(a.ly.lastDrag) < 200*time.Millisecond {
+	if a.instantLayout() {
 		return noMotion
 	}
 	return ui.ElementTransition{Size: true, Duration: kit.DurSlow, Ease: kit.EaseIO}

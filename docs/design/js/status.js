@@ -94,7 +94,7 @@
     resp: [
       R('对话栏按自身宽度三档(≥640 / 420–639 / <420)', '内边距 20 / 14 / 10;窄档:头部下拉 + 新会话 / 历史 / 占满、步骤行无附注、代码与输出折行、脚注只留模型 + 用时、改动卡不列文件、配置胶囊 ≤150、权限 / 计划卡次要按钮进「更多」、提问卡无键位提示(resp_tier_test.go)。已用 computer use 在开发版(真实模式)看过 IDE 停靠窄档与 Agent 宽档;中档(Agent + 工作区)与交互卡「更多」未实机走', 'ok'),
       R('工作区按自身宽度三档(≥600 / 520–599 / <520:迷你地图、统一 diff、面包屑)', '中档起隐藏迷你地图与面包屑右侧语言 / 编码;窄档:面包屑隐藏、标签 ≤130 且非当前 70px、差异栏收起灰字与「打开文件」、审查头只留「提交」(全部接受 / 撤销进更多)、底部面板只留终端 / 问题(当前所在分段保留)。单测覆盖面板标签;窄档视觉 cmd/shot 可对 (-w 扩对话栏 / IDE 主工作区)', 'part'),
-      R('窗口变窄自动收起 / 恢复两侧栏', '固定断点 1100 / 900 / 720 + 24px 回差;已用 System Events 缩放开发版窗口实测:约 1092 收起导航栏、约 892 对话栏收成图标条、约 1106 恢复,日志有记录', 'ok', 'B6'),
+      R('窗口变窄自动收起 / 恢复两侧栏', '断点 1040 / 900 / 720 + 24px 回差,右侧栏在 1040 以上随窗口连续缩小(主区 ≥ 440);已用 System Events 缩放开发版窗口实测:约 1092 收起导航栏、约 892 对话栏收成图标条、约 1106 恢复,日志有记录', 'ok', 'B6'),
       R('Agent 形态:工作区在窄窗变成滑入浮层;<720 导航栏变抽屉', 'overlays.go + DrawerSlide;fitPanels 进入抽屉档自动收起 sideOpen(避免 w<720 默认盖住内容)。窗口最小宽 720(main)。静态核对;滑入曲线/遮罩未实机', 'part', 'B6'),
       R('IDE 形态:窄窗对话栏收成图标条 + 浮层', 'dockRail + dockOverlay + DrawerSlide 已接。静态核对未发现矛盾,需实机验证', 'part', 'B6'),
       R('整页功能的窄窗规则(自动化 / 画布 / 浏览器 / 自定义 / 用量,<1000 / <900)', 'pageNarrowMid/winW<900:custom/usage/automation/canvas 窄布局已接(窗口宽非容器)。未测试', 'part', 'B6')],
@@ -180,7 +180,7 @@
       R('task-spec 页实现状态表', 'specs2 待办 / 尾读 / 通知 / 分叉四行', 'ok', 'B0')],
     overlays: [
       R('命令面板、历史会话、分支选择器、账号菜单、运行配置弹层', '', 'ok'),
-      R('IDE 通知中心(铃铛 / 历史 / 右下角叠放)', 'notice_ui.go 铃铛/面板/noticeToasts(shell.go);.app 内 mac_notify OpenSessionFromNotify;测试/裸二进制无 UN 点击回会话;未测试', 'part'),
+      R('IDE 通知中心(标题栏铃铛 / 历史 / 右下角叠放)', 'notice_ui.go 标题栏铃铛(状态栏不放铃铛)/面板/noticeToasts(shell.go);.app 内 mac_notify OpenSessionFromNotify;测试/裸二进制无 UN 点击回会话;未测试', 'part'),
       R('任务坞停滞 / 已结束 / 监听 / 工作流胶囊', 'chat.go taskDock(task_dock.go)六类胶囊+停滞/停止;flow_test TestTaskDockCapsules;未测试', 'ok'),
       R('上下文弹层(输入框圆环 / 状态栏;分类明细 / 阈值刻度 / 账户限额 / 刷新 / 压缩;常态 / 接近阈值 / 压缩中 / 加载 / 无限额 / 失败)', 'ctx_panel+history 估算+点开才 get_context_usage(3s 防抖)+启动并查询;限额单独 CmdRefreshUsage.Limits;未测试', 'part'),
       R('Claude 连接预热与空闲释放(状态栏「连接中 / 已连接 / 未连接 / 连接失败」)', 'core.EvConn/ConnState;claude/backend.go warmup(失败 60 秒退避)/release(回合 / 请求 / 后台任务时拒绝)/空闲回收后重连不提示「已重新启动」;app/warm.go 策略:Attach 去抖 0.35 秒预热、窗口在前台才预热、输入与回前台补预热、空闲 chat.idle 分钟释放(窗口在后台 ⅓);设置 通用 → 连接 chat.warm / chat.idle;单测 + 真实 claude 剖析(real_profile_test);未测试', 'part'),
