@@ -136,7 +136,7 @@ func (a *App) modeSeg(c *ui.Context) {
 	if a.mode == ModeIDE {
 		on = 1
 	}
-	i := kit.Seg(c, []kit.SegItem{{Icon: "bot", Text: "Agent", Tip: "⌘E"}, {Icon: "code", Text: "IDE", Tip: "⌘E"}}, on, kit.SegOpt{Large: true, W: 62, Key: "modeseg"})
+	i := kit.Seg(c, []kit.SegItem{{Icon: "bot", Text: "Agent", Tip: "⌘E"}, {Icon: "code", Text: "IDE", Tip: "⌘E"}}, on, kit.SegOpt{Large: true, Key: "modeseg"})
 	if i >= 0 {
 		a.SetMode(Mode(i))
 	}

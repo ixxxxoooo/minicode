@@ -179,13 +179,20 @@ func Tog(c *ui.Context, on bool, key string, o ...TogOpt) bool {
 // ───────── 列表行 .row ─────────
 
 // RowEl 是 .row 的外壳:行高取方案(随界面大小缩放),悬停 fill-1;
-// 选中态所有布局方案统一:强调色淡染底(Sel)+ 正文色 + 半粗体,再配合 SelBar 的左侧竖线,
+// 选中态:方案 B = 白色浮起卡(设计稿 .row.on);A / C = 强调色淡染底(Sel)+ 正文色 + 半粗体,A 再配合 SelBar 的左侧竖线,
 // 此前方案 A 只有 8% 的灰底、方案 B 只有白底,在宣纸 / 墨夜主题里几乎看不出选中了谁。
 // 调用方负责 Children;需要悬停状态时用返回值的 Hovered()。
 func RowEl(c *ui.Context, on bool) ui.Element {
 	r := ui.ButtonBase(c).Height(T.Scheme.RowH).PaddingX(8).Gap(6).Radius(T.RSm()).AlignItems(ui.Center).Cursor(ui.CursorPointer)
 	col := T.Tx2
 	switch {
+	case on && T.Scheme.ID == "b":
+		// 设计稿方案 B:选中行是白色浮起卡(--bg-raised + --sh-1),没有竖线
+		r.Background(T.Raised).FontWeight(500)
+		for _, s := range T.Shadow1() {
+			r.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+		}
+		col = T.Tx1
 	case on:
 		r.Background(T.Sel).FontWeight(500)
 		col = T.Tx1
@@ -198,6 +205,9 @@ func RowEl(c *ui.Context, on bool) ui.Element {
 
 // SelBar 画选中行左侧的强调色竖线(放在行的 Children 里,绝对定位,不占位置)。
 func SelBar(c *ui.Context) {
+	if T.Scheme.ID == "b" { // 方案 B 选中用浮起卡,不画竖线
+		return
+	}
 	ui.Box(c).Absolute().Left(0).Top(4).Bottom(4).Width(3).Radius(2).Background(T.Ac)
 }
 

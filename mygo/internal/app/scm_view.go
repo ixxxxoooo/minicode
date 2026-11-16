@@ -344,7 +344,12 @@ func (a *App) scmCommitRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow,
 	s := &a.sc
 	open := s.expanded == cm.Hash
 	r := ui.ButtonBase(c).Key("scm-c-" + cm.Hash).Height(graphRowH).PaddingX(2).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx2)
-	if open {
+	if open && t.Scheme.ID == "b" {
+		r.Background(t.Raised)
+		for _, sh := range t.Shadow1() {
+			r.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
+		}
+	} else if open {
 		r.Background(t.Sel)
 	} else if r.Hovered() {
 		r.Background(t.Fill2)
