@@ -90,7 +90,10 @@
     const dur = parseFloat(getComputedStyle(win).getPropertyValue('--dur-morph')) || 0;
     if (!chat || !ws || dur <= 8 || !stage.animate) return null;
     win.classList.add('belt'); // 先加:关掉 .pane 的 width 过渡,下面量到的才是终态
-    const rel = (el, s) => { const r = el.getBoundingClientRect(); return { x: r.left - s.left, y: r.top - s.top, w: r.width, h: r.height, op: +getComputedStyle(el).opacity }; };
+    // 预览窗口外层有 transform: scale(--s)(.fit > .frame),getBoundingClientRect 给的是缩放后的像素;
+    // 动画的 translate / width 是写在缩放之内的布局像素,所以量到的值要除以缩放系数 k,否则动画全程「缩水」、走完一还原就跳
+    const k = stage.getBoundingClientRect().width / stage.offsetWidth || 1;
+    const rel = (el, s) => { const r = el.getBoundingClientRect(); return { x: (r.left - s.left) / k, y: (r.top - s.top) / k, w: r.width / k, h: r.height / k, op: +getComputedStyle(el).opacity }; };
     const s0 = stage.getBoundingClientRect(), c0 = rel(chat, s0), w0 = rel(ws, s0);
     let ghost = null;
     if (w0.w > 2 && w0.op > .05) {
@@ -108,10 +111,11 @@
       Object.assign(chat.style, { flex: 'none', width: c1.w + 'px' });
       anims.push(chat.animate([{ transform: `translateX(${-dx}px)`, width: c0.w + 'px', opacity: c0.op }, { transform: 'translateX(0)', width: c1.w + 'px', opacity: c1.op }], opt));
       // 新工作区:从带子上与对话栏相邻的那一侧移进来(IDE → Agent 自右缘,Agent → IDE 自左缘)
-      if (w1.w > 2) anims.push(ws.animate([{ transform: `translateX(${-dx}px)` }, { transform: 'translateX(0)' }], opt));
+      // 宽度钉死成终态:不钉的话会话变宽时 flex 会把它挤窄,内容在动画里反复重排,会话的起点也跟着偏
+      if (w1.w > 2) { Object.assign(ws.style, { flex: 'none', width: w1.w + 'px' }); anims.push(ws.animate([{ transform: `translateX(${-dx}px)` }, { transform: 'translateX(0)' }], opt)); }
       // 旧工作区(幽灵):被对话栏挤出舞台
       if (ghost) anims.push(ghost.animate([{ transform: 'none' }, { transform: `translateX(${dx}px)` }], opt));
-      const end = () => { anims.forEach(a => a.cancel()); if (ghost) ghost.remove(); chat.style.flex = ''; chat.style.width = ''; win.classList.remove('belt'); win._beltEnd = null; };
+      const end = () => { anims.forEach(a => a.cancel()); if (ghost) ghost.remove(); chat.style.flex = ''; chat.style.width = ''; ws.style.flex = ''; ws.style.width = ''; win.classList.remove('belt'); win._beltEnd = null; };
       win._beltEnd = end;
       Promise.all(anims.map(a => a.finished.catch(() => {}))).then(() => { if (win._beltEnd === end) end(); });
     };
@@ -124,10 +128,10 @@
     win.dataset.mode = mode;
     const m = win._mem[mode]; win.dataset.side = m.side; win.dataset.right = m.right; win.dataset.panel = m.panel;
     if (APP.syncBars) APP.syncBars(win);
-    if (belt) belt();
     win.classList.add('morphing'); clearTimeout(win._mt); win._mt = setTimeout(() => win.classList.remove('morphing'), 470);
     $$('button[data-act="mode"]', win).forEach(b => { const on = (b.dataset.i === '1') === (mode === 'ide'); b.classList.toggle('on', on); if (on) b.parentElement.style.setProperty('--i', b.dataset.i); });
-    setNav(win, mode === 'ide' ? 'files' : 'chat');
+    setNav(win, mode === 'ide' ? 'files' : 'chat'); // 它会把左栏置为展开,所以必须在它之后再量终态(否则舞台宽度会在平移途中变化)
+    if (belt) belt();
   };
   /** 推进所有「最新一步」:旧行上移淡出,新行自下滑入 */
   const tick = () => $$('.ticker[data-ticks]').forEach(t => {
