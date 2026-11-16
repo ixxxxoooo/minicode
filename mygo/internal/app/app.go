@@ -160,6 +160,8 @@ type App struct {
 	// 会话流的折叠状态:条目 id → 是否展开(没有记录就用默认)
 	folds        map[string]bool
 	outFold      map[string]bool            // 长输出 / 用户消息展开
+	hlKey        string                     // 命令 / 输出高亮缓存对应的「主题|强调色|字号」
+	hlCache      map[string][]ui.Span       // 命令 / 输出行高亮结果(flow_hl.go)
 	foldSt       map[string]*ui.ScrollState // 命令卡 / 代码块输出的内部滚动位置(按 foldKey,必须跨帧保留)
 	tickTool     map[string]string          // 工具组 → 当前展示的最新工具 id
 	tickAt       map[string]time.Time       // 最新一步滑入动画起点

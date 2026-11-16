@@ -26,9 +26,10 @@
   F.diff = (head = true) => `<div class="tcard">${head ? `<div class="tcard-h" data-act="open" data-id="diff:router.rs">${ic('code', 's12')}<span class="grow ell">src/router.rs</span><span class="c-ok mono">+4</span><span class="c-err mono">−2</span>${ib('ext', 'sm', '在工作区打开差异')}${ib('copy', 'sm')}</div>` : ''}
     <div style="padding:3px 0">${dl('', 41, '    pub fn match_path(&self, path: &str) -> Option<&Handler> {')}${dl('del', 42, '        self.routes.get(path)')}${dl('add', 42, '        let key = normalize(path);')}${dl('add', 43, '        self.routes.get(&key).or(self.fallback.as_ref())')}${dl('', 44, '    }')}</div></div>`;
   /** 终端输出卡。live:运行中(贴底跟随,尾行带光标) */
-  F.term = (live) => `<div class="tcard"><div class="tcard-h">${ic('prompt', 's12')}<span class="grow mono">cargo test router</span>${live ? '' : '<span class="c-ok">通过</span>'}${ib('terminal', 'sm', '在终端面板查看', 'data-act="pterm"')}${ib('copy', 'sm')}</div>
+  F.term = (live) => `<div class="tcard"><div class="tcard-h">${ic('prompt', 's12')}<span class="grow mono sh"><b class="fn">cargo</b> <b class="k">test</b> router <span class="sf">--</span> <span class="sf">--nocapture</span> <span class="so">2&gt;&amp;1</span> <span class="so">|</span> <b class="fn">tail</b> <span class="sf">-20</span></span>${live ? '' : '<span class="c-ok">通过</span>'}${ib('terminal', 'sm', '在终端面板查看', 'data-act="pterm"')}${ib('copy', 'sm')}</div>
     <div class="term"><span class="d">   Compiling</span> router-demo v0.3.1
-<span class="d">     Running</span> tests/router_test.rs
+<span class="d">     Running</span> <span class="pa">tests/router_test.rs</span>
+<span class="e">warning:</span> unused variable: <span class="s">`key`</span> <span class="d">-&gt;</span> <span class="pa">src/router.rs:42:13</span>
 test matches_ignoring_case ... <span class="p">ok</span>
 ${live ? 'test matches_trailing_slash ... <span class="caret"></span>' : 'test result: <span class="p">ok</span>. 12 passed; 0 failed <span class="d">in 0.42s</span>'}</div></div>`;
   /** 待办清单。done:已完成条数(其后一条为进行中) */

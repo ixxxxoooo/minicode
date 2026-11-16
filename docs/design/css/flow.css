@@ -46,6 +46,9 @@
 .dl.add { background: var(--diff-add); box-shadow: inset 2px 0 var(--ok); } .dl.del { background: var(--diff-del); box-shadow: inset 2px 0 var(--err); }
 .term { font: 11.5px/1.6 var(--font-mono); padding: 6px 10px; color: var(--tx-1); white-space: pre; overflow: hidden; }
 .term .p { color: var(--ok); } .term .e { color: var(--err); } .term .d { color: var(--tx-3); } .term .w { color: var(--warn); }
+/* 命令卡语法高亮:命令名 fn / 子命令 k(粗)、标志 sf(青)、管道与重定向 so(灰粗)、变量 sv;输出:路径 pa、哈希 h、URL u */
+.sh b { font-weight: 600; } .sh .sf { color: var(--syn-mac); } .sh .so { color: var(--tx-3); font-weight: 600; } .sh .sv { color: var(--syn-num); }
+.term .pa { color: var(--info); } .term .h { color: var(--syn-num); } .term .u { color: var(--ac-tx); } .term .e { font-weight: 600; }
 .k { color: var(--syn-kw); } .s { color: var(--syn-str); } .fn { color: var(--syn-fn); } .ty { color: var(--syn-type); } .nu { color: var(--syn-num); } .mc { color: var(--syn-mac); } .cm { color: var(--syn-com); font-style: italic; }
 .think-body { color: var(--tx-3); font-size: 12px; line-height: 1.6; padding-left: 10px; box-shadow: inset 2px 0 var(--bd-2); }
 

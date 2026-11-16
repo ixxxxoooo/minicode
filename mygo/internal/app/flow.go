@@ -431,64 +431,6 @@ func (a *App) diffLine(c *ui.Context, i int, l diff.Line) {
 	})
 }
 
-var (
-	termHead = regexp.MustCompile(`^(\s*(?:Compiling|Running|Finished|Downloaded|Checking|Fresh|Blocking|Updating))(.*)$`)
-	termOK   = regexp.MustCompile(`\bok\b`)
-	termIn   = regexp.MustCompile(`\bin \d+(?:\.\d+)?s\b`)
-)
-
-// termLine 把一行终端输出切成带色片段。
-func (a *App) termLine(line string) []ui.Span {
-	t := a.tk
-	mk := func(s string, col ui.Color) ui.Span {
-		return ui.Span{Text: s, Font: "monospace", Size: 11.5, Color: col}
-	}
-	if m := termHead.FindStringSubmatch(line); m != nil {
-		return append([]ui.Span{mk(m[1], t.Tx3)}, a.termRest(m[2], mk)...)
-	}
-	return a.termRest(line, mk)
-}
-
-func (a *App) termRest(s string, mk func(string, ui.Color) ui.Span) []ui.Span {
-	t := a.tk
-	type mark struct {
-		i, j int
-		col  ui.Color
-	}
-	var ms []mark
-	for _, m := range termOK.FindAllStringIndex(s, -1) {
-		ms = append(ms, mark{m[0], m[1], t.Ok})
-	}
-	for _, m := range termIn.FindAllStringIndex(s, -1) {
-		ms = append(ms, mark{m[0], m[1], t.Tx3})
-	}
-	// 按起点排序(两类各自有序,数量极少,插入排序即可)
-	for i := 1; i < len(ms); i++ {
-		for j := i; j > 0 && ms[j].i < ms[j-1].i; j-- {
-			ms[j], ms[j-1] = ms[j-1], ms[j]
-		}
-	}
-	var out []ui.Span
-	last := 0
-	for _, m := range ms {
-		if m.i < last {
-			continue
-		}
-		if m.i > last {
-			out = append(out, mk(s[last:m.i], t.Tx1))
-		}
-		out = append(out, mk(s[m.i:m.j], m.col))
-		last = m.j
-	}
-	if last < len(s) {
-		out = append(out, mk(s[last:], t.Tx1))
-	}
-	if len(out) == 0 {
-		out = append(out, mk(" ", t.Tx1))
-	}
-	return out
-}
-
 // deniedOutput 判断命令输出是不是「用户拒绝」的回执:本应用自己回的文案,
 // 或终端版 claude 的 "The user doesn't want to proceed…"。
 func deniedOutput(out string) bool {
@@ -501,7 +443,8 @@ func (a *App) termCard(c *ui.Context, tc *core.ToolCall, tb *core.TerminalBlock)
 	live := tb.ExitCode == nil
 	a.cardM(c, func() {
 		kit.Ic(c, "prompt", kit.S12)
-		ui.Text(c, tb.Command).Font("monospace").FontSize(11.5).Grow(1).SingleLine()
+		// 命令按 shell 语法高亮(命令名 / 子命令 / 标志 / 字符串 / 变量 / 管道),超出宽度裁掉
+		ui.RichText(c, a.shellSpans(tb.Command, a.FlowMonoSize())...).NoWrap().Clip().Grow(1).MinWidth(0)
 		if !live {
 			if (tc != nil && tc.Status == core.ToolDenied) || deniedOutput(tb.Output) {
 				// 用户拒绝了这条命令:根本没跑过,后端回的「退出码 1」只是拒绝信号,不当作失败显示

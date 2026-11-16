@@ -90,7 +90,7 @@ func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, co
 				row := ui.Row(c).Key(i).Height(a.flowMonoLH()).AlignItems(ui.Center)
 				if mono {
 					row.Children(func() {
-						ui.RichText(c, a.termLine(ln)...).NoWrap().Clip()
+						ui.RichText(c, a.termLineSz(ln, a.FlowMonoSize())...).NoWrap().Clip()
 						if live && i == len(show)-1 && !needFold {
 							kit.Caret(c)
 						}
