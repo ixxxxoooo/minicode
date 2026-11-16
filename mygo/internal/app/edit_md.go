@@ -46,6 +46,7 @@ type mdState struct {
 	segs     []*mdSeg // 含顶层表格时:按「正文 / 表格」切成的段(此时 doc 为 nil),见 edit_md_table.go
 	pend     []mdPend // 表格上排队等执行的结构修改
 	tblFocus string   // 下一次构建里要聚焦的表格单元格键
+	readOnly bool     // 用户手动开启的只读预览(与 mdUnsafe 自动只读共用渲染路径)
 }
 
 // mdSource 此刻该标签是否显示源码:标签上的选择优先,否则看偏好 editor.mdView。
@@ -80,6 +81,24 @@ func (a *App) toggleMdView() {
 	if tb := a.ide.cur(); tb != nil && tb.buf != nil && isMarkdownFile(tb.path) {
 		a.setMdMode(tb, !a.mdSource(tb))
 	}
+}
+
+// mdPreviewReadOnly 预览是否不可编辑(含自动只读与手动开关;源码视图不算预览)。
+func (a *App) mdPreviewReadOnly(tb *ideTab) bool {
+	if tb == nil || tb.md == nil || a.mdSource(tb) {
+		return false
+	}
+	return tb.md.unsafe != "" || tb.md.readOnly
+}
+
+// toggleMdReadOnly 切换手动只读预览(自动只读时应从菜单置灰,不走这里)。
+func (a *App) toggleMdReadOnly(tb *ideTab) {
+	if tb == nil || tb.buf == nil || !isMarkdownFile(tb.path) {
+		return
+	}
+	md := a.mdEnsure(tb)
+	md.readOnly = !md.readOnly
+	uxLog.Info("Markdown 只读预览", "path", tb.path, "on", md.readOnly)
 }
 
 // mdSplitFront 把开头的 YAML 头(--- … ---,.mdc 规则文件常见)与正文分开。
@@ -258,8 +277,10 @@ func (a *App) mdView(c *ui.Context, tb *ideTab) {
 	md := a.mdEnsure(tb)
 	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
 		switch {
-		case md.unsafe != "":
-			a.mdBanner(c, tb, true, "这个文件含"+md.unsafe+",预览里编辑会把它压成普通段落,所以只读显示。", nil)
+		case a.mdPreviewReadOnly(tb):
+			if md.unsafe != "" {
+				a.mdBanner(c, tb, true, "这个文件含"+md.unsafe+",预览里编辑会把它压成普通段落,所以只读显示。", nil)
+			}
 			ui.Scroll(c).Key("mdprev-" + tb.id).Grow(1).MinHeight(0).Children(func() {
 				ui.Column(c).Padding(14, 34, 28, 34).MaxWidth(860).Children(func() {
 					markdown.View(c, tb.buf.String(), a.mdOptions())

@@ -30,13 +30,21 @@ func (a *App) mdMenuItems(m *ui.Menu) {
 	if menuItem(m, label).Chosen() {
 		a.setMdMode(tb, !src)
 	}
-	// 含 HTML / 脚注 / 列表里表格的文档不冒险改写,所见即所得里只读(顶层表格可在预览里编辑);这一项只反映状态,不可点
-	unsafe := tb.md != nil && tb.md.unsafe != ""
-	why := "当前文档可以直接在预览里编辑"
-	if unsafe {
-		why = "含 " + tb.md.unsafe + ",在预览里编辑会改写它,所以只读显示;切到源码再编辑"
+	autoRO := tb.md != nil && tb.md.unsafe != ""
+	manualRO := tb.md != nil && tb.md.readOnly
+	roOn := !src && (autoRO || manualRO)
+	why := "开启后预览只浏览、不编辑;再次点击恢复"
+	if autoRO {
+		why = "含 " + tb.md.unsafe + ",在预览里编辑会改写它,所以自动只读;切到源码再编辑"
 	}
-	menuItem(m, "只读预览").Icon(kit.MenuIcon("eye")).Checked(unsafe && !src).Disabled(true).Tooltip(why)
+	it := menuItem(m, "只读预览").Icon(kit.MenuIcon("eye")).Checked(roOn).Tooltip(why)
+	if src {
+		it = it.Disabled(true).Tooltip("源码视图下请直接编辑文本")
+	} else if autoRO {
+		it = it.Disabled(true)
+	} else if it.Chosen() {
+		a.toggleMdReadOnly(tb)
+	}
 	if menuItem(m, "格式化文档  ⇧⌥F").Chosen() {
 		a.formatDoc()
 	}
