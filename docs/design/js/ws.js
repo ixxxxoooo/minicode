@@ -18,6 +18,7 @@
     'router.rs': { k: 'file', icon: 'code', t: 'router.rs' },
     'router_test.rs': { k: 'file', icon: 'code', t: 'router_test.rs', mod: 1 },
     'Cargo.toml': { k: 'file', icon: 'gear', t: 'Cargo.toml', pv: 1 },
+    'main.py': { k: 'file', icon: 'code', t: 'main.py' },
     'diff:router.rs': { k: 'diff', icon: 'diff', t: 'router.rs (HEAD ↔ 工作区)' },
     review: { k: 'review', icon: 'eye', t: '审查 · 本轮改动', bd: 3 },
     plan: { k: 'plan', icon: 'list', t: '计划 · 路由大小写修复' },

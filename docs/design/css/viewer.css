@@ -13,9 +13,35 @@ body { margin: 0; display: grid; grid-template-columns: 208px 1fr; grid-template
 #vbar a { color: var(--tx-3); text-decoration: none; font-size: var(--fs-cap); } #vbar a:hover { color: var(--tx-1); }
 
 /* 左侧目录 */
-#vnav { padding: 8px; overflow: auto; background: var(--bg); box-shadow: inset -1px 0 var(--bd-2); display: flex; flex-direction: column; gap: 1px; }
+#vnav { padding: 0; overflow: auto; background: var(--bg); box-shadow: inset -1px 0 var(--bd-2); display: flex; flex-direction: column; gap: 1px; }
+#vlist { padding: 2px 8px 8px; display: flex; flex-direction: column; gap: 1px; flex: 1 0 auto; }
 #vnav .row { height: 28px; cursor: pointer; } #vnav .row.on { background: var(--ac-soft); color: var(--ac-tx); font-weight: var(--fw-medium); }
 #vnav .foot { margin-top: auto; padding: 8px; color: var(--tx-3); font-size: var(--fs-cap); line-height: 1.55; }
+
+/* 全文搜索(js/search.js):左上搜索框 + 结果列表 + 本页命中跳转小条 */
+#vsearch { position: sticky; top: 0; z-index: 2; padding: 8px 8px 6px; background: var(--bg); }
+.vs-box { height: 28px; border-radius: var(--r-sm); padding: 0 6px 0 8px; display: flex; align-items: center; gap: 6px; background: var(--bg-raised); box-shadow: inset 0 0 0 1px var(--bd-2); color: var(--tx-3); transition: box-shadow var(--dur-fast); cursor: text; }
+.vs-box:focus-within { box-shadow: var(--ring), inset 0 0 0 1px var(--ac-line); }
+.vs-box input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; color: var(--tx-1); font: inherit; font-size: var(--fs-ctl); -webkit-appearance: none; appearance: none; }
+.vs-box input::-webkit-search-cancel-button { display: none; }
+.vs-box:focus-within .vs-k, .vs-box .vs-x:not([hidden]) ~ .vs-k { display: none; }
+.vs-x { width: 18px; height: 18px; border-radius: var(--r-xs); display: grid; place-items: center; color: var(--tx-3); flex: none; } .vs-x:hover { background: var(--fill-2); color: var(--tx-1); } .vs-x[hidden] { display: none; }
+.vs-st { padding: 4px 2px 0; color: var(--tx-3); font-size: var(--fs-cap); } .vs-st:empty { display: none; }
+#vres { padding: 0 8px 12px; } #vres[hidden], #vlist[hidden], #vfind[hidden] { display: none; }
+.vr-sum { padding: 2px 6px 6px; color: var(--tx-3); font-size: var(--fs-cap); }
+.vr-pg { height: 26px; margin-top: 4px; padding: 0 6px; border-radius: var(--r-sm); display: flex; align-items: center; gap: 6px; color: var(--tx-1); font-weight: var(--fw-medium); cursor: pointer; }
+.vr-n { margin-left: auto; color: var(--tx-3); font-size: var(--fs-cap); font-weight: 400; }
+.vr-hit, .vr-more { padding: 3px 6px 3px 24px; border-radius: var(--r-sm); color: var(--tx-3); font-size: var(--fs-cap); line-height: 1.5; cursor: pointer; overflow-wrap: anywhere; }
+.vr-pg:hover, .vr-hit:hover, .vr-more:hover, #vres .act { background: var(--fill-2); } .vr-hit:hover, #vres .vr-hit.act { color: var(--tx-2); }
+#vres mark { background: rgb(255 200 0 / .38); color: inherit; border-radius: 2px; padding: 0 1px; }
+#vfind { position: fixed; top: 56px; right: 20px; z-index: 40; height: 32px; padding: 0 4px 0 12px; border-radius: var(--r-full); display: flex; align-items: center; gap: 4px; background: var(--bg-raised); box-shadow: var(--sh-2), inset 0 0 0 1px var(--bd-2); font-size: var(--fs-cap); }
+#vfind .vf-q { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--tx-1); font-weight: var(--fw-medium); } #vfind .vf-n { color: var(--tx-3); margin: 0 4px; white-space: nowrap; }
+#vfind button { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: var(--tx-2); } #vfind button:hover:not(:disabled) { background: var(--fill-2); color: var(--tx-1); } #vfind button:disabled { opacity: .4; }
+body.bare #vfind { display: none; }
+::highlight(vhit) { background-color: rgb(255 200 0 / .38); color: inherit; }
+::highlight(vcur) { background-color: rgb(255 140 0 / .6); color: inherit; }
+.vhit-el { animation: vflash 1.7s var(--ease-out, ease-out); border-radius: 4px; }
+@keyframes vflash { 0% { box-shadow: 0 0 0 3px var(--ac-line), 0 0 0 7px var(--ac-soft); } 100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; } }
 
 /* 主区:画框按可用空间等比缩放 */
 #vmain { overflow: auto; position: relative; }

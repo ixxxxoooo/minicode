@@ -38,6 +38,7 @@
   const st = load();
   /** 交互层(behave.js)通过它拿到状态与重渲染入口;hooks 在每次整页渲染后运行 */
   const APP = window.APP = { st, hooks: [], pages: PAGES };
+  APP.pageHtml = (p) => pageHtml(p);
 
   /* ───────── 渲染 ───────── */
   const frame = (scheme, screen, mode) => `<div class="fit"><div class="frame" data-scheme="${scheme}">${W.win({ scheme, mode, screen, theme: st.theme, setTab: st.setTab, setQ: st.setQ, cust: st.cust, cuSel: st.cuSel, cuScope: st.cuScope, cuTab: st.cuTab, cuQ: st.cuQ, auSel: st.auSel, auF: st.auF, wkOff: st.wkOff, useR: st.useR, ws: st.ws, ov: st.ov, right: st.right, panel: st.panel, panelKind: st.panelKind, unified: st.unified, staged: st.staged, sel: st.sel, scroll: st.scroll, sticky: st.sticky, cmenu: st.cmenu })}</div></div>`;
@@ -50,12 +51,14 @@
     <span class="lbl">方案</span>${seg(SCHEMES.map(s => `${s.id.toUpperCase()} ${s.name}`), SCHEMES.findIndex(s => s.id === st.scheme), 'lg', 'scheme')}
     <span class="lbl">主题</span><span class="f g3 ai">${THEMES.map(t => `<button class="swt tip ${t.id === st.theme ? 'on' : ''}" data-theme="${t.id}" data-act="theme" data-theme-id="${t.id}" data-tip="${t.name} · ${t.sub}"></button>`).join('')}</span>
     <span class="grow"></span>${btn('重播回合', 'soft', 'play', 'data-act="replay"')}<a href="v2/index.html">旧稿 v2 →</a>`; };
-  const renderNav = () => { $('#vnav').innerHTML = PAGES.map(([g, items]) => `<div class="grp-h">${g}</div>${items.map(([id, n, t]) => `<div class="row ${id === st.page ? 'on' : ''}" data-act="page" data-page="${id}">${ic(n, 's12')}<span class="ell">${t}</span></div>`).join('')}`).join('')
+  const renderNav = () => { $('#vlist').innerHTML = PAGES.map(([g, items]) => `<div class="grp-h">${g}</div>${items.map(([id, n, t]) => `<div class="row ${id === st.page ? 'on' : ''}" data-act="page" data-page="${id}">${ic(n, 's12')}<span class="ell">${t}</span></div>`).join('')}`).join('')
     + '<div class="foot">画框 1280 × 800,按窗口等比缩放。<br>所有颜色、尺寸、动效都来自 css/tokens.css。</div>'; };
+  /** 某一页的完整 HTML(主区渲染与全文搜索的索引共用,所以搜到的就是看到的) */
+  const pageHtml = (p) => (p === 'overview' ? overview() : P[p] ? P[p](st) : `<div class="stage-wrap">${frame(st.scheme, p, st.mode)}<div class="hint">${(HINTS[p] || []).map(h => `<span>${h}</span>`).join('')}</div></div>`)
+    + (window.STATUS_BLOCK && p !== 'overview' ? STATUS_BLOCK(p) : '');
   const renderMain = () => {
     const m = $('#vmain'), p = st.page;
-    m.innerHTML = p === 'overview' ? overview() : P[p] ? P[p](st) : `<div class="stage-wrap">${frame(st.scheme, p, st.mode)}<div class="hint">${(HINTS[p] || []).map(h => `<span>${h}</span>`).join('')}</div></div>`;
-    if (window.STATUS_BLOCK && p !== 'overview') m.insertAdjacentHTML('beforeend', STATUS_BLOCK(p));
+    m.innerHTML = pageHtml(p);
     m.scrollTop = 0; fit(); tick(); $$('.tracks', m).forEach(t => t.classList.add('play'));
     APP.hooks.forEach(f => f());
   };
