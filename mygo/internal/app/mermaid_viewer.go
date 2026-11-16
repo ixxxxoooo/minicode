@@ -59,6 +59,8 @@ func (a *App) mermaidViewerOverlay(c *ui.Context) {
 				})
 			}
 			cv := ui.Box(c).Grow(1).Cursor(ui.CursorGrab)
+			// 滚轮以光标为中心缩放、触控板两指平移 / 捏合缩放(与 100% / ± 按钮同一套缩放范围的放宽版)
+			cv.HandleInput(viewerInput(&v.fit, &v.scale, &v.panX, &v.panY, 0.2, 6))
 			cv.Draw(func(p *ui.Painter, r ui.Rect) {
 				if cv.Pressed() {
 					if dx, dy, ok := cv.Dragged(); ok {
@@ -81,7 +83,7 @@ func (a *App) mermaidViewerOverlay(c *ui.Context) {
 				row.Children(func() { a.mmTextLayer(c, &sc, v.scale) })
 			})
 			ui.Row(c).Height(22).Padding(0, 12).Gap(8).AlignItems(ui.Center).FontSize(theme.FsMicro).TextColor(t.Tx4).Children(func() {
-				ui.Text(c, fmt.Sprintf("缩放 %s · 拖拽平移", fmtMmPct(v.scale)))
+				ui.Text(c, fmt.Sprintf("缩放 %s · 拖拽平移 · 滚轮缩放", fmtMmPct(v.scale)))
 				ui.Spacer(c).Grow(1)
 				ui.Text(c, "⇧方向键大步").SingleLine()
 			})

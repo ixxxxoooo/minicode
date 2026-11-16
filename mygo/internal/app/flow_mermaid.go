@@ -298,23 +298,6 @@ func (a *App) mmSceneSize(sc *mermaid.Scene, scale float32) (float32, float32) {
 	return sc.Width * scale, sc.Height * scale
 }
 
-func (a *App) mmWheelZoom(v *mmViewer, dy float32, cx, cy float32, sceneW, sceneH float32) {
-	if dy == 0 {
-		return
-	}
-	f := float32(1.1)
-	if dy > 0 {
-		f = 1 / f
-	}
-	old := v.scale
-	v.fit = false
-	v.scale = clamp(v.scale*f, 0.2, 6)
-	ratio := v.scale / old
-	v.panX = cx - (cx-v.panX)*ratio
-	v.panY = cy - (cy-v.panY)*ratio
-	_, _ = sceneW, sceneH
-}
-
 func fmtMmPct(s float32) string {
 	return fmt.Sprintf("%.0f%%", s*100)
 }

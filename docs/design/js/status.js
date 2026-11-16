@@ -149,7 +149,7 @@
       R('排队卡「停止并发送」', 'dock.go queueCard 悬停停止图标→composer_queue.go qStopAndSend;未测试', 'ok'),
       R('排队消息带图片', 'queueCard splitDraftImages+queueImgBadge;退回编辑还原草稿;submitPrompt 带 Images;未测试', 'ok'),
       R('提示卡的动作(重试 / 压缩)与权限「你拒绝了…」专用行', 'flow.go noticeActions;flow_note.go permissionDenyNote;未测试', 'ok'),
-      R('会话流内 Mermaid 图表卡与全屏查看', 'flow_mermaid.go 图表卡+internal/mermaid;mermaid_viewer.go 全屏适应/±/拖拽/Esc;缺口:全屏未接滚轮(mmWheelZoom 未调用)、gantt/class/er 等 ErrUnsupported;画布页仍简版;未测试', 'part'),
+      R('会话流内 Mermaid 图表卡与全屏查看', 'flow_mermaid.go 图表卡+internal/mermaid;mermaid_viewer.go 全屏适应/±/拖拽/Esc,滚轮以光标为中心缩放、触控板两指平移 / 捏合缩放(viewer_zoom.go,单测 + Tester 滚轮);缺口:gantt/class/er 等 ErrUnsupported;画布页仍简版;滚轮未用 Computer Use 实测', 'part'),
       R('task-spec 页实现状态表', 'specs2 待办 / 尾读 / 通知 / 分叉四行', 'ok', 'B0')],
     overlays: [
       R('命令面板、历史会话、分支选择器、账号菜单、运行配置弹层', '', 'ok'),

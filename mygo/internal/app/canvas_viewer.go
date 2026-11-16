@@ -84,6 +84,7 @@ func (a *App) canvasViewerOverlay(c *ui.Context) {
 				})
 			}
 			cv := ui.Box(c).Grow(1).Cursor(ui.CursorGrab)
+			cv.HandleInput(viewerInput(&v.fit, &v.scale, &v.panX, &v.panY, 0.2, 6))
 			const designW = float32(520)
 			const designH = float32(150)
 			cv.Draw(func(p *ui.Painter, r ui.Rect) {
