@@ -29,8 +29,16 @@ func init() {
 	})
 }
 
-// shotBase 与 cmd/shot 注入时钟对齐,静态回放时阶段已用时可读。
-func shotBase() time.Time { return time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC) }
+// FixedClock 为 true(cmd/shot 截图)时,演示阶段时间锚在设计稿的「今天」,与注入的时钟对齐;
+// 否则锚在真实当前时间,开发版里等待行的已用时才是几秒而不是几十小时。
+var FixedClock bool
+
+func shotBase() time.Time {
+	if FixedClock {
+		return time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC)
+	}
+	return time.Now()
+}
 
 func buildRespWaitSlow() []Step {
 	t0 := shotBase().Add(-12 * time.Second)

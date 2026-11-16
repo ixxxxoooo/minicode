@@ -63,6 +63,7 @@ func main() {
 	a := app.New(app.Options{Palette: *pal, Scheme: *scheme, Mode: m, Screen: app.Screen(*screen), FakeLights: true})
 	a.SetProjects(demo.Projects(), "fixbug")
 	a.SetRepo(demo.Repo())
+	demo.FixedClock = true
 	a.SetClock(func() time.Time { return time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC) }) // 与设计稿的「今天」一致
 	a.SeedDemoExtras()
 	if *detail >= 0 {

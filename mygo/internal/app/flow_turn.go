@@ -92,6 +92,8 @@ func (a *App) turnFooterActions(c *ui.Context, uid string) {
 		}
 		if a.chatTier() == tierNarrow && len(parts) > 2 { // 窄档脚注只留模型与用时
 			parts = parts[:2]
+		} else if a.chatW > 0 && a.chatW < 520 && len(parts) > 3 { // 420–519:放不下 5 段,缓存 / 费用留给悬停卡
+			parts = parts[:3]
 		}
 		var tips []string               // 悬停明细:慢在哪一段(启动 / 首响应 / 总耗时)+ token 与费用
 		if hasTiming && timingIdx < 0 { // 有分段条时,明细在点开的瀑布弹卡里
