@@ -211,11 +211,13 @@ func (a *App) composerAttachRow(c *ui.Context) {
 						if src := a.localImage(abs); src != nil {
 							ui.Image(c, src).Size(18, 18).Radius(t.RXs()).Fit(ui.Cover).Shrink(0)
 						} else {
-							kit.Ic(c, "image", kit.S12).Shrink(0)
+							a.fileIc(c, baseName(at.Path))
 						}
 					} else {
-						kit.Ic(c, "image", kit.S12).Shrink(0)
+						a.fileIc(c, baseName(at.Path))
 					}
+				} else {
+					a.fileIc(c, baseName(at.Path))
 				}
 				ui.Text(c, baseName(at.Path)).FontSize(theme.FsCap).TextColor(t.Tx2).SingleLine().MaxWidth(120)
 				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "移除"}).OnClick(func() { a.removeDraftAttachPath(at.Path) })
