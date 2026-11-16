@@ -187,6 +187,9 @@ func (a *App) stepItem(c *ui.Context, it core.Item) {
 		sp.thinkText = v.Text
 		if v.Streaming {
 			sp.state, sp.thinkLive = "run", true
+			if lv := a.st.Live; lv != nil && lv.Kind == core.StageThink && !lv.Since.IsZero() { // 进行中:右侧显示已思考多久(设计稿 5.8s)
+				sp.right = elapsedText(a.now().Sub(lv.Since))
+			}
 			a.thinkWasLive[v.ID] = true
 		} else {
 			if a.thinkWasLive[v.ID] {
@@ -303,7 +306,6 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			age := float32(a.now().Sub(at)) / float32(kit.DurFast)
 			if age < 1 {
 				mq.Opacity(1 - age)
-				a.frameSoon()
 			}
 		}
 		if sp.state == "deny" {
@@ -353,7 +355,6 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 		// 展开入场:淡入并从上方 4px 落到位(设计稿 grow-y 的近似,高度不插值以免挤动下方内容)
 		if at, ok := a.foldAt[sp.id]; ok && kit.MotionOn() {
 			if p := float32(time.Since(at)) / float32(kit.DurBase); p < 1 {
-				a.frameSoon()
 				bx.Opacity(p).Translate(0, (p-1)*4)
 			} else {
 				delete(a.foldAt, sp.id)
