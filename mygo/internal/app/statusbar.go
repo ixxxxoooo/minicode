@@ -91,7 +91,10 @@ func (a *App) statusbar(c *ui.Context) {
 			}
 		}
 		ui.Spacer(c).Grow(1)
-		mode := a.sbItem(c, "mode", func() { kit.Ic(c, modeIcon(a.st.Mode), kit.S12); ui.Text(c, a.st.Mode.Label()) })
+		mode := a.sbItem(c, "mode", func() {
+			kit.Ic(c, modeIcon(a.st.Mode), kit.S12).TextColor(a.modeTint(a.st.Mode))
+			ui.Text(c, a.st.Mode.Label())
+		})
 		mode.OnClick(func() { a.togglePop("sbcfg") })
 		a.cfgPopup(c, "sbcfg", mode, true)
 		mb := ui.ButtonBase(c).Key("sb-model").Height(18).PaddingX(5).Gap(4).Radius(t.RXs()).AlignItems(ui.Center).Cursor(ui.CursorPointer).Shrink(0).Transition(kit.Fade)
@@ -120,7 +123,9 @@ func (a *App) statusbar(c *ui.Context) {
 		})
 		ctx.OnClick(func() { a.togglePop("ctx") })
 		a.ctxPopup(c, ctx)
-		if lbl := a.updLabel(); lbl != "" {
+		// 已是最新时不占状态栏;只有检查中 / 有新版本 / 下载 / 失败等需要用户留意的状态才显示
+		// (「已是最新」在设置 → 关于里查看)。
+		if lbl := a.updLabel(); lbl != "" && a.updSt.Phase != updLatest {
 			upd := a.sbItem(c, "upd", func() {
 				kit.Ic(c, "download", kit.S12).TextColor(t.Ac)
 				ui.Text(c, lbl).TextColor(t.Ac)

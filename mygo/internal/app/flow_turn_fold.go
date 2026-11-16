@@ -135,9 +135,4 @@ func (a *App) turnFoldGroup(c *ui.Context, uid string, steps []core.Item) {
 			}
 		})
 	})
-	if !open {
-		ui.Row(c).Margin(0, 0, 0, 22).Padding(6, 0, 0, 0).Children(func() {
-			ui.Text(c, "点开查看本回合的全部步骤").FontSize(11).TextColor(a.tk.Tx4)
-		})
-	}
 }

@@ -67,6 +67,11 @@ func (a *App) popIn(panel ui.Element) ui.Element {
 
 // mi 是菜单项(.mi:26 高,选中 ac-soft 底 + ac-tx 字 + 对勾)。
 func (a *App) mi(c *ui.Context, key, icon, text, right string, on bool) ui.Element {
+	return a.miTint(c, key, icon, nil, text, right, on)
+}
+
+// miTint 同 mi,图标可以单独上色(tint 为 nil = 跟随文字色)。
+func (a *App) miTint(c *ui.Context, key, icon string, tint *ui.Color, text, right string, on bool) ui.Element {
 	t := a.tk
 	b := ui.ButtonBase(c).Key("mi-" + key).Height(26).PaddingX(8).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).Justify(ui.Start).
 		Cursor(ui.CursorDefault).Transition(kit.Fade)
@@ -80,7 +85,10 @@ func (a *App) mi(c *ui.Context, key, icon, text, right string, on bool) ui.Eleme
 		if strings.HasPrefix(icon, "logo:") { // 模型品牌 logo;品牌为空 = 占位图标
 			kit.Logo(c, strings.TrimPrefix(icon, "logo:"), 14, t.Tx2)
 		} else if icon != "" {
-			kit.Ic(c, icon, kit.S12)
+			ic := kit.Ic(c, icon, kit.S12)
+			if tint != nil {
+				ic.TextColor(*tint)
+			}
 		}
 		ui.Text(c, text).Grow(1).SingleLine()
 		if right != "" {
@@ -105,7 +113,8 @@ func (a *App) cfgPopup(c *ui.Context, key string, anchor ui.Element, compact boo
 				icon string
 			}{{core.ModeDefault, "shield"}, {core.ModeAcceptEdits, "edit"}, {core.ModePlan, "list"}, {core.ModeBypassPermissions, "bolt"}}
 			for _, md := range modes {
-				if a.mi(c, "mode-"+md.m.CLI(), md.icon, md.m.Label(), "", a.st.Mode == md.m).Clicked() {
+				tint := a.modeTint(md.m)
+				if a.miTint(c, "mode-"+md.m.CLI(), md.icon, &tint, md.m.Label(), "", a.st.Mode == md.m).Clicked() {
 					a.send(core.CmdSetMode{Mode: md.m})
 					a.st.Mode = md.m // 乐观更新,后端确认后以事件为准
 				}

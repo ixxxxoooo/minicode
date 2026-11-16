@@ -145,7 +145,7 @@
       R('IDE 通知中心(铃铛 / 历史 / 右下角叠放)', 'notice_ui.go 铃铛/面板/noticeToasts(shell.go);.app 内 mac_notify OpenSessionFromNotify;测试/裸二进制无 UN 点击回会话;未测试', 'part'),
       R('任务坞停滞 / 已结束 / 监听 / 工作流胶囊', 'chat.go taskDock(task_dock.go)六类胶囊+停滞/停止;flow_test TestTaskDockCapsules;未测试', 'ok'),
       R('上下文弹层(输入框圆环 / 状态栏;分类明细 / 阈值刻度 / 账户限额 / 刷新 / 压缩;常态 / 接近阈值 / 压缩中 / 加载 / 无限额 / 失败)', 'ctx_panel.go 六态+get_context_usage;get_usage 无数据时 none 说明;未测试', 'ok'),
-      R('更新进度胶囊四态', 'update_progress.go+update_engine.go;statusbar 胶囊;开发版 dev.sh 重启;未测试', 'ok'),
+      R('更新进度胶囊四态', 'update_progress.go+update_engine.go;statusbar 胶囊只在检查中 / 有新版本 / 下载 / 校验 / 解包 / 待重启 / 失败时出现,「已是最新」不占状态栏(只在设置 → 关于里显示);开发版 dev.sh 重启;未测试', 'ok'),
       R('确认框(模式切换 / 未保存 / 删除)', '通用确认框已用于会话删除 / 移除项目 / 切换模式', 'ok', 'B2'),
       R('账号菜单的真实身份与用量', 'popups.go acctPopup+acct_popup.go ReadOAuthProfile/用量;演示 demo.AcctMenuDemo;未测试', 'ok'),
       R('上下文弹层的「查询失败」独立状态', 'ctx_panel.go ctxState 返回 err+红色重试条(CmdRefreshUsage);与主上下文弹层同一面板;未测试', 'ok')],

@@ -193,7 +193,8 @@
   const cfgPopHtml = (o = {}) => {
     const P = ensure();
     const active = P.active;
-    const perm = [['shield', '逐项确认', 1], ['edit', '自动接受编辑'], ['list', '计划模式'], ['bolt', '跳过权限确认']];
+    /* 四种权限模式各有语义色(图标上色,选中行文字仍用强调色):逐项确认=强调色、自动接受编辑=绿、计划模式=紫、跳过权限确认=警示橙;输入框胶囊与状态栏的模式图标同色 */
+    const perm = [['shield', '逐项确认', 1, 'var(--ac)'], ['edit', '自动接受编辑', 0, 'var(--c-ok)'], ['list', '计划模式', 0, 'var(--c-vio)'], ['bolt', '跳过权限确认', 0, 'var(--c-warn)']];
     const groups = [];
     const offPick = P.picks.official || P.officialModel || 'sonnet';
     const offHtml = OFFICIAL_MODELS.map(([id, t, d]) => {
@@ -215,7 +216,7 @@
     });
 
     return `<div class="pop cfg-pop${o.shell ? ' sb-pop' : ''} a-pop-up" style="padding:4px;gap:0;max-width:320px"><div class="cap">权限模式</div>
-      ${perm.map(([n, t, on]) => `<div class="mi ${on ? 'on' : ''}">${ic(n, 's12')}<span class="grow">${t}</span>${on ? ic('check', 's12') : ''}</div>`).join('')}
+      ${perm.map(([n, t, on, col]) => `<div class="mi ${on ? 'on' : ''}"><span style="color:${col};display:inline-flex">${ic(n, 's12')}</span><span class="grow">${t}</span>${on ? ic('check', 's12') : ''}</div>`).join('')}
       <div class="sep"></div><div class="cap">模型</div><div class="cfg-models scroll">${groups.join('')}</div>
       <div class="sep"></div><div class="mi" data-act="settab" data-tab="models" data-goto="settings">${ic('sliders', 's12')}<span class="grow">管理服务商…</span></div>
       ${o.shell ? '' : `<div class="f ai jb" style="padding:4px 8px 6px"><span class="t3 fs-cap m">思考强度</span>${seg(['关', '低', '中', '高'], 2)}</div>`}</div>`;

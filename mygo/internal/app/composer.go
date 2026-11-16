@@ -157,7 +157,7 @@ func (a *App) cfgChip(c *ui.Context, wide bool) {
 	}
 	b.Children(func() {
 		div := func() { ui.Box(c).Size(1, 10).Background(t.Bd3).Shrink(0) }
-		kit.Ic(c, modeIcon(a.st.Mode), kit.S12)
+		kit.Ic(c, modeIcon(a.st.Mode), kit.S12).TextColor(a.modeTint(a.st.Mode))
 		ui.Text(c, a.st.Mode.Label()).SingleLine().Shrink(0)
 		div()
 		if prov, model := a.pvModelLabel(); prov != "" {
@@ -178,6 +178,21 @@ func (a *App) cfgChip(c *ui.Context, wide bool) {
 		}
 		kit.Ic(c, "chevD", kit.S12).Opacity(.5).Margin(0, 0, 0, -1)
 	})
+}
+
+// modeTint 权限模式的语义色:逐项确认=强调色、自动接受编辑=绿、计划模式=紫、跳过权限确认=警示橙
+// (设计稿 providers.js 的 perm 列表);其余模式沿用最接近的一种。
+func (a *App) modeTint(m core.PermissionMode) ui.Color {
+	t := a.tk
+	switch m {
+	case core.ModeAcceptEdits:
+		return t.Ok
+	case core.ModePlan:
+		return t.Vio
+	case core.ModeBypassPermissions:
+		return t.Warn
+	}
+	return t.Ac
 }
 
 func modeIcon(m core.PermissionMode) string {
