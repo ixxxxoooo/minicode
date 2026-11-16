@@ -159,6 +159,21 @@
         ['未安装服务器', '该语言的行显示安装卡(与状态栏同源),不占工作区扫描配额']])}`)}</div>`;
 
   /* ───────── 滚动与滚动条 ───────── */
+  // 编辑器滚动条示意:文字 | 滚动条(刻度 + 滑块)| 迷你地图 | 概览标尺
+  const edBar = () => {
+    const lines = ['use std::collections::HashMap;', '', '/// 路由表:路径 → 处理器', 'pub struct Router {', '    routes: HashMap<String, Handler>,', '    fallback: Option<Handler>,', '}', '', 'impl Router {', '    pub fn add(&mut self, path: &str) {', '        let key = normalize(path);', '    }'];
+    const code = lines.map((t, i) => `<div style="height:20px;white-space:pre" class="mono"><span class="t4" style="display:inline-block;width:30px;text-align:right;margin-right:14px">${i + 1}</span>${t.replace(/</g, '&lt;')}</div>`).join('');
+    return `<div style="display:flex;height:100%"><div style="flex:1;min-width:0;overflow:hidden;padding-top:4px;font-size:12px">${code}</div>
+      <div style="width:10px;position:relative;background:var(--fill-1);flex:none"><i style="position:absolute;left:0;top:34px;width:3px;height:16px;background:var(--ok)"></i><i style="position:absolute;left:3px;top:70px;width:4px;height:3px;background:var(--warn)"></i><i style="position:absolute;left:3px;top:120px;width:4px;height:3px;background:var(--err)"></i><i style="position:absolute;left:2px;top:6px;width:6px;height:70px;border-radius:3px;background:var(--tx-4);opacity:.55"></i></div>
+      <div style="width:72px;flex:none;box-shadow:inset 1px 0 var(--bd-1);background:repeating-linear-gradient(180deg,var(--tx-4) 0 2px,transparent 2px 5px);opacity:.5"></div><div style="width:8px;flex:none;box-shadow:inset 1px 0 var(--bd-1)"></div></div>`;
+  };
+  // 迷你地图:on = 滑块显示;tag = 同时显示当前行范围
+  const mmSnip = (on, tag) => `<div style="position:relative;height:100%;display:flex;justify-content:flex-end"><div style="position:relative;width:80px;height:100%;box-shadow:inset 1px 0 var(--bd-1)"><div style="position:absolute;inset:6px 8px;background:repeating-linear-gradient(180deg,var(--tx-4) 0 2px,transparent 2px 5px);opacity:.5"></div>${on ? '<div style="position:absolute;left:0;right:8px;top:62px;height:54px;background:var(--fill-2);border-radius:2px"></div>' : ''}</div>${tag ? '<div class="mono fs-cap" style="position:absolute;right:86px;top:78px;padding:2px 8px;background:var(--bg-raised);border-radius:var(--r-sm);box-shadow:inset 0 0 0 1px var(--bd-1)">第 41–62 行 / 共 118</div>' : ''}</div>`;
+  // 标签条溢出:left = 左侧也有被遮住的标签
+  const TABS12 = ['router.rs', 'router_test.rs', 'Cargo.toml', 'main.rs', 'server.rs', 'util.rs', 'config.rs', 'cache.rs', 'legacy.rs', 'README.md', 'lib.rs', 'build.rs'];
+  const tabOvf = (left) => `<div class="etabs" style="width:540px;position:relative;box-shadow:inset 0 -1px var(--bd-2)"><div style="flex:1;min-width:0;display:flex;overflow:hidden;position:relative">${(left ? TABS12.slice(4) : TABS12).map((n, i) => `<div class="etab ${i === (left ? 3 : 1) ? 'on' : ''}" style="flex:none;max-width:200px">${ic('code', 's12')}<span class="nm">${n}</span><span class="x">${ic('x', 's12')}</span></div>`).join('')}${left ? '<div style="position:absolute;left:0;top:0;bottom:0;width:22px;background:linear-gradient(90deg,var(--bg-chrome),transparent);pointer-events:none"></div>' : ''}<div style="position:absolute;right:0;top:0;bottom:0;width:22px;background:linear-gradient(270deg,var(--bg-chrome),transparent);pointer-events:none"></div></div><div class="etab-tools" style="margin-left:0">${ib('chevD', 'sm', '全部标签(12)')}${ib('cols', 'sm', '向右拆分 ⌘\\')}${ib('more', 'sm', '更多')}</div></div>`;
+  const tabList = () => `<div class="pop" style="width:260px;padding:4px">${TABS12.slice(0, 8).map((n, i) => `<div class="mi">${ic(i === 2 ? 'gear' : 'code', 's12')}<span class="grow">${n}</span>${i === 1 ? '<span style="width:6px;height:6px;border-radius:50%;background:var(--tx-3)"></span>' : ''}${i === 1 ? ic('check', 's12') : ''}</div>`).join('')}<div class="t4 fs-cap" style="padding:4px 8px">…共 12 个,超出高度时菜单内滚动</div></div>`;
+
   P['scroll-spec'] = () => `<div class="ds" style="max-width:960px">${head('滚动 · Shift 滚轮与滚动条', '对标 macOS overlay / VS Code / Zed:鼠标纵向滚轮 + Shift 横向滚;滚动条滚动时出现,静止约 3 秒隐藏,仅指针停在滚动条上或拖动时保持。')}
     ${sec('Shift + 滚轮', '触控板横向手势走系统;鼠标滚轮在任意可横向滚动区域按住 Shift 后纵向刻度转为横向。双向容器上 Shift 时只横向不纵向。', tbl([['区域', 180], ['做法', 520], ['状态']], [
       ['kit.VScroll / HScroll / XYScroll', '会话流、侧栏、设置等经 kit 封装;长行代码块用 XYScroll', st('part')],
@@ -168,5 +183,16 @@
       ['出现', '滚轮 / 触控板滚动、把 ScrollState 滚离起点'],
       ['保持', '指针在滑块轨道或拖动拇指'],
       ['隐藏', '停止滚动约 3 秒;内容区悬停不动也隐藏'],
-      ['减弱动态', 'appearance.motion 或系统减弱动态 → 直接显隐']]))}</div>`;
+      ['减弱动态', 'appearance.motion 或系统减弱动态 → 直接显隐']]))}
+    ${sec('编辑器滚动条与迷你地图滑块', '编辑器的纵向滚动条恢复显示(曾被整个关掉,只剩迷你地图可拖);横向滚动条在不换行且有长行时才出现。滚动条在文字与迷你地图之间,轨道 10px 常驻留位,带改动 / 命中 / 诊断刻度;滑块遵循设置 → 外观「滚动条」。迷你地图的视口滑块在「滚动中」也要显示,让人看得出滚到哪了。', grid(
+      cell('编辑器滚动条', '', box(edBar(), 190, 460), '文字 | 滚动条(轨道 10px:改动 / 命中 / 诊断刻度 + 滑块)| 迷你地图 | 概览标尺。指针在编辑器内或拖动滑块时显示滑块;设置为「始终显示」则常驻。轨道留位不随显隐变化,文字不跳动。编辑器滚动条由编辑器组件自带,静止 3 秒隐藏的规则做不到,所以滑块显隐只有「悬停 / 常驻」两态(部分)。'),
+      cell('迷你地图 · 滚动中', '', box(mmSnip(1, 1), 190, 230), '滚轮 / 键盘 / 拖滚动条 / 点标尺任何一种引起滚动,视口滑块(浅灰块)立刻出现,左侧标出当前行范围「第 41–62 行 / 共 118」;停止滚动 3 秒后滑块与行范围一起消失。'),
+      cell('迷你地图 · 静止 3 秒后', '', box(mmSnip(0, 0), 190, 230), '只剩语法色块与刻度,不显示滑块。指针悬停地图或拖动时滑块回来;偏好「滑块 → 常驻」则一直显示(此时不额外显示行范围)。')))}
+    ${sec('标签条:放不下时怎么办', '标签条本身永远没有滚动条(任何滚动条模式)。标签保持自然宽度(上限 200,不挤压,文件名要看得清),放不下的部分这样处理:', grid(
+      cell('溢出:渐隐 + 全部标签', '', box(tabOvf(), 150, 560), '标签区可横向滚动:鼠标滚轮(纵向刻度转横向)、Shift + 滚轮、触控板横滑都行。哪一侧还有被遮住的标签,那一侧边缘出现 22px 渐隐;滚到头渐隐消失。仅在溢出时,工具区最前多一个「▾ 全部标签」。'),
+      cell('「▾ 全部标签」菜单', '', box(tabList(), 250, 300), '列出所有标签:图标 + 标题,未保存的行尾加圆点,当前标签打勾;点一行就切换并把标签滚到可见。顺序与标签条一致;虚拟标签(审查 / 计划 / 任务)也在里面。拆分后每个编辑器组各有自己的标签条,全部标签按钮列该组的标签。'),
+      cell('自动滚到可见', '', box(tabOvf(1), 110, 560), '新开 / 切换 / 菜单选择 / ⌃Tab 之后,当前标签自动滚进可见区,不需要手动去找;此图为选中第 4 个后左侧也出现渐隐。')))}
+    ${sec('拖动分隔线', '拖动底部面板 / 导航栏 / 对话栏 / 工作区分隔线时,尺寸必须与指针同步,不能有缓动(缓动让面板落后于指针、与相邻区域错位,面板背景透出编辑器文字)。松手后再恢复开合时的 440 ms 变形。', tbl([['项', 200], ['规则', 520], ['状态']], [
+      ['拖动中无过渡', '拖动与松手后约 200 ms 内,尺寸变化直接生效;只有开合面板才有变形动画', st('part')],
+      ['面板不透明', '底部面板自带不透明底色;编辑器区域裁剪在自己的矩形内,即使某一帧尺寸落后也不会画到面板上', st('part')]]))}</div>`;
 })();
