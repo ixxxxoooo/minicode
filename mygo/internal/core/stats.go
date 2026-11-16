@@ -290,6 +290,10 @@ type TurnTiming struct {
 	StartupMs int64 // 发送时 claude 进程还没起,从启动到握手完成的耗时;进程已就绪 = 0
 	FirstMs   int64 // 点发送 → 收到第一个响应(思考 / 文字 / 工具)的耗时;0 = 没测到
 	TotalMs   int64 // 点发送 → 回合结束
+	// Phases 逐阶段耗时(按时间顺序,相邻同类已合并);Calls 每次模型调用的缓存信息。
+	// 历史回放的回合没有这两项(只有记录时间差),界面按「无分段」处理。
+	Phases []TimingPhase
+	Calls  []CallInfo
 }
 
 // FormatResp 响应耗时的文案:不到 1 秒写毫秒,10 秒内保留一位小数,再长沿用「3 分 05 秒」。

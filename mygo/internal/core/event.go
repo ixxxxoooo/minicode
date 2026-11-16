@@ -1,5 +1,7 @@
 package core
 
+import "time"
+
 // StopReason 是回合结束原因。
 type StopReason int
 
@@ -133,6 +135,14 @@ type (
 		ID     string
 		Timing TurnTiming
 	}
+	// EvTurnPhase 进行中的回合换了阶段(连接 / 等待模型 / 思考 / 生成 / 工具 / 等你 / 收尾);Cache 是本次调用第一个字节带来的缓存用量。
+	EvTurnPhase struct {
+		Kind      StageKind
+		At        time.Time
+		TurnStart time.Time
+		Call      int
+		Cache     *CacheTokens
+	}
 	// EvConn claude 进程的连接状态变化(惰性启动 / 预热 / 空闲回收 / 退出);Why 是给日志与提示用的原因。
 	EvConn struct {
 		State ConnState
@@ -196,6 +206,7 @@ func (EvTasksChanged) event()        {}
 func (EvTaskOutput) event()          {}
 func (EvTurnStats) event()           {}
 func (EvTurnEnded) event()           {}
+func (EvTurnPhase) event()           {}
 func (EvTurnTiming) event()          {}
 
 // Command 是界面发给后端的命令。

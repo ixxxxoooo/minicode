@@ -42,6 +42,7 @@ type State struct {
 	TurnStats map[string]TurnStats
 	// Timings:用户消息条目 id → 本回合从「点发送」到各节点的实测耗时(只有本次运行里发出的回合才有)。
 	Timings   map[string]TurnTiming
+	Live      *LiveStage        // 进行中回合当前所处的阶段(回合结束清空)
 	Conn      ConnState         // claude 进程连接状态(演示后端恒为 ConnNone,界面按后端名决定是否显示)
 	Tasks     []*BackgroundTask // 后台任务表(按开始顺序);含已结束的
 	UserUUIDs map[string]string // 用户消息条目 id → claude 消息 uuid(文件检查点回退用)
@@ -224,6 +225,8 @@ func (s *State) Apply(ev Event) {
 		s.Conn = e.State
 	case EvTurnStarted:
 		s.Phase = PhaseRunning
+	case EvTurnPhase:
+		s.Live = &LiveStage{Kind: e.Kind, Since: e.At, TurnStart: e.TurnStart, Call: e.Call, Cache: e.Cache}
 	case EvDuration:
 		s.Durations[e.ID] = e.Secs
 	case EvTurnStats:
@@ -459,6 +462,7 @@ func (s *State) Apply(ev Event) {
 		// 分叉由界面切换会话处理,状态机不归约
 	case EvTurnEnded:
 		s.Phase = PhaseIdle
+		s.Live = nil
 		r := e.Reason
 		s.LastStop = &r
 		cancelled := r == StopCancelled

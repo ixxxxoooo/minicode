@@ -118,6 +118,7 @@ type Backend struct {
 	turnT0        time.Time
 	turnFirst     time.Duration
 	turnCold      bool
+	stages        stageClock // 本回合的分阶段计时(阶段切换时向界面发 EvTurnPhase)
 	reqSeq        int
 	usageAsked    time.Time
 	confirmedMode core.PermissionMode
@@ -454,6 +455,7 @@ func (b *Backend) ensureProc() bool {
 		b.emit(notice(core.NoticeError, err.Error()), core.EvConn{State: core.ConnFailed, Why: err.Error()})
 		if b.turnActive {
 			b.turnActive = false
+			b.stages.off()
 			b.emit(core.EvTurnEnded{Reason: core.StopError})
 		}
 		return false
@@ -510,6 +512,7 @@ func (b *Backend) onCommand(c core.Command) {
 		if p := b.takePending(c.ID); p != nil {
 			b.write(p.PermissionResponse(c.Option))
 			b.emit(core.EvPermissionResolved{ID: c.ID, Option: c.Option})
+			b.stageAnswered()
 			if c.Option == "allow_always" {
 				if m, ok := p.SuggestedMode(); ok {
 					b.emit(core.EvModeChanged{Mode: m})
@@ -520,11 +523,13 @@ func (b *Backend) onCommand(c core.Command) {
 		if p := b.takePending(c.ID); p != nil {
 			b.write(p.QuestionResponse(c.Answers))
 			b.emit(core.EvQuestionAnswered{ID: c.ID, Answers: c.Answers})
+			b.stageAnswered()
 		}
 	case core.CmdResolvePlan:
 		if p := b.takePending(c.ID); p != nil {
 			b.write(p.PlanResponse(c.Approve, c.Mode))
 			b.emit(core.EvPlanResolved{ID: c.ID, Approved: c.Approve})
+			b.stageAnswered()
 			if c.Approve {
 				m, ok := core.PermissionMode(0), false
 				if c.Mode != nil {
@@ -629,9 +634,14 @@ func (b *Backend) onPrompt(c core.CmdPrompt) {
 		b.turnT0, b.turnFirst = time.Now(), 0
 		b.turnCold = b.p == nil
 		b.emit(core.EvTurnStarted{})
+		b.stages.begin(b.turnT0, b.turnCold)
+		b.emitStage(nil)
 	}
 	if !b.ensureProc() {
 		return
+	}
+	if !steering && b.stages.connected(time.Now()) { // 冷启动的握手结束:「连接」→「本地准备」
+		b.emitStage(nil)
 	}
 	// claude 不回显用户输入,这里补上时间线条目(引导消息同样)
 	uuid := newUUID()
@@ -693,6 +703,7 @@ func (b *Backend) turnTiming() (core.TurnTiming, bool) {
 	if b.turnCold && b.p != nil && !b.p.initAt.IsZero() {
 		t.StartupMs = b.p.initAt.Sub(b.p.started).Milliseconds()
 	}
+	t.Phases, t.Calls = b.stages.finish(time.Now())
 	b.turnT0, b.turnFirst, b.turnCold = time.Time{}, 0, false
 	return t, true
 }
@@ -740,6 +751,9 @@ func (b *Backend) onLine(line string) {
 		b.emit(evs...)
 		return
 	case "control_cancel_request":
+		if b.stages.answered(time.Now()) {
+			b.emitStage(nil)
+		}
 		b.emit(b.tr.CancelRequest(str(v, "request_id"))...)
 		return
 	}
@@ -747,6 +761,9 @@ func (b *Backend) onLine(line string) {
 	if !b.turnActive && (ty == "stream_event" || ty == "assistant") {
 		b.turnActive = true
 		b.emit(core.EvTurnStarted{})
+	}
+	if changed, cache := b.stages.line(v, time.Now()); changed {
+		b.emitStage(cache)
 	}
 	evs := b.tr.Handle(v)
 	if b.turnFirst == 0 && !b.turnT0.IsZero() && len(evs) > 0 && (ty == "stream_event" || ty == "assistant") {
@@ -757,7 +774,7 @@ func (b *Backend) onLine(line string) {
 		b.turnActive = false
 		if tm, ok := b.turnTiming(); ok {
 			log.Info("回合完成", "总耗时", time.Duration(tm.TotalMs)*time.Millisecond, "首响应", time.Duration(tm.FirstMs)*time.Millisecond,
-				"启动握手", time.Duration(tm.StartupMs)*time.Millisecond)
+				"启动握手", time.Duration(tm.StartupMs)*time.Millisecond, "阶段", tm.PhaseSummary(), "调用次数", len(tm.Calls), "缓存", callsCacheSummary(tm.Calls))
 			b.emit(core.EvTurnTiming{Timing: tm})
 		}
 	}
@@ -914,6 +931,7 @@ func (b *Backend) onInitTimeout() {
 	}
 	if b.turnActive {
 		b.turnActive = false
+		b.stages.off()
 		b.emit(core.EvTurnEnded{Reason: core.StopError})
 	}
 	b.emit(notice(core.NoticeError, text))
@@ -964,6 +982,7 @@ func (b *Backend) onExit() {
 	b.restartConfig()
 	if b.turnActive {
 		b.turnActive = false
+		b.stages.off()
 		b.emit(core.EvTurnEnded{Reason: core.StopError})
 	}
 	b.emit(notice(core.NoticeError, text), core.EvConn{State: core.ConnNone, Why: "进程退出"})
@@ -982,4 +1001,32 @@ func mergeManagedEnv(cur, next []core.EnvVar) []core.EnvVar {
 		}
 	}
 	return append(out, next...)
+}
+
+// emitStage 向界面报告当前阶段(阶段切换时调用)。
+func (b *Backend) emitStage(cache *core.CacheTokens) {
+	b.emit(b.stages.live(time.Now(), cache))
+}
+
+// stageAnswered 权限 / 提问 / 计划被作答:「等你确认」结束,回到请求到达前的阶段。
+func (b *Backend) stageAnswered() {
+	if b.stages.answered(time.Now()) {
+		b.emitStage(nil)
+	}
+}
+
+// callsCacheSummary 日志用:每次调用的缓存结论,`#1 缓存写入 26.2k(首次) #2 缓存命中 98%`。
+func callsCacheSummary(calls []core.CallInfo) string {
+	var sb strings.Builder
+	for i, c := range calls {
+		if i > 0 {
+			sb.WriteByte(' ')
+		}
+		t := c.Text()
+		if t == "" {
+			t = "无缓存字段"
+		}
+		fmt.Fprintf(&sb, "#%d %s", i+1, t)
+	}
+	return sb.String()
 }
