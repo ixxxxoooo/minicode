@@ -179,6 +179,7 @@
       R('会话流内 Mermaid 图表卡与全屏查看', 'flow_mermaid.go 图表卡+internal/mermaid;mermaid_viewer.go 全屏适应/±/拖拽/Esc,滚轮以光标为中心缩放、触控板两指平移 / 捏合缩放(viewer_zoom.go,单测 + Tester 滚轮);缺口:gantt/class/er 等 ErrUnsupported;画布页仍简版;滚轮未用 Computer Use 实测', 'part'),
       R('task-spec 页实现状态表', 'specs2 待办 / 尾读 / 通知 / 分叉四行', 'ok', 'B0')],
     overlays: [
+      R('区块出错 · 故障隔离(界面构建 panic 不闪退)', 'safe_view.go guard:标题栏 / 状态栏出错 = 红色小条(重试)、导航栏 / 页面 / 对话 / 每个编辑标签 / 底部面板 = 出错卡片(重试 / 复制错误信息)、浮层 = 不画 + 5 秒后自动重试;日志 + crashes/ 留调用栈;测试环境不吞 panic;go test TestGuardIsolatesPanic;实机未测', 'ok'),
       R('命令面板、历史会话、分支选择器、账号菜单、运行配置弹层', '', 'ok'),
       R('IDE 通知中心(标题栏铃铛 / 历史 / 右下角叠放)', 'notice_ui.go 标题栏铃铛(状态栏不放铃铛)/面板/noticeToasts(shell.go);.app 内 mac_notify OpenSessionFromNotify;测试/裸二进制无 UN 点击回会话;未测试', 'part'),
       R('任务坞停滞 / 已结束 / 监听 / 工作流胶囊', 'chat.go taskDock(task_dock.go)六类胶囊+停滞/停止;flow_test TestTaskDockCapsules;未测试', 'ok'),

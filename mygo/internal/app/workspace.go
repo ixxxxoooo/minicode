@@ -22,13 +22,15 @@ func (a *App) stage(c *ui.Context) {
 	gap := a.tk.Scheme.GapPane
 	ui.Row(c).Grow(1).MinWidth(0).AlignItems(ui.Stretch).Children(func() {
 		if a.screen != ScreenWork && a.screen != ScreenWelcome {
-			if !a.page(c) {
-				a.pagePlaceholder(c)
-			}
+			a.guard(c, "页面", "page:"+string(a.screen), guardCard, func() {
+				if !a.page(c) {
+					a.pagePlaceholder(c)
+				}
+			})
 			return
 		}
 		a.wsPane(c, gap, true)
-		a.chatPane(c, gap)
+		a.guard(c, "对话", "chat", guardCard, func() { a.chatPane(c, gap) })
 		a.wsPane(c, gap, false)
 	})
 }
@@ -112,6 +114,18 @@ func (a *App) workspace(c *ui.Context) {
 		a.etabsSplitBar(c)
 	}
 	cur := a.ide.cur()
+	key := "tab:empty" // 一个标签出错只隔离这个标签的内容,标签条还在,可以切走或关闭
+	if cur != nil {
+		key = "tab:" + cur.id
+	}
+	a.guard(c, "编辑区", key, guardCard, func() { a.workspaceBody(c, cur) })
+	if a.ide.bottomOpen {
+		a.guard(c, "底部面板", "bottom", guardCard, func() { a.bottomPanel(c) })
+	}
+}
+
+// workspaceBody 是工作区里标签条以下、底部面板以上的内容。
+func (a *App) workspaceBody(c *ui.Context, cur *ideTab) {
 	switch {
 	case cur == nil && a.ide.splitDir == 0:
 		a.wsEmpty(c)
@@ -137,9 +151,6 @@ func (a *App) workspace(c *ui.Context) {
 		} else {
 			a.codeView(c, cur)
 		}
-	}
-	if a.ide.bottomOpen {
-		a.bottomPanel(c)
 	}
 }
 

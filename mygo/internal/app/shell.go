@@ -28,23 +28,23 @@ func (a *App) root(c *ui.Context) {
 	a.zoneBegin()
 	defer func() { a.zoneSync(root.FocusWithin()) }()
 	root.Children(func() {
-		a.titlebar(c)
+		a.guard(c, "标题栏", "titlebar", guardChip, func() { a.titlebar(c) })
 		if a.screen == ScreenSettings {
-			a.settingsPage(c) // 设置是整窗页面:没有导航栏与舞台
+			a.guard(c, "设置", "settings", guardCard, func() { a.settingsPage(c) }) // 设置是整窗页面:没有导航栏与舞台
 		} else {
 			a.body(c)
 		}
-		a.statusbar(c)
-		a.paletteView(c)
-		a.quickView(c)
-		a.projDialogs(c)
-		a.overlayLayer(c)
-		a.mermaidViewerOverlay(c)
+		a.guard(c, "状态栏", "statusbar", guardChip, func() { a.statusbar(c) })
+		a.guard(c, "命令面板", "palette", guardSilent, func() { a.paletteView(c) })
+		a.guard(c, "快速选择", "quick", guardSilent, func() { a.quickView(c) })
+		a.guard(c, "项目对话框", "projdlg", guardSilent, func() { a.projDialogs(c) })
+		a.guard(c, "浮层", "overlay", guardSilent, func() { a.overlayLayer(c) })
+		a.guard(c, "图表查看器", "mermaid", guardSilent, func() { a.mermaidViewerOverlay(c) })
 		if a.toast != "" { // 一句话轻提示统一走通知样式
 			a.flash(a.toast)
 			a.toast = ""
 		}
-		a.noticeToasts(c)
+		a.guard(c, "通知", "toasts", guardSilent, func() { a.noticeToasts(c) })
 		a.morphShield(c)
 		if a.delUndo.Active() {
 			ui.Row(c).Justify(ui.Center).Padding(0, 0, 8, 0).Children(func() {
@@ -62,7 +62,7 @@ func (a *App) body(c *ui.Context) {
 		if t.Scheme.ID == "c" {
 			a.rail(c)
 		}
-		a.side(c)
+		a.guard(c, "导航栏", "side", guardCard, func() { a.side(c) })
 		a.stage(c)
 	})
 }

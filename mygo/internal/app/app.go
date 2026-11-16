@@ -204,16 +204,18 @@ type App struct {
 	gi              map[string]*gitInfo                                        // 文件的追溯 / 历史缓存
 	autoRun         func(it automation.Automation, dir string) (string, error) // 自动化运行器(nil = 演示:只记录)
 	autoRunCtx      func(ctx context.Context, it automation.Automation, dir string, onChunk func(string)) (string, error)
-	autoSeen        time.Time            // 上次检查定时的时间
-	autoBusy        map[int]bool         // 正在运行的自动化
-	autoLive        map[int]*autoLive    // 运行中输出的累积与取消
-	live            map[string]*liveSess // 切走时还在跑的会话:后端继续保活,事件归约到自己的状态
-	blinkPending    bool                 // 终端光标闪烁:已排好下一次切换的重绘
-	framePending    bool                 // frameSoon 已排队
-	extHold         bool                 // 窗口还没出来:系统要求打开的文件先排队
-	extQueue        []string             // 排队中的文件(窗口出来后依次处理)
-	foldAt          map[string]time.Time // 步骤行展开的时刻(入场动画)
-	dlgSeen         string               // 已开始计时入场动画的居中浮层
+	autoSeen        time.Time             // 上次检查定时的时间
+	autoBusy        map[int]bool          // 正在运行的自动化
+	autoLive        map[int]*autoLive     // 运行中输出的累积与取消
+	live            map[string]*liveSess  // 切走时还在跑的会话:后端继续保活,事件归约到自己的状态
+	faults          map[string]*viewFault // 界面构建出错被隔离的区块(safe_view.go)
+	guardAlways     bool                  // 测试里也拦截界面 panic(默认测试不吞,免得藏缺陷)
+	blinkPending    bool                  // 终端光标闪烁:已排好下一次切换的重绘
+	framePending    bool                  // frameSoon 已排队
+	extHold         bool                  // 窗口还没出来:系统要求打开的文件先排队
+	extQueue        []string              // 排队中的文件(窗口出来后依次处理)
+	foldAt          map[string]time.Time  // 步骤行展开的时刻(入场动画)
+	dlgSeen         string                // 已开始计时入场动画的居中浮层
 	dlgAt           time.Time
 	popSeen         string    // 已开始计时入场动画的弹层
 	popAt           time.Time // 该弹层打开的时刻
