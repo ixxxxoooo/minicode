@@ -94,6 +94,13 @@
       `<div class="grid2"><div class="spec tracks">${[['--dur-instant', '80ms', '按压 / 勾选'], ['--dur-fast', '120ms', '悬停 / 收起 / 退出'], ['--dur-base', '180ms', '弹层 / 行进入 / 滑块'], ['--dur-slow', '260ms', '折叠 / 抽屉 / 提示条'], ['--dur-morph', '440ms', 'Agent ⇄ IDE']].map(([n, v, u]) => track(`${n}<span class="t3 fs-cap" style="font-weight:400;margin-left:6px">${u}</span>`, v, `var(${n})`, 'var(--ease-out)')).join('')}</div>
       <div class="spec tracks">${[['--ease-out', '进入'], ['--ease-in', '离开'], ['--ease-io', '位移'], ['--ease-spring', '滑块 / 勾选'], ['--ease-morph', '布局变形']].map(([n, u]) => track(`${n}<span class="t3 fs-cap" style="font-weight:400;margin-left:6px">${u}</span>`, '900ms', '900ms', `var(${n})`)).join('')}</div></div>`)}
     ${sec('动效模式', `共 ${P.demos.length} 个。组件只引用模式名(a-rise / a-pop / a-shake…),不直接写关键帧。带重放图标的点一下重播;循环的是为了看清楚离场。`, `<div class="grid3">${P.demos.map((_, k) => P.demo(k)).join('')}</div>`)}
+    ${sec('沙漏等待', '全站进行中图标(步骤行 / 子代理 / 任务坞 / 状态栏)默认沙漏;按钮 loading 仍用小圆环。周期 2.4s:上腔 → 下腔细流,末 0.5s ease-in-out 翻转;多枚共享全局相位。', `<div class="grid2">
+      ${spec('对比', ['.hg-wait', '.spin'], `<div class="f g5 ai">${ic('hourglass', 's16 hg-wait')}${ic('hourglass', 's16 hg-wait')}${ic('hourglass', 's16 hg-wait')}<span class="vsep"></span><span class="spin"></span><span class="t3">旧圆环仅保留给按钮 loading</span></div>`)}
+      ${spec('设置', ['appearance.waitAnim'], `<div class="t2">设置 → 外观 → 等待指示样式:沙漏(默认) / 圆环 / 点阵 / 脉冲。Go:kit.Spin 画沙漏;kit.SpinRing 仅供按钮;WaitSpinStyle 迁移旧偏好 0→圆环。</div>`)}</div>`)}
+    ${sec('流光扫光', '对标 Vercel AI Shimmer / Claude Code 状态行:约 100° 斜向高光带(宽 ≈35–40%),Tx3 底 + Tx1 峰,1.6s 匀速 + 0.5s 停;同一屏共享相位;仅唯一进行中文字;MyGo 无 background-clip:text → Go 用 RichText 分段混色(≤48 字,约 30fps)。', `<div class="grid2">
+      ${spec('新 · 扫光', ['.shimmer'], `<div class="f g4 ai wrap"><span class="m shimmer">正在生成提交说明…</span><span class="m shimmer">思考</span></div>`)}
+      ${spec('旧 · 整段呼吸(降级)', ['.shimmer-legacy'], `<div class="m shimmer-legacy">正在生成提交说明…</div><motion-p class="t3 fs-cap">appearance.shimmer = 呼吸 / 无 时回落</motion-p>`)}</div>`)}
+    ${sec('思考跑马灯', '折叠且流式:右侧 NoWrap 预览(约 200 字尾部,换行压成 ·),左缘 32px 渐隐,文本向左缓动追赶。', `<div class="spec">${typeof F !== 'undefined' ? F.thinkMarquee({ stream: true }) : ''}</div>`)}
     ${sec('过渡编排', '多个元素同时变化时,谁先谁后、各自多久。', chor)}
     ${sec('减弱动态与关闭动效', '两个来源,效果一致:设置 → 外观 → 动效 = 关闭,或系统「减弱动态效果」。', `<div class="grid2">
       ${spec('会变成什么', ['body.no-motion', 'prefers-reduced-motion'], '<div class="t2" style="line-height:1.7">· 所有时长令牌归 1ms:状态直接跳到终态,没有位移与缩放<br>· 循环动画停止:流光变成静态文字色、呼吸描边变成实线、不确定进度条变成静态条<br>· 形态切换仍然成立,只是瞬时完成;<span class="mono">.morphing</span> 锁定随之缩到 1 帧<br>· 状态的「含义」不靠动画传达:运行中始终有状态点与文字</div>')}

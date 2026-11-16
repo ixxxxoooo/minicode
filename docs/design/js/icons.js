@@ -118,6 +118,7 @@
     flag: '<path d="M6 21V4M6 5h11l-2 4 2 4H6"/>',
     bookmark: '<path d="M7 4h10v16l-5-3.5L7 20z"/>',
     trend: '<path d="m4 16 5-5 4 4 7-8M15 7h5v5"/>',
+    hourglass: '<path d="M7.5 3.5h9a1 1 0 0 1 1 1v1.4l-3.1 3.7H9.6L6.5 5.9V4.5a1 1 0 0 1 1-1z"/><path d="M7.5 20.5h9a1 1 0 0 0 1-1v-1.4l-3.1-3.7h-2.3L6.5 18.1v1.4a1 1 0 0 0 1 1z"/><g class="hg-top"><path d="M9.2 5.2h5.6l-2.4 2.9H11.6z" fill="currentColor" opacity=".9"/></g><g class="hg-bot"><path d="M9.2 18.8h5.6l-2.4-2.9H11.6z" fill="currentColor" opacity=".25"/></g><path d="M11.4 11.8h1.2v1.4h-1.2z" fill="currentColor" opacity=".7"/>',
   };
   window.ICONS = P;
 })();

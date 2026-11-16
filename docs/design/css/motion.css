@@ -10,7 +10,8 @@
 @keyframes pop-up { from { opacity: 0; transform: scale(.97) translateY(8px); } }
 @keyframes swap { from { opacity: 0; transform: translateX(-8px); } }
 @keyframes toast { from { opacity: 0; transform: translateX(18px); } }
-@keyframes shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+@keyframes shimmer { 0%, 76% { background-position: 115% 0; } 24% { background-position: -15% 0; } 77%, 100% { background-position: -15% 0; } }
+@keyframes shimmer-legacy { 50% { opacity: .42; } }
 @keyframes blink { 50% { opacity: 0; } }
 @keyframes breathe { 50% { opacity: .4; } }
 @keyframes tick-in { from { transform: translateY(100%); opacity: 0; } }
@@ -32,8 +33,17 @@
 .stagger > :nth-child(5) { animation-delay: 120ms; } .stagger > :nth-child(6) { animation-delay: 150ms; } .stagger > :nth-child(n+7) { animation-delay: 180ms; }
 
 /* 循环类 */
-.shimmer { background: linear-gradient(90deg, var(--tx-3) 0 38%, var(--tx-1) 50%, var(--tx-3) 62% 100%) 0 0 / 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; -webkit-text-fill-color: transparent; animation: shimmer var(--dur-loop) linear infinite; }
+/* 流光:约 100° 斜向高光带,1.6s 匀速扫过 + 0.5s 停顿;全局相位靠同一 keyframes */
+.shimmer { background: linear-gradient(105deg, var(--tx-3) 0%, var(--tx-3) 32%, var(--tx-1) 50%, var(--tx-3) 68%, var(--tx-3) 100%) 0 0 / 280% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; -webkit-text-fill-color: transparent; animation: shimmer 2.1s linear infinite; }
+.shimmer-legacy { color: var(--tx-2) !important; -webkit-text-fill-color: currentColor; background: none; animation: shimmer-legacy var(--dur-loop) ease-in-out infinite; }
 .breathe { animation: breathe var(--dur-loop) ease-in-out infinite; }
+/* 沙漏等待:2.4s 一周期,末 0.5s 翻转 */
+.hg-wait { color: var(--tone, var(--ac)); transform-origin: center; animation: hg-flip 2.4s ease-in-out infinite; }
+.hg-wait .hg-top { transform-origin: 12px 7px; animation: hg-sand-top 2.4s linear infinite; }
+.hg-wait .hg-bot { transform-origin: 12px 17px; animation: hg-sand-bot 2.4s linear infinite; }
+@keyframes hg-sand-top { 0%, 6% { opacity: 1; transform: scaleY(1); } 78% { opacity: 1; transform: scaleY(.15); } 79%, 100% { opacity: 0; transform: scaleY(0); } }
+@keyframes hg-sand-bot { 0%, 6% { opacity: 0; transform: scaleY(.1); } 10%, 78% { opacity: 1; transform: scaleY(1); } 79%, 100% { opacity: 1; transform: scaleY(1); } }
+@keyframes hg-flip { 0%, 78% { rotate: 0deg; } 88%, 100% { rotate: 180deg; } }
 .caret::after { content: ""; display: inline-block; width: 2px; height: 1.05em; vertical-align: -2px; margin-left: 2px; border-radius: 1px; background: var(--ac); animation: blink 1s steps(1) infinite; }
 .a-glow { animation: glow 2.2s ease-in-out infinite; }
 .sweep { position: relative; overflow: hidden; }
