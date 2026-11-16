@@ -25,7 +25,8 @@
 .step.deny .so { text-decoration: line-through; color: var(--tx-3); }
 .fold-in > * { margin: 3px 0 7px var(--flow-inset); }
 .ticker { margin-left: var(--flow-inset); font-size: var(--fs-ctl); color: var(--tx-3); }
-.nest { margin-left: 7.5px; padding-left: 14px; box-shadow: inset 1px 0 var(--bd-2); display: flex; flex-direction: column; gap: 1px; }
+.nest { margin-left: 7.5px; padding-left: 8px; box-shadow: inset 1px 0 var(--bd-2); display: flex; flex-direction: column; gap: 1px; }
+.nest.plain { margin-left: 4px; padding-left: 0; box-shadow: none; } /* 回合折叠「已处理」:不画引导线,只轻缩进 */
 
 /* 工具族色相(只染图标) */
 [data-tool="read"], [data-tool="grep"], [data-tool="glob"], [data-tool="group"] { --tone: var(--tool-explore); }
