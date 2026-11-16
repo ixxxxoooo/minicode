@@ -64,10 +64,15 @@ func (a *App) panelHeight() float32 {
 
 func clampF(v, lo, hi float32) float32 { return min(max(v, lo), hi) }
 
+// noMotion 是「立即生效」的过渡:时长取负数 = 每次变化直接显示。
+// 注意不能写成零值 ElementTransition{}:框架里「什么都没选 = 全部属性都做 200 ms 缓动」,
+// 拖动分隔线时面板会落后于指针、与相邻区域错位(曾让编辑器文字透到底部面板标签条上)。
+var noMotion = ui.ElementTransition{Duration: -1}
+
 // mt 是面板宽高变化的过渡:拖动调整期间关掉(跟手),其余时候用 440 ms 变形曲线。
 func (a *App) mt() ui.ElementTransition {
 	if a.ly.resizing != "" || time.Since(a.ly.lastDrag) < 200*time.Millisecond {
-		return ui.ElementTransition{}
+		return noMotion
 	}
 	return morph
 }

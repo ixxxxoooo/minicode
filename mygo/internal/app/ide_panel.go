@@ -15,7 +15,8 @@ import (
 func (a *App) bottomPanel(c *ui.Context) {
 	t := a.tk
 	h := a.panelHeight()
-	box := ui.Column(c).Key("bpanel").BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2).Transition(a.mt())
+	// 不透明底色:拖动分隔线时编辑器区域哪怕某一帧落后,也不会透到面板标签条上
+	box := ui.Column(c).Key("bpanel").Background(t.BG).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2).Transition(a.mt())
 	if a.ly.panelMax {
 		box.Grow(1).MinHeight(0)
 	} else {
