@@ -91,7 +91,7 @@ func (a *App) autoDlg(c *ui.Context, key string, w float32, title string, close 
 		close()
 		return
 	}
-	want := (key == "auto-new" && a.au.newDlg) || (key == "au-run" && a.au.runView != "")
+	want := (key == "auto-new" && a.au.newDlg) || (key == "au-run" && a.au.runView != "") || (key == "mcp-edit" && a.cu.mcpEdit)
 	t := a.tk
 	a.dialogOpen(key, want, func(open *bool) {
 		ui.DialogBase(c, open, func(backdrop, panel ui.Element) {
