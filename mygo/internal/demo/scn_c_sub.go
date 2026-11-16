@@ -22,6 +22,9 @@ func init() {
 	Register(Scenario{ID: "c-sub-nest", Title: "子 Agent · 嵌套子 Agent", Label: "刚刚", Build: buildSubNest})
 	Register(Scenario{ID: "c-sub-parallel", Title: "子 Agent · 并行多个", Label: "刚刚", Build: buildSubParallel})
 	Register(Scenario{ID: "c-sub-heavy", Title: "子 Agent · 高统计长摘要", Label: "刚刚", Build: buildSubHeavy})
+	Register(Scenario{ID: "c-sub-prompt", Title: "子 Agent · 超长任务提示词", Label: "刚刚", Build: buildSubLongPrompt})
+	Register(Scenario{ID: "c-sub-perm", Title: "子 Agent · 待确认权限", Label: "刚刚", Live: true, Build: buildSubPerm})
+	Register(Scenario{ID: "c-sub-noprompt", Title: "子 Agent · 无任务提示词", Label: "刚刚", Build: buildSubNoPrompt})
 }
 
 func buildSubGallery() []Step {
@@ -71,6 +74,13 @@ func buildSubGallery() []Step {
 	return s.Steps()
 }
 
+func nestRich(s *Script, parent string) {
+	s.Add(ms(60), core.EvAppend{Parent: parent, Item: &core.Thinking{ID: s.ID("th"), Text: "先列出 handlers 目录,再搜 unwrap。"}})
+	nestTools(s, parent)
+	asst := s.ID("as")
+	s.Add(ms(80), core.EvAppend{Parent: parent, Item: &core.Assistant{ID: asst, Text: "已找到 3 处可能在请求路径上 panic 的 unwrap,建议改成 `?`。"}})
+}
+
 func nestTools(s *Script, parent string) {
 	rid := s.ID("r")
 	s.Add(ms(100), core.EvAppend{Parent: parent, Item: core.NewToolCall(rid, "Read", "读取 lib.rs").WithInput(map[string]any{"file_path": "src/lib.rs"})})
@@ -90,9 +100,10 @@ func buildSubRunning() []Step {
 	s := NewScript("c-sub-run", "子 Agent · 运行中嵌套时间线")
 	uid := s.User("运行中")
 	card := core.NewSubagent(s.ID("a"), "code-reviewer", "审查 PR #128", core.SubRunning)
+	card.Prompt = "检查 src/handlers 下所有 unwrap/expect,按「可能在请求路径 panic」排序,不要改文件。"
 	stampSub(card, 5*time.Second)
 	s.Add(ms(120), core.EvAppend{Item: card})
-	nestTools(s, card.ID)
+	nestRich(s, card.ID)
 	return append(s.Steps(), Step{0, core.EvDuration{ID: uid, Secs: 8}})
 }
 
@@ -178,6 +189,44 @@ func buildSubParallel() []Step {
 	}
 	s.Say("连续多张运行中卡片用于验证「并行 N 个」汇总(若界面已实现)。")
 	finishLab(s, uid, 27)
+	return s.Steps()
+}
+
+func buildSubLongPrompt() []Step {
+	s := NewScript("c-sub-prompt", "子 Agent · 超长任务提示词")
+	uid := s.User("长提示词")
+	c := core.NewSubagent(s.ID("a"), "code-reviewer", "全仓错误处理审查", core.SubRunning)
+	c.Prompt = strings.Repeat("逐目录扫描 unwrap/expect/panic,输出 Markdown 表格(文件·行·风险·建议),不要修改任何文件。", 12)
+	stampSub(c, 30*time.Second)
+	s.Add(0, core.EvAppend{Item: c})
+	nestTools(s, c.ID)
+	finishLab(s, uid, 29)
+	return s.Steps()
+}
+
+func buildSubPerm() []Step {
+	s := NewScript("c-sub-perm", "子 Agent · 待确认权限")
+	uid := s.User("权限")
+	c := core.NewSubagent(s.ID("a"), "general-purpose", "安装依赖并跑测", core.SubRunning)
+	c.Prompt = "在沙盒里 cargo test,缺依赖时请求安装。"
+	stampSub(c, 8*time.Second)
+	s.Add(0, core.EvAppend{Item: c})
+	tid := s.ID("bash")
+	tool := core.NewToolCall(tid, "Bash", "cargo test").WithInput(map[string]any{"command": "cargo test"})
+	s.Add(ms(100), core.EvAppend{Parent: c.ID, Item: tool})
+	s.Add(ms(50), core.EvPromoteToPermission{Parent: c.ID, Request: &core.PermissionRequest{ID: tid, Tool: tool}})
+	finishLab(s, uid, 30)
+	return s.Steps()
+}
+
+func buildSubNoPrompt() []Step {
+	s := NewScript("c-sub-noprompt", "子 Agent · 无任务提示词")
+	uid := s.User("无提示词")
+	c := core.NewSubagent(s.ID("a"), "Explore", "快速浏览 README", core.SubCompleted)
+	c.Summary = "README 已过时,缺少安装步骤。"
+	stampSub(c, 5*time.Second)
+	s.Add(0, core.EvAppend{Item: c})
+	finishLab(s, uid, 31)
 	return s.Steps()
 }
 

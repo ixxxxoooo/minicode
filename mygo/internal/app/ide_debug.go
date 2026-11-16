@@ -1,16 +1,17 @@
 package app
 
 import (
-	"github.com/ixxxxoooo/minicode/internal/vcs"
 	"strings"
 
 	"github.com/egoist/mygo/ui/editor"
 	"github.com/egoist/mygo/ui/richtext"
+	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
 
 // EditorDemo 按「动作:参数」驱动编辑器进入某个状态(cmd/shot 截图用,多个动作用逗号隔开):
 // cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签;review:empty 空态)、expand:路径、newfile|newdir:文件夹:名字、renamef:路径:名字、foerr、discardask:路径、cmpfiles:提交、resetask:序号、delask:路径、rename:会话id、archived:项目id、scm、syncall、repobusy:N、search:查询、scope:文件夹、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、mdkeep(块写回演示样例)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容、goto:行、gotoline:行[:列]、multicursor、blockcomment、extmod[:auto|clean|dirty|deleted]、crumb[:file|sym|路径]、termrename;
-// queue(排两条)、steer[:正文](登记引导)、ask[:题号](切问答卡题号,1 起)、latest[:fresh](滚离底部, fresh=有新内容圆点)、wsdiag:scan|done|trunc|empty|err(工作区诊断各态)。
+// queue(排两条)、steer[:正文](登记引导)、ask[:题号](切问答卡题号,1 起)、latest[:fresh](滚离底部, fresh=有新内容圆点)、sub[:卡片id](子 Agent 标签)、wsdiag:scan|done|trunc|empty|err(工作区诊断各态)。
 func (a *App) EditorDemo(spec string) {
 	for _, act := range strings.Split(spec, ",") {
 		name, arg, _ := strings.Cut(act, ":")
@@ -163,6 +164,23 @@ func (a *App) EditorDemo(spec string) {
 			a.screen = ScreenAutomation
 			a.openAutoNewDlg()
 			continue
+		case "sub": // sub:<卡片 id>:在工作区打开子 Agent 标签(空 = 第一张卡)
+			a.SetMode(ModeIDE)
+			id := arg
+			if id == "" {
+				for _, it := range a.st.Items {
+					if s, ok := it.(*core.SubagentCard); ok {
+						id = s.ID
+						break
+					}
+				}
+			}
+			if id != "" {
+				a.OpenWorkspaceTab(vSub, id)
+				a.subNoFollow = false
+				a.subSt.Y = 1e9
+			}
+			continue
 		case "review": // 打开审查标签;review:empty = 空态
 			if arg == "empty" {
 				a.reviewDemoEmpty = true
@@ -273,6 +291,15 @@ func (a *App) EditorDemo(spec string) {
 				a.newTerm()
 			}
 			a.beginTermRename(a.ide.tpSel)
+			continue
+		}
+		if name == "termtabs" {
+			a.SetMode(ModeIDE)
+			n := 3
+			if arg != "" {
+				n = atoi(arg)
+			}
+			a.ensureTermTabsDemo(n)
 			continue
 		}
 		switch name {

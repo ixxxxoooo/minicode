@@ -36,14 +36,18 @@ func (a *App) parallelSubGroup(c *ui.Context, cards []*core.SubagentCard) {
 	a.stepRow(c, sp, func() {
 		a.nest(c, func() {
 			for _, s := range cards {
-				a.subagentCard(c, s)
+				a.compactSubRow(c, s)
 			}
 		})
 	})
 	if !open && run > 0 {
 		for i := len(cards) - 1; i >= 0; i-- {
 			if cards[i].Active() {
-				a.groupLatestSub(c, id, cards[i])
+				if step := cards[i].SubLatestStep(); step != "" {
+					a.subLatestTicker(c, cards[i].ID, step)
+				} else {
+					a.groupLatestSub(c, id, cards[i])
+				}
 				break
 			}
 		}

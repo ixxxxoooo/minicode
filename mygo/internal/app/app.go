@@ -267,6 +267,8 @@ type App struct {
 	taskSt          ui.ScrollState      // 任务输出标签的滚动
 	taskNoFollow    bool                // 任务输出:关闭「跟随输出」
 	subSt           ui.ScrollState      // 子 Agent 标签「过程」区滚动
+	subNoFollow     bool                // 子 Agent 流:用户手动滚离底部
+	subAwayLen      int                 // 离开底部时的流尾标记(回到最新圆点)
 	q               promptQueue         // 排队的消息
 	qa              map[string]*qaState // 提问向导的本地进度
 	sessLoad        sessLoadState       // 切换会话载入中(抑制欢迎页闪现)
