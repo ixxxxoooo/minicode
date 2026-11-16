@@ -189,7 +189,7 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 	total := float32(st.LineTop(tb.buf.LineCount()))
 	view := float32(st.ViewportHeight())
 	scroll := float32(st.ScrollY())
-	box := ui.Box(c).Key("mm-"+tb.id).Width(mmW+mmRulW).FillHeight().Shrink(0).BorderWidth(0, 0, 0, 1).BorderColor(t.Bd1)
+	box := ui.Box(c).Key("mm-"+tb.id).Width(mmW+mmRulW).FillHeight().Shrink(0).BorderWidth(0, 0, 0, 1).BorderColor(t.Bd1).Clip() // 必须裁剪:色块按整篇行数画,长文件会溢出盖住底部面板
 	hoverLine := -1
 	if box.Hovered() {
 		if _, y, ok := box.PointerPosition(); ok {
@@ -239,8 +239,11 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 				p.Fill(ui.Rect{X: r.X, Y: y0 + float32(l)*mmRowH - .5, W: mmW, H: mmRowH}, t.Ac.Alpha(.20), 0)
 			}
 		}
-		// 语法色块
+		// 语法色块(超出地图框高度的行不画,避免长文件每帧白画几千行)
 		for i := 0; i < n; i++ {
+			if y0+float32(i)*mmRowH > r.Y+r.H {
+				break
+			}
 			ln := strings.TrimRight(tb.buf.Line(i), " \t\r")
 			if ln == "" {
 				continue
