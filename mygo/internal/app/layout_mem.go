@@ -4,7 +4,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/diag"
 )
 
-// 各形态各自记住的布局(设计稿 forms / resp):右侧栏、底部面板、导航栏开合、对话占满、左栏分段。
+// 各形态各自记住的布局(设计稿 forms / resp):右侧栏、底部面板、导航栏开合、对话占满;左栏分段不记,切形态一律回默认。
 const (
 	kLastMode  = "layout.lastMode"
 	kStartMode = "general.start"
@@ -31,8 +31,10 @@ func (a *App) rememberLayout() {
 	a.persistLastMode()
 }
 
+// restoreLayoutFor 切到形态 m 时套用它记住的开合;左栏分段不记忆,一律回到该形态的默认
+// (设计稿 setMode:Agent 绑定「会话」、IDE 绑定「文件」,a.nav 为空即取默认,见 NavID)。
 func (a *App) restoreLayoutFor(m Mode) {
-	a.nav = a.navBy[m]
+	a.nav = ""
 	a.applyLayMem(a.memBy[m])
 }
 

@@ -140,7 +140,7 @@ type App struct {
 	fit          autoFit     // 窗口变窄时自动收起的状态(responsive.go)
 	diffPref     int         // 已应用的 Diff 默认视图偏好(0 左右 / 1 统一)
 	nav          string      // chat / files / search / scm
-	navBy        [2]string   // 各形态各自记住的左栏分段(切回来还停在原处)
+	navBy        [2]string   // 各形态最后停留的左栏分段,只用于重启后恢复;切形态不读它(一律回默认:Agent 会话 / IDE 文件)
 	popup        string      // 状态栏 / 输入框弹层:cfg / ctx / upd / acct
 	paletteOn    bool
 	pq           palState // 命令面板状态
