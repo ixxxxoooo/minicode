@@ -28,8 +28,7 @@ func (a *App) toggleWrap() {
 }
 
 // crumbTools 画面包屑条右侧的一组工具。
-// mdModeSeg 是 Markdown 标签的「预览 | 源码」分段:放在面包屑行的最左边(位置固定)。
-// 以前和换行 / 格式化图标挤在右侧一组里,切到预览时那两个图标消失,分段就跟着往右跳。
+// mdModeSeg 是 Markdown 标签的「预览 | 源码」分段:放在面包屑行右侧、换行 / 格式化图标与语言 / 编码之间。
 func (a *App) mdModeSeg(c *ui.Context, tb *ideTab) {
 	on := 0
 	if a.mdSource(tb) {
@@ -59,6 +58,10 @@ func (a *App) crumbTools(c *ui.Context, tb *ideTab) {
 			if kit.Ib(c, "align", kit.IbOpt{Small: true, Tip: "格式化文档 ⇧⌥F"}).Clicked() {
 				a.formatDoc()
 			}
+		}
+		if md {
+			a.mdModeSeg(c, tb) // 在换行 / 格式化图标右边、语言 / 编码左边:右侧文字固定,图标增减只改变分段左边,分段不会跳
+			ui.Box(c).Size(6, 1)
 		}
 		if a.wsNarrowMM() { // 中档(<600)起收起面包屑右侧的语言 / 编码
 			return
