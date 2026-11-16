@@ -166,6 +166,7 @@
 .pl-sec h4 { margin: 0 0 6px; font-size: 11px; letter-spacing: .04em; color: var(--tx-3); font-weight: var(--fw-bold); text-transform: none; }
 .pl-sec ol { margin: 0; padding-left: 20px; line-height: 1.65; color: var(--tx-1); } .pl-sec li { margin: 2px 0; } .pl-sec li small { display: block; color: var(--tx-3); font-size: 11.5px; line-height: 1.5; }
 .pl-ann { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: var(--r-md); background: var(--ac-soft); color: var(--ac-tx); font-size: 11.5px; }
+.sa-flow .flow-col { max-width: none; padding-top: 8px; }
 .sa-prompt { padding: 8px 10px; border-radius: var(--r-md); background: var(--bg-raised); box-shadow: var(--sh-1); line-height: 1.55; color: var(--tx-2); }
 .sa-res { padding: 8px 10px; border-radius: var(--r-md); background: var(--bg-sunken); box-shadow: inset 0 0 0 1px var(--bd-1); line-height: 1.6; }
 .tk-log { font: 11.5px/1.6 var(--font-mono); padding: 8px 12px; background: var(--bg-sunken); border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--bd-1); white-space: pre; overflow: hidden; }

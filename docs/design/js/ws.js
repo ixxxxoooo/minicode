@@ -60,14 +60,12 @@
       <div class="pl-sec"><h4>涉及文件</h4><div class="f g2 wrap">${F.ref('router.rs').replace('class="ref"', 'class="ref" data-act="open" data-id="router.rs"')}${F.ref('router_test.rs').replace('class="ref"', 'class="ref" data-act="open" data-id="router_test.rs"')}</div></div>
       <div class="pl-ann">${ic('chat', 's12')}<span class="grow">选中任意一段文字可以「批注」,批注会随「继续规划」一起发给 Claude</span></div></div></div>`;
 
-  /** 子 Agent 标签:子对话的完整记录(与主会话同一套步骤行) */
-  WS.sub = () => `<div class="sa-head">${ic('bot', 's16 c-ac')}<b class="grow ell">审查 handlers 的错误处理</b>${tag('运行中', 'ac')}<span class="t3 fs-cap nw num">48 秒 · 12 个工具 · 6.2k</span>${ib('stop', 'sm', '停止')}</div>
-    <div class="sa-body scroll"><div class="sa-col">
-      <div class="fc g2"><span class="t3 fs-cap m">任务</span><div class="sa-prompt">检查 src/handlers 里所有 <span class="mono">unwrap()</span> 与 <span class="mono">expect()</span>,按「可能在请求路径上 panic」排序,不要修改任何文件。</div></div>
-      <div class="fc g1"><span class="t3 fs-cap m">过程</span>${F.step('glob', 'src/handlers/**/*.rs', '', '4 个文件')}${F.step('grep', '"unwrap()"', 'src/handlers', '7 处')}${F.step('read', 'user.rs', 'src/handlers · L1–64', '64 行')}${F.step('read', 'auth.rs', 'src/handlers · L1–88', '88 行')}
-        ${F.step('grep', '"expect("', 'src/handlers', '运行中', { state: 'run' })}<div class="ticker" data-ticks="grep|expect(;read|session.rs;grep|panic!"></div></div>
-      <div class="fc g2"><span class="t3 fs-cap m">结果(完成后写在这里,并回到主会话的子 Agent 卡片上)</span><div class="sa-res t3">尚未完成 · 点上方「停止」可以随时终止,已读到的内容会保留。</div></div>
-      <div class="f g2">${btn('引用到对话', 'sm', 'quote')}${btn('复制全部', 'sm ghost', 'copy')}</div></div></div>`;
+  /** 子 Agent 标签 = 与主会话流同一套 UI(用户消息展示任务 + 步骤组 + 助手正文 + 结果卡) */
+  WS.sub = () => `<div class="sa-head">${ic('bot', 's16 c-ac')}<b class="grow ell">审查 handlers 的错误处理</b>${tag('运行中', 'ac')}<span class="t3 fs-cap nw num">48 秒 · 12 个工具 · 6.2k</span>${btn('引用到对话', 'sm', 'quote')}${btn('复制全部', 'sm ghost', 'copy')}${ib('stop', 'sm', '停止')}</div>
+    <div class="sa-body scroll sa-flow"><div class="sa-col flow-col">
+      ${F.user('检查 src/handlers 里所有 <span class="mono">unwrap()</span> 与 <span class="mono">expect()</span>,按「可能在请求路径上 panic」排序,不要修改任何文件。')}
+      <div class="acts-g">${F.step('think', '列出目录与风险点', '', '3 秒', { open: true, body: F.think() })}${F.step('glob', 'src/handlers/**/*.rs', '', '4 个文件')}${F.step('grep', '"unwrap()"', 'src/handlers', '7 处')}${F.step('read', 'user.rs', 'src/handlers · L1–64', '64 行', { state: 'run' })}</div>
+      ${F.toLatest(true)}</div></div>`;
 
   /** 任务输出标签:后台命令 / 监听的实时输出 */
   WS.task = () => `<div class="tk-head">${ic('activity', 's16 c-ac')}<b class="grow ell mono">cargo watch -x test</b>${tag('运行中', 'ac')}<span class="t3 fs-cap nw num">6 分 12 秒 · pid 48213</span>${ib('refresh', 'sm', '重启')}${ib('stop', 'sm', '停止')}</div>

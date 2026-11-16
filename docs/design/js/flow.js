@@ -10,7 +10,7 @@
    */
   F.step = (tool, obj, meta = '', right = '', o = {}) => {
     const t = TOOLS[tool], st = o.state || '', sh = st === 'run' ? 'shimmer' : '';
-    const icon = st === 'run' ? '<span class="spin"></span>' : ic(st === 'err' ? 'errc' : st === 'deny' ? 'lock' : t.icon, 's12');
+    const icon = st === 'run' ? ic('hourglass', 's12 hg-wait') : ic(st === 'err' ? 'errc' : st === 'deny' ? 'lock' : t.icon, 's12');
     return `<div class="step ${st} ${o.open ? 'open' : ''}" data-tool="${tool}" ${o.body ? 'data-act="fold"' : ''}>
       <span class="si">${icon}</span><span class="sv ${sh}">${o.verb || t.verb}</span><span class="so ell ${sh}">${obj}</span>${meta ? `<span class="sm ell">${meta}</span>` : ''}
       <span class="sr">${right}${o.body ? ic('chevR', 's12 chev') : ''}</span></div>${o.body ? `<div class="fold"><div class="fold-in"><div>${o.body}</div></div></div>` : ''}`;
@@ -34,10 +34,27 @@ test matches_ignoring_case ... <span class="p">ok</span>
 ${live ? 'test matches_trailing_slash ... <span class="caret"></span>' : 'test result: <span class="p">ok</span>. 12 passed; 0 failed <span class="d">in 0.42s</span>'}</div></div>`;
   /** 待办清单。done:已完成条数(其后一条为进行中) */
   F.todo = (done = 3) => `<div class="todo">${['定位大小写敏感的来源', '统一用 normalize 归一化路径', '补充大小写与末尾斜杠的测试'].map((t, k) => `<div class="${k < done ? 'is-done' : k === done ? 'is-now' : 't2'}">${chk(k < done ? 'done' : k === done ? 'now' : '')}<span>${t}</span></div>`).join('')}</div>`;
-  /** 子 Agent 卡。run:是否运行中 */
-  F.sub = (name, desc, run, stat) => `<div class="sub" data-tool="agent" data-act="open" data-id="sub:handlers"><div class="sub-h"><span class="si" style="color:var(--tool-agent)">${run ? '<span class="spin"></span>' : ic('bot', 's12')}</span><b class="${run ? 'shimmer' : ''}">${name}</b><span class="t3 ell grow">${desc}</span>${run ? ib('stop', 'sm', '停止') : ic('check', 's12 c-ok')}</div>
-    <div class="stat" style="padding-left:22px">${stat}</div>${run ? `<div class="ticker" style="margin-left:22px" data-ticks="grep|to_lowercase;read|handlers/user.rs;grep|unwrap()"></div>` : ''}</div>`;
+  /** 子 Agent 调用卡(主流不内联展开过程)。o: run|fail|stop|pend|prompt|long */
+  F.sub = (title, typeChip, o = {}) => { o = Object.assign({ run: 0, stat: '', prompt: '', pend: 0, fail: 0, stop: 0, bg: 0, long: 0 }, o);
+    const ico = o.run ? ic('hourglass', 's12 hg-wait') : o.fail ? ic('errc', 's12 c-err') : o.stop ? ic('bot', 's12 t4') : ic('check', 's12 c-ok');
+    const pr = o.prompt ? `<div class="sub-task"><div class="sub-task-h"><span class="t3 fs-cap m">任务</span><span class="grow"></span>${ib('copy', 'sm', '复制')}${o.long ? btn('展开', 'ghost sm') : ''}</div><div class="sub-task-b ${o.long ? 'clamp' : ''}">${o.prompt}</div></div>` : '';
+    return `<div class="sub" data-act="open" data-id="sub:handlers"><div class="sub-h"><span class="si" style="color:var(--tool-agent)">${ico}</span><b class="ell">${title}</b>${tag(typeChip)}${o.pend ? tag('待确认 ' + o.pend, 'warn') : ''}<span class="grow"></span>${btn('查看过程', 'sm ghost', 'ext')}${o.run ? ib('stop', 'sm', '停止') : ''}</div>${pr}<div class="stat">${o.stat || ''}${o.bg ? '<span>后台</span>' : ''}</div>${o.run ? `<div class="ticker" data-ticks="grep|expect(;read|session.rs"></div>` : (o.sum ? `<div class="sub-sum t3">${o.sum}</div>` : '')}</div>`; };
   F.think = () => '<div class="think-body">路由表用原始路径做键,注册与匹配两处都没有归一化。最小改动是抽一个 normalize,两处共用,顺带处理末尾斜杠。</div>';
+  /** 思考折叠态跑马灯预览。o: stream / open / narrow / reduce / preview / el / title */
+  F.thinkMarquee = (o = {}) => {
+    const stream = o.stream !== false;
+    const open = !!o.open;
+    const preview = o.preview || '…最小改动是抽一个 normalize,两处共用 · 顺带处理末尾斜杠 · 再核对 router_test 里的断言';
+    const title = o.title || '定位大小写敏感的来源';
+    const el = o.el || (stream ? '5.8s' : '4 秒');
+    const mq = (!open && stream && preview)
+      ? `<span class="think-mq${o.narrow ? ' narrow' : ''}${o.reduce ? ' still' : ''}" title=""><span class="think-mq-fade" aria-hidden="true"></span><span class="think-mq-track"><span class="think-mq-txt">${preview}</span></span></span>`
+      : '';
+    const si = stream ? ic('hourglass', 's12 hg-wait') : ic('brain', 's12');
+    const body = open ? `<div class="fold open"><div class="fold-in"><div>${F.think()}</div></div></div>` : '';
+    return `<div class="step think-marquee ${stream ? 'run' : ''} ${open ? 'open' : ''}${o.narrow ? ' tier-narrow' : ''}" data-tool="think" ${open ? 'data-act="fold"' : ''}>
+      <span class="si">${si}</span><span class="sv">思考</span><span class="so ell">${title}</span>${mq}<span class="sr"><span class="sm num">${el}</span>${open ? ic('chevR', 's12 chev') : ''}</span></div>${body}`;
+  };
 
   /** 权限卡(就地替换输入框) */
   F.perm = () => `<div class="dockcard a-pop-up a-glow"><div class="hd">${ic('shield', 'c-ac')}允许运行这条命令吗?<span class="grow"></span>${tag('Bash', 'ac')}</div>
@@ -72,9 +89,9 @@ ${live ? 'test matches_trailing_slash ... <span class="caret"></span>' : 'test r
 
   /** 输入框上方的任务坞:宽时按类别分胶囊,窄时并成一个「任务 N」;点胶囊弹出列表,点列表项在工作区打开对应标签 */
   F.tdock = () => `<div class="tdock">${chip(`子代理 <b class="num">2</b>`, 'bot', 'line split', 'data-act="tpop" data-k="agent"')}${chip(`后台命令 <b class="num">1</b>`, 'terminal', 'line split', 'data-act="tpop" data-k="cmd"')}${chip(`任务 <b class="num">3</b>`, 'activity', 'line merged', 'data-act="tpop" data-k="all"')}</div>`;
-  F.tpop = (k) => { const spin = '<span class="spin" style="margin-top:3px"></span>', row = (ico, t, d, time, id) => `<div class="row" data-act="open" data-id="${id}"><span style="margin-top:2px;flex:none">${ico}</span><div class="grow" style="min-width:0"><div class="m ell" style="color:var(--tx-1)">${t}</div><div class="t3 fs-cap ell">${d}</div></div><span class="aux">${time}</span></div>`;
-    const agents = row(spin, '审查 handlers 的错误处理', '搜索 "expect("', '48 秒', 'sub:handlers') + row(ic('check', 's12 c-ok'), '调研 axum 的路由匹配', '已完成 · 1 分 20 秒', '昨天', 'sub:handlers');
-    const cmds = row(spin, 'cargo watch -x test', '等待文件变化…', '6 分', 'task:watch');
+  F.tpop = (k) => { const hg = ic('hourglass', 's12 hg-wait'), row = (ico, t, d, time, id) => `<div class="row" data-act="open" data-id="${id}"><span style="margin-top:2px;flex:none">${ico}</span><div class="grow" style="min-width:0"><div class="m ell" style="color:var(--tx-1)">${t}</div><div class="t3 fs-cap ell">${d}</div></div><span class="aux">${time}</span></div>`;
+    const agents = row(hg, '审查 handlers 的错误处理', '搜索 "expect("', '48 秒', 'sub:handlers') + row(ic('check', 's12 c-ok'), '调研 axum 的路由匹配', '已完成 · 1 分 20 秒', '昨天', 'sub:handlers');
+    const cmds = row(hg, 'cargo watch -x test', '等待文件变化…', '6 分', 'task:watch');
     return `<div class="tpop pop a-pop-up">${k !== 'cmd' ? `<div class="cap">子代理</div>${agents}` : ''}${k !== 'agent' ? `<div class="cap">后台命令</div>${cmds}` : ''}</div>`; };
   /** 回合结束的改动卡:代替旧的「检查器 · 改动」标签,入口是「审查」 */
   F.chg = () => `<div class="chg-card v2"><div class="hd"><span class="grow">3 个文件已改动</span><span class="lk" data-act="undo">撤销</span><span class="lk rv" data-act="open" data-id="review">审查</span></div>${[['router.rs', 'src/router.rs', 18, 2], ['router_test.rs', 'tests/router_test.rs', 6, 0], ['case.js', 'web/case.js', 0, 3]].map(([n, p, ad, dl]) => `<div class="frow" data-act="open" data-id="${n === 'router.rs' ? 'diff:router.rs' : n}" data-tip="${p} · 点击打开">${U.fi(n)}<span class="nm ell">${n}</span>${ad ? `<span class="st ad">+${ad}</span>` : ''}${dl ? `<span class="st dl">−${dl}</span>` : ''}</div>`).join('')}<div class="frow more">${ic('more', 's12')}<span>还有 7 个文件</span></div></div>`;
@@ -101,7 +118,7 @@ ${live ? 'test matches_trailing_slash ... <span class="caret"></span>' : 'test r
     { kind: 'block', html: () => F.user(`路由匹配对大小写敏感:<code class="mono">/Users</code> 和 <code class="mono">/users</code> 应该命中同一个处理器。看一下 ${F.ref('router.rs')},修好并补上测试。`), wait: 500 },
     { kind: 'step', run: 1100, html: (s) => F.step('think', '定位大小写敏感的来源', '', s ? '' : '4 秒', { state: s, body: F.think() }) },
     { kind: 'block', html: () => F.plan(false, 'approved'), wait: 300 },
-    { kind: 'block', html: () => F.sub('审查 handlers 的错误处理', 'src/handlers', true, '<span>48 秒</span><span>12 个工具</span><span>6.2k</span>'), wait: 300 },
+    { kind: 'block', html: () => F.sub('审查 handlers 的错误处理', 'code-reviewer', { run: 1, stat: '<span>48 秒</span><span>12 个工具</span><span>6.2k</span>', prompt: '检查 src/handlers 里所有 <span class="mono">unwrap()</span>,不要修改文件。' }), wait: 300 },
     { kind: 'step', run: 2400,
       html: (s) => F.step('group', s ? '项目代码' : '2 个文件 · 1 次搜索', '', '', { state: s, verb: s ? '正在探索' : '探索了', body: exploreBody }) + (s ? '<div class="ticker" data-ticks="read|router.rs;grep|match_path;read|router_test.rs"></div>' : '') },
     { kind: 'step', run: 1200, html: (s) => F.step('edit', 'router.rs', 'src/', s ? '' : '<span class="c-ok">+4</span><span class="c-err">−2</span>', { state: s, open: !s, body: F.diff(false) }) },

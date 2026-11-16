@@ -48,7 +48,7 @@
       ['超链接', '识别 URL 与 <span class="mono">path:line:col</span>;⌘ 悬停出下划线与手型,⌘点击:URL 用系统浏览器、路径在编辑器打开并定位', st('ok')],
       ['字体与光标设置', '面板右上齿轮弹出:字体大小(11–20)、字体族、行高、光标样式(块 / 竖线 / 下划线)与闪烁;完整项在 设置 → 终端', st('ok')],
       ['主题', '跟随全局主题;不提供单独的终端配色开关;「调整对比度」保证 ANSI 文字在底色上 ≥ 4.5:1', st('ok')],
-      ['多标签', '新建 / 关闭 / 重命名;来自会话的命令是只读标签(带锁);shell 退出后显示「按回车重开」。重命名:双击标签或右键「重命名…」,⏎ 提交 / Esc 取消,留空或与默认名相同 = 恢复默认;起始页终端列表同名。<b>已在开发版实测</b>(此前第 0 个标签因 ix 零值一直显示成空输入框,已修)', st('ok')],
+      ['多标签', '新建 / 关闭 / 重命名;横/竖向列表(见下节);来自会话的命令是只读标签(带锁);shell 退出后显示「按回车重开」。重命名:双击 / F2 / 右键「重命名…」,⏎ 提交 / Esc 取消', st('part')],
       ['滚动与历史', '触控板平滑滚动;滚离底部时右下角出现「↓ 回到底部」;历史 10000 行(设置里可调)', st('ok')],
       ['鼠标上报(vim / htop / tmux 里用鼠标)', '应用请求鼠标模式时把点击 / 滚轮编码发给程序;按住 ⌥ 临时回到选择模式。<b>已在开发版实测</b>(滚轮与点击的 SGR 编码;此前移动事件会漏报给只要点击的程序,已按模式过滤)', st('ok')],
       ['Nerd Font 图标', '画面里出现私有区图标码点时,顶部提示条:本机没装 → 给安装命令;已装 Nerd Font → 引导到「终端设置」选用;「不再提示」写偏好 terminal.nerdHint。字体按「系统已装字体」扫描(后台),只有选了未安装的 Nerd 字体才回退系统等宽。<b>已在开发版实测</b>(提示条按钮可点,此前叠在正文上的按钮会被选择处理吃掉,已修)。未验证:装好字体后的图标渲染', st('ok')],
@@ -57,7 +57,30 @@
     ${sec('选择 / 搜索 / 链接的视觉', '', grid(
       cell('选区', '', box(`<div class="mono" style="padding:14px 16px;line-height:1.7"><span class="t3">~/router-demo</span> $ cargo test<br><span style="background:var(--ac-soft);box-shadow:0 0 0 1px var(--ac-line)">test matches_ignoring_case ... ok</span><br>test result: ok. 12 passed</div>`, 120), '选区色 = 强调色 28% 不透明;失焦后变灰。'),
       cell('搜索条', ['⌘', 'F'], box(`<div class="mono" style="padding:14px 16px;line-height:1.7">Compiling router-demo<br>test <mark style="background:var(--warn-soft);color:inherit;outline:1px solid var(--warn)">matches</mark>_ignoring_case ... ok</div><div class="pop" style="position:absolute;right:10px;top:10px;padding:4px 6px;display:flex;gap:4px;align-items:center">${ic('search', 's12')}<span class="mono">matches</span>${chip('Aa')}${chip('ab')}${chip('.*')}<span class="t3 fs-cap">1 / 3</span>${ib('arrow', 'sm')}${ib('x', 'sm')}</div>`, 130), '当前命中橙色实线框,其余淡黄;计数实时。'),
-      cell('超链接', ['⌘', '点击'], box(`<div class="mono" style="padding:14px 16px;line-height:1.7">error[E0425]: cannot find value<br>&nbsp;&nbsp;--&gt; <u style="color:var(--ac);text-decoration-thickness:1px">src/router.rs:23:9</u><span class="t3"> ← ⌘点击在编辑器打开</span></div>`, 110), '悬停才出现下划线;不按 ⌘ 时点击仍是普通光标定位。')))}</div>`;
+      cell('超链接', ['⌘', '点击'], box(`<div class="mono" style="padding:14px 16px;line-height:1.7">error[E0425]: cannot find value<br>&nbsp;&nbsp;--&gt; <u style="color:var(--ac);text-decoration-thickness:1px">src/router.rs:23:9</u><span class="t3"> ← ⌘点击在编辑器打开</span></div>`, 110), '悬停才出现下划线;不按 ⌘ 时点击仍是普通光标定位。')))}
+    ${sec('标签 · 标题截断与竖向排列', '底部面板与 Agent 形态工作区共用一套终端状态。只有 1 个 shell 时不画竖向列表;≥2 个时由偏好 <span class="mono">term.tabs</span>(横向 / 竖向 / 自动,默认自动)决定。自动 = 面板内容宽 ≥640 且非窄档时竖向,否则横向。竖向列表默认 168px,可拖 120–280,写入 <span class="mono">term.listWidth</span>。', `
+    ${tbl([['规则', 200], ['说明', 520], ['状态']], [
+      ['标题来源', '用户重命名 &gt; OSC 0/2 终端标题 &gt; 前台进程名 &gt; 启动目录 basename &gt;「终端 N」', st('part')],
+      ['显示截断', '单行 + 省略号;标签宽 min 72 / max 168(随面板缩放);路径用中间截断(<span class="mono">~/…/src</span>);超长命令先取可执行文件 basename;放不下先等比缩到 min,再横向滚动;悬停 tooltip 全文', st('part')],
+      ['竖向列表', '右侧:顶栏「+ 新终端」「⋯」;行 = 状态点 + 标题 + 悬停 ×;当前行高亮;双击/F2/右键重命名;右键:重命名·关闭·关闭其他·复制标题', st('part')],
+      ['窄档降级', '对话栏窄档或面板宽 &lt;560 强制横向,忽略竖向偏好', st('part')],
+      ['前台进程名', 'PTY 层未接进程名解析,暂无法用进程名作标题', st('todo')]]))}
+    ${tbl([['截断样本(满宽 168px)', 180], ['原文 tooltip', 360], ['状态']], [
+      ['zsh', 'zsh', st('part')],
+      ['~/Users/me/Projects/router-demo/src', '~/Users/me/Projects/router-demo/src', st('part')],
+      ['<span class="mono ell" style="max-width:168px;display:inline-block">~/…/router-demo/src</span>', '~/Users/me/Projects/router-demo/src', st('part')],
+      ['<span class="mono ell">/opt/homebrew/bin/cargo test --workspace</span>', '/opt/homebrew/bin/cargo test --workspace', st('part')],
+      ['<span class="mono ell">cargo test --workspace</span>', '/opt/homebrew/bin/cargo test --workspace', st('part')],
+      ['中文超长标题演示终端会话名', '中文超长标题演示终端会话名', st('part')],
+      ['deploy <span class="t3">(重命名)</span>', 'deploy', st('part')]])}
+    ${grid(
+      cell('横向多标签', '', box(`<div class="bpanel" style="height:140px;box-shadow:none;display:flex;flex-direction:column"><div class="tabs"><span class="tab on">${ic('terminal', 's12')}终端</span><span class="tab">问题</span><span class="tab">输出</span><span class="grow"></span><span class="f ai g1"><span class="chip on">${ic('terminal', 's12')}<span class="ell" style="max-width:72px">zsh</span>${ib('x', 'sm')}</span><span class="chip">${ic('terminal', 's12')}<span class="ell" style="max-width:120px">~/…/router-demo/src</span></span><span class="chip">${ic('terminal', 's12')}<span class="ell" style="max-width:100px">cargo test</span></span>${ib('plus', 'sm')}${ib('gear', 'sm')}${ib('more', 'sm')}</span></div><div class="term grow"><span class="p">➜</span> <b>router-demo</b> <span class="caret"></span></div></div>`, 580, 140), '头部横向滚动;选中标签带 ×。'),
+      cell('竖向列表', '', box(`<div class="bpanel" style="height:180px;box-shadow:none;display:flex;flex-direction:column"><div class="tabs"><span class="tab on">终端</span><span class="grow"></span>${ib('gear', 'sm')}${ib('more', 'sm')}</div><div class="f grow" style="min-height:0"><div class="term grow"><span class="p">➜</span> <b>router-demo</b> <span class="caret"></span></div><div class="term-side"><div class="term-side-h">${btn('+ 新终端', 'sm pri')}${ib('more', 'sm')}</div><div class="term-side-row on"><span class="term-dot ok"></span><span class="ell grow">zsh</span></div><div class="term-side-row"><span class="term-dot run"></span><span class="ell grow">~/…/router-demo/src</span>${ib('x', 'sm')}</div><div class="term-side-row"><span class="term-dot err"></span><span class="ell grow">cargo test</span></div></div></div></div>`, 580, 180), '正文在左,列表在右;绿/蓝/红状态点 = 空闲 / 运行中 / 上条失败。'),
+      cell('竖向 · 窄档降级', '', box(`<div class="bpanel" style="height:130px"><div class="tabs"><span class="tab on">终端</span><span class="grow"></span><span class="f ai g1"><span class="chip on">zsh</span><span class="chip">zsh 2</span>${ib('plus', 'sm')}</span></div><div class="term grow"></div></div>`, 420, 130), '面板 &lt;560 或窄档:强制回到头部横向。'),
+      cell('行内重命名', '', box(`<div class="term-side" style="height:120px;border:1px solid var(--bd-1);border-radius:var(--r-md)"><div class="term-side-row on" style="padding-right:6px"><span class="term-dot ok"></span><input class="inp" style="height:22px;flex:1" value="deploy"/></div><div class="term-side-row"><span class="term-dot ok"></span><span class="ell grow">zsh 2</span></div></div>`, 220, 120), '⏎ 保存 · Esc 取消。'),
+      cell('关闭最后一个', '', box(`<div class="term-side" style="height:90px;border:1px solid var(--bd-1)"><div class="term-side-row on"><span class="term-dot ok"></span><span class="ell grow">zsh</span>${ib('x', 'sm')}</div></div><div class="t3 fs-cap" style="margin-top:6px">关到只剩 1 个时列表整体隐藏,留空白壳逻辑不变。</div>`, 220, 110), ''),
+      cell('运行中命令', '', box(`<div class="term-side" style="height:100px;border:1px solid var(--bd-1)"><div class="term-side-row on"><span class="term-dot run"></span><span class="ell grow">cargo test</span></div><div class="term-side-row"><span class="term-dot ok"></span><span class="ell grow">zsh</span></div></div>`, 220, 100), 'OSC 133:命令在跑时显示运行点;结束后按退出码着色。'))}
+    <div class="t3" style="margin-top:10px;line-height:1.7">实现:Go <span class="mono">term_tabs.go</span> / <span class="mono">term_title.go</span>;调试 <span class="mono">-ed termtabs[:N]</span>。阶段三前未 Computer Use 实测。</div></div></div>`;
 
   /* ───────── 语言服务 ───────── */
   const langRow = (n, srv, state, act) => `<div class="set-row"><span class="si-box">${ic('code')}</span><div class="grow"><div class="m">${n}</div><div class="d mono">${srv}</div></div>${state}${act}</div>`;
@@ -131,6 +154,11 @@
       ['前台命令 output_file 实时尾读', '同上一节 flow_tail.go。未测试', st('ok')],
       ['系统通知与点击回会话', 'mac_notify_darwin→OpenSessionFromNotify;非 .app 包走 osascript 无点击回调。未测试', st('ok')],
       ['回合操作条分叉', '演示 + 真实 CmdForkSession;对话栏「分叉会话…」与之同路径', st('ok')]]))}
+    ${sec('子 Agent:主流调用卡 vs 工作区会话流', '主流只见调用摘要(标题 · 类型 · 任务提示词预览 · 最新一步 · 统计 · 待确认徽标);完整思考 / 工具 / 助手正文只在工作区「子 Agent」标签,样式与主会话流一致。权限卡仍在输入框 dock 处理。', tbl([['状态', 120], ['主流调用卡', 360], ['工作区标签'], ['状态列']], [
+      ['运行中', '图标转圈 + 「查看过程」+ 停止 + 最新一步 ticker', '用户消息样式展示任务 + stepGroup + 流式助手;运行中自动贴底,可点「回到最新」', st('part')],
+      ['完成 / 失败 / 停止', '对应图标 + 摘要两行 + 查看过程', '完整时间线 + 结果卡;头部引用 / 复制全部', st('part')],
+      ['并行 ≥2', '汇总行内嵌精简调用卡(不内联过程)', '点任一调用卡或「查看过程」开对应标签', st('part')],
+      ['历史回放读子代理转录', '—', '主 jsonl 不含 sidechain 内部消息;需读 subagents/*.jsonl(未接)', st('todo')]]))}
     ${sec('不同形态下「点哪里打开」', '同一个入口在 Agent 与 IDE 形态里打开的位置不同,但永远是「工作区的标签」,不是新窗口也不是模态框。', tbl([['入口', 180], ['Agent 形态', 240], ['IDE 形态']], [
       ['计划卡 [查看]', '右侧工作区展开并开「计划」标签', '编辑区开「计划」标签,对话栏仍在右侧窄栏'],
       ['子 Agent 卡 / 任务坞项', '右侧工作区「子 Agent 记录」标签', '编辑区开同一标签'],
@@ -148,7 +176,7 @@
         <div class="grp-h">${ic('chevD', 's12')}${ic('code', 's12')}<span class="grow">router_test.rs</span>${cnt(1)}</div>${probRow('err', '找不到函数 `normalize`', 'rust-analyzer', '行 8')}</div></div>`, 220), '仅已打开且已同步的语言服务会话;未打开文件不出现在此分段。'),
       cell('工作区 · 扫描中', '', box(`<div class="bpanel tall" style="height:auto;box-shadow:none">${probHead('ws', { ws: 0, scan: 1 })}<div class="t3 fs-cap" style="padding:4px 12px;display:flex;align-items:center;gap:8px"><span class="grow">已检查 <b>128</b> / 640 个文件</span><span>23%</span></div><div class="prog-scan"><i></i></div>${probBody('<div class="t3" style="padding:20px;text-align:center">扫描中… 已发现的诊断会边扫边出现</div>')}</div>`, 180), '取消 = 停止当前代次,保留已收集结果;新一次「重新检查」递增代次号。'),
       cell('工作区 · 完成', '', box(`<div class="bpanel tall" style="height:auto;box-shadow:none">${probHead('ws', { ws: 12 })}<div class="t3 fs-cap" style="padding:2px 12px 6px">共检查 640 个文件 · 来源:服务器 pull</div>${probBody(`<div class="grp-h">${ic('chevD', 's12')}${ic('code', 's12')}<span class="grow">handlers/mod.rs</span>${cnt(1)}</div>${probRow('warn', '未使用的 import', 'rust-analyzer', '行 3')}`)}</div>`, 200), '服务器支持 <span class="mono">workspace/diagnostic</span> 时标注「来源:服务器 pull」;否则「来源:逐个打开扫描」,且只含实际扫过的文件。'),
-      cell('截断', '', box(`<div class="bpanel tall" style="height:auto;box-shadow:none">${probHead('ws', { ws: 2000 })}<div class="notice warn" style="margin:0;border-radius:0;padding:6px 12px">${ic('alert', 'c-warn')}<span class="grow t2">已达上限 2000 个文件,只显示前 2000 个</span>${btn('调高上限…', 'sm ghost', 'sliders', 'data-act="settab" data-tab="editor" data-goto="settings"')}</div></div>`, 150), '链到 设置 → 编辑器与语言服务 的扫描上限;调高后需手动「重新检查」。'),
+      cell('截断', '', box(`<div class="bpanel tall" style="height:auto;box-shadow:none">${probHead('ws', { ws: 2000 })}<div class="notice warn" style="margin:0;border-radius:0;padding:6px 12px">${ic('alert', 'c-warn')}<span class="grow t2">已达上限 2000 个文件,只显示前 2000 个</span>${btn('调高上限…', 'sm ghost', 'sliders', 'data-act="settab" data-tab="lsp" data-goto="settings"')}</div></div>`, 150), '链到 设置 → 编辑器与语言服务 的扫描上限;调高后需手动「重新检查」。'),
       cell('空态', '', box(`<div class="bpanel tall" style="height:auto;box-shadow:none">${probHead('ws', { ws: 0 })}${probBody('<div class="t3" style="padding:28px;text-align:center">没有发现问题</div>')}</div>`, 130), '工作区与已打开两种分段各自独立空态。'),
       cell('错误态', '', box(`<div class="bpanel tall" style="height:auto;box-shadow:none">${probHead('ws', { ws: 0 })}<div class="notice err" style="margin:0;border-radius:0;padding:8px 12px">${ic('errc', 'c-err')}<span class="grow"><b>rust-analyzer 没有响应</b><span class="t3"> · 超时 30 s</span></span>${btn('重试', 'sm pri')}</div></div>`, 120), '崩溃 / 超时 / 用户取消都走通知条 + 可重试;重试清空错误条并重新排队扫描。')))}
     ${sec('设置与规则', '', `<div class="spec" style="padding:8px 10px;margin-bottom:12px"><div class="set-row"><span class="m grow">工作区级诊断</span>${tog(1)}</div><div class="set-row"><span class="m grow">工作区扫描文件上限</span><span class="sel"><span class="grow">2000</span>${ic('chevD', 's12 car')}</span></div><div class="set-row"><span class="m grow">扫描时包含被 gitignore 的文件</span>${tog(0)}</div></div>
