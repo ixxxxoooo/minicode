@@ -68,15 +68,72 @@ func mergeSummary(g []*core.ToolCall) (string, bool, int) {
 	return strings.Join(parts, "、"), running, failed
 }
 
+// mergeSummaryNarrow 精简档窄档短句:「读 2 · 搜 1 · 改 2 · 跑 1」。
+func mergeSummaryNarrow(g []*core.ToolCall) string {
+	var read, search, edit, run, web, other int
+	for _, tc := range g {
+		switch tc.Kind {
+		case core.KindRead:
+			read++
+		case core.KindSearch:
+			search++
+		case core.KindEdit, core.KindDelete, core.KindMove:
+			edit++
+		case core.KindExecute:
+			run++
+		case core.KindFetch:
+			web++
+		default:
+			other++
+		}
+	}
+	var parts []string
+	add := func(n int, label string) {
+		if n > 0 {
+			parts = append(parts, fmt.Sprintf("%s %d", label, n))
+		}
+	}
+	add(read, "读")
+	add(search, "搜")
+	add(edit, "改")
+	add(run, "跑")
+	add(web, "抓")
+	add(other, "工具")
+	return strings.Join(parts, " · ")
+}
+
+func mergeLiveTool(g []*core.ToolCall) *core.ToolCall {
+	for i := len(g) - 1; i >= 0; i-- {
+		if !g[i].Status.Finished() {
+			return g[i]
+		}
+	}
+	if len(g) > 0 {
+		return g[len(g)-1]
+	}
+	return nil
+}
+
 // mergeGroup 渲染精简档的合并行:折叠时一行摘要,展开后逐条(与探索组同构)。
 func (a *App) mergeGroup(c *ui.Context, g []*core.ToolCall) {
 	sum, running, failed := mergeSummary(g)
 	id := "mrg:" + g[0].ID
+	narrow := a.chatTier() == tierNarrow
 	sp := step{id: id, icon: "layers", verb: "", obj: sum, fam: famExplore, hasBody: true, open: false}
+	if narrow && !running {
+		sp.obj = mergeSummaryNarrow(g)
+	}
 	if running {
 		sp.state = "run"
-	}
-	if failed > 0 && !running {
+		if tc := mergeLiveTool(g); tc != nil {
+			live := a.presentTool(tc)
+			sp.verb, sp.obj = live.verb, live.obj
+			if !narrow {
+				sp.right = fmt.Sprintf("已 %d 步", len(g))
+			}
+		}
+	} else if failed > 0 {
+		sp.icon, sp.state = "errc", "err"
 		sp.right = fmt.Sprintf("%d 项失败", failed)
 	}
 	if set, ok := a.folds[id]; ok {
@@ -86,7 +143,13 @@ func (a *App) mergeGroup(c *ui.Context, g []*core.ToolCall) {
 		a.nest(c, func() {
 			for _, tc := range g {
 				ps := a.presentTool(tc)
-				ps.open = false // 精简档逐条也保持折叠
+				ps.open = false
+				if running && tc == mergeLiveTool(g) && ps.hasBody {
+					ps.open = true
+				}
+				if failed > 0 && tc.Status.Unsuccessful() && ps.hasBody {
+					ps.open = true
+				}
 				a.stepRow(c, ps, func() { a.toolBody(c, tc) })
 			}
 		})

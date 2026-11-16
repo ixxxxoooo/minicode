@@ -192,7 +192,6 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 		s.path, s.copyStr, s.diffAs = path, path, true
 		s.add, s.del = diffStat(tc)
 		s.hasBody = hasContent[*core.DiffBlock](tc)
-		s.open = s.hasBody && tc.Status == core.ToolCompleted && s.add+s.del <= 8 // 小改动默认展开,大改动折叠
 	case core.KindExecute:
 		s.fam = famExec
 		s.icon, s.verb = "terminal", "运行"
@@ -208,7 +207,6 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 			}
 		}
 		s.hasBody = hasContent[*core.TerminalBlock](tc)
-		s.open = s.hasBody
 	case core.KindFetch:
 		s.fam = famWeb
 		s.icon, s.verb, s.obj = "globe", "抓取", firstNonEmpty(inputStr(tc, "url"), inputStr(tc, "query"), tc.Title)
@@ -231,17 +229,45 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 	if !s.hasBody && toolHasDetail(tc) { // MCP / 浏览器 / 读取 / 搜索 / 抓取…:展开看入参与结果
 		s.hasBody = true
 	}
-	if s.hasBody {
-		switch a.ToolDetailLevel() {
-		case 0:
-			s.open = false
-		case 2:
-			if tc.Status == core.ToolCompleted || tc.Status == core.ToolRunning || tc.Status == core.ToolPending {
+	a.applyToolDefaultOpen(&s, tc)
+	return s
+}
+
+// applyToolDefaultOpen 按「工具调用详细程度」与设计稿 flow-detail 默认展开矩阵设置 sp.open(用户手动折叠记在 folds,stepRow 会覆盖)。
+func (a *App) applyToolDefaultOpen(s *step, tc *core.ToolCall) {
+	if !s.hasBody {
+		return
+	}
+	lv := a.ToolDetailLevel()
+	switch lv {
+	case 0:
+		s.open = false
+		return
+	case 2:
+		s.open = tc.Status == core.ToolCompleted || tc.Status == core.ToolRunning || tc.Status == core.ToolPending
+		if s.state == "err" || s.state == "deny" {
+			s.open = true
+		}
+		return
+	}
+	// 标准档:默认折叠;失败 / 被拒绝 / 运行中的命令 / 非 0 退出码展开
+	s.open = false
+	if s.state == "err" || s.state == "deny" {
+		s.open = true
+		return
+	}
+	if tc.Kind == core.KindExecute {
+		if s.state == "run" {
+			s.open = true
+			return
+		}
+		for _, ct := range tc.Content {
+			if tb, ok := ct.(*core.TerminalBlock); ok && tb.ExitCode != nil && *tb.ExitCode != 0 {
 				s.open = true
+				return
 			}
 		}
 	}
-	return s
 }
 
 func firstNonEmpty(ss ...string) string {
@@ -253,11 +279,11 @@ func firstNonEmpty(ss ...string) string {
 	return ""
 }
 
-// thinkTitle 取思考内容的第一句作标题(没有就叫「思考」)。
+// thinkTitle 取思考内容的第一句作标题(流式尚无正文时写「思考中」)。
 func thinkTitle(text string) string {
 	text = strings.TrimSpace(text)
 	if text == "" {
-		return ""
+		return "思考中"
 	}
 	if i := strings.IndexAny(text, "。.\n"); i > 0 {
 		text = text[:i]
