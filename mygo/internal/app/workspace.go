@@ -20,6 +20,7 @@ import (
 // stage 是舞台:按形态排布工作区与对话栏。槽位始终在树里(带 Key),宽度变化走 440 ms 变形过渡。
 func (a *App) stage(c *ui.Context) {
 	gap := a.tk.Scheme.GapPane
+	a.wsHostPrev, a.wsHostNow = a.wsHostNow, "" // 工作区上一帧由哪一槽承载(见 wsPane)
 	ui.Row(c).Grow(1).MinWidth(0).AlignItems(ui.Stretch).Children(func() {
 		if a.screen != ScreenWork && a.screen != ScreenWelcome {
 			a.guard(c, "页面", "page:"+string(a.screen), guardCard, func() {
@@ -69,11 +70,13 @@ func (a *App) wsPane(c *ui.Context, gap float32, left bool) {
 	}
 	p.Opacity(op)
 	// 收起期间继续画内容(被宽度动画一点点裁掉);另一槽正承载工作区时不能画第二份,否则同一份编辑器状态会出现两处。
+	// 只有上一帧承载着工作区的那一槽才继续画(快速连续开合时两槽都在收起期,也只画一份)。
 	keep := a.keepWhile("ws:"+key, active, kit.DurMorph) && !a.wsActive(!left)
-	if !active && !keep {
+	if !active && !(keep && a.wsHostPrev == key) {
 		p.Children(func() {})
 		return
 	}
+	a.wsHostNow = key
 	if w := p.Bounds().W; w > 0 {
 		a.wsW = w
 	}
