@@ -26,6 +26,7 @@ func (a *App) filesView(c *ui.Context) {
 	haveSec := false
 	outer.Children(func() {
 		files := kit.VScroll(c).Key("files").TrackScroll(&d.treeSt).Grow(1).MinHeight(0)
+		files.OnShortcut(ui.Cmd, ui.KeyF, a.toggleTreeFilter)
 		files.OnShortcut(0, ui.KeyF2, func() {
 			if a.ide.sel == "" {
 				return
@@ -89,6 +90,8 @@ func (a *App) filesView(c *ui.Context) {
 								newDir.Opacity(0.4).Cursor(ui.CursorDefault)
 							}
 						}
+						flt := kit.Ib(c, "filter", kit.IbOpt{Small: true, Tip: map[bool]string{true: "关闭过滤", false: "过滤文件(⌘F)"}[d.fltOpen]})
+						flt.OnClick(a.toggleTreeFilter)
 						shut := kit.Ib(c, "collapseAll", kit.IbOpt{Small: true, Tip: map[bool]string{true: "全部收起", false: "没有展开的文件夹"}[a.treeOpenCount() > 0]})
 						if a.treeOpenCount() > 0 {
 							shut.OnClick(a.collapseTree)
@@ -99,8 +102,13 @@ func (a *App) filesView(c *ui.Context) {
 						kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.treeHeadMenu)
 					})
 				})
+				a.treeFilterBar(c)
 				if !d.rootShut {
-					a.treeDir(c, "", 0)
+					if d.fltActive() {
+						a.treeFiltered(c, "", 0)
+					} else {
+						a.treeDir(c, "", 0)
+					}
 				}
 			})
 		})
@@ -223,7 +231,7 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 		}
 		if e.Dir {
 			icon := "chevR"
-			if d.open[e.Path] {
+			if d.open[e.Path] || d.fltActive() { // 过滤时目录一律展开(命中项藏在里面)
 				icon = "chevD"
 			}
 			kit.Ic(c, icon, kit.S12).TextColor(t.Tx3)

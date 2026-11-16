@@ -146,6 +146,11 @@ type ide struct {
 	rootShut bool            // 「文件夹」区块(文件树本体)是否已折叠
 	revealed string          // 上次自动在文件树里定位的标签路径(ide_reveal.go)
 	revealTo string          // 待滚入可见的树行路径(自动定位后一次性消费)
+	fltOpen  bool            // 文件树过滤条已展开(ide_tree_filter.go)
+	flt      string          // 过滤关键字
+	fltKey   string          // 过滤结果缓存的键(关键字 + 文件清单版本)
+	fltVis   map[string]bool // 过滤后应显示的路径(命中文件 + 祖先目录)
+	fltN     int             // 命中的文件数
 	treeSt   ui.ScrollState  // 文件树的滚动状态
 	treeIdx  int             // 本帧已画的树行数(算目标行的内容位置)
 	treeHit  int             // 目标行的行序号(-1 = 本帧没画到)
