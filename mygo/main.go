@@ -330,6 +330,7 @@ func main() {
 			Content:              ui.View(a.View),
 		})
 		a.SetWindow(win)
+		a.WireReopen()
 		a.InstallAppMenu()
 		a.InitBrand()
 		a.HoldExternalOpen(false) // 窗口出来了:处理冷启动时排队的「双击打开的文件」

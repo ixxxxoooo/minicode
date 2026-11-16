@@ -168,7 +168,7 @@ func (a *App) syncTray(dark bool) {
 			return
 		}
 		if !clickMenu {
-			tr.OnClick(func() { mygo.App.Focus() })
+			tr.OnClick(func() { a.showMainWindow("托盘 / 通知") })
 		}
 		a.brand.tray = tr
 		a.brand.trayMode = sum.mode

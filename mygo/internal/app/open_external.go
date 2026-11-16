@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/egoist/mygo"
 	"github.com/ixxxxoooo/minicode/internal/canvas"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/projects"
@@ -274,5 +273,5 @@ func (a *App) focusMain() {
 	if testing.Testing() || a.win == nil {
 		return
 	}
-	mygo.App.Focus()
+	a.showMainWindow("托盘 / 通知")
 }

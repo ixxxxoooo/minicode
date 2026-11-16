@@ -227,7 +227,7 @@ func (a *App) trayMenuFull() *mygo.Menu {
 				Label:   trayClip(s.title, 24),
 				ToolTip: s.title,
 				Icon:    trayMarkIcon(mk),
-				Click:   func(*mygo.MenuItem, *mygo.Window) { a.OpenSession(s.id); mygo.App.Focus() },
+				Click:   func(*mygo.MenuItem, *mygo.Window) { a.OpenSession(s.id); a.showMainWindow("托盘 / 通知") },
 			}
 			if it.Icon == nil || trayMarkAsText() {
 				it.Icon = nil                          // 文字标记与图标二选一,避免重复
@@ -242,15 +242,15 @@ func (a *App) trayMenuFull() *mygo.Menu {
 	}
 	items = append(items,
 		&mygo.MenuItem{Type: mygo.MenuItemSeparator},
-		&mygo.MenuItem{Label: "新对话", Click: func(*mygo.MenuItem, *mygo.Window) { a.NewSession(); mygo.App.Focus() }},
-		&mygo.MenuItem{Label: "打开 MiniCode", Click: func(*mygo.MenuItem, *mygo.Window) { mygo.App.Focus() }},
+		&mygo.MenuItem{Label: "新对话", Click: func(*mygo.MenuItem, *mygo.Window) { a.NewSession(); a.showMainWindow("托盘 / 通知") }},
+		&mygo.MenuItem{Label: "打开 MiniCode", Click: func(*mygo.MenuItem, *mygo.Window) { a.showMainWindow("托盘 / 通知") }},
 		a.pauseMenu(),
 		&mygo.MenuItem{Type: mygo.MenuItemSeparator},
-		&mygo.MenuItem{Label: "设置…", Click: func(*mygo.MenuItem, *mygo.Window) { a.openSettings("general"); mygo.App.Focus() }},
+		&mygo.MenuItem{Label: "设置…", Click: func(*mygo.MenuItem, *mygo.Window) { a.openSettings("general"); a.showMainWindow("托盘 / 通知") }},
 		&mygo.MenuItem{Label: "检查更新…", Click: func(*mygo.MenuItem, *mygo.Window) {
 			a.openSettings("about")
 			a.checkUpdateAsync()
-			mygo.App.Focus()
+			a.showMainWindow("托盘 / 通知")
 		}},
 		&mygo.MenuItem{Label: "重启 MiniCode", Click: func(*mygo.MenuItem, *mygo.Window) { a.trayRestart() }},
 		&mygo.MenuItem{Label: "退出 MiniCode", Role: mygo.RoleQuit},
@@ -284,7 +284,7 @@ func (a *App) trayRestart() {
 		a.restartApp("托盘菜单", false)
 		return
 	}
-	mygo.App.Focus()
+	a.showMainWindow("托盘 / 通知")
 	var body string
 	if running > 0 && dirty > 0 {
 		body = strconv.Itoa(running) + " 个会话正在运行,另有 " + strconv.Itoa(dirty) + " 个文件未保存,重启会丢失这些内容。"
