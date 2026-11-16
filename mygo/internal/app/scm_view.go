@@ -345,9 +345,9 @@ func (a *App) scmCommitRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow,
 	open := s.expanded == cm.Hash
 	r := ui.ButtonBase(c).Key("scm-c-" + cm.Hash).Height(graphRowH).PaddingX(2).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx2)
 	if open {
-		r.Background(t.Fill2)
+		r.Background(t.Sel)
 	} else if r.Hovered() {
-		r.Background(t.Fill1)
+		r.Background(t.Fill2)
 	}
 	r.ContextMenu(func(m *ui.Menu) { a.commitMenu(m, cm) })
 	r.OnClick(func() {

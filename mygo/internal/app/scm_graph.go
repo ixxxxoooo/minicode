@@ -140,7 +140,7 @@ func (a *App) graphBigRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow, 
 	case picked:
 		r.Background(t.InfoSoft)
 	case r.Hovered():
-		r.Background(t.Fill1)
+		r.Background(t.Fill2)
 	}
 	if !hit {
 		r.Opacity(.35)

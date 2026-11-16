@@ -117,7 +117,7 @@ func (a *App) mcpRow(c *ui.Context, r McpRow) {
 		row.Cursor(ui.CursorDefault)
 	}
 	if row.Hovered() {
-		row.Background(t.Fill1)
+		row.Background(t.Fill2)
 	}
 	row.Children(func() {
 		a.mcpDot(c, r.Conn)

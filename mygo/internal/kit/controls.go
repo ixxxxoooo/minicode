@@ -182,7 +182,7 @@ func RowEl(c *ui.Context, on bool) ui.Element {
 		r.Background(T.Sel).FontWeight(500)
 		col = T.Tx1
 	case r.Hovered():
-		r.Background(T.Fill1)
+		r.Background(T.Fill2) // 悬停 8.5% 墨色(5% 在浅色主题下几乎看不见,指针位置难辨认)
 		col = T.Tx1
 	}
 	return r.TextColor(col).Transition(Fade)
