@@ -64,7 +64,7 @@ func (t *ideTab) findQuery() (string, bool) {
 // cursorXY 是光标行左下在代码区里的位置(用于定位浮层)。
 func cursorXY(tb *ideTab, line, col int) (x, y float32) {
 	y = float32(tb.st.LineTop(line)-tb.st.ScrollY()) + edLineH*edScale
-	x = edGutter + float32(col)*edChar*edScale
+	x = edGutterW(tb) + edTextPad + float32(col)*edChar*edScale
 	return
 }
 

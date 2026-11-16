@@ -1,11 +1,13 @@
 package app
 
 import (
+	"math"
 	"sort"
 	"unicode/utf8"
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/editor"
 
 	"github.com/ixxxxoooo/minicode/internal/diag"
 )
@@ -30,6 +32,36 @@ type linkMemo struct {
 	path string
 	ok   bool
 	at   uint64 // 缓存时的缓冲区版本,变了就重算
+}
+
+// edTextPad 是行号栏右边到第一列字符之间的内边距(实测 5~6pt)。
+const edTextPad = 6.0
+
+// edGutterW 复现库的 gutterWidth:行号(至少 3 位)+ 折叠箭头 + Git 竖条 + 4px 留白。
+// 行号位数随总行数变,所以不能用常量 edGutter(那只是 3 位数、无 Git 条时的近似)。
+func edGutterW(tb *ideTab) float32 {
+	if tb == nil || tb.st == nil || tb.buf == nil {
+		return edGutter
+	}
+	cw := edChar * edScale
+	w := float32(0)
+	if tb.st.LineNumbers != editor.LineNumbersOff {
+		digits := len(itoa(tb.buf.LineCount()))
+		if digits < 3 {
+			digits = 3
+		}
+		w += float32(digits)*cw + cw*1.5
+	}
+	if !tb.st.NoFolding {
+		w += 20 * edScale * 0.8
+	}
+	if tb.st.DiffBase != nil {
+		w += 6
+	}
+	if w > 0 {
+		w += 4
+	}
+	return float32(math.Ceil(float64(w)))
 }
 
 // displayCols 把一行里 [b0,b1) 字节区间换算成显示列(Tab 对齐到 tabW,宽字符占 2 格)。
@@ -136,7 +168,8 @@ func (a *App) linkHover(c *ui.Context, tb *ideTab, ev ui.Element) {
 		return
 	}
 	x, y, ok := ev.PointerPosition()
-	if !ok || x < edGutter {
+	gw := edGutterW(tb) + edTextPad
+	if !ok || x < gw {
 		return
 	}
 	l, ok := linkLineAt(tb, y)
@@ -144,7 +177,7 @@ func (a *App) linkHover(c *ui.Context, tb *ideTab, ev ui.Element) {
 		return
 	}
 	ln := tb.buf.Line(l)
-	cell := int((x - edGutter) / (edChar * edScale))
+	cell := int((x - gw) / (edChar * edScale))
 	col := byteAtCell(ln, cell, tb.st.TabSize)
 	w, b0, b1 := wordAt(ln, col)
 	if w == "" || col >= len(ln) || !a.linkJumpable(tb, w) {
@@ -163,7 +196,7 @@ func (a *App) linkUnderline(c *ui.Context, tb *ideTab, yOff float32) {
 	}
 	t := a.tk
 	top := float32(tb.st.LineTop(k.line)-tb.st.ScrollY()) + edLineH*edScale - 4*edScale + yOff
-	left := edGutter + float32(k.c0)*edChar*edScale
+	left := edGutterW(tb) + edTextPad + float32(k.c0)*edChar*edScale
 	w := float32(k.c1-k.c0) * edChar * edScale
 	ui.Box(c).Absolute().Left(left).Top(top).Width(w).Height(1).Background(t.AcTx).HitTest(func(float32, float32, ui.Rect) bool { return false })
 }
