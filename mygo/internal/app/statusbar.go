@@ -87,7 +87,17 @@ func (a *App) statusbar(c *ui.Context) {
 				ui.Text(c, itoa(nw))
 			}).OnClick(func() { a.ide.bottomOpen, a.ide.bottomTab = true, "problems" })
 		}
-		if a.mode == ModeIDE {
+		// IDE 专属项随形态滑入 / 滑出(设计稿 .sbar .ide-items:max-width 0 → 420 用 440ms 变形曲线,透明度 260ms)。
+		// 容器始终在树里,展开才有起点;收起期间内容保留到宽度归零。
+		isIDE := a.mode == ModeIDE
+		ideKeep := a.keepWhile("sb-ide", isIDE, kit.DurMorph)
+		ideBox := ui.Row(c).Key("sb-ide").Gap(6).AlignItems(ui.Center).Shrink(0).Clip()
+		ideBox.MaxWidth(max(.01, ideBox.AnimateWith("mw", map[bool]float32{true: 420, false: 0}[isIDE], kit.DurMorph, kit.EaseMorph)))
+		ideBox.Opacity(ideBox.AnimateWith("op", map[bool]float32{true: 1, false: 0}[isIDE], kit.DurSlow, kit.EaseCSS))
+		ideBox.Children(func() {
+			if !ideKeep {
+				return
+			}
 			if tab := a.ide.cur(); tab != nil && !tab.diff && tab.st != nil {
 				p := tab.st.CursorPos()
 				// 点光标位置 = 转到行(与 VS Code 一致,键盘 ⌃G 同一入口)
@@ -132,7 +142,7 @@ func (a *App) statusbar(c *ui.Context) {
 					a.sbItem(c, "lsp", func() { kit.Ic(c, "okc", kit.S12).TextColor(t.Ok); ui.Text(c, srv) })
 				}
 			}
-		}
+		})
 		ui.Spacer(c).Grow(1)
 		if tier < 3 {
 			a.connChip(c)
