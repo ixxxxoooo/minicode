@@ -411,8 +411,8 @@ func (a *App) nestPlain(c *ui.Context, inner func()) {
 
 func (a *App) thinkBody(c *ui.Context, text string) {
 	t := a.tk
-	ui.Row(c).Children(func() {
-		ui.Box(c).Width(2).Background(t.Bd2).Margin(0, 8, 0, 0)
+	ui.Row(c).MinWidth(0).AlignItems(ui.Stretch).Children(func() {
+		ui.Box(c).Width(2).Background(t.Bd2).Margin(0, 8, 0, 0).Shrink(0)
 		ui.Text(c, strings.TrimSpace(text)).FontSize(a.FlowCapFont()).LineHeight(1.6).TextColor(t.Tx3).Grow(1)
 	})
 }
