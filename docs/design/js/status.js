@@ -109,13 +109,17 @@
     'ws-sub': [
       R('子 Agent 标签:任务 / 过程 / 结果、引用到对话、复制全部', '', 'ok'),
       R('会话流子 Agent 卡与标签里的「停止」', '会话流卡片与标签页 CmdStopTask', 'ok', 'B4'),
-      R('过程流式滚动', '任务标签有跟随输出与 ↓ 回到底部;子 Agent 标签运行中过程区自动贴底(无单独开关)', 'ok', 'B4')],
+      R('过程流式滚动', '任务标签有跟随输出与 ↓ 回到底部;子 Agent 标签运行中过程区自动贴底(无单独开关)', 'ok', 'B4'),
+      R('会话流里的子 Agent 只显示紧凑调用卡(任务预览 / 最新一步 / 统计 / 查看过程),过程在自己的标签里同款会话流', 'flow_sub.go / flow_sub_stream.go / ws_views_sub.go;已用 computer use 在开发版(演示模式)走过:调用卡 → 查看过程 → 标签内任务消息 + 思考 + 步骤 + 正文,切会话自动关闭旧标签;未做:读 ~/.claude/projects/.../subagents/*.jsonl 回放历史子 Agent 过程(历史会话只有卡片摘要)、「待确认」权限徽标未实机', 'part')],
     'ws-task': [
       R('任务输出标签:跟随输出、停止任务', '', 'ok'),
       R('「在终端面板中打开」', '展开底部面板并选中只读 cmd: 标签(与命令卡「在终端面板查看」同路径)', 'ok', 'B4'),
       R('重启任务 / 显示 pid', '演示 CmdRestartTask;真实 claude 置灰+原因;run id / pid 行内显示', 'ok', 'B4'),
       R('正常运行时注入任务', 'translate task_*+任务坞+会话流 TaskNote(flow_note.go);后端 TestRealBackgroundTaskAndSubagent;界面仅 ui.Tester/无真实端到端;未测试', 'part')],
     flow: [
+      R('字号预设(紧凑 / 标准 / 舒适 / 大字 / 自定义)与会话 / 设置页内容宽度多档', 'typography_prefs.go;预设联动界面大小与正文字号、还原联动、会话宽 6 档、设置页宽 5 档;已用 computer use 实测设置页预设联动与宽度档位(会话宽「占满」仅在窄窗口里点过,未在宽屏对照);未做 appearance.dockW(IDE 对话栏预设宽)', 'part', 'B6'),
+      R('折叠的思考流式预览(跑马灯)与等待沙漏', 'flow_think_marquee.go / kit/hourglass.go;已用 computer use 在开发版(演示场景「思考 · 折叠跑马灯」)看过:单行、尾部右对齐、左侧渐隐、沙漏图标;窗口在后台时停在尾部不动画(未在前台窗口里肉眼确认逐帧滚动手感);文字流光只接到步骤行,其余 RunText 仍是呼吸', 'part', 'B6'),
+      R('终端标题自适应截断与竖向标签列表', 'term_title.go / term_tabs.go;已用 computer use 在开发版(真实模式)走过:≥2 个终端出竖列(贴顶、状态点、选中行 ✕)、窄面板自动横向、默认标题只留路径、同名加序号;未做:前台进程名作标题(PTY 层未接)、列表拖拽排序', 'part', 'B6'),
       R('界面大小(默认 110%,90–150%)与正文字号', 'theme.SetUIScale / Px:字号令牌、行高、控件、图标一起缩放(设置 → 外观 → 字号与大小,appearance.uiScale);正文字号 appearance.fontScale 在其上再缩放;未测试', 'part', 'B6'),
       R('列表选中态统一(强调色底 + 左侧 3px 竖线 + 半粗体):会话行 / 文件树 / 各列表', 'kit.RowEl + kit.SelBar;文件夹行选中也高亮;未测试', 'part', 'B6'),
       R('文件树标题行工具按钮悬停才显示', 'ide_tree.go:按钮始终在布局里,Opacity 随标题行悬停淡入(菜单打开时不丢锚点);设计稿 .tree-h;未测试', 'part', 'B2'),
