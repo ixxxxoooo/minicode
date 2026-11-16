@@ -367,7 +367,7 @@ func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 				if more {
 					ui.Box(c).Absolute().Left(0).Right(0).Bottom(0).Height(16).Background(bg).HitTest(func(_, _ float32, _ ui.Rect) bool { return false }).
 						MaskLinearGradient(ui.LinearGradient{
-							Angle: 0,
+							Angle: 180, // 从上到下:上缘透明、越往下越盖住(0 是从下往上,方向反了会把这一行上半截盖掉)
 							Stops: []ui.GradientStop{
 								{Color: ui.Transparent, At: 0},
 								{Color: t.Tx1.Alpha(.55), At: .6},
