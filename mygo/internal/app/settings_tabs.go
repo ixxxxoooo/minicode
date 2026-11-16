@@ -472,7 +472,7 @@ var settingsTabs = []setTabDef{
 			rTog("browser.fetch", "允许抓取网页", "关闭后只保留演示源与已缓存页面;真实网址会提示去设置开启", true),
 			rStp("browser.timeout", "请求超时", "单个页面的最长等待时间", 20, 5, 120, 5, "秒"),
 			rFld("browser.ua", "User-Agent", "留空使用内置标识;个别站点会按它返回不同内容", "", 220, false, "默认"),
-			rTog("browser.reader", "默认进入阅读模式", "", true),
+			rTog("browser.reader", "默认进入阅读模式", "内置浏览器目前只有阅读模式,此开关暂无作用", true),
 		}},
 	}},
 
