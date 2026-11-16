@@ -291,9 +291,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 				kit.Spin(c, tone)
 			case sp.state == "err":
 				kit.Ic(c, sp.icon, kit.S12).TextColor(t.Err)
-			case sp.path != "": // 文件相关的步骤:显示文件 / 语言图标(按扩展名上色),点图标跳到文件
-				a.fileIc(c, baseName(sp.path))
-			default:
+			default: // 设计稿:读取 / 编辑 / 写入也是工具族图标(文档 / 铅笔 / 文件,按族上色),不用按扩展名的文件类型图标
 				kit.Ic(c, sp.icon, kit.S12).TextColor(t.Tx3.Mix(tone, .78))
 			}
 		})
