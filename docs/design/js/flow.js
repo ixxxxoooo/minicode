@@ -29,7 +29,7 @@
   F.term = (live) => `<div class="tcard"><div class="tcard-h">${ic('prompt', 's12')}<span class="grow mono sh"><b class="fn">cargo</b> <b class="k">test</b> router <span class="sf">--</span> <span class="sf">--nocapture</span> <span class="so">2&gt;&amp;1</span> <span class="so">|</span> <b class="fn">tail</b> <span class="sf">-20</span></span>${live ? '' : '<span class="c-ok">通过</span>'}${ib('terminal', 'sm', '在终端面板查看', 'data-act="pterm"')}${ib('copy', 'sm')}</div>
     <div class="term"><span class="d">   Compiling</span> router-demo v0.3.1
 <span class="d">     Running</span> <span class="pa">tests/router_test.rs</span>
-<span class="e">warning:</span> unused variable: <span class="s">`key`</span> <span class="d">-&gt;</span> <span class="pa">src/router.rs:42:13</span>
+<span class="e">warning:</span> unused variable: <span class="s">\`key\`</span> <span class="d">-&gt;</span> <span class="pa">src/router.rs:42:13</span>
 test matches_ignoring_case ... <span class="p">ok</span>
 ${live ? 'test matches_trailing_slash ... <span class="caret"></span>' : 'test result: <span class="p">ok</span>. 12 passed; 0 failed <span class="d">in 0.42s</span>'}</div></div>`;
   /** 待办清单。done:已完成条数(其后一条为进行中) */
