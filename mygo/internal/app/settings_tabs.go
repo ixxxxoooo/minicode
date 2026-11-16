@@ -333,7 +333,7 @@ var settingsTabs = []setTabDef{
 		{title: "文件树", rows: []setRow{
 			rTog("appearance.fileIcons", "彩色文件图标", "按文件类型给图标上色;关闭后全部用灰色。作用于文件树、标签、搜索与源代码管理", true),
 		}},
-	}, note: "状态栏、侧栏等独立字号调节将补在本分类(预留位置,无新偏好键)。"},
+	}},
 
 	{id: "motion", title: "动效与反馈", icon: "spark", desc: "动画、形态切换、等待指示与滚动条。", groups: []setGroup{
 		{title: "动效", rows: []setRow{

@@ -63,14 +63,34 @@ func TestSettingsContentWidth(t *testing.T) {
 func TestFontPresetApply(t *testing.T) {
 	a, _ := sessionApp(t, "flow-gaps-b4")
 	a.applyFontPresetChoice(0)
-	if a.prefs.Int(pUIScale, theme.DefaultUIScale) != 100 || a.prefs.Int(pFontScale, 100) != 100 {
-		t.Fatalf("紧凑预设应 100/100")
+	if a.prefs.Int(pUIScale, theme.DefaultUIScale) != 100 || a.prefs.Int(pFontScale, 100) != 95 {
+		t.Fatalf("紧凑预设应 100/95")
 	}
 	a.applyFontPresetChoice(2)
-	if a.prefs.Int(pUIScale, theme.DefaultUIScale) != 120 || a.prefs.Int(pFontScale, 100) != 118 {
-		t.Fatalf("舒适预设应 120/118")
+	if a.prefs.Int(pUIScale, theme.DefaultUIScale) != 120 || a.prefs.Int(pFontScale, 100) != 110 {
+		t.Fatalf("舒适预设应 120/110")
 	}
 	if theme.UIScale() < 1.19 {
 		t.Fatalf("uiScale 应随预设更新,得 %v", theme.UIScale())
+	}
+}
+
+// 预设行点「还原」要把界面大小与正文字号一起还原(此前只还原了预设键本身,界面仍停在放大状态)。
+func TestFontPresetResetRestoresScales(t *testing.T) {
+	a, _ := sessionApp(t, "flow-gaps-b4")
+	a.applyFontPresetChoice(2) // 舒适 120/110
+	row := setRow{key: pFontPreset, def: 1}
+	a.resetPref(row)
+	if got := a.prefs.Int(pUIScale, theme.DefaultUIScale); got != theme.DefaultUIScale {
+		t.Fatalf("界面大小应还原为 %d,得 %d", theme.DefaultUIScale, got)
+	}
+	if got := a.prefs.Int(pFontScale, 100); got != 100 {
+		t.Fatalf("正文字号应还原为 100,得 %d", got)
+	}
+	if a.prefs.Has(pFontPreset) {
+		t.Fatal("预设键应回到默认(不落盘)")
+	}
+	if theme.UIScale() != float32(theme.DefaultUIScale)/100 {
+		t.Fatalf("界面缩放应回到默认,得 %v", theme.UIScale())
 	}
 }

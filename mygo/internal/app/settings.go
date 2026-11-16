@@ -214,6 +214,7 @@ func (a *App) resetPref(r setRow) {
 	a.prefs.Reset(r.key)
 	delete(a.set.restart, r.key)
 	delete(a.set.bufs, r.key)
+	a.onTypographyPref(r.key, r.def) // 预设行还原 = 应用「标准」预设;滑块还原后重新判断是否「自定义」
 	a.applyPrefs()
 }
 

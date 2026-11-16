@@ -11,10 +11,10 @@ const (
 )
 
 var fontPresetPairs = []struct{ ui, font int }{
-	{100, 100},
-	{theme.DefaultUIScale, 110},
-	{120, 118},
-	{135, 130},
+	{100, 95},
+	{theme.DefaultUIScale, 100}, // 标准 = 两个滑块的默认值,全新安装即在此档
+	{120, 110},
+	{135, 125},
 }
 
 var flowLineHeights = []float32{1.5, 1.65, 1.8}
