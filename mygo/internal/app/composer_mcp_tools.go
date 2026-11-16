@@ -1,8 +1,6 @@
 package app
 
 import (
-	"time"
-
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/customize"
@@ -56,13 +54,7 @@ func (a *App) toggleMcpTool(server, tool string, on bool) {
 				return
 			}
 			log.Info("MCP 工具开关", "server", server, "tool", tool, "on", on)
-			a.send(core.CmdRefreshMcp{})
-			delay := time.AfterFunc(1500*time.Millisecond, func() {
-				if a.win != nil {
-					a.win.Update(func() { a.send(core.CmdRefreshMcp{}) })
-				}
-			})
-			_ = delay
+			a.mcpManualRefresh(a.mcpRuntimeReady())
 		}
 	})
 }

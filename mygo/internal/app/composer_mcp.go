@@ -2,7 +2,7 @@ package app
 
 import (
 	"fmt"
-	"sort"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
@@ -10,18 +10,6 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
-
-// mcpView 合并会话里的 mcp_status 与自定义页配置。
-type mcpView struct {
-	Name, Detail string
-	Conn         core.McpConn
-	On           bool
-	Tools        int
-	Tokens       uint64
-	OnDemand     bool
-	Expand       bool
-	ToolsList    []core.McpToolUsage
-}
 
 func (a *App) mcpChip(c *ui.Context, wide bool) ui.Element {
 	n := a.mcpEnabledCount()
@@ -34,29 +22,19 @@ func (a *App) mcpChip(c *ui.Context, wide bool) ui.Element {
 		open := a.popup != "mcp"
 		a.togglePop("mcp")
 		if open && a.popup == "mcp" {
-			a.send(core.CmdRefreshMcp{})
+			a.mcpOnOpenPopup()
 		}
 	})
 	return ch
 }
 
 func (a *App) mcpEnabledCount() int {
-	rows := a.mcpRows()
+	rows := a.mcpRowsUnified()
 	n := 0
 	for _, r := range rows {
 		if r.On {
 			n++
 		}
-	}
-	if n == 0 && len(a.st.Mcp) > 0 {
-		for _, s := range a.st.Mcp {
-			if s.Conn != core.McpDisabled {
-				n++
-			}
-		}
-	}
-	if n == 0 {
-		return len(rows) // 演示:显示配置里启用的数量
 	}
 	return n
 }
@@ -65,7 +43,7 @@ func (a *App) mcpPopup(c *ui.Context, anchor ui.Element) {
 	a.popOpen("mcp", func(open *bool) {
 		ui.PopoverBase(c, anchor, open, func(panel ui.Element) {
 			a.popPanel(panel, 300).Padding(0).Clip().AttachTo(anchor, ui.AnchorTopRight, ui.AnchorBottomRight).Margin(0, 0, 6, 0)
-			rows := a.mcpRows()
+			rows := a.mcpRowsUnified()
 			en, total := 0, len(rows)
 			var tokSum uint64
 			for _, r := range rows {
@@ -81,19 +59,39 @@ func (a *App) mcpPopup(c *ui.Context, anchor ui.Element) {
 			t := a.tk
 			ui.Row(c).Padding(8, 10).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 				ui.Column(c).Grow(1).Children(func() {
-					ui.Text(c, fmt.Sprintf("已启用 %d / %d", en, total)).FontWeight(600)
-					if tokSum > 0 || ratio > 0 {
+					ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+						ui.Text(c, fmt.Sprintf("已启用 %d / %d", en, total)).FontWeight(600).Grow(1)
+						kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新 MCP 状态"}).OnClick(func() {
+							a.mcpManualRefresh(false)
+							if !a.mcpRuntimeReady() {
+								a.toast = "已重读配置;发送第一条消息后可查看连接状态"
+							}
+						})
+					})
+					if a.mcpRefreshing {
+						ui.Text(c, "正在刷新…").FontSize(theme.FsCap).TextColor(t.Tx3)
+					} else if tokSum > 0 || ratio > 0 {
 						ui.Text(c, fmt.Sprintf("工具定义占上下文 %s · %.1f%%", fmtTok(tokSum), ratio)).FontSize(theme.FsCap).TextColor(t.Tx3)
-					} else if a.be != nil && a.be.Name() == "claude" && len(a.st.Mcp) == 0 {
-						ui.Text(c, "发送消息后才会连接 MCP;点刷新获取状态").FontSize(theme.FsCap).TextColor(t.Tx4)
+					} else if !a.mcpRuntimeReady() {
+						ui.Text(c, "会话未启动;已显示配置层服务器,点刷新重读配置").FontSize(theme.FsCap).TextColor(t.Tx4)
+					} else if a.mcpRuntimeAt > 0 {
+						ui.Text(c, "运行时状态更新于 "+relTime(a.now(), time.Unix(a.mcpRuntimeAt, 0))).FontSize(theme.FsCap).TextColor(t.Tx4)
 					}
 				})
 			})
 			ui.Column(c).Padding(4).Children(func() {
+				if len(rows) == 0 {
+					ui.Text(c, "没有配置 MCP 服务器").FontSize(theme.FsCap).TextColor(t.Tx3).Padding(8, 12)
+				}
 				for _, r := range rows {
 					a.mcpRow(c, r)
 				}
 				kit.Sep(c)
+				if !a.mcpRuntimeReady() && len(rows) > 0 {
+					kit.Btn(c, "启动并查询连接", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() {
+						a.mcpManualRefresh(true)
+					})
+				}
 				if a.mi(c, "mcp-manage", "sliders", "管理 MCP…", "", false).Clicked() {
 					a.popup = ""
 					a.screen = ScreenCustomize
@@ -104,7 +102,7 @@ func (a *App) mcpPopup(c *ui.Context, anchor ui.Element) {
 	})
 }
 
-func (a *App) mcpRow(c *ui.Context, r mcpView) {
+func (a *App) mcpRow(c *ui.Context, r McpRow) {
 	t := a.tk
 	key := "mcp-" + r.Name
 	exp := a.mcpExp[key]
@@ -151,51 +149,6 @@ func (a *App) mcpDot(c *ui.Context, conn core.McpConn) {
 		col = t.Tx4
 	}
 	ui.Box(c).Size(7, 7).Radius(4).Background(col).Shrink(0)
-}
-
-func (a *App) mcpRows() []mcpView {
-	st := a.cuStore()
-	byName := map[string]mcpView{}
-	if st != nil {
-		for _, it := range st.List(customize.MCP, customize.All, "") {
-			mv := mcpView{Name: it.Name, On: it.On, OnDemand: it.OnDemand, Tools: len(it.Tools)}
-			mv.Detail = mcpDetailFromItem(it)
-			mv.Conn = mcpConnFromItem(it.Status)
-			byName[it.Name] = mv
-		}
-	}
-	for _, s := range a.st.Mcp {
-		mv, ok := byName[s.Name]
-		if !ok {
-			mv = mcpView{Name: s.Name, On: s.Conn != core.McpDisabled, Tools: len(s.Tools)}
-		}
-		mv.Conn = s.Conn
-		if s.Error != "" {
-			mv.Detail = s.Error
-		} else if mv.Detail == "" {
-			mv.Detail = fmt.Sprintf("%d 个工具", len(s.Tools))
-		}
-		if len(s.Tools) > 0 {
-			mv.Tools = len(s.Tools)
-		}
-		byName[s.Name] = mv
-	}
-	for _, tl := range a.st.Usage.McpTools {
-		mv := byName[tl.Server]
-		mv.Tokens += tl.Tokens
-		mv.ToolsList = append(mv.ToolsList, tl)
-		byName[tl.Server] = mv
-	}
-	var names []string
-	for n := range byName {
-		names = append(names, n)
-	}
-	sort.Strings(names)
-	out := make([]mcpView, 0, len(names))
-	for _, n := range names {
-		out = append(out, byName[n])
-	}
-	return out
 }
 
 func mcpDetailFromItem(it *customize.Item) string {

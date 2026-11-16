@@ -192,6 +192,12 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 	common[add("shield", "切换权限模式", a.shortcutLabel("modeCycle"), "循环切换逐项确认 / 自动接受编辑 / 计划等权限模式。", a.cyclePermissionMode)] = true
 	okSess := a.hasActiveSession()
 	addPal("compress", "压缩上下文", "", "发送 /compact,整理当前会话的上下文。", okSess, "还没有活动会话", func() { a.send(core.CmdCompact{}) })
+	addPal("plug", "刷新 MCP 状态", "", "重读 MCP 配置;会话已启动时向 Claude 查询连接状态。", okSess, "还没有活动会话", func() {
+		a.mcpManualRefresh(false)
+		if !a.mcpRuntimeReady() {
+			a.toast = "已重读配置;发送第一条消息后可查看连接状态"
+		}
+	})
 	addPal("fork", "分叉当前会话", "", "以当前会话为起点复制出一条新会话。", okSess, "还没有活动会话", func() { a.forkSessionAsk(a.curSess) })
 	common[add("chat", "新会话", a.shortcutLabel("newChat"), "开始新会话并回到欢迎页。", a.NewSession)] = true
 	addPal("list", "打开计划", "", "在工作区打开最新一份计划。", okSess && a.latestPlan() != nil, map[bool]string{true: "本轮还没有计划", false: "还没有活动会话"}[okSess], a.paletteOpenPlan)
@@ -562,7 +568,7 @@ func (a *App) palList(c *ui.Context, items []palItem, run func(int)) {
 		}
 		a.pq.lastSel, a.pq.lastQ = a.pq.sel, a.pq.query
 	}
-	ui.Scroll(c).Key("pal-list").TrackScroll(st).Grow(1).MinWidth(0).Children(func() {
+	kit.VScroll(c).Key("pal-list").TrackScroll(st).Grow(1).MinWidth(0).Children(func() {
 		ui.Column(c).Padding(4).Children(func() {
 			last := ""
 			for i, it := range items {
