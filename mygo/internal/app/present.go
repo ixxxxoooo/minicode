@@ -225,6 +225,9 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 	case "deny":
 		s.icon = "lock"
 	}
+	if !s.hasBody && toolHasDetail(tc) { // MCP / 浏览器 / 读取 / 搜索 / 抓取…:展开看入参与结果
+		s.hasBody = true
+	}
 	if s.hasBody {
 		switch a.ToolDetailLevel() {
 		case 0:

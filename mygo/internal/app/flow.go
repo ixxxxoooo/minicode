@@ -343,6 +343,10 @@ func (a *App) todoBody(c *ui.Context, td *core.Todos) {
 }
 
 func (a *App) toolBody(c *ui.Context, tc *core.ToolCall) {
+	if !toolRichBody(tc) { // 没有差异 / 终端输出:统一给「入参 + 结果」详情,所有工具都能展开
+		a.toolDetail(c, tc)
+		return
+	}
 	for _, ct := range tc.Content {
 		switch v := ct.(type) {
 		case *core.DiffBlock:
