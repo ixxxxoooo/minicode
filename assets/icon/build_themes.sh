@@ -1,5 +1,5 @@
 #!/bin/sh
-# 主题配色版应用图标:四套主题配色(mist / celadon / graphite / aurora)× 六种样式 × 四种外观,
+# 主题配色版应用图标:四套主题配色(mist / celadon / graphite / aurora)× 五种样式 × 四种外观,
 # 渲染成 512px PNG 直接放进 Go 内嵌素材目录(paper / ink 沿用默认的 app-style*.png)。
 # SVG 只是中间产物,放在临时目录,不进仓库。需要 python3、PyObjC、Pillow。
 set -eu

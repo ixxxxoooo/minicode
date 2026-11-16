@@ -1,5 +1,5 @@
 #!/bin/sh
-# 全量图标:六种样式 × 四种外观 PNG/icns、托盘、文档图标。需要 python3、PyObjC、Pillow、iconutil。
+# 全量图标:五种样式 × 四种外观 PNG/icns、托盘、文档图标。需要 python3、PyObjC、Pillow、iconutil。
 set -eu
 cd "$(dirname "$0")"
 python3 gen.py all
@@ -23,7 +23,7 @@ render_app app-dark.svg MiniCode-dark
 render_app app-light.svg app-light
 render_app app-dark.svg app-dark
 
-for si in 0 1 2 3 4 5; do
+for si in 0 1 2 3 4; do
   for suf in "" -dark -clear -tint; do
     svg="app-style${si}${suf}.svg"
     [ -f "$svg" ] || continue
@@ -46,7 +46,7 @@ for doc in doc-mcworkspace doc-mccanvas doc-mcsettings; do
 done
 
 echo "完成:$(ls -1 *.icns 2>/dev/null | wc -l) 个 icns,$(ls -1 tray-*.png 2>/dev/null | wc -l) 个托盘 PNG"
-ls -lh MiniCode.icns app-style2.icns tray-error.png tray-running-0.png doc-mcworkspace.icns 2>/dev/null || true
+ls -lh MiniCode.icns app-style0.icns tray-error.png tray-running-0.png doc-mcworkspace.icns 2>/dev/null || true
 # 同步到 Go 内嵌目录:托盘全部 PNG + 各样式 / 外观的 512px 应用图标(运行时不再依赖外部文件路径)
 DEST=../../mygo/internal/app/brandassets
 mkdir -p "$DEST"

@@ -22,7 +22,7 @@ func TestDockIconDataFallback(t *testing.T) {
 	}
 }
 
-// 六种样式 × 浅 / 深 / 透明 / 着色 的内嵌素材必须齐全,否则换样式后 Dock 会回退到默认图。
+// 五种样式 × 浅 / 深 / 透明 / 着色 的内嵌素材必须齐全,否则换样式后 Dock 会回退到默认图。
 func TestEmbeddedAppIconsComplete(t *testing.T) {
 	for si := range appStyles {
 		for _, suf := range []string{"", "-dark", "-clear", "-tint"} {
@@ -33,7 +33,7 @@ func TestEmbeddedAppIconsComplete(t *testing.T) {
 	}
 }
 
-// 四套主题配色 × 六种样式 × 四种外观的内嵌素材也必须齐全(跟随主题的 Dock 图标用)。
+// 四套主题配色 × 五种样式 × 四种外观的内嵌素材也必须齐全(跟随主题的 Dock 图标用)。
 func TestEmbeddedThemeIconsComplete(t *testing.T) {
 	for _, pal := range []string{"mist", "celadon", "graphite", "aurora"} {
 		for si := range appStyles {
@@ -46,7 +46,7 @@ func TestEmbeddedThemeIconsComplete(t *testing.T) {
 	}
 }
 
-// 五种托盘样式 × 全部状态(含运行动画三帧)的内嵌素材必须齐全。
+// 四种托盘样式 × 全部状态(含运行动画三帧)的内嵌素材必须齐全。
 func TestEmbeddedTrayIconsComplete(t *testing.T) {
 	states := []string{"idle", "running", "running-0", "running-1", "running-2", "waiting", "unread", "error", "update", "paused", "demo"}
 	for si := range trayStyles {
@@ -78,7 +78,7 @@ func TestTintTrayPNG(t *testing.T) {
 	if c := nrgba(28, 4); c.R < 0xe0 || c.G > 0x80 || c.A < 0xe0 {
 		t.Fatalf("徽标应为红色,实际 %+v", c)
 	}
-	// 主体(左上织纹)在浅色菜单栏上是黑色
+	// 主体(提示符的 > 形)在浅色菜单栏上是黑色
 	var sawBlack bool
 	for y := 4; y < 30 && !sawBlack; y++ {
 		for x := 4; x < 20; x++ {
@@ -202,7 +202,7 @@ func TestTrayMenuGroupedWithRestart(t *testing.T) {
 	}
 }
 
-// 品牌小标跟随所选样式;织纹在小尺寸自动换「经纬」;空状态小标取托盘空闲图。
+// 品牌小标跟随所选样式;空状态小标取托盘空闲图。
 func TestBrandLogoSource(t *testing.T) {
 	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true, Prefs: prefs.Memory()})
 	if a.brandLogoSource(64) == nil || a.brandLogoSource(20) == nil {
@@ -214,5 +214,48 @@ func TestBrandLogoSource(t *testing.T) {
 	}
 	if brandInkImage("tray-idle.png", ui.Color{R: 0, G: 0, B: 0, A: 64}) == nil {
 		t.Fatal("空状态小标应能由托盘图染色得到")
+	}
+}
+
+// 默认样式是提示符;删掉织纹前保存的样式下标只迁移一次,选过的样式换算后保持不变。
+func TestIconStyleDefaultsAndMigration(t *testing.T) {
+	if appStyles[0] != "提示符" || trayStyles[0] != "提示符" {
+		t.Fatalf("默认应为提示符: %v / %v", appStyles, trayStyles)
+	}
+	for _, s := range append(append([]string{}, appStyles...), trayStyles...) {
+		if s == "织纹" {
+			t.Fatal("织纹应已删除")
+		}
+	}
+	cases := []struct{ oldApp, oldTray, newApp, newTray int }{
+		{0, 0, 0, 0}, // 织纹 → 提示符
+		{1, 1, 1, 0}, // 经纬保持;托盘提示符
+		{2, 2, 0, 1}, // 提示符;托盘棋盘
+		{3, 3, 2, 2}, // 棋盘;托盘行
+		{4, 4, 3, 3}, // 行;托盘花括号
+		{5, 0, 4, 0}, // 花括号
+	}
+	for _, c := range cases {
+		p := prefs.Memory()
+		p.Set(pAppStyle, c.oldApp)
+		p.Set(pTrayStyle, c.oldTray)
+		migrateIconStyles(p)
+		if got := p.Int(pAppStyle, 0); got != c.newApp {
+			t.Errorf("应用图标 %d 应迁移成 %d,得到 %d", c.oldApp, c.newApp, got)
+		}
+		if got := p.Int(pTrayStyle, 0); got != c.newTray {
+			t.Errorf("托盘图标 %d 应迁移成 %d,得到 %d", c.oldTray, c.newTray, got)
+		}
+		// 再迁移一次不能再动
+		migrateIconStyles(p)
+		if p.Int(pAppStyle, 0) != c.newApp || p.Int(pTrayStyle, 0) != c.newTray {
+			t.Errorf("迁移应只做一次: %+v", c)
+		}
+	}
+	// 从没选过:不写样式键,默认就是提示符
+	p := prefs.Memory()
+	migrateIconStyles(p)
+	if p.Has(pAppStyle) || p.Has(pTrayStyle) {
+		t.Fatal("没选过的人不应被写入样式键")
 	}
 }

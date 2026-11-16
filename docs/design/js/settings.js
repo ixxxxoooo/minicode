@@ -41,7 +41,7 @@
   const brandGroups = () => { const B = U.brand;
     return `${G('应用图标',
       `<div style="padding:10px 12px 2px">${B.previewDocks()}</div>`,
-      R('图标样式', '六选一,共用同一套线宽、配色与光影;小尺寸(≤ 28px)的织纹会自动换成更粗的「经纬」', `<b class="t2" data-bi-name="app">${B.styleName('app')}</b>`),
+      R('图标样式', '五选一,共用同一套线宽、配色与光影;默认「提示符」', `<b class="t2" data-bi-name="app">${B.styleName('app')}</b>`),
       `<div style="padding:0 12px 12px">${B.pickApp()}</div>`,
       R('图标外观', '对应 macOS 26 的默认 / 深色 / 透明 / 着色;「自动」随系统深浅在浅色与深色之间选', B.segOpt('icoMode', ['自动', '浅色', '深色', '透明', '着色'])),
       R('配色', '跟随当前主题,或固定为某一套主题的色板(图标不再随主题变)', B.tintPick()),
@@ -55,7 +55,7 @@
       R('图标样式', '与应用图标同源的单色版;系统按菜单栏明暗自动着色,点开时自动反白', `<b class="t2" data-bi-name="tray">${B.styleName('tray')}</b>`),
       `<div style="padding:0 12px 12px">${B.pickTray()}</div>`,
       R('随会话状态变化', '运行中动画,以及待确认(!)/ 已完成 / 出错(×)/ 有更新的徽标;关闭后始终是静态图标', B.togOpt('trayDyn')),
-      R('运行中动画', '三根纬线依次明暗,或整体呼吸;开启「减弱动态效果」时静止', B.segOpt('trayAnim', ['织线流动', '呼吸', '无'])),
+      R('运行中动画', '标记的片段依次明暗(提示符是光标闪烁),或整体呼吸;开启「减弱动态效果」时静止', B.segOpt('trayAnim', ['逐段点亮', '呼吸', '无'])),
       R('彩色徽标', '徽标改用系统语义色(橙 / 绿 / 红 / 蓝),形状不变;关闭则保持纯单色模板', B.togOpt('trayColor')),
       R('在图标旁显示数字', '待处理数(权限 + 提问),为 0 时隐藏', B.togOpt('trayCount')),
       R('单击图标', '⌥ 单击执行另一个', B.segOpt('trayClick', ['弹出菜单', '打开窗口'])))}

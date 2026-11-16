@@ -14,7 +14,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/kit"
 )
 
-// trayStyleIndex 菜单栏图标样式下标(织纹 / 提示符 / 棋盘 / 行 / 花括号),越界按默认 0。
+// trayStyleIndex 菜单栏图标样式下标(提示符 / 棋盘 / 行 / 花括号),越界按默认 0。
 func (a *App) trayStyleIndex() int {
 	if a.prefs == nil {
 		return 0
@@ -36,12 +36,12 @@ func (a *App) trayAssetName(sum traySum, frame int) string {
 		pre = "tray-s" + strconv.Itoa(i)
 	}
 	if mode == "running" && !a.trayAnimStatic() && a.trayAnimMode() == 0 {
-		return pre + "-running-" + strconv.Itoa(frame%3) + ".png" // 织线流动:三帧轮流点亮
+		return pre + "-running-" + strconv.Itoa(frame%3) + ".png" // 逐段点亮:三帧轮流点亮
 	}
 	return pre + "-" + mode + ".png"
 }
 
-// trayAnimMode 运行中动画:0 织线流动 / 1 呼吸 / 2 无。
+// trayAnimMode 运行中动画:0 逐段点亮 / 1 呼吸 / 2 无。
 func (a *App) trayAnimMode() int {
 	if a.prefs == nil {
 		return 0

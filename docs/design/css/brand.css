@@ -11,7 +11,7 @@
 .logo.brand { background: none; border-radius: 0; position: relative; overflow: visible; display: block; }
 .logo.brand .bi { position: absolute; left: 50%; top: 50%; translate: -50% -50%; }
 
-/* 托盘动画:织线流动(纬线依次明暗)/ 呼吸;减弱动态时静止 */
+/* 托盘动画:逐段点亮(被标记的片段依次明暗;提示符是光标闪烁)/ 呼吸;减弱动态时静止 */
 @keyframes tr-flow { 0%, 100% { opacity: 1; } 40% { opacity: .3; } }
 @keyframes tr-breathe { 0%, 100% { opacity: 1; } 50% { opacity: .38; } }
 @keyframes dk-bounce { 0%, 55%, 100% { translate: 0 0; } 20% { translate: 0 -15px; } 38% { translate: 0 0; } 46% { translate: 0 -5px; } }

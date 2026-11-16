@@ -105,7 +105,7 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 - **输出面板**(`ide_output.go`):`outApp / outGit / outLSP` 三个通道,语言服务与 Git 操作写入。
 - **彩色文件图标**:`ide_tree.go` 的 `fileTint` / `fileIc`,偏好 `appearance.fileIcons`(默认开)。
 - 设计稿 `docs/design` v3.2 新增五页(`js/specs2.js`):布局 · 拖拽与面板停靠、终端 · 能力与主题、语言服务 · 识别与安装、画布 / 浏览器 / 自定义 · 业界做法、会话流 · 待办 / 审批 / 后台任务;每页都有「实现状态」列,与代码保持一致。
-- 设计稿 `docs/design` v3.3 新增「图标与品牌 · 应用 / 托盘」页(`js/brand-spec.js`,规范组首项):图标生成器 `js/brand.js`(`U.brand`:六种应用图标样式 × 浅 / 深 / 透明 / 着色外观 × 六套主题配色,五种菜单栏模板图标 × 八种状态 × 彩色徽标,织纹按「压 / 穿」切段、不靠背景色挖洞,≤ 28px 自动换 2×2「经纬」)、样式 `css/brand.css`、交互 `js/brand-act.js`;设置 → 外观新增「应用图标 / 菜单栏图标」两组(`settings.js::brandGroups`),选择实时刷新全稿里的图标(Dock、⌘Tab、通知、关于、查看器标题栏等)。Go 分支尚未实现 Dock 图标换装与托盘,实现状态表如实标注;`assets/icon/` 目前只有浅 / 深两套 `.icns` 与四张托盘 PNG。
+- 设计稿 `docs/design` v3.3 新增「图标与品牌 · 应用 / 托盘」页(`js/brand-spec.js`,规范组首项):图标生成器 `js/brand.js`(`U.brand`:五种应用图标样式(默认「提示符」,织纹已删除)× 浅 / 深 / 透明 / 着色外观 × 六套主题配色,四种菜单栏模板图标 × 八种状态 × 彩色徽标,「经纬」按「压 / 穿」切段、不靠背景色挖洞)、样式 `css/brand.css`、交互 `js/brand-act.js`;设置 → 外观新增「应用图标 / 菜单栏图标」两组(`settings.js::brandGroups`),选择实时刷新全稿里的图标(Dock、⌘Tab、通知、关于、查看器标题栏等)。Go 分支尚未实现 Dock 图标换装与托盘,实现状态表如实标注;`assets/icon/` 目前只有浅 / 深两套 `.icns` 与四张托盘 PNG。
 
 ### 项目与工作区、多仓库(v3.3 补充,设计稿 `proj-ws` / `multi-git` / `menus` / `gaps` 页)
 
@@ -198,7 +198,7 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 
 ### 品牌图标 / 托盘 / 应用菜单(Computer Use + 菜单栏截图实测,已修)
 
-- **素材内嵌**:`assets/icon/build_all.sh` 生成后同步到 `mygo/internal/app/brandassets/`,`brand_embed.go` 用 `go:embed` 读取(开发版从访达 / `open` 启动时工作目录是 `/`,靠文件路径永远找不到素材,托盘曾因此整个不出现)。命名:应用图标 `app-style<N>[-dark|-clear|-tint].png`(N 与 `appStyles` 同序:织纹 / 经纬 / 提示符 / 棋盘 / 行 / 花括号),托盘 `tray-<状态>.png`(样式 0)与 `tray-s<N>-<状态>.png`(N = 1..4,对应 `trayStyles` 提示符…花括号),运行中三帧 `-running-0..2`。改 `gen.py` 后重跑 `build_all.sh` 并把 `brandassets` 一起提交。
+- **素材内嵌**:`assets/icon/build_all.sh` 生成后同步到 `mygo/internal/app/brandassets/`,`brand_embed.go` 用 `go:embed` 读取(开发版从访达 / `open` 启动时工作目录是 `/`,靠文件路径永远找不到素材,托盘曾因此整个不出现)。命名:应用图标 `app-style<N>[-dark|-clear|-tint].png`(N 与 `appStyles` 同序:提示符(默认)/ 经纬 / 棋盘 / 行 / 花括号),托盘 `tray-<状态>.png`(样式 0 = 提示符)与 `tray-s<N>-<状态>.png`(N = 1..3,对应 `trayStyles` 棋盘 / 行 / 花括号);**织纹样式已删除**,旧偏好 `appearance.appIcon` / `trayStyle` 里的下标由 `migrateIconStyles` 按 `appearance.iconStyleRev` 迁移一次,运行中三帧 `-running-0..2`。改 `gen.py` 后重跑 `build_all.sh` 并把 `brandassets` 一起提交。
 - **`mygo.NewTray` 在应用就绪前会直接 panic**(无任何输出、进程静默退出 2,日志停在「载入设置」后)。`syncBrand` 开头必须 `if !mygo.App.IsReady() { return }`;`New()` 里的 `retheme` 也会走到它,就绪后 `InitBrand` 会补一次。
 - **托盘模板图 vs 彩色徽标**:纯黑 + alpha 的模板图随菜单栏明暗自动着色;开「彩色徽标」时合成非模板图,必须用 `Tray.Dark()`(macOS 26 的菜单栏明暗跟壁纸走,不等于 `AppleInterfaceStyle`)并在 `OnAppearanceChange` 里重画。状态优先级见 `brandSummarize`:待确认 > 出错 > 已完成 > 运行中 > 有更新 > 暂停 > 空闲;出错 / 已完成只记「不在前台时发生」(`brand.trayErr/trayUnread`),回前台或新回合开始清除。
 - **库的菜单图标(`MenuItem.Icon`)在托盘菜单里实机不渲染**(PNG 正确、`NewMenuIcon` 成功,仍不显示;带 `Subtitle` 的项也一样),托盘会话行的状态点改用 🟠🔵🟢 字符。`System Events` 能点托盘:`click menu bar item 1 of menu bar 2`(`process "minicode"`),子菜单用 `menu 1 of menu item "…"`;`screencapture -x` 后用 PIL 裁剪看菜单栏。

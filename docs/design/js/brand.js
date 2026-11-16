@@ -1,8 +1,8 @@
 /* 设计稿 v3.3 · 品牌与图标生成器
-   一个母题、六种样式:应用图标(1024 画布、824 连续圆角图形)与菜单栏模板图标(36 画布 = 18pt@2x)都由这里生成,
+   一个母题、五种样式:应用图标(1024 画布、824 连续圆角图形)与菜单栏模板图标(36 画布 = 18pt@2x)都由这里生成,
    所以设计稿里每个出现图标的地方(查看器标题栏、关于、欢迎页、设置预览、Dock / 菜单栏 / 通知仿真)都跟随同一个选择,
    主题、外观(自动 / 浅 / 深 / 透明 / 着色)与样式三个维度可以任意组合。
-   母题是「织机」:经线(墨色)是会话、终端、改动三条主线,纬线(主题色)是 Claude 的思路穿过它们;压穿交替 = 人审批 ⇄ Agent 执行。
+   默认样式是「提示符」(一根线弯成 ❯ + 光标);「经纬」保留织机母题:经线(墨色)是会话、终端、改动三条主线,纬线(主题色)是 Claude 的思路穿过它们;压穿交替 = 人审批 ⇄ Agent 执行。
    所有线宽比例来自同一组令牌(BAND 112 / GAP 26 / CUT 14,1024 画布),衍生图标按比例缩放。
    可交互的部分(点选样式、切外观)在 brand-act.js,规范页在 brand-spec.js。
    @author ixxxxoooo */
@@ -11,22 +11,27 @@
   const S = () => (window.APP && window.APP.st) || {};
 
   /* ───────── 选择项与默认值 ───────── */
-  const DEF = { icoStyle: 'weave', icoMode: 'auto', icoTint: 'follow', trayStyle: 'weave', trayAnim: 'flow', trayColor: 1, trayCount: 0, trayOn: 1, trayDyn: 1, trayClick: 'menu',
+  const DEF = { icoStyle: 'prompt', icoMode: 'auto', icoTint: 'follow', trayStyle: 'prompt', trayAnim: 'flow', trayColor: 1, trayCount: 0, trayOn: 1, trayDyn: 1, trayClick: 'menu',
     dockBadge: 'pending', dockBounce: 'once', dockProgress: 1, fileIcon: 0 };
   /** 分段控件的取值表:下标 ↔ 取值 */
   const OPT = { icoMode: ['auto', 'light', 'dark', 'clear', 'tint'], dockBadge: ['off', 'pending', 'running'], dockBounce: ['off', 'once', 'until'], trayAnim: ['flow', 'breathe', 'none'], trayClick: ['menu', 'window'] };
-  const cur = (k) => (S()[k] ?? DEF[k]);
+  /** 当前选择。样式取值可能是旧版本存下的(如已删除的 'weave'),不在清单里就退回默认(提示符) */
+  const cur = (k) => {
+    const v = S()[k] ?? DEF[k];
+    if (k === 'icoStyle' && !STYLES.some(s => s.id === v)) return DEF[k];
+    if (k === 'trayStyle' && !TRAYS.some(s => s.id === v)) return DEF[k];
+    return v;
+  };
   const themeOf = (id) => THEMES.find(t => t.id === id) || THEMES[0];
 
   const STYLES = [
-    { id: 'weave', name: '织纹', en: 'Weave', d: '3×3 平纹布:经线压过纬线、纬线又压过经线,像会话、终端与改动被织在一起。默认。' },
-    { id: 'warp', name: '经纬', en: 'Warp', d: '2×2 粗织纹,图形最大、小尺寸最清晰;织纹在 ≤ 28px 时自动用它。' },
-    { id: 'prompt', name: '提示符', en: 'Prompt', d: '一根线弯成 ❯,旁边一个光标。最直白的「命令行里的 Claude」。' },
+    { id: 'prompt', name: '提示符', en: 'Prompt', d: '一根线弯成 ❯,旁边一个光标。最直白的「命令行里的 Claude」。默认。' },
+    { id: 'warp', name: '经纬', en: 'Warp', d: '2×2 粗织纹:经线压过纬线、纬线又压过经线;图形最大、小尺寸最清晰。' },
     { id: 'grid', name: '棋盘', en: 'Check', d: '3×3 方块,压穿的节奏变成棋盘;最几何、最安静。' },
     { id: 'lines', name: '行', en: 'Lines', d: '四行代码:缩进、被高亮的片段、长短不一。工具感最强。' },
     { id: 'braces', name: '花括号', en: 'Braces', d: '{ } 抱着一个线结,像在代码里找到了那根线。' },
   ];
-  const TRAYS = STYLES.filter(s => s.id !== 'warp').map(s => s.id === 'weave' ? { ...s, d: '同应用图标的 3×3 织纹,单色。' } : s);
+  const TRAYS = STYLES.filter(s => s.id !== 'warp');
   const TRAY_STATES = [
     ['idle', '空闲', '没有运行中的回合,也没有待处理的事'],
     ['running', '运行中', '至少一个会话在跑回合 / 后台任务;图标动画,不加徽标'],
@@ -67,7 +72,7 @@
   const shadow = (id, dy, sd, op) => `<filter id="mc-sh-${id}" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="${dy}" stdDeviation="${sd}" flood-color="#000" flood-opacity="${op}"/></filter>`;
   document.body.insertAdjacentHTML('afterbegin', `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="mc-sq" d="${SQ}"/>${shadow('l', 12, 16, .2)}${shadow('d', 12, 16, .5)}${shadow('c', 10, 14, .14)}</defs></svg>`);
 
-  /* ───────── 织纹几何:按「压 / 穿」把每根带子切成若干段,不依赖背景色挖洞,所以透明 / 着色外观也成立 ───────── */
+  /* ───────── 经纬几何:按「压 / 穿」把每根带子切成若干段,不依赖背景色挖洞,所以透明 / 着色外观也成立 ───────── */
   /** 带独立圆角的矩形路径。顺序:左上、右上、右下、左下 */
   const rp = (x, y, w, h, tl, tr, br, bl) => { const k = Math.min(1, h / (tl + bl || 1), h / (tr + br || 1), w / (tl + tr || 1), w / (bl + br || 1)); tl *= k; tr *= k; br *= k; bl *= k; return `M${x + tl} ${y}H${x + w - tr}A${tr} ${tr} 0 0 1 ${x + w} ${y + tr}V${y + h - br}A${br} ${br} 0 0 1 ${x + w - br} ${y + h}H${x + bl}A${bl} ${bl} 0 0 1 ${x} ${y + h - bl}V${y + tl}A${tl} ${tl} 0 0 1 ${x + tl} ${y}Z`; };
   /** 在 [lo,hi] 里去掉 skips 之后剩下的区间 */
@@ -82,13 +87,12 @@
       warp.push(segs(lo, hi, sk).map(([a, b]) => rp(pos(i), a, band, b - a, a === lo ? R : I, a === lo ? R : I, b === hi ? R : I, b === hi ? R : I)).join('')); }
     return { warp, weft };
   };
-  const W3 = { n: 3, band: 112, gap: 26, tail: 82, cut: 14, ir: 12 }, W2 = { n: 2, band: 170, gap: 34, tail: 106, cut: 20, ir: 16 };
+  const W2 = { n: 2, band: 170, gap: 34, tail: 106, cut: 20, ir: 16 };
   const BRACE = 'M438 322C378 322 372 352 372 398V446C372 482 352 502 312 512C352 522 372 542 372 578V626C372 672 378 702 438 702';
   const pill = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h / 2}"/>`;
 
-  /** 六种应用图标图形(1024 画布、图形区约 520)。ink:墨(经线 / 方块)、th:线(纬线,渐变引用) */
+  /** 五种应用图标图形(1024 画布、图形区约 520)。ink:墨(经线 / 方块)、th:线(纬线,渐变引用) */
   const ART = {
-    weave: ({ ink, th }) => { const { warp, weft } = weaveParts(W3); return `<path d="${warp.join('')}" fill="${ink}"/><path d="${weft.join('')}" fill="${th}"/>`; },
     warp: ({ ink, th }) => { const { warp, weft } = weaveParts(W2); return `<path d="${warp.join('')}" fill="${ink}"/><path d="${weft.join('')}" fill="${th}"/>`; },
     prompt: ({ ink, th }) => `<path d="M372 368 520 512 372 656" fill="none" stroke="${th}" stroke-width="112" stroke-linecap="round" stroke-linejoin="round"/><rect x="566" y="600" width="150" height="112" rx="56" fill="${ink}"/>`,
     grid: ({ ink, th }) => { const c = 118, g = 30, o = 512 - (3 * c + 2 * g) / 2; let a = '', b = '';
@@ -105,7 +109,7 @@
   /** 一枚应用图标的 SVG。o:{ s 样式, m 外观, t 主题, z 边长(px), flat 不要投影 } */
   const appSvg = (o) => {
     const r = resolve(o), id = 'bi' + (++uid), z = o.z || 64;
-    let st = o.s || cur('icoStyle'); if (z <= 28 && st === 'weave') st = 'warp';   /* 光学尺寸:太小时 3×3 会糊成一团 */
+    const st = o.s && ART[o.s] ? o.s : cur('icoStyle');
     const small = z <= 36 || o.flat;
     return `<svg class="bi-svg" width="${z}" height="${z}" viewBox="0 0 1024 1024" aria-hidden="true"><defs>
       <linearGradient id="${id}b" x1="0" y1="100" x2="0" y2="924" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${r.bg[0]}" stop-opacity="${r.bgo[0]}"/><stop offset="1" stop-color="${r.bg[1]}" stop-opacity="${r.bgo[1]}"/></linearGradient>
@@ -119,7 +123,6 @@
 
   /* ───────── 菜单栏模板图标(36 画布,单色 currentColor) ───────── */
   const TRAY = {
-    weave: (lv) => { const { warp, weft } = weaveParts({ n: 3, band: 6, gap: 3, tail: 4.3, cut: 1, ir: 1, cx: 18 }); return `<path d="${warp.join('')}"/>` + weft.map((d, j) => `<path ${lv(j)} d="${d}"/>`).join(''); },
     prompt: (lv) => `<path d="M10.5 9.5 18 18l-7.5 8.5" fill="none" stroke="currentColor" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/><rect ${lv(1)} x="20.5" y="23.6" width="8" height="4.4" rx="2.2"/>`,
     grid: (lv) => { const c = 7.4, g = 2.4, o = 18 - (3 * c + 2 * g) / 2; let s = '', k = 0;
       for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { const r = `x="${o + i * (c + g)}" y="${o + j * (c + g)}" width="${c}" height="${c}" rx="2.2"`; s += (i + j) % 2 === 0 ? `<rect ${r}/>` : `<rect ${lv(k++)} ${r} fill-opacity=".42"/>`; } return s; },
@@ -137,7 +140,7 @@
   };
   /** 一枚菜单栏图标。o:{ s 样式, state 状态, z 边长, col 彩色徽标, frame 动画定格帧 } */
   const traySvg = (o) => {
-    const id = 'bt' + (++uid), st = o.s || cur('trayStyle'), state = o.state || 'idle', z = o.z || 18, col = +(o.col ?? cur('trayColor')), fr = o.frame;
+    const id = 'bt' + (++uid), st = o.s && TRAY[o.s] ? o.s : cur('trayStyle'), state = o.state || 'idle', z = o.z || 18, col = +(o.col ?? cur('trayColor')), fr = o.frame;
     const lv = (i) => `class="lv" style="--d:${i}${fr !== undefined ? `;opacity:${i === fr % 3 ? 1 : .26}` : ''}"`;
     let body = TRAY[st](lv), badge = '';
     const bd = BADGE[state], x = 28.2, y = 8;
@@ -167,7 +170,7 @@
   const logo = (size, extra = '') => `<span class="logo brand" style="width:${size}px;height:${size}px;${extra}">${app({ z: Math.round(size * 1.24) })}</span>`;
 
   /* ───────── 设置里用的构件 ───────── */
-  /** 应用图标选择器:六张卡,样式固定、外观与配色跟随当前设置 */
+  /** 应用图标选择器:五张卡,样式固定、外观与配色跟随当前设置 */
   const pickApp = () => `<div class="ico-pick" role="radiogroup" aria-label="应用图标样式">${STYLES.map(s => `<div class="ico-card ${s.id === cur('icoStyle') ? 'on' : ''}" data-act="ico-style" data-v="${s.id}" tabindex="0" role="radio" aria-checked="${s.id === cur('icoStyle')}" data-tip="${s.d}">${app({ s: s.id, z: 72 })}<b>${s.name}</b><span>${s.en}</span></div>`).join('')}</div>`;
   /** 菜单栏图标选择器:每张卡同时给出浅色 / 深色菜单栏上的样子 */
   const pickTray = () => `<div class="tray-pick" role="radiogroup" aria-label="菜单栏图标样式">${TRAYS.map(s => `<div class="tray-card ${s.id === cur('trayStyle') ? 'on' : ''}" data-act="tray-style" data-v="${s.id}" tabindex="0" role="radio" aria-checked="${s.id === cur('trayStyle')}" data-tip="${s.d}"><div class="pr"><span class="mb-chip l">${tray({ s: s.id, z: 20 })}</span><span class="mb-chip d">${tray({ s: s.id, z: 20 })}</span></div><b>${s.name}</b><span class="en">${s.en}</span></div>`).join('')}</div>`;
@@ -179,5 +182,5 @@
   const segOpt = (key, labels) => seg(labels, Math.max(0, OPT[key].indexOf(cur(key))), '', 'ico-opt').replace('<div class="seg ', `<div data-ikey="${key}" class="seg `);
   const togOpt = (key) => tog(+cur(key) ? 1 : 0, `data-live="ico" data-ikey="${key}"`);
 
-  window.U.brand = { app, tray, appSvg, traySvg, refresh, logo, STYLES, TRAYS, TRAY_STATES, PAL, OPT, DEF, cur, resolve, themeOf, styleName, pickApp, pickTray, tintPick, previewDocks, segOpt, togOpt, ART, weaveParts, W3, SQ, mix, uidNext: () => 'bu' + (++uid) };
+  window.U.brand = { app, tray, appSvg, traySvg, refresh, logo, STYLES, TRAYS, TRAY_STATES, PAL, OPT, DEF, cur, resolve, themeOf, styleName, pickApp, pickTray, tintPick, previewDocks, segOpt, togOpt, ART, weaveParts, SQ, mix, uidNext: () => 'bu' + (++uid) };
 })();

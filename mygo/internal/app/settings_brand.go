@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/prefs"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
@@ -21,11 +22,43 @@ const (
 	pTrayColor = "appearance.trayColorBadge"
 	pTrayCount = "appearance.trayCount"
 	pTrayClick = "appearance.trayClick"
+	// pIconStyleRev 图标样式编号的版本:2 = 已删掉「织纹」(提示符成了 0),旧偏好里的下标按它迁移一次。
+	pIconStyleRev = "appearance.iconStyleRev"
 )
 
 // 样式名与顺序以设计稿 brand.js::STYLES 为准(下标 = 偏好值,也是素材文件名里的编号)。
-var appStyles = []string{"织纹", "经纬", "提示符", "棋盘", "行", "花括号"}
-var trayStyles = []string{"织纹", "提示符", "棋盘", "行", "花括号"}
+// 默认(下标 0)是提示符;「织纹」已删除,旧偏好经 migrateIconStyles 换算。
+var appStyles = []string{"提示符", "经纬", "棋盘", "行", "花括号"}
+var trayStyles = []string{"提示符", "棋盘", "行", "花括号"}
+
+// migrateIconStyles 把「删掉织纹」之前保存的样式下标换成新编号(只做一次,以 pIconStyleRev 为记号)。
+// 应用图标:旧 织纹 0 / 经纬 1 / 提示符 2 / 棋盘 3 / 行 4 / 花括号 5 → 新 0 / 1 / 0 / 2 / 3 / 4;
+// 菜单栏图标:旧 织纹 0 / 提示符 1 / 棋盘 2 / 行 3 / 花括号 4 → 新 0 / 0 / 1 / 2 / 3。
+// 从没选过的人(键不存在)本来就跟随默认,现在自然变成提示符。
+func migrateIconStyles(p *prefs.Store) {
+	if p == nil || p.Int(pIconStyleRev, 0) >= 2 {
+		return
+	}
+	conv := func(key string, table []int) {
+		if !p.Has(key) {
+			return
+		}
+		old := p.Int(key, 0)
+		n := 0
+		if old >= 0 && old < len(table) {
+			n = table[old]
+		}
+		if n == 0 {
+			p.Reset(key)
+		} else {
+			p.Set(key, n)
+		}
+		setLog.Info("迁移图标样式偏好", "key", key, "old", old, "new", n)
+	}
+	conv(pAppStyle, []int{0, 1, 0, 2, 3, 4})
+	conv(pTrayStyle, []int{0, 0, 1, 2, 3})
+	p.Set(pIconStyleRev, 2)
+}
 
 // brandTintPick 「配色」:第一枚「跟随主题」(图标随当前主题变色),其后六枚固定为某一套主题的配色,
 // 每枚都是该配色下当前样式的图标小预览(设计稿 brand.js::tintPick)。
@@ -86,7 +119,7 @@ func brandAppBody(a *App, c *ui.Context) {
 	ui.Column(c).Padding(10, 12).Gap(6).Children(func() {
 		a.brandPreviewDock(c)
 	})
-	a.settingsRow(c, setRow{key: pAppStyle, def: 0, title: "图标样式", desc: "六选一;立即换 Dock 图标", kind: kNone, right: func(a *App, c *ui.Context) {
+	a.settingsRow(c, setRow{key: pAppStyle, def: 0, title: "图标样式", desc: "五选一;立即换 Dock 图标", kind: kNone, right: func(a *App, c *ui.Context) {
 		ui.Column(c).Gap(6).Children(func() {
 			ui.Text(c, appStyles[a.prefs.Int(pAppStyle, 0)]).FontWeight(600).TextColor(a.tk.Tx2)
 			a.brandAppStylePick(c)
@@ -107,7 +140,7 @@ func brandAppBody(a *App, c *ui.Context) {
 
 func brandTrayBody(a *App, c *ui.Context) {
 	a.settingsRow(c, rTog("general.tray", "在菜单栏显示图标", "关闭后可在本页重新打开", true), true)
-	a.settingsRow(c, setRow{key: pTrayStyle, def: 0, title: "图标样式", desc: "五选一,单色模板图,随菜单栏深浅自动变色", kind: kNone, right: func(a *App, c *ui.Context) {
+	a.settingsRow(c, setRow{key: pTrayStyle, def: 0, title: "图标样式", desc: "四选一,单色模板图,随菜单栏深浅自动变色", kind: kNone, right: func(a *App, c *ui.Context) {
 		ui.Column(c).Gap(4).Children(func() {
 			ui.Text(c, trayStyles[a.prefs.Int(pTrayStyle, 0)]).FontWeight(600)
 			a.brandTrayStylePick(c)
@@ -119,7 +152,7 @@ func brandTrayBody(a *App, c *ui.Context) {
 	})
 	rows := []setRow{
 		rTog(pTrayDyn, "随会话状态变化", "", true),
-		rSeg(pTrayAnim, "运行中动画", "系统「减弱动态」时静止", 0, "织线流动", "呼吸", "无"),
+		rSeg(pTrayAnim, "运行中动画", "系统「减弱动态」时静止", 0, "逐段点亮", "呼吸", "无"),
 		rTog(pTrayColor, "彩色徽标", "待确认 / 出错 / 有更新 / 已完成用彩色圆点;「增强对比度」下自动关闭", true),
 		rTog(pTrayCount, "在图标旁显示数字", "", true),
 		rSeg(pTrayClick, "单击图标", "⌥ 单击执行另一个", 0, "弹出菜单", "打开窗口"),

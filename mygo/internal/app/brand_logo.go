@@ -45,7 +45,7 @@ func logoTile(c *ui.Context, src ui.ImageSource, px float32, z int) {
 	ui.Image(c, src).Absolute().ZIndex(z).Left(off).Top(off).Size(s, s).Fit(ui.Cover)
 }
 
-// brandLogoSource 品牌小标跟随「设置 → 外观 → 应用图标」的样式与外观;小尺寸(≤ 28px)的织纹自动换成 2×2「经纬」。
+// brandLogoSource 品牌小标跟随「设置 → 外观 → 应用图标」的样式与外观;
 // 内嵌素材缺失时退回随包的 app-logo.png。
 func (a *App) brandLogoSource(px float32) ui.ImageSource {
 	style := 0
@@ -54,9 +54,6 @@ func (a *App) brandLogoSource(px float32) ui.ImageSource {
 	}
 	if style < 0 || style >= len(appStyles) {
 		style = 0
-	}
-	if style == 0 && px <= 28 {
-		style = 1
 	}
 	if src := brandImage(a.appIconName(style), false); src != nil {
 		return src

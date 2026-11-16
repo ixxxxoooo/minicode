@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""MiniCode 图标 SVG 生成:六种样式 × 四种外观、托盘状态、文档图标、Icon Composer 分层。
+"""MiniCode 图标 SVG 生成:五种样式 × 四种外观、托盘状态、文档图标。
 
-与 docs/design/js/brand.js 同源令牌;分段织纹不依赖背景色挖洞。
+与 docs/design/js/brand.js 同源令牌;「经纬」的分段织纹不依赖背景色挖洞。
 渲染 PNG / icns:render.py + build_all.sh(iconutil)。
 
 @author ixxxxoooo
@@ -13,13 +13,12 @@ import pathlib
 import textwrap
 
 OUT = pathlib.Path(__file__).parent
-LAYERS = OUT / "layers"
 THEME_OUT = None  # 由 --theme-dir 指定:各主题配色图标的 SVG 输出目录
 
-# Go appearance.appIcon 下标 → 样式 id(与设计稿 brand.js::STYLES、settings_brand.appStyles 顺序一致,默认下标 0 = 织纹)
-STYLES = ("weave", "warp", "prompt", "grid", "lines", "braces")
+# Go appearance.appIcon 下标 → 样式 id(与设计稿 brand.js::STYLES、settings_brand.appStyles 顺序一致,默认下标 0 = 提示符)
+STYLES = ("prompt", "warp", "grid", "lines", "braces")
 # 菜单栏图标样式(设计稿 TRAYS = STYLES 去掉 warp);下标即 appearance.trayStyle
-TRAY_STYLES = ("weave", "prompt", "grid", "lines", "braces")
+TRAY_STYLES = ("prompt", "grid", "lines", "braces")
 APPEARANCES = ("light", "dark", "clear", "tint")
 TRAY_STATES = ("idle", "running", "waiting", "unread", "error", "update", "paused", "demo")
 
@@ -36,13 +35,7 @@ SPAN = N * BAND + (N - 1) * GAP
 ORIGIN = 512 - SPAN / 2
 TAIL = 66
 W2 = dict(n=2, band=170, gap=34, tail=106, cut=20, ir=16, cx=512)
-W3 = dict(n=3, band=112, gap=26, tail=82, cut=14, ir=12, cx=512)
 BRACE = "M438 322C378 322 372 352 372 398V446C372 482 352 502 312 512C352 522 372 542 372 578V626C372 672 378 702 438 702"
-
-
-def band_pos(i, cfg=W3):
-    o = cfg["cx"] - (cfg["n"] * cfg["band"] + (cfg["n"] - 1) * cfg["gap"]) / 2
-    return o + i * (cfg["band"] + cfg["gap"])
 
 
 def rp(x, y, w, h, tl, tr, br, bl):
@@ -182,9 +175,6 @@ def resolve_appearance(mode: str, dark: bool = False, pal: str = "paper"):
 
 
 def art_svg(style: str, ink: str, th_ref: str) -> str:
-    if style == "weave":
-        w, f = weave_parts(W3)
-        return f'<path d="{"".join(w)}" fill="{ink}"/><path d="{"".join(f)}" fill="{th_ref}"/>'
     if style == "warp":
         w, f = weave_parts(W2)
         return f'<path d="{"".join(w)}" fill="{ink}"/><path d="{"".join(f)}" fill="{th_ref}"/>'
@@ -258,34 +248,8 @@ def _lv(i: int, frame: int | None) -> str:
     return f'opacity="{op}"'
 
 
-def tray_weave_body(frame: int | None = None) -> str:
-    b, g, cut, tail, pad, n = 6, 3, 1, 3, 3, 3
-    pos = [pad + tail + i * (b + g) for i in range(n)]
-    lo, hi = pad, 36 - pad
-    parts = []
-    for j, y in enumerate(pos):
-        parts.append(f'<rect x="{lo}" y="{y}" width="{hi - lo}" height="{b}" rx="{b / 2}" fill="#000" {_lv(j, frame)}/>')
-    for x in pos:
-        parts.append(f'<rect x="{x}" y="{lo}" width="{b}" height="{hi - lo}" rx="{b / 2}" fill="#000"/>')
-    for i, x in enumerate(pos):
-        for j, y in enumerate(pos):
-            if (i + j) % 2 == 1:
-                parts += [
-                    f'<rect x="{x}" y="{y - cut}" width="{b}" height="{cut}" fill="#fff"/>',
-                    f'<rect x="{x}" y="{y + b}" width="{b}" height="{cut}" fill="#fff"/>',
-                ]
-            else:
-                parts += [
-                    f'<rect x="{x - cut}" y="{y}" width="{cut}" height="{b}" fill="#fff"/>',
-                    f'<rect x="{x + b}" y="{y}" width="{cut}" height="{b}" fill="#fff"/>',
-                ]
-    return "\n  ".join(parts)
-
-
 def tray_body(style: str, frame: int | None = None) -> str:
-    """五种菜单栏图标的主体(36 画布、单色黑;白底在渲染成模板图时转成透明)。移植自设计稿 brand.js::TRAY。"""
-    if style == "weave":
-        return tray_weave_body(frame)
+    """四种菜单栏图标的主体(36 画布、单色黑;白底在渲染成模板图时转成透明)。移植自设计稿 brand.js::TRAY。"""
     if style == "prompt":
         return (
             '<path d="M10.5 9.5 18 18l-7.5 8.5" fill="none" stroke="#000" stroke-width="4.4" '
@@ -329,7 +293,7 @@ def tray_body(style: str, frame: int | None = None) -> str:
     raise ValueError(style)
 
 
-def tray_badge(state: str, style: str = "weave", frame: int | None = None) -> str:
+def tray_badge(state: str, style: str = "prompt", frame: int | None = None) -> str:
     """带徽标的状态:主体先用圆形遮罩挖出一圈空白,再画徽标(demo 是空心圆环,paused 整体半透明)。"""
     x, y = 28.2, 8
     spec = {
@@ -361,7 +325,7 @@ def tray_badge(state: str, style: str = "weave", frame: int | None = None) -> st
     return mask + body + g
 
 
-def tray_icon_svg(state: str = "idle", frame: int | None = None, style: str = "weave") -> str:
+def tray_icon_svg(state: str = "idle", frame: int | None = None, style: str = "prompt") -> str:
     head = '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><rect width="36" height="36" fill="#fff"/>'
     if state in ("waiting", "unread", "error", "update", "paused", "demo"):
         return head + "  " + tray_badge(state, style, frame) + "</svg>"
@@ -369,14 +333,14 @@ def tray_icon_svg(state: str = "idle", frame: int | None = None, style: str = "w
 
 
 def tray_file(style_idx: int, state: str, frame: int | None = None) -> str:
-    """托盘文件名:样式 0(织纹)沿用旧名 tray-<状态>,其余是 tray-s<下标>-<状态>。"""
+    """托盘文件名:样式 0(提示符)沿用旧名 tray-<状态>,其余是 tray-s<下标>-<状态>。"""
     pre = "tray" if style_idx == 0 else f"tray-s{style_idx}"
     if frame is not None:
         return f"{pre}-{state}-{frame}.svg"
     return f"{pre}-{state}.svg"
 
 
-def doc_icon_svg(label: str, style: str = "weave") -> str:
+def doc_icon_svg(label: str, style: str = "prompt") -> str:
     r = resolve_appearance("light")
     uid = "d"
     art = art_svg(style, r["ink"], f"url(#{uid}t)")
@@ -394,37 +358,10 @@ def doc_icon_svg(label: str, style: str = "weave") -> str:
 </svg>'''
 
 
-def write_layers():
-    LAYERS.mkdir(exist_ok=True)
-    r = resolve_appearance("light")
-    bg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-<defs><linearGradient id="bg" x1="0" y1="100" x2="0" y2="924" gradientUnits="userSpaceOnUse">
-<stop offset="0" stop-color="{r["bg0"]}"/><stop offset="1" stop-color="{r["bg1"]}"/></linearGradient></defs>
-<rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/></svg>'''
-    w, f = weave_parts(W3)
-    warp = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><path d="{"".join(w)}" fill="{r["ink"]}"/></svg>'
-    weft = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><defs>
-<linearGradient id="th" x1="250" y1="250" x2="774" y2="774" gradientUnits="userSpaceOnUse">
-<stop offset="0" stop-color="{r["th0"]}"/><stop offset="1" stop-color="{r["th1"]}"/></linearGradient></defs>
-<path d="{"".join(f)}" fill="url(#th)"/></svg>'''
-    (LAYERS / "background.svg").write_text(bg)
-    (LAYERS / "warp.svg").write_text(warp)
-    (LAYERS / "weft.svg").write_text(weft)
-    note = textwrap.dedent(
-        """\
-        # MiniCode.icon(Icon Composer)
-        三层 SVG 在 layers/:background / warp / weft。
-        可用 Apple Icon Composer(macOS 26)导入后导出 .icon;本仓库未打包 .icon 目录(避免未签名包结构)。
-        运行时 Dock 仍用 .icns / PNG;透明·着色外观用 app-style*-clear / -tint PNG。
-        """
-    )
-    (LAYERS / "README.txt").write_text(note)
-
-
 def generate_all():
-    # 默认织纹浅 / 深(兼容旧名)
-    (OUT / "app-light.svg").write_text(app_icon_svg("weave", "light", "l"))
-    (OUT / "app-dark.svg").write_text(app_icon_svg("weave", "dark", "d"))
+    # 默认(提示符)浅 / 深(兼容旧名)
+    (OUT / "app-light.svg").write_text(app_icon_svg("prompt", "light", "l"))
+    (OUT / "app-dark.svg").write_text(app_icon_svg("prompt", "dark", "d"))
     for si, st in enumerate(STYLES):
         for mode in APPEARANCES:
             suf = "" if mode == "light" else f"-{mode}"
@@ -448,13 +385,12 @@ def generate_all():
     (OUT / "tray.svg").write_text(tray_icon_svg("idle"))
     for lab, fn in (("MCWS", "doc-mcworkspace.svg"), ("CANVAS", "doc-mccanvas.svg"), ("CONF", "doc-mcsettings.svg")):
         (OUT / fn).write_text(doc_icon_svg(lab))
-    write_layers()
 
 
 def main():
     p = argparse.ArgumentParser(description="生成 MiniCode 图标 SVG")
-    p.add_argument("cmd", nargs="?", default="all", choices=("all", "legacy", "tray", "layers"))
-    p.add_argument("--style", type=int, default=2)
+    p.add_argument("cmd", nargs="?", default="all", choices=("all", "legacy", "tray"))
+    p.add_argument("--style", type=int, default=0)
     p.add_argument("--mode", default="light")
     p.add_argument("--theme-dir", default=None, help="各主题配色图标 SVG 的输出目录(缺省不生成)")
     args = p.parse_args()
@@ -464,15 +400,13 @@ def main():
     if args.cmd == "all":
         generate_all()
     elif args.cmd == "legacy":
-        (OUT / "app-light.svg").write_text(app_icon_svg("weave", "light"))
-        (OUT / "app-dark.svg").write_text(app_icon_svg("weave", "dark"))
+        (OUT / "app-light.svg").write_text(app_icon_svg("prompt", "light"))
+        (OUT / "app-dark.svg").write_text(app_icon_svg("prompt", "dark"))
         (OUT / "tray.svg").write_text(tray_icon_svg("idle"))
     elif args.cmd == "tray":
         for si, tst in enumerate(TRAY_STYLES):
             for state in TRAY_STATES:
                 (OUT / tray_file(si, state)).write_text(tray_icon_svg(state, None, tst))
-    elif args.cmd == "layers":
-        write_layers()
 
 
 if __name__ == "__main__":

@@ -73,7 +73,7 @@ func (a *App) dockSignature(dark bool) string {
 }
 
 // dockIconData 按偏好 appearance.appIcon* 选 Dock 图标,返回 PNG 字节。
-// 顺序:内嵌的当前配色 512px 样式图 → 默认配色的同款 → 磁盘上的样式 icns / PNG → 包内默认织纹。
+// 顺序:内嵌的当前配色 512px 样式图 → 默认配色的同款 → 磁盘上的样式 icns / PNG → 包内默认图标。
 func (a *App) dockIconData(dark bool) []byte {
 	style := 0
 	if a.prefs != nil {

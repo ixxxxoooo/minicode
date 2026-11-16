@@ -12,5 +12,5 @@
 </defs>
 <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#s3lightb)" filter="url(#s3lightsh)"/>
 <rect x="102" y="102" width="820" height="820" rx="184" fill="none" stroke="url(#s3lightr)" stroke-width="4"/>
-  <g fill="url(#s3lightt)"><rect x="305.0" y="305.0" width="118" height="118" rx="34"/><rect x="305.0" y="601.0" width="118" height="118" rx="34"/><rect x="453.0" y="453.0" width="118" height="118" rx="34"/><rect x="601.0" y="305.0" width="118" height="118" rx="34"/><rect x="601.0" y="601.0" width="118" height="118" rx="34"/></g><g fill="#26251E"><rect x="305.0" y="453.0" width="118" height="118" rx="34"/><rect x="453.0" y="305.0" width="118" height="118" rx="34"/><rect x="453.0" y="601.0" width="118" height="118" rx="34"/><rect x="601.0" y="453.0" width="118" height="118" rx="34"/></g>
+  <g fill="url(#s3lightt)"><rect x="300" y="294.0" width="150" height="76" rx="38.0"/><rect x="396" y="534.0" width="190" height="76" rx="38.0"/><rect x="554" y="654.0" width="96" height="76" rx="38.0"/></g><g fill="#26251E"><rect x="474" y="294.0" width="250" height="76" rx="38.0"/><rect x="396" y="414.0" width="328" height="76" rx="38.0"/><rect x="514" y="534.0" width="114" height="76" rx="38.0"/><rect x="300" y="654.0" width="230" height="76" rx="38.0"/></g>
 </svg>
