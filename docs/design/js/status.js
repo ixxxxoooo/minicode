@@ -127,6 +127,7 @@
       R('「回到最新」悬停底色不透明', 'flow_scroll.go:悬停 Fill2.Over(Raised),不再透出后面的文字;设计稿 .to-latest:hover 同步;未测试', 'ok'),
       R('输出面板:鼠标拖选 / 双击选词 / ⌘C 复制', 'ide_output.go 整列日志 Selectable 共用一个选区;行右键补「复制所选」(无选区置灰并提示);未测试', 'ok'),
       R('命令卡语法高亮(命令行 + 输出)', 'flow_hl.go:shellSpans(命令名 / 子命令 / 标志 / 引号 / 变量 / 管道·重定向 / 注释)与 termLineSz(错误·警告·通过、URL、路径:行:列、提交哈希、git 状态码与 ## 分支行),颜色取主题语法色与状态色,按「主题+字号+文本」缓存;命令头与输出共用;设计稿 flow.js F.term + flow.css .sh/.term;未测试', 'ok'),
+      R('吸顶用户消息:点击向下悬浮展开 + 正文拖选复制', 'flow_user_float.go:吸顶时 userCardClick→togglePop,PopoverBase 在卡片正下方浮出完整正文(Selectable,超 24 行内部滚动),点外面 / Esc 收起,底部「复制 / 编辑」;没吸顶仍是就地编辑;设计稿 sticky.js openFloat + flow.css .msg-float;未测试', 'ok'),
       R('侧栏工作区 / 项目右键与「编辑项目」', '工作区展开只列会话;右键 = 编辑工作区… / 编辑项目…(新对话 · 编辑 · 访达 / 复制 · 移除);全应用右键菜单改为窗口内自绘(SetMenuPresentation);其余菜单的图标与快捷键提示已经 menu_item.go 的 menuItem 统一补齐;未测试', 'ok', 'B2'),
       R('右键菜单图标与快捷键提示统一(menuItem 单点维护)', 'menu_item.go:文字 → 设计稿图标表,「文字  快捷键」拆成右侧提示;图标名取自 kit.iconPaths;未测试', 'ok', 'B2'),
       R('会话流步骤行 / 差异卡头 / 命令卡头右键菜单', 'menu_extra.go stepMenu + flow.go cardM:复制路径 / 命令 / 输出 / 网址、访达、查看差异 / 审查标签、终端面板;未测试', 'ok', 'B2'),
@@ -230,11 +231,11 @@
       R('「与此页面对话」的页面引用', '正文框选→@浏览器:url#段+填输入框;日志 RedactURL 脱敏', 'ok', 'B7'),
       R('系统浏览器打开 / 隐私设置', '地址栏外链;设置 browser.fetch 可关抓取', 'ok', 'B7')],
     customize: [
-      R('七类左栏、筛选与作用域、开关 / 新建 / 删除、详情表单', '界面与校验完整;演示内存+演示多套', 'ok'),
+      R('七类左栏、筛选与作用域、开关 / 新建 / 删除、详情表单', '界面与校验完整;演示内存+演示多套;切换左栏分类或整页入口会清空选中与草稿(cuResetNav);删除改标题行垃圾桶+cuDeleteAsk 确认框,删除后选中相邻项;未测试', 'part'),
       R('读写真实的 ~/.claude 与项目 .claude', 'OpenDisk+Persist/SaveMCP 七类写盘;cuMCPEditDlg;Skill 重命名。缺口:已安装插件详情无编辑表单回写 JSON;演示不落盘;未测试', 'part', 'B7'),
-      R('插件市场安装进度', 'cuInstallPlugin+RunPluginInstall;演示四相位,真实安装中多仅 phase0 至结束;未测试', 'part', 'B7'),
+      R('插件市场安装进度', 'cuInstallPlugin+RunPluginInstall;市场经「浏览市场」进入,详情安装条在滚动区内;演示四相位,真实安装中多仅 phase0 至结束;未测试', 'part', 'B7'),
       R('MCP 授权 / 重连 / 工具开关接真实状态', 'mcp_status+mcp list 兜底+init 初值;login 仍手工', 'part', 'B7'),
-      R('命令 / 子 Agent 试运行、钩子试运行', 'custom_wire.go:cuTryCommand/cuTryAgent/cuTryHook;未测试', 'ok'),
+      R('命令 / 子 Agent 试运行、钩子试运行', 'custom_wire.go:cuTryCommand/cuTryAgent/cuTryHook;「在输入框试用」读表单草稿(cuDraftItem)而非磁盘旧值;未测试', 'part'),
       R('Skills / 规则「在编辑器里打开」', 'cuOpenPath 解析 ~/ 与相对路径,Skill 补 SKILL.md;未测试', 'ok')],
     usage: [
       R('7 天 / 30 天 / 本月、汇总卡、柱图悬停、按模型 / 项目 / 贵会话、导出 CSV、空数据加载态(真实扫描)', '', 'ok'),

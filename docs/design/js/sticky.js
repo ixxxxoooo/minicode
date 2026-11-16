@@ -64,7 +64,20 @@
       setTimeout(() => $$('.su-note', r).forEach(n => n.remove()), 2600); mark(wrapOf(m)); };
     A.ACT['su-cancel'] = () => cancelEdit();
     A.ACT['su-send'] = (el) => send(el.closest('.msg-u'));
-    document.addEventListener('click', (e) => { const m = e.target.closest && e.target.closest('.flow .msg-u'); if (!m || m.classList.contains('editing') || e.target.closest('a, button, .ref')) return; startEdit(m); });
+    /* ── 吸顶时点击:在卡片正下方悬浮展开完整正文(不占位、不挤动下面的会话);正文可拖选复制;点外面 / Esc 收起;「编辑」在浮层底部 ── */
+    const floatOf = (m) => m && m.querySelector(':scope > .msg-float');
+    const closeFloat = () => { const m = document.querySelector('.flow .msg-u.floating'); if (!m) return false; floatOf(m).remove(); m.classList.remove('floating'); return true; };
+    const openFloat = (m) => { closeFloat(); const c = m.cloneNode(true); $$('.fade, .msg-float', c).forEach(x => x.remove());
+      const f = document.createElement('div'); f.className = 'msg-float a-pop';
+      f.innerHTML = `<div class="mf-body">${c.innerHTML}</div><div class="mf-acts"><span class="t4 fs-micro grow">拖选可复制 · Esc 收起</span>${btn('复制', 'sm ghost', '', 'data-act="su-copy"')}${btn('编辑', 'sm ghost', '', 'data-act="su-edit"')}</div>`;
+      m.appendChild(f); m.classList.add('floating'); };
+    A.ACT['su-copy'] = (el) => { const m = el.closest('.msg-u'); navigator.clipboard && navigator.clipboard.writeText(m.querySelector('.mf-body').textContent.trim()); A.toast && A.toast('已复制消息'); };
+    A.ACT['su-edit'] = (el) => { const m = el.closest('.msg-u'); closeFloat(); startEdit(m); };
+    document.addEventListener('click', (e) => { const m = e.target.closest && e.target.closest('.flow .msg-u'); if (!m || m.classList.contains('editing') || e.target.closest('a, button, .ref, .msg-float')) return;
+      if (m.classList.contains('stuck') || m.classList.contains('floating')) { m.classList.contains('floating') ? closeFloat() : openFloat(m); return; }   /* 吸顶:展开 / 收起;没吸顶:就地编辑 */
+      startEdit(m); });
+    document.addEventListener('mousedown', (e) => { if (!e.target.closest('.flow .msg-u.floating')) closeFloat(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && closeFloat()) e.stopPropagation(); }, true);
     document.addEventListener('mousedown', (e) => { const m = editing(); if (m && !m.contains(e.target)) cancelEdit(); });
     document.addEventListener('keydown', (e) => { const ta = e.target.closest && e.target.closest('.msg-u.editing textarea'); if (!ta) return;
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cancelEdit(); }
