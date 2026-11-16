@@ -77,8 +77,8 @@ ${live ? 'test matches_trailing_slash ... <span class="caret"></span>' : 'test r
   /** 计划卡。streaming:生成中(无按钮) */
   F.plan = (streaming, state) => { const ok = state === 'approved';
     return `<div class="plan" data-tool="plan"><div class="f ai g3">${ic('list', 's12 c-warn')}<b class="${streaming ? 'shimmer' : ''}">路由大小写修复计划</b>${tag(streaming ? '生成中…' : ok ? '已批准' : '待批准', streaming ? '' : ok ? 'ok' : 'warn')}<span class="grow"></span>${btn('查看', 'sm ghost', 'ext', 'data-act="open" data-id="plan"')}</div>
-    <ol><li>抽出 <span class="mono">normalize</span>,注册与匹配共用</li><li>匹配失败时回退到 <span class="mono">fallback</span></li><li class="${streaming ? 'caret' : ''}">补 2 条测试并跑通</li></ol>
-    ${streaming ? '' : '<div class="t3 fs-cap">另有 2 项 · 点「查看」看全文</div>'}
+    <div class="plan-sum"><p>抽出 normalize,注册与匹配共用</p><p class="${streaming ? 'caret' : ''}">匹配失败时回退到 fallback</p></div>
+    ${streaming ? '' : '<div class="plan-more">另有 1 项</div>'}
     ${streaming || ok ? '' : `<div class="f ai g3">${btn('开始实施', 'pri sm', 'play')}${btn('自动模式', 'sm opt-sec')}${btn('继续规划', 'sm ghost')}</div>`}</div>`; };
   F.note = (icon, t) => `<div class="note-line"><span class="si" style="width:16px;display:grid;place-items:center">${ic(icon, 's12')}</span>${t}</div>`;
   F.notice = (lv, t, acts = '') => `<div class="notice ${lv}">${ic(lv === 'err' ? 'errc' : 'alert', lv === 'err' ? 'c-err' : 'c-warn')}<div class="grow">${t}</div>${acts}</div>`;

@@ -90,7 +90,10 @@
 .opt { display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 9px; border-radius: var(--r-sm); box-shadow: inset 0 0 0 1px var(--bd-2); transition: background var(--dur-fast), box-shadow var(--dur-fast); cursor: default; }
 .opt:hover { background: var(--fill-1); } .opt.on { box-shadow: inset 0 0 0 1.5px var(--ac); background: var(--ac-soft); }
 .plan { background: var(--bg-raised); border-radius: var(--r-md); box-shadow: var(--sh-1); padding: 8px 11px; display: flex; flex-direction: column; gap: 5px; }
-.plan ol { margin: 0; padding-left: 17px; color: var(--tx-2); line-height: 1.6; }
+/* 概要:纯文本小号灰字(跳过标题行、去掉 Markdown 标记),最多 2 条、每条最多 2 行;左侧 2px 细线;「另有 N 项」灰字,全文在工作区「计划」标签 */
+.plan-sum { display: flex; flex-direction: column; gap: 3px; margin: 1px 0 2px; padding-left: 8px; box-shadow: inset 2px 0 var(--bd-2); color: var(--tx-2); font-size: var(--fs-cap); line-height: 1.5; }
+.plan-sum p { margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.plan-more { padding-left: 10px; color: var(--tx-4); font-size: var(--fs-cap); }
 
 /* 提示分级 */
 .note-line { display: flex; align-items: center; gap: 6px; color: var(--tx-3); min-height: 22px; }
