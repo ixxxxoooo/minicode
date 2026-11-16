@@ -10,7 +10,10 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
-const thinkPreviewRunes = 200
+const (
+	thinkPreviewRunes = 200
+	thinkMqMinW       = 96
+)
 
 type thinkMqSt struct {
 	X, Show float32
@@ -46,7 +49,7 @@ func (a *App) thinkMarqueeVisible(sp step, open bool) bool {
 	return true
 }
 
-func (a *App) thinkMarqueeRow(c *ui.Context, sp step, tone ui.Color, open bool) ui.Element {
+func (a *App) thinkMarqueeRow(c *ui.Context, sp step, tone ui.Color, open bool, row ui.Element) ui.Element {
 	if !a.thinkMarqueeVisible(sp, open) {
 		return ui.Box(c).Width(0).Shrink(0)
 	}
@@ -55,14 +58,31 @@ func (a *App) thinkMarqueeRow(c *ui.Context, sp step, tone ui.Color, open bool) 
 	if preview == "" {
 		return ui.Box(c).Width(0).Shrink(0)
 	}
-	box := ui.Box(c).Height(20).Grow(10).MinWidth(48).MaxWidth(480).Shrink(1).Clip()
+	rowW := float32(0)
+	if b := row.Bounds(); b.W > 0 {
+		rowW = b.W
+	}
+	maxW := rowW * 0.52
+	if maxW > 0 && maxW < thinkMqMinW {
+		return ui.Box(c).Width(0).Shrink(0)
+	}
+	box := ui.Box(c).Height(20).Grow(1).MinWidth(0).Shrink(1).Clip().MarginStart(4)
+	if maxW > 0 {
+		box.MaxWidth(maxW)
+	} else {
+		box.MaxWidth(rowW * 0.52)
+	}
 	id := sp.id
 	st := a.thinkMq[id]
-	boxW := float32(480)
+	boxW := float32(0)
 	if b := box.Bounds(); b.W > 8 {
 		boxW = b.W
+	} else if rowW > 0 {
+		boxW = maxW
 	}
-	// 目标偏移:让文本尾部贴住右缘(留 4px)。文本宽度优先用上一帧量到的,首帧按字宽估算。
+	if boxW > 0 && boxW < thinkMqMinW {
+		return ui.Box(c).Width(0).Shrink(0)
+	}
 	textW := st.TW
 	if textW <= 0 {
 		textW = thinkMqEstimateWidth(preview)
@@ -71,31 +91,32 @@ func (a *App) thinkMarqueeRow(c *ui.Context, sp step, tone ui.Color, open bool) 
 	if target < 0 {
 		target = 0
 	}
-	// 窗口在后台 / 减弱动态:不做缓动与持续帧,直接停在尾部(与动画终态一致)
 	still := !kit.MotionOn() || kit.SystemReduceMotion() || (a.win != nil && !a.win.IsFocused())
 	if still {
 		st.Show = target
 	} else if diff := target - st.Show; diff > 0.5 || diff < -0.5 {
-		st.Show += diff * .22 // 缓动追赶,避免逐字跳
+		st.Show += diff * .22
 		a.frameSoon()
 	} else {
 		st.Show = target
 	}
 	box.Children(func() {
-		// 平移的是内层(文字),外框只负责裁剪;平移外框会把整个窗口一起移走
-		inner := ui.Row(c).Height(20).Shrink(0).AlignItems(ui.Center)
+		inner := ui.Row(c).Height(20).Grow(1).MinWidth(0).Justify(ui.End).AlignItems(ui.Center)
 		if st.Show > 0 {
 			inner.Translate(-st.Show, 0)
 		}
 		inner.Children(func() {
-			tx := ui.Text(c, preview).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().NoWrap().Shrink(0)
+			tx := ui.Text(c, preview).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().NoWrap().Shrink(0).PaddingStart(8)
 			if w := tx.Bounds().W; w > 0 {
 				st.TW = w
 			}
 		})
-		if target > 0 { // 文本没有溢出时不画左侧渐隐
+		if target > 0 {
 			bg := t.BG.Over(t.Fill1)
-			ui.Box(c).Width(28).Height(20).Absolute().HitTest(func(_, _ float32, _ ui.Rect) bool { return false }).
+			if hov := row.Hovered(); hov {
+				bg = t.Fill1
+			}
+			ui.Box(c).Width(32).Height(20).Absolute().HitTest(func(_, _ float32, _ ui.Rect) bool { return false }).
 				MaskLinearGradient(ui.LinearGradient{
 					Angle: 90,
 					Stops: []ui.GradientStop{

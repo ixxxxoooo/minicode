@@ -46,6 +46,7 @@ func (a *App) flowDebug(name, arg string) bool {
 		flowDbgLog.Info("调试问答题号", "id", qid, "cur", cur)
 		return true
 	case "thinking":
+		a.NewSession()
 		demo.Replay(a.State(), demo.ThinkMarqueeReplay())
 		a.st.Apply(core.EvTurnStarted{})
 		if a.thinkMq == nil {

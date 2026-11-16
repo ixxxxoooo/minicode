@@ -87,13 +87,13 @@
       ['hmanlab TUI', '只读调用并成一块,展开任一条会把它拆出组', '不取:拆组会让行位置跳动']]))}
     ${sec('实现状态', '未测试:Go 侧仅 go build + cmd/shot(-detail 0|1|2)截图。', `<table class="ia-tbl"><thead><tr><th style="width:240px">项</th><th>说明</th><th style="width:70px">状态</th></tr></thead><tbody>
       ${[
-        ['精简档合并摘要', 'flow_merge.go:相邻 ≥2 个工具调用并成一行;已有', 'part'],
-        ['精简档进行中 / 失败态', '进行中显示最新一步 + 「已 N 步」;失败红图标 + 「N 项失败」', 'todo'],
-        ['窄档短句', '读 2 · 搜 1 · 改 2 · 跑 1', 'todo'],
-        ['标准档默认折叠(失败 / 运行中例外)', 'present.go presentTool 按矩阵重写默认展开', 'todo'],
-        ['详细档探索组默认展开', 'exploreGroup 读档位', 'todo'],
+        ['精简档合并摘要', 'flow_merge.go 相邻 ≥2 合并;进行中 / 失败 / 窄档短句已接线', 'part'],
+        ['精简档进行中 / 失败态', '最新一步 + 「已 N 步」;红 errc + 「N 项失败」;结束后 120ms 摘要淡入未接', 'part'],
+        ['窄档短句', 'mergeSummaryNarrow:读 2 · 搜 1 · 改 2 · 跑 1', 'part'],
+        ['标准档默认折叠(失败 / 运行中例外)', 'present.go applyToolDefaultOpen', 'part'],
+        ['详细档探索组默认展开', 'exploreGroup ToolDetailLevel==2 默认展开', 'part'],
         ['断组条目(思考 / 子 Agent / 卡片)', 'stepGroup 已按条目类型断开;核对压缩卡 / 错误卡', 'part'],
-        ['思考行宽度分配', 'flow.go stepRow + flow_think_marquee.go 按本页改:标题常驻、跑马灯弹性、<96px 隐藏', 'todo']
+        ['思考行宽度分配', '标题常驻 + 跑马灯 flex(max 52%、<96px 隐藏);cmd/shot -ed thinking 截图,未 computer use', 'part']
       ].map(([a, b, c]) => `<tr><td><b>${a}</b></td><td class="t2">${b}</td><td>${st(c)}</td></tr>`).join('')}
     </tbody></table>`)}
   </div>`;
