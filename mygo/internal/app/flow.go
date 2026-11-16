@@ -312,7 +312,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 				ui.Text(c, sp.verb).TextColor(t.Tx3).Shrink(0).SingleLine()
 			}
 			objCol := t.Tx2
-			if sp.fam == famThink {
+			if sp.fam == famThink || sp.fam == famExec { // 命令行的对象与动词「运行」同色(设计稿:命令是等宽长串,不比动词更深)
 				objCol = t.Tx3
 			}
 			obj = ui.Text(c, sp.obj).TextColor(objCol).SingleLine().Shrink(1).MinWidth(0)

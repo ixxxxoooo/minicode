@@ -203,6 +203,18 @@ func RowEl(c *ui.Context, on bool) ui.Element {
 	return r.TextColor(col).Transition(Fade)
 }
 
+// SelStyle 给自绘的列表行套上选中外观(与 RowEl 的选中态一致:方案 B = 白色浮起卡,A / C = 强调色淡染底)。
+func SelStyle(r ui.Element) ui.Element {
+	if T.Scheme.ID == "b" {
+		r.Background(T.Raised)
+		for _, s := range T.Shadow1() {
+			r.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+		}
+		return r.FontWeight(500)
+	}
+	return r.Background(T.Sel).FontWeight(500)
+}
+
 // SelBar 画选中行左侧的强调色竖线(放在行的 Children 里,绝对定位,不占位置)。
 func SelBar(c *ui.Context) {
 	if T.Scheme.ID == "b" { // 方案 B 选中用浮起卡,不画竖线

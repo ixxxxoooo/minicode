@@ -392,7 +392,9 @@ func (a *App) scmCommitRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow,
 		}
 		for _, ch := range files {
 			fr := ui.ButtonBase(c).Key("scm-cf-" + cm.Hash + ch.Path).Height(theme.Px(22)).PaddingX(4).Gap(5).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx2)
-			if fr.Hovered() {
+			if a.ide.active == "diff:rev-"+cm.Short()+":"+ch.Path {
+				kit.SelStyle(fr)
+			} else if fr.Hovered() {
 				fr.Background(t.Fill1)
 			}
 			if fr.Clicked() {
