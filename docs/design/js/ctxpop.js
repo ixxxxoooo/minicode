@@ -1,7 +1,8 @@
 /* 设计稿 v3.4 · 上下文弹层
    入口:输入框右侧的「上下文」圆环(点击展开,再点 / 点外部 / Esc 收起)与 IDE 状态栏的「上下文」,两处是同一份内容(一个内容只有一个家)。
    内容:用量与阈值 → 分类明细 → 账户限额 → 更新时间与刷新 → 跳转「用量与成本」。
-   状态:ok 常态 / warn 接近阈值(建议压缩)/ busy 压缩中 / load 明细加载中 / none 第三方服务商(无账户限额)/ err 查询失败。
+   状态:ok 常态 / warn 接近阈值(建议压缩)/ busy 压缩中 / load 明细加载中 / none 第三方服务商(无账户限额)/ err 查询失败;
+   历史会话可先显示「来自历史记录的估算」;点刷新才向 Claude 发 get_context_usage(3 秒防抖);惰性会话有「启动并查询」。
    F.ctxBody(o) 只返回内部内容(两处的外壳不同),F.ctxPop(o) 是输入框里的外壳。
    @author ixxxxoooo */
 (function () {
@@ -35,8 +36,9 @@
     const limits = s === 'none' ? `<div class="ctx-none">${ic('info', 's12')}<span class="grow">当前使用第三方服务商,没有账户限额数据。</span></div>`
       : s === 'err' ? `<div class="ctx-hint err">${ic('alert', 's12')}<span class="grow">账户限额查询失败(网络超时),分类明细不受影响。</span>${btn('重试', 'sm ghost', 'refresh', 'data-act="ctx-refresh"')}</div>`
       : s === 'load' ? '' : `<div class="fc g3">${lim('5 小时限额', 38, '2 小时 10 分后重置')}${lim('本周限额', 21, '周五 09:00 重置')}</div>`;
-    const foot = `<div class="f ai fs-cap t3 ctx-foot"><span class="grow ctx-upd">${s === 'load' ? '更新中…' : s === 'none' ? '分类明细随回合自动更新' : '更新于 ' + (o.upd || '3 分钟前')}</span>${ib('refresh', 'sm tip-u', '刷新', 'data-act="ctx-refresh"')}${btn('用量与成本', 'sm ghost', 'arrow', 'data-act="screen" data-screen="usage"')}</div>`;
-    return head + hint + body + limits + foot;
+    const est = o.estimated ? `<div class="ctx-hint info">${ic('info', 's12')}<span class="grow">来自历史记录的估算,点刷新向 Claude 查询精确值。</span></div>` : '';
+    const foot = `<div class="f ai fs-cap t3 ctx-foot"><span class="grow ctx-upd">${s === 'load' ? '刷新中…' : o.estimated ? '估算 · 点刷新查询精确值' : '更新于 ' + (o.upd || '3 分钟前')}</span>${ib('refresh', 'sm tip-u', '刷新', 'data-act="ctx-refresh"')}${btn('用量与成本', 'sm ghost', 'arrow', 'data-act="screen" data-screen="usage"')}</div>`;
+    return head + hint + est + body + limits + foot;
   };
   /** 输入框里的外壳:向上弹出,右对齐到圆环 */
   F.ctxPop = (o = {}) => `<div class="pop ctx-pop a-pop-up" data-state="${o.state || 'ok'}">${F.ctxBody(o)}</div>`;

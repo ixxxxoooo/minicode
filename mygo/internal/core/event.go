@@ -191,10 +191,19 @@ type (
 	CmdStopTask struct{ TaskID string }
 	// CmdBackgroundCurrent 把前台运行中的 Bash / 子 Agent 转入后台(Ctrl+B);ToolUseID 为空表示全部。
 	CmdBackgroundCurrent struct{ ToolUseID string }
-	// CmdRefreshUsage 查询账户用量与限额;Force 为假时数据还新(见 LimitsTTLSecs)就不再请求。
-	CmdRefreshUsage struct{ Force bool }
-	// CmdRefreshMcp 刷新 MCP 服务器状态与各工具的上下文占用;不查账户限额。
-	CmdRefreshMcp struct{}
+	// CmdRefreshUsage 按需查询上下文分类与/或账户限额;界面指定 Context / Limits,不默认全查。
+	CmdRefreshUsage struct {
+		Force     bool // 限额:越过 LimitsTTLSecs 缓存
+		Context   bool // get_context_usage
+		Limits    bool // get_usage
+		StartProc bool // 惰性后端:为查上下文而启动 claude 进程
+	}
+	// CmdRefreshMcp 刷新 MCP:界面先重读配置,Runtime 为真且进程在跑时发 mcp_status。
+	CmdRefreshMcp struct {
+		Runtime   bool // 发 mcp_status(需进程已启动,除非 StartProc)
+		StartProc bool // 显式启动进程再查运行时状态
+		Force     bool // 由界面防抖后传入,后端只做占位
+	}
 	// CmdMcpToggle 热切换一个 MCP 服务器。
 	CmdMcpToggle struct {
 		Name    string

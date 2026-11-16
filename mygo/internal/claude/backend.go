@@ -427,24 +427,9 @@ func (b *Backend) hasReq(k reqKind) bool {
 	return false
 }
 
-func (b *Backend) refreshMcp() {
+func (b *Backend) refreshMcpStatus() {
 	if !b.hasReq(rkMcpStatus) {
 		b.request(req{kind: rkMcpStatus}, McpStatusReq)
-	}
-	if !b.hasReq(rkContext) {
-		b.request(req{kind: rkContext}, ContextUsageReq)
-	}
-}
-
-func (b *Backend) refreshMcpCLI() {
-	list, err := FetchMcpList(b.cfg.Cwd)
-	if err != nil {
-		log.Warn("无会话时 mcp list 失败", "err", err)
-		b.emit(notice(core.NoticeWarning, "无法获取 MCP 状态:"+err.Error()+";请先打开会话或检查 claude mcp"))
-		return
-	}
-	if len(list) > 0 {
-		b.emit(core.EvMcpServers{Servers: list})
 	}
 }
 
@@ -556,13 +541,22 @@ func (b *Backend) onCommand(c core.Command) {
 			b.request(req{kind: rkOther, what: "转入后台"}, func(id string) obj { return BackgroundTasks(id, c.ToolUseID) })
 		}
 	case core.CmdRefreshUsage:
-		if b.p == nil {
+		wantCtx, wantLim := c.Context, c.Limits
+		if wantCtx {
+			if b.p == nil {
+				if !c.StartProc || !b.ensureProc() {
+					return
+				}
+			}
+			if !b.hasReq(rkContext) {
+				b.request(req{kind: rkContext}, ContextUsageReq)
+			}
+		}
+		if !wantLim {
 			return
 		}
-		// 上下文明细(本地请求,成本低)每次打开都刷新;账户限额同一时刻只查一次,
-		// 数据还新就不重复查(缓存 LimitsTTLSecs),只有用户点「刷新」(Force)才越过缓存
-		if !b.hasReq(rkContext) {
-			b.request(req{kind: rkContext}, ContextUsageReq)
+		if b.p == nil {
+			return
 		}
 		fresh := !c.Force && !b.usageAsked.IsZero() && time.Since(b.usageAsked) < core.LimitsTTLSecs*time.Second
 		if fresh || b.hasReq(rkUsage) {
@@ -572,11 +566,15 @@ func (b *Backend) onCommand(c core.Command) {
 		b.emit(b.tr.UsageChecking())
 		b.request(req{kind: rkUsage}, UsageReq)
 	case core.CmdRefreshMcp:
-		if b.p != nil {
-			b.refreshMcp()
-		} else {
-			b.refreshMcpCLI()
+		if !c.Runtime {
+			return
 		}
+		if b.p == nil {
+			if !c.StartProc || !b.ensureProc() {
+				return
+			}
+		}
+		b.refreshMcpStatus()
 	case core.CmdMcpToggle:
 		if b.p != nil {
 			b.request(req{kind: rkMcpToggle}, func(id string) obj { return McpToggleReq(id, c.Name, c.Enabled) })
@@ -754,7 +752,7 @@ func (b *Backend) onControlResponse(v obj) {
 		if !success {
 			log.Warn("mcp_toggle 失败", "err", errText)
 		}
-		b.refreshMcp() // 不管成败都刷新一次:列表以后端实际状态为准
+		b.refreshMcpStatus() // 不管成败都刷新一次:列表以后端实际状态为准
 	case rkContext:
 		if ev, ok := b.tr.ContextBreakdown(body, success); ok {
 			b.emit(ev)

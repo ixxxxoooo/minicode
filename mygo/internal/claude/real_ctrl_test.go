@@ -21,8 +21,8 @@ func TestRealControlRequests(t *testing.T) {
 	})
 	skipIfLimitReply(t, r)
 
-	r.b.Send(core.CmdRefreshMcp{})
-	r.b.Send(core.CmdRefreshUsage{Force: true})
+	r.b.Send(core.CmdRefreshMcp{Runtime: true})
+	r.b.Send(core.CmdRefreshUsage{Context: true, Limits: true, Force: true})
 	r.waitTimeout(45*time.Second, "控制请求应答", func() bool {
 		return r.usageCountLocked() >= 1 && (len(r.st.Usage.ContextCategories) > 0 || r.st.Usage.ContextDetailErr != "" || r.st.Usage.LimitsState != core.LimitsIdle)
 	})

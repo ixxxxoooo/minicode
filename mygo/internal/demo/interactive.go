@@ -42,16 +42,22 @@ func (b *Backend) Send(cmd core.Command) {
 		b.mu.Lock()
 		sink := b.sink
 		b.mu.Unlock()
-		if sink != nil {
+		if sink != nil && c.Runtime {
 			sink(core.EvMcpServers{Servers: demoMcpServers()})
-			sink(core.EvUsage{Usage: demoContextUsage()})
 		}
 	case core.CmdRefreshUsage:
 		u := demoContextUsage()
+		if !c.Context && !c.Limits {
+			break
+		}
+		if c.Context {
+			u.ContextQueriedAt = time.Now().Unix()
+			u.ContextEstimated = false
+		}
 		b.mu.Lock()
 		sink := b.sink
 		b.mu.Unlock()
-		if sink != nil {
+		if sink != nil && c.Context {
 			sink(core.EvUsage{Usage: u})
 		}
 	case core.CmdMcpToggle:

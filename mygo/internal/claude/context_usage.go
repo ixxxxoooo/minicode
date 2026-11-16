@@ -2,6 +2,7 @@ package claude
 
 import (
 	"strings"
+	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/core"
 )
@@ -48,6 +49,8 @@ func ApplyContextUsage(body obj, ok bool, usage *core.Usage) (core.Event, bool) 
 	}
 	usage.ContextCategories = list
 	usage.ContextDetailErr = ""
+	usage.ContextEstimated = false
+	usage.ContextQueriedAt = time.Now().Unix()
 	usage.McpTools = nil
 	for _, x := range arr(body, "mcpTools") {
 		xm := asObj(x)

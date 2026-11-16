@@ -149,6 +149,9 @@ func ReplayLines(lines []string, cwd string) []core.Event {
 	endTurn()
 	flushStats(&curUID, &turnUsage, &durations)
 	events = append(events, durations...)
+	if u, ok := estimateContextFromLines(lines); ok {
+		events = append(events, core.EvUsage{Usage: u})
+	}
 	// 回放到末尾仍没有终态通知的后台任务,属于已经退出的上一个进程:用一份空的存活快照把它们收尾成「已停止」,
 	// 否则任务坞会一直显示「运行中」。之后本进程自己启动的任务由实时事件创建,不受影响。
 	events = append(events, core.EvTasksChanged{})
@@ -180,4 +183,55 @@ func LoadSession(path, cwd string) ([]core.Event, error) {
 		}
 	}
 	return ReplayLines(lines, cwd), nil
+}
+
+const defaultContextWindow = 200_000
+
+// estimateContextFromLines 用历史 jsonl 最后一条助手消息的 usage 估算上下文占用。
+func estimateContextFromLines(lines []string) (core.Usage, bool) {
+	var lastUsage obj
+	var window uint64 = defaultContextWindow
+	for _, line := range lines {
+		v := parseLine(line)
+		if v == nil || boolOf(v, "isSidechain", false) {
+			continue
+		}
+		switch str(v, "type") {
+		case "assistant":
+			if u := sub(sub(v, "message"), "usage"); u != nil {
+				lastUsage = u
+			}
+		case "result":
+			for _, m := range arr(v, "modelUsage") {
+				if w := u64(asObj(m), "contextWindow"); w > 0 {
+					window = max(window, w)
+				}
+			}
+			if u := sub(v, "usage"); u != nil {
+				lastUsage = u
+			}
+		}
+	}
+	if lastUsage == nil {
+		return core.Usage{}, false
+	}
+	used := u64(lastUsage, "input_tokens") + u64(lastUsage, "cache_read_input_tokens") +
+		u64(lastUsage, "cache_creation_input_tokens") + u64(lastUsage, "output_tokens")
+	if used == 0 {
+		return core.Usage{}, false
+	}
+	cats := []core.ContextCategory{
+		{Name: "消息", Tokens: used, Kind: core.CtxUsed},
+	}
+	free := window
+	if window > used {
+		free = window - used
+		cats = append(cats, core.ContextCategory{Name: "空闲", Tokens: free, Kind: core.CtxFree})
+	}
+	return core.Usage{
+		ContextUsed:       used,
+		ContextSize:       window,
+		ContextCategories: cats,
+		ContextEstimated:  true,
+	}, true
 }

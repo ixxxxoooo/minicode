@@ -25,7 +25,7 @@ func (a *App) ctxState() string {
 	if a.ctxCompacting {
 		return "busy"
 	}
-	if a.ctxLoading {
+	if a.ctxLoading && len(u.ContextCategories) == 0 && !u.ContextEstimated {
 		return "load"
 	}
 	if u.LimitsState == core.LimitsChecking {
@@ -78,18 +78,6 @@ func (a *App) ctxAnchorPopup(c *ui.Context, key string, anchor ui.Element, attac
 	})
 }
 
-func (a *App) ctxEnsureLoaded() {
-	if len(a.st.Usage.ContextCategories) > 0 {
-		return
-	}
-	if a.be != nil && a.be.Name() == "claude" {
-		a.send(core.CmdRefreshUsage{Force: false})
-		a.ctxLoading = true
-	} else if a.be != nil && a.be.Name() == "demo" {
-		a.send(core.CmdRefreshUsage{Force: true})
-	}
-}
-
 // ctxPanelBody 上下文弹层内容(与状态栏 / 输入框共用)。
 func (a *App) ctxPanelBody(c *ui.Context) {
 	t := a.tk
@@ -136,6 +124,18 @@ func (a *App) ctxPanelBody(c *ui.Context) {
 			kit.Btn(c, "压缩", kit.BtnOpt{Small: true}).OnClick(a.requestCompact)
 		}
 	})
+	if u.ContextEstimated {
+		ui.Row(c).Gap(6).Padding(6, 8).Radius(t.RSm()).Background(t.Fill1).AlignItems(ui.Center).Children(func() {
+			kit.Ic(c, "info", kit.S12).TextColor(t.Tx3)
+			ui.Text(c, "来自历史记录的估算,点刷新向 Claude 查询精确值。").FontSize(theme.FsCap).Grow(1).TextColor(t.Tx3)
+		})
+	}
+	if a.ctxLoading && len(u.ContextCategories) > 0 {
+		ui.Row(c).Gap(6).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
+			kit.Spin(c, t.Tx3)
+			ui.Text(c, "刷新中…")
+		})
+	}
 	if st == "warn" {
 		ui.Row(c).Gap(6).Padding(6, 8).Radius(t.RSm()).Background(t.WarnSoft).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
@@ -157,19 +157,21 @@ func (a *App) ctxPanelBody(c *ui.Context) {
 			for _, w := range []float32{.7, .55, .62, .48} {
 				ui.Box(c).Height(10).WidthPercent(w * 100).Radius(t.RXs()).Background(t.Fill2)
 			}
-			ui.Text(c, "正在读取分类明细…").FontSize(theme.FsCap).TextColor(t.Tx4)
+			ui.Text(c, "正在向 Claude 查询分类明细…").FontSize(theme.FsCap).TextColor(t.Tx4)
 		})
 	} else if u.ContextDetailErr != "" && len(u.ContextCategories) == 0 {
 		ui.Row(c).Gap(6).Padding(6, 8).Radius(t.RSm()).Background(t.ErrSoft).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "alert", kit.S12).TextColor(t.Err)
 			ui.Text(c, u.ContextDetailErr).FontSize(theme.FsCap).Grow(1)
 			kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() {
-				a.ctxLoading = true
-				a.send(core.CmdRefreshUsage{Force: true})
+				a.ctxManualRefresh()
 			})
 		})
-		if a.be != nil && a.be.Name() == "claude" && a.st.Phase == core.PhaseIdle {
-			ui.Text(c, "需要已启动的会话才能查询;先发一条消息或打开历史会话。").FontSize(theme.FsMicro).TextColor(t.Tx4)
+		if a.be != nil && a.be.Name() == "claude" && !a.sessProcLive {
+			ui.Row(c).Gap(6).Children(func() {
+				ui.Text(c, "会话进程尚未启动;可先查看历史估算,或发送消息后刷新。").FontSize(theme.FsMicro).TextColor(t.Tx4).Grow(1)
+				kit.Btn(c, "启动并查询", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(a.ctxStartAndQuery)
+			})
 		}
 	} else {
 		a.ctxBarLive(c, u)
@@ -178,8 +180,9 @@ func (a *App) ctxPanelBody(c *ui.Context) {
 	ui.Row(c).AlignItems(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx3).Gap(6).Children(func() {
 		ui.Text(c, a.ctxUpdatedText(st, u)).Grow(1)
 		kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() {
-			a.ctxLoading = len(u.ContextCategories) == 0
-			a.send(core.CmdRefreshUsage{Force: true})
+			a.ctxLoading = true
+			a.ctxRefreshAt = a.now()
+			a.send(core.CmdRefreshUsage{Context: true, Limits: true, Force: true})
 		})
 		kit.Btn(c, "用量与成本", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "arrow"}).OnClick(func() {
 			a.popup = ""
@@ -193,7 +196,13 @@ func (a *App) ctxUpdatedText(st string, u core.Usage) string {
 		return "更新中…"
 	}
 	if st == "none" {
-		return "分类明细随回合自动更新"
+		if u.ContextEstimated {
+			return "估算值 · 点刷新获取精确分类"
+		}
+		return "点开面板时向 Claude 查询"
+	}
+	if u.ContextEstimated && u.ContextQueriedAt == 0 {
+		return "估算 · 点刷新查询精确值"
 	}
 	if u.LimitsAt == 0 {
 		return "暂无账户限额数据"
@@ -218,7 +227,7 @@ func (a *App) ctxLimitsBlock(c *ui.Context, st string, u core.Usage) {
 			kit.Ic(c, "alert", kit.S12).TextColor(t.Err)
 			ui.Text(c, "账户限额查询失败,分类明细不受影响。").FontSize(theme.FsCap).Grow(1)
 			kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() {
-				a.send(core.CmdRefreshUsage{Force: true})
+				a.send(core.CmdRefreshUsage{Limits: true, Force: true})
 			})
 		})
 		return
@@ -380,7 +389,9 @@ func (a *App) requestCompact() {
 }
 
 func (a *App) onUsageEvent(u core.Usage) {
-	a.ctxLoading = false
+	if a.ctxLoading && (u.ContextQueriedAt != 0 || u.ContextDetailErr != "" || len(u.ContextCategories) > 0 && !u.ContextEstimated) {
+		a.ctxLoading = false
+	}
 	if a.ctxCompacting && u.ContextUsed < a.st.Usage.ContextUsed {
 		a.ctxCompacting = false
 	}

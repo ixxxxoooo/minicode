@@ -162,6 +162,8 @@ type App struct {
 	outFold      map[string]bool            // 长输出 / 用户消息展开
 	hlKey        string                     // 命令 / 输出高亮缓存对应的「主题|强调色|字号」
 	hlCache      map[string][]ui.Span       // 命令 / 输出行高亮结果(flow_hl.go)
+	refHlKey     string                     // 引用面板语法色缓存键(主题)
+	refHlCache   map[string][]ui.Span       // path+行内容 → 着色 span(ide_refs_hl.go)
 	foldSt       map[string]*ui.ScrollState // 命令卡 / 代码块输出的内部滚动位置(按 foldKey,必须跨帧保留)
 	tickTool     map[string]string          // 工具组 → 当前展示的最新工具 id
 	tickAt       map[string]time.Time       // 最新一步滑入动画起点
@@ -263,29 +265,36 @@ type App struct {
 	slashDisk       *customize.DiskStore
 
 	// 测试 / 截图用:没有系统红绿灯时自己画
-	fakeLights      bool
-	devBadge        string
-	proj            string // 真实项目目录(演示模式为空)
-	demoExtra       bool   // 演示:工作区里还有一个本会话没碰过的未提交文件
-	welcomeLine     string // 演示欢迎页状态行变体(clean / mcp-fail / review)
-	demoPgCanvas    int    // 演示画布数据套(见 demo.CanvasSetNames)
-	demoPgAuto      int
-	demoPgBrowser   int
-	demoPgCustomize int
-	demoPgUsage     int
-	update          string // 状态栏更新提示文案(空 = 不显示)
-	updSt           updState
-	upd             *update.Runner
-	updSilent       bool   // 当前这次检查是后台静默检查(失败 / 已是最新都不打扰界面)
-	updNoticed      string // 已经为哪个版本发过「发现新版本」通知,避免每次检查都弹
-	nt              *noticeStore
-	mcpExp          map[string]bool // MCP 弹层里各服务器是否展开工具列表
-	ctxLoading      bool
-	ctxCompacting   bool
-	sideBF          string // 方案 B 侧栏当前浏览的项目 id
-	sessCtxWs       string // 侧栏正在画哪个工作区的会话行(点会话时先进入该工作区)
-	sessFork        func(fromID string) (newID string, err error)
-	brand           brand // Dock / 托盘(brand.go)
+	fakeLights        bool
+	devBadge          string
+	proj              string // 真实项目目录(演示模式为空)
+	demoExtra         bool   // 演示:工作区里还有一个本会话没碰过的未提交文件
+	welcomeLine       string // 演示欢迎页状态行变体(clean / mcp-fail / review)
+	demoPgCanvas      int    // 演示画布数据套(见 demo.CanvasSetNames)
+	demoPgAuto        int
+	demoPgBrowser     int
+	demoPgCustomize   int
+	demoPgUsage       int
+	update            string // 状态栏更新提示文案(空 = 不显示)
+	updSt             updState
+	upd               *update.Runner
+	updSilent         bool   // 当前这次检查是后台静默检查(失败 / 已是最新都不打扰界面)
+	updNoticed        string // 已经为哪个版本发过「发现新版本」通知,避免每次检查都弹
+	nt                *noticeStore
+	mcpExp            map[string]bool // MCP 弹层里各服务器是否展开工具列表
+	ctxLoading        bool
+	ctxCompacting     bool
+	ctxRefreshAt      time.Time
+	mcpRefreshAt      time.Time
+	mcpRefreshing     bool
+	mcpRuntimeAt      int64  // 最近一次 mcp_status 成功的 Unix 秒
+	mcpTurnRefDone    bool   // 本会话首回合结束后是否已自动刷新 MCP
+	sessProcLive      bool   // claude 子进程是否至少启动过一次
+	cuMcpManageLoaded bool   // 本次进入自定义 MCP 页是否已触发加载
+	sideBF            string // 方案 B 侧栏当前浏览的项目 id
+	sessCtxWs         string // 侧栏正在画哪个工作区的会话行(点会话时先进入该工作区)
+	sessFork          func(fromID string) (newID string, err error)
+	brand             brand // Dock / 托盘(brand.go)
 }
 
 // Options 是创建应用的参数。
@@ -413,6 +422,7 @@ func (a *App) afterEvent(ev core.Event) {
 		a.curSess = e.SessionID
 	}
 	if _, ok := ev.(core.EvTurnStarted); ok {
+		a.sessProcLive = true
 		if a.cuDemo() && a.curSess == "b4-queue-img" && a.q.len() == 0 {
 			a.QueuePrompts(demo.QueuePromptSamples()...)
 		}
@@ -427,6 +437,9 @@ func (a *App) afterEvent(ev core.Event) {
 		}
 		a.qTurnEnded(e.Reason == core.StopEndTurn)
 		a.drainQueue()
+		if e.Reason == core.StopEndTurn {
+			a.mcpAfterTurnEnd()
+		}
 	}
 	if e, ok := ev.(core.EvPlanUpdated); ok && e.Streaming {
 		a.onPlanUpdated(e.ID, true)
@@ -442,6 +455,9 @@ func (a *App) afterEvent(ev core.Event) {
 	}
 	if u, ok := ev.(core.EvUsage); ok {
 		a.onUsageEvent(u.Usage)
+	}
+	if _, ok := ev.(core.EvMcpServers); ok {
+		a.onMcpServers()
 	}
 	if n, ok := ev.(core.EvAppend); ok {
 		if no, y := n.Item.(*core.Notice); y {
@@ -501,6 +517,13 @@ func (a *App) OpenSession(id string) {
 		return
 	}
 	a.beginSessLoad(id)
+	a.ctxRefreshAt = time.Time{}
+	a.mcpRefreshAt = time.Time{}
+	a.mcpRefreshing = false
+	a.mcpRuntimeAt = 0
+	a.mcpTurnRefDone = false
+	a.sessProcLive = false
+	a.cuMcpManageLoaded = false
 	a.st = core.NewState()
 	a.q.reset()
 	a.qa = nil
@@ -629,6 +652,9 @@ func (a *App) View(c *ui.Context) {
 	}
 	a.autosave()
 	a.extmodTick()
+	if kit.ScrollFrameActive(a.now()) {
+		a.frameSoon()
+	}
 	a.root(c)
 }
 

@@ -123,6 +123,8 @@ type Usage struct {
 	LimitsAt                 int64 // 限额数据最近一次更新的时刻(Unix 秒);0 = 还没取到
 	LimitsState              LimitsState
 	ContextDetailErr         string // get_context_usage 失败时的可行动说明(空 = 无错误)
+	ContextEstimated         bool   // 占用来自历史回放估算,非 get_context_usage
+	ContextQueriedAt         int64  // 最近一次精确查询成功的时刻(Unix 秒);0 = 尚未精确查询
 }
 
 // ContextRatio 上下文使用比例 0..1。
