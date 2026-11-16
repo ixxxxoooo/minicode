@@ -34,6 +34,20 @@ type reviewState struct {
 	side       bool            // 左右对比(默认行内)
 	grpClosed  map[string]bool // 多仓库分组是否折叠(键 g<序号>)
 	revAt      map[string]int  // 块撤销时「改动前文本」写进文件的字节位置(「重新应用」按它校验后写回)
+
+	chg changedCache // changedFiles 的缓存(按会话状态的 Rev)
+}
+
+// changedCache 缓存「会话里改过的文件」。changedFiles 每次都遍历整个时间线并对每个块算行级差异,
+// 而改动卡、编辑器叠层、状态栏、审查入口每帧都会调它,长会话里一帧要算好几遍。
+// 会话状态每归约一个事件 Rev 加一,所以按 (状态指针, Rev, 条目数, 末条) 判断是否需要重算。
+type changedCache struct {
+	st    *core.State
+	rev   uint64
+	n     int
+	last  core.Item
+	valid bool
+	out   []chFile
 }
 
 func (r *reviewState) init() {
@@ -55,6 +69,34 @@ func (a *App) changedFiles() []chFile {
 	if a.reviewDemoEmpty {
 		return nil
 	}
+	out := a.sessionChangedFiles()
+	// 演示:工作区里还有一个没被本会话碰过的未提交文件,与设计稿的「3 个文件」一致
+	if a.demoExtra {
+		src, _ := a.ide.fs.Read(a.wsRel("tests/case_test.rs"))
+		blk := &core.DiffBlock{Path: "tests/case_test.rs", New: src, Line: 1}
+		ad, _ := diff.Stat(diff.Lines("", src, 1, 1))
+		out = append(out, chFile{path: blk.Path, status: "A", add: ad, blocks: []*core.DiffBlock{blk}})
+	}
+	out = append(out, a.demoRepoFiles()...) // 演示工作区:另外两个文件夹也各有一轮改动
+	return out
+}
+
+// sessionChangedFiles 是 changedFiles 中只由会话时间线决定的那部分(带缓存;返回的切片可以安全追加)。
+func (a *App) sessionChangedFiles() []chFile {
+	var last core.Item
+	if n := len(a.st.Items); n > 0 {
+		last = a.st.Items[n-1]
+	}
+	cc := &a.rv.chg
+	if cc.valid && cc.st == a.st && cc.rev == a.st.Rev && cc.n == len(a.st.Items) && cc.last == last {
+		return append([]chFile(nil), cc.out...)
+	}
+	out := a.computeChangedFiles()
+	*cc = changedCache{st: a.st, rev: a.st.Rev, n: len(a.st.Items), last: last, valid: true, out: out}
+	return append([]chFile(nil), out...)
+}
+
+func (a *App) computeChangedFiles() []chFile {
 	idx := map[string]int{}
 	var out []chFile
 	var visit func(items []core.Item)
@@ -95,14 +137,6 @@ func (a *App) changedFiles() []chFile {
 		}
 	}
 	visit(a.st.Items)
-	// 演示:工作区里还有一个没被本会话碰过的未提交文件,与设计稿的「3 个文件」一致
-	if a.demoExtra {
-		src, _ := a.ide.fs.Read(a.wsRel("tests/case_test.rs"))
-		blk := &core.DiffBlock{Path: "tests/case_test.rs", New: src, Line: 1}
-		ad, _ := diff.Stat(diff.Lines("", src, 1, 1))
-		out = append(out, chFile{path: blk.Path, status: "A", add: ad, blocks: []*core.DiffBlock{blk}})
-	}
-	out = append(out, a.demoRepoFiles()...) // 演示工作区:另外两个文件夹也各有一轮改动
 	return out
 }
 
