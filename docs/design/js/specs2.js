@@ -64,7 +64,7 @@
       ['显示截断', '单行 + 省略号;标签宽 min 72 / max 168(随面板缩放);路径用中间截断(<span class="mono">~/…/src</span>);超长命令先取可执行文件 basename;放不下先等比缩到 min,再横向滚动;悬停 tooltip 全文', st('part')],
       ['竖向列表', '右侧:顶栏「+ 新终端」「⋯」;行 = 状态点 + 标题 + 悬停 ×;当前行高亮;双击/F2/右键重命名;右键:重命名·关闭·关闭其他·复制标题', st('part')],
       ['窄档降级', '对话栏窄档或面板宽 &lt;560 强制横向,忽略竖向偏好', st('part')],
-      ['前台进程名', 'PTY 层未接进程名解析,暂无法用进程名作标题', st('todo')]]))}
+      ['前台进程名', 'PTY 层未接进程名解析,暂无法用进程名作标题', st('todo')]])}
     ${tbl([['截断样本(满宽 168px)', 180], ['原文 tooltip', 360], ['状态']], [
       ['zsh', 'zsh', st('part')],
       ['~/Users/me/Projects/router-demo/src', '~/Users/me/Projects/router-demo/src', st('part')],
@@ -80,7 +80,7 @@
       cell('行内重命名', '', box(`<div class="term-side" style="height:120px;border:1px solid var(--bd-1);border-radius:var(--r-md)"><div class="term-side-row on" style="padding-right:6px"><span class="term-dot ok"></span><input class="inp" style="height:22px;flex:1" value="deploy"/></div><div class="term-side-row"><span class="term-dot ok"></span><span class="ell grow">zsh 2</span></div></div>`, 220, 120), '⏎ 保存 · Esc 取消。'),
       cell('关闭最后一个', '', box(`<div class="term-side" style="height:90px;border:1px solid var(--bd-1)"><div class="term-side-row on"><span class="term-dot ok"></span><span class="ell grow">zsh</span>${ib('x', 'sm')}</div></div><div class="t3 fs-cap" style="margin-top:6px">关到只剩 1 个时列表整体隐藏,留空白壳逻辑不变。</div>`, 220, 110), ''),
       cell('运行中命令', '', box(`<div class="term-side" style="height:100px;border:1px solid var(--bd-1)"><div class="term-side-row on"><span class="term-dot run"></span><span class="ell grow">cargo test</span></div><div class="term-side-row"><span class="term-dot ok"></span><span class="ell grow">zsh</span></div></div>`, 220, 100), 'OSC 133:命令在跑时显示运行点;结束后按退出码着色。'))}
-    <div class="t3" style="margin-top:10px;line-height:1.7">实现:Go <span class="mono">term_tabs.go</span> / <span class="mono">term_title.go</span>;调试 <span class="mono">-ed termtabs[:N]</span>。阶段三前未 Computer Use 实测。</div></div></div>`;
+    <div class="t3" style="margin-top:10px;line-height:1.7">实现:Go <span class="mono">term_tabs.go</span> / <span class="mono">term_title.go</span>;调试 <span class="mono">-ed termtabs[:N]</span>。阶段三前未 Computer Use 实测。</div>`)}</div>`;
 
   /* ───────── 语言服务 ───────── */
   const langRow = (n, srv, state, act) => `<div class="set-row"><span class="si-box">${ic('code')}</span><div class="grow"><div class="m">${n}</div><div class="d mono">${srv}</div></div>${state}${act}</div>`;

@@ -28,9 +28,9 @@
         ['展开正文', F.thinkMarquee({ stream: false, open: true, el: '4 秒' })],
         ['窄档隐藏', F.thinkMarquee({ stream: true, narrow: true })],
         ['减弱动态', F.thinkMarquee({ stream: true, reduce: true, preview: '静态显示最后一句,不滚动' })],
-      ].map(([l, h]) => `<div><div class="t3 fs-cap m">${l}</div>${h}</div>`).join('')}</div><motion-p class="t2 fs-cap" style="margin-top:8px">参考 Claude.ai 末行摘要、ChatGPT Thinking 行、Cursor shimmer+预览:只在<strong>流式且折叠</strong>时出现;展开态正文自带流,不重复预览;窗口失焦 / 减弱动态时静态末句。</motion-p>`)}
+      ].map(([l, h]) => `<div><div class="t3 fs-cap m">${l}</div>${h}</div>`).join('')}</div><p class="t2 fs-cap" style="margin-top:8px">参考 Claude.ai 末行摘要、ChatGPT Thinking 行、Cursor shimmer+预览:只在<strong>流式且折叠</strong>时出现;展开态正文自带流,不重复预览;窗口失焦 / 减弱动态时静态末句。</p>`)}
       ${spec('子 Agent · 调用卡(主流不内联)', ['--tool-agent', '.sub-task', '.ticker'], F.sub('审查 handlers 的错误处理', 'code-reviewer', { run: 1, pend: 1, stat: '<span>48 秒</span><span>7 次工具</span><span>12.4k</span>', prompt: '只读扫描 unwrap,不要改文件。' }) + F.sub('调研 axum 路由', 'Explore', { stat: '<span>1 分 20 秒</span><span>11 次工具</span>', sum: 'axum 类型安全路由更值得迁移。' }))}
-      ${spec('子 Agent · 并行组', ['--tool-agent', '.ticker'], F.step('agent', '并行 2 个', '', '1 个运行中', { verb: '子 Agent', open: true, body: `<div class="nest" style="gap:6px;padding-top:4px">${F.sub('代码审查', 'code-reviewer', { run: 1, stat: '<span>48 秒</span>' })}${F.sub('调研路由', 'Explore', { stat: '<span>1 分 20 秒</span>' })}</div>` })}</div>`)}
+      ${spec('子 Agent · 并行组', ['--tool-agent', '.ticker'], F.step('agent', '并行 2 个', '', '1 个运行中', { verb: '子 Agent', open: true, body: `<div class="nest" style="gap:6px;padding-top:4px">${F.sub('代码审查', 'code-reviewer', { run: 1, stat: '<span>48 秒</span>' })}${F.sub('调研路由', 'Explore', { stat: '<span>1 分 20 秒</span>' })}</div>` }))}</div>`)}
     ${sec('交互卡', '需要你决定的事就地替换输入框:权限、提问。处理完输入框原位回来,视线不用移动。计划卡留在正文里。',
       `<div class="grid2">${spec('权限请求', ['.a-pop-up', '.a-glow', '--ac-line'], F.perm())}${spec('提问', ['.opt', '--ac-soft'], F.ask())}
       ${spec('计划 · 生成中', ['.shimmer', '.caret'], F.plan(true))}${spec('计划 · 待批准', ['--tool-plan'], F.plan(false))}</div>`)}
