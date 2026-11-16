@@ -149,7 +149,6 @@ func (a *App) paletteAbsFile(q string) *scored {
 		return nil
 	}
 	name := filepath.Base(abs)
-	line, col = line, col
 	item := palItem{
 		group: "文件",
 		icon:  fileIcon(name),
