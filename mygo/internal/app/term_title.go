@@ -45,17 +45,7 @@ func (a *App) termTabRawTitle(i int) string {
 		return s
 	}
 	// 前台进程名:PTY 层暂未实现
-	cwd := tp.cwd
-	if cwd == "" {
-		cwd = a.proj
-	}
-	if cwd != "" {
-		return filepath.Base(cwd)
-	}
-	if i == 0 {
-		return shellName()
-	}
-	return "终端 " + itoa(i+1)
+	return a.termDefaultName(i)
 }
 
 // termPathLike 是否应按路径做中间截断。

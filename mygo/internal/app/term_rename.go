@@ -1,6 +1,7 @@
 package app
 
 import (
+	"path/filepath"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
@@ -15,10 +16,25 @@ type termRen struct {
 	buf string
 }
 
+// termBaseName 是没有重命名 / 终端标题时的基础名:启动目录名,没有目录就用 shell 名。
+func (a *App) termBaseName(i int) string {
+	if i >= 0 && i < len(a.ide.tps) && a.ide.tps[i].cwd != "" {
+		return filepath.Base(a.ide.tps[i].cwd)
+	}
+	if a.proj != "" {
+		return filepath.Base(a.proj)
+	}
+	return shellName()
+}
+
+// termDefaultName 是第 i 个终端的默认名:基础名与更靠前的标签重名时追加序号(「项目 2」),
+// 竖向列表里同项目开多个终端也分得清。
 func (a *App) termDefaultName(i int) string {
-	name := shellName()
-	if i > 0 {
-		name += " " + itoa(i+1)
+	name := a.termBaseName(i)
+	for j := 0; j < i && j < len(a.ide.tps); j++ {
+		if a.termTabRawTitle(j) == name {
+			return name + " " + itoa(i+1)
+		}
 	}
 	return name
 }

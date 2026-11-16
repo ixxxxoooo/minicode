@@ -18,8 +18,8 @@ func TestTermEntries(t *testing.T) {
 	if len(got) != 2 {
 		t.Fatalf("应有 2 个终端,得到 %d", len(got))
 	}
-	if got[0].Name != shellName() || got[1].Name != shellName()+" 2" {
-		t.Fatalf("命名应为 shell / shell 2,得到 %q %q", got[0].Name, got[1].Name)
+	if got[0].Name != a.termDefaultName(0) || got[1].Name != a.termDefaultName(1) || got[0].Name == got[1].Name {
+		t.Fatalf("默认名应按目录命名且互不相同,得到 %q %q", got[0].Name, got[1].Name)
 	}
 	if !got[1].Current || got[0].Current {
 		t.Fatalf("当前应是第二个: %+v", got)

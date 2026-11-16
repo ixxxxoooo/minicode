@@ -28,7 +28,8 @@ func TestTermNormalizeCommandBasename(t *testing.T) {
 
 func TestTermTabWidthsCompress(t *testing.T) {
 	texts := []string{"终端一", "终端二很长很长", "三"}
-	widths := termTabWidths(texts, 200)
+	// 可用区放得下:总宽不超出,单个不低于下限
+	widths := termTabWidths(texts, 260)
 	var sum float32
 	for _, w := range widths {
 		if w < termTabMinW {
@@ -36,8 +37,14 @@ func TestTermTabWidthsCompress(t *testing.T) {
 		}
 		sum += w
 	}
-	if sum > 200+1 {
-		t.Fatalf("总宽应不超过可用区: %v > 200", sum)
+	if sum > 260+1 {
+		t.Fatalf("总宽应不超过可用区: %v > 260", sum)
+	}
+	// 3 × 下限都放不下:每个压到下限,剩下的靠横向滚动
+	for _, w := range termTabWidths(texts, 200) {
+		if w != termTabMinW {
+			t.Fatalf("放不下时应压到下限 %v,得 %v", termTabMinW, w)
+		}
 	}
 }
 
@@ -54,8 +61,12 @@ func TestTermTabRawTitlePriority(t *testing.T) {
 		t.Fatalf("demo/OSC 替身: %q", got)
 	}
 	a.ide.tps[0].demoTitle = ""
+	if got := a.termTabRawTitle(0); got != "x" {
+		t.Fatalf("启动目录 basename: %q", got)
+	}
+	a.ide.tps[0].cwd = ""
 	if got := a.termTabRawTitle(0); got != "demo" {
-		t.Fatalf("cwd basename: %q", got)
+		t.Fatalf("项目目录 basename: %q", got)
 	}
 }
 
