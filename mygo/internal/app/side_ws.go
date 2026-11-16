@@ -66,23 +66,8 @@ func (a *App) projectsList(c *ui.Context) {
 	}
 }
 
-// caretBtn 是行首的展开箭头:单独可点,只展开 / 收起,不改变当前选中的项目或工作区。
-func (a *App) caretBtn(c *ui.Context, key string, open bool, toggle func()) {
-	t := a.tk
-	b := ui.ButtonBase(c).Key(key).Size(16, 18).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).Radius(4).Margin(0, -2, 0, -2).Cursor(ui.CursorPointer)
-	b.OnClick(toggle)
-	b.Children(func() {
-		rot := float32(0)
-		if open {
-			rot = 90
-		}
-		car := kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
-		car.Rotate(car.AnimateWith("rot", rot, kit.DurBase, kit.EaseOut))
-	})
-}
-
 // wsRow 工作区行:点行 = 选中这个工作区(聊天栏与 IDE 一起切过来)并展开;已选中时再点 = 展开 / 收起;
-// 点箭头只展开 / 收起。展开后列出所有成员文件夹的会话(工作区是平的,没有主文件夹)。
+// 没有行首箭头,图标本身表达展开(layers ⇄ layersOpen)。展开后列出所有成员文件夹的会话(工作区是平的,没有主文件夹)。
 func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 	t := a.tk
 	open := a.projOpen[w.ID]
@@ -108,8 +93,11 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 		if over {
 			dropLine(c, t)
 		}
-		a.caretBtn(c, "wscar-"+w.ID, open, func() { a.projOpen[w.ID] = !open })
-		ic := kit.Ic(c, "layers", kit.S12).TextColor(t.Tx3)
+		name := "layers"
+		if open {
+			name = "layersOpen" // 展开 = 三层拉开
+		}
+		ic := kit.Ic(c, name, kit.S16).TextColor(t.Tx3)
 		if on {
 			ic.TextColor(t.Ac)
 		}

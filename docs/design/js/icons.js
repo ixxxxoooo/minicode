@@ -92,7 +92,10 @@
     sync: '<path d="M4 12a8 8 0 0 1 14-5l2 2M20 12a8 8 0 0 1-14 5l-2-2M18 4v5h-5M6 20v-5h5"/>',
     tree: '<path d="M5 4v16M5 8h5M5 14h5M13 6h6M13 12h6M13 18h6"/>',
     filePlus: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M14 3l5 5v3M14 3v5h5"/><path d="M17.5 14.5v6M14.5 17.5h6"/>',
-    folderPlus: '<path d="M11 19H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v3"/><path d="M17.5 14.5v6M14.5 17.5h6"/>',
+    /* 侧栏「项目与工作区」展开态:folderOpen = 文件夹翻开,layersOpen = 三层各自拉开(收起时用 folder / layers) */
+    folderOpen: '<path d="M3 18V6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v2"/><path d="M3.2 18.4 5.6 11a2 2 0 0 1 1.9-1.4h13.2a1 1 0 0 1 .95 1.3l-2.1 6.8a2 2 0 0 1-1.9 1.4H5a2 2 0 0 1-1.8-.7z"/>',
+    layersOpen: '<path d="m12 2.5 8 4.5-8 4.5L4 7z"/><path d="m3.5 12.2 8.5 4.8 8.5-4.8"/><path d="m3.5 17 8.5 4.8 8.5-4.8"/>',
+    folderPlus:'<path d="M11 19H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v3"/><path d="M17.5 14.5v6M14.5 17.5h6"/>',
     collapseAll: '<path d="M8 4.5l4 4 4-4M8 19.5l4-4 4 4M4.5 12h15"/>',
     wrap: '<path d="M4 6h16M4 12h12.5a3 3 0 0 1 0 6H12M14.5 15.5 12 18l2.5 2.5M4 18h4"/>',
     align: '<path d="M4 6h16M4 10.5h10M4 15h16M4 19.5h10"/>',

@@ -21,7 +21,7 @@
   const side = `<div style="padding:8px">
     <div class="row on" style="height:28px">${ic('plus', 's12', 'c-ac')}<span class="grow b">新对话</span>${kbd('⌘', 'N')}</div>
     <div class="grp-h" style="margin-top:6px"><span class="grow">项目与工作区</span>${ib('plus', 'sm', '添加项目或工作区')}</div>
-    <div class="row" style="height:28px">${ic('chevD', 's12')}${ic('layers', 's12', 'c-ac')}<span class="grow b">全栈工作区</span><span class="t4 fs-micro">3 个文件夹</span></div>
+    <div class="row" style="height:28px">${ic('layersOpen', 's16', 'c-ac')}<span class="grow b">全栈工作区</span><span class="t4 fs-micro">3 个文件夹</span></div>
     <div class="row" style="height:28px;padding-left:25px">完整修复一个 Bug:路由大小写<span class="aux">刚刚</span></div>
     <div class="row" style="height:28px;padding-left:25px">权限请求:修改配置…<span class="aux">5 分钟</span></div>
     <div class="row" style="height:28px">${ic('chevR', 's12')}${ic('folder', 's12')}<span class="grow b">scenario-lab</span><span class="t4 fs-micro">61</span></div>
@@ -80,7 +80,7 @@
         <div class="f g2"><div class="row" style="height:24px;background:var(--fill-1);border-radius:var(--r-sm)">${ic('layers', 's12')}<span>全栈工作区</span></div></div>
         <div class="f g2" style="margin-top:8px">${btn('从列表移除', 'sm ghost', 'trash')}<span class="grow"></span>${btn('取消', 'ghost')}${btn('保存', 'pri')}</div></div>`, 480, 400), '显示名只存在 ~/.minicode/workspaces.json 的 names 里,不改文件夹、不动 Claude 的会话文件;与文件夹名相同或留空 = 恢复文件夹名。点所属工作区名直接进入「编辑工作区」。来自 Claude 会话记录的项目没有「从列表移除」,底部改成一行说明。')))}
     ${sec('拖拽排序', '工作区行可以拖着换位置(顺序写进 ' + mono('~/.minicode/workspaces.json') + ');工作区内的文件夹顺序在「编辑工作区」对话框里用上移 / 下移调整(文件树顺序跟着变)。侧栏不再列成员文件夹,所以成员行的拖拽取消。项目行按最近活动排序,不手动排。', grid(
-      cell('拖动中', '', box(`<div style="padding:8px"><div class="row" style="height:28px">${ic('chevD', 's12')}${ic('layers', 's12', 'c-ac')}<span class="grow b">全栈工作区</span><span class="t4 fs-micro">3 个文件夹</span></div>
+      cell('拖动中', '', box(`<div style="padding:8px"><div class="row" style="height:28px">${ic('layersOpen', 's16', 'c-ac')}<span class="grow b">全栈工作区</span><span class="t4 fs-micro">3 个文件夹</span></div>
         <div class="row" style="height:28px;box-shadow:inset 0 2px 0 var(--ac)">${ic('chevR', 's12')}${ic('layers', 's12')}<span class="grow b">文档与素材</span><span class="t4 fs-micro">2 个文件夹</span></div>
         <div class="row" style="height:28px;opacity:.5">${ic('chevR', 's12')}${ic('layers', 's12')}<span class="grow b">运维脚本</span><span class="t4 fs-micro">2 个文件夹</span></div>
         <div class="pop" style="position:relative;width:170px;padding:4px 10px;margin:-30px 0 0 120px;opacity:.92">${ic('layers', 's12')} 运维脚本</div></div>`, 170, 330), '拖起的行变淡、指针旁跟一份副本;经过的行顶部出现 2px 强调色插入线,松手 = 放到那一行之前。'),

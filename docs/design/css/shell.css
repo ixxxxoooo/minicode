@@ -38,7 +38,7 @@
 .side-body { flex: 1; min-height: 0; padding: 0 6px; overflow: hidden; }
 .side-foot { display: flex; align-items: center; gap: 2px; padding: 6px 8px; flex: none; }
 .proj { font-weight: var(--fw-medium); color: var(--tx-1); gap: 5px; }
-.proj .car { color: var(--tx-4); transition: transform var(--dur-base) var(--ease-out); } .proj.open .car { transform: rotate(90deg); }
+/* 项目 / 工作区行不再有行首展开箭头:图标本身表达展开(folder ⇄ folderOpen,layers ⇄ layersOpen),图标 16px */
 .sess { padding-left: 25px; }
 .new-chat { color: var(--tx-1); font-weight: var(--fw-medium); margin: 0 6px 4px; }
 
