@@ -297,12 +297,13 @@ type App struct {
 	ctxRefreshAt      time.Time
 	mcpRefreshAt      time.Time
 	mcpRefreshing     bool
-	mcpRuntimeAt      int64  // 最近一次 mcp_status 成功的 Unix 秒
-	mcpTurnRefDone    bool   // 本会话首回合结束后是否已自动刷新 MCP
-	sessProcLive      bool   // claude 子进程是否至少启动过一次
-	cuMcpManageLoaded bool   // 本次进入自定义 MCP 页是否已触发加载
-	sideBF            string // 方案 B 侧栏当前浏览的项目 id
-	sessCtxWs         string // 侧栏正在画哪个工作区的会话行(点会话时先进入该工作区)
+	mcpDeny           map[string]bool // 本地层被禁用的 MCP 工具规则(缓存,弹层打开 / 切换后后台重读)
+	mcpRuntimeAt      int64           // 最近一次 mcp_status 成功的 Unix 秒
+	mcpTurnRefDone    bool            // 本会话首回合结束后是否已自动刷新 MCP
+	sessProcLive      bool            // claude 子进程是否至少启动过一次
+	cuMcpManageLoaded bool            // 本次进入自定义 MCP 页是否已触发加载
+	sideBF            string          // 方案 B 侧栏当前浏览的项目 id
+	sessCtxWs         string          // 侧栏正在画哪个工作区的会话行(点会话时先进入该工作区)
 	sessFork          func(fromID string) (newID string, err error)
 	brand             brand // Dock / 托盘(brand.go)
 }

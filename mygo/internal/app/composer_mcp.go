@@ -68,7 +68,8 @@ func (a *App) mcpPopup(c *ui.Context, anchor ui.Element) {
 							}
 						})
 					})
-					if a.mcpRefreshing {
+					if a.mcpRefreshing && time.Since(a.mcpRefreshAt) < 10*time.Second { // 后端没回事件时不能一直转
+						a.frameIn(200 * time.Millisecond)
 						ui.Text(c, "正在刷新…").FontSize(theme.FsCap).TextColor(t.Tx3)
 					} else if tokSum > 0 || ratio > 0 {
 						ui.Text(c, fmt.Sprintf("工具定义占上下文 %s · %.1f%%", fmtTok(tokSum), ratio)).FontSize(theme.FsCap).TextColor(t.Tx3)
@@ -111,21 +112,20 @@ func (a *App) mcpRow(c *ui.Context, r McpRow) {
 		row.Background(t.Fill1)
 	}
 	row.Children(func() {
-		if kit.Ib(c, "chevR", kit.IbOpt{Small: true}).Clicked() {
+		chev := "chevR"
+		if exp {
+			chev = "chevD"
+		}
+		if kit.Ib(c, chev, kit.IbOpt{Small: true, Tip: map[bool]string{true: "收起工具列表", false: "展开工具列表"}[exp]}).Clicked() {
 			a.mcpExp[key] = !exp
 		}
-		chevRot := float32(0)
-		if exp {
-			chevRot = 90
-		}
-		kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4).Rotate(chevRot)
 		a.mcpDot(c, r.Conn)
 		ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 			ui.Text(c, r.Name).FontWeight(500).SingleLine()
 			ui.Text(c, r.Detail).FontSize(theme.FsMicro).TextColor(t.Tx3).SingleLine()
 		})
 		if kit.Tog(c, r.On, key+"-tog") {
-			a.toggleMcpServer(r.Name, !r.On)
+			a.setMcpServerOn(r.Name, !r.On)
 		}
 	})
 	if exp && len(r.ToolsList) > 0 {
@@ -176,20 +176,40 @@ func mcpConnFromItem(st customize.Status) core.McpConn {
 	return core.McpUnknown
 }
 
-func (a *App) toggleMcpServer(name string, on bool) {
+// setMcpServerOn 弹层里的服务器开关:写配置(项目条目的 disabledMcpServers,下次启动仍生效)+ 立刻热切换运行中的会话。
+// 此前弹层只发了热切换命令,没有进程时什么也不做、也不改本地状态,开关就像点不动。
+func (a *App) setMcpServerOn(name string, on bool) {
+	found := false
+	if st := a.cuStore(); st != nil {
+		for _, it := range st.List(customize.MCP, customize.All, "") {
+			if it.Name == name {
+				a.cuMCPOn(it, on) // 持久化 + 更新本地状态 + 热切换
+				found = true
+				break
+			}
+		}
+	}
+	if !found { // 账号连接器 / 插件带来的服务器不在配置里,只能热切换(需要会话进程)
+		if !a.mcpRuntimeReady() {
+			a.toast = "会话还没连接,暂时无法切换「" + name + "」"
+			return
+		}
+		a.hotToggleMcp(name, on)
+	}
+}
+
+// hotToggleMcp 把开关热切换给运行中的会话(没有进程时后端会忽略,配置已落盘,下次启动生效)。
+func (a *App) hotToggleMcp(name string, on bool) {
 	if a.be == nil {
-		a.toast = "当前没有活动后端"
 		return
 	}
-	if a.be.Name() == "demo" {
+	switch a.be.Name() {
+	case "demo":
 		a.send(core.CmdMcpToggle{Name: name, Enabled: on})
 		a.toast = "演示模式:MCP 开关已记录"
-		return
-	}
-	if a.be.Name() == "claude" {
+	case "claude":
 		a.send(core.CmdMcpToggle{Name: name, Enabled: on})
-		log.Info("MCP 切换", "server", name, "on", on)
-		return
+		a.mcpRefreshing, a.mcpRefreshAt = true, time.Now() // 后端切换后会重查状态
+		log.Info("MCP 热切换", "server", name, "on", on)
 	}
-	a.toast = "该运行模式不支持 MCP 热切换"
 }

@@ -162,6 +162,7 @@ func (a *App) cuMCPOn(it *customize.Item, on bool) {
 		}
 	}
 	log.Info("MCP启停", "name", it.Name, "on", on)
+	a.hotToggleMcp(it.Name, on)
 }
 
 func (a *App) cuMCPTool(it *customize.Item, i int) {

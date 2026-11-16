@@ -58,6 +58,7 @@ func (a *App) mcpRefresh(opts mcpRefreshOpts) {
 }
 
 func (a *App) mcpOnOpenPopup() {
+	a.mcpDenyReload()
 	a.mcpRefresh(mcpRefreshOpts{ReloadDisk: true, Runtime: a.mcpRuntimeReady()})
 }
 

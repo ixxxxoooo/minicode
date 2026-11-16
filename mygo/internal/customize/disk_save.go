@@ -311,3 +311,27 @@ func (ds *DiskStore) MCPToolDenied(server, tool string) bool {
 	}
 	return false
 }
+
+// MCPDenySet 一次读出本地层 permissions.deny 里全部 mcp__ 规则(键即规则原文)。
+// 弹层里每个工具行都要问「是否被禁用」,逐个读文件每帧会读几十次,所以批量读一次再缓存。
+func (ds *DiskStore) MCPDenySet() map[string]bool {
+	out := map[string]bool{}
+	path := filepath.Join(ds.proj, ".claude", "settings.local.json")
+	var root map[string]any
+	if !readJSON(path, &root) {
+		return out
+	}
+	perms, _ := root["permissions"].(map[string]any)
+	deny, _ := perms["deny"].([]any)
+	for _, x := range deny {
+		if s, ok := x.(string); ok && strings.HasPrefix(s, "mcp__") {
+			out[s] = true
+		}
+	}
+	return out
+}
+
+// MCPToolKey 是工具对应的 permissions.deny 规则文本。
+func MCPToolKey(server, tool string) string {
+	return "mcp__" + strings.ReplaceAll(server, " ", "_") + "__" + tool
+}
