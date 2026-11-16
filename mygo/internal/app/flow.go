@@ -87,64 +87,71 @@ func (a *App) stepGroup(c *ui.Context, items []core.Item) {
 			// 时间轴竖线:贴着图标列中线
 			ui.Box(c).Absolute().Left(7.5).Top(10).Bottom(10).Width(1).Background(t.Bd2)
 		}
-		for i := 0; i < len(items); {
-			if sa, ok := items[i].(*core.SubagentCard); ok {
-				j := i
-				var grp []*core.SubagentCard
-				for j < len(items) {
-					sa2, ok2 := items[j].(*core.SubagentCard)
-					if !ok2 {
-						break
-					}
-					grp = append(grp, sa2)
-					j++
-				}
-				if len(grp) >= 2 {
-					a.parallelSubGroup(c, grp)
-					i = j
-					continue
-				}
-				_ = sa
-			}
-			if _, ok := mergeable(items[i]); ok && a.ToolDetailLevel() == 0 {
-				j := i
-				var grp []*core.ToolCall
-				for j < len(items) {
-					tc2, ok2 := mergeable(items[j])
-					if !ok2 {
-						break
-					}
-					grp = append(grp, tc2)
-					j++
-				}
-				if len(grp) >= 2 {
-					a.mergeGroup(c, grp)
-					i = j
-					continue
-				}
-			}
-			if tc, ok := isExplore(items[i]); ok {
-				_ = tc
-				j := i
-				var grp []*core.ToolCall
-				for j < len(items) {
-					tc2, ok2 := isExplore(items[j])
-					if !ok2 {
-						break
-					}
-					grp = append(grp, tc2)
-					j++
-				}
-				if len(grp) >= 2 {
-					a.exploreGroup(c, grp)
-					i = j
-					continue
-				}
-			}
-			a.stepItem(c, items[i])
-			i++
-		}
+		a.stepSeq(c, items)
 	})
+}
+
+// stepSeq 排一串连续的步骤:并行子 Agent 成一组;精简档下相邻的工具调用(≥2 个)并成一行摘要;
+// 其余档只把相邻的读 / 搜合成探索组;剩下的逐行。回合折叠展开后里面也走这里
+// (设计稿 flow-detail:「展开它之后,里面每一串按当前档位再排一次」)。
+func (a *App) stepSeq(c *ui.Context, items []core.Item) {
+	for i := 0; i < len(items); {
+		if sa, ok := items[i].(*core.SubagentCard); ok {
+			j := i
+			var grp []*core.SubagentCard
+			for j < len(items) {
+				sa2, ok2 := items[j].(*core.SubagentCard)
+				if !ok2 {
+					break
+				}
+				grp = append(grp, sa2)
+				j++
+			}
+			if len(grp) >= 2 {
+				a.parallelSubGroup(c, grp)
+				i = j
+				continue
+			}
+			_ = sa
+		}
+		if _, ok := mergeable(items[i]); ok && a.ToolDetailLevel() == 0 {
+			j := i
+			var grp []*core.ToolCall
+			for j < len(items) {
+				tc2, ok2 := mergeable(items[j])
+				if !ok2 {
+					break
+				}
+				grp = append(grp, tc2)
+				j++
+			}
+			if len(grp) >= 2 {
+				a.mergeGroup(c, grp)
+				i = j
+				continue
+			}
+		}
+		if tc, ok := isExplore(items[i]); ok {
+			_ = tc
+			j := i
+			var grp []*core.ToolCall
+			for j < len(items) {
+				tc2, ok2 := isExplore(items[j])
+				if !ok2 {
+					break
+				}
+				grp = append(grp, tc2)
+				j++
+			}
+			if len(grp) >= 2 {
+				a.exploreGroup(c, grp)
+				i = j
+				continue
+			}
+		}
+		a.stepItem(c, items[i])
+		i++
+	}
 }
 
 func (a *App) exploreGroup(c *ui.Context, g []*core.ToolCall) {
@@ -165,7 +172,7 @@ func (a *App) exploreGroup(c *ui.Context, g []*core.ToolCall) {
 	a.stepRow(c, sp, func() {
 		a.nest(c, func() {
 			for _, tc := range g {
-				a.stepRow(c, a.presentTool(tc), nil)
+				a.groupChild(c, tc, false) // 每一条都是普通步骤行:点才展开入参 / 结果,失败的自动展开
 			}
 		})
 	})

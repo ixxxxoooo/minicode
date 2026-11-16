@@ -126,13 +126,23 @@ func (a *App) turnFoldGroup(c *ui.Context, uid string, steps []core.Item) {
 	sp := step{id: id, icon: "layers", verb: "已处理", obj: elapsed, meta: meta, fam: famExplore, hasBody: true, open: open}
 	a.stepRow(c, sp, func() {
 		a.nest(c, func() {
+			// 里面每一串按当前档位再排一次(精简档 = 摘要行,标准档 = 探索组 + 逐行);已答的提问卡把串断开
+			var run []core.Item
+			flush := func() {
+				if len(run) > 0 {
+					a.stepSeq(c, run)
+					run = nil
+				}
+			}
 			for _, it := range steps {
 				if q, ok := it.(*core.QuestionRequest); ok && q.Answered {
+					flush()
 					a.askEcho(c, q)
 					continue
 				}
-				a.stepItem(c, it)
+				run = append(run, it)
 			}
+			flush()
 		})
 	})
 }

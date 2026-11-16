@@ -13,10 +13,12 @@ import (
 // 例如「编辑了 2 个文件、运行了 2 条命令」,展开后才看到逐条;标准档只合并探索类(见 exploreGroup),
 // 详细档不合并且默认展开 diff / 命令输出。设计稿:设置 → 对话 → 工具调用详细程度的预览。
 
-// mergeable 精简档下可并入摘要行的条目:只认普通工具调用(子 Agent、思考、待办、权限卡各自成行,保持可见)。
+// mergeable 精简档下可并入摘要行的条目:普通工具调用(子 Agent、思考、待办、待处理的权限卡各自成行,保持可见)。
+// 已处理的权限请求(点了「允许 / 拒绝」)里装的也是那次工具调用,同样并入——否则一个需要确认的编辑 / 命令
+// 就会把相邻的一串从中间截断(设计稿 flow-detail:被拒绝的调用仍留在原来的组里,计入「N 项失败」)。
 func mergeable(it core.Item) (*core.ToolCall, bool) {
-	tc, ok := it.(*core.ToolCall)
-	if !ok {
+	tc := doneToolOf(it)
+	if tc == nil {
 		return nil, false
 	}
 	switch tc.Kind {
@@ -141,17 +143,18 @@ func (a *App) mergeGroup(c *ui.Context, g []*core.ToolCall) {
 	}
 	a.stepRow(c, sp, func() {
 		a.nest(c, func() {
+			live := mergeLiveTool(g)
 			for _, tc := range g {
-				ps := a.presentTool(tc)
-				ps.open = false
-				if running && tc == mergeLiveTool(g) && ps.hasBody {
-					ps.open = true
-				}
-				if failed > 0 && tc.Status.Unsuccessful() && ps.hasBody {
-					ps.open = true
-				}
-				a.stepRow(c, ps, func() { a.toolBody(c, tc) })
+				a.groupChild(c, tc, running && tc == live)
 			}
 		})
 	})
+}
+
+// groupChild 画分组展开后的一条:普通步骤行(各自再点才展开详情,展开不拆组),默认收起;
+// 失败 / 被拒绝 / 被中断的自动展开原因,进行中的那一条(autoOpen)展开看实时输出。
+func (a *App) groupChild(c *ui.Context, tc *core.ToolCall, autoOpen bool) {
+	ps := a.presentTool(tc)
+	ps.open = ps.hasBody && (autoOpen || tc.Status.Unsuccessful())
+	a.stepRow(c, ps, func() { a.toolBody(c, tc) })
 }
