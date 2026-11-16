@@ -124,11 +124,26 @@ func (a *App) modeSegCompact(c *ui.Context) {
 	}
 	kit.Ib(c, icon, kit.IbOpt{Tip: "切换 Agent / IDE ⌘E"}).OnClick(func() {
 		if a.mode == ModeAgent {
-			a.SetMode(ModeIDE)
+			a.pickMode(ModeIDE)
 		} else {
-			a.SetMode(ModeAgent)
+			a.pickMode(ModeAgent)
 		}
 	})
+}
+
+// pickMode 处理标题栏形态分段的点击:设置 / 整页功能不属于任一形态,
+// 在其中点 Agent / IDE = 先回到工作台,再切到点中的形态(点的就是当前形态时只回工作台)。
+// 参数 m:点中的形态。无返回值。
+func (a *App) pickMode(m Mode) {
+	if a.screen != ScreenWork {
+		log.Info("形态分段:离开页面回到工作台", "from", a.screen, "mode", m)
+		if a.screen == ScreenSettings {
+			a.closeSettings()
+		} else {
+			a.screen = ScreenWork
+		}
+	}
+	a.SetMode(m)
 }
 
 func (a *App) modeSeg(c *ui.Context) {
@@ -138,7 +153,7 @@ func (a *App) modeSeg(c *ui.Context) {
 	}
 	i := kit.Seg(c, []kit.SegItem{{Icon: "bot", Text: "Agent", Tip: "⌘E"}, {Icon: "code", Text: "IDE", Tip: "⌘E"}}, on, kit.SegOpt{Large: true, Key: "modeseg"})
 	if i >= 0 {
-		a.SetMode(Mode(i))
+		a.pickMode(Mode(i))
 	}
 }
 
