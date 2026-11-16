@@ -268,14 +268,14 @@ func (a *App) applyToolDefaultOpen(s *step, tc *core.ToolCall) {
 		return
 	case 2:
 		s.open = tc.Status == core.ToolCompleted || tc.Status == core.ToolRunning || tc.Status == core.ToolPending
-		if s.state == "err" || s.state == "deny" {
+		if s.state == "deny" { // 失败的不自动展开(只在行尾标红),被拒绝的仍展开
 			s.open = true
 		}
 		return
 	}
-	// 标准档:默认折叠;失败 / 被拒绝 / 运行中的命令 / 非 0 退出码展开
+	// 标准档:默认折叠;被拒绝 / 运行中的命令 / 非 0 退出码展开(失败的不自动展开)
 	s.open = false
-	if s.state == "err" || s.state == "deny" {
+	if s.state == "deny" {
 		s.open = true
 		return
 	}

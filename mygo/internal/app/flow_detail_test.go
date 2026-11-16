@@ -32,7 +32,7 @@ func TestToolDefaultOpenMatrix(t *testing.T) {
 	}{
 		{"精简·编辑", 0, edit(core.ToolCompleted), false},
 		{"标准·编辑完成", 1, edit(core.ToolCompleted), false},
-		{"标准·编辑失败", 1, edit(core.ToolFailed), true},
+		{"标准·编辑失败", 1, edit(core.ToolFailed), false},
 		{"标准·命令完成", 1, run(core.ToolCompleted, core.Int(0)), false},
 		{"标准·命令运行中", 1, run(core.ToolRunning, nil), true},
 		{"标准·命令非0退出码", 1, run(core.ToolCompleted, core.Int(101)), true},

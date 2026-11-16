@@ -165,6 +165,6 @@ func (a *App) mergeGroup(c *ui.Context, g []*core.ToolCall) {
 // 失败 / 被拒绝 / 被中断的自动展开原因,进行中的那一条(autoOpen)展开看实时输出。
 func (a *App) groupChild(c *ui.Context, tc *core.ToolCall, autoOpen bool) {
 	ps := a.presentTool(tc)
-	ps.open = ps.hasBody && (autoOpen || tc.Status.Unsuccessful())
+	ps.open = ps.hasBody && (autoOpen || (tc.Status.Unsuccessful() && tc.Status != core.ToolFailed && tc.Status != core.ToolInterrupted))
 	a.stepRow(c, ps, func() { a.toolBody(c, tc) })
 }
