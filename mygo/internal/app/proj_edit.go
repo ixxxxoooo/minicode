@@ -86,7 +86,7 @@ func (a *App) projectDialog(c *ui.Context) {
 			ui.Row(c).Gap(6).Wrap().Children(func() {
 				for _, w := range ws {
 					w := w
-					r := kit.RowEl(c, false).Key("proj-ws-" + w.ID).Height(24).Gap(5).PaddingX(8).Radius(t.RSm()).Background(t.Fill1)
+					r := kit.RowEl(c, false).Key("proj-ws-" + w.ID).Height(theme.Px(24)).Gap(5).PaddingX(8).Radius(t.RSm()).Background(t.Fill1)
 					r.OnClick(func() { a.openWsDialog(w.ID, "") })
 					r.Children(func() {
 						kit.Ic(c, "layers", kit.S12).TextColor(t.Tx3)

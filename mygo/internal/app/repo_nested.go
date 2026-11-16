@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/ixxxxoooo/minicode/internal/theme"
 	"os"
 	"path/filepath"
 	"sort"
@@ -91,7 +92,7 @@ func (a *App) nestedBadges(c *ui.Context, p string) {
 	}
 	kit.Tag(c, a.repos[i].kind)
 	if _, _, _, n := a.repoSummary(i); n > 0 {
-		ui.Text(c, itoa(n)).FontSize(10).FontWeight(700).TextColor(a.tk.Warn).FontFeatures("tnum").Shrink(0)
+		ui.Text(c, itoa(n)).FontSize(theme.Px(10)).FontWeight(700).TextColor(a.tk.Warn).FontFeatures("tnum").Shrink(0)
 	}
 }
 

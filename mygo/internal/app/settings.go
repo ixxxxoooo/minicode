@@ -249,6 +249,7 @@ func (a *App) applyPrefs() {
 		a.sch = theme.FindScheme(a.prefs.Str(kScheme, a.sch.ID))
 	}
 	a.accent = accentOf(a.pal, a.prefs.Int(kAccent, 0))
+	theme.SetUIScale(a.prefs.Int(pUIScale, theme.DefaultUIScale)) // 界面大小:先于 retheme,令牌与行高才按新倍率算
 	a.density = a.prefs.Int(kDensity, 1)
 	a.radius = a.prefs.Int(kRadius, 1)
 	a.ApplySystemAppearance()
@@ -290,7 +291,7 @@ func (a *App) settingsNav(c *ui.Context) {
 			kit.Kbd(c, "esc")
 		})
 		// 搜索框
-		ui.Row(c).Height(24).PaddingX(8).Gap(6).Radius(t.RSm()).Background(t.Fill1).AlignItems(ui.Center).Margin(0, 0, 6, 0).Children(func() {
+		ui.Row(c).Height(theme.Px(24)).PaddingX(8).Gap(6).Radius(t.RSm()).Background(t.Fill1).AlignItems(ui.Center).Margin(0, 0, 6, 0).Children(func() {
 			kit.Ic(c, "search", kit.S12).TextColor(t.Tx3)
 			in := ui.TextInputBase(c.Key("set-q"), &a.set.query).Grow(1).FontSize(theme.FsCap + .5).Placeholder("搜索设置").PlaceholderColor(t.Tx4)
 			in.OnShortcut(0, ui.KeyEscape, func() { a.set.query = "" })
@@ -465,7 +466,7 @@ func (a *App) settingsControl(c *ui.Context, r setRow) {
 		}
 	case kStep:
 		v := a.prefInt(r)
-		ui.Row(c).Height(24).PaddingX(2).Gap(2).Radius(t.RSm()).Background(t.Raised).Border(1, t.Bd2).AlignItems(ui.Center).Shrink(0).Children(func() {
+		ui.Row(c).Height(theme.Px(24)).PaddingX(2).Gap(2).Radius(t.RSm()).Background(t.Raised).Border(1, t.Bd2).AlignItems(ui.Center).Shrink(0).Children(func() {
 			btn := func(label string, d int) {
 				b := ui.ButtonBase(c).Key("stp-"+r.key+label).Size(20, 20).Radius(t.RXs()).Justify(ui.Center).AlignItems(ui.Center).TextColor(t.Tx3).Transition(kit.Fade)
 				if b.Hovered() {
@@ -527,7 +528,7 @@ func (a *App) settingsField(c *ui.Context, r setRow) {
 	}
 	shake := a.set.fieldShake[r.key]
 	kit.Field(c, r.key, kit.FieldOpt{ShakeAt: &shake}, func(box ui.Element) {
-		box.Height(26).Width(w).Shrink(0).Grow(0) // 保留 kit.Field 自带的描边 / 聚焦环,一眼看出可编辑
+		box.Height(theme.Px(26)).Width(w).Shrink(0).Grow(0) // 保留 kit.Field 自带的描边 / 聚焦环,一眼看出可编辑
 		in := ui.TextInputBase(c.Key("fld-"+r.key), buf).Grow(1).FontSize(theme.FsCap + .5).Placeholder(r.ph).PlaceholderColor(a.tk.Tx4)
 		if r.mono {
 			in.Font("monospace")

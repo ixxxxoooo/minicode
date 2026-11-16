@@ -25,7 +25,7 @@ func (a *App) termNerdCheck(c *ui.Context, tp *termPanel) {
 		return
 	}
 	t := a.tk
-	bar := ui.Row(c).Key("term-nerd").Height(28).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).
+	bar := ui.Row(c).Key("term-nerd").Height(theme.Px(28)).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).
 		Background(t.WarnSoft).BorderWidth(0, 0, 1, 0).BorderColor(t.Warn).Children(func() {
 		ui.Text(c, tp.nerdWarn).FontSize(theme.FsCap).TextColor(t.Warn).Grow(1).MinWidth(0).SingleLine()
 		kit.Btn(c, "终端设置", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() {

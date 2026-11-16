@@ -30,9 +30,9 @@ func Ib(c *ui.Context, icon string, o ...IbOpt) ui.Element {
 	if len(o) > 0 {
 		op = o[0]
 	}
-	sz := float32(24)
+	sz := theme.Px(24)
 	if op.Small {
-		sz = 20
+		sz = theme.Px(20)
 	}
 	b := ui.ButtonBase(c).Size(sz, sz).Radius(T.RSm()).Justify(ui.Center).AlignItems(ui.Center)
 	col := T.Tx2
@@ -109,9 +109,9 @@ func Btn(c *ui.Context, text string, o ...BtnOpt) ui.Element {
 	if len(o) > 0 {
 		op = o[0]
 	}
-	h, px, fs := float32(24), float32(9), float32(12)
+	h, px, fs := theme.Px(24), float32(9), theme.Px(12)
 	if op.Small {
-		h, px, fs = 20, 7, 11.5
+		h, px, fs = theme.Px(20), 7, theme.Px(11.5)
 	}
 	b := ui.ButtonBase(c).Height(h).PaddingX(px).Radius(T.RSm()).Gap(5).AlignItems(ui.Center).FontSize(fs).Shrink(0)
 	if op.Disabled {
@@ -195,7 +195,7 @@ func Chip(c *ui.Context, text string, o ...ChipOpt) ui.Element {
 	if len(o) > 0 {
 		op = o[0]
 	}
-	b := ui.ButtonBase(c).Height(22).PaddingX(7).Radius(T.RSm()).Gap(4).AlignItems(ui.Center).FontSize(11.5).Cursor(ui.CursorPointer).Shrink(0)
+	b := ui.ButtonBase(c).Height(theme.Px(22)).PaddingX(7).Radius(T.RSm()).Gap(4).AlignItems(ui.Center).FontSize(theme.Px(11.5)).Cursor(ui.CursorPointer).Shrink(0)
 	clickFocusRing(b)
 	clickPressScale(b)
 	col := T.Tx2
@@ -264,8 +264,8 @@ func Tag(c *ui.Context, text string, k ...TagKind) ui.Element {
 		kind = k[0]
 	}
 	bg, fg := tagColors(kind)
-	return ui.Row(c).Height(16).PaddingX(5).Radius(T.RXs()).Background(bg).AlignItems(ui.Center).Shrink(0).Children(func() {
-		ui.Text(c, text).FontSize(10.5).FontWeight(500).TextColor(fg).SingleLine()
+	return ui.Row(c).Height(theme.Px(16)).PaddingX(5).Radius(T.RXs()).Background(bg).AlignItems(ui.Center).Shrink(0).Children(func() {
+		ui.Text(c, text).FontSize(theme.Px(10.5)).FontWeight(500).TextColor(fg).SingleLine()
 	})
 }
 
@@ -275,12 +275,12 @@ func Cnt(c *ui.Context, n string, accent bool) ui.Element {
 	if accent {
 		bg, fg = T.Ac, T.OnAc
 	}
-	w := float32(15)
+	w := theme.Px(15)
 	if r := utf8.RuneCountInString(n); r > 1 {
-		w = float32(r)*6 + 8
+		w = float32(r)*theme.Px(6) + 8
 	}
-	return ui.Row(c).MinWidth(15).Width(w).Height(15).Radius(8).Background(bg).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).Children(func() {
-		ui.Text(c, n).FontSize(10).FontWeight(700).TextColor(fg).SingleLine()
+	return ui.Row(c).MinWidth(theme.Px(15)).Width(w).Height(theme.Px(15)).Radius(8).Background(bg).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).Children(func() {
+		ui.Text(c, n).FontSize(theme.Px(10)).FontWeight(700).TextColor(fg).SingleLine()
 	})
 }
 
@@ -288,8 +288,8 @@ func Cnt(c *ui.Context, n string, accent bool) ui.Element {
 func Kbd(c *ui.Context, keys ...string) ui.Element {
 	return ui.Row(c).Gap(2).Shrink(0).AlignItems(ui.Center).Children(func() {
 		for _, k := range keys {
-			ui.Row(c).MinWidth(16).Height(15).PaddingX(4).Radius(T.RXs()).Background(T.Fill1).Border(1, T.Bd2).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, k).Font("monospace").FontSize(10).TextColor(T.Tx3).SingleLine()
+			ui.Row(c).MinWidth(theme.Px(16)).Height(theme.Px(15)).PaddingX(4).Radius(T.RXs()).Background(T.Fill1).Border(1, T.Bd2).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
+				ui.Text(c, k).Font("monospace").FontSize(theme.Px(10)).TextColor(T.Tx3).SingleLine()
 			})
 		}
 	})
@@ -310,7 +310,7 @@ func Dot(c *ui.Context, k TagKind) ui.Element {
 	case KInfo:
 		col = T.Info
 	}
-	return ui.Box(c).Size(6, 6).Radius(3).Background(col).Shrink(0)
+	return ui.Box(c).Size(theme.Px(6), theme.Px(6)).Radius(theme.Px(3)).Background(col).Shrink(0)
 }
 
 // Sep 是水平分隔线(设计稿 .sep:1px bd-1,上下 4px)。

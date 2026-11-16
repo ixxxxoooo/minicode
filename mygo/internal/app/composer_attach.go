@@ -165,7 +165,7 @@ func (a *App) queueAttachChips(c *ui.Context, draft string) {
 	t := a.tk
 	ui.Row(c).Gap(4).Shrink(0).Children(func() {
 		for _, at := range atts {
-			chip := ui.Row(c).Height(22).PaddingX(3).Gap(3).Radius(t.RXs()).AlignItems(ui.Center).Border(1, t.Bd2).Background(t.Fill1).Shrink(0)
+			chip := ui.Row(c).Height(theme.Px(22)).PaddingX(3).Gap(3).Radius(t.RXs()).AlignItems(ui.Center).Border(1, t.Bd2).Background(t.Fill1).Shrink(0)
 			chip.Children(func() {
 				if abs := a.absAttach(at.Path); abs != "" {
 					if _, err := os.Stat(abs); err == nil {
@@ -204,7 +204,7 @@ func (a *App) composerAttachRow(c *ui.Context) {
 	ui.Row(c).Padding(6, 12, 0, 12).Gap(6).Wrap().Children(func() {
 		for _, at := range atts {
 			at := at
-			chip := ui.Row(c).Height(24).PaddingX(4).Gap(4).Radius(t.RSm()).AlignItems(ui.Center).Border(1, t.Bd2).Background(t.Fill1).Cursor(ui.CursorDefault)
+			chip := ui.Row(c).Height(theme.Px(24)).PaddingX(4).Gap(4).Radius(t.RSm()).AlignItems(ui.Center).Border(1, t.Bd2).Background(t.Fill1).Cursor(ui.CursorDefault)
 			chip.Children(func() {
 				if abs := a.absAttach(at.Path); abs != "" {
 					if _, err := os.Stat(abs); err == nil {

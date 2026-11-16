@@ -191,7 +191,7 @@ func (a *App) mcPop(c *ui.Context, anchor ui.Element, tb *ideTab) {
 
 func (a *App) mcPopItem(c *ui.Context, key, icon, text string, keys ...string) ui.Element {
 	t := a.tk
-	b := ui.ButtonBase(c).Key(key).Height(26).PaddingX(8).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).
+	b := ui.ButtonBase(c).Key(key).Height(theme.Px(26)).PaddingX(8).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).
 		Cursor(ui.CursorDefault).Transition(kit.Fade)
 	if b.Hovered() {
 		b.Background(t.Fill1)

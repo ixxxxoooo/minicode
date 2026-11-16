@@ -50,7 +50,7 @@ func (a *App) etabListPopup(c *ui.Context, anchor ui.Element) {
 					for _, tb := range d.tabs {
 						tb := tb
 						on := tb.id == d.active
-						row := ui.ButtonBase(c).Key("etab-list-" + tb.id).Height(28).PaddingX(8).Gap(8).Radius(t.RSm()).
+						row := ui.ButtonBase(c).Key("etab-list-" + tb.id).Height(theme.Px(28)).PaddingX(8).Gap(8).Radius(t.RSm()).
 							AlignItems(ui.Center).Justify(ui.Start).Cursor(ui.CursorDefault).Transition(kit.Fade)
 						switch {
 						case on:

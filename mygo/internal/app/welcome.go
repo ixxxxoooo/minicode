@@ -128,7 +128,7 @@ func (a *App) welcomeRecentBlock(c *ui.Context, t *theme.Tokens) {
 			if key == "" {
 				key = r.Title
 			}
-			row := kit.RowEl(c, false).Height(28).PaddingX(8).Gap(8).Key("wrec-" + key)
+			row := kit.RowEl(c, false).Height(theme.Px(28)).PaddingX(8).Gap(8).Key("wrec-" + key)
 			row.OnClick(func() { a.openWelcomeRecent(r.ID, r.Title) })
 			row.Children(func() {
 				ui.Text(c, r.Title).Grow(1).SingleLine()
@@ -159,7 +159,7 @@ func (a *App) starterCard(c *ui.Context, s starter) {
 	b := ui.ButtonBase(c).Key(s.title).Radius(t.RMd()).Background(t.Raised).Cursor(ui.CursorPointer).
 		Transition(ui.ElementTransition{Position: true, Shadows: true, Duration: kit.DurBase, Ease: kit.EaseOut})
 	if narrow {
-		b.WidthPercent(100).Height(32).PaddingX(10).Gap(8).AlignItems(ui.Center).Justify(ui.Start)
+		b.WidthPercent(100).Height(theme.Px(32)).PaddingX(10).Gap(8).AlignItems(ui.Center).Justify(ui.Start)
 	} else {
 		b.Width(150).Padding(9, 10).Gap(3).AlignItems(ui.Start)
 	}
@@ -182,7 +182,7 @@ func (a *App) starterCard(c *ui.Context, s starter) {
 		}
 		ui.Column(c).Gap(3).Grow(1).MinWidth(0).Children(func() {
 			// 设计稿里图标是行内元素,所在行高约 20px
-			ui.Row(c).Height(20).AlignItems(ui.Center).Children(func() { kit.Ic(c, s.icon, 14).TextColor(t.AcTx) })
+			ui.Row(c).Height(theme.Px(20)).AlignItems(ui.Center).Children(func() { kit.Ic(c, s.icon, 14).TextColor(t.AcTx) })
 			ui.Text(c, s.title).FontWeight(700).SingleLine()
 			ui.Text(c, s.desc).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.35)
 		})

@@ -262,7 +262,7 @@ func (a *App) etabPane(c *ui.Context, tb *ideTab, pane int8) {
 			el.Background(t.BG)
 		}
 	case "b":
-		el.Radius(t.RSm()).Height(24)
+		el.Radius(t.RSm()).Height(theme.Px(24))
 		if on {
 			el.Background(t.Fill2)
 		}

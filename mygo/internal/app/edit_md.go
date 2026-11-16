@@ -392,10 +392,10 @@ const mdShowFormatBar = false
 func (a *App) mdFormatBar(c *ui.Context, doc *richtext.Document) {
 	t := a.tk
 	f := doc.Formatting()
-	ui.Row(c).Height(32).Shrink(0).PaddingX(10).Gap(1).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+	ui.Row(c).Height(theme.Px(32)).Shrink(0).PaddingX(10).Gap(1).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		btn := func(key, tip string, on bool, content func(), run func()) {
-			b := ui.ButtonBase(c).Key("mdf-" + key).MinWidth(24).Height(24).PaddingX(5).Radius(t.RSm()).Justify(ui.Center).AlignItems(ui.Center).
-				Cursor(ui.CursorPointer).TextColor(t.Tx2).FontSize(12).Tooltip(tip)
+			b := ui.ButtonBase(c).Key("mdf-" + key).MinWidth(24).Height(theme.Px(24)).PaddingX(5).Radius(t.RSm()).Justify(ui.Center).AlignItems(ui.Center).
+				Cursor(ui.CursorPointer).TextColor(t.Tx2).FontSize(theme.Px(12)).Tooltip(tip)
 			switch {
 			case on:
 				b.Background(t.Fill2).TextColor(t.Tx1)

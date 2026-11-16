@@ -203,9 +203,8 @@ func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "在此项目新建会话"}).Margin(0, -4, 0, 0).OnClick(func() { a.NewSessionIn(p) })
 		} else if a.registry().HasProject(p.Path) && !a.isRepoDir(p.Path) {
 			kit.Tag(c, "非仓库")
-		} else {
-			ui.Text(c, itoa(p.Count)).FontSize(theme.FsMicro).FontWeight(400).TextColor(t.Tx4).FontFeatures("tnum")
 		}
+		// 项目行末尾不再显示会话数量:数字对找会话没有帮助,还让每行右侧参差不齐
 	})
 }
 
@@ -233,9 +232,8 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 	})
 	r.ContextMenu(func(m *ui.Menu) { a.sessionMenu(m, s.ID, s.Title, false) })
 	r.Children(func() {
-		if on && t.Scheme.ID == "a" {
-			// 方案 A:选中行左侧一道强调色竖线
-			ui.Box(c).Absolute().Left(0).Top(5).Bottom(5).Width(2).Radius(2).Background(t.Ac)
+		if on {
+			kit.SelBar(c) // 选中行左侧一道强调色竖线(所有布局方案统一)
 		}
 		state := a.sessState(s.ID)
 		ui.Row(c).Width(14).Height(14).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).Margin(0, -2, 0, 0).Children(func() {
@@ -265,7 +263,7 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 			case "wait":
 				lbl = "待确认"
 			}
-			ui.Text(c, lbl).FontSize(theme.FsMicro).TextColor(t.Tx4).FontFeatures("tnum").SingleLine()
+			ui.Text(c, lbl).FontSize(theme.FsCap).TextColor(t.Tx3).FontFeatures("tnum").SingleLine()
 		}
 	})
 }
@@ -275,7 +273,7 @@ func (a *App) sessionsB(c *ui.Context) {
 	name, icon, proj := a.sideBCtx()
 	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
 		ui.Row(c).Gap(4).Padding(0, 0, 6, 0).Shrink(0).AlignItems(ui.Center).Children(func() {
-			chip := kit.Chip(c, name, kit.ChipOpt{Icon: icon, Line: true, Car: true, On: a.popup == "projpick"}).Height(26).Grow(1).MinWidth(0)
+			chip := kit.Chip(c, name, kit.ChipOpt{Icon: icon, Line: true, Car: true, On: a.popup == "projpick"}).Height(theme.Px(26)).Grow(1).MinWidth(0)
 			chip.OnClick(func() { a.togglePop("projpick") })
 			a.projPickPopup(c, chip)
 			kit.Ib(c, "edit", kit.IbOpt{Tip: "新对话 ⌘N"}).Size(26, 26).OnClick(a.NewSession)

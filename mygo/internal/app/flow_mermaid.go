@@ -85,7 +85,7 @@ func (a *App) foldMermaidBlock(c *ui.Context, b *markdown.CodeBlockView) {
 	tile := a.mmCardTitle(src)
 	entry := a.mmEnsure(src)
 	a.box(c).Background(t.Sunken).Radius(t.RMd()).Border(1, t.Bd1).Clip().Children(func() {
-		ui.Row(c).Height(28).PaddingX(8).Gap(6).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+		ui.Row(c).Height(theme.Px(28)).PaddingX(8).Gap(6).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 			kit.Ic(c, "layers", kit.S12).TextColor(t.Tx3)
 			ui.Text(c, tile).FontSize(theme.FsCap).TextColor(t.Tx3)
 			ui.Text(c, mmHeadline(src)).Grow(1).SingleLine().FontSize(theme.FsCap).TextColor(t.Tx2)

@@ -251,7 +251,7 @@ func (a *App) quickView(c *ui.Context) {
 		}
 		a.dialogIn("quick", backdrop, panel)
 		panel.Children(func() {
-			ui.Row(c).Height(36).PaddingX(14).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+			ui.Row(c).Height(theme.Px(36)).PaddingX(14).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 				kit.Ic(c, ic, kit.S12).TextColor(t.Tx3)
 				in := ui.TextInputBase(c.Key("qp-in"), &s.query).Grow(1).FontSize(theme.FsBody).AutoFocus().Placeholder(ph).PlaceholderColor(t.Tx4)
 				in.OnSubmit(func() { run(s.sel) })
@@ -268,7 +268,7 @@ func (a *App) quickView(c *ui.Context) {
 						}
 						i, e := i, e
 						on := i == a.repoAct
-						b := ui.ButtonBase(c).Key("qp-repo-" + itoa(i)).Height(22).PaddingX(8).Gap(5).Radius(11).AlignItems(ui.Center).Cursor(ui.CursorPointer).
+						b := ui.ButtonBase(c).Key("qp-repo-" + itoa(i)).Height(theme.Px(22)).PaddingX(8).Gap(5).Radius(11).AlignItems(ui.Center).Cursor(ui.CursorPointer).
 							FontSize(theme.FsCap).Transition(kit.Fade)
 						switch {
 						case on:

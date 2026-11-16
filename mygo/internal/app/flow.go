@@ -259,7 +259,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			obj.Strikethrough().TextColor(t.Tx3)
 		}
 		if sp.meta != "" && a.chatTier() != tierNarrow { // 窄档:附注(路径、行区间)让位
-			ui.Text(c, sp.meta).Font("monospace").FontSize(11).TextColor(t.Tx3).SingleLine().Shrink(1)
+			ui.Text(c, sp.meta).Font("monospace").FontSize(theme.Px(11)).TextColor(t.Tx3).SingleLine().Shrink(1)
 		}
 		ui.Spacer(c).Grow(1)
 		// 右侧结果
@@ -398,7 +398,7 @@ func (a *App) cardHead(c *ui.Context, head func(), menu func(m *ui.Menu), body f
 				hr = ui.Row(c).MinHeight(24).Padding(3, 4, 3, 9).Gap(6).AlignItems(ui.Start).TextColor(t.Tx3).FontSize(theme.FsCap).
 					BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1)
 			} else {
-				hr = ui.Row(c).Height(24).Padding(0, 4, 0, 9).Gap(6).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.FsCap).
+				hr = ui.Row(c).Height(theme.Px(24)).Padding(0, 4, 0, 9).Gap(6).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.FsCap).
 					BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1)
 			}
 			if menu != nil {
@@ -486,7 +486,7 @@ func (a *App) diffLine(c *ui.Context, i int, l diff.Line) {
 		case diff.Del:
 			ui.Box(c).Absolute().Left(0).Top(0).Bottom(0).Width(2).Background(t.Err)
 		}
-		ui.Text(c, itoa(no)).Font("monospace").FontSize(11.5).TextColor(t.Tx4).TextAlign(ui.End).Width(30).PaddingEnd(8).Shrink(0)
+		ui.Text(c, itoa(no)).Font("monospace").FontSize(theme.Px(11.5)).TextColor(t.Tx4).TextAlign(ui.End).Width(30).PaddingEnd(8).Shrink(0)
 		ui.RichText(c, kit.RustSpans(l.Text, t.Tx1, 11.5)...).NoWrap().PaddingStart(4).Grow(1).MinWidth(0).Clip()
 	})
 }

@@ -52,7 +52,7 @@ func (a *App) groupLatest(c *ui.Context, grpID string, tc *core.ToolCall) {
 		a.tickAt[grpID] = time.Now()
 	}
 	a.tickTool[grpID] = tc.ID
-	row := ui.Row(c).Key("tick-"+grpID).Height(22).Margin(0, 0, 2, theme.FlowInset).Gap(6).AlignItems(ui.Center).
+	row := ui.Row(c).Key("tick-"+grpID).Height(theme.Px(22)).Margin(0, 0, 2, theme.FlowInset).Gap(6).AlignItems(ui.Center).
 		TextColor(t.Tx3).FontSize(theme.FsCap).Clip()
 	off := float32(0)
 	if at, ok := a.tickAt[grpID]; ok && kit.MotionOn() {

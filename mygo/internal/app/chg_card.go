@@ -19,7 +19,7 @@ func (a *App) changesCard(c *ui.Context) {
 	}
 	box := ui.Column(c).Key("chg-card").Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd2).Padding(3).Margin(2, 0)
 	box.Children(func() {
-		ui.Row(c).Height(28).PaddingX(8).Gap(2).AlignItems(ui.Center).Children(func() {
+		ui.Row(c).Height(theme.Px(28)).PaddingX(8).Gap(2).AlignItems(ui.Center).Children(func() {
 			ui.Text(c, itoa(len(files))+" 个文件已改动").FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx2).SingleLine().Grow(1).MinWidth(0)
 			a.changesCardUndoBtn(c)
 			a.chgLink(c, "chg-review", "审查", t.Tx2, a.OpenReview)
@@ -35,7 +35,7 @@ func (a *App) changesCard(c *ui.Context) {
 			}
 		}
 		if n := len(files) - chgCardMax; n > 0 && !narrow {
-			r := kit.RowEl(c, false).Key("chg-more").Height(26).Gap(8).Cursor(ui.CursorPointer)
+			r := kit.RowEl(c, false).Key("chg-more").Height(theme.Px(26)).Gap(8).Cursor(ui.CursorPointer)
 			if r.Clicked() {
 				a.rv.chgAll = !a.rv.chgAll
 			}
@@ -58,7 +58,7 @@ const chgCardMax = 3
 // chgLink 是标题行右侧的纯文字链接(悬停才出现浅底),颜色默认 col,悬停变主文字色。
 func (a *App) chgLink(c *ui.Context, key, text string, col ui.Color, on func()) {
 	t := a.tk
-	b := ui.ButtonBase(c).Key(key).Height(22).PaddingX(7).Radius(t.RSm()).AlignItems(ui.Center).
+	b := ui.ButtonBase(c).Key(key).Height(theme.Px(22)).PaddingX(7).Radius(t.RSm()).AlignItems(ui.Center).
 		Cursor(ui.CursorPointer).Transition(kit.Fade)
 	if b.Hovered() {
 		b.Background(t.Fill1)
@@ -75,7 +75,7 @@ func (a *App) chgLink(c *ui.Context, key, text string, col ui.Color, on func()) 
 func (a *App) changesFileRow(c *ui.Context, i int, f chFile) {
 	t := a.tk
 	name := baseName(f.path)
-	r := kit.RowEl(c, false).Key("chg-f-" + itoa(i)).Height(26).Gap(8).Cursor(ui.CursorPointer)
+	r := kit.RowEl(c, false).Key("chg-f-" + itoa(i)).Height(theme.Px(26)).Gap(8).Cursor(ui.CursorPointer)
 	r.Tooltip(a.shortPath(f.path) + " · 点击打开")
 	if r.Clicked() {
 		line := 0

@@ -89,7 +89,7 @@ func (a *App) composerRefChips(c *ui.Context) {
 		for _, r := range a.refs {
 			r := r
 			p := strings.TrimPrefix(r, "@")
-			chip := ui.Row(c).Key("ref-"+p).Height(22).Padding(0, 3, 0, 7).Gap(4).Radius(t.RXs()).AlignItems(ui.Center).
+			chip := ui.Row(c).Key("ref-"+p).Height(theme.Px(22)).Padding(0, 3, 0, 7).Gap(4).Radius(t.RXs()).AlignItems(ui.Center).
 				Background(t.InfoSoft).Shrink(0).Cursor(ui.CursorPointer)
 			if chip.Hovered() {
 				chip.Background(t.Info.Alpha(.2))

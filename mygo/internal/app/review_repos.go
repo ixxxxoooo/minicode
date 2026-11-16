@@ -309,7 +309,7 @@ func (a *App) reviewGroupHead(c *ui.Context, g reviewGroup) {
 	t := a.tk
 	key := "g" + itoa(g.idx)
 	closed := a.rv.grpClosed[key]
-	h := ui.ButtonBase(c).Key("rvg-" + key).Height(32).PaddingX(10).Gap(8).AlignItems(ui.Center).Radius(t.RMd()).Background(t.Fill1).Cursor(ui.CursorDefault).Transition(kit.Fade)
+	h := ui.ButtonBase(c).Key("rvg-" + key).Height(theme.Px(32)).PaddingX(10).Gap(8).AlignItems(ui.Center).Radius(t.RMd()).Background(t.Fill1).Cursor(ui.CursorDefault).Transition(kit.Fade)
 	if h.Hovered() {
 		h.Background(t.Fill2)
 	}

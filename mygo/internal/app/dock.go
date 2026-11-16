@@ -142,11 +142,11 @@ func (a *App) permCard(c *ui.Context, r *core.PermissionRequest) {
 			if filePath != "" {
 				ui.Row(c).Gap(6).Padding(6, 8).AlignItems(ui.Center).Background(t.Sunken).Radius(t.RSm()).Border(1, t.Bd1).Children(func() {
 					a.fileIc(c, baseName(filePath))
-					ui.Text(c, d).Font("monospace").FontSize(11.5).LineHeight(1.5).TextColor(t.Tx1).Grow(1).SingleLine()
+					ui.Text(c, d).Font("monospace").FontSize(theme.Px(11.5)).LineHeight(1.5).TextColor(t.Tx1).Grow(1).SingleLine()
 				})
 			} else {
 				ui.Column(c).Background(t.Sunken).Radius(t.RSm()).Border(1, t.Bd1).Padding(6, 9).Children(func() {
-					ui.Text(c, d).Font("monospace").FontSize(11.5).LineHeight(1.5).TextColor(t.Tx1)
+					ui.Text(c, d).Font("monospace").FontSize(theme.Px(11.5)).LineHeight(1.5).TextColor(t.Tx1)
 				})
 			}
 		}
@@ -380,11 +380,11 @@ func (a *App) queueKind(c *ui.Context, steer bool, n int) {
 	ui.Row(c).Height(17).PaddingX(6).Gap(4).Radius(9).Background(bg).AlignItems(ui.Center).Shrink(0).Children(func() {
 		if steer {
 			kit.Ic(c, "bolt", kit.S12).TextColor(fg)
-			ui.Text(c, "引导").FontSize(11).TextColor(fg)
+			ui.Text(c, "引导").FontSize(theme.Px(11)).TextColor(fg)
 			return
 		}
-		ui.Text(c, itoa(n)).FontSize(11).TextColor(fg).FontFeatures("tnum")
-		ui.Text(c, "排队").FontSize(11).TextColor(fg)
+		ui.Text(c, itoa(n)).FontSize(theme.Px(11)).TextColor(fg).FontFeatures("tnum")
+		ui.Text(c, "排队").FontSize(theme.Px(11)).TextColor(fg)
 	})
 }
 
@@ -426,7 +426,7 @@ func (a *App) queueCard(c *ui.Context) {
 		for k, sp := range a.q.steers { // 引导靠前:已经发给 Claude
 			sp := sp
 			steerImg := sp.Show == "(图片)"
-			ui.Row(c).Key("steer" + itoa(k)).Height(26).PaddingX(6).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Children(func() {
+			ui.Row(c).Key("steer" + itoa(k)).Height(theme.Px(26)).PaddingX(6).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Children(func() {
 				a.queueKind(c, true, 0)
 				ui.Text(c, sp.Show).SingleLine().Grow(1).MinWidth(0)
 				if steerImg {
@@ -440,7 +440,7 @@ func (a *App) queueCard(c *ui.Context) {
 		}
 		for i, it := range a.q.items {
 			i, it := i, it
-			row := ui.Row(c).Key(it.ID).Height(26).PaddingX(6).Gap(8).AlignItems(ui.Center).Radius(t.RSm())
+			row := ui.Row(c).Key(it.ID).Height(theme.Px(26)).PaddingX(6).Gap(8).AlignItems(ui.Center).Radius(t.RSm())
 			if row.Hovered() {
 				row.Background(t.Fill1)
 			}

@@ -13,7 +13,7 @@ func (a *App) canvasListRow(c *ui.Context, l *canvas.Library, id string, s *canv
 	title := s.Doc.Title
 	if v.listRenID == id {
 		ui.Column(c.Key("cv-ren-"+id)).Gap(4).Padding(4, 0).Children(func() {
-			ui.TextInput(c.Key("cv-ren-in"), &v.listRenName).Height(26)
+			ui.TextInput(c.Key("cv-ren-in"), &v.listRenName).Height(theme.Px(26))
 			ui.Row(c).Gap(6).Children(func() {
 				kit.Btn(c, "保存", kit.BtnOpt{Small: true, Variant: kit.BtnPri}).OnClick(func() {
 					old := title

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/ixxxxoooo/minicode/internal/theme"
 	"hash/fnv"
 	"time"
 
@@ -66,7 +67,7 @@ func (a *App) glyph(c *ui.Context, col ui.Color) ui.Element {
 	if kit.MotionOn() {
 		a.frameIn(100 * time.Millisecond)
 	}
-	return ui.Text(c, glyphFrame(d)).FontSize(14).Width(14).TextAlign(ui.Center).TextColor(col).SingleLine().Shrink(0)
+	return ui.Text(c, glyphFrame(d)).FontSize(theme.Px(14)).Width(14).TextAlign(ui.Center).TextColor(col).SingleLine().Shrink(0)
 }
 
 // frameIn 请求 d 之后重绘一次(低频动画用;frameSoon 是 16 ms)。

@@ -114,7 +114,7 @@ func (a *App) cuKV(c *ui.Context, rows [][2]string) {
 				ui.Text(c, r[0]).TextColor(t.Tx3).Width(72).Shrink(0)
 				v := ui.Text(c, r[1]).Grow(1).MinWidth(0).LineHeight(1.4)
 				if strings.ContainsAny(r[1], "/") || strings.Contains(r[1], "npx") || strings.Contains(r[1], ".md") {
-					v.Font("monospace").FontSize(11.5)
+					v.Font("monospace").FontSize(theme.Px(11.5))
 				}
 			})
 		}
@@ -122,16 +122,16 @@ func (a *App) cuKV(c *ui.Context, rows [][2]string) {
 }
 
 func (a *App) cuField(c *ui.Context, key string, v *string, mono bool, ph string) {
-	in := ui.TextInput(c.Key(key), v).Height(26).FontSize(theme.FsBody).Placeholder(ph).PlaceholderColor(a.tk.Tx4)
+	in := ui.TextInput(c.Key(key), v).Height(theme.Px(26)).FontSize(theme.FsBody).Placeholder(ph).PlaceholderColor(a.tk.Tx4)
 	if mono {
-		in.Font("monospace").FontSize(11.5)
+		in.Font("monospace").FontSize(theme.Px(11.5))
 	}
 }
 
 func (a *App) cuArea(c *ui.Context, key string, v *string, h float32, mono bool) {
 	in := ui.TextArea(c.Key(key), v).Height(h).FontSize(theme.FsBody)
 	if mono {
-		in.Font("monospace").FontSize(11.5)
+		in.Font("monospace").FontSize(theme.Px(11.5))
 	}
 }
 
@@ -527,7 +527,7 @@ func (a *App) cuAgent(c *ui.Context, st *customize.Store, it *customize.Item) fu
 	ui.Row(c).Gap(14).AlignItems(ui.Start).Wrap().Children(func() {
 		a.cuLbl(c, "模型", func() { a.cuModelSeg(c, "ca-model", &d.Model, true) })
 		a.cuLbl(c, "颜色", func() {
-			ui.Row(c).Gap(6).Height(20).AlignItems(ui.Center).Children(func() {
+			ui.Row(c).Gap(6).Height(theme.Px(20)).AlignItems(ui.Center).Children(func() {
 				for i, col := range colors {
 					sw := ui.ButtonBase(c).Key("ca-c-"+itoa(i)).Size(14, 14).Radius(7).Background(col).Cursor(ui.CursorPointer)
 					if i == d.Color {

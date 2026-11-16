@@ -18,7 +18,7 @@ func (a *App) folderPicker(c *ui.Context, key string, current int, all string, o
 	if on {
 		label = a.repos[current].name
 	}
-	b := ui.ButtonBase(c).Key("fp-" + key).Height(22).PaddingX(8).Gap(5).Radius(11).AlignItems(ui.Center).Cursor(ui.CursorPointer).
+	b := ui.ButtonBase(c).Key("fp-" + key).Height(theme.Px(22)).PaddingX(8).Gap(5).Radius(11).AlignItems(ui.Center).Cursor(ui.CursorPointer).
 		FontSize(theme.FsCap).Shrink(0).Transition(kit.Fade)
 	switch {
 	case on:

@@ -127,7 +127,7 @@ func (a *App) timelineRows(c *ui.Context) {
 	}
 	// 顶部:还没提交的本地更改(含未保存的编辑),点开是 HEAD ↔ 工作区
 	if a.ide.git[tb.path] != "" || tb.dirty() {
-		r := ui.ButtonBase(c).Key("tl-local").Height(34).PaddingX(8).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).Margin(0, 4)
+		r := ui.ButtonBase(c).Key("tl-local").Height(theme.Px(34)).PaddingX(8).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).Margin(0, 4)
 		if r.Hovered() {
 			r.Background(t.Fill1)
 		}
@@ -155,7 +155,7 @@ func (a *App) timelineRows(c *ui.Context) {
 	}
 	for _, cm := range g.log {
 		cm := cm
-		r := ui.ButtonBase(c).Key("tl-"+cm.Hash).Height(34).PaddingX(8).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).Margin(0, 4)
+		r := ui.ButtonBase(c).Key("tl-"+cm.Hash).Height(theme.Px(34)).PaddingX(8).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).Margin(0, 4)
 		if r.Hovered() {
 			r.Background(t.Fill1)
 		}

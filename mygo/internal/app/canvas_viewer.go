@@ -130,7 +130,7 @@ func (a *App) canvasViewerOverlay(c *ui.Context) {
 					bx.Children(func() { ui.Text(c, n.Label).SingleLine() })
 				}
 			})
-			ui.Row(c).Height(22).Padding(0, 12).Gap(8).AlignItems(ui.Center).FontSize(theme.FsMicro).TextColor(t.Tx4).Children(func() {
+			ui.Row(c).Height(theme.Px(22)).Padding(0, 12).Gap(8).AlignItems(ui.Center).FontSize(theme.FsMicro).TextColor(t.Tx4).Children(func() {
 				ui.Text(c, fmt.Sprintf("缩放 %.0f%% · 中心 (%.0f, %.0f)", v.scale*100, v.lastX, v.lastY))
 				ui.Spacer(c).Grow(1)
 				ui.Text(c, "拖拽平移 · 滚轮缩放 · ⇧方向键大步").SingleLine()

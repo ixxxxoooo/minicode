@@ -47,7 +47,7 @@ func (a *App) scmExpandAllView(c *ui.Context) {
 		a.sc.folded = map[string]bool{}
 	}
 	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
-		ui.Row(c).Height(24).PaddingX(4).Gap(2).AlignItems(ui.Center).Shrink(0).Children(func() {
+		ui.Row(c).Height(theme.Px(24)).PaddingX(4).Gap(2).AlignItems(ui.Center).Shrink(0).Children(func() {
 			ui.Text(c, "仓库").Grow(1).FontSize(theme.FsMicro).FontWeight(700).TextColor(t.Tx3)
 			ui.Text(c, "全部展开").FontSize(theme.FsMicro).TextColor(t.Ac).Shrink(0)
 			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多"}).Menu(a.repoOverviewMenu)
@@ -72,7 +72,7 @@ func (a *App) scmExpandBlock(c *ui.Context, i int) {
 	e := a.repos[i]
 	br, ah, bh, n := a.repoSummary(i)
 	ui.Column(c).Key("scm-bl-"+itoa(i)).Gap(4).Radius(t.RMd()).Border(1, t.Bd1).Padding(4, 6, 8, 6).Children(func() {
-		r := kit.RowEl(c, i == a.repoAct).Height(32).Gap(8).PaddingX(4)
+		r := kit.RowEl(c, i == a.repoAct).Height(theme.Px(32)).Gap(8).PaddingX(4)
 		r.OnClick(func() { a.setActiveRepo(i) })
 		r.Children(func() {
 			kit.Ic(c, "branch", kit.S12).TextColor(t.Tx3)

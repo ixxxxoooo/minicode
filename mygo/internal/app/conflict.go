@@ -290,7 +290,7 @@ func (a *App) conflictView(c *ui.Context, tb *ideTab) {
 				if s.at < 0 || s.at >= total {
 					s.at = 0
 				}
-				ui.Row(c).Height(32).Gap(6).AlignItems(ui.Center).Children(func() {
+				ui.Row(c).Height(theme.Px(32)).Gap(6).AlignItems(ui.Center).Children(func() {
 					if kit.Ib(c, "chevL", kit.IbOpt{Small: true, Tip: "上一处冲突"}).Clicked() {
 						s.at = (s.at - 1 + total) % total
 					}
@@ -314,7 +314,7 @@ func (a *App) conflictCard(c *ui.Context, s *confState, g confSeg, k int, narrow
 	t := a.tk
 	ch := s.choice[k]
 	ui.Column(c).Key("cf-"+itoa(k)).Radius(t.RMd()).Border(1, t.Bd2).Background(t.Raised).Children(func() {
-		ui.Row(c).Height(30).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+		ui.Row(c).Height(theme.Px(30)).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 			ui.Text(c, "冲突 "+itoa(k+1)).FontWeight(700)
 			ui.Text(c, "第 "+itoa(g.line)+" 行").FontSize(theme.FsCap).TextColor(t.Tx4)
 			ui.Spacer(c).Grow(1)
@@ -330,7 +330,7 @@ func (a *App) conflictCard(c *ui.Context, s *confState, g confSeg, k int, narrow
 				col.Background(tint.Alpha(.10))
 			}
 			col.Children(func() {
-				ui.Row(c).Height(22).PaddingX(10).Gap(6).AlignItems(ui.Center).Background(tint.Alpha(.12)).Children(func() {
+				ui.Row(c).Height(theme.Px(22)).PaddingX(10).Gap(6).AlignItems(ui.Center).Background(tint.Alpha(.12)).Children(func() {
 					ui.Text(c, title).FontSize(theme.FsCap).FontWeight(600).TextColor(tint)
 					ui.Text(c, tag).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().MinWidth(0)
 				})
@@ -343,7 +343,7 @@ func (a *App) conflictCard(c *ui.Context, s *confState, g confSeg, k int, narrow
 						if txt == "" {
 							txt = " "
 						}
-						ui.Text(c, txt).Font("monospace").FontSize(12).LineHeight(1.6).TextColor(t.Tx1)
+						ui.Text(c, txt).Font("monospace").FontSize(theme.Px(12)).LineHeight(1.6).TextColor(t.Tx1)
 					}
 				})
 			})
@@ -359,7 +359,7 @@ func (a *App) conflictCard(c *ui.Context, s *confState, g confSeg, k int, narrow
 			}
 			side("传入", g.incTag, g.inc, t.Ok, ch == chInc || ch == chBoth, "cf-i"+itoa(k))
 		})
-		ui.Row(c).Height(34).PaddingX(8).Gap(6).AlignItems(ui.Center).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
+		ui.Row(c).Height(theme.Px(34)).PaddingX(8).Gap(6).AlignItems(ui.Center).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
 			for _, o := range []struct {
 				label string
 				ch    int
@@ -387,7 +387,7 @@ func (a *App) conflictResult(c *ui.Context, s *confState) {
 	t := a.tk
 	s.refreshResult()
 	ui.Column(c).Radius(t.RMd()).Border(1, t.Bd2).Children(func() {
-		ui.Row(c).Height(26).PaddingX(10).Gap(6).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+		ui.Row(c).Height(theme.Px(26)).PaddingX(10).Gap(6).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 			kit.Ic(c, "merge", kit.S12).TextColor(t.Tx3)
 			ui.Text(c, "结果").FontSize(theme.FsCap).FontWeight(600).TextColor(t.Tx3)
 			ui.Text(c, "选择上面的操作,或直接在这里编辑").FontSize(theme.FsMicro).TextColor(t.Tx4).Grow(1).SingleLine()
@@ -396,7 +396,7 @@ func (a *App) conflictResult(c *ui.Context, s *confState) {
 		if s.result != auto {
 			s.resultEdit = true
 		}
-		ui.TextArea(c.Key("cf-res"), &s.result).Lines(8, 24).Font("monospace").FontSize(12).LineHeight(1.6).
+		ui.TextArea(c.Key("cf-res"), &s.result).Lines(8, 24).Font("monospace").FontSize(theme.Px(12)).LineHeight(1.6).
 			Background(t.Fill1).BorderWidth(0).Padding(8, 10)
 	})
 }

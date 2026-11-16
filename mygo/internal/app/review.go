@@ -324,7 +324,7 @@ func (a *App) reviewView(c *ui.Context) {
 		totalDel += f.del
 	}
 	// 头:标题 / 统计 / 视图切换 / 批量操作
-	ui.Row(c).Height(36).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+	ui.Row(c).Height(theme.Px(36)).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		kit.Ic(c, "eye", kit.S12).TextColor(t.Ac)
 		ui.Text(c, "本轮改动").FontWeight(700)
 		count := itoa(len(files)) + " 个文件"
@@ -332,8 +332,8 @@ func (a *App) reviewView(c *ui.Context) {
 			count += " · " + itoa(repoGroupCount(gs)) + " 个仓库"
 		}
 		ui.Text(c, count).TextColor(t.Tx3)
-		ui.Text(c, "+"+itoa(totalAdd)).Font("monospace").FontSize(11.5).TextColor(t.Ok)
-		ui.Text(c, "−"+itoa(totalDel)).Font("monospace").FontSize(11.5).TextColor(t.Err)
+		ui.Text(c, "+"+itoa(totalAdd)).Font("monospace").FontSize(theme.Px(11.5)).TextColor(t.Ok)
+		ui.Text(c, "−"+itoa(totalDel)).Font("monospace").FontSize(theme.Px(11.5)).TextColor(t.Err)
 		ui.Spacer(c).Grow(1)
 		if !a.wsNarrow() {
 			on := 0
@@ -404,7 +404,7 @@ func (a *App) reviewView(c *ui.Context) {
 	}
 	ui.Column(c).Shrink(0).Children(func() {
 		a.reviewStageUndoBar(c)
-		ui.Row(c).Height(28).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).
+		ui.Row(c).Height(theme.Px(28)).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).
 			TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
 			ui.Text(c, a.reviewFooterText(files)).Grow(1).SingleLine()
 			n, why := a.reviewStageAcceptedReason(files)
@@ -445,7 +445,7 @@ func (a *App) reviewFile(c *ui.Context, f chFile, first bool) {
 	closed := !open
 	box := ui.Column(c).Key("rvf-"+f.path).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd1).Clip()
 	box.Children(func() {
-		head := ui.ButtonBase(c).Key("rvh-" + f.path).Height(30).PaddingX(10).Gap(6).AlignItems(ui.Center).Cursor(ui.CursorDefault).Transition(kit.Fade)
+		head := ui.ButtonBase(c).Key("rvh-" + f.path).Height(theme.Px(30)).PaddingX(10).Gap(6).AlignItems(ui.Center).Cursor(ui.CursorDefault).Transition(kit.Fade)
 		if head.Hovered() {
 			head.Background(t.Fill1)
 		}
@@ -491,7 +491,7 @@ func (a *App) reviewHunk(c *ui.Context, f chFile, i int, d *core.DiffBlock) {
 	st := a.rv.hunk[k]
 	lo, hi := hunkRange(d)
 	ls := diff.Lines(d.Old, d.New, d.Line, d.Line)
-	ui.Row(c).Key("rvb-"+k).Height(24).PaddingX(10).Gap(8).AlignItems(ui.Center).Background(t.Fill1).
+	ui.Row(c).Key("rvb-"+k).Height(theme.Px(24)).PaddingX(10).Gap(8).AlignItems(ui.Center).Background(t.Fill1).
 		BorderWidth(1, 0, 1, 0).BorderColor(t.Bd1).TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
 		lbl := "第 " + itoa(lo) + "–" + itoa(hi) + " 行"
 		if lo == hi {
@@ -621,7 +621,7 @@ func (a *App) diffSplitLines(c *ui.Context, ls []diff.Line) {
 					if side == 0 {
 						no = ln.OldNo
 					}
-					ui.Text(c, itoa(no)).Font("monospace").FontSize(11.5).TextColor(t.Tx4).TextAlign(ui.End).Width(30).PaddingEnd(6).Shrink(0)
+					ui.Text(c, itoa(no)).Font("monospace").FontSize(theme.Px(11.5)).TextColor(t.Tx4).TextAlign(ui.End).Width(30).PaddingEnd(6).Shrink(0)
 					ui.RichText(c, kit.RustSpans(ln.Text, t.Tx1, 11.5)...).NoWrap().Grow(1).MinWidth(0).Clip()
 				})
 			}

@@ -292,7 +292,7 @@ func (a *App) dlgFrame(c *ui.Context, key string, w float32, title string, body 
 func (a *App) dlgInput(c *ui.Context, key string, v *string, ph string, autoFocus bool, submit func()) {
 	d := &a.pd
 	kit.Field(c, key, kit.FieldOpt{Err: d.err, ShakeAt: &d.shakeAt}, func(box ui.Element) {
-		box.Height(30)
+		box.Height(theme.Px(30))
 		in := ui.TextInputBase(c.Key(key), v).Grow(1).MinWidth(0).FontSize(theme.FsBody).Placeholder(ph).PlaceholderColor(a.tk.Tx4)
 		if autoFocus {
 			in.AutoFocus()
@@ -392,7 +392,7 @@ func (a *App) addProjectDialog(c *ui.Context) {
 			ui.Text(c, "最近 · 发现的项目").FontSize(theme.FsCap).TextColor(t.Tx3).Margin(8, 0, 0, 0)
 			for i, f := range items {
 				f := f
-				r := kit.RowEl(c, projects.Clean(d.path) == projects.Clean(f.path) && d.path != "").Key("ap-f-" + itoa(i)).Height(36).Gap(8)
+				r := kit.RowEl(c, projects.Clean(d.path) == projects.Clean(f.path) && d.path != "").Key("ap-f-" + itoa(i)).Height(theme.Px(36)).Gap(8)
 				if !f.added {
 					r.OnClick(func() { d.path, d.err, d.hint = f.path, "", "" })
 				}
@@ -470,7 +470,7 @@ func (a *App) workspaceDialog(c *ui.Context) {
 		}
 		for i, f := range d.folders {
 			i, f := i, f
-			ui.Row(c).Key("ws-f-" + itoa(i)).Height(36).Gap(8).AlignItems(ui.Center).PaddingX(4).Children(func() {
+			ui.Row(c).Key("ws-f-" + itoa(i)).Height(theme.Px(36)).Gap(8).AlignItems(ui.Center).PaddingX(4).Children(func() {
 				kit.Ic(c, "folder", kit.S12).TextColor(t.Tx3)
 				ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 					ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
@@ -527,7 +527,7 @@ func (a *App) workspaceDialog(c *ui.Context) {
 					continue
 				}
 				n++
-				r := kit.RowEl(c, false).Key("ws-pick-" + p.ID).Height(26).Gap(6)
+				r := kit.RowEl(c, false).Key("ws-pick-" + p.ID).Height(theme.Px(26)).Gap(6)
 				r.OnClick(func() { a.addWsFolder(p.Path) })
 				r.Children(func() {
 					kit.Ic(c, "plus", kit.S12).TextColor(t.Ac)

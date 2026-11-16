@@ -1,6 +1,7 @@
 package kit
 
 import (
+	"github.com/ixxxxoooo/minicode/internal/theme"
 	"time"
 	"unicode"
 
@@ -100,7 +101,7 @@ func Seg(c *ui.Context, items []SegItem, on int, o ...SegOpt) int {
 					col = T.Tx1
 				}
 				b := ui.ButtonBase(c).ZIndex(1).Height(h).Justify(ui.Center).AlignItems(ui.Center).Gap(4).Cursor(ui.CursorPointer).
-					FontSize(11.5).FontWeight(500).TextColor(col).Transition(Fade)
+					FontSize(theme.Px(11.5)).FontWeight(500).TextColor(col).Transition(Fade)
 				if op.Fill {
 					b.Grow(1).Basis(0)
 				} else {
@@ -144,7 +145,7 @@ func Tog(c *ui.Context, on bool, key string, o ...TogOpt) bool {
 	if on {
 		bg = T.Ac
 	}
-	b := ui.ButtonBase(c).Key(key).Size(26, 15).Radius(8).Background(bg).Shrink(0).Transition(ui.ElementTransition{Colors: true, Duration: DurBase, Ease: EaseIO})
+	b := ui.ButtonBase(c).Key(key).Size(26*theme.UIScale(), 15*theme.UIScale()).Radius(8 * theme.UIScale()).Background(bg).Shrink(0).Transition(ui.ElementTransition{Colors: true, Duration: DurBase, Ease: EaseIO})
 	if op.Disabled {
 		b.Disabled(true).Opacity(.42).Cursor(ui.CursorDefault)
 	} else {
@@ -152,12 +153,12 @@ func Tog(c *ui.Context, on bool, key string, o ...TogOpt) bool {
 	}
 	clickFocusRing(b)
 	b.Label("开关")
-	x := float32(2)
+	x := 2 * theme.UIScale()
 	if on {
-		x = 13
+		x = 13 * theme.UIScale()
 	}
 	b.Children(func() {
-		k := ui.Box(c).Absolute().Top(2).Size(11, 11).Radius(6).Background(ui.Hex("#FFFFFF")).Shadow(0, 1, 2, 0, ui.RGBA(0, 0, 0, .25))
+		k := ui.Box(c).Absolute().Top(2*theme.UIScale()).Size(11*theme.UIScale(), 11*theme.UIScale()).Radius(6*theme.UIScale()).Background(ui.Hex("#FFFFFF")).Shadow(0, 1, 2, 0, ui.RGBA(0, 0, 0, .25))
 		k.Left(k.AnimateTo("x", x, thumbSpring))
 	})
 	if op.Disabled {
@@ -168,23 +169,16 @@ func Tog(c *ui.Context, on bool, key string, o ...TogOpt) bool {
 
 // ───────── 列表行 .row ─────────
 
-// RowEl 是 .row 的外壳:行高取方案(24 / 26 / 22),悬停 fill-1,选中 fill-2(方案 C 选中是强调色淡底)。
+// RowEl 是 .row 的外壳:行高取方案(随界面大小缩放),悬停 fill-1;
+// 选中态所有布局方案统一:强调色淡染底(Sel)+ 正文色 + 半粗体,再配合 SelBar 的左侧竖线,
+// 此前方案 A 只有 8% 的灰底、方案 B 只有白底,在宣纸 / 墨夜主题里几乎看不出选中了谁。
 // 调用方负责 Children;需要悬停状态时用返回值的 Hovered()。
 func RowEl(c *ui.Context, on bool) ui.Element {
 	r := ui.ButtonBase(c).Height(T.Scheme.RowH).PaddingX(8).Gap(6).Radius(T.RSm()).AlignItems(ui.Center).Cursor(ui.CursorPointer)
 	col := T.Tx2
 	switch {
-	case on && T.Scheme.ID == "c":
-		r.Background(T.AcSoft)
-		col = T.AcTx
-	case on && T.Scheme.ID == "b":
-		r.Background(T.Raised)
-		for _, s := range T.Shadow1() {
-			r.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
-		}
-		col = T.Tx1
 	case on:
-		r.Background(T.Fill2)
+		r.Background(T.Sel).FontWeight(600)
 		col = T.Tx1
 	case r.Hovered():
 		r.Background(T.Fill1)
@@ -193,17 +187,22 @@ func RowEl(c *ui.Context, on bool) ui.Element {
 	return r.TextColor(col).Transition(Fade)
 }
 
+// SelBar 画选中行左侧的强调色竖线(放在行的 Children 里,绝对定位,不占位置)。
+func SelBar(c *ui.Context) {
+	ui.Box(c).Absolute().Left(0).Top(4).Bottom(4).Width(3).Radius(2).Background(T.Ac)
+}
+
 // Grp 是分组小标题(.grp-h:24 高,10.5px 粗体,字距 .04em,tx-3)。
 func Grp(c *ui.Context, s string) ui.Element {
-	return ui.Row(c).Height(24).PaddingX(8).AlignItems(ui.Center).Gap(5).Shrink(0).Children(func() {
-		ui.Text(c, s).FontSize(10.5).FontWeight(600).LetterSpacing(.4).TextColor(T.Tx3).SingleLine()
+	return ui.Row(c).Height(theme.Px(24)).PaddingX(8).AlignItems(ui.Center).Gap(5).Shrink(0).Children(func() {
+		ui.Text(c, s).FontSize(theme.Px(10.5)).FontWeight(600).LetterSpacing(.4).TextColor(T.Tx3).SingleLine()
 	})
 }
 
 // Cap 是弹层里的小节标题(.cap)。
 func Cap(c *ui.Context, s string) ui.Element {
 	return ui.Row(c).PaddingX(8).Padding(6, 8, 3, 8).Children(func() {
-		ui.Text(c, s).FontSize(10.5).FontWeight(500).LetterSpacing(.3).TextColor(T.Tx3)
+		ui.Text(c, s).FontSize(theme.Px(10.5)).FontWeight(500).LetterSpacing(.3).TextColor(T.Tx3)
 	})
 }
 

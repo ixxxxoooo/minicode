@@ -273,7 +273,7 @@ func (a *App) viewerFail(c *ui.Context, tb *ideTab, msg string) {
 // viewerBar 是查看器顶部的工具条:左信息、右操作。
 func (a *App) viewerBar(c *ui.Context, left, right func()) {
 	t := a.tk
-	ui.Row(c).Height(30).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+	ui.Row(c).Height(theme.Px(30)).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		left()
 		ui.Box(c).Grow(1)
 		right()
@@ -486,6 +486,6 @@ func (a *App) tableView(c *ui.Context, tb *ideTab) {
 			ui.Text(c, strconv.Itoa(row+tv.start+1)).FontSize(theme.FsCap).TextColor(t.Tx4).SingleLine()
 			return
 		}
-		ui.Text(c, sh.Cell(row+tv.start, col-1)).FontSize(12).TextColor(t.Tx1).SingleLine()
+		ui.Text(c, sh.Cell(row+tv.start, col-1)).FontSize(theme.Px(12)).TextColor(t.Tx1).SingleLine()
 	}).Key("tbl-" + tb.id).Grow(1).MinHeight(0)
 }

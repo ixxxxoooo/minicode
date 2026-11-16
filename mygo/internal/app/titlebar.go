@@ -156,8 +156,8 @@ func (a *App) crumb(c *ui.Context) {
 // cmdk 是 ⌘K 命令栏。
 func (a *App) cmdk(c *ui.Context) {
 	t := a.tk
-	b := ui.ButtonBase(c).Width(250).Height(24).Radius(t.RMd()).PaddingStart(8).PaddingEnd(6).Gap(6).AlignItems(ui.Center).
-		FontSize(11.5).TextColor(t.Tx3).Cursor(ui.CursorPointer).Shrink(0)
+	b := ui.ButtonBase(c).Width(250).Height(theme.Px(24)).Radius(t.RMd()).PaddingStart(8).PaddingEnd(6).Gap(6).AlignItems(ui.Center).
+		FontSize(theme.Px(11.5)).TextColor(t.Tx3).Cursor(ui.CursorPointer).Shrink(0)
 	switch {
 	case t.Scheme.ID == "b":
 		b.Radius(theme.RFull).Background(t.Raised.Alpha(.7))
@@ -182,6 +182,6 @@ func (a *App) avatar(c *ui.Context) ui.Element {
 	t := a.tk
 	return ui.ButtonBase(c).Size(20, 20).Radius(10).Background(t.AcSoft).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).
 		Tooltip("账号与设置").Label("账号与设置").Children(func() {
-		ui.Text(c, "L").FontSize(10).FontWeight(600).TextColor(t.AcTx)
+		ui.Text(c, "L").FontSize(theme.Px(10)).FontWeight(600).TextColor(t.AcTx)
 	})
 }

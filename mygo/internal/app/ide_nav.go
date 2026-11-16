@@ -382,7 +382,7 @@ func (a *App) hoverLocal(tb *ideTab, req editor.HoverRequest, w string, s, e int
 				ui.Text(c, h.sym.Name).FontWeight(600)
 				ui.Text(c, path.Base(h.path)+":"+itoa(h.sym.Line+1)).FontSize(theme.FsMicro).TextColor(t.Tx4)
 			})
-			ui.Text(c, h.sym.Detail).Font("monospace").FontSize(11.5).TextColor(t.Tx2)
+			ui.Text(c, h.sym.Detail).Font("monospace").FontSize(theme.Px(11.5)).TextColor(t.Tx2)
 			if doc != "" {
 				ui.Text(c, doc).FontSize(theme.FsCap).TextColor(t.Tx2).LineHeight(1.5)
 			}

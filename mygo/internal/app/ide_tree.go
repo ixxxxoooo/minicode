@@ -30,14 +30,16 @@ func (a *App) filesView(c *ui.Context) {
 		})
 		files.Children(func() {
 			ui.Column(c).Children(func() {
-				ui.Row(c).Height(24).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Children(func() {
+				hdr := ui.Row(c).Key("tree-hdr").Height(theme.Px(26)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(700)
+				hdrHot := hdr.Hovered() || a.popup != ""
+				hdr.Children(func() {
 					title := strings.ToUpper(d.fs.Name())
 					if a.multiRoot() {
 						title = strings.ToUpper(a.ws.Name) + "(工作区)"
 					}
 					// 标题 + 箭头整块可点,点一下折叠 / 展开整棵文件树(与「大纲 / 时间线」区块一致)
-					head := ui.ButtonBase(c).Key("tree-root-head").Grow(1).Height(24).Justify(ui.Start).Gap(5).AlignItems(ui.Center).
-						TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Cursor(ui.CursorDefault)
+					head := ui.ButtonBase(c).Key("tree-root-head").Grow(1).Height(theme.Px(26)).Justify(ui.Start).Gap(5).AlignItems(ui.Center).
+						TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(700).Cursor(ui.CursorDefault)
 					if head.Clicked() {
 						d.rootShut = !d.rootShut
 						diag.L("ide").Info("折叠文件树根", "折叠", d.rootShut)
@@ -53,33 +55,44 @@ func (a *App) filesView(c *ui.Context) {
 					// 图标各有各的含义:添加文件夹 / 新建文件夹 = 带加号的文件夹,新建文件 = 带加号的文件,
 					// 全部收起 = 两枚相对的箭头夹一条线;多根时「新建文件夹」只留在 ··· 菜单(顶层要先选文件夹)
 					_, ro := a.mutable()
-					if a.multiRoot() {
-						kit.Ib(c, "folderPlus", kit.IbOpt{Small: true, Tip: "添加文件夹到工作区"}).OnClick(func() {
-							a.pickFolders(true, func(ps []string) { a.wsAddFolders(a.ws.ID, ps) })
-						})
-					}
-					newFile := kit.Ib(c, "filePlus", kit.IbOpt{Small: true, Tip: map[bool]string{true: "新建文件", false: ro}[ro == ""]})
-					if ro == "" {
-						newFile.OnClick(func() { a.beginNew(a.newTargetDir(), false) })
+					// 工具按钮默认隐藏,鼠标移到标题行上才淡入(叠在行尾,标题文字平时完整显示);按钮始终存在,
+					// 所以从 ··· 打开菜单后鼠标移走也不会丢掉菜单的锚点
+					tools := ui.Row(c).Key("tree-tools").Absolute().Right(0).Top(0).Bottom(0).PaddingStart(10).PaddingEnd(4).Gap(1).AlignItems(ui.Center).
+						Background(t.BG).Transition(kit.Fade)
+					if hdrHot {
+						tools.Opacity(1)
 					} else {
-						newFile.Opacity(0.4).Cursor(ui.CursorDefault)
+						tools.Opacity(0)
 					}
-					if !a.multiRoot() {
-						newDir := kit.Ib(c, "folderPlus", kit.IbOpt{Small: true, Tip: map[bool]string{true: "新建文件夹", false: ro}[ro == ""]})
-						if ro == "" {
-							newDir.OnClick(func() { a.beginNew(a.newTargetDir(), true) })
-						} else {
-							newDir.Opacity(0.4).Cursor(ui.CursorDefault)
+					tools.Children(func() {
+						if a.multiRoot() {
+							kit.Ib(c, "folderPlus", kit.IbOpt{Small: true, Tip: "添加文件夹到工作区"}).OnClick(func() {
+								a.pickFolders(true, func(ps []string) { a.wsAddFolders(a.ws.ID, ps) })
+							})
 						}
-					}
-					shut := kit.Ib(c, "collapseAll", kit.IbOpt{Small: true, Tip: map[bool]string{true: "全部收起", false: "没有展开的文件夹"}[a.treeOpenCount() > 0]})
-					if a.treeOpenCount() > 0 {
-						shut.OnClick(a.collapseTree)
-					} else {
-						shut.Opacity(0.4).Cursor(ui.CursorDefault)
-					}
-					kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache, d.filesCache = nil, nil })
-					kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.treeHeadMenu)
+						newFile := kit.Ib(c, "filePlus", kit.IbOpt{Small: true, Tip: map[bool]string{true: "新建文件", false: ro}[ro == ""]})
+						if ro == "" {
+							newFile.OnClick(func() { a.beginNew(a.newTargetDir(), false) })
+						} else {
+							newFile.Opacity(0.4).Cursor(ui.CursorDefault)
+						}
+						if !a.multiRoot() {
+							newDir := kit.Ib(c, "folderPlus", kit.IbOpt{Small: true, Tip: map[bool]string{true: "新建文件夹", false: ro}[ro == ""]})
+							if ro == "" {
+								newDir.OnClick(func() { a.beginNew(a.newTargetDir(), true) })
+							} else {
+								newDir.Opacity(0.4).Cursor(ui.CursorDefault)
+							}
+						}
+						shut := kit.Ib(c, "collapseAll", kit.IbOpt{Small: true, Tip: map[bool]string{true: "全部收起", false: "没有展开的文件夹"}[a.treeOpenCount() > 0]})
+						if a.treeOpenCount() > 0 {
+							shut.OnClick(a.collapseTree)
+						} else {
+							shut.Opacity(0.4).Cursor(ui.CursorDefault)
+						}
+						kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache, d.filesCache = nil, nil })
+						kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.treeHeadMenu)
+					})
 				})
 				if !d.rootShut {
 					a.treeDir(c, "", 0)
@@ -90,8 +103,8 @@ func (a *App) filesView(c *ui.Context) {
 			ui.Box(c).Height(1).Background(t.Bd1)
 			for _, name := range []string{"大纲", "时间线"} {
 				open := d.sections[name]
-				r := ui.ButtonBase(c).Key("sec-" + name).Height(24).PaddingX(8).Justify(ui.Start).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).
-					FontSize(10.5).FontWeight(700).Cursor(ui.CursorDefault)
+				r := ui.ButtonBase(c).Key("sec-" + name).Height(theme.Px(26)).PaddingX(8).Justify(ui.Start).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).
+					FontSize(theme.Px(11.5)).FontWeight(700).Cursor(ui.CursorDefault)
 				if r.Clicked() {
 					d.sections[name] = !open
 				}
@@ -157,8 +170,8 @@ func (a *App) treeDir(c *ui.Context, dir string, depth int) {
 func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 	t := a.tk
 	d := a.ide
-	on := !e.Dir && d.sel == e.Path
-	r := kit.RowEl(c, on).Key("tr-" + e.Path).PaddingStart(6 + float32(depth)*12).Gap(5)
+	on := d.sel == e.Path // 文件夹点过之后也高亮,否则只看得到文件被选中
+	r := kit.RowEl(c, on).Key("tr-" + e.Path).PaddingStart(6 + float32(depth)*14).Gap(6)
 	dragRef(r, e.Path, e.Dir) // 拖到对话栏 = 引用
 	if e.Dir {
 		if ref, ok := ui.Drop[fileRef](r); ok && !ref.Dir {
@@ -190,15 +203,18 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 		d.openFile(e.Path, true)
 	}
 	r.Children(func() {
+		if on {
+			kit.SelBar(c)
+		}
 		if e.Dir {
 			icon := "chevR"
 			if d.open[e.Path] {
 				icon = "chevD"
 			}
-			kit.Ic(c, icon, kit.S12).TextColor(t.Tx4)
-			kit.Ic(c, "folder", kit.S12)
+			kit.Ic(c, icon, kit.S12).TextColor(t.Tx3)
+			kit.Ic(c, "folder", kit.S14)
 		} else {
-			ui.Box(c).Size(12, 12).Shrink(0)
+			ui.Box(c).Size(theme.Px(12), theme.Px(12)).Shrink(0)
 			a.fileIc(c, e.Name)
 		}
 		nm := ui.Text(c, e.Name).Grow(1).SingleLine()
@@ -209,7 +225,7 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 			a.nestedBadges(c, e.Path) // 嵌套仓库 / 子模块的根目录:类别标签 + 改动数
 		}
 		if g != "" && !e.Dir {
-			ui.Text(c, g).FontSize(10).FontWeight(700).Shrink(0)
+			ui.Text(c, g).FontSize(theme.Px(10)).FontWeight(700).Shrink(0)
 		}
 	})
 }

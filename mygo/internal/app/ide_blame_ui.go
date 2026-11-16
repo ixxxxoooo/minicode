@@ -171,7 +171,7 @@ func (a *App) drawCommitCard(c *ui.Context, tb *ideTab, bl vcs.BlameLine, right,
 	card.Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 			ui.Box(c).Size(22, 22).Radius(11).Background(t.AcSoft).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, authorAbbr(bl.Author)).FontSize(10).FontWeight(700).TextColor(t.AcTx)
+				ui.Text(c, authorAbbr(bl.Author)).FontSize(theme.Px(10)).FontWeight(700).TextColor(t.AcTx)
 			})
 			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 				ui.Text(c, bl.Author).FontWeight(600).SingleLine()
@@ -281,19 +281,19 @@ func (a *App) blameGutterOverlay(c *ui.Context, tb *ideTab) {
 	if g == nil {
 		ui.Row(c).Key("blame-no-repo").Absolute().Left(0).Top(0).Width(88).Padding(4, 6).
 			Children(func() {
-				ui.Text(c, "不在 Git 仓库").FontSize(9).TextColor(t.Tx4)
+				ui.Text(c, "不在 Git 仓库").FontSize(theme.Px(9)).TextColor(t.Tx4)
 			})
 		return
 	}
 	if g.busy {
 		ui.Row(c).Key("blame-gutter-busy").Absolute().Left(0).Top(0).Width(88).Padding(4, 6).Children(func() {
-			ui.Text(c, "读取中…").FontSize(9).TextColor(t.Tx4)
+			ui.Text(c, "读取中…").FontSize(theme.Px(9)).TextColor(t.Tx4)
 		})
 		return
 	}
 	if len(g.blame) == 0 && len(g.log) == 0 {
 		ui.Row(c).Key("blame-gutter-empty").Absolute().Left(0).Top(0).Width(88).Padding(4, 6).Children(func() {
-			ui.Text(c, "暂无历史").FontSize(9).TextColor(t.Tx4)
+			ui.Text(c, "暂无历史").FontSize(theme.Px(9)).TextColor(t.Tx4)
 		})
 		return
 	}
@@ -316,8 +316,8 @@ func (a *App) blameGutterOverlay(c *ui.Context, tb *ideTab) {
 			row := ui.Row(c).Key("bg-" + itoa(i)).Absolute().Left(2).Top(top).Width(w - 4).Height(monoLH * edScale).AlignItems(ui.Center).Gap(4)
 			row.Children(func() {
 				ui.Box(c).Width(2).Height(monoLH * edScale).Background(blameHashColor(bl.Hash, t)).Shrink(0)
-				ui.Text(c, authorAbbr(bl.Author)).FontSize(9).TextColor(t.Tx3).SingleLine().Width(28).Shrink(0)
-				ui.Text(c, bl.When).FontSize(9).TextColor(t.Tx4).SingleLine().Grow(1)
+				ui.Text(c, authorAbbr(bl.Author)).FontSize(theme.Px(9)).TextColor(t.Tx3).SingleLine().Width(28).Shrink(0)
+				ui.Text(c, bl.When).FontSize(theme.Px(9)).TextColor(t.Tx4).SingleLine().Grow(1)
 			})
 		}
 	})

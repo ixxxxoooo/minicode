@@ -35,8 +35,8 @@ func (a *App) selectBox(c *ui.Context, key string, w float32, items []selItem, c
 		}
 	}
 	pk := "sel@" + key
-	b := ui.ButtonBase(c).Key("sel-"+key).Width(w).Height(24).PaddingX(8).Gap(6).Radius(t.RSm()).AlignItems(ui.Center).
-		Background(t.Raised).Border(1, t.Bd2).Cursor(ui.CursorPointer).FontSize(12).Shrink(0).Transition(kit.Fade)
+	b := ui.ButtonBase(c).Key("sel-"+key).Width(w).Height(theme.Px(24)).PaddingX(8).Gap(6).Radius(t.RSm()).AlignItems(ui.Center).
+		Background(t.Raised).Border(1, t.Bd2).Cursor(ui.CursorPointer).FontSize(theme.Px(12)).Shrink(0).Transition(kit.Fade)
 	if b.Hovered() || a.popup == pk {
 		b.Background(t.Raised.Mix(t.Tx1, .04))
 	}
@@ -66,9 +66,9 @@ func (a *App) selectBox(c *ui.Context, key string, w float32, items []selItem, c
 			a.popPanel(panel, pw).AttachTo(b, ui.AnchorTopLeft, ui.AnchorBottomLeft).Margin(4, 0, 0, 0)
 			q := strings.ToLower(strings.TrimSpace(a.set.pv.selQ))
 			if len(items) > selSearchMin {
-				ui.Row(c).Height(26).Margin(2, 2, 4, 2).PaddingX(8).Gap(6).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Children(func() {
+				ui.Row(c).Height(theme.Px(26)).Margin(2, 2, 4, 2).PaddingX(8).Gap(6).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Children(func() {
 					kit.Ic(c, "search", kit.S12).TextColor(t.Tx3)
-					ui.TextInputBase(c.Key("sel-q-"+key), &a.set.pv.selQ).Grow(1).FontSize(12).Placeholder("搜索").AutoFocus()
+					ui.TextInputBase(c.Key("sel-q-"+key), &a.set.pv.selQ).Grow(1).FontSize(theme.Px(12)).Placeholder("搜索").AutoFocus()
 				})
 			}
 			shown := 0
@@ -97,7 +97,7 @@ func (a *App) selectBox(c *ui.Context, key string, w float32, items []selItem, c
 func (a *App) selRow(c *ui.Context, key string, it selItem, on bool, pick func()) {
 	t := a.tk
 	if it.disabled {
-		ui.Row(c).Height(26).PaddingX(8).Gap(8).AlignItems(ui.Center).Opacity(.5).Children(func() {
+		ui.Row(c).Height(theme.Px(26)).PaddingX(8).Gap(8).AlignItems(ui.Center).Opacity(.5).Children(func() {
 			if it.logo {
 				kit.Logo(c, it.brand, 14, t.Tx2)
 			}
@@ -111,7 +111,7 @@ func (a *App) selRow(c *ui.Context, key string, it selItem, on bool, pick func()
 		})
 		return
 	}
-	b := ui.ButtonBase(c).Key("selrow-" + key + "-" + it.id).Height(26).PaddingX(8).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).
+	b := ui.ButtonBase(c).Key("selrow-" + key + "-" + it.id).Height(theme.Px(26)).PaddingX(8).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).
 		Justify(ui.Start).Cursor(ui.CursorDefault).Transition(kit.Fade)
 	switch {
 	case on:

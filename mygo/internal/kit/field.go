@@ -18,12 +18,12 @@ func Field(c *ui.Context, key string, o FieldOpt, build func(row ui.Element)) {
 	t := T
 	ui.Column(c).Gap(4).Shrink(0).Children(func() {
 		if o.Label != "" {
-			ui.Text(c, o.Label).FontSize(11.5).FontWeight(500).TextColor(t.Tx2)
+			ui.Text(c, o.Label).FontSize(theme.Px(11.5)).FontWeight(500).TextColor(t.Tx2)
 		}
 		if o.Desc != "" {
-			ui.Text(c, o.Desc).FontSize(10.5).TextColor(t.Tx3).LineHeight(theme.LhCap)
+			ui.Text(c, o.Desc).FontSize(theme.Px(10.5)).TextColor(t.Tx3).LineHeight(theme.LhCap)
 		}
-		box := ui.Row(c).Key(key+"-fld").MinWidth(0).Height(28).PaddingX(8).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Border(1, t.Bd2)
+		box := ui.Row(c).Key(key+"-fld").MinWidth(0).Height(theme.Px(28)).PaddingX(8).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Border(1, t.Bd2)
 		bad := o.Err != ""
 		if box.FocusWithin() && !bad {
 			box.BorderColor(t.Ac)
@@ -36,7 +36,7 @@ func Field(c *ui.Context, key string, o FieldOpt, build func(row ui.Element)) {
 		if bad {
 			ui.Row(c).Gap(5).AlignItems(ui.Center).Children(func() {
 				Ic(c, "alert", S12).TextColor(t.Err)
-				ui.Text(c, o.Err).FontSize(10.5).TextColor(t.Err).Grow(1)
+				ui.Text(c, o.Err).FontSize(theme.Px(10.5)).TextColor(t.Err).Grow(1)
 			})
 		}
 	})

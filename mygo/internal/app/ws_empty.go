@@ -120,7 +120,7 @@ func (a *App) wsEmpty(c *ui.Context) {
 
 	group := func(title string, rows []wsRow, none string) {
 		ui.Column(c).Gap(5).AlignItems(ui.Stretch).Children(func() {
-			ui.Text(c, title).FontSize(10.5).FontWeight(500).LetterSpacing(.3).TextColor(t.Tx3).Margin(0, 0, 0, 4)
+			ui.Text(c, title).FontSize(theme.Px(10.5)).FontWeight(500).LetterSpacing(.3).TextColor(t.Tx3).Margin(0, 0, 0, 4)
 			ui.Column(c).Radius(t.RMd()).Background(t.Raised).Border(1, t.Bd1).AlignItems(ui.Stretch).Children(func() {
 				if len(rows) == 0 {
 					ui.Text(c, none).FontSize(theme.FsCap).TextColor(t.Tx3).Padding(10, 12)
@@ -130,7 +130,7 @@ func (a *App) wsEmpty(c *ui.Context) {
 					if i > 0 {
 						ui.Box(c).Height(1).Background(t.Bd1).Shrink(0)
 					}
-					b := ui.ButtonBase(c).Key("wse-" + r.key).Height(36).PaddingX(12).Gap(10).AlignItems(ui.Center).
+					b := ui.ButtonBase(c).Key("wse-" + r.key).Height(theme.Px(36)).PaddingX(12).Gap(10).AlignItems(ui.Center).
 						Justify(ui.Start).Cursor(ui.CursorPointer).Transition(kit.Fade)
 					if b.Hovered() {
 						b.Background(t.Fill1)

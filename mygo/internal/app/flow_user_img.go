@@ -133,7 +133,7 @@ func (a *App) userMsgImages(c *ui.Context, u *core.User) {
 			abs := a.resolveUserImage(raw)
 			if abs == "" {
 				// 文件找不到:一枚带文件名的小胶囊,不占缩略图的大格子。
-				ui.Row(c).Height(28).Padding(0, 10).Radius(t.RSm()).Background(t.Fill1).AlignItems(ui.Center).Children(func() {
+				ui.Row(c).Height(theme.Px(28)).Padding(0, 10).Radius(t.RSm()).Background(t.Fill1).AlignItems(ui.Center).Children(func() {
 					a.fileIc(c, baseName(raw))
 					ui.Text(c, baseName(raw)).FontSize(theme.FsMicro).TextColor(t.Tx4).Margin(0, 0, 0, 6)
 				})

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/ixxxxoooo/minicode/internal/theme"
 	"math"
 	"strings"
 	"time"
@@ -344,13 +345,13 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 		vy := 4 + scroll/total*mmRowH*float32(n)
 		ui.Box(c).Key("mm-range").Absolute().Right(mmW+mmRulW+edTrackW+6).Top(vy).Padding(2, 8).PassThrough().
 			Background(t.Raised).Radius(t.RSm()).Border(1, t.Bd1).Children(func() {
-			ui.Text(c, "第 "+itoa(first+1)+"–"+itoa(last+1)+" 行 / 共 "+itoa(tb.buf.LineCount())).Font("monospace").FontSize(11).TextColor(t.Tx2).SingleLine()
+			ui.Text(c, "第 "+itoa(first+1)+"–"+itoa(last+1)+" 行 / 共 "+itoa(tb.buf.LineCount())).Font("monospace").FontSize(theme.Px(11)).TextColor(t.Tx2).SingleLine()
 		})
 	}
 	if a.mmTip != "" && box.Hovered() {
 		ui.Box(c).Absolute().Left(4).Right(mmRulW+4).Bottom(4).MaxHeight(80).Padding(6, 8).
 			Background(t.Raised).Radius(t.RSm()).Border(1, t.Bd1).Children(func() {
-			ui.Text(c, a.mmTip).Font("monospace").FontSize(11).TextColor(t.Tx2)
+			ui.Text(c, a.mmTip).Font("monospace").FontSize(theme.Px(11)).TextColor(t.Tx2)
 		})
 	} else if !box.Hovered() {
 		a.mmTip = ""

@@ -219,7 +219,7 @@ func abs(f float64) float64 {
 func (a *App) stat(c *ui.Context, v, label, sub string, subCol ui.Color) {
 	t := a.tk
 	a.box(c).Grow(1).Basis(0).Padding(14, 16).Gap(3).Children(func() {
-		ui.Text(c, v).FontSize(20).FontWeight(600).FontFeatures("tnum")
+		ui.Text(c, v).FontSize(theme.Px(20)).FontWeight(600).FontFeatures("tnum")
 		ui.Text(c, label).FontSize(theme.FsCap).TextColor(t.Tx3)
 		if sub != "" {
 			ui.Text(c, sub).FontSize(theme.FsMicro).TextColor(subCol)
@@ -285,7 +285,7 @@ func (a *App) usageModels(c *ui.Context, u core.UsageReport) {
 		ui.Text(c, "按模型").FontWeight(600)
 		for _, m := range u.Models {
 			col := []ui.Color{t.Info, t.Vio, t.Ok}[m.Kind%3]
-			ui.Row(c).Height(28).Gap(8).AlignItems(ui.Center).Children(func() {
+			ui.Row(c).Height(theme.Px(28)).Gap(8).AlignItems(ui.Center).Children(func() {
 				ui.Text(c, m.Name).Width(96).SingleLine()
 				ui.Box(c).Grow(1).Height(6).Radius(3).Background(t.Fill2).Clip().Children(func() {
 					ui.Box(c).HeightPercent(100).WidthPercent(float32(m.Fraction * 100)).Radius(3).Background(col)
@@ -301,7 +301,7 @@ func (a *App) usageProjects(c *ui.Context, u core.UsageReport) {
 	a.box(c).Grow(1).Basis(0).Padding(10, 14).Gap(4).Children(func() {
 		ui.Text(c, "按项目").FontWeight(600)
 		for _, p := range u.Projects {
-			ui.Row(c).Height(28).Gap(8).AlignItems(ui.Center).Children(func() {
+			ui.Row(c).Height(theme.Px(28)).Gap(8).AlignItems(ui.Center).Children(func() {
 				ui.Text(c, p.Name).Grow(1).SingleLine().MinWidth(0)
 				ui.Text(c, itoa(p.Sessions)+" 个会话").FontSize(theme.FsCap).TextColor(t.Tx3).FontFeatures("tnum").Shrink(0)
 				ui.Text(c, core.FormatMoney(p.Cost)).Width(54).FontFeatures("tnum").TextAlign(ui.End)
@@ -315,7 +315,7 @@ func (a *App) usageTop(c *ui.Context, u core.UsageReport) {
 	a.box(c).Padding(10, 6).Children(func() {
 		ui.Text(c, "最贵的会话").FontWeight(600).Padding(0, 8, 4, 8)
 		for i, s := range u.TopSessions {
-			r := ui.ButtonBase(c).Key("top-" + itoa(i)).Height(30).PaddingX(8).Gap(10).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
+			r := ui.ButtonBase(c).Key("top-" + itoa(i)).Height(theme.Px(30)).PaddingX(8).Gap(10).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
 			if r.Hovered() {
 				r.Background(t.Fill1)
 			}

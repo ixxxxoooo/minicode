@@ -15,8 +15,8 @@ import (
 // 它固定在会话列表上方,不随列表滚动;withAdd 为假时不画「+」(方案 C 的侧栏标题行已经有)。
 func (a *App) projectsHeader(c *ui.Context, withAdd bool) {
 	t := a.tk
-	ui.Row(c).Key("projhdr").Height(24).PaddingX(8).Margin(6, 0, 0, 0).AlignItems(ui.Center).Gap(4).Shrink(0).Children(func() {
-		ui.Text(c, "项目与工作区").Grow(1).FontSize(theme.FsMicro).FontWeight(600).TextColor(t.Tx3)
+	ui.Row(c).Key("projhdr").Height(theme.Px(24)).PaddingX(8).Margin(6, 0, 0, 0).AlignItems(ui.Center).Gap(4).Shrink(0).Children(func() {
+		ui.Text(c, "项目与工作区").Grow(1).FontSize(theme.FsCap).FontWeight(600).TextColor(t.Tx2)
 		if withAdd {
 			a.addMenuButton(c)
 		}
@@ -116,9 +116,8 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 		ui.Text(c, w.Name).Grow(1).SingleLine()
 		if hov {
 			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "在此工作区新建会话"}).Margin(0, -4, 0, 0).OnClick(func() { a.NewSessionIn(a.startProject(w)) })
-		} else {
-			ui.Text(c, itoa(len(w.Folders))+" 个文件夹").FontSize(theme.FsMicro).FontWeight(400).TextColor(t.Tx4)
 		}
+		// 工作区行末尾不再显示「N 个文件夹」:成员文件夹在「编辑工作区」里管理
 	})
 	if !open {
 		return

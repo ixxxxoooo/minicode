@@ -73,7 +73,7 @@ func (a *App) mi(c *ui.Context, key, icon, text, right string, on bool) ui.Eleme
 // miTint 同 mi,图标可以单独上色(tint 为 nil = 跟随文字色)。
 func (a *App) miTint(c *ui.Context, key, icon string, tint *ui.Color, text, right string, on bool) ui.Element {
 	t := a.tk
-	b := ui.ButtonBase(c).Key("mi-" + key).Height(26).PaddingX(8).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).Justify(ui.Start).
+	b := ui.ButtonBase(c).Key("mi-" + key).Height(theme.Px(26)).PaddingX(8).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).Justify(ui.Start).
 		Cursor(ui.CursorDefault).Transition(kit.Fade)
 	switch {
 	case on:
@@ -314,7 +314,7 @@ func (a *App) acctPopup(c *ui.Context, which string, anchor ui.Element) {
 			})
 			ui.Column(c).Padding(4).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
 				item := func(key, icon, text, right string, fn func()) {
-					b := a.mi(c, "acct-"+key, icon, text, right, false).Height(28)
+					b := a.mi(c, "acct-"+key, icon, text, right, false).Height(theme.Px(28))
 					if b.Clicked() {
 						a.popup = ""
 						fn()

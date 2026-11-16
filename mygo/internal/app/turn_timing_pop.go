@@ -18,7 +18,7 @@ const maxPopRows = 10
 func (a *App) timingChip(c *ui.Context, uid string, timing core.TurnTiming, stats core.TurnStats, hasStats bool) {
 	t := a.tk
 	key := "rt:" + uid
-	chip := ui.ButtonBase(c).Key("rtchip-"+uid).Height(20).PaddingX(6).Margin(0, 0, 0, -6).Gap(6).Radius(t.RSm()).AlignItems(ui.Center).
+	chip := ui.ButtonBase(c).Key("rtchip-"+uid).Height(theme.Px(20)).PaddingX(6).Margin(0, 0, 0, -6).Gap(6).Radius(t.RSm()).AlignItems(ui.Center).
 		Cursor(ui.CursorPointer).FontSize(theme.FsCap).Transition(kit.Fade)
 	switch {
 	case a.popup == key:
@@ -73,7 +73,7 @@ func (a *App) timingPopBody(c *ui.Context, tm core.TurnTiming, stats core.TurnSt
 	total := float32(max(1, tm.TotalMs))
 	slowWait, _ := tm.SlowestWait()
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-		ui.Text(c, "响应耗时").FontWeight(700).FontSize(13)
+		ui.Text(c, "响应耗时").FontWeight(700).FontSize(theme.Px(13))
 		if slowWait >= int64(core.SlowWait/1e6) {
 			kit.Tag(c, "首字偏慢", kit.KWarn)
 		}
@@ -135,7 +135,7 @@ func (a *App) waterfallRow(c *ui.Context, tm core.TurnTiming, p core.TimingPhase
 		if tm.Calls[p.Call-1].Slow() {
 			subc = t.Warn
 		}
-		ui.Text(c, sub).FontSize(10.5).TextColor(subc).Margin(0, 0, 2, 82).LineHeight(1.4)
+		ui.Text(c, sub).FontSize(theme.Px(10.5)).TextColor(subc).Margin(0, 0, 2, 82).LineHeight(1.4)
 	}
 }
 

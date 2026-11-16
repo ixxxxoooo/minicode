@@ -103,8 +103,8 @@ func (a *App) scmBody(c *ui.Context) {
 func (a *App) scmHead(c *ui.Context) {
 	t := a.tk
 	s := &a.sc
-	ui.Row(c).Height(30).Gap(2).AlignItems(ui.Center).Shrink(0).PaddingX(2).Children(func() {
-		b := ui.ButtonBase(c).Key("scm-br").Height(24).PaddingX(7).Gap(5).Radius(t.RSm()).AlignItems(ui.Center).Cursor(ui.CursorPointer).
+	ui.Row(c).Height(theme.Px(30)).Gap(2).AlignItems(ui.Center).Shrink(0).PaddingX(2).Children(func() {
+		b := ui.ButtonBase(c).Key("scm-br").Height(theme.Px(24)).PaddingX(7).Gap(5).Radius(t.RSm()).AlignItems(ui.Center).Cursor(ui.CursorPointer).
 			Background(t.Raised).Border(1, t.Bd2).FontSize(theme.FsCap).Shrink(1).MinWidth(0).Tooltip("切换分支")
 		if b.Hovered() {
 			b.Background(t.Raised.Mix(t.Tx1, .04))
@@ -171,7 +171,7 @@ func (a *App) scmCommitBox(c *ui.Context, nStaged int) {
 			if s.genning {
 				in.Opacity(.35).Placeholder("") // 生成中只留上面那行流光提示,不再叠一行占位文字
 			}
-			ui.Row(c).Height(22).PaddingX(4).AlignItems(ui.Center).Children(func() {
+			ui.Row(c).Height(theme.Px(22)).PaddingX(4).AlignItems(ui.Center).Children(func() {
 				if s.amend {
 					kit.Tag(c, "修改上次提交", kit.KWarn)
 				}
@@ -231,7 +231,7 @@ func (a *App) scmGroup(c *ui.Context, id, title string, cs []vcs.Change, actIcon
 	if len(cs) == 0 && id == "changes" {
 		return
 	}
-	h := ui.ButtonBase(c).Key("scm-h-" + id).Height(24).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3)
+	h := ui.ButtonBase(c).Key("scm-h-" + id).Height(theme.Px(24)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3)
 	if h.Hovered() {
 		h.Background(t.Fill1)
 	}
@@ -239,7 +239,7 @@ func (a *App) scmGroup(c *ui.Context, id, title string, cs []vcs.Change, actIcon
 	h.ContextMenu(func(m *ui.Menu) { a.scmGroupMenu(m, id, cs) })
 	h.Children(func() {
 		kit.Ic(c, map[bool]string{true: "chevR", false: "chevD"}[s.folded[id]], kit.S12)
-		ui.Text(c, title).FontSize(10.5).FontWeight(700).LetterSpacing(.3)
+		ui.Text(c, title).FontSize(theme.Px(10.5)).FontWeight(700).LetterSpacing(.3)
 		ui.Spacer(c).Grow(1)
 		if h.Hovered() && actIcon != "" {
 			paths := make([]string, len(cs))
@@ -283,7 +283,7 @@ func statusLetter(st byte) string {
 
 // scmFile 是一个文件行:图标 + 名 + 目录;悬停显示 打开 / 放弃 / 暂存 操作,否则显示 +N −N 与状态字母。
 func (a *App) scmFile(c *ui.Context, grp string, ch vcs.Change) {
-	r := ui.ButtonBase(c).Key("scm-f-" + grp + "-" + ch.Path).Height(22).PaddingX(4).PaddingStart(14).Gap(5).AlignItems(ui.Center).Radius(a.tk.RSm()).Cursor(ui.CursorPointer)
+	r := ui.ButtonBase(c).Key("scm-f-" + grp + "-" + ch.Path).Height(theme.Px(22)).PaddingX(4).PaddingStart(14).Gap(5).AlignItems(ui.Center).Radius(a.tk.RSm()).Cursor(ui.CursorPointer)
 	dragRef(r, ch.Path, false)
 	a.scmFileInner(c, grp, ch, r)
 }
@@ -305,14 +305,14 @@ func (a *App) scmStat(c *ui.Context, ch vcs.Change) {
 func (a *App) scmGraph(c *ui.Context) {
 	t := a.tk
 	s := &a.sc
-	h := ui.ButtonBase(c).Key("scm-h-graph").Height(24).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3).Margin(8, 0, 0, 0)
+	h := ui.ButtonBase(c).Key("scm-h-graph").Height(theme.Px(24)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3).Margin(8, 0, 0, 0)
 	if h.Hovered() {
 		h.Background(t.Fill1)
 	}
 	h.OnClick(func() { s.folded["graph"] = !s.folded["graph"] })
 	h.Children(func() {
 		kit.Ic(c, map[bool]string{true: "chevR", false: "chevD"}[s.folded["graph"]], kit.S12)
-		ui.Text(c, "图形").FontSize(10.5).FontWeight(700).LetterSpacing(.3)
+		ui.Text(c, "图形").FontSize(theme.Px(10.5)).FontWeight(700).LetterSpacing(.3)
 		ui.Spacer(c).Grow(1)
 		if len(s.log) > 0 {
 			ui.Text(c, itoa(len(s.log))+" 个提交").FontSize(theme.FsMicro).TextColor(t.Tx4)
@@ -386,7 +386,7 @@ func (a *App) scmCommitRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow,
 			return
 		}
 		for _, ch := range files {
-			fr := ui.ButtonBase(c).Key("scm-cf-" + cm.Hash + ch.Path).Height(22).PaddingX(4).Gap(5).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx2)
+			fr := ui.ButtonBase(c).Key("scm-cf-" + cm.Hash + ch.Path).Height(theme.Px(22)).PaddingX(4).Gap(5).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx2)
 			if fr.Hovered() {
 				fr.Background(t.Fill1)
 			}
@@ -492,14 +492,14 @@ func (a *App) scmStashes(c *ui.Context) {
 	if len(s.stashes) == 0 {
 		return
 	}
-	h := ui.ButtonBase(c).Key("scm-h-stash").Height(24).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3).Margin(8, 0, 0, 0)
+	h := ui.ButtonBase(c).Key("scm-h-stash").Height(theme.Px(24)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3).Margin(8, 0, 0, 0)
 	if h.Hovered() {
 		h.Background(t.Fill1)
 	}
 	h.OnClick(func() { s.folded["stash"] = !s.folded["stash"] })
 	h.Children(func() {
 		kit.Ic(c, map[bool]string{true: "chevR", false: "chevD"}[s.folded["stash"]], kit.S12)
-		ui.Text(c, "储藏").FontSize(10.5).FontWeight(700).LetterSpacing(.3)
+		ui.Text(c, "储藏").FontSize(theme.Px(10.5)).FontWeight(700).LetterSpacing(.3)
 		ui.Spacer(c).Grow(1)
 		kit.Cnt(c, itoa(len(s.stashes)), false)
 	})
@@ -508,7 +508,7 @@ func (a *App) scmStashes(c *ui.Context) {
 	}
 	for i, st := range s.stashes {
 		i, st := i, st
-		r := ui.Row(c).Key("stash-" + itoa(i)).Height(36).PaddingX(6).Gap(6).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
+		r := ui.Row(c).Key("stash-" + itoa(i)).Height(theme.Px(36)).PaddingX(6).Gap(6).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
 		if r.Hovered() {
 			r.Background(t.Fill1)
 		}
@@ -540,7 +540,7 @@ func (a *App) scmReviewRow(c *ui.Context) {
 	if n == 0 {
 		return
 	}
-	r := ui.ButtonBase(c).Key("scm-review").Height(28).PaddingX(8).Gap(6).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).
+	r := ui.ButtonBase(c).Key("scm-review").Height(theme.Px(28)).PaddingX(8).Gap(6).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).
 		Background(t.AcSoft).Margin(0, 2, 6, 2).Shrink(0)
 	r.OnClick(a.OpenReview)
 	r.Children(func() {

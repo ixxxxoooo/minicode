@@ -82,7 +82,7 @@ func (a *App) mermaidViewerOverlay(c *ui.Context) {
 				row := ui.Box(c).Absolute().Top(v.panY).Left(v.panX)
 				row.Children(func() { a.mmTextLayer(c, &sc, v.scale) })
 			})
-			ui.Row(c).Height(22).Padding(0, 12).Gap(8).AlignItems(ui.Center).FontSize(theme.FsMicro).TextColor(t.Tx4).Children(func() {
+			ui.Row(c).Height(theme.Px(22)).Padding(0, 12).Gap(8).AlignItems(ui.Center).FontSize(theme.FsMicro).TextColor(t.Tx4).Children(func() {
 				ui.Text(c, fmt.Sprintf("缩放 %s · 拖拽平移 · 滚轮缩放", fmtMmPct(v.scale)))
 				ui.Spacer(c).Grow(1)
 				ui.Text(c, "⇧方向键大步").SingleLine()

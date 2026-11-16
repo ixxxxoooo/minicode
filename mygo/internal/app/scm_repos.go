@@ -16,7 +16,7 @@ import (
 func (a *App) repoOverview(c *ui.Context) {
 	t := a.tk
 	ui.Column(c).Shrink(0).Padding(0, 0, 4, 0).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Margin(0, 0, 6, 0).Children(func() {
-		ui.Row(c).Height(24).PaddingX(4).Gap(2).AlignItems(ui.Center).Children(func() {
+		ui.Row(c).Height(theme.Px(24)).PaddingX(4).Gap(2).AlignItems(ui.Center).Children(func() {
 			ui.Text(c, "仓库").Grow(1).FontSize(theme.FsMicro).FontWeight(700).TextColor(t.Tx3)
 			ui.Text(c, itoa(len(a.repos))).FontSize(theme.FsMicro).TextColor(t.Tx4).Margin(0, 4, 0, 0)
 			if a.scmExpandAll() {
@@ -33,7 +33,7 @@ func (a *App) repoOverview(c *ui.Context) {
 				indent = 16
 			}
 			if e.repo == nil && e.checked {
-				r := kit.RowEl(c, false).Key("repo-"+itoa(i)).Height(30).Gap(6).TextColor(t.Tx3).Margin(0, 0, 0, indent)
+				r := kit.RowEl(c, false).Key("repo-"+itoa(i)).Height(theme.Px(30)).Gap(6).TextColor(t.Tx3).Margin(0, 0, 0, indent)
 				on := i == a.repoAct
 				if on {
 					r.Background(t.Fill1)
@@ -49,7 +49,7 @@ func (a *App) repoOverview(c *ui.Context) {
 			}
 			br, ah, bh, n := a.repoSummary(i)
 			conf, staged := a.repoFlags(i)
-			r := kit.RowEl(c, i == a.repoAct).Key("repo-"+itoa(i)).Height(32).Gap(6).Margin(0, 0, 0, indent)
+			r := kit.RowEl(c, i == a.repoAct).Key("repo-"+itoa(i)).Height(theme.Px(32)).Gap(6).Margin(0, 0, 0, indent)
 			hov := r.Hovered()
 			r.OnClick(func() { a.setActiveRepo(i) })
 			r.ContextMenu(func(m *ui.Menu) { a.repoRowMenu(m, i) })

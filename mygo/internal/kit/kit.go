@@ -117,6 +117,7 @@ const (
 
 // Ic 画一个图标,颜色继承文字色(用 TextColor 改)。
 func Ic(c *ui.Context, name string, size float32) ui.Element {
+	size = theme.Px(size) // 图标随界面大小缩放
 	return ui.Icon(c, svgOf(name)).Size(size, size)
 }
 
@@ -129,5 +130,5 @@ func Txt(c *ui.Context, s string, size float32, col ui.Color) ui.Element {
 
 // Mono 是等宽文字(设计稿 .mono:11.5px)。
 func Mono(c *ui.Context, s string, col ui.Color) ui.Element {
-	return ui.Text(c, s).Font("monospace").FontSize(11.5).TextColor(col)
+	return ui.Text(c, s).Font("monospace").FontSize(theme.Px(11.5)).TextColor(col)
 }

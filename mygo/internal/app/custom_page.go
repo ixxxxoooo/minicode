@@ -257,7 +257,7 @@ func (a *App) cuMain(c *ui.Context, st *customize.Store) {
 	kit.VScroll(c).Key("cu-main").Grow(1).MinWidth(0).Children(func() {
 		ui.Column(c).Padding(4, 20, 24, 20).Gap(8).Children(func() {
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-				ui.Row(c.Key("cu-qbox")).Grow(1).MinWidth(0).Height(26).PaddingX(8).Gap(6).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Children(func() {
+				ui.Row(c.Key("cu-qbox")).Grow(1).MinWidth(0).Height(theme.Px(26)).PaddingX(8).Gap(6).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Children(func() {
 					kit.Ic(c, "search", kit.S12).TextColor(t.Tx4)
 					ui.TextInput(c.Key("cu-q"), &s.q).Grow(1).MinWidth(0).Background(ui.Transparent).BorderWidth(0).Padding(0).FontSize(theme.FsCap + .5).
 						Placeholder("筛选" + custCats[cat].title).PlaceholderColor(t.Tx4).FocusRing(false)
@@ -571,13 +571,13 @@ func (a *App) cuDialog(c *ui.Context, st *customize.Store) {
 			panel.Children(func() {
 				ui.Text(c, meta.add).FontSize(theme.FsTitle).FontWeight(600)
 				kit.Field(c, "cd-name", kit.FieldOpt{Label: "名称", Err: d.err}, func(box ui.Element) {
-					box.Height(30)
+					box.Height(theme.Px(30))
 					in := ui.TextInputBase(c.Key("cd-name"), &d.name).Grow(1).FontSize(theme.FsBody).Placeholder(ph).PlaceholderColor(t.Tx4).AutoFocus()
 					in.OnSubmit(create)
 				})
 				if extraLbl != "" {
 					kit.Field(c, "cd-extra", kit.FieldOpt{Label: extraLbl}, func(box ui.Element) {
-						box.Height(30)
+						box.Height(theme.Px(30))
 						ui.TextInputBase(c.Key("cd-extra"), &d.extra).Grow(1).FontSize(theme.FsBody).Placeholder(extraPh).PlaceholderColor(t.Tx4)
 					})
 				}

@@ -123,7 +123,7 @@ func (a *App) cfgGroupHead(c *ui.Context, id, brand, name, count, blocked string
 	t := a.tk
 	p := a.pvLoad()
 	open := a.cfgGroupOpen(id, active) && blocked == ""
-	b := ui.ButtonBase(c).Key("cfg-grp-"+id).Height(24).PaddingX(8).Gap(4).Radius(t.RSm()).AlignItems(ui.Center).Justify(ui.Start).
+	b := ui.ButtonBase(c).Key("cfg-grp-"+id).Height(theme.Px(24)).PaddingX(8).Gap(4).Radius(t.RSm()).AlignItems(ui.Center).Justify(ui.Start).
 		Cursor(ui.CursorDefault).Transition(kit.Fade).Margin(2, 0, 0, 0)
 	if blocked != "" {
 		b.Opacity(.6)
@@ -139,7 +139,7 @@ func (a *App) cfgGroupHead(c *ui.Context, id, brand, name, count, blocked string
 	b.Children(func() {
 		kit.Ic(c, map[bool]string{true: "chevD", false: "chevR"}[open], kit.S12).TextColor(t.Tx3)
 		kit.Logo(c, brand, 13, t.Tx2)
-		ui.Text(c, name).FontSize(10.5).FontWeight(600).LetterSpacing(.3).TextColor(t.Tx2).SingleLine()
+		ui.Text(c, name).FontSize(theme.Px(10.5)).FontWeight(600).LetterSpacing(.3).TextColor(t.Tx2).SingleLine()
 		if active {
 			kit.Tag(c, "当前", kit.KAc)
 		}

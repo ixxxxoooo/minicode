@@ -156,7 +156,7 @@ func (a *App) provAddMenu(c *ui.Context, anchor ui.Element) {
 			kit.Cap(c, "预设")
 			for i, ps := range claudecfg.Presets {
 				ps := ps
-				b := ui.ButtonBase(c).Key("prov-ps-" + strconv.Itoa(i)).Height(34).PaddingX(8).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).Justify(ui.Start).Cursor(ui.CursorDefault).Transition(kit.Fade)
+				b := ui.ButtonBase(c).Key("prov-ps-" + strconv.Itoa(i)).Height(theme.Px(34)).PaddingX(8).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).Justify(ui.Start).Cursor(ui.CursorDefault).Transition(kit.Fade)
 				if b.Hovered() {
 					b.Background(t.Fill1)
 				}
@@ -167,7 +167,7 @@ func (a *App) provAddMenu(c *ui.Context, anchor ui.Element) {
 				b.Children(func() {
 					ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 						ui.Text(c, ps.Name).SingleLine()
-						ui.Text(c, claudecfg.HostOf(ps.BaseURL)).Font("monospace").FontSize(10.5).TextColor(t.Tx3).SingleLine()
+						ui.Text(c, claudecfg.HostOf(ps.BaseURL)).Font("monospace").FontSize(theme.Px(10.5)).TextColor(t.Tx3).SingleLine()
 					})
 				})
 			}
@@ -274,7 +274,7 @@ func (a *App) provEditor(c *ui.Context) {
 
 // provBoxStyle 是编辑区输入框外壳:定宽、24 高。
 func (a *App) provBoxStyle(box ui.Element, w float32) {
-	box.Height(24).Width(w).PaddingX(8).Shrink(0)
+	box.Height(theme.Px(24)).Width(w).PaddingX(8).Shrink(0)
 }
 
 // provFieldRow 是编辑区的一行:左侧标题 + 说明,右侧控件(输入校验错误由 kit.Field 画在输入框下方)。
@@ -493,7 +493,7 @@ func (a *App) provInventory(c *ui.Context) {
 		switch {
 		case p.fetching:
 			for i := 0; i < 4; i++ {
-				ui.Row(c).Height(26).Gap(8).AlignItems(ui.Center).Opacity(.6 + .4*float32(i%2)).Children(func() {
+				ui.Row(c).Height(theme.Px(26)).Gap(8).AlignItems(ui.Center).Opacity(.6 + .4*float32(i%2)).Children(func() {
 					ui.Box(c).Size(14, 14).Radius(4).Background(t.Fill2).Shrink(0)
 					ui.Box(c).Height(10).Radius(4).Background(t.Fill2).Grow(1)
 				})
@@ -516,7 +516,7 @@ func (a *App) provInventory(c *ui.Context) {
 			})
 		default:
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-				ui.Row(c).Grow(1).Height(24).PaddingX(8).Gap(6).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Children(func() {
+				ui.Row(c).Grow(1).Height(theme.Px(24)).PaddingX(8).Gap(6).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Children(func() {
 					kit.Ic(c, "search", kit.S12).TextColor(t.Tx3)
 					ui.TextInputBase(c.Key("prov-filter"), &p.filter).Grow(1).FontSize(theme.FsCap + .5).Placeholder("过滤模型 ID").PlaceholderColor(t.Tx4)
 				})
@@ -537,7 +537,7 @@ func (a *App) provInventory(c *ui.Context) {
 		// 手动添加一行:输入框 + 添加(回车也行)
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 			kit.Field(c, "prov-manual", kit.FieldOpt{Err: p.manualErr, ShakeAt: &p.shakeAt}, func(box ui.Element) {
-				box.Height(24).Grow(1).PaddingX(8)
+				box.Height(theme.Px(24)).Grow(1).PaddingX(8)
 				in := ui.TextInputBase(c.Key("prov-manual-in"), &p.manual).Grow(1).FontSize(theme.FsCap + .5).Font("monospace").Placeholder("手动添加模型 ID").PlaceholderColor(t.Tx4)
 				if p.focusManual {
 					in.AutoFocus()
@@ -560,7 +560,7 @@ func (a *App) provModelRow(c *ui.Context, d *claudecfg.Provider, m string) {
 			manual = true
 		}
 	}
-	b := ui.ButtonBase(c).Key("prov-m-" + m).Height(26).PaddingX(8).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).Justify(ui.Start).Cursor(ui.CursorPointer).Transition(kit.Fade)
+	b := ui.ButtonBase(c).Key("prov-m-" + m).Height(theme.Px(26)).PaddingX(8).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).Justify(ui.Start).Cursor(ui.CursorPointer).Transition(kit.Fade)
 	switch {
 	case on:
 		b.Background(t.AcSoft)
@@ -712,7 +712,7 @@ func (a *App) mappingBody(a2 *App, c *ui.Context) {
 		rowBox(a, c, false, 40).Children(func() {
 			ui.Column(c).Grow(1).MinWidth(0).Gap(1).Children(func() {
 				ui.Text(c, sl.Label).FontWeight(500).SingleLine().Tooltip(sl.Env)
-				ui.Text(c, sl.Env).Font("monospace").FontSize(10.5).TextColor(t.Tx4).SingleLine()
+				ui.Text(c, sl.Env).Font("monospace").FontSize(theme.Px(10.5)).TextColor(t.Tx4).SingleLine()
 			})
 			var items []selItem
 			if !sl.Required {

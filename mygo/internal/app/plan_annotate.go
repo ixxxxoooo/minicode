@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/ixxxxoooo/minicode/internal/theme"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
@@ -37,7 +38,7 @@ func (a *App) planPara(c *ui.Context, planID string, ix int, text string, stream
 	t := a.tk
 	ui.Row(c).Key("plan-p-"+itoa(ix)).Gap(8).AlignItems(ui.Start).Margin(0, 0, 6, 0).Children(func() {
 		ui.Column(c).Grow(1).MinWidth(0).Children(func() {
-			ui.Text(c, text).FontSize(13).LineHeight(1.55).TextColor(t.Tx1)
+			ui.Text(c, text).FontSize(theme.Px(13)).LineHeight(1.55).TextColor(t.Tx1)
 		})
 		if !streaming {
 			kit.Ib(c, "chat", kit.IbOpt{Small: true, Tip: "批注并继续规划"}).OnClick(func() {

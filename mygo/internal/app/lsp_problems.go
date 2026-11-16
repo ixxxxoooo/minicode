@@ -93,7 +93,7 @@ func (a *App) problemScopeBar(c *ui.Context) {
 		}
 	}
 	scope := a.probScope()
-	ui.Row(c).Height(28).PaddingX(8).Gap(4).AlignItems(ui.Center).Children(func() {
+	ui.Row(c).Height(theme.Px(28)).PaddingX(8).Gap(4).AlignItems(ui.Center).Children(func() {
 		ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() {
 			kit.Chip(c, "问题 · 已打开", kit.ChipOpt{On: scope == "open"}).OnClick(func() {
 				a.ide.probScope = "open"
@@ -158,7 +158,7 @@ func (a *App) problemWsChrome(c *ui.Context) {
 
 func (a *App) problemFileGroup(c *ui.Context, f string, ds []lsp.Diagnostic) {
 	t := a.tk
-	ui.Row(c).Key("pg-" + f).Height(24).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Children(func() {
+	ui.Row(c).Key("pg-" + f).Height(theme.Px(24)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(10.5)).FontWeight(700).Children(func() {
 		kit.Ic(c, "chevD", kit.S12)
 		a.fileIc(c, f)
 		ui.Text(c, f).Grow(1).SingleLine()

@@ -317,7 +317,7 @@ func (a *App) searchView(c *ui.Context) {
 					v       *string
 				}{{"sr-inc", "要包含的文件,如 src/**,*.rs", &s.inc}, {"sr-exc", "要排除的文件", &s.exc}} {
 					ui.Row(c).PaddingStart(16).Children(func() {
-						ui.TextInputBase(c.Key(g.key), g.v).Grow(1).Height(24).Padding(0, 8).FontSize(theme.FsCap).Placeholder(g.ph).PlaceholderColor(t.Tx4).
+						ui.TextInputBase(c.Key(g.key), g.v).Grow(1).Height(theme.Px(24)).Padding(0, 8).FontSize(theme.FsCap).Placeholder(g.ph).PlaceholderColor(t.Tx4).
 							Background(t.Raised).Radius(t.RSm()).Border(1, t.Bd2)
 					})
 				}
@@ -407,7 +407,7 @@ func (a *App) searchBox(c *ui.Context, key, icon string, v *string, ph string, t
 // toggleBtn 是小方块开关(设计稿 tgl)。
 func (a *App) toggleBtn(c *ui.Context, label string, on *bool, tip string) {
 	t := a.tk
-	b := ui.ButtonBase(c).Key("tg-"+label).Size(20, 18).Justify(ui.Center).AlignItems(ui.Center).Radius(t.RXs()).FontSize(10.5).FontWeight(600).Cursor(ui.CursorPointer).Shrink(0).Tooltip(tip)
+	b := ui.ButtonBase(c).Key("tg-"+label).Size(20, 18).Justify(ui.Center).AlignItems(ui.Center).Radius(t.RXs()).FontSize(theme.Px(10.5)).FontWeight(600).Cursor(ui.CursorPointer).Shrink(0).Tooltip(tip)
 	switch {
 	case *on:
 		b.Background(t.AcSoft).TextColor(t.AcTx).Border(1, t.AcLine)
@@ -424,7 +424,7 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 	t := a.tk
 	s := &a.sr
 	if f := r.file; f != nil {
-		row := ui.ButtonBase(c).Key("sf-" + f.Path).Height(22).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
+		row := ui.ButtonBase(c).Key("sf-" + f.Path).Height(theme.Px(22)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
 		if row.Hovered() {
 			row.Background(t.Fill1)
 		}
@@ -444,7 +444,7 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 	}
 	m := *r.match
 	ign := s.ignored[mkey(m)]
-	row := ui.ButtonBase(c).Key("sm-" + mkey(m)).Height(20).PaddingX(4).PaddingStart(22).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
+	row := ui.ButtonBase(c).Key("sm-" + mkey(m)).Height(theme.Px(20)).PaddingX(4).PaddingStart(22).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
 	if row.Hovered() {
 		row.Background(t.Fill1)
 	}
@@ -482,7 +482,7 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 		// 外层容器负责限宽 + 裁剪:RichText 自身的 Shrink 对超长单行不生效,
 		// 会把行号挤出面板。
 		ui.Box(c).Grow(1).Shrink(1).MinWidth(0).Clip().Children(func() {
-			ui.RichText(c, sp...).Font("monospace").FontSize(11.5).NoWrap()
+			ui.RichText(c, sp...).Font("monospace").FontSize(theme.Px(11.5)).NoWrap()
 		})
 		if !row.Hovered() {
 			ui.Text(c, itoa(m.Line+1)).FontSize(theme.FsMicro).TextColor(t.Tx4).FontFeatures("tnum").Shrink(0)

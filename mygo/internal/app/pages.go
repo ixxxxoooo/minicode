@@ -117,7 +117,7 @@ func (a *App) miniComposer(c *ui.Context, key, ph string, buf *string, chip stri
 			}
 			return false
 		})
-		ui.Row(c).Height(30).PaddingX(4).Gap(4).AlignItems(ui.Center).Children(func() {
+		ui.Row(c).Height(theme.Px(30)).PaddingX(4).Gap(4).AlignItems(ui.Center).Children(func() {
 			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "添加附件"})
 			if chip != "" {
 				kit.Chip(c, chip, kit.ChipOpt{Icon: "at", Line: true})

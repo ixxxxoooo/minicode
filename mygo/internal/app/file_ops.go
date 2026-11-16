@@ -317,14 +317,14 @@ func (a *App) fileOpInput(c *ui.Context, depth int, isDir bool, icon string) {
 	a.fo.frames++
 	key := "fo-" + a.fo.kind + "-" + a.fo.dir + a.fo.path
 	ui.Column(c).Key(key + "-col").Shrink(0).Children(func() {
-		ui.Row(c).Key(key + "-row").Height(24).PaddingStart(6 + float32(depth)*12).PaddingEnd(6).Gap(5).AlignItems(ui.Center).Children(func() {
+		ui.Row(c).Key(key + "-row").Height(theme.Px(24)).PaddingStart(6 + float32(depth)*12).PaddingEnd(6).Gap(5).AlignItems(ui.Center).Children(func() {
 			ui.Box(c).Size(12, 12).Shrink(0)
 			if isDir {
 				kit.Ic(c, "folder", kit.S12)
 			} else {
 				kit.Ic(c, icon, kit.S12)
 			}
-			box := ui.Row(c).Key(key+"-box").Grow(1).MinWidth(0).Height(20).PaddingX(6).AlignItems(ui.Center).
+			box := ui.Row(c).Key(key+"-box").Grow(1).MinWidth(0).Height(theme.Px(20)).PaddingX(6).AlignItems(ui.Center).
 				Background(t.Fill1).Radius(t.RSm()).Border(1, t.Ac)
 			box.Children(func() {
 				in := ui.TextInputBase(c.Key(key), &a.fo.buf).Grow(1).MinWidth(0).FontSize(theme.FsBody).

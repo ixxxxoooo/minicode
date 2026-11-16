@@ -205,7 +205,7 @@ func (a *App) reviewHover(c *ui.Context, tb *ideTab) {
 		barTop = y + 2
 		a.ide.rvBarBelow = true
 	}
-	bar := ui.Row(c).Key("rv-hov").Absolute().Right(a.mmWidth()+mmRulW+edTrackW+20).Top(barTop).Height(22).Gap(6).PaddingX(8).
+	bar := ui.Row(c).Key("rv-hov").Absolute().Right(a.mmWidth()+mmRulW+edTrackW+20).Top(barTop).Height(theme.Px(22)).Gap(6).PaddingX(8).
 		Background(t.Raised).Radius(t.RSm()).Border(1, t.Bd1).FontSize(theme.FsMicro)
 	bar.Children(func() {
 		ui.Text(c, "Claude 改动").TextColor(t.Ac)

@@ -50,7 +50,7 @@ func (a *App) turnFooterActions(c *ui.Context, uid string) {
 	}
 	showStats := a.prefs.Bool(pStats, true)
 	canFork := a.curSess != "" && !strings.HasPrefix(a.curSess, "new:")
-	ui.Row(c).Key("foot-"+uid).Height(22).Margin(0, 0, 0, -4).Gap(2).AlignItems(ui.Center).TextColor(t.Tx4).FontSize(theme.FsCap).Children(func() {
+	ui.Row(c).Key("foot-"+uid).Height(theme.Px(22)).Margin(0, 0, 0, -4).Gap(2).AlignItems(ui.Center).TextColor(t.Tx4).FontSize(theme.FsCap).Children(func() {
 		if kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制本回合回复"}).Clicked() {
 			a.copyOut(a.turnText(uid), "本回合回复")
 		}

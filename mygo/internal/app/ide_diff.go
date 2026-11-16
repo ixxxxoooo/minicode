@@ -160,7 +160,7 @@ func (a *App) hunkBar(c *ui.Context, bar ui.Element, act *editor.DiffHunkActions
 	tk := a.tk
 	bar.Row().Gap(4)
 	btn := func(key, icon, text string, danger bool, run func()) {
-		b := ui.ButtonBase(c).Key("hk-"+key).Height(20).PaddingX(7).Gap(4).Radius(tk.RSm()).AlignItems(ui.Center).Background(tk.Raised).Border(1, tk.Bd2).
+		b := ui.ButtonBase(c).Key("hk-"+key).Height(theme.Px(20)).PaddingX(7).Gap(4).Radius(tk.RSm()).AlignItems(ui.Center).Background(tk.Raised).Border(1, tk.Bd2).
 			Cursor(ui.CursorPointer).FontSize(theme.FsMicro).TextColor(tk.Tx2)
 		if b.Hovered() {
 			b.Background(tk.Fill1)
@@ -267,7 +267,7 @@ func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 	dv.Layout = a.diffLayout(tb, narrow)
 	adds, dels := dv.Stats()
 	hunks := dv.Hunks()
-	ui.Row(c).Height(30).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+	ui.Row(c).Height(theme.Px(30)).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		a.fileIc(c, path.Base(tb.path))
 		ui.Text(c, path.Base(tb.path)).FontWeight(600).SingleLine().Shrink(0)
 		if !narrow { // 窄档:差异栏的灰字说明与「打开文件」按钮让位(后者在「更多」里)
@@ -349,7 +349,7 @@ func (a *App) diffEmptyBar(c *ui.Context, tb *ideTab) {
 	if kind == "" {
 		kind = dkHead
 	}
-	ui.Row(c).Height(26).Shrink(0).PaddingX(12).Gap(6).AlignItems(ui.Center).Background(t.Fill1).Children(func() {
+	ui.Row(c).Height(theme.Px(26)).Shrink(0).PaddingX(12).Gap(6).AlignItems(ui.Center).Background(t.Fill1).Children(func() {
 		kit.Ic(c, "check", kit.S12).TextColor(t.Ok)
 		ui.Text(c, diffEmptyText(kind)).FontSize(theme.FsCap).TextColor(t.Tx3)
 	})

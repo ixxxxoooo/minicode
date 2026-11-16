@@ -30,7 +30,7 @@ func (a *App) virtView(c *ui.Context, tb *ideTab) {
 // wsHead 是虚拟标签顶部的标题条(36 高):图标 + 标题 + 状态,右侧是操作。
 func (a *App) wsHead(c *ui.Context, icon string, iconCol ui.Color, title string, left, right func()) {
 	t := a.tk
-	ui.Row(c).Height(36).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+	ui.Row(c).Height(theme.Px(36)).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		kit.Ic(c, icon, kit.S12).TextColor(iconCol)
 		ui.Text(c, title).FontWeight(700).SingleLine().Shrink(1)
 		if left != nil {
@@ -229,7 +229,7 @@ func (a *App) taskView(c *ui.Context, id string) {
 			kit.Ib(c, "stop", kit.IbOpt{Small: true, Tip: "停止"}).OnClick(func() { a.send(core.CmdStopTask{TaskID: tk.TaskID}) })
 		}
 	})
-	ui.Row(c).Height(30).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
+	ui.Row(c).Height(theme.Px(30)).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
 		ui.Text(c, "来自会话「"+core.ShortTitle(a.st.Title)+"」· 后台命令").Grow(1).SingleLine()
 		ui.Text(c, "跟随输出")
 		if kit.Tog(c, a.taskFollowOn(), "tfollow") {

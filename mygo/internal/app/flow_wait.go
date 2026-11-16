@@ -120,7 +120,7 @@ func (a *App) statusRow(c *ui.Context) {
 	}
 	t := a.tk
 	a.frameIn(100 * time.Millisecond) // 已用时 100 ms 刷新一次
-	row := ui.Row(c).Key("rt-st").Height(26).Gap(6).Margin(0, -8).PaddingX(8).Radius(t.RSm()).AlignItems(ui.Center).
+	row := ui.Row(c).Key("rt-st").Height(theme.Px(26)).Gap(6).Margin(0, -8).PaddingX(8).Radius(t.RSm()).AlignItems(ui.Center).
 		FontSize(a.FlowCapFont()).Transition(kit.Fade)
 	switch {
 	case fading: // 回合结束:淡出 + 高度收到 0,同时脚注就位

@@ -75,7 +75,7 @@ func (a *App) updSidebarCapsule(c *ui.Context) {
 	}
 	t := a.tk
 	lbl := a.updLabel()
-	row := ui.ButtonBase(c).Key("upd-cap").Height(26).PaddingX(8).Gap(6).Radius(t.RSm()).Background(t.AcSoft).AlignItems(ui.Center).Margin(4, 0, 0, 0).Cursor(ui.CursorPointer)
+	row := ui.ButtonBase(c).Key("upd-cap").Height(theme.Px(26)).PaddingX(8).Gap(6).Radius(t.RSm()).Background(t.AcSoft).AlignItems(ui.Center).Margin(4, 0, 0, 0).Cursor(ui.CursorPointer)
 	row.OnClick(func() {
 		if a.updSt.Phase == updReady {
 			a.applyUpdateRestart()

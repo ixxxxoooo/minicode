@@ -188,9 +188,9 @@ func (a *App) canvasDoc(c *ui.Context, s *canvas.Store) {
 			title := ui.Column(c)
 			title.Children(func() {
 				if v.preview {
-					ui.Text(c, viewDoc.Title).FontSize(22).FontWeight(700)
+					ui.Text(c, viewDoc.Title).FontSize(theme.Px(22)).FontWeight(700)
 				} else {
-					ui.TextInput(c.Key("cv-title"), &s.Doc.Title).FontSize(22).FontWeight(700).Background(ui.Transparent).BorderWidth(0).Padding(0)
+					ui.TextInput(c.Key("cv-title"), &s.Doc.Title).FontSize(theme.Px(22)).FontWeight(700).Background(ui.Transparent).BorderWidth(0).Padding(0)
 				}
 			})
 			v.pos["title"] = title.Bounds().Y - top
@@ -215,9 +215,9 @@ func (a *App) canvasBlock(c *ui.Context, b *canvas.Block) {
 	switch b.Kind {
 	case canvas.Heading:
 		if v.preview {
-			ui.Text(c, b.Text).FontSize(15).FontWeight(700).Padding(18, 0, 8, 0)
+			ui.Text(c, b.Text).FontSize(theme.Px(15)).FontWeight(700).Padding(18, 0, 8, 0)
 		} else {
-			ui.TextInput(c.Key("cvh-"+b.ID), &b.Text).FontSize(15).FontWeight(700).Background(ui.Transparent).BorderWidth(0).Padding(18, 0, 8, 0)
+			ui.TextInput(c.Key("cvh-"+b.ID), &b.Text).FontSize(theme.Px(15)).FontWeight(700).Background(ui.Transparent).BorderWidth(0).Padding(18, 0, 8, 0)
 		}
 	case canvas.Para:
 		if v.preview {
@@ -258,7 +258,7 @@ func (a *App) canvasDiagram(c *ui.Context, b *canvas.Block) {
 	t := a.tk
 	const sc = 1.0 // 520 宽的设计坐标缩到正文列宽
 	a.box(c).Background(t.Sunken).Clip().Margin(4, 0).Children(func() {
-		ui.Row(c).Height(30).Padding(0, 10).Gap(8).AlignItems(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx3).Children(func() {
+		ui.Row(c).Height(theme.Px(30)).Padding(0, 10).Gap(8).AlignItems(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx3).Children(func() {
 			kit.Ic(c, "layers", kit.S12)
 			ui.Text(c, d.Caption).Grow(1).SingleLine()
 			kit.Tag(c, "Mermaid")
@@ -316,13 +316,13 @@ func (a *App) canvasTable(c *ui.Context, tb *canvas.Table) {
 	t := a.tk
 	w := []float32{2.2, 1.3, 1.6, 1.3}
 	ui.Column(c).Padding(2, 0).Children(func() {
-		ui.Row(c).Height(26).AlignItems(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx3).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd2).Children(func() {
+		ui.Row(c).Height(theme.Px(26)).AlignItems(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx3).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd2).Children(func() {
 			for i, h := range tb.Head {
 				ui.Text(c, h).Grow(w[i%4]).Basis(0)
 			}
 		})
 		for _, r := range tb.Rows {
-			ui.Row(c).Height(26).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+			ui.Row(c).Height(theme.Px(26)).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 				for i, cell := range r {
 					if i == len(r)-1 {
 						ui.Row(c).Grow(w[i%4]).Basis(0).Children(func() {

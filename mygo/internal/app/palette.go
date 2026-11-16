@@ -533,7 +533,7 @@ func (a *App) paletteView(c *ui.Context) {
 						a.palPreview(c, items)
 					}
 				})
-				ui.Row(c).Height(28).PaddingX(12).Gap(12).AlignItems(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx3).
+				ui.Row(c).Height(theme.Px(28)).PaddingX(12).Gap(12).AlignItems(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx3).
 					BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
 					ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() { kit.Kbd(c, "↑", "↓"); ui.Text(c, "选择") })
 					ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() { kit.Kbd(c, "⏎"); ui.Text(c, "执行") })
@@ -646,7 +646,7 @@ func (a *App) palPreview(c *ui.Context, items []palItem) {
 			})
 			ui.Text(c, cur.path).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Margin(2, 0, 8, 0)
 			for _, ln := range a.filePreview(cur.path, 16) {
-				kit.Mono(c, ln, t.Tx2).FontSize(10.5).SingleLine()
+				kit.Mono(c, ln, t.Tx2).FontSize(theme.Px(10.5)).SingleLine()
 			}
 		default:
 			title := cur.title
@@ -661,7 +661,7 @@ func (a *App) palPreview(c *ui.Context, items []palItem) {
 			ui.Text(c, desc).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.5).Margin(4, 0, 10, 0)
 			if showThemes {
 				for _, p := range theme.Palettes {
-					ui.Row(c).Height(20).Gap(8).AlignItems(ui.Center).FontSize(theme.FsCap).Children(func() {
+					ui.Row(c).Height(theme.Px(20)).Gap(8).AlignItems(ui.Center).FontSize(theme.FsCap).Children(func() {
 						ui.Box(c).Size(8, 8).Radius(4).Background(ui.Hex(p.Accent)).Shrink(0)
 						ui.Text(c, p.Name)
 						ui.Text(c, themeSub[p.ID]).TextColor(t.Tx4)

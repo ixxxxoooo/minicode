@@ -72,7 +72,7 @@ func (a *App) browserPage(c *ui.Context) {
 			if kit.Ib(c, "refresh", kit.IbOpt{Tip: "重新载入"}).Clicked() {
 				b.Reload()
 			}
-			box := ui.Row(c.Key("br-urlbox")).Grow(1).MinWidth(0).Height(28).PaddingX(8).Gap(6).AlignItems(ui.Center).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd2)
+			box := ui.Row(c.Key("br-urlbox")).Grow(1).MinWidth(0).Height(theme.Px(28)).PaddingX(8).Gap(6).AlignItems(ui.Center).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd2)
 			if box.FocusWithin() {
 				box.BorderColor(t.Ac)
 			}
@@ -178,11 +178,11 @@ func (a *App) browserReader(c *ui.Context, b *browser.Browser, pg browser.Page) 
 				el.Children(func() {
 					switch s.Level {
 					case 0:
-						ui.Text(c, s.Heading).FontSize(26).FontWeight(700).Margin(2, 0, 14, 0)
+						ui.Text(c, s.Heading).FontSize(theme.Px(26)).FontWeight(700).Margin(2, 0, 14, 0)
 					case 1:
-						ui.Text(c, s.Heading).FontSize(15).FontWeight(700).Padding(16, 0, 8, 0)
+						ui.Text(c, s.Heading).FontSize(theme.Px(15)).FontWeight(700).Padding(16, 0, 8, 0)
 					default:
-						ui.Text(c, s.Heading).FontSize(13).FontWeight(650).Padding(12, 0, 6, 0)
+						ui.Text(c, s.Heading).FontSize(theme.Px(13)).FontWeight(650).Padding(12, 0, 6, 0)
 					}
 					markdown.View(c, padCode(s.Body), a.mdOptions())
 				})

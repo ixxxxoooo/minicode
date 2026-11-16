@@ -137,7 +137,7 @@ func (a *App) askCard(c *ui.Context, q *core.QuestionRequest) {
 				for i, x := range q.Questions {
 					i, x := i, x
 					cur := i == s.cur
-					chip := ui.ButtonBase(c).Key("qa-step" + itoa(i)).Height(22).PaddingX(8).Gap(5).Radius(11).AlignItems(ui.Center).
+					chip := ui.ButtonBase(c).Key("qa-step" + itoa(i)).Height(theme.Px(22)).PaddingX(8).Gap(5).Radius(11).AlignItems(ui.Center).
 						Cursor(ui.CursorPointer).Transition(kit.Fade).MaxWidth(170)
 					switch {
 					case cur:
@@ -152,7 +152,7 @@ func (a *App) askCard(c *ui.Context, q *core.QuestionRequest) {
 						if s.hasAnswer(q, i) {
 							kit.Ic(c, "check", kit.S12).TextColor(t.Ok)
 						} else {
-							ui.Text(c, itoa(i+1)).FontSize(11.5).TextColor(t.Tx3).FontFeatures("tnum")
+							ui.Text(c, itoa(i+1)).FontSize(theme.Px(11.5)).TextColor(t.Tx3).FontFeatures("tnum")
 						}
 						lb := strings.TrimSpace(x.Header)
 						if lb == "" {
@@ -162,7 +162,7 @@ func (a *App) askCard(c *ui.Context, q *core.QuestionRequest) {
 						if cur {
 							col = t.Tx1
 						}
-						ui.Text(c, lb).FontSize(11.5).TextColor(col).SingleLine().Shrink(1)
+						ui.Text(c, lb).FontSize(theme.Px(11.5)).TextColor(col).SingleLine().Shrink(1)
 					})
 				}
 			})
@@ -172,13 +172,13 @@ func (a *App) askCard(c *ui.Context, q *core.QuestionRequest) {
 			ui.Text(c, "可多选").FontSize(theme.FsCap).TextColor(t.Tx3)
 		}
 		if len(qu.Options) == 0 {
-			ui.TextInputBase(c.Key("ask-free"+itoa(s.cur)), &s.freet[s.cur]).Height(28).PaddingX(9).Radius(t.RSm()).Border(1, t.Bd2).Placeholder("输入你的回答…").PlaceholderColor(t.Tx4)
+			ui.TextInputBase(c.Key("ask-free"+itoa(s.cur)), &s.freet[s.cur]).Height(theme.Px(28)).PaddingX(9).Radius(t.RSm()).Border(1, t.Bd2).Placeholder("输入你的回答…").PlaceholderColor(t.Tx4)
 		}
 		ui.Column(c).Gap(4).Children(func() {
 			for i, o := range qu.Options {
 				on := hasInt(s.sel[s.cur], i)
 				i := i
-				row := ui.ButtonBase(c).Key("opt" + itoa(s.cur) + "-" + itoa(i)).Justify(ui.Start).Height(28).PaddingX(9).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).Cursor(ui.CursorPointer).
+				row := ui.ButtonBase(c).Key("opt" + itoa(s.cur) + "-" + itoa(i)).Justify(ui.Start).Height(theme.Px(28)).PaddingX(9).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).Cursor(ui.CursorPointer).
 					Transition(kit.Fade)
 				switch {
 				case on:
@@ -203,7 +203,7 @@ func (a *App) askCard(c *ui.Context, q *core.QuestionRequest) {
 			}
 		})
 		if s.wantsFreeInput(qu) && len(qu.Options) > 0 {
-			ui.TextInputBase(c.Key("ask-other"+itoa(s.cur)), &s.freet[s.cur]).Height(28).PaddingX(9).Radius(t.RSm()).Border(1, t.Bd2).Placeholder("其它说明…").PlaceholderColor(t.Tx4)
+			ui.TextInputBase(c.Key("ask-other"+itoa(s.cur)), &s.freet[s.cur]).Height(theme.Px(28)).PaddingX(9).Radius(t.RSm()).Border(1, t.Bd2).Placeholder("其它说明…").PlaceholderColor(t.Tx4)
 		}
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Wrap().Children(func() {
 			if n > 1 {

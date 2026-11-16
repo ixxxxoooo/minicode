@@ -74,7 +74,7 @@ func (a *App) graphView(c *ui.Context) {
 			ui.Text(c, a.branch+" · "+itoa(len(s.log))+" 个提交").FontSize(theme.FsCap).TextColor(t.Tx3)
 		}
 	}, func() {
-		in := ui.TextInputBase(c.Key("graph-q"), &g.q).Width(200).Height(24).PaddingX(8).Radius(t.RSm()).Background(t.Fill1).
+		in := ui.TextInputBase(c.Key("graph-q"), &g.q).Width(200).Height(theme.Px(24)).PaddingX(8).Radius(t.RSm()).Background(t.Fill1).
 			FontSize(theme.FsCap).Placeholder("搜索描述 / 作者 / 哈希 / 分支").PlaceholderColor(t.Tx4)
 		_ = in
 		if g.q != "" && kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "清除搜索"}).Clicked() {
@@ -99,7 +99,7 @@ func (a *App) graphView(c *ui.Context) {
 	a.graphPickBar(c)
 	gw := float32(s.lanes*graphLaneW + 10)
 	// 表头
-	ui.Row(c).Height(22).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+	ui.Row(c).Height(theme.Px(22)).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		hd := func(s string, w float32) {
 			e := ui.Text(c, s).FontSize(theme.FsMicro).TextColor(t.Tx4).FontWeight(600).SingleLine()
 			if w > 0 {
@@ -193,7 +193,7 @@ func (a *App) graphDetail(c *ui.Context) {
 		return
 	}
 	ui.Column(c).Key("graph-detail").Height(190).Shrink(0).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Background(t.Raised).Children(func() {
-		ui.Row(c).Height(30).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).Children(func() {
+		ui.Row(c).Height(theme.Px(30)).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).Children(func() {
 			ui.Text(c, cm.Subject).FontWeight(600).SingleLine().Shrink(1).MinWidth(0)
 			ui.Spacer(c).Grow(1)
 			ui.Text(c, cm.Short()+" · "+cm.Author+" · "+cm.When).FontSize(theme.FsCap).TextColor(t.Tx3).Font("monospace").SingleLine().Shrink(0)
@@ -215,7 +215,7 @@ func (a *App) graphDetail(c *ui.Context) {
 			}
 			for _, ch := range files {
 				ch := ch
-				fr := ui.ButtonBase(c).Key("gf-" + cm.Hash + ch.Path).Height(24).PaddingX(6).Gap(6).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx2)
+				fr := ui.ButtonBase(c).Key("gf-" + cm.Hash + ch.Path).Height(theme.Px(24)).PaddingX(6).Gap(6).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx2)
 				if fr.Hovered() {
 					fr.Background(t.Fill1)
 				}

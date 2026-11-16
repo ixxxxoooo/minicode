@@ -308,6 +308,10 @@ var settingsTabs = []setTabDef{
 		}},
 		brandAppGroup(), // 设计稿顺序:强调色 → 应用图标 → 菜单栏图标 → 密度与形状
 		brandTrayGroup(),
+		{title: "字号与大小", rows: []setRow{
+			rStp(pUIScale, "界面大小", "侧栏、列表、菜单、按钮、文件树等所有界面文字、图标与行高整体缩放(90%–150%,默认 110%)", theme.DefaultUIScale, theme.MinUIScale, theme.MaxUIScale, 5, "%"),
+			rStp(pFontScale, "正文字号", "会话里你的消息与 Claude 回复正文、Markdown 预览的字号(85%–150%),不影响其余界面文字", 100, 85, 150, 5, "%"),
+		}},
 		{title: "密度与形状", rows: []setRow{
 			{key: kDensity, title: "界面密度", desc: "行高:紧凑 −2 / 标准 / 宽松 +2(在当前布局的基础上)", kind: kSeg, def: 1, opts: []string{"紧凑", "标准", "宽松"}},
 			{key: kRadius, title: "圆角", desc: "圆角大小:利落 ×0.55 / 适中 / 圆润 ×1.35", kind: kSeg, def: 1, opts: []string{"利落", "适中", "圆润"}},
@@ -316,7 +320,6 @@ var settingsTabs = []setTabDef{
 			rSeg("appearance.flowStyle", "会话样式", "对话:你的消息靠右成气泡;通栏:与正文同宽的整行卡片", 0, "跟随布局", "对话", "通栏"),
 			rSeg("appearance.width", "内容宽度", "会话时间线与输入框的最大宽度;窄屏或分屏时会自动收窄", 1, "窄", "标准", "宽"),
 			rSeg("appearance.density2", "工具调用详细程度", "精简只显示动词与对象;详细默认展开输出", 1, "精简", "标准", "详细"),
-			rStp("appearance.fontScale", "时间线字号", "会话里 Claude 回复正文的字号(85%–150%)", 100, 85, 150, 5, "%"),
 		}},
 		{title: "文件树", rows: []setRow{
 			rTog("appearance.fileIcons", "彩色文件图标", "按文件类型给图标上色(Rust 橙、Go 蓝、Python 绿…);关闭后全部用灰色。作用于文件树、标签、搜索与源代码管理", true),

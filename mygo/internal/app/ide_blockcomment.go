@@ -46,7 +46,7 @@ func (a *App) blockCmtBanner(c *ui.Context, tb *ideTab) {
 		return
 	}
 	t := a.tk
-	ui.Row(c).Key("block-cmt-hint").Height(32).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).
+	ui.Row(c).Key("block-cmt-hint").Height(theme.Px(32)).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).
 		Background(t.InfoSoft).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		kit.Ic(c, "info", kit.S12).TextColor(t.Info)
 		ui.Text(c, a.ux.blockCmtHint).Grow(1).SingleLine().TextColor(t.Tx2)

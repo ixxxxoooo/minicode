@@ -1,6 +1,7 @@
 package kit
 
 import (
+	"github.com/ixxxxoooo/minicode/internal/theme"
 	"math"
 	"time"
 
@@ -79,7 +80,7 @@ func UndoBar(c *ui.Context, u *UndoSlot) {
 	}
 	t := T
 	ui.Row(c).Gap(10).Padding(8, 10).Radius(t.RMd()).Background(t.Fill1).Border(1, t.Bd2).Children(func() {
-		ui.Text(c, u.Label).Grow(1).FontSize(12)
+		ui.Text(c, u.Label).Grow(1).FontSize(theme.Px(12))
 		Btn(c, "撤销", BtnOpt{Small: true}).OnClick(func() {
 			fn := u.Undo
 			u.Clear()

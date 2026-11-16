@@ -125,7 +125,7 @@ func (a *App) archiveFold(c *ui.Context, projID string, arch []core.SessionInfo,
 	t := a.tk
 	key := "arch:" + projID
 	open := a.projOpen[key]
-	r := kit.RowEl(c, false).Key("archhead-" + projID).Height(24).PaddingStart(indent).Gap(5).TextColor(t.Tx3)
+	r := kit.RowEl(c, false).Key("archhead-" + projID).Height(theme.Px(24)).PaddingStart(indent).Gap(5).TextColor(t.Tx3)
 	r.OnClick(func() { a.projOpen[key] = !open })
 	r.Children(func() {
 		rot := float32(0)
@@ -218,7 +218,7 @@ func (a *App) commitRename() {
 func (a *App) renameInput(c *ui.Context, id string) {
 	t := a.tk
 	a.ren.frames++
-	box := ui.Row(c).Key("ren-box-"+id).Grow(1).MinWidth(0).Height(24).PaddingX(8).Gap(4).AlignItems(ui.Center).
+	box := ui.Row(c).Key("ren-box-"+id).Grow(1).MinWidth(0).Height(theme.Px(24)).PaddingX(8).Gap(4).AlignItems(ui.Center).
 		Background(t.Fill1).Radius(t.RSm()).Border(1, t.Ac)
 	box.Children(func() {
 		in := ui.TextInputBase(c.Key("ren-"+id), &a.ren.buf).Grow(1).MinWidth(0).FontSize(theme.FsBody).

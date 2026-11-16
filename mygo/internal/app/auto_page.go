@@ -143,7 +143,7 @@ func (a *App) autoWeek(c *ui.Context, items []automation.Automation) {
 
 func (a *App) autoSlot(c *ui.Context, sl automation.Slot, day int) {
 	t := a.tk
-	b := ui.ButtonBase(c).Key("slot-" + itoa(day) + "-" + itoa(sl.ID)).Height(22).PaddingX(5).Gap(5).Radius(t.RXs()).AlignItems(ui.Center).Justify(ui.Start).
+	b := ui.ButtonBase(c).Key("slot-" + itoa(day) + "-" + itoa(sl.ID)).Height(theme.Px(22)).PaddingX(5).Gap(5).Radius(t.RXs()).AlignItems(ui.Center).Justify(ui.Start).
 		Cursor(ui.CursorPointer).FontSize(theme.FsMicro + .5).Background(t.AcSoft).TextColor(t.AcTx)
 	switch {
 	case sl.Off:
@@ -332,7 +332,7 @@ func (a *App) autoDrawer(c *ui.Context) {
 				if rk == "" {
 					rk = fmt.Sprintf("auto:%d:%d", it.ID, r.At.Unix())
 				}
-				row := kit.RowEl(c, false).Key("run-" + itoa(it.ID) + "-" + itoa(i)).Height(28)
+				row := kit.RowEl(c, false).Key("run-" + itoa(it.ID) + "-" + itoa(i)).Height(theme.Px(28))
 				row.OnClick(func() { a.openAutoRun(r, rk) })
 				row.Children(func() {
 					if r.OK {

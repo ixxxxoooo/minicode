@@ -73,7 +73,7 @@ func (a *App) cuMCPEditDlg(c *ui.Context, st *customize.Store) {
 			a.cuLbl(c, "额外参数(空格分隔,接在命令后)", func() { a.cuField(c, "mcp-args", &d.Note, true, "无") })
 		}
 		a.cuLbl(c, "环境变量(每行 KEY=VALUE)", func() {
-			ui.TextArea(c.Key("mcp-env"), &s.mcpEnv).Lines(3, 6).Font("monospace").FontSize(11.5)
+			ui.TextArea(c.Key("mcp-env"), &s.mcpEnv).Lines(3, 6).Font("monospace").FontSize(theme.Px(11.5))
 		})
 		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
 			ui.Text(c, "配置层").TextColor(t.Tx3).Width(72).Shrink(0)

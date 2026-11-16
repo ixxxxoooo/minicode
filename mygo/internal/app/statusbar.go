@@ -26,7 +26,7 @@ func (a *App) statusbar(c *ui.Context) {
 	if t.Scheme.ID == "b" {
 		h = 24
 	}
-	r := ui.Row(c).Height(h).PaddingX(8).Gap(6).FontSize(11).TextColor(t.Tx3).Shrink(0).AlignItems(ui.Center)
+	r := ui.Row(c).Height(h).PaddingX(8).Gap(6).FontSize(theme.Px(11)).TextColor(t.Tx3).Shrink(0).AlignItems(ui.Center)
 	if t.Scheme.ID != "b" {
 		r.BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2)
 	}

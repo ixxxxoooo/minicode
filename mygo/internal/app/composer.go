@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/ixxxxoooo/minicode/internal/theme"
 	"math"
 
 	"github.com/egoist/mygo/ui"
@@ -110,7 +111,7 @@ func (a *App) composerBar(c *ui.Context) {
 		ui.Spacer(c).Grow(1)
 		// 上下文环(点击展开与状态栏同内容的弹层)
 		pct := a.st.Usage.ContextRatio()
-		ctxBtn := ui.ButtonBase(c).Key("ctx-chip").Height(22).PaddingX(7).Gap(4).Radius(t.RSm()).AlignItems(ui.Center).Cursor(ui.CursorPointer).Transition(kit.Fade)
+		ctxBtn := ui.ButtonBase(c).Key("ctx-chip").Height(theme.Px(22)).PaddingX(7).Gap(4).Radius(t.RSm()).AlignItems(ui.Center).Cursor(ui.CursorPointer).Transition(kit.Fade)
 		if ctxBtn.Hovered() || a.popup == "ctx-cmp" {
 			ctxBtn.Background(t.Fill2)
 		}
@@ -124,7 +125,7 @@ func (a *App) composerBar(c *ui.Context) {
 				if pct >= 0.95 {
 					col = t.Err
 				}
-				ui.Text(c, itoa(int(pct*100+.5))+"%").FontSize(11.5).TextColor(col).FontFeatures("tnum")
+				ui.Text(c, itoa(int(pct*100+.5))+"%").FontSize(theme.Px(11.5)).TextColor(col).FontFeatures("tnum")
 			}
 			a.ringColored(c, pct)
 		})
@@ -149,7 +150,7 @@ func (a *App) composerBar(c *ui.Context) {
 // cfgChip 是「运行配置胶囊」:权限模式 · 模型 · 思考强度合在一个弹层入口里。
 func (a *App) cfgChip(c *ui.Context, wide bool) {
 	t := a.tk
-	b := ui.ButtonBase(c).Height(22).PaddingX(7).Gap(5).Radius(t.RSm()).AlignItems(ui.Center).FontSize(11.5).TextColor(t.Tx2).Cursor(ui.CursorPointer).
+	b := ui.ButtonBase(c).Height(theme.Px(22)).PaddingX(7).Gap(5).Radius(t.RSm()).AlignItems(ui.Center).FontSize(theme.Px(11.5)).TextColor(t.Tx2).Cursor(ui.CursorPointer).
 		MinWidth(0).Clip().Transition(kit.Fade)
 	if b.Hovered() || a.popup == "cfg" {
 		b.Background(t.Fill2).TextColor(t.Tx1)

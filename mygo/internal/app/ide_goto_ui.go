@@ -119,7 +119,7 @@ func (a *App) gotoLineStrip(c *ui.Context, tb *ideTab) {
 			card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
 		card.Children(func() {
-			ui.Row(c).Height(36).PaddingX(12).Gap(8).AlignItems(ui.Center).Children(func() {
+			ui.Row(c).Height(theme.Px(36)).PaddingX(12).Gap(8).AlignItems(ui.Center).Children(func() {
 				kit.Ic(c, "list", kit.S12).TextColor(t.Tx3)
 				ui.Text(c, "转到").TextColor(t.Tx2).FontWeight(600)
 				in := ui.TextInputBase(c.Key("goto-in"), &g.text).Width(84).Font("monospace").FontFeatures("tnum").
@@ -160,7 +160,7 @@ func (a *App) gotoLineStrip(c *ui.Context, tb *ideTab) {
 
 func (a *App) gotoLineNotice(c *ui.Context, msg string) {
 	t := a.tk
-	ui.Row(c).Height(32).PaddingX(12).Gap(8).AlignItems(ui.Center).Background(t.InfoSoft).
+	ui.Row(c).Height(theme.Px(32)).PaddingX(12).Gap(8).AlignItems(ui.Center).Background(t.InfoSoft).
 		BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
 		kit.Ic(c, "info", kit.S12).TextColor(t.Info)
 		ui.Text(c, msg).Grow(1).TextColor(t.Tx2)

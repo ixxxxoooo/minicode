@@ -291,7 +291,7 @@ func (a *App) shortcutKeycap(c *ui.Context, sp shortcutSpec) {
 		combo = sp.def
 	}
 	rec := a.set.recID == sp.id
-	cap := ui.ButtonBase(c).Key("kb-" + sp.id).Height(24).PaddingX(6).Radius(t.RSm()).Cursor(ui.CursorPointer).Shrink(0)
+	cap := ui.ButtonBase(c).Key("kb-" + sp.id).Height(theme.Px(24)).PaddingX(6).Radius(t.RSm()).Cursor(ui.CursorPointer).Shrink(0)
 	switch {
 	case rec:
 		cap.Background(t.WarnSoft).Border(1, t.Warn)

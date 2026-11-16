@@ -122,7 +122,7 @@ func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, co
 		ui.Column(c).Key("foldout-" + key).Children(inner)
 	}
 	if n > foldLineCap {
-		ui.Row(c).Height(26).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
+		ui.Row(c).Height(theme.Px(26)).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
 			label := "展开 · 共 " + itoa(n) + " 行"
 			if exp {
 				label = "收起"
@@ -159,7 +159,7 @@ func (a *App) hookMDFold(o *markdown.Options) {
 		t := a.tk
 		box := ui.Column(c).Background(t.Sunken).Radius(t.RMd()).Border(1, t.Bd1).Clip()
 		box.Children(func() {
-			ui.Row(c).Height(24).PaddingX(8).Gap(6).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+			ui.Row(c).Height(theme.Px(24)).PaddingX(8).Gap(6).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 				if b.Info != "" {
 					ui.Text(c, b.Info).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Grow(1)
 				} else {

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/ixxxxoooo/minicode/internal/theme"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
@@ -178,7 +179,7 @@ func (a *App) mdTableView(c *ui.Context, tb *ideTab, md *mdState, idx int, s *md
 						if p == nil {
 							continue
 						}
-						in := ui.TextInputBase(c.Key(keyOf(rr, cc)), p).Grow(1).Basis(0).MinWidth(0).Height(mdCellH).PaddingX(8).FontSize(13).FocusRing(false)
+						in := ui.TextInputBase(c.Key(keyOf(rr, cc)), p).Grow(1).Basis(0).MinWidth(0).Height(mdCellH).PaddingX(8).FontSize(theme.Px(13)).FocusRing(false)
 						if rr < 0 {
 							in.FontWeight(650)
 						}

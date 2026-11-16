@@ -217,7 +217,7 @@ func (a *App) stickyScroll(c *ui.Context, tb *ideTab) {
 	rail := a.mmWidth() + mmRulW + edTrackW + 6
 	ui.Column(c).Key("sticky").Absolute().Left(0).Right(rail).Top(0).Background(t.Raised).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd2).Children(func() {
 		for _, s := range rows {
-			r := ui.ButtonBase(c).Key("st-" + itoa(s.Line)).Height(22).PaddingStart(edGutter).PaddingEnd(8).Justify(ui.Start).AlignItems(ui.Center).Gap(6).
+			r := ui.ButtonBase(c).Key("st-" + itoa(s.Line)).Height(theme.Px(22)).PaddingStart(edGutter).PaddingEnd(8).Justify(ui.Start).AlignItems(ui.Center).Gap(6).
 				Cursor(ui.CursorPointer).TextColor(t.Tx2)
 			if r.Hovered() {
 				r.Background(t.Fill1)
@@ -226,7 +226,7 @@ func (a *App) stickyScroll(c *ui.Context, tb *ideTab) {
 				a.jumpTo(tb.path, s.Line, s.Col, s.Col)
 			}
 			r.Children(func() {
-				ui.Text(c, s.Detail).Font("monospace").FontSize(12).SingleLine()
+				ui.Text(c, s.Detail).Font("monospace").FontSize(theme.Px(12)).SingleLine()
 			})
 		}
 	})
@@ -257,14 +257,14 @@ func (a *App) askBar(c *ui.Context, tb *ideTab) {
 	if x > 260 {
 		x = 260
 	}
-	bar := ui.Row(c).Key("askbar").Absolute().Left(x).Top(y).Height(28).Padding(2).Gap(1).AlignItems(ui.Center).
+	bar := ui.Row(c).Key("askbar").Absolute().Left(x).Top(y).Height(theme.Px(28)).Padding(2).Gap(1).AlignItems(ui.Center).
 		Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd1)
 	for _, sh := range t.Shadow2() {
 		bar.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
 	}
 	bar.Children(func() {
 		btn := func(icon, text, key string, run func()) {
-			b := ui.ButtonBase(c).Key("ab-" + key).Height(24).PaddingX(7).Gap(4).Radius(t.RSm()).AlignItems(ui.Center).Cursor(ui.CursorPointer).TextColor(t.Tx2).FontSize(theme.FsCap)
+			b := ui.ButtonBase(c).Key("ab-" + key).Height(theme.Px(24)).PaddingX(7).Gap(4).Radius(t.RSm()).AlignItems(ui.Center).Cursor(ui.CursorPointer).TextColor(t.Tx2).FontSize(theme.FsCap)
 			if b.Hovered() {
 				b.Background(t.Fill1).TextColor(t.Tx1)
 			}
@@ -424,8 +424,8 @@ func (a *App) ovPanel(c *ui.Context, tb *ideTab) {
 	case "rename":
 		panel("ov-rename", 280).Children(func() {
 			ui.Text(c, "重命名符号").FontSize(theme.FsMicro).TextColor(t.Tx4).FontWeight(700).Margin(2, 6)
-			in := ui.TextInputBase(c.Key("ov-ren-in"), &ov.input).Height(28).PaddingX(8).Radius(t.RSm()).Background(t.Fill1).Border(1, t.Ac).
-				Font("monospace").FontSize(12).AutoFocus()
+			in := ui.TextInputBase(c.Key("ov-ren-in"), &ov.input).Height(theme.Px(28)).PaddingX(8).Radius(t.RSm()).Background(t.Fill1).Border(1, t.Ac).
+				Font("monospace").FontSize(theme.Px(12)).AutoFocus()
 			in.OnSubmit(func() { a.applyRename(ov.word, strings.TrimSpace(ov.input)) })
 			esc(in)
 			ui.Text(c, "将更新 "+itoa(ov.hits)+" 处引用("+itoa(ov.files)+" 个文件) · ⏎ 应用 · Esc 取消").
@@ -434,7 +434,7 @@ func (a *App) ovPanel(c *ui.Context, tb *ideTab) {
 	case "inline":
 		panel("ov-inline", 340).Children(func() {
 			ui.Text(c, "行内编辑 · 用一句话描述修改").FontSize(theme.FsMicro).TextColor(t.Tx4).FontWeight(700).Margin(2, 6)
-			in := ui.TextInputBase(c.Key("ov-inl-in"), &ov.input).Height(28).PaddingX(8).Radius(t.RSm()).Background(t.Fill1).Border(1, t.Ac).AutoFocus().
+			in := ui.TextInputBase(c.Key("ov-inl-in"), &ov.input).Height(theme.Px(28)).PaddingX(8).Radius(t.RSm()).Background(t.Fill1).Border(1, t.Ac).AutoFocus().
 				Placeholder("例如:把它改成忽略大小写").PlaceholderColor(t.Tx4)
 			in.OnSubmit(func() {
 				s := strings.TrimSpace(ov.input)
@@ -492,7 +492,7 @@ func (a *App) peekPanel(c *ui.Context, tb *ideTab, y float32) {
 		el.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
 	el.Children(func() {
-		ui.Row(c).Height(26).Shrink(0).PaddingX(10).Gap(6).AlignItems(ui.Center).Background(t.AcSoft).FontSize(theme.FsCap).Children(func() {
+		ui.Row(c).Height(theme.Px(26)).Shrink(0).PaddingX(10).Gap(6).AlignItems(ui.Center).Background(t.AcSoft).FontSize(theme.FsCap).Children(func() {
 			a.fileIc(c, path.Base(ov.peekP))
 			ui.Text(c, "定义 · "+ov.peekP+":"+itoa(ov.peekL+1)).FontWeight(600).TextColor(t.AcTx)
 			ui.Spacer(c).Grow(1)

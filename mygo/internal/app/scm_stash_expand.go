@@ -112,7 +112,7 @@ func (a *App) scmStashFileRows(c *ui.Context, i int) {
 	}
 	for _, ch := range fs[:limit] {
 		ch := ch
-		fr := ui.ButtonBase(c).Key("stashf-" + itoa(i) + ch.Path).Height(28).PaddingX(22).Gap(6).
+		fr := ui.ButtonBase(c).Key("stashf-" + itoa(i) + ch.Path).Height(theme.Px(28)).PaddingX(22).Gap(6).
 			AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx2)
 		if fr.Hovered() {
 			fr.Background(t.Fill1)
@@ -131,7 +131,7 @@ func (a *App) scmStashFileRows(c *ui.Context, i int) {
 	}
 	if !showAll && len(fs) > stashFilePreview {
 		more := len(fs) - stashFilePreview
-		r := ui.ButtonBase(c).Key("stash-more-" + itoa(i)).Height(26).PaddingX(24).Gap(6).
+		r := ui.ButtonBase(c).Key("stash-more-" + itoa(i)).Height(theme.Px(26)).PaddingX(24).Gap(6).
 			AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3)
 		if r.Hovered() {
 			r.Background(t.Fill1)

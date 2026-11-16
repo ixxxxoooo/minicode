@@ -49,7 +49,7 @@ func (a *App) graphPickBar(c *ui.Context) {
 		return
 	}
 	t := a.tk
-	ui.Row(c).Key("graph-picks").Height(32).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).
+	ui.Row(c).Key("graph-picks").Height(theme.Px(32)).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).
 		Background(t.InfoSoft).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		switch len(g.picks) {
 		case 1:

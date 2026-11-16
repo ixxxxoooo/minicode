@@ -54,7 +54,7 @@ func (a *App) syncDiffAnns(tb *ideTab) {
 
 func (a *App) hunkAnnBar(c *ui.Context, tb *ideTab, i int) {
 	tk := a.tk
-	bar := ui.Row(c).Height(24).PaddingX(4).Gap(4).AlignItems(ui.Center).Background(tk.Raised).Border(1, tk.Bd2).Radius(tk.RSm())
+	bar := ui.Row(c).Height(theme.Px(24)).PaddingX(4).Gap(4).AlignItems(ui.Center).Background(tk.Raised).Border(1, tk.Bd2).Radius(tk.RSm())
 	act := &editor.DiffHunkActions{Index: i, Hunk: dvHunk(tb.dv, i)}
 	// 按钮必须在 bar 的 Children 里创建,否则成了注解容器的兄弟节点:纵向堆叠并盖住代码行。
 	bar.Children(func() { a.hunkBar(c, bar, act, tb) })
@@ -84,7 +84,7 @@ func (a *App) diffLineBar(c *ui.Context, tb *ideTab) {
 		return
 	}
 	t := a.tk
-	ui.Row(c).Height(26).PaddingX(12).Gap(6).AlignItems(ui.Center).Background(t.AcSoft).Children(func() {
+	ui.Row(c).Height(theme.Px(26)).PaddingX(12).Gap(6).AlignItems(ui.Center).Background(t.AcSoft).Children(func() {
 		ui.Text(c, "已选第 "+itoa(r.Start+1)+"–"+itoa(r.End+1)+" 行").FontSize(theme.FsCap).TextColor(t.AcTx).Grow(1)
 		if tb.dk == dkWork {
 			kit.Btn(c, "暂存选中行", kit.BtnOpt{Small: true, Icon: "plus"}).OnClick(func() { a.stageLineRange(tb, r) })

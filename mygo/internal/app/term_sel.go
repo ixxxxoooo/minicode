@@ -489,7 +489,7 @@ func (a *App) termFindBar(c *ui.Context, tp *termPanel) {
 	if !f.open && f.closingAt.IsZero() {
 		return
 	}
-	bar := ui.Row(c).Key("tfind").Absolute().Top(6).Right(16).Height(30).Padding(0, 4, 0, 8).Gap(4).AlignItems(ui.Center).
+	bar := ui.Row(c).Key("tfind").Absolute().Top(6).Right(16).Height(theme.Px(30)).Padding(0, 4, 0, 8).Gap(4).AlignItems(ui.Center).
 		Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd2)
 	if !f.closingAt.IsZero() {
 		bar = kit.PopOut(bar, f.closingAt)
@@ -682,7 +682,7 @@ func (a *App) termSettings(c *ui.Context, anchor ui.Element) {
 		ui.PopoverBase(c, anchor, open, func(panel ui.Element) {
 			a.popPanel(panel, 268).AttachTo(anchor, ui.AnchorBottomRight, ui.AnchorTopRight).Margin(0, 0, 6, 0).Padding(8)
 			row := func(label string, right func()) {
-				ui.Row(c).Height(28).AlignItems(ui.Center).Gap(8).Children(func() {
+				ui.Row(c).Height(theme.Px(28)).AlignItems(ui.Center).Gap(8).Children(func() {
 					ui.Text(c, label).TextColor(t.Tx2).Grow(1)
 					right()
 				})

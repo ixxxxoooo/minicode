@@ -52,7 +52,7 @@ func (a *App) parallelSubGroup(c *ui.Context, cards []*core.SubagentCard) {
 
 func (a *App) groupLatestSub(c *ui.Context, grpID string, s *core.SubagentCard) {
 	t := a.tk
-	row := ui.Row(c).Key("tick-sub-"+grpID).Height(22).Margin(0, 0, 2, theme.FlowInset).Gap(6).AlignItems(ui.Center).
+	row := ui.Row(c).Key("tick-sub-"+grpID).Height(theme.Px(22)).Margin(0, 0, 2, theme.FlowInset).Gap(6).AlignItems(ui.Center).
 		TextColor(t.Tx3).FontSize(theme.FsCap).Clip()
 	row.Children(func() {
 		kit.Spin(c, t.ToolAgent)

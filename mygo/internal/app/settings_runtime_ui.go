@@ -118,7 +118,7 @@ func (a *App) settingsFieldErr(c *ui.Context, r setRow, err string) {
 			}
 		})
 		kit.Field(c, r.key, kit.FieldOpt{Err: err}, func(box ui.Element) {
-			box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(24).Width(r.w).Shrink(0)
+			box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(theme.Px(24)).Width(r.w).Shrink(0)
 			in := ui.TextInputBase(c.Key("fld-"+r.key), buf).Grow(1).FontSize(theme.FsCap + .5).Font("monospace")
 			in.OnChange(func() { a.setPref(r, *buf) })
 		})

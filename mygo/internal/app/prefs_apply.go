@@ -16,6 +16,7 @@ const (
 	pMorph         = "appearance.morph"
 	pShimmer       = "appearance.shimmer"
 	pFontScale     = "appearance.fontScale"
+	pUIScale       = "appearance.uiScale" // 界面大小(百分数,默认 110)
 	pThinkOpen     = "chat.thinkOpen"
 	pStats         = "chat.stats"
 	pGroupFold     = "chat.groupFold"

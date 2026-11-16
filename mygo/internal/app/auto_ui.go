@@ -133,7 +133,7 @@ func (a *App) autoNewDlg(c *ui.Context) {
 			return s.newErr
 		}
 		kit.Field(c, "aun-name", kit.FieldOpt{Label: "名称", Err: errOf("name")}, func(box ui.Element) {
-			box.Height(30)
+			box.Height(theme.Px(30))
 			ui.TextInputBase(c.Key("aun-name"), &s.newName).Grow(1).FontSize(theme.FsBody)
 		})
 		ui.Column(c).Gap(4).Children(func() {
@@ -146,7 +146,7 @@ func (a *App) autoNewDlg(c *ui.Context) {
 			if e := pe; e != "" {
 				ui.Row(c).Gap(5).AlignItems(ui.Center).Children(func() {
 					kit.Ic(c, "alert", kit.S12).TextColor(t.Err)
-					ui.Text(c, e).FontSize(10.5).TextColor(t.Err)
+					ui.Text(c, e).FontSize(theme.Px(10.5)).TextColor(t.Err)
 				})
 			}
 		})
@@ -166,7 +166,7 @@ func (a *App) autoNewDlg(c *ui.Context) {
 			s.newDays = []string{"每天", "工作日", "周一", "0 9 * * *"}[i]
 		}
 		kit.Field(c, "aun-time", kit.FieldOpt{Label: "时间", Err: errOf("time")}, func(box ui.Element) {
-			box.Height(30).Width(120).Grow(0).Shrink(0)
+			box.Height(theme.Px(30)).Width(120).Grow(0).Shrink(0)
 			ui.TextInputBase(c.Key("aun-time"), &s.newTime).Grow(1).FontSize(theme.FsBody)
 		})
 		ui.Column(c).Gap(4).Children(func() {
@@ -206,7 +206,7 @@ func (a *App) autoProjPick(c *ui.Context, sel *string, key string) {
 			for i, n := range names {
 				i, n := i, n
 				on := i == idx
-				b := ui.ButtonBase(c).Key(key + "-" + itoa(i)).Height(24).PaddingX(9).Radius(12).AlignItems(ui.Center).
+				b := ui.ButtonBase(c).Key(key + "-" + itoa(i)).Height(theme.Px(24)).PaddingX(9).Radius(12).AlignItems(ui.Center).
 					Cursor(ui.CursorPointer).FontSize(theme.FsCap).Transition(kit.Fade)
 				switch {
 				case on:

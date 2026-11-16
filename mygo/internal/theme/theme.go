@@ -65,27 +65,63 @@ var Schemes = []Scheme{
 
 // 固定尺寸(设计稿 :root),单位 DIP。
 const (
-	HCtl      = 24
-	HCtlSm    = 20
-	HBar      = 36
-	HTab      = 30
-	HStatus   = 22
 	WRail     = 44
-	WSide     = 228
 	WWs       = 560 // Agent 形态右侧工作区宽度
 	WDock     = 352
 	WCol      = 712
 	IconSize  = 14
 	FlowInset = 22
-
-	FsMicro   = 10
-	FsCap     = 11
-	FsBody    = 12
-	FsRead    = 13
-	FsTitle   = 14
-	FsHead    = 18
-	FsDisplay = 26
 )
+
+// 界面字号与控件高度会随「界面大小」(设置 → 外观)缩放,所以是变量,由 SetUIScale 统一重算。
+// 基准值是 100% 时的设计稿尺寸;默认界面大小是 110%(见 DefaultUIScale),比设计稿的 12px 正文更好读。
+var (
+	HCtl    float32 = 24
+	HCtlSm  float32 = 20
+	HBar    float32 = 36
+	HTab    float32 = 30
+	HStatus float32 = 22
+	WSide   float32 = 228
+
+	FsMicro   float32 = 10
+	FsCap     float32 = 11
+	FsBody    float32 = 12
+	FsRead    float32 = 13
+	FsTitle   float32 = 14
+	FsHead    float32 = 18
+	FsDisplay float32 = 26
+)
+
+// 界面大小的范围与默认值(百分数)。
+const (
+	MinUIScale     = 90
+	MaxUIScale     = 150
+	DefaultUIScale = 110
+)
+
+var uiScale float32 = 1
+
+// UIScale 返回当前界面缩放倍率(1 = 100%)。
+func UIScale() float32 { return uiScale }
+
+// Px 把一个基准尺寸(字号 / 行高 / 图标)按界面缩放换算,取到 0.5 的整倍数,文字边缘才不发虚。
+func Px(base float32) float32 {
+	v := base * uiScale
+	return float32(int(v*2+.5)) / 2
+}
+
+// SetUIScale 设置界面大小(百分数,夹在 MinUIScale ~ MaxUIScale 之间)并重算所有缩放后的尺寸。
+func SetUIScale(pct int) {
+	pct = min(max(pct, MinUIScale), MaxUIScale)
+	uiScale = float32(pct) / 100
+	HCtl, HCtlSm, HBar = Px(24), Px(20), Px(36)
+	HTab, HStatus = Px(30), Px(22)
+	WSide = float32(int(228*(1+(uiScale-1)*.8) + .5)) // 侧栏随字号略加宽,但不按全比例,免得挤占对话区
+	FsMicro, FsCap, FsBody, FsRead = Px(10), Px(11), Px(12), Px(13)
+	FsTitle, FsHead, FsDisplay = Px(14), Px(18), Px(26)
+}
+
+func init() { SetUIScale(DefaultUIScale) }
 
 // 行高令牌(设计稿 --lh-*)。
 const (
@@ -126,6 +162,8 @@ type Tokens struct {
 	Fill1, Fill2, Fill3 ui.Color
 	// 强调色
 	Ac, OnAc, AcSoft, AcLine, AcTx ui.Color
+	// 列表选中态:会话 / 文件树 / 大纲等所有列表共用,强调色淡染,比 Fill2 的灰底明显得多
+	Sel ui.Color
 	// 状态色
 	Ok, Err, Warn, Info                 ui.Color
 	OkSoft, ErrSoft, WarnSoft, InfoSoft ui.Color
@@ -191,6 +229,11 @@ func Resolve(p Palette, s Scheme, accent string) *Tokens {
 	t.AcSoft = mix(ac, 13, raised)
 	t.AcLine = mix(ac, 45, surface)
 	t.AcTx = mix(ac, 84, ink)
+	if p.Dark {
+		t.Sel = over(ac, 24)
+	} else {
+		t.Sel = over(ac, 16)
+	}
 
 	t.Ok, t.Err, t.Warn, t.Info = h(p.Ok), h(p.Err), h(p.Warn), h(p.Info)
 	t.Vio, t.Cyan, t.Pink = h(p.Vio), h(p.Cyan), h(p.Pink)

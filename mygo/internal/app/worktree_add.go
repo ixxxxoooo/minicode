@@ -87,7 +87,7 @@ func (a *App) worktreeNewRow(c *ui.Context) {
 		kit.Ic(c, "plus", kit.S12).TextColor(t.Tx3)
 		ui.Column(c).Gap(2).Grow(1).MinWidth(0).Children(func() {
 			kit.Field(c, "wt-new", kit.FieldOpt{Err: a.set.wtErr}, func(box ui.Element) {
-				box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(24).Shrink(0)
+				box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(theme.Px(24)).Shrink(0)
 				in := ui.TextInputBase(c.Key("wt-new-in"), &a.set.wtNew).Grow(1).FontSize(theme.FsCap + .5).Font("monospace").Placeholder("新分支名(已存在则直接检出),例如 feat/login")
 				in.OnChange(func() { a.set.wtErr = "" })
 				in.OnSubmit(a.worktreeCreate)
