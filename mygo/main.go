@@ -321,7 +321,7 @@ func main() {
 			Height:        h,
 			X:             wx,
 			Y:             wy,
-			MinWidth:      720,
+			MinWidth:      480, // 窄窗口档(<720)已有:导航栏抽屉 / 形态分段收成图标 / 输入栏收紧,480 下 Agent 与 IDE 都可用
 			MinHeight:     560,
 			StateKey:      sk,
 			TitleBarStyle: mygo.TitleBarHidden,
