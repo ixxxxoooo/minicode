@@ -353,8 +353,7 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 		tp.selFresh = false
 		if fresh && a.prefs.Bool(pTermCopyOnSelect, false) { // 选择即复制:拖选 / 双击选词 / 三击选行松手后
 			if s := tp.selectedText(); s != "" {
-				c.WriteClipboard(s) // 输入事件里有上下文,直接写(经 copyText 要等下一次构建,松手后没有重绘就一直不生效)
-				a.toast = "已复制选中的终端文字"
+				a.termClip(c, s)
 				tp.sel.drag = false
 				return true
 			}
@@ -379,8 +378,7 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 		switch ev.Text {
 		case "copy":
 			if s := tp.selectedText(); s != "" {
-				c.WriteClipboard(s) // 输入事件里有上下文,直接写(经 copyText 要等下一次构建,松手后没有重绘就一直不生效)
-				a.toast = "已复制选中的终端文字"
+				a.termClip(c, s)
 				return true
 			}
 			return false
@@ -389,7 +387,7 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 			return true
 		}
 		if ev.Text == "paste" {
-			if s := c.ReadClipboard(); s != "" {
+			if s := c.Services().ReadClipboard(); s != "" { // 输入回调里不在构建期,c.ReadClipboard 会静默返回空,必须走 Services
 				tp.t.Paste(s)
 			}
 			return true
@@ -399,8 +397,7 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 			// ⌘C 兜底:正常由系统「拷贝」菜单变成 copy 命令;按键直接到达(合成按键、菜单没接管)时,
 			// 有选区也要复制。重复复制无副作用,所以不怕和菜单各触发一次;没选区不拦,留给窗口
 			if s := tp.selectedText(); s != "" {
-				c.WriteClipboard(s) // 输入事件里有上下文,直接写(经 copyText 要等下一次构建,松手后没有重绘就一直不生效)
-				a.toast = "已复制选中的终端文字"
+				a.termClip(c, s)
 				return true
 			}
 		}
@@ -431,6 +428,15 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 		}
 	}
 	return false
+}
+
+// termClip 在输入事件里把选中的终端文字写进剪贴板并提示。
+// 注意:输入回调里的 *ui.Context 不在构建期,它的 WriteClipboard / ReadClipboard 会静默什么都不做
+// (复制、粘贴、选择即复制全都因此「没效果」),必须走 c.Services()(窗口级服务,主线程可用)。
+func (a *App) termClip(c *ui.Context, s string) {
+	c.Services().WriteClipboard(s)
+	a.toast = "已复制选中的终端文字"
+	a.redraw()
 }
 
 // flushPendLater 安排一次超时补发:系统正常会在按键之后立刻给文字事件(清掉 pend);

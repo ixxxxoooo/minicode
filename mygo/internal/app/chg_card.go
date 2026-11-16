@@ -76,6 +76,12 @@ func (a *App) changesFileRow(c *ui.Context, i int, f chFile) {
 	t := a.tk
 	name := baseName(f.path)
 	r := kit.RowEl(c, false).Key("chg-f-" + itoa(i)).Height(theme.Px(26)).Gap(8).Cursor(ui.CursorPointer)
+	if a.ide != nil && (a.ide.active == a.wsRel(f.path) || a.ide.sel == a.wsRel(f.path)) {
+		// 正在编辑器里看这个文件:选中外观。改动卡本身就是白底卡,方案 B 的白色浮起卡看不出来,这里统一用强调色淡染底
+		r.Background(t.Sel).FontWeight(500).TextColor(t.Tx1)
+	} else if r.Hovered() {
+		r.Background(t.Fill2) // 悬停:与列表行一致的 8.5% 墨色
+	}
 	r.Tooltip(a.shortPath(f.path) + " · 点击打开")
 	if r.Clicked() {
 		line := 0

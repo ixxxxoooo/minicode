@@ -297,11 +297,17 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 		})
 		mqOn := a.thinkMarqueeVisible(sp, open)
 		var obj ui.Element
+		sep := func() { // 读取 / 编辑 / 写入:文件类型图标(GO / JS / MD…)放在文件名前面;左侧图标列仍是设计稿的工具族图标
+			if sp.path != "" && sp.fam != famThink && sp.obj == baseName(sp.path) {
+				a.fileIc(c, baseName(sp.path))
+			}
+		}
 		if sp.state == "run" && (sp.fam != famThink || !mqOn) { // 思考行有跑马灯时标题常驻静态,其余运行中的行(含没有跑马灯的思考)都是流光
 			if sp.verb != "" {
 				kit.RunTextS(c, sp.verb, t.Tx1, func(e ui.Element) ui.Element { return e.TextColor(t.Tx2).Shrink(0).SingleLine() })
 			}
 			// 设计稿:动词与对象一样的 .shimmer(底色 tx-3,高亮带扫到 tx-1),字号颜色同源,不让对象单独提亮成深色
+			sep()
 			obj = kit.RunTextS(c, sp.obj, t.Tx1, func(e ui.Element) ui.Element { return e.TextColor(t.Tx2).SingleLine().Shrink(1).MinWidth(0) })
 		} else {
 			// 字重规范(设计稿 v4):工具行的动词与对象都是常规字重,靠颜色分层——动词 Tx3 → 对象 Tx2 → 附注 Tx3 → 结果 Tx4;
@@ -309,6 +315,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			if sp.verb != "" {
 				ui.Text(c, sp.verb).TextColor(t.Tx3).Shrink(0).SingleLine()
 			}
+			sep()
 			objCol := t.Tx2
 			if sp.fam == famThink || sp.fam == famExec { // 命令行的对象与动词「运行」同色(设计稿:命令是等宽长串,不比动词更深)
 				objCol = t.Tx3
