@@ -23,22 +23,10 @@ func (a *App) copyOut(s, what string) {
 	a.toast = "已复制" + what
 }
 
-// openPathRef 打开会话流里提到的文件引用:`路径[:行[:列]]`,绝对路径会先换成相对项目根。
-// 文件不存在时返回 false(调用方提示)。
+// openPathRef 打开会话流里提到的文件引用:`路径[:行[:列]]`,优先工作区内路径,否则尝试磁盘绝对路径。
 func (a *App) openPathRef(ref string) bool {
 	p, line, col := splitPathRef(ref)
-	rel := a.wsRel(p)
-	if rel == "" || a.ide == nil || a.ide.fs == nil {
-		return false
-	}
-	if _, err := a.ide.fs.Read(rel); err != nil {
-		return false
-	}
-	a.screen = ScreenWork
-	a.jumpTo(rel, max(line-1, 0), max(col-1, 0), 0)
-	a.revealWorkspace() // Agent 形态:工作区自动展开并闪一下边框
-	log.Info("会话流跳转到文件", "path", rel, "line", line)
-	return true
+	return a.openAnyFile(p, line, col)
 }
 
 // splitPathRef 拆 `a/b.rs:12:3` 成路径、行、列(后缀不是数字就不拆)。

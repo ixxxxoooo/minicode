@@ -107,9 +107,7 @@ func (a *App) cuOpenPath(p string) {
 	if a.mode != ModeIDE {
 		a.mode = ModeIDE
 	}
-	a.screen = ScreenWork
-	a.ide.openFile(abs, true)
-	log.Info("在编辑器打开自定义文件", "path", abs)
+	a.openAnyFile(abs, 0, 0)
 }
 
 func (a *App) cuAuthReal(it *customize.Item) {

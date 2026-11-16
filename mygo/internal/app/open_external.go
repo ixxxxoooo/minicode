@@ -67,9 +67,7 @@ func (a *App) OpenExternalFile(path string) {
 	case ext == ".mcsettings":
 		a.importSettingsFile(abs)
 	default:
-		if !a.openPathRef(abs) {
-			a.toast = "「" + filepath.Base(abs) + "」不在当前项目里,请先打开它所在的项目"
-		}
+		a.openAnyFile(abs, 0, 0)
 	}
 	a.focusMain()
 }

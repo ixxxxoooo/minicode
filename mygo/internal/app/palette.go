@@ -344,6 +344,9 @@ func (a *App) palItems() []palItem {
 				fs = append(fs, scored{a.fileItem(p), sc + fileNameBonus(q, p), i})
 			}
 		}
+		if cand := a.paletteAbsFile(q); cand != nil {
+			fs = append([]scored{*cand}, fs...)
+		}
 	}
 	for _, g := range [][]scored{cs, ss, fs} {
 		sort.SliceStable(g, func(i, j int) bool { return g[i].score > g[j].score })
