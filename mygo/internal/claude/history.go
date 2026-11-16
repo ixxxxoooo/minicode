@@ -207,9 +207,7 @@ func estimateContextFromLines(lines []string) (core.Usage, bool) {
 					window = max(window, w)
 				}
 			}
-			if u := sub(v, "usage"); u != nil {
-				lastUsage = u
-			}
+			// result.usage 是整个回合所有请求的累计值,不代表当前上下文,所以这里不取
 		}
 	}
 	if lastUsage == nil {
@@ -219,6 +217,10 @@ func estimateContextFromLines(lines []string) (core.Usage, bool) {
 		u64(lastUsage, "cache_creation_input_tokens") + u64(lastUsage, "output_tokens")
 	if used == 0 {
 		return core.Usage{}, false
+	}
+	// 占用已超过默认 20 万窗口,说明用的是扩展上下文模型:按 100 万估,不显示成「超 100%」
+	if used > window {
+		window = 1_000_000
 	}
 	cats := []core.ContextCategory{
 		{Name: "消息", Tokens: used, Kind: core.CtxUsed},
