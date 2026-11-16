@@ -9,7 +9,7 @@ import (
 // chatPane 是对话栏:标题行 + 会话流 + 任务坞 + 输入框。
 func (a *App) chatPane(c *ui.Context, gap float32) {
 	t := a.tk
-	p := a.pane(c).Key("chat").Transition(a.mt())
+	p := a.pane(c).Key("chat").Transition(noPos(a.mt()))
 	shown := true
 	switch {
 	case a.mode == ModeAgent || a.chatMax:

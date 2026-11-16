@@ -113,8 +113,6 @@ type App struct {
 	navSwapKey   string                                   // 左栏内容上一帧的「形态 + 分段」(变了就播换内容入场)
 	navSwapAt    time.Time                                // 左栏内容换内容入场的起点
 	slotLife     map[string]*slotLife                     // 各收起 / 展开槽位的活跃状态(收起动画期间继续画内容)
-	wsHostPrev   string                                   // 工作区上一帧由哪个槽位承载("ws-l" / "ws-r")
-	wsHostNow    string                                   // 本帧承载工作区的槽位
 	wsFloat      bool                                     // Agent 窄窗:工作区浮层打开
 	dockFloat    bool                                     // IDE 窄窗:对话栏浮层打开
 	sideDrawer   bool                                     // <720:导航栏以抽屉展示

@@ -17,10 +17,10 @@ import (
 // 工作区 = 编辑器标签组 + 底部面板,全窗口只有一份状态(a.ide),所以两个形态里是同一个编辑器、同一个终端;
 // 它只是在两处「槽位」里轮流显示(同一时刻只有一个槽位有内容)。
 
-// stage 是舞台:按形态排布工作区与对话栏。槽位始终在树里(带 Key),宽度变化走 440 ms 变形过渡。
+// stage 是舞台:按形态排布工作区与对话栏。工作区与对话栏各是一个带 Key 的元素,换形态时只是换了先后顺序
+// (设计稿 .ws / .chat 的 order),所以内容、编辑器状态都不会重建;宽度变化走 440 ms 变形过渡。
 func (a *App) stage(c *ui.Context) {
 	gap := a.tk.Scheme.GapPane
-	a.wsHostPrev, a.wsHostNow = a.wsHostNow, "" // 工作区上一帧由哪一槽承载(见 wsPane)
 	ui.Row(c).Grow(1).MinWidth(0).AlignItems(ui.Stretch).Children(func() {
 		if a.screen != ScreenWork && a.screen != ScreenWelcome {
 			a.guard(c, "页面", "page:"+string(a.screen), guardCard, func() {
@@ -30,60 +30,66 @@ func (a *App) stage(c *ui.Context) {
 			})
 			return
 		}
-		a.wsPane(c, gap, true)
-		a.guard(c, "对话", "chat", guardCard, func() { a.chatPane(c, gap) })
-		a.wsPane(c, gap, false)
+		chat := func() { a.guard(c, "对话", "chat", guardCard, func() { a.chatPane(c, gap) }) }
+		if a.mode == ModeIDE { // IDE:工作区在主位(左),对话栏停靠在右
+			a.wsPane(c, gap)
+			chat()
+		} else { // Agent:对话在主位,工作区在右侧
+			chat()
+			a.wsPane(c, gap)
+		}
 	})
 }
 
-// wsActive 该槽位此刻是否承载工作区。
-func (a *App) wsActive(left bool) bool {
-	if left {
-		return a.mode == ModeIDE && !a.chatMax
+// wsOccupies 工作区此刻是否占位(Agent = 右栏开着且不是浮层;IDE = 没被对话占满)。
+func (a *App) wsOccupies() bool {
+	if a.mode == ModeIDE {
+		return !a.chatMax
 	}
-	if a.useWsOverlay() {
-		return false
-	}
-	return a.mode == ModeAgent && a.rightOn
+	return !a.useWsOverlay() && a.rightOn
 }
 
-// wsPane 是工作区槽位:left = IDE 形态的主区,否则 = Agent 形态的右栏。
-func (a *App) wsPane(c *ui.Context, gap float32, left bool) {
-	active := a.wsActive(left)
-	key := "ws-r"
-	if left {
-		key = "ws-l"
+// wsActive 工作区此刻是否在左(IDE 主区,left = true)或右(Agent 右栏)占位。
+func (a *App) wsActive(left bool) bool {
+	return a.wsOccupies() && (a.mode == ModeIDE) == left
+}
+
+// noPos 去掉位置过渡:形态切换时 ws / chat 只是换顺序(设计稿 order 瞬间生效),不能让它们从旧位置滑过去。
+func noPos(t ui.ElementTransition) ui.ElementTransition {
+	t.Position = false
+	if !t.Size && !t.Width && !t.Height && !t.Colors && !t.Shadows {
+		t.Size = true
 	}
-	p := a.pane(c).Key(key).ClipX().Transition(a.mt())
+	return t
+}
+
+// wsPane 是工作区:IDE 形态在主位(占满),Agent 形态在右侧(默认 560,收起时宽度归零)。
+func (a *App) wsPane(c *ui.Context, gap float32) {
+	active := a.wsOccupies()
+	ide := a.mode == ModeIDE
+	p := a.pane(c).Key("ws").ClipX().Transition(noPos(a.mt()))
 	switch {
-	case active && left:
+	case active && ide:
 		p.Grow(1).Basis(0)
 	case active:
 		p.Width(a.wsRW()).Shrink(0).Margin(0, 0, 0, gap)
 	default:
 		p.Width(0).Shrink(0)
 	}
-	// 透明度 260ms ease-io(设计稿 .pane);形态切换里「展开中」的那一槽直接显示,内容由 morphWrap 分轨淡入。
-	op := p.AnimateWith("op", map[bool]float32{true: 1, false: 0}[active], kit.DurSlow, kit.EaseIO)
-	if active && a.morphing() {
-		op = 1
-	}
-	p.Opacity(op)
-	// 收起期间继续画内容(被宽度动画一点点裁掉);另一槽正承载工作区时不能画第二份,否则同一份编辑器状态会出现两处。
-	// 只有上一帧承载着工作区的那一槽才继续画(快速连续开合时两槽都在收起期,也只画一份)。
-	keep := a.keepWhile("ws:"+key, active, kit.DurMorph) && !a.wsActive(!left)
-	if !active && !(keep && a.wsHostPrev == key) {
+	// 透明度 260ms ease-io(设计稿 .pane);宽度走 440ms 变形曲线(上面的 Transition)。
+	p.Opacity(p.AnimateWith("op", map[bool]float32{true: 1, false: 0}[active], kit.DurSlow, kit.EaseIO))
+	// 收起期间继续画内容,被宽度动画一点点裁掉(设计稿里内容一直在 DOM 里)
+	if !a.keepWhile("ws", active, kit.DurMorph) {
 		p.Children(func() {})
 		return
 	}
-	a.wsHostNow = key
 	if w := p.Bounds().W; w > 0 {
 		a.wsW = w
 	}
 	p.Children(func() {
 		inner := ui.Column(c).Grow(1).MinHeight(0)
 		a.zoneMarkEditor(inner)
-		if !left {
+		if !ide {
 			inner.Width(a.wsRW())
 			if active {
 				a.resizeHandle(c, lyWs, "l", a.wsRW(), theme.WWs, 360, max(360, a.winW-a.sideW()-360), func(v float32) { a.ly.ws = v })
