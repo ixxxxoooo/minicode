@@ -11,8 +11,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
-// 等待行(设计稿 resp-time 页):发送后立刻出现,拿到第一个字才让位。
-// 只在「还没有任何可读内容」的阶段显示:连接 / 本地准备 / 等待模型,以及超过 3 秒的收尾。
+// 状态行与会话流尾等待提示(设计稿 resp-time 页):回合进行中始终在场,结束时淡出收折。
 
 const pSlowHint = "chat.slowHint"
 
@@ -48,7 +47,7 @@ func (a *App) statusVisible() (fading bool, ok bool) {
 	if a.stRunning { // 刚结束:记下时刻,淡出 + 收折
 		a.stRunning, a.stEnd = false, a.now()
 	}
-	if !kit.MotionOn() || a.stEnd.IsZero() || a.now().Sub(a.stEnd) >= kit.DurSlow {
+	if !kit.MotionOn() || a.stEnd.IsZero() || a.now().Sub(a.stEnd) >= kit.DurStatus {
 		return false, false
 	}
 	return true, true
@@ -72,6 +71,9 @@ func (a *App) stageWord() string {
 	if ls := a.st.Live; ls != nil {
 		switch ls.Kind {
 		case core.StageTool:
+			if ls.Label != "" {
+				return "运行 " + ls.Label
+			}
 			return "运行工具"
 		case core.StageNone:
 			return ""
@@ -123,8 +125,8 @@ func (a *App) statusRow(c *ui.Context) {
 	row := ui.Row(c).Key("rt-st").Height(theme.Px(26)).Gap(6).Margin(0, -8).PaddingX(8).Radius(t.RSm()).AlignItems(ui.Center).
 		FontSize(a.FlowCapFont()).Transition(kit.Fade)
 	switch {
-	case fading: // 回合结束:淡出 + 高度收到 0,同时脚注就位
-		kit.CollapseHide(row, a.stEnd, 26, a.frameSoon)
+	case fading: // 回合结束:淡出 160ms + 高度收到 0,同时脚注就位
+		kit.CollapseHideFor(row, a.stEnd, 26, kit.DurStatus, a.frameSoon)
 	case !a.turnStartTime().IsZero():
 		kit.StaggerRise(row, 0, a.turnStartTime(), a.frameSoon) // 发送瞬间:淡入下落
 	}
@@ -200,7 +202,7 @@ func (a *App) waitSteps(c *ui.Context, ls core.LiveStage) {
 		}
 		ui.Row(c).Gap(8).AlignItems(ui.Center).TextColor(t.Tx1).Children(func() {
 			ui.Row(c).Width(16).Justify(ui.Center).Shrink(0).Children(func() { a.glyph(c, t.Ac) })
-			ui.Text(c, stageName(core.TimingPhase{Kind: ls.Kind, Call: ls.Call})).Grow(1).SingleLine()
+			ui.Text(c, stageName(core.TimingPhase{Kind: ls.Kind, Call: ls.Call, Label: ls.Label})).Grow(1).SingleLine()
 			ui.Text(c, core.FormatResp(a.now().Sub(ls.Since).Milliseconds())).FontFeatures("tnum").TextColor(t.Tx3)
 		})
 	})
@@ -212,7 +214,7 @@ func stageName(p core.TimingPhase) string {
 	switch {
 	case p.Label != "":
 		n += " " + p.Label
-	case p.Call > 0 && (p.Kind == core.StageWait):
+	case p.Call > 0 && p.Kind == core.StageWait:
 		n += fmt.Sprintf(" · 第 %d 次调用", p.Call)
 	}
 	return n

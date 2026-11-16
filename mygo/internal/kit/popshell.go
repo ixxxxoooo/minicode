@@ -91,12 +91,17 @@ func StaggerRise(el ui.Element, index int, baseAt time.Time, frame func()) {
 	el.Opacity(ease).Translate(0, (1-ease)*6)
 }
 
-// CollapseHide 删除折叠:高度收到 0 并淡出(slow)。
+// CollapseHide 删除折叠:高度收到 0 并淡出,时长 DurSlow。
 func CollapseHide(el ui.Element, started time.Time, fullH float32, frame func()) {
+	CollapseHideFor(el, started, fullH, DurSlow, frame)
+}
+
+// CollapseHideFor 与 CollapseHide 相同,可指定时长(状态行结束用 DurStatus)。
+func CollapseHideFor(el ui.Element, started time.Time, fullH float32, dur time.Duration, frame func()) {
 	if !MotionOn() || started.IsZero() {
 		return
 	}
-	p := float32(time.Since(started)) / float32(DurSlow)
+	p := float32(time.Since(started)) / float32(dur)
 	if p >= 1 {
 		el.Opacity(0).Height(0).Clip()
 		return

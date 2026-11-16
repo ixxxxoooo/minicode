@@ -25,6 +25,7 @@ var (
 	DurFast    = 120 * time.Millisecond
 	DurBase    = 180 * time.Millisecond
 	DurSlow    = 260 * time.Millisecond
+	DurStatus  = 160 * time.Millisecond // 状态行回合结束淡出(设计稿 resp-time)
 	DurMorph   = 440 * time.Millisecond
 	DurLoop    = 1600 * time.Millisecond // 呼吸 / 旋转等循环动画一档
 )
@@ -39,10 +40,10 @@ var pulseOn = true
 func SetMotion(on bool) {
 	motionOn = on
 	if on {
-		DurInstant, DurFast, DurBase, DurSlow, DurMorph = 80*time.Millisecond, 120*time.Millisecond, 180*time.Millisecond, 260*time.Millisecond, 440*time.Millisecond
+		DurInstant, DurFast, DurBase, DurSlow, DurStatus, DurMorph = 80*time.Millisecond, 120*time.Millisecond, 180*time.Millisecond, 260*time.Millisecond, 160*time.Millisecond, 440*time.Millisecond
 		DurLoop = 1600 * time.Millisecond
 	} else {
-		DurInstant, DurFast, DurBase, DurSlow, DurMorph = 0, 0, 0, 0, 0
+		DurInstant, DurFast, DurBase, DurSlow, DurStatus, DurMorph = 0, 0, 0, 0, 0, 0
 		DurLoop = 0
 	}
 	Fade = ui.ElementTransition{Colors: true, Duration: DurFast}

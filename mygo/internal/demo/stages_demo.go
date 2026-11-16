@@ -11,6 +11,10 @@ func stage(k core.StageKind, call int) core.Event {
 	return core.EvTurnPhase{Kind: k, Call: call}
 }
 
+func stageL(k core.StageKind, call int, label string) core.Event {
+	return core.EvTurnPhase{Kind: k, Call: call, Label: label}
+}
+
 func phase(k core.StageKind, msN int64, call int, label string) core.TimingPhase {
 	return core.TimingPhase{Kind: k, Ms: msN, Call: call, Label: label}
 }
@@ -77,7 +81,7 @@ func (b *Backend) multiCallScene(uid string) []Step {
 	tc := core.NewToolCall(tid, "Bash", "运行 echo hi").WithInput(map[string]any{"command": "echo hi"})
 	s := []Step{
 		{0, stage(core.StagePrep, 0)}, {ms(100), stage(core.StageWait, 1)}, {ms(2100), stage(core.StageWrite, 1)},
-		{ms(500), core.EvAppend{Item: tc}}, {0, stage(core.StageTool, 1)},
+		{ms(500), core.EvAppend{Item: tc}}, {0, stageL(core.StageTool, 1, "Bash")},
 		{ms(800), core.EvToolUpdate{ID: tid, Patch: core.ToolPatch{Status: core.Status(core.ToolCompleted), DurationMs: 800,
 			AppendContent: []core.ToolContent{&core.TerminalBlock{Command: "echo hi", Output: "hi", ExitCode: core.Int(0)}}}}},
 		{0, stage(core.StageWait, 2)}, {ms(3900), stage(core.StageWrite, 2)},

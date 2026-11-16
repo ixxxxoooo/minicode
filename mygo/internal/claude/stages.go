@@ -82,7 +82,11 @@ func (c *stageClock) closeSpan(now time.Time) {
 
 // live 当前阶段的实时快照(给 EvTurnPhase)。
 func (c *stageClock) live(now time.Time, cache *core.CacheTokens) core.EvTurnPhase {
-	return core.EvTurnPhase{Kind: c.cur, At: now, TurnStart: c.t0, Call: c.call, Cache: cache, Final: c.final && c.cur == core.StageFin}
+	label := c.curLabel
+	if c.cur == core.StageTool && label == "" {
+		label = c.toolName
+	}
+	return core.EvTurnPhase{Kind: c.cur, At: now, TurnStart: c.t0, Call: c.call, Label: label, Cache: cache, Final: c.final && c.cur == core.StageFin}
 }
 
 // line 喂入 claude 的一行输出(已解析),返回(是否切换了阶段, 本次调用的缓存用量)。

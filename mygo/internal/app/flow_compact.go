@@ -7,6 +7,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 // 压缩上下文卡(设计稿 flow-compact 页):会话流里独立的一张卡,
@@ -16,6 +17,7 @@ const compactBarAnim = 260 * time.Millisecond // 对比条从满宽收缩到占�
 
 func (a *App) compactCard(c *ui.Context, cp *core.Compaction) {
 	t := a.tk
+	narrow := a.chatTier() == tierNarrow
 	box := ui.Row(c).Key("cp-"+cp.ID).Gap(10).AlignItems(ui.Start).Padding(10, 12).Radius(t.RMd()).FontSize(a.FlowCapFont()).TextColor(t.Tx2)
 	if cp.State == core.CompactFailed {
 		box.Background(t.ErrSoft)
@@ -57,8 +59,12 @@ func (a *App) compactCard(c *ui.Context, cp *core.Compaction) {
 					if e := elapsedText(a.now().Sub(cp.StartedAt)); e != "" {
 						ui.Text(c, e).FontFeatures("tnum").TextColor(t.Tx4).SingleLine().Shrink(0)
 					}
-				case cp.State == core.CompactDone && cp.Ms > 0:
-					ui.Text(c, "用时 "+core.FormatResp(cp.Ms)).FontFeatures("tnum").TextColor(t.Tx4).SingleLine().Shrink(1)
+				case cp.State == core.CompactDone && !narrow:
+					if cp.Ms > 0 {
+						ui.Text(c, "用时 "+core.FormatResp(cp.Ms)).FontFeatures("tnum").TextColor(t.Tx4).SingleLine().Shrink(1)
+					} else {
+						ui.Text(c, "用时 —").FontFeatures("tnum").TextColor(t.Tx4).SingleLine().Shrink(1)
+					}
 				}
 				ui.Spacer(c).Grow(1)
 				if cp.State == core.CompactDone && cp.Pre > 0 && cp.Post > 0 && cp.Post < cp.Pre {
@@ -70,7 +76,7 @@ func (a *App) compactCard(c *ui.Context, cp *core.Compaction) {
 			case core.CompactRunning:
 				kit.IndetMeter(c)
 				pre := a.st.Usage.ContextUsed
-				txt := "压缩会让 Claude 把前面的对话整理成摘要,释放上下文空间"
+				txt := "期间可以继续输入,压缩完成后再发送"
 				if pre > 0 {
 					txt = "压缩前约 " + fmtTok(pre) + " tokens · " + txt
 				}
@@ -89,6 +95,15 @@ func (a *App) compactCard(c *ui.Context, cp *core.Compaction) {
 				})
 			default:
 				a.compactBars(c, cp)
+				if narrow && cp.State == core.CompactDone {
+					var foot string
+					if cp.Ms > 0 {
+						foot = "用时 " + core.FormatResp(cp.Ms)
+					} else {
+						foot = "用时 —"
+					}
+					ui.Text(c, foot).FontFeatures("tnum").TextColor(t.Tx4).FontSize(theme.FsMicro).SingleLine()
+				}
 			}
 		})
 	})

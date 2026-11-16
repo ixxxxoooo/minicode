@@ -253,13 +253,13 @@ func (s *State) Apply(ev Event) {
 		if s.Live == nil || !s.Live.TurnStart.Equal(e.TurnStart) { // 新回合:清掉上一回合的阶段记录
 			s.LiveDone = nil
 		} else if ms := e.At.Sub(s.Live.Since).Milliseconds(); ms > 0 && s.Live.Kind != e.Kind {
-			s.LiveDone = append(s.LiveDone, TimingPhase{Kind: s.Live.Kind, Ms: ms, Call: s.Live.Call})
+			s.LiveDone = append(s.LiveDone, TimingPhase{Kind: s.Live.Kind, Ms: ms, Call: s.Live.Call, Label: s.Live.Label})
 		}
 		cache := e.Cache
 		if cache == nil && s.Live != nil && s.Live.Call == e.Call {
 			cache = s.Live.Cache // 同一次调用内保留第一个字节带来的缓存用量
 		}
-		s.Live = &LiveStage{Kind: e.Kind, Since: e.At, TurnStart: e.TurnStart, Call: e.Call, Cache: cache}
+		s.Live = &LiveStage{Kind: e.Kind, Since: e.At, TurnStart: e.TurnStart, Call: e.Call, Label: e.Label, Cache: cache}
 	case EvDuration:
 		s.Durations[e.ID] = e.Secs
 	case EvTurnStats:

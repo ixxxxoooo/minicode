@@ -143,7 +143,7 @@
     ${sec('实现状态', '与 Go 代码逐项对应;仅 go build 通过,未经开发版 computer use 实测的一律「未测试」。演示后端触发词:发「慢」= 冷启动 + 11 秒等待 + 收尾;「多次」= 两次模型调用 + 工具 + 缓存命中;其余普通提问 = 1.4 秒短等待。', tbl([['项', 240], ['说明', 0], ['状态', 70]], [
       ['后端分阶段计时', 'claude/stages.go stageClock(连接 / 本地准备 / 等待模型 / 思考 / 生成 / 工具 / 等你 / 收尾 + 每次调用的缓存,子 Agent 事件不参与);backend.go 接入;日志「回合完成」带「阶段 / 调用次数 / 缓存」;stages_test.go 已写、未运行', st('part')],
       ['实时阶段事件', 'core.EvTurnPhase → State.Live / LiveDone;演示后端同样发出(demo/stages_demo.go)。未测试', st('part')],
-      ['状态行(始终在场)', 'app/flow_wait.go:发送同一帧出现(界面先把回合置为运行中,后端再确认)、整个回合不消失、阶段词淡入、8 秒转琥珀、点击展开阶段清单、结束时淡出并收折;后端先发用户消息再启动进程。未测试', st('part')],
+      ['状态行(始终在场)', 'flow_wait.go:回合全程在场、阶段词/工具名、8s 琥珀、展开清单、结束时 kit.DurStatus(160ms)淡出收折;演示截图 scn:resp-wait-slow。未 computer use', st('part')],
       ['Esc 中断', 'app.go escInterrupts:仅 Agent 形态主界面、回合进行中、无浮层 / 编辑态 / 斜杠菜单时 Esc = 停止(状态行括号里的「Esc 中断」只在可用时才写);IDE 形态不启用(编辑器里 Esc 有别的用途)。未测试', st('part')],
       ['发送瞬间乐观运行态', 'app.go send:非引导的 CmdPrompt 在空闲时先本地置为运行中(状态行同帧出现),后端 EvTurnStarted 幂等;后端先发用户消息再启动进程(冷启动不再让用户消息晚几百毫秒才出现)。未测试', st('part')],
       ['回复出完即结束', 'core.EvTurnPhase.Final → State.Phase 置空闲 + Settling;后端先发临时用时,result 到达再替换;收尾期间发送的消息记「接力」,result 后无缝开始下一回合(claude/backend.go carry)。未测试', st('part')],
@@ -151,8 +151,8 @@
       ['沙漏等待图标', 'kit.Spin 默认沙漏(2.4s 全局相位);SpinRing 仅按钮 loading;appearance.waitAnim 沙漏/圆环/点阵/脉冲 + 旧偏好迁移。未测试', st('part')],
       ['思考折叠跑马灯', 'flow_think_marquee.go:折叠且流式时右侧尾句预览;演示 scn:think-marquee;-ed thinking。未测试', st('part')],
       ['流光扫光', 'kit.RunTextS RichText 分段混色(无 background-clip:text);appearance.shimmer 流光/呼吸/无;约 30fps。未测试', st('part')],
-      ['慢因提示卡', 'app/flow_wait_hint.go 按上表;设置 → 对话 → 显示慢响应提示(chat.slowHint);动作按钮「编辑工作区…」「压缩上下文」。未测试', st('part')],
-      ['脚注迷你分段条 + 瀑布弹卡', 'app/turn_timing_pop.go:点击「用时」开弹卡,窄档隐藏条;最多 10 行;含「等你确认」时标题写「模型 x s」;底部缓存 / 上下文 / 一句结论。设计稿里的「悬停即开」Go 版改为点击(避免鼠标经过误触)。未测试', st('part')],
+      ['慢因提示卡', 'flow_wait_hint.go 优先级表 + 动作;chat.slowHint;cmd/shot scn:resp-wait-slow 琥珀 + 压缩按钮已对照。未 computer use', st('part')],
+      ['脚注迷你分段条 + 瀑布弹卡', 'turn_timing_pop.go:迷你条 + 点击瀑布(非悬停);scn:resp-multi-timing 脚注条已对照。弹卡明细未截图。未 computer use', st('part')],
       ['缓存判定', 'core.CallInfo.Verdict / Text(命中 / 部分命中 / 首次写入 / 未命中;第三方不返回缓存字段时不判);弹卡里逐次调用显示。等待行不放缓存 chip(见上)', st('part')],
       ['等你确认单独成段', '权限 / 提问 / 计划请求到达 → 作答(含取消)。未测试', st('part')],
       ['历史回放分段', '回放没有逐段数据,脚注沿用旧样式(设计如此,不伪造)', st('ok')],
@@ -186,8 +186,8 @@
       ['撤销', '无(压缩不可逆;卡片里不放撤销)']])}</div>`)}
     ${sec('实现状态', '仅 go build 通过,未经开发版 computer use 实测。', tbl([['项', 240], ['说明', 0], ['状态', 70]], [
       ['压缩卡条目 + 事件', 'core.Compaction / EvCompact;claude 翻译 compacting / compact_boundary(metadata);后端手动压缩不再发假用户消息。未测试', st('part')],
-      ['卡片 UI', 'app/flow_compact.go:压缩中 / 已完成 / 失败三态、对比条动画。未测试', st('part')],
-      ['演示', '演示后端 /compact 走 压缩中 → 已完成;发「压缩失败」走失败态', st('part')],
+      ['卡片 UI', 'flow_compact.go:三态 + 窄档用时尾行 + 回放无用时「—」;压缩中文案对齐稿;cmd/shot scn:compact-* 已对照。未 computer use', st('part')],
+      ['演示', 'interactive「慢/多次/压缩失败」+ 截图场景 scn:resp-wait-slow、compact-running/done/fail', st('part')],
       ['历史回放', '本机历史记录里没有 compact_boundary 样本可核对字段,重开会话时还不会还原成卡(旧的 /compact 命令消息仍被过滤);待有样本后补', st('todo')]]))}
   </div>`;
 

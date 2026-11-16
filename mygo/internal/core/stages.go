@@ -122,6 +122,7 @@ type LiveStage struct {
 	Since     time.Time // 进入当前阶段的时刻
 	TurnStart time.Time // 回合开始(点发送)的时刻
 	Call      int       // 当前是第几次模型调用
+	Label     string    // 工具名等
 	Cache     *CacheTokens
 }
 

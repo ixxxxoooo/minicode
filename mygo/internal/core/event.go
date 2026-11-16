@@ -141,6 +141,7 @@ type (
 		At        time.Time
 		TurnStart time.Time
 		Call      int
+		Label     string // 工具阶段写工具名(状态行「运行 Bash」)
 		Cache     *CacheTokens
 		// Final 最后一段回复已出完(end_turn):界面立刻按「已结束」处理,不等 claude 收尾返回 result。
 		Final bool

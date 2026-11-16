@@ -42,6 +42,10 @@
       R('窄档起手卡单列', '', 'ok'),
       R('空会话下的拖拽引用落点', '欢迎页同样可以拖文件进输入框', 'ok'),
       R('侧栏切换已有会话时对话区过渡', 'session_load.go:回放完成前不显示欢迎页;无上一会话内容时「正在载入会话…」+骨架,否则暂留上一会话流;历史失败可行动错误;新会话仍欢迎页;未测试', 'part', 'B2')],
+    'resp-time': [
+      R('状态行 + 慢因 + 脚注分段条', 'flow_wait / flow_wait_hint / turn_timing_pop;cmd/shot scn:resp-wait-slow、resp-multi-timing 静态对照;瀑布弹卡未开;未 computer use', 'part', 'B4')],
+    'flow-compact': [
+      R('压缩上下文卡三态 + 窄档', 'flow_compact.go;scn:compact-running/done/fail;历史 compact_boundary 还原仍 todo', 'part', 'B4')],
     palette: [
       R('⌘K 打开 / Esc · 遮罩关闭、欢迎列表(命令 / 会话 / 最近文件)与模糊查询', '', 'ok'),
       R('主题二级列表:上下即时预览,Esc 还原', '', 'ok'),
