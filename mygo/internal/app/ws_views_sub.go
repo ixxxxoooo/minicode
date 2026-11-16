@@ -50,7 +50,8 @@ func (a *App) subView(c *ui.Context, id string) {
 	}
 	ui.Box(c).Grow(1).MinHeight(0).Children(func() {
 		kit.VScroll(c).Key("subview-" + id).TrackScroll(st).Grow(1).Children(func() {
-			ui.Column(c).Padding(10, a.flowPad(), 16, a.flowPad()).Children(func() {
+			// 内容列(flowCol)自带最大宽度与左右内边距;外层居中,与主会话流同样的版心
+			ui.Column(c).Padding(10, 0, 16, 0).AlignItems(ui.Center).Children(func() {
 				a.subFlowItems(c, s)
 			})
 		})
