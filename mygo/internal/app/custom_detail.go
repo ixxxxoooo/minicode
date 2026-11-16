@@ -173,19 +173,13 @@ func (a *App) cuHeadDel(c *ui.Context, st *customize.Store, it *customize.Item, 
 func (a *App) cuDeleteDo(st *customize.Store, it *customize.Item, verb string) {
 	cat := a.cuCat()
 	snap := *it
+	if cat == customize.Plugins && !a.cuDemo() {
+		a.cuUninstallPlugin(it) // 真实卸载要跑 claude 子进程,放后台,完成后再刷新列表
+		return
+	}
 	if a.cuDisk() != nil && cat != customize.Plugins {
 		a.cuRemoveDisk(st, it)
 	} else if cat == customize.Plugins {
-		if !a.cuDemo() {
-			res := customize.RunPluginUninstall(it.Name)
-			if res.Code != 0 && res.Err != "" {
-				a.toast = res.Err
-				return
-			}
-			if ds := a.cuDisk(); ds != nil {
-				ds.Reload()
-			}
-		}
 		st.Uninstall(it)
 	} else {
 		st.Remove(cat, it)
@@ -225,22 +219,21 @@ func (a *App) cuMarketDetail(c *ui.Context, st *customize.Store) {
 	kit.VScroll(c).Key("cu-mkscroll").Grow(1).MinHeight(0).Children(func() {
 		ui.Column(c).Padding(14, 16).Gap(12).Children(func() {
 			a.cuHead(c, st, nil, "plug", m.Name, func() { kit.Tag(c, m.By, kit.KAc) })
-			ui.Text(c, m.Desc+"。安装后会把它包含的 Skills、命令、子 Agent 与钩子一并加入。").TextColor(t.Tx2).LineHeight(1.6)
-			a.cuKV(c, [][2]string{{"来源", "claude-plugins-official"}, {"热度", "★ " + m.Stars}, {"安装到", "用户(所有项目)"}})
-			a.cuLbl(c, "将包含", func() {
-				a.cuCard(c, func() {
-					for _, r := range []struct {
-						i, n string
-						v    int
-					}{{"spark", "Skills", 6}, {"slash", "斜杠命令", 2}, {"bot", "子 Agent", 1}} {
-						ui.Row(c).Height(t.Scheme.RowH).PaddingX(8).Gap(6).AlignItems(ui.Center).Children(func() {
-							kit.Ic(c, r.i, kit.S12)
-							ui.Text(c, r.n).Grow(1)
-							ui.Text(c, itoa(r.v)).TextColor(t.Tx3)
-						})
-					}
-				})
-			})
+			desc := m.Desc
+			if desc == "" {
+				desc = "这个插件没有提供说明。"
+			}
+			ui.Text(c, desc).TextColor(t.Tx2).LineHeight(1.6)
+			src, ver := m.MP, m.Ver
+			if src == "" {
+				src = "演示数据"
+			}
+			if ver == "" {
+				ver = "以市场最新为准"
+			}
+			a.cuKV(c, [][2]string{{"作者", m.By}, {"来源市场", src}, {"版本", ver}, {"安装到", "用户(所有项目)"}})
+			// 包含的技能 / 命令 / 子 Agent 要装完才知道,不再编数字糊弄
+			ui.Text(c, "安装后会把它包含的 Skills、命令、子 Agent、钩子与 MCP 一并加入,可在「已安装」里查看具体数量并逐项启停。").FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.5)
 			ui.Row(c).Key("cu-mkfoot").Margin(8, 0, 0, 0).Padding(10, 0, 0, 0).Gap(8).AlignItems(ui.Center).
 				BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
 				if m.Installed {
@@ -260,8 +253,6 @@ func (a *App) cuMarketDetail(c *ui.Context, st *customize.Store) {
 				} else {
 					kit.Btn(c, "安装", kit.BtnOpt{Variant: kit.BtnPri, Icon: "download"}).OnClick(func() { a.cuInstallPlugin(st, m) })
 				}
-				ui.Spacer(c).Grow(1)
-				kit.Btn(c, "查看源码", kit.BtnOpt{Variant: kit.BtnGhost, Icon: "ext"}).OnClick(func() { a.toast = "查看源码:尚未接入" })
 			})
 		})
 	})
@@ -282,26 +273,19 @@ func (a *App) cuPlugin(c *ui.Context, st *customize.Store, it *customize.Item) f
 		})
 	}
 	ui.Text(c, it.About).TextColor(t.Tx2).LineHeight(1.6)
-	a.cuKV(c, [][2]string{{"来源", it.Src}, {"版本", it.Ver}})
-	a.cuLbl(c, "安装到", func() {
-		on := 0
-		if it.Scope == customize.Project {
-			on = 1
-		}
-		if i := kit.Seg(c, []kit.SegItem{{Text: "用户"}, {Text: "项目"}}, on, kit.SegOpt{Key: "cp-scope"}); i >= 0 {
-			it.Scope = []customize.Scope{customize.User, customize.Project}[i]
-		}
-	})
+	// 安装层是装的时候定的(claude plugin install --scope),装完不能在这里改,所以只读展示
+	a.cuKV(c, [][2]string{{"来源市场", it.Src}, {"版本", it.Ver}, {"安装到", it.Scope.Label() + "层"}})
 	a.cuLbl(c, "包含内容", func() {
 		a.cuCard(c, func() {
+			if len(it.Inc) == 0 {
+				ui.Text(c, "没有读到包含的内容(插件目录里没有 skills / commands / agents / hooks / .mcp.json)").FontSize(theme.FsCap).TextColor(t.Tx3).Padding(8)
+			}
 			for i := range it.Inc {
 				inc := &it.Inc[i]
+				// 插件内部各项不能单独启停(claude 只认整个插件),所以这里只展示数量,不放假开关
 				ui.Row(c).Height(t.Scheme.RowH).PaddingX(8).Gap(6).AlignItems(ui.Center).Children(func() {
 					ui.Text(c, inc.Kind).Grow(1)
 					ui.Text(c, itoa(inc.N)).TextColor(t.Tx3)
-					if kit.Tog(c, inc.On, "cpi-"+it.Name+inc.Kind) {
-						inc.On = !inc.On
-					}
 				})
 			}
 		})
@@ -312,7 +296,7 @@ func (a *App) cuPlugin(c *ui.Context, st *customize.Store, it *customize.Item) f
 		if it.On {
 			label = "停用"
 		}
-		kit.Btn(c, label).OnClick(func() { it.On = !it.On })
+		kit.Btn(c, label).OnClick(func() { a.cuPluginToggle(it) })
 	}
 }
 
@@ -321,7 +305,11 @@ func (a *App) cuPlugin(c *ui.Context, st *customize.Store, it *customize.Item) f
 func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func() {
 	t := a.tk
 	a.cuHead(c, st, it, "server", it.Name, a.cuHeadDel(c, st, it, "删除"))
-	switch it.Status {
+	status := it.Status
+	if !it.On { // 开关关着就是停用,不管上次探活是什么结果
+		status = customize.StOff
+	}
+	switch status {
 	case customize.StOK:
 		a.cuBanner(c, kit.KOk, "check", "已连接 · "+itoa(len(it.Tools))+" 个工具", func() {
 			kit.Btn(c, "重新连接", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() { a.cuReconnectReal(it) })
@@ -330,11 +318,22 @@ func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func
 		a.cuBanner(c, kit.KWarn, "alert", "需要授权后才能使用", func() {
 			kit.Btn(c, "授权", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() { a.cuAuth(it) })
 		})
+	case customize.StNone:
+		a.cuBanner(c, kit.KInfo, "alert", "还没有查询连接状态", func() {
+			kit.Btn(c, "查询", kit.BtnOpt{Small: true, Icon: "refresh", Loading: a.mcpRefreshing}).OnClick(a.cuRefreshMCP)
+		})
+	case customize.StOff:
+		a.cuBanner(c, kit.KInfo, "alert", "已在本项目停用,打开列表右侧的开关即可恢复", func() {
+			kit.Btn(c, "启用", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() {
+				if !a.cuDemo() {
+					a.cuMCPOn(it, true)
+				} else {
+					it.On, it.Status = true, customize.StNone
+				}
+			})
+		})
 	default:
-		reason := ""
-		if i := strings.Index(it.Desc, ":"); i >= 0 {
-			reason = it.Desc[i+len(":"):]
-		}
+		reason := strings.TrimPrefix(it.Desc, "连接失败 · ")
 		a.cuBanner(c, kit.KErr, "alert", "连接失败:"+reason+"。检查命令与环境变量后重试。", func() {
 			kit.Btn(c, "重试", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() { a.cuReconnectReal(it) })
 		})

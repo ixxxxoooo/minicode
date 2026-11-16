@@ -44,23 +44,28 @@ func parseMcpListLines(s string) []core.McpServerStatus {
 		if raw == "" || strings.HasPrefix(raw, "Checking") || strings.HasPrefix(raw, "Installed") {
 			continue
 		}
-		parts := strings.SplitN(raw, ":", 2)
-		if len(parts) != 2 {
+		// 名字里可能带冒号(plugin:xxx:yyy),分隔符是「冒号 + 空格」
+		cut := strings.Index(raw, ": ")
+		if cut < 0 {
 			continue
 		}
-		name := strings.TrimSpace(strings.TrimPrefix(parts[0], "❯"))
-		rest := strings.TrimSpace(parts[1])
-		st := core.McpServerStatus{Name: name, Error: rest}
+		name := strings.TrimSpace(strings.TrimPrefix(raw[:cut], "❯"))
+		rest := strings.TrimSpace(raw[cut+2:])
+		st := core.McpServerStatus{Name: name}
 		low := strings.ToLower(rest)
 		switch {
+		case strings.Contains(low, "disabled"), strings.Contains(rest, "⊘"):
+			st.Conn = core.McpDisabled
+		case strings.Contains(low, "failed"), strings.Contains(rest, "✘"):
+			st.Conn = core.McpFailed
+			st.Error = rest
 		case strings.Contains(low, "connected"), strings.Contains(rest, "✔"), strings.Contains(rest, "✓"):
 			st.Conn = core.McpConnected
 		case strings.Contains(low, "auth"), strings.Contains(low, "pending"), strings.Contains(low, "approval"):
 			st.Conn = core.McpNeedsAuth
-		case strings.Contains(low, "disabled"):
-			st.Conn = core.McpDisabled
 		default:
 			st.Conn = core.McpFailed
+			st.Error = rest
 		}
 		out = append(out, st)
 	}

@@ -56,6 +56,7 @@ const (
 	StOK   Status = "ok"
 	StWarn Status = "warn" // 需要授权
 	StErr  Status = "err"
+	StOff  Status = "off" // 在本项目里被停用(不是连接失败)
 )
 
 // Tool 是 MCP 的一个工具及其开关。
@@ -143,6 +144,8 @@ var Events = []string{"PreToolUse", "PostToolUse", "Stop", "UserPromptSubmit", "
 type Market struct {
 	Name, By, Desc, Stars string
 	Installed             bool
+	MP                    string // 所属市场(安装时拼成 name@market)
+	Ver                   string // 市场里标注的版本(没有就空)
 }
 
 // Store 保存全部条目。

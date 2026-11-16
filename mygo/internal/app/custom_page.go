@@ -37,6 +37,7 @@ type custState struct {
 	detail       bool // <900px:列表 / 详情两级
 	sel          *customize.Item
 	mk           *customize.Market // 市场里选中的
+	mkMore       int               // 市场里「显示更多」点过几次(每次多一页)
 	draft        customize.Item    // 选中项的草稿副本(文本框绑它,保存才写回)
 	dOf          *customize.Item   // 草稿对应哪一项
 	rulePV       bool              // 规则:预览
@@ -161,9 +162,7 @@ func (a *App) customizePage(c *ui.Context) {
 				}
 				if cat == customize.Plugins {
 					kit.Btn(c, "浏览市场", kit.BtnOpt{Icon: "search"}).OnClick(func() { s.market = true; s.mk = nil })
-					kit.Btn(c, "从本地目录安装", kit.BtnOpt{Variant: kit.BtnPri, Icon: "plus"}).OnClick(func() {
-						a.toast = "从本地目录安装:尚未接入目录选择器"
-					})
+					kit.Btn(c, "添加市场…", kit.BtnOpt{Variant: kit.BtnPri, Icon: "plus"}).Tooltip("选一个本地目录作为插件市场(里面要有 .claude-plugin/marketplace.json)").OnClick(a.cuAddMarketplace)
 					return
 				}
 				kit.Btn(c, meta.add, kit.BtnOpt{Variant: kit.BtnPri, Icon: "plus"}).OnClick(func() { s.dlg = &custDlg{scope: customize.User} })
@@ -391,6 +390,8 @@ func (a *App) cuRow(c *ui.Context, st *customize.Store, it *customize.Item, on, 
 		if kit.Tog(c, it.On, "cut-"+it.Name) {
 			if a.cuCat() == customize.MCP && !a.cuDemo() {
 				a.cuMCPOn(it, !it.On)
+			} else if a.cuCat() == customize.Plugins {
+				a.cuPluginToggle(it)
 			} else {
 				it.On = !it.On
 				log.Info("自定义启停", "cat", a.cuCat(), "name", it.Name, "on", it.On)
@@ -454,6 +455,11 @@ func (a *App) cuMarket(c *ui.Context, st *customize.Store) {
 		ui.Text(c, "没有符合条件的插件").TextColor(t.Tx3).Padding(20, 0)
 		return
 	}
+	// 官方市场有 300 多个插件,每帧全画太重:先画一页,其余靠搜索或「显示更多」
+	total := len(ms)
+	if limit := marketPage * (1 + s.mkMore); total > limit {
+		ms = ms[:limit]
+	}
 	for i := 0; i < len(ms); i += 2 {
 		ui.Row(c).Gap(8).AlignItems(ui.Stretch).Children(func() {
 			for j := i; j < i+2; j++ {
@@ -475,18 +481,31 @@ func (a *App) cuMarket(c *ui.Context, st *customize.Store) {
 						})
 						ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 							ui.Text(c, m.Name).FontWeight(500).SingleLine()
-							ui.Text(c, m.By+" · ★ "+m.Stars).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
+							sub := m.By
+							if m.MP != "" && m.MP != m.By {
+								sub += " · " + m.MP
+							}
+							if m.Stars != "" {
+								sub += " · ★ " + m.Stars
+							}
+							ui.Text(c, sub).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 						})
 						if m.Installed {
 							kit.Tag(c, "已安装", kit.KOk)
 						}
 					})
-					ui.Text(c, m.Desc).FontSize(theme.FsCap).TextColor(t.Tx2).LineHeight(1.45)
+					ui.Text(c, m.Desc).FontSize(theme.FsCap).TextColor(t.Tx2).LineHeight(1.45).MaxLines(3)
 				})
 			}
 		})
 	}
+	if shown := len(ms); shown < total {
+		kit.Btn(c, "显示更多(还有 "+itoa(total-shown)+" 个,也可以直接搜索)", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(func() { s.mkMore++ })
+	}
 }
+
+// marketPage 是插件市场每次显示的数量(官方市场有 300 多个)。
+const marketPage = 40
 
 // cuDialog 是「新建」对话框。
 func (a *App) cuDialog(c *ui.Context, st *customize.Store) {

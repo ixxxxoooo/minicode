@@ -300,6 +300,8 @@ type App struct {
 	ctxRefreshAt      time.Time
 	mcpRefreshAt      time.Time
 	mcpRefreshing     bool
+	mcpListBusy       bool            // claude mcp list 正在后台跑(它会逐个探活,可能要几十秒,不能叠着起)
+	mcpListAt         time.Time       // 上次拿到 mcp list 结果的时间
 	mcpDeny           map[string]bool // 本地层被禁用的 MCP 工具规则(缓存,弹层打开 / 切换后后台重读)
 	mcpRuntimeAt      int64           // 最近一次 mcp_status 成功的 Unix 秒
 	mcpTurnRefDone    bool            // 本会话首回合结束后是否已自动刷新 MCP

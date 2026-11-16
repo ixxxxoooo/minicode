@@ -90,12 +90,20 @@ func (a *App) mcpRowsUnified() []McpRow {
 	for _, s := range a.st.Mcp {
 		mv, ok := byName[s.Name]
 		if !ok {
-			mv = McpRow{Name: s.Name, On: s.Conn != core.McpDisabled, Tools: len(s.Tools)}
+			// 配置文件里没有的:账号连接器(claude.ai …)与插件自带的服务器,只有运行时才看得到
+			scope := "插件"
+			if strings.HasPrefix(s.Name, "claude.ai ") {
+				scope = "账号"
+			}
+			mv = McpRow{Name: s.Name, Scope: scope, On: s.Conn != core.McpDisabled, Tools: len(s.Tools)}
 		}
 		mv.Conn = s.Conn
 		mv.Runtime = true
 		if s.Error != "" {
-			mv.Detail = s.Error
+			mv.Detail = customize.ShortMCPErr(s.Error) // 服务端回的整段 JSON 错误不能原样塞进一行
+			if s.Conn == core.McpFailed && !strings.HasPrefix(mv.Detail, "连接失败") {
+				mv.Detail = "连接失败 · " + mv.Detail
+			}
 		} else {
 			lbl := mcpConnLabel(s.Conn, true)
 			if len(s.Tools) > 0 {

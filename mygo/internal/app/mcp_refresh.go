@@ -28,9 +28,14 @@ func (a *App) mcpRefresh(opts mcpRefreshOpts) {
 	if opts.ReloadDisk {
 		a.cuEnsureDisk()
 		if ds := a.cuDisk(); ds != nil {
+			// 后台只读盘,合并回主线程做(此前后台直接改列表:既会重复追加,又和界面读取抢数据)
 			a.bg("重载MCP配置", func() func() {
-				ds.ReloadMCPConfig()
-				return func() {}
+				fresh := ds.ReadMCPConfig()
+				return func() {
+					if a.cu.disk == ds { // 期间换了项目就丢弃
+						ds.ApplyMCPConfig(fresh)
+					}
+				}
 			})
 		}
 	}
@@ -57,6 +62,32 @@ func (a *App) mcpRefresh(opts mcpRefreshOpts) {
 	mcpLog.Info("刷新MCP", "runtime", runtime, "startProc", opts.StartProc)
 }
 
+// mcpFetchListBG 没有会话进程时,用 claude mcp list 给配置里的服务器补连接状态(后台跑,结果回主线程合并)。
+// 它会逐个探活,实测要几十秒,所以同一时刻只跑一个,自动触发的 60 秒内不重复,手动刷新(force)不受限。
+func (a *App) mcpFetchListBG(force bool) {
+	ds := a.cuDisk()
+	if ds == nil || a.mcpListBusy || a.cuDemo() {
+		return
+	}
+	if !force && time.Since(a.mcpListAt) < 60*time.Second {
+		return
+	}
+	a.mcpListBusy, a.mcpRefreshing, a.mcpRefreshAt = true, true, time.Now()
+	a.bg("查询MCP连接状态", func() func() {
+		st, err := ds.FetchMCPStatus()
+		return func() {
+			a.mcpListBusy, a.mcpRefreshing, a.mcpListAt = false, false, time.Now()
+			if err != nil {
+				mcpLog.Warn("查询 MCP 状态失败", "err", err)
+				return
+			}
+			if a.cu.disk == ds {
+				ds.ApplyMCPStatus(st)
+			}
+		}
+	})
+}
+
 func (a *App) mcpOnOpenPopup() {
 	a.mcpDenyReload()
 	a.mcpRefresh(mcpRefreshOpts{ReloadDisk: true, Runtime: a.mcpRuntimeReady()})
@@ -64,10 +95,16 @@ func (a *App) mcpOnOpenPopup() {
 
 func (a *App) mcpOnOpenManage() {
 	a.mcpRefresh(mcpRefreshOpts{Force: true, ReloadDisk: true, Runtime: a.mcpRuntimeReady()})
+	if !a.mcpRuntimeReady() {
+		a.mcpFetchListBG(false)
+	}
 }
 
 func (a *App) mcpManualRefresh(startProc bool) {
 	a.mcpRefresh(mcpRefreshOpts{Force: true, ReloadDisk: true, Runtime: true, StartProc: startProc})
+	if !startProc && !a.mcpRuntimeReady() {
+		a.mcpFetchListBG(true)
+	}
 }
 
 func (a *App) mcpAfterTurnEnd() {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -33,7 +34,11 @@ func OpenDisk(proj string) (*DiskStore, error) {
 	}
 	// 市场列表要起 claude 子进程(最长 60 秒),而 OpenDisk 会在界面线程里被调用(输入框 MCP 芯片、斜杠命令等),
 	// 所以这里只放兜底数据;真实列表由调用方放到后台取(RunMarketplaceList),回主线程后用 SetMarket 替换。
-	ds.Market = defaultMarket()
+	if mk := ReadMarketplaces(home); len(mk) > 0 {
+		ds.Market = mk // 真实的市场内容,直接读磁盘,不起子进程
+	} else {
+		ds.Market = defaultMarket()
+	}
 	ds.loadAll()
 	return ds, nil
 }
@@ -133,36 +138,68 @@ func (ds *DiskStore) loadPlugins() {
 			Scope       string `json:"scope"`
 			InstallPath string `json:"installPath"`
 			Version     string `json:"version"`
+			ProjectPath string `json:"projectPath"`
 		} `json:"plugins"`
 	}
 	if !readJSON(p, &raw) {
 		return
 	}
-	for id, vers := range raw.Plugins {
-		if len(vers) == 0 {
+	enabled := ds.enabledPlugins()
+	ids := make([]string, 0, len(raw.Plugins))
+	for id := range raw.Plugins {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids) // map 遍历随机,按名字排,列表不乱跳
+	for _, id := range ids {
+		// 同一个插件可能装在多个层:项目层的只在它所属的项目里生效,别的项目里不列
+		pick := -1
+		for i, v := range raw.Plugins[id] {
+			if strings.EqualFold(v.Scope, "project") && filepath.Clean(v.ProjectPath) != ds.proj {
+				continue
+			}
+			pick = i
+		}
+		if pick < 0 {
 			continue
 		}
-		v := vers[len(vers)-1]
-		name := id
+		v := raw.Plugins[id][pick]
+		name, mp := id, ""
 		if i := strings.Index(id, "@"); i > 0 {
-			name = id[:i]
+			name, mp = id[:i], id[i+1:]
 		}
 		sc := User
 		if strings.EqualFold(v.Scope, "project") {
 			sc = Project
 		}
+		on, known := enabled[id]
+		if !known {
+			on = false // settings 里没写 = 没启用(claude 的默认)
+		}
+		src := mp
+		if src == "" {
+			src = "已安装"
+		}
 		it := &Item{
-			Name: name, Scope: sc, On: true, Ver: v.Version, Src: "已安装",
+			Name: name, Scope: sc, On: on, Ver: v.Version, Src: src,
 			Desc: scopeLabel(v.Scope) + " · v" + v.Version,
-			Path: v.InstallPath,
+			Path: v.InstallPath, Inc: pluginInc(v.InstallPath),
 		}
 		ds.items[Plugins] = append(ds.items[Plugins], it)
 		for _, m := range ds.Market {
-			if m.Name == name {
+			if m.Name == name && (mp == "" || m.MP == mp) {
 				m.Installed = true
+				it.About = m.Desc // 详情页的说明取自市场清单
 			}
 		}
 	}
+}
+
+// PluginID 返回插件在 claude 里的完整标识(名称@市场),装机时没有市场信息就退回名称。
+func PluginID(it *Item) string {
+	if it.Src != "" && it.Src != "已安装" {
+		return it.Name + "@" + it.Src
+	}
+	return it.Name
 }
 
 func mcpCmdOf(ent map[string]any) (transport, cmd string) {
@@ -187,6 +224,40 @@ func mcpCmdOf(ent map[string]any) (transport, cmd string) {
 }
 
 func (ds *DiskStore) loadMCP() {
+	ds.items[MCP] = ds.readMCP()
+}
+
+// ReadMCPConfig 只读磁盘配置并返回一份全新的 MCP 列表,不改 ds 的任何状态,
+// 所以可以放在后台线程里调用;结果交回界面线程用 ApplyMCPConfig 合并。
+func (ds *DiskStore) ReadMCPConfig() []*Item { return ds.readMCP() }
+
+// ApplyMCPConfig 把磁盘读到的 MCP 配置合并进当前列表(只能在界面线程调用):
+// 同名项原地更新(保留指针,界面选中的条目不会丢,也保留已查到的连接状态 / 工具列表),
+// 新增的追加,磁盘上已经没有的移除。此前每次刷新都是「再追加一遍」,列表越刷越多。
+func (ds *DiskStore) ApplyMCPConfig(fresh []*Item) {
+	old := map[string]*Item{}
+	for _, it := range ds.items[MCP] {
+		if _, dup := old[it.Name]; !dup { // 旧版本留下的重复项只认第一个,其余丢弃
+			old[it.Name] = it
+		}
+	}
+	out := make([]*Item, 0, len(fresh))
+	for _, n := range fresh {
+		if cur, ok := old[n.Name]; ok {
+			cur.Scope, cur.On = n.Scope, n.On
+			cur.Transport, cur.Cmd = n.Transport, n.Cmd
+			cur.Env, cur.EnvVals = n.Env, n.EnvVals
+			out = append(out, cur)
+			continue
+		}
+		out = append(out, n)
+	}
+	ds.items[MCP] = out
+}
+
+// readMCP 读用户层与项目层的 MCP 服务器配置(按名字去重,用户层优先)。
+func (ds *DiskStore) readMCP() []*Item {
+	var result []*Item
 	type layer struct {
 		scope Scope
 		path  string
@@ -238,15 +309,18 @@ func (ds *DiskStore) loadMCP() {
 			seen[name] = true
 			ent, _ := cfg.(map[string]any)
 			tr, cmd := mcpCmdOf(ent)
-			it := &Item{Name: name, Scope: ly.scope, On: !disabled[name], Status: StErr, Transport: tr, Cmd: cmd,
-				Desc: ly.scope.Label() + " · 待刷新状态"}
+			it := &Item{Name: name, Scope: ly.scope, On: !disabled[name], Status: StNone, Transport: tr, Cmd: cmd,
+				Desc: ly.scope.Label() + " · 未查询连接状态"} // 还没查过就是「未知」,不能先标成失败(红点)
 			if em, ok := ent["env"].(map[string]any); ok {
 				it.Env = envKeysOnly(em)
 				it.EnvVals = envValsOf(em)
 			}
-			ds.items[MCP] = append(ds.items[MCP], it)
+			result = append(result, it)
 		}
 	}
+	// map 遍历顺序随机:按名字排序,列表才不会每次刷新都乱跳
+	sort.Slice(result, func(i, j int) bool { return result[i].Name < result[j].Name })
+	return result
 }
 
 func (ds *DiskStore) loadSkills() {
@@ -452,23 +526,43 @@ func (ds *DiskStore) loadHooks() {
 }
 
 // ReloadMCPConfig 只从磁盘配置重载 MCP 列表,不启动子进程。
+// 同步版本(读盘 + 合并),只在界面线程或测试里用;后台线程请用 ReadMCPConfig + ApplyMCPConfig。
 func (ds *DiskStore) ReloadMCPConfig() {
-	ds.loadMCP()
+	ds.ApplyMCPConfig(ds.ReadMCPConfig())
 }
 
 // RefreshMCPStatus 用 claude mcp list 的输出更新状态(不启动会话)。
+// 同步版本只在测试里用:会跑子进程,界面线程请走 FetchMCPStatus(后台)+ ApplyMCPStatus(界面线程)。
 func (ds *DiskStore) RefreshMCPStatus() {
+	if st, err := ds.FetchMCPStatus(); err == nil {
+		ds.ApplyMCPStatus(st)
+	}
+}
+
+// MCPStatus 是一次 claude mcp list 的结果快照(按服务器名索引)。
+type MCPStatus struct{ byName map[string]mcpLine }
+
+// FetchMCPStatus 跑 claude mcp list 并解析,不改 ds(可在后台线程调用)。
+func (ds *DiskStore) FetchMCPStatus() (*MCPStatus, error) {
 	out, err := RunMCPList(ds.proj)
 	if err != nil {
 		alog.Warn("MCP 列表失败", "err", err)
+		return nil, err
+	}
+	st := &MCPStatus{byName: map[string]mcpLine{}}
+	for _, ln := range out {
+		st.byName[ln.Name] = ln
+	}
+	return st, nil
+}
+
+// ApplyMCPStatus 把状态快照写到各条目上(只能在界面线程调用)。
+func (ds *DiskStore) ApplyMCPStatus(st *MCPStatus) {
+	if st == nil {
 		return
 	}
-	byName := map[string]mcpLine{}
-	for _, ln := range out {
-		byName[ln.Name] = ln
-	}
 	for _, it := range ds.items[MCP] {
-		ln, ok := byName[it.Name]
+		ln, ok := st.byName[it.Name]
 		if !ok {
 			it.Status = StErr
 			it.Desc = it.Scope.Label() + " · 未在 claude mcp list 中"

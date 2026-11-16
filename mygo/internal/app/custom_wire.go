@@ -12,7 +12,6 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/claude"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/customize"
-	"github.com/ixxxxoooo/minicode/internal/diag"
 )
 
 func (a *App) cuDemo() bool { return a.demoWs() || a.demoExtra }
@@ -55,15 +54,87 @@ func (a *App) cuEnsureDisk() {
 		return
 	}
 	a.cu.disk, a.cust = ds, ds.Store
-	// 市场列表要起 claude 子进程,放到后台取;回主线程后替换兜底数据(仍是同一个仓库对象才应用)
-	a.bg("读取插件市场", func() func() {
-		defer diag.SpanSlow("customize", "插件市场列表", 2*time.Second)()
-		mk := customize.RunMarketplaceList()
+	// 插件市场的真实内容由 OpenDisk 直接读 ~/.claude/plugins/marketplaces(不起子进程)。
+	// 此前这里还会后台跑 claude plugin marketplace list,它列的是「市场」而不是插件,会把真实列表换成假数据。
+}
+
+// cuPluginToggle 启用 / 停用已安装的插件:先按点击结果显示,后台跑 claude plugin enable|disable 落盘,失败则还原并提示。
+func (a *App) cuPluginToggle(it *customize.Item) {
+	on := !it.On
+	if a.cuDemo() {
+		it.On = on
+		a.toast = map[bool]string{true: "已启用「", false: "已停用「"}[on] + it.Name + "」(演示)"
+		return
+	}
+	ds := a.cuDisk()
+	id, proj := customize.PluginID(it), a.proj
+	it.On = on
+	a.toast = "正在" + map[bool]string{true: "启用", false: "停用"}[on] + "「" + it.Name + "」…"
+	a.bg("切换插件", func() func() {
+		res := customize.RunPluginToggle(id, on, proj)
 		return func() {
-			if a.cu.disk == ds {
-				ds.SetMarket(mk)
+			if res.Code != 0 {
+				it.On = !on
+				a.toast = "切换失败:" + customize.ShortMCPErr(res.Err)
+				log.Warn("插件启停失败", "id", id, "on", on, "err", res.Err)
+				return
 			}
+			if ds != nil && a.cu.disk == ds {
+				it.On = on
+			}
+			a.toast = map[bool]string{true: "已启用「", false: "已停用「"}[on] + it.Name + "」,新会话生效"
+			log.Info("插件启停", "id", id, "on", on)
 		}
+	})
+}
+
+// cuUninstallPlugin 后台跑 claude plugin uninstall <名称@市场>,成功后重读磁盘;失败给出原因,列表不动。
+func (a *App) cuUninstallPlugin(it *customize.Item) {
+	ds := a.cuDisk()
+	id, name := customize.PluginID(it), it.Name
+	a.toast = "正在卸载「" + name + "」…"
+	a.bg("卸载插件", func() func() {
+		res := customize.RunPluginUninstall(id)
+		return func() {
+			if res.Code != 0 {
+				a.toast = "卸载失败:" + customize.ShortMCPErr(res.Err)
+				log.Warn("插件卸载失败", "id", id, "err", res.Err)
+				return
+			}
+			if ds != nil && a.cu.disk == ds {
+				ds.Reload()
+			}
+			a.cu.sel, a.cu.dOf, a.cu.delArm = nil, nil, nil
+			a.toast = "已卸载「" + name + "」"
+			log.Info("插件卸载", "id", id)
+		}
+	})
+}
+
+// cuAddMarketplace 选一个本地目录当作插件市场添加(claude plugin marketplace add <目录>)。
+func (a *App) cuAddMarketplace() {
+	if a.cuDemo() {
+		a.toast = "演示模式不会真的添加插件市场"
+		return
+	}
+	a.pickFolders(false, func(ps []string) {
+		src := ps[0]
+		ds := a.cuDisk()
+		a.toast = "正在添加插件市场…"
+		a.bg("添加插件市场", func() func() {
+			res := customize.RunMarketplaceAdd(src)
+			return func() {
+				if res.Code != 0 {
+					a.toast = "添加失败:" + customize.ShortMCPErr(res.Err)
+					return
+				}
+				if ds != nil && a.cu.disk == ds {
+					ds.Reload()
+				}
+				a.toast = "已添加插件市场,可在「市场」里浏览"
+				a.cu.market = true
+			}
+		})
 	})
 }
 
@@ -135,13 +206,21 @@ func (a *App) cuReconnectReal(it *customize.Item) {
 		a.cuReconnect(it)
 		return
 	}
+	ds := a.cuDisk()
 	a.bg("MCP重连", func() func() {
-		if ds := a.cuDisk(); ds != nil {
-			ds.ReloadMCPConfig()
+		var fresh []*customize.Item
+		var st *customize.MCPStatus
+		if ds != nil {
+			fresh = ds.ReadMCPConfig()
+			st, _ = ds.FetchMCPStatus() // 子进程,只能在后台跑
 		}
-		ok := it.Status == customize.StOK
-		name, desc := it.Name, it.Desc
 		return func() {
+			if ds != nil && a.cu.disk == ds {
+				ds.ApplyMCPConfig(fresh)
+				ds.ApplyMCPStatus(st)
+			}
+			ok := it.Status == customize.StOK
+			name, desc := it.Name, it.Desc
 			a.mcpManualRefresh(a.mcpRuntimeReady())
 			if ok {
 				a.toast = "已连接「" + name + "」"
@@ -162,6 +241,7 @@ func (a *App) cuMCPOn(it *customize.Item, on bool) {
 		if err := ds.SetMCPEnabled(it.Name, on); err != nil {
 			a.toast = "切换失败:" + err.Error()
 			it.On = !on
+			delete(a.mcpOn, it.Name) // 没写成功就不能再按「点过的结果」显示
 			return
 		}
 	}
@@ -313,7 +393,11 @@ func (a *App) cuInstallPlugin(st *customize.Store, m *customize.Market) {
 		})
 		return
 	}
-	a.cu.plug = &pluginInstall{name: m.Name, market: "claude-plugins-official", phase: 0}
+	mp := m.MP
+	if mp == "" {
+		mp = "claude-plugins-official"
+	}
+	a.cu.plug = &pluginInstall{name: m.Name, market: mp, phase: 0}
 	a.bg("安装插件", func() func() {
 		res := customize.RunPluginInstall(m.Name, a.cu.plug.market)
 		return func() {

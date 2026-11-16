@@ -107,18 +107,19 @@ func (a *App) mcpRow(c *ui.Context, r McpRow) {
 	t := a.tk
 	key := "mcp-" + r.Name
 	exp := a.mcpExp[key]
-	row := ui.ButtonBase(c).Key(key).MinHeight(36).Padding(5, 8).Gap(6).Radius(t.RSm()).AlignItems(ui.Center).WidthPercent(100).Cursor(ui.CursorPointer)
+	// 行首不再放「>」箭头:有工具列表时点整行展开 / 收起(光标变手型),没有就是普通行
+	canExp := len(r.ToolsList) > 0
+	row := ui.ButtonBase(c).Key(key).MinHeight(40).Padding(6, 10).Gap(8).Radius(t.RSm()).AlignItems(ui.Center).WidthPercent(100)
+	if canExp {
+		row.Cursor(ui.CursorPointer).Tooltip(map[bool]string{true: "点击收起工具列表", false: "点击展开工具列表"}[exp])
+		row.OnClick(func() { a.mcpExp[key] = !exp })
+	} else {
+		row.Cursor(ui.CursorDefault)
+	}
 	if row.Hovered() {
 		row.Background(t.Fill1)
 	}
 	row.Children(func() {
-		chev := "chevR"
-		if exp {
-			chev = "chevD"
-		}
-		if kit.Ib(c, chev, kit.IbOpt{Small: true, Tip: map[bool]string{true: "收起工具列表", false: "展开工具列表"}[exp]}).Clicked() {
-			a.mcpExp[key] = !exp
-		}
 		a.mcpDot(c, r.Conn)
 		ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 			nm := ui.Text(c, r.Name).FontWeight(500).SingleLine()
@@ -175,6 +176,8 @@ func mcpConnFromItem(st customize.Status) core.McpConn {
 		return core.McpNeedsAuth
 	case customize.StErr:
 		return core.McpFailed
+	case customize.StOff:
+		return core.McpDisabled
 	}
 	return core.McpUnknown
 }
@@ -196,8 +199,15 @@ func (a *App) setMcpServerOn(name string, on bool) {
 			}
 		}
 	}
-	if !found { // 账号连接器 / 插件带来的服务器不在配置里,只能热切换(需要会话进程)
-		if !a.mcpRuntimeReady() {
+	if !found { // 账号连接器 / 插件带来的服务器不在 mcpServers 里,但 claude 同样认 disabledMcpServers 里的名字
+		if ds := a.cuDisk(); ds != nil {
+			if err := ds.SetMCPEnabled(name, on); err != nil {
+				delete(a.mcpOn, name)
+				a.toast = "切换失败:" + err.Error()
+				return
+			}
+			log.Info("MCP启停(运行时服务器)", "name", name, "on", on)
+		} else if !a.mcpRuntimeReady() {
 			delete(a.mcpOn, name)
 			a.toast = "会话还没连接,暂时无法切换「" + name + "」"
 			return
