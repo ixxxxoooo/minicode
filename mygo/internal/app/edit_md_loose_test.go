@@ -11,6 +11,8 @@ func TestMdNormalizedIgnoresEquivalentSyntax(t *testing.T) {
 		"```sh\ncd mygo\n```",
 		"---",
 		"2. 第二项",
+		"区块标题「<工作区名>」与 node_modules、~28 个、[…]",
+		"画布 ` ```canvas ` 围栏",
 	}
 	for _, s := range same {
 		if mdBlockWouldNormalize(s) {

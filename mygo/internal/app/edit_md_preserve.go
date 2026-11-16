@@ -94,6 +94,7 @@ var (
 	mdQuoteLead = regexp.MustCompile(`(?m)^[ \t]*(>[ \t]?)+`)
 	mdSpaceRun  = regexp.MustCompile(`\s+`)
 	mdOrdLead   = regexp.MustCompile(`^(\d+)[.)] `)
+	mdEscape    = regexp.MustCompile("\\\\([!-/:-@\\[-`{-~])")
 )
 
 // mdLooseKey 给「写法不同但内容没变」的块算同一个键,这些差别序列化后虽然字节不同,实际不会改变文档:
@@ -108,6 +109,8 @@ func mdLooseKey(s string) string {
 		return s[:3]
 	}
 	s = mdQuoteLead.ReplaceAllString(s, "")
+	s = mdEscape.ReplaceAllString(s, "$1")   // 反斜杠转义(\< \~ \_ \[ …)渲染结果相同
+	s = strings.ReplaceAll(s, "`", "")       // 行内代码含反引号时分隔符个数会变(` ```x ` → ```` ```x ````),渲染相同
 	s = mdOrdLead.ReplaceAllString(s, "1. ") // 有序列表按项切块后,单独一项的编号(2. / 3.)会被序列化成 1.,是切块的副作用
 	return strings.TrimSpace(mdSpaceRun.ReplaceAllString(s, " "))
 }
