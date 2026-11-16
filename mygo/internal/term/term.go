@@ -34,13 +34,14 @@ const ScrollbackLines = 5000
 
 // Options 是起一个终端的参数。
 type Options struct {
-	Shell      string   // 空 = $SHELL,再退回 /bin/zsh
-	Cwd        string   // 工作目录
-	Cols, Rows int      // 初始大小(字符数)
-	Env        []string // 额外环境变量(KEY=VALUE)
-	Scrollback int      // 历史行数;0 = ScrollbackLines
-	LoginShell bool     // 以登录 shell 启动(-l),默认 true
-	Notify     func()   // 画面变化 / 进程退出时调用(任意 goroutine,已合并节流)
+	Shell       string   // 空 = $SHELL,再退回 /bin/zsh
+	Cwd         string   // 工作目录
+	Cols, Rows  int      // 初始大小(字符数)
+	Env         []string // 额外环境变量(KEY=VALUE)
+	Scrollback  int      // 历史行数;0 = ScrollbackLines
+	LoginShell  bool     // 以登录 shell 启动(-l),默认 true
+	Integration bool     // 启用 shell 集成(OSC 133);zsh 经启动文件静默注入,见 Term.Integrated
+	Notify      func()   // 画面变化 / 进程退出时调用(任意 goroutine,已合并节流)
 }
 
 // Term 是一个运行中(或已退出)的终端。
@@ -68,7 +69,11 @@ type Term struct {
 	cmdRunning  atomic.Bool   // OSC 133:命令是否在运行
 	cmdBlocks   []CmdBlock    // 命令块装饰(行号 + 成败)
 	blockScroll int           // 上次记块时的回看行数,变小说明被清掉了
+	integrated  bool          // 集成已随 shell 启动文件静默注入(不需要再往终端里敲命令)
 }
+
+// Integrated 报告 shell 集成是否已在启动时注入;为 false 时调用方可退回 IntegrationCmd。
+func (t *Term) Integrated() bool { return t.integrated }
 
 // Start 起 shell。登录 shell(-l)才有完整的 PATH(从访达启动的应用只继承很短的环境)。
 func Start(o Options) (*Term, error) {
@@ -94,6 +99,14 @@ func Start(o Options) (*Term, error) {
 		cmd.Dir = o.Cwd
 	}
 	cmd.Env = environ(o.Env)
+	integrated := false
+	if o.Integration {
+		// zsh:把 ZDOTDIR 指到代理启动文件目录,集成脚本随用户自己的 .zshrc 之后静默加载,
+		// 不往终端里敲 source 命令(那行回显会在每个新终端里闪一下)
+		if env, ok := zshInjectEnv(shell, cmd.Env); ok {
+			cmd.Env, integrated = env, true
+		}
+	}
 
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{Cols: uint16(o.Cols), Rows: uint16(o.Rows)})
 	if err != nil {
@@ -103,7 +116,7 @@ func Start(o Options) (*Term, error) {
 	if scroll <= 0 {
 		scroll = ScrollbackLines
 	}
-	t := &Term{em: vt.NewSafeEmulator(o.Cols, o.Rows), ptmx: ptmx, cmd: cmd, notify: o.Notify, cols: o.Cols, rows: o.Rows}
+	t := &Term{em: vt.NewSafeEmulator(o.Cols, o.Rows), ptmx: ptmx, cmd: cmd, notify: o.Notify, cols: o.Cols, rows: o.Rows, integrated: integrated}
 	t.em.SetScrollbackSize(scroll)
 	cb := vt.Callbacks{Title: func(s string) {
 		t.mu.Lock()

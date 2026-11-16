@@ -121,11 +121,93 @@ func EnsureIntegrationScripts() (zsh, bash string) {
 	return zsh, bash
 }
 
+// zsh 静默注入:不再往终端里敲 `source …` 命令(那行回显会在每个新终端里露出来,
+// 慢 shell 启动时尤其明显),而是让 zsh 自己在启动文件里加载集成脚本。
+//
+// 做法(同 VS Code):把 ZDOTDIR 指到 ~/.minicode/shell/zdotdir,里面的 .zshenv / .zprofile /
+// .zshrc 是代理,先把 ZDOTDIR 还给用户、source 用户自己的同名文件,.zshrc 代理最后加载集成脚本、
+// 并把 ZDOTDIR 还原(用户原来没设就 unset),所以 .zlogin 与子 shell 都不受影响。
+// 用户原来的 ZDOTDIR 经 MC_USER_ZDOTDIR 传递。
+const zshProxyPrefix = `# MiniCode 代理启动文件:先还原 ZDOTDIR,source 用户自己的同名文件
+__mc_base=${MC_USER_ZDOTDIR:-$HOME}
+__mc_proxy=$ZDOTDIR
+ZDOTDIR=$__mc_base
+`
+
+const zshProxyEnv = zshProxyPrefix + `[[ -f $ZDOTDIR/.zshenv ]] && source $ZDOTDIR/.zshenv
+[[ $ZDOTDIR != $__mc_base ]] && MC_USER_ZDOTDIR=$ZDOTDIR
+ZDOTDIR=$__mc_proxy
+unset __mc_base __mc_proxy
+`
+
+const zshProxyProfile = zshProxyPrefix + `[[ -f $ZDOTDIR/.zprofile ]] && source $ZDOTDIR/.zprofile
+[[ $ZDOTDIR != $__mc_base ]] && MC_USER_ZDOTDIR=$ZDOTDIR
+ZDOTDIR=$__mc_proxy
+unset __mc_base __mc_proxy
+`
+
+const zshProxyRc = zshProxyPrefix + `# /etc/zshrc 在 ZDOTDIR 还指着代理目录时已把 HISTFILE 设到了代理目录里,挪回用户目录
+[[ $HISTFILE == $__mc_proxy/* ]] && HISTFILE=$__mc_base/${HISTFILE#$__mc_proxy/}
+[[ -f $ZDOTDIR/.zshrc ]] && source $ZDOTDIR/.zshrc
+[[ $ZDOTDIR != $__mc_base ]] && MC_USER_ZDOTDIR=$ZDOTDIR
+[[ -r "$MC_SHELL_DIR/integration.zsh" ]] && source "$MC_SHELL_DIR/integration.zsh"
+if [[ -n $MC_USER_ZDOTDIR ]]; then ZDOTDIR=$MC_USER_ZDOTDIR; else unset ZDOTDIR; fi
+unset __mc_base __mc_proxy MC_USER_ZDOTDIR MC_SHELL_DIR
+`
+
+// writeIfChanged 内容没变就不写(多个终端同时起时避免互相截断),写入走临时文件 + 改名。
+func writeIfChanged(path, content string) error {
+	if old, err := os.ReadFile(path); err == nil && string(old) == content {
+		return nil
+	}
+	tmp := path + "." + strconv.Itoa(os.Getpid()) + ".tmp"
+	if err := os.WriteFile(tmp, []byte(content), 0o644); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
+}
+
+// zshInjectEnv 为 zsh 准备静默注入:写好代理启动文件,返回改过 ZDOTDIR 等变量的环境。
+// 不是 zsh 或写文件失败时返回 ok=false,调用方退回 IntegrationCmd。
+func zshInjectEnv(shell string, env []string) ([]string, bool) {
+	if filepath.Base(shell) != "zsh" {
+		return env, false
+	}
+	EnsureIntegrationScripts()
+	home, _ := os.UserHomeDir()
+	shellDir := filepath.Join(home, ".minicode", "shell")
+	proxy := filepath.Join(shellDir, "zdotdir")
+	if err := os.MkdirAll(proxy, 0o755); err != nil {
+		log.Warn("集成代理目录创建失败,退回命令注入", "err", err)
+		return env, false
+	}
+	for name, content := range map[string]string{".zshenv": zshProxyEnv, ".zprofile": zshProxyProfile, ".zshrc": zshProxyRc} {
+		if err := writeIfChanged(filepath.Join(proxy, name), content); err != nil {
+			log.Warn("集成代理文件写入失败,退回命令注入", "file", name, "err", err)
+			return env, false
+		}
+	}
+	orig := ""
+	out := make([]string, 0, len(env)+3)
+	for _, e := range env {
+		switch {
+		case strings.HasPrefix(e, "ZDOTDIR="):
+			orig = strings.TrimPrefix(e, "ZDOTDIR=")
+		case strings.HasPrefix(e, "MC_USER_ZDOTDIR="), strings.HasPrefix(e, "MC_SHELL_DIR="):
+		default:
+			out = append(out, e)
+		}
+	}
+	out = append(out, "ZDOTDIR="+proxy, "MC_USER_ZDOTDIR="+orig, "MC_SHELL_DIR="+shellDir)
+	return out, true
+}
+
 // quietTail 接在注入命令后面:执行完立刻清屏(含回看),
 // 用户看不到那行 source 的回显,只见到干净的提示符。
 const quietTail = "; printf '\\033[H\\033[2J\\033[3J'\n"
 
 // IntegrationCmd 返回应在 shell 启动后执行的一条 source 命令(按 shell 类型)。
+// 仅用于没法静默注入的 shell(bash 等);zsh 走 zshInjectEnv。
 func IntegrationCmd(shell string) string {
 	zsh, bash := EnsureIntegrationScripts()
 	if strings.Contains(filepath.Base(shell), "bash") {

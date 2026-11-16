@@ -244,10 +244,11 @@ func themePairFor(base string, sysDark bool) string {
 
 // TermStartOpts 供 term_panel 调用:登录 shell、项目目录、shell 与回看(新终端生效)。
 func (a *App) TermStartOpts(cols, rows, sb int, cwd string) term.Options {
-	o := term.Options{Cols: cols, Rows: rows, Scrollback: sb, LoginShell: true, Cwd: cwd, Notify: a.redraw}
+	o := term.Options{Cols: cols, Rows: rows, Scrollback: sb, LoginShell: true, Cwd: cwd, Notify: a.redraw, Integration: true}
 	if a == nil || a.prefs == nil {
 		return o
 	}
+	o.Integration = a.prefs.Bool(pTermIntegrate, true)
 	o.LoginShell = a.prefs.Bool("term.login", true)
 	if !a.prefs.Bool("term.cwd", true) {
 		o.Cwd = ""

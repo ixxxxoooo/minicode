@@ -151,7 +151,8 @@ func (a *App) realTerminal(c *ui.Context) {
 			log.Error("启动终端失败", "err", err)
 		} else {
 			tp.t, tp.focusIt = tm, true
-			if a.prefs.Bool(pTermIntegrate, true) {
+			// zsh 已在启动时静默注入;其余 shell 才退回往终端里敲 source 命令
+			if a.prefs.Bool(pTermIntegrate, true) && !tm.Integrated() {
 				tm.SendText(term.IntegrationCmd(shellName()))
 			}
 			if tp.initCmd == "" && !termDebugDone {
