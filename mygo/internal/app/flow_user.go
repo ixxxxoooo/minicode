@@ -116,7 +116,7 @@ func (a *App) userMsg(c *ui.Context, u *core.User, rowIdx int) {
 		a.userEditCard(c, u)
 		return
 	}
-	card := ui.ButtonBase(c).Key("user-"+u.ID).Background(t.Raised).Radius(t.RMd()).Padding(7, 11).AlignItems(ui.Stretch).Column()
+	card := ui.ButtonBase(c).Key("user-"+u.ID).Background(t.Raised).Radius(t.RMd()).Padding(8, 12).AlignItems(ui.Stretch).Column()
 	// 正被吸顶(设计稿 .msg-u.stuck):用户消息是列表的分节标题,库把它钉在列表顶部。
 	// 判断(上一帧的数据):标题行已滚出视口(首个可见行在它之后),或它贴着列表顶边且内容确实滚过。
 	stuck := false
