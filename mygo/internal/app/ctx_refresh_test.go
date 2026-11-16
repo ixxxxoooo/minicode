@@ -11,6 +11,7 @@ func TestCtxDebounceNoDoubleCmd(t *testing.T) {
 	a := New(Options{})
 	fb := &claudeFakeBE{}
 	a.Attach(fb)
+	fb.cmds = nil         // 打开会话时的预热命令不算
 	a.sessProcLive = true // 进程已启动,点开才会发查询
 	a.ctxRefreshAt = time.Now()
 	a.ctxEnsureLoaded()
@@ -38,6 +39,7 @@ func TestCtxNoProcNotLoading(t *testing.T) {
 	a := New(Options{})
 	fb := &claudeFakeBE{}
 	a.Attach(fb)
+	fb.cmds = nil // 打开会话时的预热命令不算
 	a.sessProcLive = false
 	a.ctxEnsureLoaded()
 	if len(fb.cmds) != 0 {

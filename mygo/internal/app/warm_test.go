@@ -43,30 +43,29 @@ func warmApp(t *testing.T) (*App, *claudeFake, *time.Time, *bool) {
 	return a, fb, &now, &fg
 }
 
-// 打开会话:去抖之前不预热,到点才预热,且只预热一次。
-func TestWarmOnOpenAfterDebounce(t *testing.T) {
+// 打开会话 = 立刻预热(6a3c14c 起不再去抖),且只预热一次。
+func TestWarmOnOpenImmediately(t *testing.T) {
 	a, fb, now, _ := warmApp(t)
-	a.warmTick()
-	if fb.warms() != 0 {
-		t.Fatal("去抖时间内不应预热(快速翻会话列表不该起进程)")
+	if fb.warms() != 1 {
+		t.Fatalf("打开会话应立刻预热一次,实际 %d", fb.warms())
 	}
 	*now = now.Add(warmDebounce + time.Millisecond)
 	a.warmTick()
 	a.warmTick()
 	if fb.warms() != 1 {
-		t.Fatalf("到点后应预热且只预热一次,实际 %d", fb.warms())
+		t.Fatalf("之后不应重复预热,实际 %d", fb.warms())
 	}
 }
 
-// 快速切换:前一个会话还没到点就被换掉,不能给它起进程。
-func TestWarmSkippedWhenSwitchedAwayQuickly(t *testing.T) {
+// 快速切换:每个新前台会话各预热一次,旧会话不会被再次预热。
+func TestWarmOnlyForegroundSession(t *testing.T) {
 	a, fb1, now, _ := warmApp(t)
 	fb2 := &claudeFake{}
 	a.Attach(fb2)
 	*now = now.Add(time.Second)
 	a.warmTick()
-	if fb1.warms() != 0 {
-		t.Fatal("已切走的会话不应预热")
+	if fb1.warms() != 1 {
+		t.Fatalf("已切走的会话不应再次预热,实际 %d", fb1.warms())
 	}
 	if fb2.warms() != 1 {
 		t.Fatalf("当前会话应预热一次,实际 %d", fb2.warms())
@@ -75,18 +74,18 @@ func TestWarmSkippedWhenSwitchedAwayQuickly(t *testing.T) {
 
 // 窗口不在前台:一直等,回到前台才预热。
 func TestWarmWaitsForForeground(t *testing.T) {
-	a, fb, now, fg := warmApp(t)
+	a, _, now, fg := warmApp(t)
 	*fg = false
 	a.warm.fgWas = false
+	fb := &claudeFake{}
+	a.Attach(fb) // 窗口在后台打开会话:只排期不预热
 	*now = now.Add(5 * time.Second)
 	a.warmTick()
 	if fb.warms() != 0 {
 		t.Fatal("窗口在后台不应预热")
 	}
 	*fg = true
-	a.warmTick() // 回前台:排期
-	*now = now.Add(warmDebounce + time.Millisecond)
-	a.warmTick()
+	a.warmTick() // 回前台:到点预热
 	if fb.warms() != 1 {
 		t.Fatalf("回前台后应预热,实际 %d", fb.warms())
 	}

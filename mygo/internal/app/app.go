@@ -1073,5 +1073,6 @@ func (a *App) AutomationTick(now time.Time) {
 func (a *App) escInterrupts() bool {
 	return a.st.Phase == core.PhaseRunning && a.mode == ModeAgent && a.screen == ScreenWork &&
 		!a.paletteOn && a.qp == nil && a.popup == "" && !a.chatMax && !a.editingUser() && a.pd.kind == "" &&
+		a.pendingDock() == nil && // 有权限 / 提问卡时 Esc 归卡片(拒绝 / 跳过),不当作中断
 		!strings.HasPrefix(a.draft, "/")
 }

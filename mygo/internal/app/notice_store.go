@@ -29,7 +29,7 @@ type noticeAction struct {
 type noticeStore struct {
 	items   []noticeItem
 	unread  int
-	toasts  []noticeItem // 右下角叠放(每帧画最末几条)
+	toasts  []noticeItem // 右上角叠放(每帧画最末几条)
 	nextID  int64
 	panelOn bool
 }

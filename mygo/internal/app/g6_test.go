@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/backend"
 	"github.com/ixxxxoooo/minicode/internal/core"
@@ -31,6 +32,9 @@ func (s *sinkBE) isClosed() bool       { s.mu.Lock(); defer s.mu.Unlock(); retur
 func TestBackgroundSessionKeepAlive(t *testing.T) {
 	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true})
 	a.SetProjects(demo.Projects(), "fixbug")
+	clock := time.Date(2026, 11, 16, 15, 0, 0, 0, time.Local)
+	a.SetClock(func() time.Time { return clock })
+	a.warm.fgHook = func() bool { return true }
 	be := &sinkBE{}
 	a.Attach(be)
 	a.curSess = "s1"
@@ -48,8 +52,14 @@ func TestBackgroundSessionKeepAlive(t *testing.T) {
 	if a.st != cur {
 		t.Fatal("后台事件不应改动当前会话的状态")
 	}
+	// 回合结束后不立刻结束进程(用户常紧接着回来),闲置超过时限才回收
+	if got := a.BackgroundSessions(); len(got) != 1 || be.isClosed() {
+		t.Fatalf("后台回合结束后应先保留后端:%v closed=%v", got, be.isClosed())
+	}
+	clock = clock.Add(a.idleLimit() + time.Minute)
+	a.reapParked()
 	if len(a.BackgroundSessions()) != 0 || !be.isClosed() {
-		t.Fatal("后台回合结束后应释放后端")
+		t.Fatal("闲置超时后应释放后端")
 	}
 
 	// 回到仍在跑的后台会话:接回同一个后端与状态
@@ -70,6 +80,7 @@ func TestPersistModelAndEffort(t *testing.T) {
 	be := &sinkBE{}
 	a.Attach(be)
 	a.st.Models = core.DefaultModels()
+	a.pvLoad().store.Activate("", "") // 演示服务商表默认激活了第三方,这里测官方模型偏好
 	a.pickModel("opus")
 	a.pickEffort(core.EffortHigh)
 	if a.prefs.Str(prefModel, "") != "opus" || a.prefs.Int(prefEffort, -1) != int(core.EffortHigh) {

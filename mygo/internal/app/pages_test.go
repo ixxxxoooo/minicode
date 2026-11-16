@@ -262,7 +262,7 @@ func TestCustomizePage(t *testing.T) {
 	if fg := st.List(customize.MCP, customize.All, "figma")[0]; fg.Status != customize.StOK {
 		t.Fatalf("授权后应连通:%v", fg.Status)
 	}
-	// 选中 postgres(已停用):重试仍失败
+	// 选中 postgres(已停用):详情条给「启用」,点后恢复为待查询
 	if err := tt.Click("postgres"); err != nil {
 		t.Fatal(err)
 	}
@@ -270,11 +270,11 @@ func TestCustomizePage(t *testing.T) {
 	if a.cu.sel.Name != "postgres" {
 		t.Fatalf("应选中 postgres:%v", a.cu.sel.Name)
 	}
-	if err := tt.Click("重试"); err != nil {
+	if err := tt.Click("启用"); err != nil {
 		t.Fatal(err)
 	}
-	if a.cu.sel.Status != customize.StErr {
-		t.Fatal("已停用的服务器重试不应连通")
+	if !a.cu.sel.On || a.cu.sel.Status == customize.StErr || a.cu.sel.Status == customize.StOff {
+		t.Fatalf("点启用后应恢复:On=%v Status=%v", a.cu.sel.On, a.cu.sel.Status)
 	}
 	// 关键字筛选
 	a.cu.q = "git"
@@ -283,7 +283,11 @@ func TestCustomizePage(t *testing.T) {
 		t.Fatalf("筛选后选中项应退回 github:%v", a.cu.sel.Name)
 	}
 	a.cu.q = ""
-	// 新建:名称冲突报错,合法则创建并选中
+	// 新建:名称冲突报错,合法则创建并选中(右上角的提示会盖住页头按钮,先收掉)
+	if a.nt != nil {
+		a.nt.toasts = nil
+	}
+	tt.Frame()
 	if err := tt.Click("添加服务器"); err != nil {
 		t.Fatal(err)
 	}
@@ -351,6 +355,9 @@ func TestCustomizePage(t *testing.T) {
 	// 插件市场:经「浏览市场」进入市场再点卡片
 	a.screen = ScreenCustomize
 	a.SetCustomize("plugins")
+	if a.nt != nil {
+		a.nt.toasts = nil // 右上角提示会盖住页头按钮
+	}
 	tt.Frame()
 	if err := tt.Click("浏览市场"); err != nil {
 		t.Fatal(err)
