@@ -241,6 +241,12 @@ func (t *Tokens) Shadow1() []ShadowLayer {
 	return []ShadowLayer{{0, 1, 2, 0, t.shadeColor(.06 * t.kShade)}}
 }
 
+// ShadowStuck 吸顶卡的阴影(--sh-stuck):只在卡片正下方一小道,负扩散收在两侧之内,
+// 不会像 Shadow2 那样在整行下面拖出长暗带。
+func (t *Tokens) ShadowStuck() []ShadowLayer {
+	return []ShadowLayer{{0, 3, 8, -4, t.shadeColor(.22 * t.kShade)}}
+}
+
 func (t *Tokens) Shadow2() []ShadowLayer {
 	return []ShadowLayer{
 		{0, 10, 30, -6, t.shadeColor(.18 * t.kShade)},

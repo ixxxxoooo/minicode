@@ -59,11 +59,18 @@ func (a *App) submitUserEdit() {
 
 func (a *App) userEditCard(c *ui.Context, u *core.User) {
 	t := a.tk
-	col := ui.Column(c).Key("user-ed-"+u.ID).Background(t.Raised).Radius(t.RMd()).Padding(8, 10).Gap(6).Border(1, t.Ac)
+	// 只有卡片外圈一道描边;里面的输入区不画框、不画聚焦环,文字直接写在卡片上(设计稿 .msg-u.editing)。
+	col := ui.Column(c).Key("user-ed-"+u.ID).Background(t.Raised.Over(t.BG)).Radius(t.RMd()).Padding(9, 11, 7, 11).Gap(6).AlignItems(ui.Stretch).Border(1, t.AcLine)
+	for _, s := range t.Shadow1() {
+		col.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+	}
 	col.Children(func() {
-		ed := ui.TextArea(c.Key("uedit"), &a.userEd.draft).Lines(3, 10).FontSize(a.FlowFontSize()).AutoFocus()
+		ed := ui.TextArea(c.Key("uedit"), &a.userEd.draft).Lines(3, 10).FontSize(a.FlowFontSize()).LineHeight(1.55).
+			Background(ui.Transparent).BorderWidth(0).Padding(0).FocusRing(false).TextColor(t.Tx1).AutoFocus()
 		ed.OnShortcut(0, ui.KeyEscape, func() { a.cancelUserEdit() })
-		ui.Row(c).Gap(6).Justify(ui.End).Children(func() {
+		ui.Box(c).Height(1).Background(t.Bd1) // 与操作行之间的分隔线(设计稿 .ed-acts)
+		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+			ui.Text(c, "发送后会回退这一轮之后的文件改动").FontSize(theme.FsMicro).TextColor(t.Tx3).Grow(1).SingleLine()
 			kit.Btn(c, "取消", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(a.cancelUserEdit)
 			canReal := a.be == nil || a.be.Name() != "claude" || a.st.UserUUIDs[u.ID] != ""
 			sub := kit.Btn(c, "发送", kit.BtnOpt{Small: true, Variant: kit.BtnPri, Icon: "send"})

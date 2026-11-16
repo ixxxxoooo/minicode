@@ -200,8 +200,9 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 		}
 	}
 	if stuck {
-		// 固定在顶部时抬高一层并描一圈细边,与下面滚动的内容分开。
-		for _, s := range t.Shadow2() {
+		// 固定在顶部时:卡片正下方一小道短阴影 + 一圈细边,与下面滚动的内容分开。
+		// (不用大偏移的 Shadow2,也不再叠下沿渐隐,那两层叠起来会在整行下面拖出长暗带。)
+		for _, s := range t.ShadowStuck() {
 			card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
 		card.Shadow(0, 0, 0, 1, t.Bd1)
@@ -213,11 +214,6 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 	hov := card.Hovered()
 	card.OnClick(func() { a.beginUserEdit(u) }).Cursor(ui.CursorPointer)
 	card.Children(func() {
-		if stuck {
-			// 卡片下沿 14px 的渐隐,让滚到下面的内容淡入而不是被硬切(设计稿 .msg-u::after)。
-			ui.Box(c).Key("user-fade-"+u.ID).Absolute().Left(0).Right(0).TopPercent(100).Height(14).PassThrough().
-				Gradient(t.BG, t.BG.Alpha(0), 180)
-		}
 		if clamp && exp && lines > userFoldExp {
 			fs := a.FlowFontSize()
 			ui.Scroll(c).MaxHeight(float32(userFoldExp) * fs * 1.55).Key("user-scroll-" + u.ID).Children(func() {

@@ -140,6 +140,7 @@
   /* 层级阴影 */
   --sh-1: 0 1px 2px rgb(var(--c-shade) / calc(.06 * var(--k-shade))), 0 0 0 1px var(--bd-1);
   --sh-2: 0 10px 30px -6px rgb(var(--c-shade) / calc(.18 * var(--k-shade))), 0 2px 6px rgb(var(--c-shade) / calc(.07 * var(--k-shade))), 0 0 0 1px var(--bd-2);
+  --sh-stuck: 0 3px 8px -4px rgb(var(--c-shade) / calc(.22 * var(--k-shade)));  /* 吸顶卡:卡片正下方一小道,收在两侧之内 */
   --sh-3: 0 28px 70px -12px rgb(var(--c-shade) / calc(.3 * var(--k-shade))), 0 0 0 1px var(--bd-2);
   --ring: 0 0 0 3px color-mix(in srgb, var(--c-accent) 18%, transparent);
   --scrim: rgb(var(--c-shade) / calc(.2 * var(--k-shade) + .06));
