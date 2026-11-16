@@ -72,6 +72,9 @@ func (a *App) crumbSegment(c *ui.Context, tb *ideTab, name string, partIx int, l
 		b.Background(t.Fill1)
 	}
 	b.Children(func() {
+		if last && tb.virt == "" && !tb.diff {
+			a.fileIc(c, name)
+		}
 		x := ui.Text(c, name)
 		if last {
 			x.TextColor(t.Tx1).FontWeight(500)

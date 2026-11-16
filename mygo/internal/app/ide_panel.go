@@ -194,7 +194,7 @@ func (a *App) problems(c *ui.Context) {
 			for _, g := range data {
 				ui.Row(c).Height(24).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Children(func() {
 					kit.Ic(c, "chevD", kit.S12)
-					kit.Ic(c, "code", kit.S12)
+					a.fileIc(c, g.file)
 					ui.Text(c, g.file).Grow(1)
 					kit.Cnt(c, itoa(len(g.items)), false)
 				})
@@ -276,7 +276,7 @@ func (a *App) refsPanel(c *ui.Context) {
 					}
 					ui.Row(c).Key("rg-" + it.path).Height(24).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Children(func() {
 						kit.Ic(c, "chevD", kit.S12)
-						a.fileIc(c, it.path)
+						a.fileIc(c, path.Base(it.path))
 						ui.Text(c, it.path).Grow(1)
 						kit.Cnt(c, itoa(n), false)
 					})

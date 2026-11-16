@@ -21,6 +21,7 @@ func (a *App) crumbs(c *ui.Context, tb *ideTab) {
 	ui.Row(c).Height(24).Shrink(0).PaddingX(14).Gap(8).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(11.5).Children(func() {
 		ui.Row(c).Grow(1).MinWidth(0).Gap(3).AlignItems(ui.Center).Clip().Children(func() {
 			if a.isExternalTab(tb) {
+				a.fileIc(c, filepath.Base(tb.path))
 				ui.Text(c, a.pathDisplay(tb.path)).SingleLine().TextColor(t.Tx2).FontSize(11.5)
 				a.externalChip(c)
 				return

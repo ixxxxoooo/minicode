@@ -492,7 +492,7 @@ func (a *App) peekPanel(c *ui.Context, tb *ideTab, y float32) {
 	}
 	el.Children(func() {
 		ui.Row(c).Height(26).Shrink(0).PaddingX(10).Gap(6).AlignItems(ui.Center).Background(t.AcSoft).FontSize(theme.FsCap).Children(func() {
-			kit.Ic(c, "code", kit.S12).TextColor(t.AcTx)
+			a.fileIc(c, path.Base(ov.peekP))
 			ui.Text(c, "定义 · "+ov.peekP+":"+itoa(ov.peekL+1)).FontWeight(600).TextColor(t.AcTx)
 			ui.Spacer(c).Grow(1)
 			ui.Text(c, "⌥⏎ 在编辑器中打开").TextColor(t.Tx3)
