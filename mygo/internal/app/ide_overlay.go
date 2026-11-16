@@ -512,6 +512,10 @@ func (a *App) peekPanel(c *ui.Context, tb *ideTab, y float32) {
 
 // editorShortcuts 是编辑器级快捷键(只在有当前文件时生效):F12 / ⇧F12 / ⌥F12 / F2 / ⌘. / ⌘L / ⌘I / ⌃- / ⌃⇧- / ⌘+ ⌘- ⌘0(字号)。
 func (a *App) editorShortcuts(c *ui.Context) bool {
+	if c.Shortcut(0, ui.KeyF2) && a.filesFocus && a.ide.sel != "" {
+		a.beginRenameFile(a.ide.sel)
+		return true
+	}
 	tb := a.ide.cur()
 	if tb != nil && tb.st != nil {
 		a.filesFocus = false

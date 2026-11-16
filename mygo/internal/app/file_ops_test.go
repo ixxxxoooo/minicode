@@ -84,8 +84,8 @@ func TestFileTreeRename(t *testing.T) {
 	tb.buf.Set("// 改过\n" + tb.buf.String())
 	a.beginRenameFile("src/router.rs")
 	tt.Frame()
-	if a.fo.buf != "router" || a.fo.ext != ".rs" {
-		t.Fatalf("输入框应预填不含扩展名的原名:%q ext=%q", a.fo.buf, a.fo.ext)
+	if a.fo.buf != "router.rs" || a.fo.ext != ".rs" {
+		t.Fatalf("输入框应预填完整文件名:%q ext=%q", a.fo.buf, a.fo.ext)
 	}
 	a.fo.buf = "main.rs"
 	a.commitFileOp()
@@ -121,6 +121,23 @@ func TestFileTreeDelete(t *testing.T) {
 	}
 	if !strings.Contains(toast, "已移除") {
 		t.Fatalf("toast=%q", toast)
+	}
+}
+
+// F2 在文件树有选中项时可进入重命名(不必先打开编辑器标签)。
+func TestFileTreeF2Rename(t *testing.T) {
+	a, tt := demoIDE(t)
+	a.nav, a.sideOpen = "files", true
+	for _, tb := range append([]*ideTab(nil), a.ide.tabs...) {
+		a.closeWsTab(tb.id)
+	}
+	a.ide.sel = "src/router.rs"
+	a.filesFocus = true
+	tt.Frame()
+	tt.Key(0, ui.KeyF2)
+	tt.Frame()
+	if a.fo.kind != "rename" || a.fo.path != "src/router.rs" {
+		t.Fatalf("F2 应进入重命名:%+v", a.fo)
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -72,11 +73,8 @@ func (a *App) beginRenameFile(p string) {
 	}
 	a.nav, a.sideOpen = "files", true
 	base := path.Base(p)
-	ext, name := "", base
-	if e := path.Ext(base); e != "" {
-		ext, name = e, strings.TrimSuffix(base, e)
-	}
-	a.fo = fileOp{kind: "rename", path: p, buf: name, ext: ext}
+	ext := path.Ext(base)
+	a.fo = fileOp{kind: "rename", path: p, buf: base, ext: ext}
 }
 
 // opErrText 把文件系统的错误翻成界面上的一句话。
@@ -314,7 +312,7 @@ func filterOut(list []string, p string) []string {
 }
 
 // fileOpInput 是树里的行内输入框(新建 / 重命名共用):⏎ 提交,Esc 或点别处取消。
-// 重命名时只选中不含扩展名的部分由输入框默认全选代替(MyGo 输入框没有部分选中接口)。
+// 重命名时输入框显示完整文件名,默认只选中不含扩展名的主名部分。
 func (a *App) fileOpInput(c *ui.Context, depth int, isDir bool, icon string) {
 	t := a.tk
 	a.fo.frames++
@@ -332,6 +330,19 @@ func (a *App) fileOpInput(c *ui.Context, depth int, isDir bool, icon string) {
 			box.Children(func() {
 				in := ui.TextInputBase(c.Key(key), &a.fo.buf).Grow(1).MinWidth(0).FontSize(theme.FsBody).
 					Background(ui.Transparent).BorderWidth(0).Padding(0).FocusRing(false).AutoFocus()
+				if a.fo.kind == "rename" && a.fo.frames <= 2 {
+					stem := a.fo.buf
+					if a.fo.ext != "" && strings.HasSuffix(a.fo.buf, a.fo.ext) {
+						stem = strings.TrimSuffix(a.fo.buf, a.fo.ext)
+					}
+					if n := utf8.RuneCountInString(stem); n > 0 {
+						end := n
+						if a.fo.ext == "" {
+							end = utf8.RuneCountInString(a.fo.buf)
+						}
+						in = in.SetTextSelection(0, end)
+					}
+				}
 				in.OnSubmit(a.commitFileOp)
 				in.OnShortcut(0, ui.KeyEscape, func() { a.fo = fileOp{} })
 			})

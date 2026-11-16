@@ -20,7 +20,15 @@ func (a *App) filesView(c *ui.Context) {
 	d := a.ide
 	// 外层竖排:文件树自己滚动,「大纲 / 时间线」像 VS Code 的分区那样钉在底部。
 	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
-		ui.Scroll(c).Key("files").Grow(1).MinHeight(0).Children(func() {
+		files := ui.Scroll(c).Key("files").Grow(1).MinHeight(0)
+		files.OnShortcut(0, ui.KeyF2, func() {
+			if a.ide.sel == "" {
+				return
+			}
+			a.filesFocus = true
+			a.beginRenameFile(a.ide.sel)
+		})
+		files.Children(func() {
 			ui.Column(c).Children(func() {
 				ui.Row(c).Height(24).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Children(func() {
 					title := strings.ToUpper(d.fs.Name())
