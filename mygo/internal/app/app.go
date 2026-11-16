@@ -89,6 +89,8 @@ type App struct {
 	sch    theme.Scheme
 	accent string
 	tk     *theme.Tokens
+	rtOpen bool   // 等待行是否展开阶段清单(回合结束丢弃)
+	rtPop  string // 脚注瀑布弹卡对应的回合(用户消息 id)
 
 	// 窗口形态与布局
 	mode         Mode

@@ -354,6 +354,7 @@ var settingsTabs = []setTabDef{
 			rTog("chat.fold", "回合结束后折叠过程", "把本回合的工具步骤折成「已处理 1 分 13 秒」", true),
 			rTog("chat.stickyUser", "用户消息吸顶", "长会话滚动时当前回合的提问固定在顶部;下一轮顶走后只留一张", true),
 			rTog("chat.stats", "显示回合用量", "回复下方的模型 · 用时 · token · 费用", true),
+			rTog("chat.slowHint", "显示慢响应提示", "等模型超过 8 秒时,在等待行下面写出可能的原因与下一步", true),
 			rTog("chat.groupFold", "工具组默认折叠", "连续的读取 / 搜索收进一行;失败时自动展开", true),
 		}},
 		{title: "新会话", rows: []setRow{
