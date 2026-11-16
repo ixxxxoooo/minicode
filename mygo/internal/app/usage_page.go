@@ -337,6 +337,16 @@ func (a *App) usageTop(c *ui.Context, u core.UsageReport) {
 }
 
 func (a *App) usageDrawer(c *ui.Context, u core.UsageReport) {
+	// 服务商本来就不提供账户限额(第三方网关):整块「账户限额」不显示,不留一段没人看的说明
+	noLimits := len(u.Limits) == 0 && !a.cuDemo() && a.be != nil &&
+		a.use.limitsState == core.LimitsUnavailable && a.use.limitsAt != 0
+	if !noLimits {
+		a.usageLimitsBlock(c, u)
+	}
+	a.usageTips(c, u, noLimits)
+}
+
+func (a *App) usageLimitsBlock(c *ui.Context, u core.UsageReport) {
 	t := a.tk
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 		ui.Text(c, "账户限额").FontWeight(500).Grow(1)
@@ -379,7 +389,13 @@ func (a *App) usageDrawer(c *ui.Context, u core.UsageReport) {
 			})
 		}
 	})
-	kit.Sep(c)
+}
+
+func (a *App) usageTips(c *ui.Context, u core.UsageReport, noLimits bool) {
+	t := a.tk
+	if !noLimits {
+		kit.Sep(c)
+	}
 	ui.Text(c, "建议").FontWeight(500)
 	ui.Column(c).Gap(10).Children(func() {
 		for _, tip := range u.Tips {
@@ -394,10 +410,12 @@ func (a *App) usageDrawer(c *ui.Context, u core.UsageReport) {
 		}
 	})
 	ui.Spacer(c).Grow(1)
-	ui.Row(c).Gap(8).AlignItems(ui.Start).FontSize(theme.FsCap).TextColor(t.Tx3).Children(func() {
-		kit.Ic(c, "info", kit.S12).Margin(2, 0, 0, 0)
-		ui.Text(c, "限额只在打开此页或点「刷新」时查询,不轮询。").LineHeight(1.45).Grow(1)
-	})
+	if !noLimits {
+		ui.Row(c).Gap(8).AlignItems(ui.Start).FontSize(theme.FsCap).TextColor(t.Tx3).Children(func() {
+			kit.Ic(c, "info", kit.S12).Margin(2, 0, 0, 0)
+			ui.Text(c, "限额只在打开此页或点「刷新」时查询,不轮询。").LineHeight(1.45).Grow(1)
+		})
+	}
 }
 
 // exportUsage 把当前范围的每日费用写成 CSV(演示写到临时目录,真实模式让用户选位置)。

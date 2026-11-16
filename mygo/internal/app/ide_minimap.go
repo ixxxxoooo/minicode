@@ -1,7 +1,6 @@
 package app
 
 import (
-	"github.com/ixxxxoooo/minicode/internal/theme"
 	"math"
 	"strings"
 	"time"
@@ -205,13 +204,11 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 		a.redrawSoon() // 持续出帧到过期那一刻,滑块才会按时收起
 	}
 	box := ui.Box(c).Key("mm-"+tb.id).Width(mmW+mmRulW).FillHeight().Shrink(0).BorderWidth(0, 0, 0, 1).BorderColor(t.Bd1).Clip() // 必须裁剪:色块按整篇行数画,长文件会溢出盖住底部面板
+	// 悬停行只做地图上的浅色高亮,不再弹源码摘要(没人看)
 	hoverLine := -1
 	if box.Hovered() {
 		if _, y, ok := box.PointerPosition(); ok {
 			hoverLine = int((y - 4) / mmRowH)
-			if hoverLine >= 0 && hoverLine < n {
-				a.mmTip = strings.TrimRight(tb.buf.Line(hoverLine), " \t\r")
-			}
 		}
 	}
 	cursorLine := st.CursorPos().Line
@@ -339,21 +336,4 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 		}
 		tick(cursorLine, t.Tx2, 0, mmRulW)
 	})
-	if (scrolling || box.Dragging()) && total > 0 && view > 0 && a.prefs.Int(pMmSlider, 0) != 1 {
-		// 行范围标签:贴在滑块左侧,告诉用户「滚到哪了」
-		first, last := st.VisibleLines()
-		vy := 4 + scroll/total*mmRowH*float32(n)
-		ui.Box(c).Key("mm-range").Absolute().Right(mmW+mmRulW+edTrackW+6).Top(vy).Padding(2, 8).PassThrough().
-			Background(t.Raised).Radius(t.RSm()).Border(1, t.Bd1).Children(func() {
-			ui.Text(c, "第 "+itoa(first+1)+"–"+itoa(last+1)+" 行 / 共 "+itoa(tb.buf.LineCount())).Font("monospace").FontSize(theme.Px(11)).TextColor(t.Tx2).SingleLine()
-		})
-	}
-	if a.mmTip != "" && box.Hovered() {
-		ui.Box(c).Absolute().Left(4).Right(mmRulW+4).Bottom(4).MaxHeight(80).Padding(6, 8).
-			Background(t.Raised).Radius(t.RSm()).Border(1, t.Bd1).Children(func() {
-			ui.Text(c, a.mmTip).Font("monospace").FontSize(theme.Px(11)).TextColor(t.Tx2)
-		})
-	} else if !box.Hovered() {
-		a.mmTip = ""
-	}
 }

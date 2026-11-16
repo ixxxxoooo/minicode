@@ -35,7 +35,7 @@ fn normalize(path: &str) -> String {
   const mark = (html, word, cls) => html.split(/(<[^>]+>)/).map(s => s[0] === '<' ? s : s.replace(new RegExp('\\b' + word + '\\b', 'g'), `<span class="${cls}">${word}</span>`)).join('');
   const hl = (s) => s.replace(/match_path/g, '<mark class="hit">match_path</mark>');
   /** 第 n 行(1 起)顶边的像素:CodeLens 占 16px,出现在它所属行的上方 */
-  const ytop = (n) => (n - 1) * 20 + Object.keys(LENS).filter(k => +k <= n).length * 16;
+  const ytop = (n) => (n - 1) * 20 + (IDE.lens ? Object.keys(LENS).filter(k => +k <= n).length * 16 : 0);
   const tgl = (t, on, tip) => `<span class="tgl ${on ? 'on' : ''}" ${tip ? `data-tip="${tip}"` : ''}>${t}</span>`;
 
   /* ───────── 差异数据:两个改动块,行内词级高亮 ───────── */
@@ -107,14 +107,14 @@ fn normalize(path: &str) -> String {
     const word = o.word === undefined ? 'Handler' : o.word, ov = o.ov, hits = (o.hl || ov === 'find') ? hitLines() : [];
     const sel = ov === 'ask' || ov === 'inline' ? [18, 19] : [], edit = ov === 'claude' ? [18, 19] : [], occ = word ? SRC.map((l, k) => new RegExp('\\b' + word + '\\b').test(l) ? k + 1 : 0).filter(Boolean) : [];
     const scrollPx = o.scroll ? ytop(o.scroll + 1) : 0;
-    const gut = SRC.map((_, k) => { const n = k + 1; return `${LENS[n] ? '<div class="lens-sp"></div>' : ''}<div class="ln ${n === CUR ? 'cur' : ''} ${GIT[n] || ''}">${[4, 9, 11, 17].includes(n) ? ic('chevD', 'fold') : ''}${ov === 'action' && n === 13 ? ic('bulb', 'bulb') : ''}${n}</div>`; }).join('');
+    const gut = SRC.map((_, k) => { const n = k + 1; return `${IDE.lens && LENS[n] ? '<div class="lens-sp"></div>' : ''}<div class="ln ${n === CUR ? 'cur' : ''} ${GIT[n] || ''}">${[4, 9, 11, 17].includes(n) ? ic('chevD', 'fold') : ''}${ov === 'action' && n === 13 ? ic('bulb', 'bulb') : ''}${n}</div>`; }).join('');
     const src = SRC.map((l, k) => { const n = k + 1; let h = rust(l);
       if (hits.length) h = hl(h.split(/(<[^>]+>)/).map(s => s[0] === '<' ? s : s).join(''));
       else if (word) h = mark(h, word, 'occ');
       if (!hits.length && n === 13 && ov !== 'action') h = h.replace('insert', '<span class="sqw">insert</span>'); else if (n === 13) h = h.replace('insert', '<span class="sqw">insert</span>');
       if (hits.length && n === 17) h = h.replace('<mark class="hit">', '<mark class="hit cur-hit">');
       const caret = n === CUR && !ov && !o.hl ? '<span class="cursor"></span><span class="blame">你 · 2 分钟前 · 未提交</span>' : '';
-      return `${LENS[n] ? `<div class="lens"><span>${LENS[n].split(' · ')[0]}</span>${LENS[n].includes('测试') ? '<span>2 个测试</span>' : ''}<span class="c-ac">问 Claude</span></div>` : ''}<div class="ln ${n === CUR && !ov ? 'cur' : ''} ${sel.includes(n) ? 'sel' : ''} ${edit.includes(n) ? 'edit' : ''}">${h}${caret}</div>`; }).join('');
+      return `${IDE.lens && LENS[n] ? `<div class="lens"><span>${LENS[n].split(' · ')[0]}</span>${LENS[n].includes('测试') ? '<span>2 个测试</span>' : ''}<span class="c-ac">问 Claude</span></div>` : ''}<div class="ln ${n === CUR && !ov ? 'cur' : ''} ${sel.includes(n) ? 'sel' : ''} ${edit.includes(n) ? 'edit' : ''}">${h}${caret}</div>`; }).join('');
     const mm = SRC.map((l, k) => mmRow(l, k + 1, { hits, occ: o.hl || ov === 'find' ? [] : occ, edit })).join('');
     const gm = Object.keys(GIT).map(n => `<b class="gm ${GIT[n] === 'ga' ? 'a' : 'm'}" style="top:${4 + (n - 1) * 4}px;height:4px"></b>`).join('');
     const T = SRC.length, rp = (n) => ((n - 0.5) / T * 100).toFixed(1) + '%';

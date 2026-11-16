@@ -167,7 +167,6 @@ type App struct {
 	inl        *inlinePatch          // 行内编辑预览(ide_inline.go)
 	claudeJob  context.CancelFunc    // 取消进行中的 Haiku 行内请求(ide_claude_edit.go)
 	codeActs   []lsp.CodeAction      // ⌘. 拉取的 LSP 代码操作
-	mmTip      string                // 迷你地图悬停源码摘要
 
 	// 会话流的折叠状态:条目 id → 是否展开(没有记录就用默认)
 	folds        map[string]bool

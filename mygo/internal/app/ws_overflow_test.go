@@ -37,7 +37,7 @@ func TestPanelDragFollowsPointer(t *testing.T) {
 }
 
 // 迷你地图:滚动后显示行范围标签,停 3 秒后收起。
-func TestMinimapShowsRangeWhileScrolling(t *testing.T) {
+func TestMinimapNeverShowsRange(t *testing.T) {
 	a, tt := demoIDE(t)
 	a.SetClock(tt.Now) // 迷你地图按 a.now() 判断「停了 3 秒」,跟着测试器的虚拟时间走
 	tb := a.ide.cur()
@@ -64,14 +64,15 @@ func TestMinimapShowsRangeWhileScrolling(t *testing.T) {
 	if tb.mmAt.IsZero() {
 		t.Fatal("滚动后应记录滚动时刻")
 	}
-	if !has() {
-		t.Fatalf("滚动中应显示行范围:%v", tt.Texts())
+	// 「第 x–y 行 / 共 n」气泡已取消(用户反馈没人看):滚动中也不显示
+	if has() {
+		t.Fatalf("滚动中也不应显示行范围:%v", tt.Texts())
 	}
 	tt.Advance(3500 * time.Millisecond)
 	tt.Frame()
 	tt.Frame()
 	if has() {
-		t.Fatal("停止滚动 3 秒后应收起行范围")
+		t.Fatal("不应显示行范围")
 	}
 }
 

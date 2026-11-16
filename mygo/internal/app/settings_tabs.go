@@ -456,6 +456,7 @@ var settingsTabs = []setTabDef{
 			rTog("editor.bracketColor", "括号配对着色", "", true),
 			rTog("editor.bracketGuide", "括号配对竖线", "", true),
 			rTog("editor.syntax", "语法高亮", "", true),
+			rTog("editor.codelens", "CodeLens", "在函数 / 类型上方显示「N 个引用 · 问 Claude」,默认关闭", false),
 		}},
 		{title: "Markdown 与格式化", rows: []setRow{
 			rSeg("editor.mdView", "Markdown 默认视图", "打开 .md / .mdc 时先显示哪一种;标签上随时可切换", 0, "预览", "源码"),

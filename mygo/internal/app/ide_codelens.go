@@ -12,7 +12,7 @@ func (a *App) codeLens(c *ui.Context, tb *ideTab) {
 	if tb == nil || tb.st == nil || tb.buf == nil || tb.diff || tb.virt != "" {
 		return
 	}
-	if !a.prefs.Bool("editor.codelens", true) {
+	if !a.prefs.Bool("editor.codelens", false) {
 		return
 	}
 	first, last := tb.st.VisibleLines()
