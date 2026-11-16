@@ -8,5 +8,5 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 chrome="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 url="file://$root/docs/design/index.html#page=$page&scheme=$scheme&theme=$theme&mode=$mode&bare=1"
 "$chrome" --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 \
-  --window-size=1280,800 --virtual-time-budget=2500 --screenshot="$out" "$url" >/dev/null 2>&1
+  --window-size=1280,800 --virtual-time-budget=${PROTO_BUDGET:-6000} --screenshot="$out" "$url" >/dev/null 2>&1
 echo "$out"

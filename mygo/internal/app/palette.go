@@ -87,6 +87,14 @@ func (a *App) previewPalette(id string) {
 func (a *App) setPalette(id string) { a.prefs.Set(kTheme, id); a.applyPrefs() }
 func (a *App) setScheme(id string)  { a.prefs.Set(kScheme, id); a.applyPrefs() }
 
+// descHit 用说明文字做子串匹配(不区分大小写)。至少 2 个字符才匹配,免得单字查询把说明里的字都撞上。
+func descHit(q, desc string) bool {
+	if len([]rune(q)) < 2 || desc == "" {
+		return false
+	}
+	return strings.Contains(strings.ToLower(desc), strings.ToLower(q))
+}
+
 // fuzzy 是子序列模糊匹配:返回得分(越大越好),不匹配为 -1。
 // 连续命中、词首命中与靠前命中加分,与 VS Code 的快速打开手感接近。
 func fuzzy(q, s string) int {
@@ -281,6 +289,9 @@ func (a *App) palItems() []palItem {
 		}
 		if sc := fuzzy(q, cm.title); sc >= 0 {
 			cs = append(cs, scored{cm, sc, i})
+		} else if descHit(q, cm.desc) {
+			// 标题没命中时看说明文字(如搜「主题」找到「设置:外观」),排在标题命中之后
+			cs = append(cs, scored{cm, -1000, i})
 		}
 	}
 	n := 0

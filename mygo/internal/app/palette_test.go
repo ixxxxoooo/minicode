@@ -143,3 +143,32 @@ func TestPaletteOpenFile(t *testing.T) {
 		t.Fatalf("应打开 src/main.rs:mode=%v cur=%v", a.mode, a.ide.cur())
 	}
 }
+
+// 搜「主题」要能找到说明里写着主题的「设置:外观」,且标题命中的项排在前面。
+func TestPaletteMatchesDescription(t *testing.T) {
+	if descHit("主", "主题、布局") {
+		t.Fatal("单字查询不该撞说明文字")
+	}
+	if !descHit("主题", "打开设置的「外观」:主题、布局方案、强调色。") || descHit("主题", "") {
+		t.Fatal("两个字以上应命中说明文字,说明为空不命中")
+	}
+	a, tt := newTestApp(t)
+	a.OpenPalette("主题")
+	tt.Frame()
+	titles := []string{}
+	for _, it := range a.palItems() {
+		titles = append(titles, it.title)
+	}
+	appearance := -1
+	for i, s := range titles {
+		if s == "设置:外观" {
+			appearance = i
+		}
+	}
+	if appearance < 0 {
+		t.Fatalf("搜「主题」应命中「设置:外观」,实际 %v", titles)
+	}
+	if len(titles) == 0 || titles[0] != "主题:切换…" {
+		t.Fatalf("标题命中的「主题:切换…」应排第一,实际 %v", titles)
+	}
+}
