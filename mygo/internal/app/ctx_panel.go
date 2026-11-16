@@ -128,6 +128,9 @@ func (a *App) ctxPanelBody(c *ui.Context) {
 		ui.Row(c).Gap(6).Padding(6, 8).Radius(t.RSm()).Background(t.Fill1).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "info", kit.S12).TextColor(t.Tx3)
 			ui.Text(c, "来自历史记录的估算,点刷新向 Claude 查询精确值。").FontSize(theme.FsCap).Grow(1).TextColor(t.Tx3)
+			if a.be != nil && a.be.Name() == "claude" && !a.sessProcLive {
+				kit.Btn(c, "启动并查询", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(a.ctxStartAndQuery)
+			}
 		})
 	}
 	if a.ctxLoading && len(u.ContextCategories) > 0 {
@@ -180,8 +183,12 @@ func (a *App) ctxPanelBody(c *ui.Context) {
 	ui.Row(c).AlignItems(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx3).Gap(6).Children(func() {
 		ui.Text(c, a.ctxUpdatedText(st, u)).Grow(1)
 		kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() {
-			a.ctxLoading = true
 			a.ctxRefreshAt = a.now()
+			if a.be != nil && a.be.Name() == "claude" && !a.sessProcLive {
+				a.toast = "会话进程尚未启动,发送消息后可查询;也可点「启动并查询」"
+				return
+			}
+			a.ctxLoading = true
 			a.send(core.CmdRefreshUsage{Context: true, Limits: true, Force: true})
 		})
 		kit.Btn(c, "用量与成本", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "arrow"}).OnClick(func() {

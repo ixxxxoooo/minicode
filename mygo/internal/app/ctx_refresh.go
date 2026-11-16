@@ -20,6 +20,11 @@ func (a *App) ctxRequestQuery(startProc bool) {
 	if a.be.Name() != "claude" {
 		return
 	}
+	if !startProc && !a.sessProcLive {
+		// 会话进程没起来,后端不会回应(也不该为查询而启动进程),不能挂着「刷新中」
+		a.ctxLoading = false
+		return
+	}
 	a.ctxLoading = true
 	a.send(core.CmdRefreshUsage{Context: true, StartProc: startProc})
 }
