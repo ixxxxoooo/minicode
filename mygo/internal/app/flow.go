@@ -506,13 +506,40 @@ func (a *App) diffCard(c *ui.Context, d *core.DiffBlock, head bool) {
 			}
 		}
 	}
+	// 长差异限高折叠(设计稿 flow-detail:差异超过 8 行限高并出「展开全部」;标准档手动展开用 12 行):
+	// 与命令输出同一套交互(内部滚动,展开后上限 480px)。
+	key := foldKey("dif", d.Path+":"+itoa(d.Line)+":"+itoa(len(d.Old))+":"+itoa(len(d.New)))
+	limit := foldLineCap
+	if a.ToolDetailLevel() == 2 {
+		limit = 8
+	}
+	needFold := len(ls) > limit
+	exp := a.foldExpanded(key)
 	a.cardM(c, h, hm, func() {
 		hov := a.cardHov
-		ui.Column(c).Padding(3, 0).Children(func() {
-			for i, l := range ls {
-				a.diffLine(c, i, l)
+		rows := func() {
+			ui.Column(c).Padding(3, 0).Children(func() {
+				for i, l := range ls {
+					a.diffLine(c, i, l)
+				}
+			})
+		}
+		if needFold {
+			maxH := float32(foldExpandMax)
+			if !exp {
+				maxH = float32(limit)*a.flowMonoLH() + 6
 			}
-		})
+			kit.VScroll(c).TrackScroll(a.foldScroll(key, false)).MaxHeight(maxH).Key("difout-" + key).Children(rows)
+			ui.Row(c).Height(theme.Px(26)).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
+				label := "展开全部 · 共 " + itoa(len(ls)) + " 行"
+				if exp {
+					label = "收起"
+				}
+				kit.Btn(c, label, kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() { a.setFold(key, !exp) })
+			})
+		} else {
+			rows()
+		}
 		if !head { // 悬停时右上角出现「在工作区打开差异」(会话流里的差异只是预览,完整的差异在工作区)
 			ui.Row(c).Absolute().Top(2).Right(3).Opacity(map[bool]float32{true: 1, false: 0}[hov]).Children(func() {
 				kit.Ib(c, "ext", kit.IbOpt{Small: true, Tip: "在工作区打开差异"}).OnClick(func() { a.OpenDiffTab(d.Path) })
