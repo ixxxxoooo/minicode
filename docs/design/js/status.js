@@ -213,7 +213,7 @@
       R('图谱菜单「与 HEAD 比较」与「选中两个提交比较」', 'scm_compare.go / scm_graph_picks.go:多选提示条 + 取消、双选后「比较」、相同提交 toast、取活动仓库;-ed cmp2 / cmphead。空文件列表仍只有 toast;未测试', 'ok', 'B3'),
       R('推送被拒:「拉取并变基 / 拉取并合并」分按钮', 'git_dialogs.go scmPushGuide + git_push_actions.go:拉取并变基/合并分按钮(进行中 Loading);冲突时同条引导打开冲突、中止变基(RebaseAbort)/中止合并(MergeAbort);演示 Mem 可造冲突。缺口:失败 stderr 主要靠日志与 friendlyGitErr,未用 Computer Use 实测整条引导', 'ok', 'B3'),
       R('审查 → 一键暂存已接受的改动', 'review_stage.go:多仓库按 repoAt 暂存,部分失败提示 + 撤销条只覆盖成功数,无已接受改动时置灰并说明;缺口:分组审查页还没有按仓库各放一颗暂存钮;未测试', 'ok', 'B3'),
-      R('行内追溯的悬停提交卡', 'ide_blame_ui.go blameCardOverlay:悬停 300ms 出卡,移出追溯/卡片后 blameCloseDelay 250ms 收起(可移入卡片,换行即关;blame_card_delay_test.go)。未提交行「查看提交/差异」置灰(Tip 说明)。缺口:未提交行无快捷开 HEAD↔工作区差异;静态核对未发现其它矛盾,悬停交互需实机验证', 'part', 'B3'),
+      R('行内追溯的悬停提交卡', 'ide_blame_ui.go blameCardOverlay:悬停 300ms 出卡,移出追溯/卡片后 blameCloseDelay 250ms 收起(可移入卡片,换行即关;blame_card_delay_test.go)。未提交行「查看提交」置灰(没有提交可看),「差异」直接打开 HEAD↔工作区差异标签(blameOpenDiff,单测覆盖)。缺口:悬停交互需实机验证', 'part', 'B3'),
       R('储藏条目展开看各文件差异', 'scm_stash_expand.go + vcs/stash_diff.go:展开读取中 / 空储藏 / >8 个文件折叠「还有 N 个…」、文件右键「打开差异 / 复制路径」、-ed stashfiles;缺口:储藏父行本身没有右键;未测试', 'ok', 'B3')],
     automation: [
       R('周历(翻周 / 今天)、卡片列表筛选与启停、右侧编辑抽屉、新建 / 删除、真实落盘', '', 'ok'),

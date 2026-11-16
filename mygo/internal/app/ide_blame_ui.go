@@ -212,14 +212,12 @@ func (a *App) drawCommitCard(c *ui.Context, tb *ideTab, bl vcs.BlameLine, right,
 				a.scmCommitFiles(bl.Hash)
 				blameLog.Info("追溯卡查看提交", "hash", shortHash(bl.Hash))
 			})
-			kit.Btn(c, "差异", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "diff", Disabled: bl.Uncommitted || bl.Hash == "", Tip: map[bool]string{true: "未提交的改动请用差异标签", false: ""}[bl.Uncommitted]}).OnClick(func() {
-				if bl.Hash == "" {
-					return
-				}
-				cm := a.blameCommitFor(bl.Hash)
-				rel := a.wsRel(tb.path)
-				a.scmOpenCommitFile(cm, rel, true)
-				blameLog.Info("追溯卡打开差异", "hash", shortHash(bl.Hash), "path", rel)
+			diffTip := ""
+			if bl.Uncommitted {
+				diffTip = "打开 HEAD ↔ 工作区差异"
+			}
+			kit.Btn(c, "差异", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "diff", Disabled: !bl.Uncommitted && bl.Hash == "", Tip: diffTip}).OnClick(func() {
+				a.blameOpenDiff(tb, bl)
 			})
 			kit.Btn(c, "复制哈希", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "copy", Disabled: bl.Hash == ""}).OnClick(func() {
 				if bl.Hash != "" {
@@ -228,6 +226,26 @@ func (a *App) drawCommitCard(c *ui.Context, tb *ideTab, bl vcs.BlameLine, right,
 			})
 		})
 	})
+}
+
+// blameOpenDiff 追溯卡「差异」:已提交的行打开那次提交对该文件的改动;
+// 未提交的行没有提交可看,直接打开当前文件的 HEAD ↔ 工作区差异(暂存与否都包含在内)。
+func (a *App) blameOpenDiff(tb *ideTab, bl vcs.BlameLine) {
+	if tb == nil {
+		return
+	}
+	if bl.Uncommitted {
+		a.openDiffKind(dkHead, tb.path, true)
+		blameLog.Info("追溯卡打开未提交差异", "path", tb.path)
+		return
+	}
+	if bl.Hash == "" {
+		return
+	}
+	cm := a.blameCommitFor(bl.Hash)
+	rel := a.wsRel(tb.path)
+	a.scmOpenCommitFile(cm, rel, true)
+	blameLog.Info("追溯卡打开差异", "hash", shortHash(bl.Hash), "path", rel)
 }
 
 func shortHash(h string) string {
