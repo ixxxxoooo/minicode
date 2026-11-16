@@ -19,9 +19,13 @@ func (a *App) filesView(c *ui.Context) {
 	t := a.tk
 	d := a.ide
 	a.autoReveal()
+	d.treeIdx, d.treeHit = 0, -1
 	// 外层竖排:文件树自己滚动,「大纲 / 时间线」像 VS Code 的分区那样钉在底部。
-	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
-		files := kit.VScroll(c).Key("files").Grow(1).MinHeight(0)
+	outer := ui.Column(c).Grow(1).MinHeight(0)
+	var secBox ui.Element
+	haveSec := false
+	outer.Children(func() {
+		files := kit.VScroll(c).Key("files").TrackScroll(&d.treeSt).Grow(1).MinHeight(0)
 		files.OnShortcut(0, ui.KeyF2, func() {
 			if a.ide.sel == "" {
 				return
@@ -100,7 +104,8 @@ func (a *App) filesView(c *ui.Context) {
 				}
 			})
 		})
-		ui.Column(c).Children(func() {
+		secBox, haveSec = ui.Column(c), true
+		secBox.Children(func() {
 			ui.Box(c).Height(1).Background(t.Bd1)
 			for _, name := range []string{"大纲", "时间线"} {
 				open := d.sections[name]
@@ -131,6 +136,11 @@ func (a *App) filesView(c *ui.Context) {
 			}
 		})
 	})
+	// 文件树视口高 ≈ 外层高 − 钉在底部的区块高(都取上一帧);然后把待定位的行滚进可见范围
+	if h := outer.Bounds().H; h > 0 && haveSec {
+		d.treeH = h - secBox.Bounds().H
+	}
+	a.treeRevealScroll()
 }
 
 // listing 带缓存地列目录:界面每帧都在画树,不能每帧读磁盘。刷新按钮 / 文件变化清缓存。
@@ -172,6 +182,10 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 	t := a.tk
 	d := a.ide
 	on := d.sel == e.Path // 文件夹点过之后也高亮,否则只看得到文件被选中
+	if e.Path == d.revealTo {
+		d.treeHit = d.treeIdx
+	}
+	d.treeIdx++
 	r := kit.RowEl(c, on).Key("tr-" + e.Path).PaddingStart(6 + float32(depth)*14).Gap(6)
 	dragRef(r, e.Path, e.Dir) // 拖到对话栏 = 引用
 	if e.Dir {

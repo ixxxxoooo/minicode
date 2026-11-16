@@ -126,6 +126,11 @@ type ide struct {
 	sections map[string]bool // 资源管理器区块折叠(大纲 / 时间线)
 	rootShut bool            // 「文件夹」区块(文件树本体)是否已折叠
 	revealed string          // 上次自动在文件树里定位的标签路径(ide_reveal.go)
+	revealTo string          // 待滚入可见的树行路径(自动定位后一次性消费)
+	treeSt   ui.ScrollState  // 文件树的滚动状态
+	treeIdx  int             // 本帧已画的树行数(算目标行的内容位置)
+	treeHit  int             // 目标行的行序号(-1 = 本帧没画到)
+	treeH    float32         // 文件树视口高度(上一帧估算)
 
 	tabSt          ui.ScrollState     // 标签条的横向滚动
 	tabSeen        string             // 已滚动到可见的标签
