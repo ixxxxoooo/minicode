@@ -14,13 +14,9 @@ import (
 
 // flowCol 是会话流的居中列(最宽 712,两侧 16)。
 func (a *App) flowCol(c *ui.Context, inner func()) {
-	col := ui.Column(c).MaxWidth(a.flowMaxWidth()).PaddingX(a.flowPad())
-	if w, ok := a.flowSnapWidth(); ok {
-		col.Width(w)
-	} else {
-		col.WidthPercent(100)
-	}
-	col.Children(inner)
+	// 宽度全程跟随容器(形态切换 / 拖动分隔线时逐帧动态重排)。会话流是虚拟列表,每帧只构建视口内的行,
+	// 不再需要「过渡期吸附到台阶、结束才跳回精确宽度」那套(它会让最后一瞬间才整体重排)。
+	ui.Column(c).MaxWidth(a.flowMaxWidth()).PaddingX(a.flowPad()).WidthPercent(100).Children(inner)
 }
 
 // flowPad 是会话流内容列的左右内边距,按对话栏自己的宽度三档(设计稿 ws.css:宽 20 / 中 14 / 窄 10)。
@@ -37,30 +33,6 @@ func (a *App) flowPad() float32 {
 // flowMaxWidth 是会话流与输入框等内容列的最大宽度(见 appearance.flowWidth 六档)。
 func (a *App) flowMaxWidth() float32 {
 	return a.flowContentMaxWidth()
-}
-
-// morphSnapStep 形态切换期间会话流内容宽度的吸附台阶(px)。
-const morphSnapStep = 80
-
-// snapDown 把宽度向下吸附到台阶的整数倍(不超过原宽,所以不会被裁)。
-func snapDown(w, step float32) float32 {
-	if w < step*2 {
-		return w
-	}
-	return float32(int(w/step)) * step
-}
-
-// flowSnapWidth 形态切换(对话栏宽度做 440 ms 过渡)期间返回会话流内容列应使用的固定宽度。
-//
-// 库的 ElementTransition{Size} 会在每个中间宽度把整个子树重排;会话流没有虚拟化,
-// 长会话(大项目里常见)里每条文字每帧都要重新断行,CoreText 断行每帧几十毫秒,动画只有 ~20 fps。
-// 过渡期间内容本来就在淡入 / 淡出,这里把内容宽度吸附到 80px 台阶,
-// 约 28 个中间宽度缩成约 5 个(各宽度的排版有全局缓存),过渡结束回到精确宽度。
-func (a *App) flowSnapWidth() (float32, bool) {
-	if a.win == nil || !kit.MotionOn() || !a.morphing() || a.chatW <= 0 {
-		return 0, false
-	}
-	return snapDown(a.chatW, morphSnapStep), true
 }
 
 // isStepItem 属于「步骤行」的条目(会收进一个活动组)。

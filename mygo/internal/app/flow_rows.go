@@ -222,13 +222,7 @@ func (a *App) flowListView(c *ui.Context) {
 
 // flowColPad 是会话流的居中列(同 flowCol,内边距由调用方给)。
 func (a *App) flowColPad(c *ui.Context, pad float32, inner func()) {
-	col := ui.Column(c).MaxWidth(a.flowMaxWidth()).PaddingX(pad).AlignItems(ui.Stretch)
-	if w, ok := a.flowSnapWidth(); ok {
-		col.Width(w)
-	} else {
-		col.WidthPercent(100)
-	}
-	col.Children(inner)
+	ui.Column(c).MaxWidth(a.flowMaxWidth()).PaddingX(pad).AlignItems(ui.Stretch).WidthPercent(100).Children(inner)
 }
 
 // userStuck 报告第 idx 行(用户消息)此刻是否被钉在列表顶部(用上一帧的数据)。
