@@ -19,6 +19,7 @@ import (
 // projDlg 是这几个对话框共用的状态;kind 为空表示没有打开。
 type projDlg struct {
 	kind string // addProj / ws / proj / confirm / branch-dirty
+	open bool   // 对话框是否应保持打开;右上角 ✕ / 取消 先置 false,退场动画结束后再清 pd
 
 	// 编辑项目(复用 name 作显示名输入)
 	projPath string
@@ -51,12 +52,19 @@ type projDlg struct {
 
 func (a *App) closeProjDlg() { a.pd = projDlg{} }
 
+// cancelProjDlg 请求关闭当前项目对话框(保留 kind 直到 dialogOpen 退场结束)。
+func (a *App) cancelProjDlg() {
+	if a.pd.kind != "" {
+		a.pd.open = false
+	}
+}
+
 // openAddProject 打开「添加项目」。
-func (a *App) openAddProject() { a.pd = projDlg{kind: "addProj"} }
+func (a *App) openAddProject() { a.pd = projDlg{kind: "addProj", open: true} }
 
 // openWsDialog 打开工作区对话框:id 为空 = 新建;withFolder 非空时预置第一个文件夹(从项目行「加入工作区」来)。
 func (a *App) openWsDialog(id, withFolder string) {
-	d := projDlg{kind: "ws"}
+	d := projDlg{kind: "ws", open: true}
 	if id != "" {
 		if w, ok := a.registry().Workspace(id); ok {
 			d.wsID, d.name, d.folders, d.loadMD = w.ID, w.Name, w.Folders, w.LoadMD
@@ -70,7 +78,7 @@ func (a *App) openWsDialog(id, withFolder string) {
 
 // confirmDlg 打开确认框。
 func (a *App) confirmDlg(title, body, okText string, danger bool, ok func()) {
-	a.pd = projDlg{kind: "confirm", title: title, body: body, okText: okText, danger: danger, ok: ok}
+	a.pd = projDlg{kind: "confirm", open: true, title: title, body: body, okText: okText, danger: danger, ok: ok}
 }
 
 // pickFolders 弹系统文件夹选择器(真实模式);演示模式没有,提示直接输入路径。
@@ -256,7 +264,7 @@ func (a *App) dlgFrame(c *ui.Context, key string, w float32, title string, body 
 		a.closeProjDlg()
 		return
 	}
-	want := a.pd.kind == key
+	want := a.pd.kind == key && a.pd.open
 	t := a.tk
 	a.dialogOpen(key, want, func(open *bool) {
 		ui.DialogBase(c, open, func(backdrop, panel ui.Element) {
@@ -269,11 +277,14 @@ func (a *App) dlgFrame(c *ui.Context, key string, w float32, title string, body 
 			panel.Children(func() {
 				ui.Row(c).AlignItems(ui.Center).Children(func() {
 					ui.Text(c, title).FontSize(theme.FsHead).FontWeight(700).Grow(1)
-					kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭 Esc"}).OnClick(func() { *open = false })
+					kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭 Esc"}).OnClick(func() { a.pd.open = false; *open = false })
 				})
 				body()
 			})
 		})
+		if !*open {
+			a.pd.open = false
+		}
 	})
 }
 
@@ -408,7 +419,7 @@ func (a *App) addProjectDialog(c *ui.Context) {
 		}
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Margin(8, 0, 0, 0).Children(func() {
 			ui.Text(c, "已在列表里的项目会置灰并显示「已添加」").FontSize(theme.FsCap).TextColor(t.Tx3).Grow(1)
-			kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(a.closeProjDlg)
+			kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(a.cancelProjDlg)
 			kit.Btn(c, "添加", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(a.submitAddProject)
 		})
 	})
@@ -543,7 +554,7 @@ func (a *App) workspaceDialog(c *ui.Context) {
 		}
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Margin(6, 0, 0, 0).Children(func() {
 			ui.Text(c, "保存到 ~/.minicode/workspaces.json,不会往项目里写文件").FontSize(theme.FsCap).TextColor(t.Tx3).Grow(1)
-			kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(a.closeProjDlg)
+			kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(a.cancelProjDlg)
 			kit.Btn(c, okText, kit.BtnOpt{Variant: kit.BtnPri}).OnClick(a.submitWorkspace)
 		})
 	})
@@ -555,7 +566,7 @@ func (a *App) confirmDialog(c *ui.Context) {
 	a.dlgFrame(c, "confirm", 400, d.title, func() {
 		ui.Text(c, d.body).FontSize(theme.FsBody).TextColor(t.Tx2).LineHeight(theme.LhBody)
 		ui.Row(c).Gap(8).Justify(ui.End).Margin(10, 0, 0, 0).Children(func() {
-			kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(a.closeProjDlg)
+			kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(a.cancelProjDlg)
 			v := kit.BtnPri
 			if d.danger {
 				v = kit.BtnDanger

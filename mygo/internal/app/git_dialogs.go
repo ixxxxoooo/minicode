@@ -112,7 +112,7 @@ func (a *App) switchBranchNamed(name string) {
 		return
 	}
 	if a.branchDirty() {
-		a.pd = projDlg{kind: "branch-dirty", title: "工作区有未提交的更改", body: "切换分支前可以储藏、带着改动切换,或取消。", branchName: name, branchFn: run}
+		a.pd = projDlg{kind: "branch-dirty", open: true, title: "工作区有未提交的更改", body: "切换分支前可以储藏、带着改动切换,或取消。", branchName: name, branchFn: run}
 		return
 	}
 	run()
@@ -131,7 +131,7 @@ func (a *App) createBranchNamed(name string) {
 		return
 	}
 	if a.branchDirty() {
-		a.pd = projDlg{kind: "branch-dirty", title: "工作区有未提交的更改", body: "创建并切换分支前可以储藏、带着改动继续,或取消。", branchName: name, branchFn: run}
+		a.pd = projDlg{kind: "branch-dirty", open: true, title: "工作区有未提交的更改", body: "创建并切换分支前可以储藏、带着改动继续,或取消。", branchName: name, branchFn: run}
 		return
 	}
 	run()
@@ -154,7 +154,7 @@ func (a *App) branchDirtyDialog(c *ui.Context) {
 		t := a.tk
 		ui.Text(c, d.body).TextColor(t.Tx2).FontSize(theme.FsBody).LineHeight(1.55)
 		ui.Row(c).Gap(8).Margin(8, 0, 0, 0).Children(func() {
-			kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(a.closeProjDlg)
+			kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(a.cancelProjDlg)
 			kit.Btn(c, "带着改动切换", kit.BtnOpt{Variant: kit.BtnSoft}).OnClick(func() {
 				fn := d.branchFn
 				a.closeProjDlg()

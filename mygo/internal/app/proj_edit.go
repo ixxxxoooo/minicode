@@ -17,7 +17,7 @@ import (
 
 // openProjDialog 打开某个项目的编辑对话框。
 func (a *App) openProjDialog(p core.ProjectInfo) {
-	a.pd = projDlg{kind: "proj", projPath: projects.Clean(p.Path), name: p.Name}
+	a.pd = projDlg{kind: "proj", open: true, projPath: projects.Clean(p.Path), name: p.Name}
 	log.Info("打开编辑项目", "path", a.pd.projPath)
 }
 
@@ -111,7 +111,7 @@ func (a *App) projectDialog(c *ui.Context) {
 				ui.Text(c, "来自 Claude 会话记录,随会话存在,不能从列表移除").FontSize(theme.FsMicro).TextColor(t.Tx4).Shrink(1)
 			}
 			ui.Spacer(c).Grow(1)
-			kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(a.closeProjDlg)
+			kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(a.cancelProjDlg)
 			kit.Btn(c, "保存", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(a.submitProject)
 		})
 	})
