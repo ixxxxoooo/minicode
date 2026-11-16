@@ -115,11 +115,11 @@
     ${sec('实现状态 · 本页', '', `<div class="snip" style="height:auto;padding:10px 14px">${tbl([['范围', 200], ['状态', 80], ['说明', 0]], [
       ['css/tokens.css 字号 v4(含 --fs-ctl / --fw-strong)', st('part'), '设计稿已更新;Go theme.go 同步(未测试)'],
       ['字重三档(无 700)', st('part'), 'flow.css / base.css 已改;Go 工具行 / 卡片标题对齐(未测试)'],
-      ['会话六档列宽', st('part'), 'appearance.flowWidth + 迁移'],
-      ['设置五档列宽', st('part'), 'appearance.setWidth'],
-      ['字号预设 / 行距', st('part'), '未集中测试'],
+      ['会话六档列宽', st('ok'), 'typography_layout.go + 设置分段;cmd/shot 未逐档截图'],
+      ['设置五档列宽', st('ok'), 'typography_layout.go + settings typography 页;未逐档截图'],
+      ['字号预设 / 行距', st('ok'), 'typography_prefs.go + settings_tabs;未集中测试'],
       ['IDE dockW 四档', st('todo'), '仅规范,未接布局'],
-      ['设计稿 settings.js 分组', st('todo'), '等待 typography 分类合并'],
+      ['设计稿 settings.js 分组', st('ok'), 'Go settings_tabs id=typography 已接;未测试'],
     ])}</div>`)}
   </div>`;
 

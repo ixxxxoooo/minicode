@@ -213,7 +213,7 @@
       ['退出应用', '结束全部进程', '正在运行的先弹确认(现有行为)']])}</div>`)}
     ${sec('托盘', '菜单栏图标动画(逐段点亮 / 呼吸,设置 → 外观 → 菜单栏图标)只在「有会话真正在运行」时播放;数字徽标 = 运行中的会话数(不含已结束留在后台的);菜单里每个会话一行,前缀标记同侧栏:⁘ 运行中 · 🟠 待确认 · 🔵 已结束未查看。', '')}
     ${sec('实现状态', '仅 go build 通过,未经开发版 computer use 实测。', tbl([['项', 240], ['说明', 0], ['状态', 70]], [
-      ['会话行运行 / 待确认 / 未查看标识', 'app/side.go sessRow + sess_state.go(sessState / sessUnread);动画字符复用 spinner_style。未测试', st('part')],
+      ['会话行运行 / 待确认 / 未查看标识', 'side.go sessRow + session_meta.go sessState/sessUnread;行首 14px 列+glyph/琥珀点/强调点,右侧「运行中/待确认」。仅 cmd/shot 对照,未 computer use', st('ok')],
       ['后台会话回合结束后保活并按闲置回收', 'app.go applyParked 不再立刻 Close,live 条目记 idleSince,WarmTick 里 reapParked 按闲置时限回收;回收前有后台任务 / 待处理请求则不回收。未测试', st('part')],
       ['打开会话立即预热', 'warm.go warmAttach 不再去抖(窗口在前台时当场发预热)。未测试', st('part')],
       ['托盘按真正运行的会话计数', 'brand_tray.go countRunningSessions / 会话列表只数 Phase=Running 的后台会话(此前后台保活的空闲会话也会被算成运行中)。未测试', st('part')]]))}
