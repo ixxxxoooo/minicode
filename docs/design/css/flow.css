@@ -259,3 +259,8 @@ body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 
 .cp-row .lb { color: var(--tx-3); } .cp-row .v { text-align: right; color: var(--tx-1); }
 .cp-row .trk { height: 6px; border-radius: 3px; background: var(--fill-1); overflow: hidden; } .cp-row .trk i { display: block; height: 100%; border-radius: 3px; }
 .cp.fail { background: var(--err-soft); } .cp.fail .si { color: var(--err); } .cp-act { display: flex; gap: 6px; }
+
+/* 会话行运行中标识(sess-live 页) */
+.sr { display: flex; align-items: center; gap: 4px; height: 30px; padding: 0 8px; border-radius: var(--r-sm); color: var(--tx-2); font-size: 12.5px; } .sr.on { background: var(--fill-2); color: var(--tx-1); }
+.sr .sr-ind { width: 14px; flex: none; display: grid; place-items: center; }
+.sr-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ac); } .sr-dot.warn { background: var(--warn); }
