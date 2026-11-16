@@ -175,7 +175,7 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 		a.userEditCard(c, u)
 		return
 	}
-	card := ui.ButtonBase(c).Key("user-"+u.ID).Background(t.Raised).Radius(t.RMd()).Padding(7, 11).AlignItems(ui.Stretch).Vertical()
+	card := ui.ButtonBase(c).Key("user-"+u.ID).Background(t.Raised).Radius(t.RMd()).Padding(7, 11).AlignItems(ui.Stretch).Column()
 	// 正被吸顶:上一帧提问卡的顶边比所属回合的顶边低(设计稿 .msg-u.stuck)。
 	stuck := false
 	if sticky {
@@ -186,17 +186,21 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 	}
 	// 吸顶的卡必须不透明,否则下面滚过来的内容会透出来叠成一团:
 	// Fill1 之类的半透明填充要先叠在底色 BG 上。
+	bg := t.Raised.Over(t.BG) // 卡片底色,悬停动作条要用同色盖住下面的文字
 	switch style {
 	case 1:
+		bg = t.AcSoft.Over(t.BG)
 		card.AlignSelf(ui.End).MaxWidthPercent(86).Background(t.AcSoft.Over(t.BG)).Radius(t.RLg(), t.RLg(), t.RXs(), t.RLg())
 	case 2:
 		card.AlignSelf(ui.Stretch).MaxWidthPercent(100).Background(t.Raised.Over(t.BG))
 	default:
 		card.Background(t.Raised.Over(t.BG))
 		if t.Scheme.ID == "b" {
+			bg = t.AcSoft.Over(t.BG)
 			card.AlignSelf(ui.End).MaxWidthPercent(86).Background(t.AcSoft.Over(t.BG)).Radius(t.RLg(), t.RLg(), t.RXs(), t.RLg())
 		}
 		if t.Scheme.ID == "c" {
+			bg = t.Fill1.Over(t.BG)
 			card.Background(t.Fill1.Over(t.BG)).Radius(0, t.RSm(), t.RSm(), 0)
 		}
 	}
@@ -213,7 +217,7 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 		}
 	}
 	hov := card.Hovered()
-	card.OnClick(func() { a.beginUserEdit(u) }).Cursor(ui.CursorPointer)
+	card.OnClick(func() { a.userCardClick(u, stuck) }).Cursor(ui.CursorPointer)
 	card.Children(func() {
 		if clamp && exp && lines > userFoldExp {
 			fs := a.FlowFontSize()
@@ -229,7 +233,7 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 		}
 		a.userMsgImages(c, u)
 		if hov {
-			a.userMsgHoverBar(c, u)
+			a.userMsgHoverBar(c, u, bg)
 		}
 		if clamp {
 			ui.Row(c).Gap(6).Margin(4, 0, 0, 0).Children(func() {
@@ -246,6 +250,7 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 			})
 		}
 	})
+	a.userFloat(c, u, card) // 吸顶时点击:向下悬浮展开完整正文
 }
 
 // userImgMark 是 Claude 在用户文字里为图片插入的占位标记(如「[Image #16]」),

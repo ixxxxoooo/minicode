@@ -9,9 +9,11 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
-func (a *App) userMsgHoverBar(c *ui.Context, u *core.User) {
+// userMsgHoverBar 悬停动作条:浮在卡片右上角(不占位,悬停出现时不会把卡片撑高),
+// 用卡片底色盖住下面的文字。
+func (a *App) userMsgHoverBar(c *ui.Context, u *core.User, bg ui.Color) {
 	t := a.tk
-	ui.Row(c).Gap(2).Margin(4, 0, 0, 0).AlignItems(ui.Center).TextColor(t.Tx4).FontSize(theme.FsCap).Children(func() {
+	ui.Row(c).Absolute().Top(4).Right(6).ZIndex(3).Padding(1, 3).Background(bg).Radius(t.RSm()).Gap(2).AlignItems(ui.Center).TextColor(t.Tx4).FontSize(theme.FsCap).Children(func() {
 		rwTip := "回退到这条消息之前的文件改动"
 		canRw := a.st.Phase != core.PhaseRunning
 		if _, ok := a.st.UserUUIDs[u.ID]; !ok {
