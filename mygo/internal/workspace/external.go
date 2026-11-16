@@ -24,6 +24,21 @@ func NewWithExternal(base FS) FS {
 	return &WithExternal{base: base}
 }
 
+// Base 返回被包装的原始文件系统。
+func (w *WithExternal) Base() FS { return w.base }
+
+// Unwrap 拆掉 WithExternal 包装,返回底层文件系统(没包装则原样返回)。
+// 凡是要按具体类型判断能力(Multi / Mutable / OS)的地方,都要先 Unwrap,否则包装层会遮住底层能力。
+func Unwrap(fs FS) FS {
+	for {
+		w, ok := fs.(*WithExternal)
+		if !ok {
+			return fs
+		}
+		fs = w.base
+	}
+}
+
 // IsExternalPath 是否应按磁盘绝对路径打开(演示虚拟路径 /demo/... 不算)。
 func IsExternalPath(p string) bool {
 	if !strings.HasPrefix(p, "/") {

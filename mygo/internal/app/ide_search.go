@@ -112,7 +112,7 @@ func (a *App) SetSearch(query string, replace string, showRepl bool) {
 
 // searchFS 搜索用的文件系统:多根且限定了文件夹范围时只含那一个根(路径前缀不变)。
 func (a *App) searchFS() workspace.FS {
-	if m, ok := a.ide.fs.(*workspace.Multi); ok && a.sr.scope != "" {
+	if m, ok := workspace.Unwrap(a.ide.fs).(*workspace.Multi); ok && a.sr.scope != "" {
 		for i, r := range m.Roots() {
 			if r.Name == a.sr.scope {
 				return m.Only(i)

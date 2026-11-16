@@ -30,7 +30,7 @@ func (o fileOp) active() bool { return o.kind != "" }
 
 // mutable 当前文件系统能不能改;不能返回原因。
 func (a *App) mutable() (workspace.Mutable, string) {
-	if m, ok := a.ide.fs.(workspace.Mutable); ok {
+	if m, ok := workspace.Unwrap(a.ide.fs).(workspace.Mutable); ok { // 先拆掉 WithExternal 包装,否则会被判成只读
 		return m, ""
 	}
 	return nil, "这个项目是只读的"

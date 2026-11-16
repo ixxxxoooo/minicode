@@ -21,7 +21,7 @@ func TestDemoWorkspaceLifecycle(t *testing.T) {
 	if !a.multiRoot() || len(a.repos) != 5 {
 		t.Fatalf("应进入 3 个文件夹(+2 个嵌套仓库)的多根工作区:%d", len(a.repos))
 	}
-	m, ok := a.ide.fs.(*workspace.Multi)
+	m, ok := workspace.Unwrap(a.ide.fs).(*workspace.Multi)
 	if !ok || m.Roots()[0].Name != "router-demo" {
 		t.Fatal("文件系统应是多根,主文件夹在最前")
 	}

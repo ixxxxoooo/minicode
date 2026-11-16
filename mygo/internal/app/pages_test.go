@@ -111,6 +111,10 @@ func TestAutomationPage(t *testing.T) {
 	if got, _ := a.auto.Get(5); len(got.Runs) != 1 {
 		t.Fatal("立即运行应记一条记录")
 	}
+	// 「已保存」「已创建」两条 toast 叠在右下角,会盖住抽屉底部的按钮;真实使用时等 6 秒或点 × 关掉,这里直接清空
+	a.nt.toasts = nil
+	tt.Frame()
+	tt.Frame()
 	if err := tt.Click("删除"); err != nil {
 		t.Fatal(err)
 	}
