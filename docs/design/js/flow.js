@@ -23,7 +23,7 @@
 
   const dl = (k, no, tx) => `<div class="dl ${k}"><span class="no">${no}</span><span class="tx">${rust(tx)}</span></div>`;
   /** 差异卡。head:是否带文件头 */
-  F.diff = (head = true) => `<div class="tcard">${head ? `<div class="tcard-h" data-act="open" data-id="diff:router.rs">${ic('diff', 's12')}<span class="grow ell">src/router.rs</span><span class="c-ok mono">+4</span><span class="c-err mono">−2</span>${ib('ext', 'sm', '在工作区打开差异')}${ib('copy', 'sm')}</div>` : ''}
+  F.diff = (head = true) => `<div class="tcard">${head ? `<div class="tcard-h" data-act="open" data-id="diff:router.rs">${ic('code', 's12')}<span class="grow ell">src/router.rs</span><span class="c-ok mono">+4</span><span class="c-err mono">−2</span>${ib('ext', 'sm', '在工作区打开差异')}${ib('copy', 'sm')}</div>` : ''}
     <div style="padding:3px 0">${dl('', 41, '    pub fn match_path(&self, path: &str) -> Option<&Handler> {')}${dl('del', 42, '        self.routes.get(path)')}${dl('add', 42, '        let key = normalize(path);')}${dl('add', 43, '        self.routes.get(&key).or(self.fallback.as_ref())')}${dl('', 44, '    }')}</div></div>`;
   /** 终端输出卡。live:运行中(贴底跟随,尾行带光标) */
   F.term = (live) => `<div class="tcard"><div class="tcard-h">${ic('prompt', 's12')}<span class="grow mono">cargo test router</span>${live ? '' : '<span class="c-ok">通过</span>'}${ib('terminal', 'sm', '在终端面板查看', 'data-act="pterm"')}${ib('copy', 'sm')}</div>

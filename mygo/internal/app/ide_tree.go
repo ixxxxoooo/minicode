@@ -177,6 +177,8 @@ func fileIcon(name string) string {
 		return "code"
 	case strings.HasSuffix(name, ".toml"), strings.HasSuffix(name, ".json"), strings.HasSuffix(name, ".yaml"), strings.HasSuffix(name, ".yml"):
 		return "gear"
+	case strings.HasSuffix(name, ".png"), strings.HasSuffix(name, ".jpg"), strings.HasSuffix(name, ".jpeg"), strings.HasSuffix(name, ".webp"), strings.HasSuffix(name, ".gif"), strings.HasSuffix(name, ".svg"):
+		return "image"
 	}
 	return "fileText"
 }
@@ -272,6 +274,8 @@ func (a *App) fileTint(name string, fallback ui.Color) ui.Color {
 		return t.Warn
 	case strings.HasSuffix(n, ".py"):
 		return t.Ok
+	case strings.HasSuffix(n, ".png"), strings.HasSuffix(n, ".jpg"), strings.HasSuffix(n, ".jpeg"), strings.HasSuffix(n, ".webp"), strings.HasSuffix(n, ".gif"), strings.HasSuffix(n, ".svg"):
+		return t.Vio
 	case strings.HasSuffix(n, ".md"), strings.HasSuffix(n, ".txt"):
 		return t.Tx3
 	case strings.HasSuffix(n, ".toml"), strings.HasSuffix(n, ".json"), strings.HasSuffix(n, ".yaml"), strings.HasSuffix(n, ".yml"):
