@@ -241,30 +241,29 @@ func (a *App) cuMarketDetail(c *ui.Context, st *customize.Store) {
 					}
 				})
 			})
+			ui.Row(c).Key("cu-mkfoot").Margin(8, 0, 0, 0).Padding(10, 0, 0, 0).Gap(8).AlignItems(ui.Center).
+				BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
+				if m.Installed {
+					kit.Tag(c, "已安装", kit.KOk)
+				} else if a.cu.plug != nil && a.cu.plug.name == m.Name {
+					phases := []string{"正在下载…", "正在解包…", "安装完成", "安装失败"}
+					p := a.cu.plug.phase
+					if p < 0 || p >= len(phases) {
+						p = 0
+					}
+					kit.Tag(c, phases[p], kit.KInfo)
+					if a.cu.plug.phase < 3 {
+						kit.Btn(c, "安装中", kit.BtnOpt{Variant: kit.BtnPri, Loading: true, Disabled: true})
+					} else if a.cu.plug.phase == 3 {
+						kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnSoft, Icon: "refresh"}).OnClick(func() { a.cuInstallPlugin(st, m) })
+					}
+				} else {
+					kit.Btn(c, "安装", kit.BtnOpt{Variant: kit.BtnPri, Icon: "download"}).OnClick(func() { a.cuInstallPlugin(st, m) })
+				}
+				ui.Spacer(c).Grow(1)
+				kit.Btn(c, "查看源码", kit.BtnOpt{Variant: kit.BtnGhost, Icon: "ext"}).OnClick(func() { a.toast = "查看源码:尚未接入" })
+			})
 		})
-	})
-	ui.Row(c).Padding(10, 16).Gap(8).AlignItems(ui.Center).Shrink(0).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
-		if m.Installed {
-			kit.Tag(c, "已安装", kit.KOk)
-		} else {
-			if a.cu.plug != nil && a.cu.plug.name == m.Name {
-				phases := []string{"正在下载…", "正在解包…", "安装完成", "安装失败"}
-				p := a.cu.plug.phase
-				if p < 0 || p >= len(phases) {
-					p = 0
-				}
-				kit.Tag(c, phases[p], kit.KInfo)
-				if a.cu.plug.phase < 3 {
-					kit.Btn(c, "安装中", kit.BtnOpt{Variant: kit.BtnPri, Loading: true, Disabled: true})
-				} else if a.cu.plug.phase == 3 {
-					kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnSoft, Icon: "refresh"}).OnClick(func() { a.cuInstallPlugin(st, m) })
-				}
-			} else {
-				kit.Btn(c, "安装", kit.BtnOpt{Variant: kit.BtnPri, Icon: "download"}).OnClick(func() { a.cuInstallPlugin(st, m) })
-			}
-		}
-		ui.Spacer(c).Grow(1)
-		kit.Btn(c, "查看源码", kit.BtnOpt{Variant: kit.BtnGhost, Icon: "ext"}).OnClick(func() { a.toast = "查看源码:尚未接入" })
 	})
 }
 

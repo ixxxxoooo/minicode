@@ -310,8 +310,12 @@ func TestCustomizePage(t *testing.T) {
 	if a.pd.kind != "confirm" || st.Count(customize.MCP) != 5 {
 		t.Fatalf("应先弹确认框且未删除:kind=%q", a.pd.kind)
 	}
-	a.pd.ok()
-	tt.Frame()
+	pdOk := a.pd.ok
+	a.closeProjDlg()
+	if pdOk != nil {
+		pdOk()
+	}
+	settle(tt)
 	if st.Count(customize.MCP) != 4 {
 		t.Fatal("确认后应删除")
 	}
@@ -340,11 +344,13 @@ func TestCustomizePage(t *testing.T) {
 	if a.screen != ScreenWork || !strings.HasPrefix(a.draft, "/review2") {
 		t.Fatalf("应回对话并填入命令:%v %q", a.screen, a.draft)
 	}
-	// 插件市场:安装
+	// 插件市场:经「浏览市场」进入市场再点卡片
 	a.screen = ScreenCustomize
 	a.SetCustomize("plugins")
-	a.cu.market = true
 	tt.Frame()
+	if err := tt.Click("浏览市场"); err != nil {
+		t.Fatal(err)
+	}
 	tt.Frame()
 	if err := tt.Click("frontend-design"); err != nil {
 		t.Fatal(err)
