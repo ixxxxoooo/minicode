@@ -244,31 +244,60 @@ func (a *App) mdWrite(tb *ideTab, md *mdState) {
 	uxLog.Debug("Markdown 写回", "path", tb.path, "blocks", len(md.body.parts))
 }
 
-// rtTheme 把当前令牌映射成富文本编辑器的外观(随主题缓存)。
+// rtTheme 把当前令牌映射成富文本编辑器的外观(随主题缓存),对照设计稿 ide-md 的 .md 样式:
+// 正文 13px / 行高 1.7,H1 21 · H2 15 · H3 14,行内代码取强调色(字 ac-tx、底 ac 11%),
+// 列表符 tx-4,引用左侧 3px 条 + tx-2 字,任务框用成功色。
 func (a *App) rtTheme() *richtext.Theme {
 	if a.ux.rt != nil {
 		return a.ux.rt
 	}
 	t := a.tk
 	th := richtext.DefaultTheme(t.UITheme())
-	th.Text, th.Muted, th.Link = t.Tx1, t.Tx4, t.AcTx
+	th.Text, th.Muted, th.Link = t.Tx1, t.Tx3, t.AcTx
 	th.Caret, th.Selection = t.Ac, t.Ac.Alpha(.22)
-	th.Code, th.CodeBackground = t.Tx1, t.Fill2
+	th.Code, th.CodeBackground = a.inlineCodeColors()
+	th.CodeSize = 11.5 / theme.FsRead
 	th.CodeBlockBackground = t.Sunken
-	th.Marker, th.Checkbox = t.Tx3, t.Ac
+	th.CodeBlockPadding = [2]float32{.8, .55}
+	th.Marker, th.Checkbox = t.Tx4, t.Ok
 	th.QuoteBar, th.QuoteText = t.Bd3, t.Tx2
+	th.QuoteBarWidth = 3
+	th.Indent = 1.4
 	for i := range th.Headings {
 		th.Headings[i].Color = t.Tx1
 	}
-	sizes := [3]float32{1.75, 1.4, 1.18}
-	for i, sz := range sizes {
-		th.Headings[i].Size, th.Headings[i].Weight = sz, 700
-		th.Headings[i].Top, th.Headings[i].Bottom = .9, .35
+	// 设计稿:h1 21 / 700(下 8)、h2 15 / 650(上 12 下 4)、h3 14 / 650(上 8 下 4);Size 以正文 13px 为 1。
+	heads := [3]richtext.HeadingStyle{
+		{Size: 21.0 / theme.FsRead, Weight: 700, Color: t.Tx1, Top: .6, Bottom: .6},
+		{Size: 15.0 / theme.FsRead, Weight: 650, Color: t.Tx1, Top: .8, Bottom: .3},
+		{Size: 14.0 / theme.FsRead, Weight: 650, Color: t.Tx1, Top: .55, Bottom: .3},
 	}
-	th.ParagraphSpacing = .7
+	copy(th.Headings[:3], heads[:])
+	th.ParagraphSpacing = .5
 	th.CodeBlockRadius = float32(t.RMd()) / theme.FsRead
 	a.ux.rt = th
 	return th
+}
+
+// rtFont 是预览正文的字体:设计稿 .md 的 13px / 行高 1.7。
+func rtFont() ui.Font { return ui.Font{Size: theme.FsRead, LineHeight: 1.7} }
+
+// rtSpans 微调预览里个别段落的着色:代码块恢复正文色(行内代码取强调色,不能殃及代码块),
+// 已完成任务不加删除线、不变灰(设计稿里只靠实心勾框区分)。
+func (a *App) rtSpans(p int, st richtext.ParagraphStyle, spans []ui.Span) []ui.Span {
+	t := a.tk
+	switch {
+	case st.CodeBlock:
+		for i := range spans {
+			spans[i].Color = t.Tx1
+		}
+	case st.Checked:
+		for i := range spans {
+			spans[i].Strikethrough = false
+			spans[i].Color = t.Tx2
+		}
+	}
+	return spans
 }
 
 // mdView 是 Markdown 标签的所见即所得内容(顶部已有面包屑条)。
@@ -308,16 +337,18 @@ func (a *App) mdView(c *ui.Context, tb *ideTab) {
 		}
 		a.mdApplyReveal(tb, md)
 		ui.Row(c).Grow(1).MinHeight(0).Justify(ui.Center).AlignItems(ui.Stretch).Children(func() {
-			ui.Column(c).Grow(1).MinWidth(0).MinHeight(0).MaxWidth(900).Padding(10, 30, 6, 30).Children(func() {
+			ui.Column(c).Grow(1).MinWidth(0).MinHeight(0).MaxWidth(900).Padding(14, 34, 8, 34).Children(func() {
 				// 库里 Box.Clip 只裁子元素、不裁自己的 Draw,富文本编辑器是自绘的,滚动后整段会画出自己的矩形
 				// (盖住上面的提示条、下面的底部面板),所以套一层不带内边距的裁剪容器。
 				ui.Column(c).Grow(1).MinWidth(0).MinHeight(0).Clip().Children(func() {
 					ed := richtext.EditorBase(c.Key("md-"+tb.id), md.doc, richtext.EditorOptions{
-						Label:       "Markdown 文档",
-						Placeholder: "开始写点什么……  # 空格 变标题,- 空格 变列表",
-						Font:        ui.Font{Size: 14},
-						Theme:       a.rtTheme(),
-						OnLink:      a.openMdLink,
+						Label:        "Markdown 文档",
+						Placeholder:  "开始写点什么……  # 空格 变标题,- 空格 变列表",
+						Font:         rtFont(),
+						Theme:        a.rtTheme(),
+						Spans:        a.rtSpans,
+						SpansVersion: 1,
+						OnLink:       a.openMdLink,
 						OnKey: func(key ui.Key, mods ui.Modifiers) bool {
 							if mods == ui.Cmd && key == ui.KeyV {
 								if a.mdTryPasteImage(c, tb, md) {

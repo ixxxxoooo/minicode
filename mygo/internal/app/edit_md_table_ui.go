@@ -84,7 +84,7 @@ func (a *App) mdSegsView(c *ui.Context, tb *ideTab, md *mdState) {
 	a.mdRunPend(tb, md)
 	kit.VScroll(c).Key("mdsegs-" + tb.id).Grow(1).MinHeight(0).Children(func() {
 		ui.Row(c).Justify(ui.Center).Children(func() {
-			ui.Column(c).Grow(1).MinWidth(0).MaxWidth(900).Padding(10, 30, 24, 30).Children(func() {
+			ui.Column(c).Grow(1).MinWidth(0).MaxWidth(900).Padding(14, 34, 24, 34).Children(func() {
 				var changed *mdSeg
 				for i, s := range md.segs {
 					if s.table {
@@ -97,11 +97,13 @@ func (a *App) mdSegsView(c *ui.Context, tb *ideTab, md *mdState) {
 						continue
 					}
 					ed := richtext.EditorBase(c.Key("mdseg-"+tb.id+"-"+itoa(i)), s.doc, richtext.EditorOptions{
-						Label:       "Markdown 文档",
-						Font:        ui.Font{Size: 14},
-						Theme:       a.rtTheme(),
-						OnLink:      a.openMdLink,
-						NoScrollbar: true,
+						Label:        "Markdown 文档",
+						Font:         rtFont(),
+						Theme:        a.rtTheme(),
+						Spans:        a.rtSpans,
+						SpansVersion: 1,
+						OnLink:       a.openMdLink,
+						NoScrollbar:  true,
 					}).FillWidth().Height(s.h)
 					if ed.Changed() {
 						changed = s
