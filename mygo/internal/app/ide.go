@@ -37,6 +37,7 @@ type ideTab struct {
 	lay     int8      // 差异视图:0 跟随偏好 scm.diff,1 左右,2 统一(用户在标签上点过的选择,窄档只是临时强制统一、不改它)
 	dk      string    // 差异来源:head / work / staged(空 = 提交里的差异)
 	hooked  bool      // 已接上悬停 / 转到定义 / 补全
+	link    *edLink   // ⌘ 悬停时指针下可跳转的单词(ide_link.go)
 	diagSet bool      // 演示诊断已装
 	diagGen int       // 已铺到编辑器的语言服务诊断代数(+1)
 	fq      *string   // 编辑器查找条的查询词(迷你地图画命中刻度)
@@ -89,6 +90,7 @@ type ide struct {
 	headOf func(string) (string, bool)
 
 	tabs      []*ideTab
+	linkMemo  linkMemo // ⌘ 悬停可跳转的判定缓存(ide_link.go)
 	active    string
 	tabs2     []*ideTab // 第二编辑器组(拆分)
 	active2   string

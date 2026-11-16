@@ -317,3 +317,6 @@
 .we-row { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 12px; cursor: default; transition: background var(--dur-fast); } .we-row + .we-row { box-shadow: inset 0 1px var(--bd-1); }
 .we-row:hover { background: var(--fill-1); } .we-row:focus-visible { outline: none; box-shadow: var(--ring); } .we-row .ic { color: var(--tx-2); flex: none; } .we-row .m { flex: none; }
 .we-none { padding: 10px 12px; color: var(--tx-3); font-size: var(--fs-cap); }
+
+/* ⌘ 悬停可跳转:按住 ⌘ 时,指针下能跳转的标识符变强调色并加下划线,光标变手型;松开 ⌘ 或移开即恢复 */
+.lnk { color: var(--ac-tx, var(--ac)) !important; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; cursor: pointer; }

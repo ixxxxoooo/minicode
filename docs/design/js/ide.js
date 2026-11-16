@@ -111,6 +111,7 @@ fn normalize(path: &str) -> String {
     const src = SRC.map((l, k) => { const n = k + 1; let h = rust(l);
       if (hits.length) h = hl(h.split(/(<[^>]+>)/).map(s => s[0] === '<' ? s : s).join(''));
       else if (word) h = mark(h, word, 'occ');
+      if (o.link && n === o.linkLine) h = mark(h, o.link, 'lnk');
       if (!hits.length && n === 13 && ov !== 'action') h = h.replace('insert', '<span class="sqw">insert</span>'); else if (n === 13) h = h.replace('insert', '<span class="sqw">insert</span>');
       if (hits.length && n === 17) h = h.replace('<mark class="hit">', '<mark class="hit cur-hit">');
       const caret = n === CUR && !ov && !o.hl ? '<span class="cursor"></span><span class="blame">你 · 2 分钟前 · 未提交</span>' : '';

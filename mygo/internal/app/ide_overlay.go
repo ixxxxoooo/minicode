@@ -110,8 +110,10 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 	col.Children(func() {
 		a.blockCmtBanner(c, tb)
 		a.extmodBanner(c, tb)
+		var edEl ui.Element
 		ui.Row(c).Grow(1).MinHeight(0).Clip().Children(func() { // 裁剪:编辑器画不出自己的矩形(拖动面板时落后一帧也不盖住底部面板)
 			ev := editor.View(c.Key("ed-"+tb.id), st).Grow(1).MinWidth(0).FillHeight()
+			edEl = ev
 			if h := ev.Bounds().H; h > 0 {
 				a.ide.edViewH = h
 			}
@@ -119,6 +121,8 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 				a.minimap(c, tb)
 			}
 		})
+		a.linkHover(c, tb, edEl)
+		a.linkUnderline(c, tb, float32(edEl.Bounds().Y-col.Bounds().Y))
 		a.stickyScroll(c, tb)
 		a.codeLens(c, tb)
 		a.askBar(c, tb)

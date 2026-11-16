@@ -354,6 +354,9 @@ func docAbove(src string, line int) string {
 
 // hoverAt 悬停:有定义就给签名 + 文档 + 动作行。
 func (a *App) hoverAt(tb *ideTab, req editor.HoverRequest) {
+	if tb.link != nil { // ⌘ 按住时指的是「跳转」,悬停卡会盖住下划线
+		return
+	}
 	w, s, e := wordUnder(tb, req.Offset)
 	if w == "" || isKeyword(w) {
 		return
