@@ -134,7 +134,7 @@
     ${cards(2, `<div class="usage-card">${cap('锁定版式 · 横 / 竖')}<div class="f g6 ai" style="gap:36px;flex-wrap:wrap"><span class="lockup">${app({ z: 56 })}MiniCode</span><span class="lockup v">${app({ z: 76 })}MiniCode</span></div>${why('字标用系统 SF Pro Semibold、字距 −2.5%,不另造字体。图标与字标间距 = 图标本体宽的 1/8;安全留白 = 图标本体宽的 1/4。')}</div>`,
       `<div class="usage-card">${cap('不要这样用')}${tbl([['错误', 150], ['原因']], [['给图标再加一圈描边 / 背景块', '系统已有图形遮罩;重复会变成「图标里套图标」'], ['把线头裁掉', '线头是识别点,去掉就只剩一个格子'], ['拉伸或改比例', '连续圆角与线宽比例会失真'], ['在图标上叠文字', '名字交给标签;状态交给角标'], ['用彩色图标做菜单栏主体', '模板图才能适配深浅与选中态']])}</div>`)}
 
-    ${sec('设置里怎么换', '入口在 设置 → 外观 → 应用图标 / 菜单栏图标(一项配置只有一个家;通用里的「菜单栏图标」只放一个跳转)。选了立刻生效,不需要重启。', `<div class="f g3" style="margin-bottom:10px">${btn('打开 设置 → 外观', 'pri', 'arrow', 'data-act="settab" data-tab="appearance" data-goto="settings"')}<span class="t3 fs-cap" style="align-self:center">里面的预览(浅 / 深壁纸上的 Dock + 16 / 24 / 40 px)会随选项实时变化</span></div>
+    ${sec('设置里怎么换', '入口在 设置 → 应用与菜单栏图标(一项配置只有一个家;「通知」里只有跳转)。选了立刻生效,不需要重启。', `<div class="f g3" style="margin-bottom:10px">${btn('打开 设置 → 图标', 'pri', 'arrow', 'data-act="settab" data-tab="brand" data-goto="settings"')}<span class="t3 fs-cap" style="align-self:center">里面的预览(浅 / 深壁纸上的 Dock + 16 / 24 / 40 px)会随选项实时变化</span></div>
       ${tbl([['选项', 170], ['影响哪里', 190], ['macOS 实现', 260], ['要注意']], [
         ['图标样式 / 外观 / 配色', 'Dock、⌘Tab、应用内的所有标志', '<span class="kcode">NSApp.applicationIconImage = …</span>,启动时按偏好套用一次,之后即时生效', '退出后 Dock 里「保留」的那一格会退回包内默认图标;通知中心、访达、启动台仍显示包内图标'],
         ['同时更换访达里的图标', '访达、启动台、关于本机', '<span class="kcode">NSWorkspace.setIcon(_:forFile:)</span> 给 MiniCode.app 写自定义图标', '应用更新(替换 .app)后需重新套用;默认关闭;只改本机'],

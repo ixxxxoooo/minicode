@@ -8,11 +8,12 @@
   /* ───────── 信息架构 ───────── */
   const jump = (id, t, i, cls = '') => `<div class="it row ${cls}" data-act="settab" data-tab="${id}" data-goto="settings" tabindex="0">${ic(i, 's12')}<span class="grow">${t}</span></div>`;
   const page = (id, t, i, cls = '') => `<div class="it row ${cls}" data-act="screen" data-screen="${id}" tabindex="0">${ic(i, 's12')}<span class="grow">${t}</span></div>`;
-  const tree = `<div class="ia-tree">
-    <div class="ia-col"><b>客户端</b>${jump('general', '通用', 'sliders')}${jump('appearance', '外观', 'palette')}${jump('shortcuts', '快捷键', 'kbd', 'new')}</div>
-    <div class="ia-col"><b>CLAUDE CODE</b>${jump('models', '模型与服务商', 'cpu', 'new')}${jump('chat', '对话与提示词', 'chat', 'new')}${jump('permissions', '权限与信任', 'shield', 'new')}${jump('runtime', '运行环境', 'cube', 'new')}</div>
-    <div class="ia-col"><b>工作台</b>${jump('editor', '编辑器与语言服务', 'code', 'new')}${jump('terminal', '终端', 'terminal')}${jump('scm', '源代码管理', 'branch')}${jump('browser', '浏览器', 'globe')}</div>
-    <div class="ia-col"><b>其他</b>${jump('privacy', '隐私与诊断', 'lock', 'new')}${jump('advanced', '高级', 'wrench')}${jump('about', '关于', 'info')}</div></div>
+  const tree = `<div class="ia-tree" style="grid-template-columns:repeat(5,minmax(0,1fr))">
+    <div class="ia-col"><b>客户端</b>${jump('general', '通用', 'sliders')}${jump('notify', '通知', 'bell', 'new')}${jump('shortcuts', '快捷键', 'kbd')}</div>
+    <div class="ia-col"><b>外观</b>${jump('appearance', '主题与布局', 'palette', 'new')}${jump('typography', '字体与尺寸', 'align', 'new')}${jump('motion', '动效与反馈', 'spark', 'new')}${jump('brand', '应用与菜单栏图标', 'grid', 'new')}</div>
+    <div class="ia-col"><b>CLAUDE CODE</b>${jump('models', '模型与服务商', 'cpu')}${jump('chat', '对话与提示词', 'chat', 'new')}${jump('permissions', '权限与信任', 'shield')}${jump('runtime', '运行环境', 'cube', 'new')}</div>
+    <div class="ia-col"><b>工作台</b>${jump('editor', '编辑器', 'code', 'new')}${jump('lsp', '语言服务', 'brain', 'new')}${jump('terminal', '终端', 'terminal')}${jump('scm', '源代码管理', 'branch')}${jump('browser', '浏览器', 'globe')}</div>
+    <div class="ia-col"><b>其他</b>${jump('privacy', '隐私与诊断', 'lock')}${jump('advanced', '高级', 'wrench')}${jump('about', '关于', 'info')}</div></div>
     <div class="ia-tree" style="margin-top:10px;grid-template-columns:2fr 1fr"><div class="ia-col"><b>整页功能(管理内容,不是偏好)</b><div class="f g2 wrap">${page('automation', '自动化', 'timer')}${page('canvas', '画布', 'canvas')}${page('browser', '浏览器', 'globe')}${page('customize', '自定义(7 类)', 'plug')}${page('usage', '用量与成本', 'chart', 'new')}</div></div>
     <div class="ia-col"><b>账号菜单(左下角)</b><div class="t3 fs-cap" style="line-height:1.7">设置 ⌘, · 用量与成本 · 快捷键<br>检查更新 · 关于</div></div></div>`;
 
@@ -45,13 +46,26 @@
   ];
   const entry = `<table class="ia-tbl"><thead><tr><th style="width:150px">功能</th><th colspan="4">入口(第一个是「家」,其余都是跳转,不复制一份)</th></tr></thead><tbody>${ENTRY.map(r => `<tr><td><b>${r[0]}</b></td>${r.slice(1).map((c, k) => `<td>${c ? (k === 0 ? `<b>${c}</b>` : c) : ''}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 
+  /** 设置分类重规划(14→19):旧 id、新 id、可搜索行数约数(与 Go settings_tabs 一致,未做阶段三实测) */
+  const SET_REALIGN = [
+    ['general · 通用', '14 类通用(含连接/通知)', 'general 8 行 + notify 5 行', '连接→runtime;通知→notify;菜单栏跳转→brand'],
+    ['appearance · 外观', '14 类外观(一大页)', 'appearance 6 · typography 5 · motion 6 · brand 16', '拆成 4 类,每类≤4 组'],
+    ['(无)', '—', 'editor 21 · lsp 11', '编辑器与 LSP 分列;intel→lsp'],
+    ['chat · 对话与提示词', 'Agent 会话在 appearance', 'chat +2 行(会话样式/工具详细)', '字号与内容宽度→typography'],
+    ['runtime · 运行环境', '连接在 general', 'runtime +2 行', '预热与空闲释放迁入'],
+    ['其余 9 类', 'models / permissions / terminal / scm / browser / privacy / advanced / about / shortcuts', '行数基本不变', '仅导航分组调整'],
+  ];
+  const realign = `<table class="ia-tbl"><thead><tr><th style="width:170px">旧分类(14 类)</th><th style="width:200px">新分类(19 类)</th><th style="width:120px">行数约</th><th>说明</th></tr></thead><tbody>${SET_REALIGN.map(([a, b, c, d]) => `<tr><td><b>${a}</b></td><td class="from">${b}</td><td class="mono">${c}</td><td class="t2">${d}</td></tr>`).join('')}</tbody></table>
+    <div class="t3 fs-cap" style="margin-top:8px;line-height:1.6"><b>实现状态</b>:Go 与设计稿 <span class="mono">settings.js</span> 已按上表拆分并接 <span class="mono">ALIAS</span> / <span class="mono">resolveSetTabID</span>;偏好键未改。<span class="tag warn">未测试</span>(未跑 go test 全量、未 computer use)。</div>`;
+
   P.ia = () => `<div class="ds">${head('信息架构 · 功能归位', '旧版设置有 22 项,偏好、功能内容与数据看板混在一起,同一件事散在三处。重新归位只靠四条原则;设置页的搜索兜底:找不到时,搜一下就能直达。')}
     ${sec('四条原则', '每一次「放哪里」的争论,都用它们裁决。', `<div class="grid2">
       ${spec('一项配置只有一个家', ['设置 / 自定义'], '<div class="t2" style="line-height:1.6">别处出现的同一项一律是「跳转按钮」,不是第二份控件。记忆文件在「自定义 → 规则与记忆」,设置里只有一行「前往」。</div>')}
       ${spec('功能页管内容,设置管偏好', ['customize ≠ settings'], '<div class="t2" style="line-height:1.6">要增删改的东西(插件、MCP、Skills、命令、子 Agent、规则、钩子)在「自定义」;开关与参数(字号、代理、快捷键)才进设置。</div>')}
       ${spec('看板不是设置', ['usage'], '<div class="t2" style="line-height:1.6">用量与成本是随时间变化的数据,需要图表与范围切换,所以升为整页;设置里不放任何「只读的数」,除了隐私与诊断的本机性能。</div>')}
       ${spec('入口随处可达,位置只有一个', ['账号菜单 · 面板齿轮'], '<div class="t2" style="line-height:1.6">在哪个上下文里用到,就在哪里放一个直达入口(终端齿轮、浏览器齿轮、MCP「管理」),落点精确到分类。</div>')}</div>`)}
-    ${sec('新结构:4 组 14 类', '点任意一类可直接跳到设置页对应分类。蓝底是本次内容有变动的分类。', tree)}
+    ${sec('新结构:5 组 19 类', '点任意一类可直接跳到设置页对应分类。蓝底是本次内容有变动的分类。', tree)}
+    ${sec('设置分类重规划(2025)', '从 4 组 14 类拆成 5 组 19 类,避免单页过长;旧 setTab id 经别名仍可落地。', realign)}
     ${sec('迁移对照', '每一行都对应一次「位置不对」的修正。', moves)}
     ${sec('入口矩阵', '同一个功能可以有多个入口,但「家」只有一个。', entry)}
     ${sec('服务商 · 状态与交互清单', '设置 → 模型与服务商 与运行配置弹层共用 <span class="mono">APP.st.prov</span> 原型状态。', (() => {
