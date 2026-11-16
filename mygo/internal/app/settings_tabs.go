@@ -321,11 +321,14 @@ var settingsTabs = []setTabDef{
 
 	{id: "typography", title: "字体与尺寸", icon: "align", desc: "界面缩放、会话正文字号与内容宽度。", groups: []setGroup{
 		{title: "界面与正文", rows: []setRow{
+			rSeg(pFontPreset, "字号预设", "同时调整界面大小与会话正文字号;滑块偏离后自动显示「自定义」", 1, "紧凑", "标准", "舒适", "大字", "自定义"),
 			rStp(pUIScale, "界面大小", "侧栏、列表、菜单、按钮、文件树等所有界面文字、图标与行高整体缩放(90%–150%,默认 110%)", theme.DefaultUIScale, theme.MinUIScale, theme.MaxUIScale, 5, "%"),
 			rStp(pFontScale, "会话正文字号", "会话里你的消息与 Claude 回复正文、Markdown 预览的字号(85%–150%),不影响其余界面文字", 100, 85, 150, 5, "%"),
+			rSeg(pLineHeight, "正文行距", "会话流、用户消息与输入框的行距;不影响编辑器与终端", 1, "紧凑", "标准", "宽松"),
 		}},
-		{title: "会话布局", rows: []setRow{
-			rSeg("appearance.width", "内容宽度", "会话时间线与输入框的最大宽度;窄屏或分屏时会自动收窄", 1, "窄", "标准", "宽"),
+		{title: "内容宽度", rows: []setRow{
+			rSeg(pFlowWidth, "会话内容宽度", "时间线、排队卡、任务坞与输入框同宽;窄屏自动收窄", 2, "窄", "紧凑", "标准", "宽", "特宽", "占满"),
+			rSeg(pSetWidth, "设置页内容宽度", "设置主栏内容列;窗口较窄时自动铺满", 1, "窄", "标准", "宽", "特宽", "占满"),
 		}},
 		{title: "文件树", rows: []setRow{
 			rTog("appearance.fileIcons", "彩色文件图标", "按文件类型给图标上色;关闭后全部用灰色。作用于文件树、标签、搜索与源代码管理", true),

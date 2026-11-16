@@ -270,7 +270,6 @@ func (a *App) applyPrefs() {
 // settingsPage 是整页设置:左侧导航(196)+ 右侧内容(620 居中)。
 func (a *App) settingsPage(c *ui.Context) {
 	t := a.tk
-	ensureTypographySettingsRows()
 	a.initSettingsConfig()
 	a.shortcutRecordCapture(c)
 	ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Background(t.BG).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2).Children(func() {
