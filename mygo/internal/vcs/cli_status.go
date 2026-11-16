@@ -220,10 +220,12 @@ func (r *CLI) Show(rev, p string) (string, bool) {
 }
 
 func (r *CLI) AheadBehind() (int, int) {
-	out, err := r.git(5*time.Second, "rev-list", "--left-right", "--count", "@{u}...HEAD")
+	// 没有上游分支是常态(本地新建仓库 / 未推送的分支),静默返回 0
+	out, err := r.gitQuiet(5*time.Second, "rev-list", "--left-right", "--count", "@{u}...HEAD")
 	if err != nil {
 		return 0, 0
 	}
+	out = strings.TrimRight(out, "\n")
 	var behind, ahead int
 	fmt.Sscanf(out, "%d\t%d", &behind, &ahead)
 	return ahead, behind

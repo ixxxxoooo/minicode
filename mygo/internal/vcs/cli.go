@@ -35,6 +35,16 @@ func (r *CLI) git(timeout time.Duration, args ...string) (string, error) {
 
 // gitRaw 同 git,但保留输出末尾的换行(取文件内容时要原样)。
 func (r *CLI) gitRaw(timeout time.Duration, args ...string) (string, error) {
+	return r.gitRun(false, timeout, args...)
+}
+
+// gitQuiet 同 gitRaw,但失败不写日志。用于「失败是正常状态」的探测(例如分支没有上游),
+// 否则每次轮询都会刷一条调试日志。
+func (r *CLI) gitQuiet(timeout time.Duration, args ...string) (string, error) {
+	return r.gitRun(true, timeout, args...)
+}
+
+func (r *CLI) gitRun(quiet bool, timeout time.Duration, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "git", append([]string{"--no-optional-locks"}, args...)...)
@@ -50,7 +60,9 @@ func (r *CLI) gitRaw(timeout time.Duration, args ...string) (string, error) {
 		if msg == "" {
 			msg = err.Error()
 		}
-		log.Debug("git 失败", "args", args, "err", msg)
+		if !quiet {
+			log.Debug("git 失败", "args", args, "err", msg)
+		}
 		return "", fmt.Errorf("%s", msg)
 	}
 	return out.String(), nil

@@ -241,7 +241,9 @@ func (ds *DiskStore) SetMCPEnabled(name string, on bool) error {
 		projects[ds.proj] = ent
 	}
 	var disabled []string
-	for _, x := range ent["disabledMcpServers"].([]any) {
+	// 项目条目里没有该键很常见,必须用带检查的断言,否则 nil 接口会 panic
+	oldDisabled, _ := ent["disabledMcpServers"].([]any)
+	for _, x := range oldDisabled {
 		if s, ok := x.(string); ok && s != name {
 			disabled = append(disabled, s)
 		}
