@@ -115,6 +115,7 @@ type App struct {
 	navDropKey   string                                   // 左栏上一帧的「分段 + 形态 + 当前项目」(变了就播逐行落下,见 side_drop.go)
 	navDropAt    time.Time                                // 逐行落下的起点
 	navDropIdx   int                                      // 本帧已画的行序号(决定每行推迟多久)
+	navDropRate  float64                                  // 本帧的落下时长倍数(设置「列表落下速度」;0 = 不播)
 	slotLife     map[string]*slotLife                     // 各收起 / 展开槽位的活跃状态(收起动画期间继续画内容)
 	wsFloat      bool                                     // Agent 窄窗:工作区浮层打开
 	dockFloat    bool                                     // IDE 窄窗:对话栏浮层打开

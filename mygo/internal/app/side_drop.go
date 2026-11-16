@@ -16,10 +16,18 @@ const (
 	navDropShift  = 10                    // 起点在落点上方多少 px
 )
 
+// navDropRates 是设置「列表落下速度」(appearance.navDrop:慢 / 标准 / 快 / 无)对应的时长倍数。
+// 标准 = 1,与设计稿 .cascade 完全一致(每行 260ms、间隔 30ms);0 = 不播。
+var navDropRates = []float64{1.8, 1, 0.55, 0}
+
 // syncNavDrop 每帧在画导航内容之前调用:行序号归零;「分段 + 形态 + 当前项目」变了就记下落下动效的起点。
 // 首帧(还没有上一帧的键)不播。无参数、无返回值。
 func (a *App) syncNavDrop() {
 	a.navDropIdx = 0
+	a.navDropRate = navDropRates[1]
+	if a.prefs != nil {
+		a.navDropRate = navDropRates[min(max(a.prefs.Int(pNavDrop, 1), 0), len(navDropRates)-1)]
+	}
 	key := a.navSwapKey
 	if a.tk.Scheme.ID == "b" && a.NavID() == "chat" {
 		// 方案 B 的会话列表只看当前项目 / 工作区:换项目也是「换了一屏内容」
@@ -37,12 +45,14 @@ func (a *App) syncNavDrop() {
 func (a *App) navDrop(el ui.Element) ui.Element {
 	i := a.navDropIdx
 	a.navDropIdx++
-	dur := kit.DurSlow
+	rate := a.navDropRate
+	dur := time.Duration(float64(kit.DurSlow) * rate)
 	if !kit.MotionOn() || a.navDropAt.IsZero() || dur <= 0 {
 		return el
 	}
 	i = min(i, navDropMaxIdx)
-	p := float32(time.Since(a.navDropAt)-kit.Scale(time.Duration(i)*navDropStep)) / float32(dur)
+	delay := time.Duration(float64(kit.Scale(time.Duration(i)*navDropStep)) * rate)
+	p := float32(time.Since(a.navDropAt)-delay) / float32(dur)
 	if p >= 1 {
 		return el
 	}

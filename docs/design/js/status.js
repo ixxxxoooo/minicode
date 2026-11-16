@@ -310,7 +310,7 @@
       R('时长 5 档 + 5 条曲线、形态切换 440 ms、流畅 / 简化 / 无', '', 'ok'),
       R('弹层退场(pop-out)', 'PopOut+popClosing;dialogOpen+DialogOut 居中框', 'ok', 'B8'),
       R('文字流光 / 流底部渐隐遮罩', 'kit.RunText+chat_fade.go;appearance.shimmer;未测试', 'ok'),
-      R('导航栏换内容逐行落下(.cascade:换分段 / 换形态 / 方案 B 换项目)', 'side_drop.go navDrop:会话 / 项目 / 工作区 / 文件树 / 搜索结果 / 源代码管理各行已接;抽屉形态(窄窗)未接;未测试', 'part'),
+      R('导航栏换内容逐行落下(.cascade:换分段 / 换形态 / 方案 B 换项目)', 'side_drop.go navDrop:会话 / 项目 / 工作区 / 文件树 / 搜索结果 / 源代码管理各行已接;设置 → 动效与反馈 →「列表落下速度」(慢 / 标准 / 快 / 无)已接;抽屉形态(窄窗)未接;未测试', 'part'),
       R('列表入场 stagger、折叠的高度插值', 'StaggerRise/CollapseHide 已接;FoldHeight 仅自动化 Cron 段;通用列表仍缺高度插值;未测试', 'part', 'B8'),
       R('states 增补的 11 种动效(抖动 / 折叠 / 抽屉 / 骨架 / 浮起 …)', 'ShakeInput~Crossfade 等均有调用点;未测试', 'ok'),
       R('已定义但没有调用点的动效', 'GrowY/Crossfade/OkPop/IndetMeter/FoldHeight 均已接线;登记行无新增缺口;未测试', 'ok')]

@@ -343,6 +343,7 @@ var settingsTabs = []setTabDef{
 		{title: "动效", rows: []setRow{
 			rTog("appearance.motion", "动效", "流光、滑入与布局变形;关闭后所有动画直接到位(也跟随系统「减弱动态效果」)", true),
 			rSeg("appearance.morph", "形态切换动画", "Agent ⇄ IDE 的布局变形,约 0.44 秒;「简化」只淡入淡出", 0, "流畅", "简化", "无"),
+			rSeg("appearance.navDrop", "列表落下速度", "导航栏换分段 / 换形态 / 换项目时,列表行自上而下逐行落下;「标准」每行约 0.26 秒、间隔 0.03 秒", 1, "慢", "标准", "快", "无"),
 			rSeg("appearance.shimmer", "流光样式", "「正在进行」的文字扫光", 0, "流光", "呼吸", "无"),
 			rPreview("shimmer"),
 			rSeg("appearance.spinner", "等待字符动画", "状态行与回合进行中的字符动画", 2, "经典", "趣味", "Claude", "诗意", "极客", "极简"),
