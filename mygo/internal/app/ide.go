@@ -48,6 +48,9 @@ type ideTab struct {
 	blameShown bool
 	inlayVer   uint64 // 内联提示已应用到哪一版缓冲区
 
+	viewer string       // 非文本查看器的种类:image / table(空 = 文本标签),见 ide_viewer.go
+	vw     *viewerState // 查看器状态(载入结果、缩放、当前工作表)
+
 	md     *mdState // Markdown 所见即所得的状态(edit_md.go)
 	mdMode int8     // Markdown 视图:0 跟随偏好,mdWysiwyg / mdSource = 在标签上手动选的
 
@@ -250,13 +253,29 @@ func (d *ide) openFile(p string, pin bool) {
 	end := diag.SpanSlow("ide", "打开文件", 50*time.Millisecond, "path", p)
 	defer end()
 	t := &ideTab{id: p, path: p, preview: !pin}
-	src, err := d.fs.Read(p)
-	if err != nil {
-		t.err = "无法打开:" + err.Error()
-		ideLog.Warn("读取文件失败", "path", p, "err", err)
-	} else if strings.IndexByte(src, 0) >= 0 {
-		t.err = "二进制文件,不能用文本方式打开"
+	if k := viewerKind(p); k != "" { // 图片 / 表格:不当文本读,交给查看器(ide_viewer.go)
+		t.viewer, t.vw = k, &viewerState{}
 	} else {
+		d.loadText(t)
+	}
+	d.addTab(t)
+	if d.onDiskSnap != nil && t.buf != nil {
+		d.onDiskSnap(t)
+	}
+}
+
+// loadText 把标签的内容当文本读进缓冲区;读不出 / 是二进制时写 t.err(由 errView 显示并给出口)。
+func (d *ide) loadText(t *ideTab) {
+	p := t.path
+	src, err := d.fs.Read(p)
+	switch {
+	case err != nil:
+		t.err = "无法打开:" + friendlyReadErr(err)
+		ideLog.Warn("读取文件失败", "path", p, "err", err)
+	case strings.IndexByte(src, 0) >= 0:
+		t.err = binaryHint(p)
+	default:
+		t.err = ""
 		t.buf = editor.NewBuffer(src)
 		t.buf.SetLanguage(editor.LanguageFor(path.Base(p)))
 		t.saved = src
@@ -264,10 +283,6 @@ func (d *ide) openFile(p string, pin bool) {
 		if head, ok := d.headOf(p); ok {
 			t.st.DiffBase = editor.NewBuffer(head) // 行号栏的改动色条
 		}
-	}
-	d.addTab(t)
-	if d.onDiskSnap != nil && t.buf != nil {
-		d.onDiskSnap(t)
 	}
 }
 

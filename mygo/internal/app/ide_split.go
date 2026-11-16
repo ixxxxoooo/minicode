@@ -1,7 +1,6 @@
 package app
 
 import (
-	"path"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
@@ -80,18 +79,11 @@ func (a *App) openSide(p string, preview bool) {
 func (a *App) mkFileTab(p string, preview bool) *ideTab {
 	d := a.ide
 	t := &ideTab{id: p, path: p, preview: preview}
-	src, err := d.fs.Read(p)
-	if err != nil {
-		t.err = "无法打开:" + err.Error()
+	if k := viewerKind(p); k != "" {
+		t.viewer, t.vw = k, &viewerState{}
 		return t
 	}
-	t.buf = editor.NewBuffer(src)
-	t.buf.SetLanguage(editor.LanguageFor(path.Base(p)))
-	t.saved = src
-	t.st = &editor.State{Buffer: t.buf}
-	if head, ok := d.headOf(p); ok {
-		t.st.DiffBase = editor.NewBuffer(head)
-	}
+	d.loadText(t)
 	return t
 }
 
@@ -115,8 +107,10 @@ func (a *App) wsSplit(c *ui.Context, cur *ideTab) {
 		switch {
 		case pcur.isVirt():
 			a.virtView(c, pcur)
+		case pcur.viewer != "":
+			a.viewerTab(c, pcur)
 		case pcur.err != "":
-			ui.Text(c, pcur.err).TextColor(a.tk.Tx3)
+			a.errView(c, pcur)
 		case pcur.diff:
 			a.diffTab(c, pcur)
 		default:

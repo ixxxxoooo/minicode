@@ -100,7 +100,6 @@ func (a *App) flashOverlay(c *ui.Context) {
 
 // workspace 是工作区内容:标签条 + 当前标签的内容 + 底部面板。
 func (a *App) workspace(c *ui.Context) {
-	t := a.tk
 	if a.ly.panelMax && a.ide.bottomOpen { // 底部面板最大化:标签条与编辑器让位
 		a.bottomPanel(c)
 		return
@@ -121,11 +120,12 @@ func (a *App) workspace(c *ui.Context) {
 		a.wsSplit(c, cur)
 	case cur.isVirt():
 		a.virtView(c, cur)
+	case cur.viewer != "":
+		a.crumbs(c, cur)
+		a.viewerTab(c, cur)
 	case cur.err != "":
 		a.crumbs(c, cur)
-		ui.Column(c).Grow(1).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, cur.err).TextColor(t.Tx3)
-		})
+		a.errView(c, cur)
 	case cur.diff:
 		a.diffTab(c, cur)
 	default:
