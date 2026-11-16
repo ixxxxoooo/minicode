@@ -47,6 +47,7 @@ func (a *App) MigrateSettingsPrefs() {
 	}
 	a.syncModelEffortPrefs()
 	migrateIconStyles(a.prefs)
+	migrateWaitAnim(a.prefs)
 	if a.prefs.Has("chat.mode") && !a.prefs.Has(pPermMode) {
 		a.prefs.Set(pPermMode, a.prefs.Int("chat.mode", 0))
 	}

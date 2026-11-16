@@ -72,7 +72,7 @@ func Ib(c *ui.Context, icon string, o ...IbOpt) ui.Element {
 	}
 	return b.Children(func() {
 		if op.Loading {
-			Spin(c, T.Ac)
+			SpinRing(c, T.Ac)
 		} else {
 			Ic(c, icon, S14)
 		}
@@ -170,7 +170,7 @@ func Btn(c *ui.Context, text string, o ...BtnOpt) ui.Element {
 			if op.Variant == BtnDefault || op.Variant == BtnDanger {
 				spinCol = T.Ac
 			}
-			Spin(c, spinCol)
+			SpinRing(c, spinCol)
 		} else if op.Icon != "" {
 			Ic(c, op.Icon, S12)
 		}
@@ -332,23 +332,7 @@ func Meter(c *ui.Context, pct float32) ui.Element {
 	})
 }
 
-// Spin 是 11px 的旋转圈(.spin:强调色描边,一圈 0.8 s)。
-func Spin(c *ui.Context, col ui.Color) ui.Element {
-	e := ui.Box(c).Size(11, 11).Shrink(0)
-	e.Draw(func(p *ui.Painter, r ui.Rect) {
-		cx, cy := r.X+r.W/2, r.Y+r.H/2
-		pts := make([][2]float32, 0, 24)
-		for i := 0; i <= 22; i++ { // 约 3/4 圈的弧
-			a := float64(i) / 22 * 4.7
-			pts = append(pts, [2]float32{cx + 4.75*float32(math.Cos(a)), cy + 4.75*float32(math.Sin(a))})
-		}
-		p.StrokePolyline(pts, 1.5, col)
-	})
-	e.Rotate(e.Loop("spin", DurLoop/2, ui.Linear) * 360)
-	return e
-}
-
-// Chk 是待办的勾选圆(.chk):0 未开始(描边圈)/ 1 进行中(旋转圈)/ 2 已完成(ok 实心 + 白勾)。
+// Chk 是待办的勾选圆(.chk):0 未开始(描边圈)/ 1 进行中(沙漏)/ 2 已完成(ok 实心 + 白勾)。
 func Chk(c *ui.Context, state int) ui.Element {
 	r := ui.Row(c).Size(14, 14).Radius(7).Justify(ui.Center).AlignItems(ui.Center).Shrink(0)
 	switch state {

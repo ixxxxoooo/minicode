@@ -66,6 +66,7 @@ var iconPaths = map[string]string{
 	"hand":        "<path d=\"M8 12V6.5a1.5 1.5 0 0 1 3 0V11M11 10V5a1.5 1.5 0 0 1 3 0v5.5M14 10.5V7a1.5 1.5 0 0 1 3 0v6.5c0 4-2.5 6.5-6 6.5-2.5 0-4-1-5.5-3L4 14.5a1.5 1.5 0 0 1 2.5-1.5L8 14.5\"/>",
 	"history":     "<path d=\"M4 12a8 8 0 1 0 2.5-5.8M4 4.5v4h4M12 8v4l2.5 1.5\"/>",
 	"home":        "<path d=\"M4 11 12 4l8 7M6 10v9h12v-9\"/>",
+	"hourglass":   "<path d=\"M7.5 3.5h9a1 1 0 0 1 1 1v1.4l-3.1 3.7H9.6L6.5 5.9V4.5a1 1 0 0 1 1-1z\"/><path d=\"M7.5 20.5h9a1 1 0 0 0 1-1v-1.4l-3.1-3.7h-2.3L6.5 18.1v1.4a1 1 0 0 0 1 1z\"/><g class=\"hg-top\"><path d=\"M9.2 5.2h5.6l-2.4 2.9H11.6z\" fill=\"currentColor\" opacity=\".9\"/></g><g class=\"hg-bot\"><path d=\"M9.2 18.8h5.6l-2.4-2.9H11.6z\" fill=\"currentColor\" opacity=\".25\"/></g><path d=\"M11.4 11.8h1.2v1.4h-1.2z\" fill=\"currentColor\" opacity=\".7\"/>",
 	"image":       "<rect x=\"3.5\" y=\"4.5\" width=\"17\" height=\"15\" rx=\"2.5\"/><circle cx=\"9\" cy=\"10\" r=\"1.6\"/><path d=\"m4 18 5-5 4 4 3-3 4.5 4.5\"/>",
 	"info":        "<circle cx=\"12\" cy=\"12\" r=\"8.5\"/><path d=\"M12 11v5M12 8h.01\"/>",
 	"kbd":         "<rect x=\"3\" y=\"6.5\" width=\"18\" height=\"11\" rx=\"2.5\"/><path d=\"M7 10.5h.01M10.5 10.5h.01M14 10.5h.01M17.5 10.5h.01M8 14h8\"/>",

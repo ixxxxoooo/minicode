@@ -8,15 +8,17 @@ import (
 	"github.com/egoist/mygo/ui"
 )
 
-// WaitSpinStyle:0 圆环 / 1 点阵 / 2 脉冲。
+// WaitSpinStyle:0 沙漏 / 1 圆环 / 2 点阵 / 3 脉冲。
 var WaitSpinStyle atomic.Int32
 
 // SpinStyled 按 appearance.waitAnim 偏好渲染等待动画。
 func SpinStyled(c *ui.Context, col ui.Color) ui.Element {
 	switch WaitSpinStyle.Load() {
 	case 1:
-		return spinDots(c, col)
+		return SpinRing(c, col)
 	case 2:
+		return spinDots(c, col)
+	case 3:
 		return spinPulse(c, col)
 	default:
 		return Spin(c, col)
@@ -44,6 +46,6 @@ func spinPulse(c *ui.Context, col ui.Color) ui.Element {
 	wrap := ui.Box(c).Size(11, 11).Shrink(0)
 	s := 0.7 + 0.3*float32(math.Sin(float64(wrap.Loop("pulse", 900*time.Millisecond, ui.Linear)*2*math.Pi)))
 	wrap.Scale(s, s)
-	wrap.Children(func() { Spin(c, col) })
+	wrap.Children(func() { SpinRing(c, col) })
 	return wrap
 }
