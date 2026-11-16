@@ -42,6 +42,7 @@ func (a *App) SetProject(dir string) {
 	log.Info("切换项目", "dir", dir)
 	a.SetRepo(nil)
 	a.sc = scmState{gen: a.sc.gen + 1}
+	a.headC.reset()
 	a.ide.useFS(a.wrapIDE(workspace.NewOS(dir)), map[string]string{}, a.headOfRepo)
 	a.ide.termLines = nil
 	a.lspReset()
@@ -70,7 +71,7 @@ func (a *App) headOfRepo(p string) (string, bool) {
 	if r == nil {
 		return "", false
 	}
-	return r.Show("HEAD", rel)
+	return a.headShow(p, func() (string, bool) { return r.Show("HEAD", rel) })
 }
 
 // welcomeStatus 是欢迎页问候下面的状态行。演示模式保持设计稿里的文案,真实模式读仓库。

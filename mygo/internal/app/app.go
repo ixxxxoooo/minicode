@@ -212,6 +212,7 @@ type App struct {
 	pickOnReady     bool                           // 新会话握手后应用已记住的模型 / 思考强度
 	cf              map[string]*confState          // 合并冲突标签的状态(按文件)
 	sc              scmState                       // 源代码管理
+	headC           headCache                      // 文件在 HEAD 的内容缓存(head_cache.go)
 	auto            *automation.Store              // 自动化清单
 	au              autoState                      // 自动化页状态
 	clock           func() time.Time               // 当前时间(测试 / 截图注入固定时间)
@@ -446,6 +447,7 @@ func (a *App) afterEvent(ev core.Event) {
 
 // SetRepo 设置当前项目的仓库;nil 表示不是 Git 仓库(分支显示为空)。
 func (a *App) SetRepo(r vcs.Repo) {
+	a.headC.reset()
 	a.repo = r
 	a.branch = ""
 	if r != nil {

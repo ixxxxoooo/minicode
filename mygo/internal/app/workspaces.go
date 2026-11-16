@@ -233,6 +233,7 @@ func (a *App) ActivateWorkspace(id string) {
 		a.lspReset()
 		a.closeTerm()
 	}
+	a.headC.reset()
 	a.ide.useFS(a.wrapIDE(multi), map[string]string{}, a.headOfRepo)
 	a.ide.termLines = nil
 	a.repoAct = 0
@@ -308,6 +309,7 @@ func (a *App) leaveWorkspace() {
 		return
 	}
 	if s.proj == "" { // 演示:原样还原(含未提交的演示改动)
+		a.headC.reset()
 		a.ide.useFS(s.fs, s.git, s.head)
 		a.SetRepo(s.repo)
 		a.sc = s.sc
