@@ -127,7 +127,12 @@ func FixBug(withPermission bool) []Step {
 	add(0, core.EvTurnStats{ID: "u1", Stats: core.TurnStats{Model: "claude-sonnet-5-5", Input: 44100, Output: 624, CacheRead: 400000, CacheWrite: 4000, CostUSD: &cost, ApiMs: &apiMs, TtftMs: &ttft, Calls: &calls}})
 	add(0, core.EvDuration{ID: "u1", Secs: 73})
 	// 实测响应耗时(冷启动 1.9 秒 + 首个响应 3.2 秒 + 整个回合 73 秒),脚注显示「用时 1 分 13 秒」,悬停看分段
-	add(0, core.EvTurnTiming{ID: "u1", Timing: core.TurnTiming{StartupMs: 1900, FirstMs: 3200, TotalMs: 73000}})
+	add(0, core.EvTurnTiming{ID: "u1", Timing: core.TurnTiming{StartupMs: 1900, FirstMs: 3200, TotalMs: 73000,
+		Phases: []core.TimingPhase{
+			{Kind: core.StageConn, Ms: 1900}, {Kind: core.StagePrep, Ms: 100}, {Kind: core.StageWait, Ms: 3200, Call: 1},
+			{Kind: core.StageWrite, Ms: 1500, Call: 1}, {Kind: core.StageTool, Ms: 2400, Label: "Bash"}, {Kind: core.StageWait, Ms: 4200, Call: 2},
+			{Kind: core.StageWrite, Ms: 28000, Call: 2}, {Kind: core.StageAsk, Ms: 18000}, {Kind: core.StageWait, Ms: 9000, Call: 3}, {Kind: core.StageWrite, Ms: 4700, Call: 3}},
+		Calls: []core.CallInfo{{Cache: core.CacheTokens{Written: 26170, Uncached: 2}}, {Cache: core.CacheTokens{Read: 26180, Written: 17, Uncached: 4}}, {Cache: core.CacheTokens{Uncached: 30000}}}}})
 	add(0, core.EvUsage{Usage: core.Usage{ContextUsed: 76000, ContextSize: 200000, CostUSD: 12.4}})
 	add(0, core.EvTurnEnded{Reason: core.StopEndTurn})
 	return s

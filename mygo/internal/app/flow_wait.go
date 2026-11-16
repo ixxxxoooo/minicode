@@ -40,6 +40,9 @@ func (a *App) waitLive() (core.LiveStage, bool) {
 	if ls == nil || a.st.Phase != core.PhaseRunning || len(a.st.Items) == 0 {
 		return core.LiveStage{}, false
 	}
+	if as, ok := a.st.Items[len(a.st.Items)-1].(*core.Assistant); ok && as.Streaming { // 已经在出字:让位给正文
+		return core.LiveStage{}, false
+	}
 	switch ls.Kind {
 	case core.StageConn, core.StagePrep, core.StageWait:
 		return *ls, true

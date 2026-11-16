@@ -181,6 +181,10 @@ func (b *Backend) prompt(p core.CmdPrompt) {
 	head := []Step{{0, user}, {ms(250), core.EvTurnStarted{}}}
 	text := strings.ToLower(p.Text)
 	switch {
+	case strings.Contains(text, "慢"):
+		head = append(head, b.slowWaitScene(uid)...)
+	case strings.Contains(text, "多次"):
+		head = append(head, b.multiCallScene(uid)...)
 	case strings.Contains(text, "权限"):
 		head = append(head, b.permissionScene(uid)...)
 	case strings.Contains(text, "多问") || strings.Contains(text, "三个问题"):
@@ -204,7 +208,7 @@ func (b *Backend) prompt(p core.CmdPrompt) {
 	case strings.Contains(text, "待办"):
 		head = append(head, b.todoScene(uid)...)
 	default:
-		head = append(head, b.replyScene(uid, "收到。这是演示后端的回复:真实模式下这里会是 Claude 的回答。")...)
+		head = append(head, b.shortWaitScene(uid, "收到。这是演示后端的回复:真实模式下这里会是 Claude 的回答。")...)
 	}
 	b.play(head)
 }

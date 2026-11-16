@@ -227,6 +227,15 @@ func (s *State) Apply(ev Event) {
 	case EvTurnStarted:
 		s.Phase = PhaseRunning
 	case EvTurnPhase:
+		if e.At.IsZero() { // 演示后端不预知时刻:按归约时的墙钟记
+			e.At = time.Now()
+		}
+		if e.TurnStart.IsZero() {
+			e.TurnStart = e.At
+			if s.Live != nil {
+				e.TurnStart = s.Live.TurnStart
+			}
+		}
 		if s.Live == nil || !s.Live.TurnStart.Equal(e.TurnStart) { // 新回合:清掉上一回合的阶段记录
 			s.LiveDone = nil
 		} else if ms := e.At.Sub(s.Live.Since).Milliseconds(); ms > 0 && s.Live.Kind != e.Kind {
