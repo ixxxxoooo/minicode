@@ -117,6 +117,7 @@ func (a *App) cfgPopup(c *ui.Context, key string, anchor ui.Element, compact boo
 				if a.miTint(c, "mode-"+md.m.CLI(), md.icon, &tint, md.m.Label(), "", a.st.Mode == md.m).Clicked() {
 					a.send(core.CmdSetMode{Mode: md.m})
 					a.st.Mode = md.m // 乐观更新,后端确认后以事件为准
+					a.rememberPermMode(md.m)
 				}
 			}
 			kit.Sep(c)

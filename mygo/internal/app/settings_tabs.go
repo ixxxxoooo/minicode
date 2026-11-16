@@ -353,7 +353,7 @@ var settingsTabs = []setTabDef{
 			rTog("chat.groupFold", "工具组默认折叠", "连续的读取 / 搜索收进一行;失败时自动展开", true),
 		}},
 		{title: "新会话", rows: []setRow{
-			rSeg(pPermMode, "默认权限模式", "新会话的起始模式;运行中可随时在输入框切换", 0, "逐项确认", "自动接受编辑", "计划"),
+			rSeg(pPermMode, "默认权限模式", "新会话的起始模式;在输入框里切换后会自动记住,下次新会话沿用(「跳过权限确认」不记)", 0, "逐项确认", "自动接受编辑", "计划"),
 			rTog("chat.ding", "回合结束提示音", "", false),
 		}},
 		{title: "排队与引导", rows: []setRow{

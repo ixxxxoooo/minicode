@@ -1,7 +1,9 @@
 package app
 
 import (
+	"sort"
 	"strconv"
+	"strings"
 	"unicode"
 
 	"github.com/egoist/mygo/ui"
@@ -86,6 +88,36 @@ func (a *App) cfgGroupOpen(id string, active bool) bool {
 	return active != a.pvLoad().folded[id]
 }
 
+// prefCfgFolded 记住模型选择器里各服务商分组的展开 / 折叠(存「相对默认翻转过」的分组 id,逗号分隔)。
+const prefCfgFolded = "cfg.folded"
+
+// loadCfgFolded 在读入服务商数据时恢复上次的展开 / 折叠状态。
+func (a *App) loadCfgFolded(p *provState) {
+	if a.prefs == nil {
+		return
+	}
+	for _, id := range strings.Split(a.prefs.Str(prefCfgFolded, ""), ",") {
+		if id = strings.TrimSpace(id); id != "" {
+			p.folded[id] = true
+		}
+	}
+}
+
+// saveCfgFolded 把当前的展开 / 折叠状态写进偏好(翻转过的分组按 id 排序,输出稳定)。
+func (a *App) saveCfgFolded() {
+	if a.prefs == nil {
+		return
+	}
+	var ids []string
+	for id, v := range a.pvLoad().folded {
+		if v {
+			ids = append(ids, id)
+		}
+	}
+	sort.Strings(ids)
+	a.prefs.Set(prefCfgFolded, strings.Join(ids, ","))
+}
+
 // cfgGroupHead 是分组标题行:箭头 + 名称 + 右侧说明;不可用的组置灰,右侧写原因并带「去设置」。
 func (a *App) cfgGroupHead(c *ui.Context, id, brand, name, count, blocked string, active bool) {
 	t := a.tk
@@ -99,7 +131,10 @@ func (a *App) cfgGroupHead(c *ui.Context, id, brand, name, count, blocked string
 		b.Background(t.Fill1)
 	}
 	if blocked == "" {
-		b.OnClick(func() { p.folded[id] = !p.folded[id] })
+		b.OnClick(func() {
+			p.folded[id] = !p.folded[id]
+			a.saveCfgFolded()
+		})
 	}
 	b.Children(func() {
 		kit.Ic(c, map[bool]string{true: "chevD", false: "chevR"}[open], kit.S12).TextColor(t.Tx3)

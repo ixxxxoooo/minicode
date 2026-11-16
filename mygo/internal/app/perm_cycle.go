@@ -23,8 +23,21 @@ func (a *App) cyclePermissionMode() {
 	}
 	a.send(core.CmdSetMode{Mode: next})
 	a.st.Mode = next
+	a.rememberPermMode(next)
 	a.toast = "权限模式:" + next.Label()
 	log.Info("循环权限模式", "mode", next.CLI())
+}
+
+// rememberPermMode 记住在输入框里选的权限模式,新会话沿用(与模型 / 思考强度同一套做法)。
+// 「跳过权限确认」风险高,不记:下次新会话仍回到上一次记住的安全模式。
+func (a *App) rememberPermMode(m core.PermissionMode) {
+	if a.prefs == nil || m == core.ModeBypassPermissions {
+		return
+	}
+	if idx := permModeIndex(m); a.prefs.Int(pPermMode, 0) != idx || !a.prefs.Has(pPermMode) {
+		a.prefs.Set(pPermMode, idx)
+		log.Info("记住权限模式", "mode", m.CLI())
+	}
 }
 
 func (a *App) hasActiveSession() bool {

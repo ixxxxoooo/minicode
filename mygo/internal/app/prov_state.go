@@ -58,6 +58,7 @@ func (a *App) pvLoad() *provState {
 	p.loaded = true
 	p.busy = map[string]int{}
 	p.folded = map[string]bool{}
+	a.loadCfgFolded(p)
 	if a.demoWs() {
 		p.store = demo.DemoProviderStore()
 		p.keys = demo.DemoProviderKeys()
