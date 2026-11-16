@@ -430,7 +430,7 @@ var settingsTabs = []setTabDef{
 			rTog("editor.inlay", "内联提示", "类型与参数名(inlayHint);无能力时自动跳过", true),
 			rTog("lsp.workspaceDiag", "工作区级诊断", "工作区分段下可拉取或扫描项目源文件(有上限)", true),
 			rFld("lsp.workspaceDiagLimit", "工作区扫描文件上限", "单次检查最多包含的文件数", "2000", 60, false, ""),
-			rTog("lsp.workspaceDiagGitignore", "扫描时包含被 gitignore 的文件", "关闭时跳过 target、node_modules 等常见目录", false),
+			rTog("lsp.workspaceDiagGitignore", "扫描时包含被 gitignore 的文件", "关闭时按仓库的 .gitignore 跳过;非 Git 项目跳过 target、node_modules 等常见目录", false),
 		}},
 		{title: "语言服务器", body: func(a *App, c *ui.Context) { a.lspBody(a, c) }},
 		{title: "忽略规则", body: func(a *App, c *ui.Context) { ignoreArea(a, c) }},

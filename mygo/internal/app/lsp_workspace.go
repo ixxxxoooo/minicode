@@ -8,6 +8,7 @@ import (
 
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/lsp"
+	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
 
 var wsLog = diag.L("lsp.workspace")
@@ -24,7 +25,95 @@ func (a *App) lspWorkspaceScan() {
 		limit = 2000
 	}
 	includeIgnored := a.prefs.Bool("lsp.workspaceDiagGitignore", false)
-	files := a.lspWorkspaceFiles(includeIgnored, limit)
+	cands := a.lspWorkspaceCandidates(includeIgnored)
+	groups := a.ignoreGroups(cands, includeIgnored)
+	if len(groups) == 0 {
+		a.lspWorkspaceStart(capFiles(cands, limit), limit)
+		return
+	}
+	// 按仓库的 .gitignore 过滤要起 git 子进程,放后台;结果回主线程再启动扫描
+	a.bg("lsp.ws.ignore", func() func() {
+		defer diag.Recover("lsp.workspace.ignore")
+		end := diag.SpanSlow("lsp", "工作区诊断·忽略过滤", 2*time.Second, "files", len(cands))
+		kept := dropIgnored(cands, groups)
+		end()
+		return func() {
+			if n := len(cands) - len(kept); n > 0 {
+				wsLog.Info("工作区诊断按 .gitignore 跳过文件", "skipped", n, "kept", len(kept))
+			}
+			a.lspWorkspaceStart(capFiles(kept, limit), limit)
+		}
+	})
+}
+
+// dropIgnored 去掉被 .gitignore 忽略的文件(会起 git 子进程,不要在界面线程调用)。
+// 某个仓库读规则失败时只记警告、该仓库的文件原样保留。
+func dropIgnored(cands []string, groups []ignoreGroup) []string {
+	drop := map[string]bool{}
+	for _, g := range groups {
+		hit, err := g.ck.Ignored(g.rels)
+		if err != nil {
+			wsLog.Warn("读取 .gitignore 规则失败,该仓库按常见目录兜底", "err", err)
+			continue
+		}
+		for i, rel := range g.rels {
+			if hit[rel] {
+				drop[g.trees[i]] = true
+			}
+		}
+	}
+	kept := make([]string, 0, len(cands))
+	for _, p := range cands {
+		if !drop[p] {
+			kept = append(kept, p)
+		}
+	}
+	return kept
+}
+
+// ignoreGroup 是同一个仓库里待判定的文件:rels 是相对仓库的路径,trees 是对应的文件树路径(多根时带文件夹前缀)。
+type ignoreGroup struct {
+	ck    vcs.IgnoreChecker
+	rels  []string
+	trees []string
+}
+
+// ignoreGroups 把候选文件按仓库分组;只有真实 git 的仓库(实现了 IgnoreChecker)才参与,
+// 演示 / 非仓库 / 用户选择「包含被忽略的文件」时返回空,调用方直接用硬编码目录过滤后的结果。
+func (a *App) ignoreGroups(files []string, includeIgnored bool) []ignoreGroup {
+	if includeIgnored {
+		return nil
+	}
+	idx := map[vcs.IgnoreChecker]int{}
+	var out []ignoreGroup
+	for _, p := range files {
+		repo, rel := a.repoAt(p)
+		ck, ok := repo.(vcs.IgnoreChecker)
+		if !ok || repo == nil {
+			continue
+		}
+		i, seen := idx[ck]
+		if !seen {
+			i = len(out)
+			idx[ck] = i
+			out = append(out, ignoreGroup{ck: ck})
+		}
+		out[i].rels = append(out[i].rels, rel)
+		out[i].trees = append(out[i].trees, p)
+	}
+	return out
+}
+
+// capFiles 取前 limit 个(已排序)。
+func capFiles(files []string, limit int) []string {
+	if len(files) > limit {
+		return files[:limit]
+	}
+	return files
+}
+
+// lspWorkspaceStart 对已定下来的文件列表按会话分组并启动扫描(主线程)。
+func (a *App) lspWorkspaceStart(files []string, limit int) {
 	bySess := map[string][]string{}
 	for _, rel := range files {
 		s := a.lspFor(rel)
@@ -66,25 +155,20 @@ func (a *App) lspWorkspaceScan() {
 	a.redraw()
 }
 
-// lspWorkspaceFiles 枚举工作区诊断要检查的文件(有上限)。
-func (a *App) lspWorkspaceFiles(includeIgnored bool, limit int) []string {
+// lspWorkspaceCandidates 枚举工作区诊断的候选文件(已排序、未截断):有语言支持的文件,
+// 关闭「包含被忽略的文件」时先去掉 target / node_modules 等常见产物目录(再由 .gitignore 精筛)。
+func (a *App) lspWorkspaceCandidates(includeIgnored bool) []string {
 	var files []string
 	for _, p := range a.ide.allFiles() {
 		if a.lspFor(p) == nil && symbolLang(p) == "" {
 			continue
 		}
-		if !includeIgnored {
-			if skipWorkspacePath(p) {
-				continue
-			}
+		if !includeIgnored && skipWorkspacePath(p) {
+			continue
 		}
 		files = append(files, p)
 	}
 	sort.Strings(files)
-	trunc := len(files) > limit
-	if trunc {
-		files = files[:limit]
-	}
 	return files
 }
 
