@@ -71,13 +71,13 @@ func drawHourglass(p *ui.Painter, r ui.Rect, col ui.Color, phase float32) {
 	p.StrokePolyline(outline, 1.2, col)
 	topH := (1 - flow) * h * .28
 	if topH > .5 {
-		p.Fill(ui.Rect{x + w*.32, y + h*.12, w * .36, topH}, col.Mix(ui.Transparent, .12), 1)
+		p.Fill(ui.Rect{X: x + w*.32, Y: y + h*.12, W: w * .36, H: topH}, col.Mix(ui.Transparent, .12), 1)
 	}
 	botH := flow * h * .28
 	if botH > .5 {
-		p.Fill(ui.Rect{x + w*.32, y + h*.92 - botH, w * .36, botH}, col.Mix(ui.Transparent, .12), 1)
+		p.Fill(ui.Rect{X: x + w*.32, Y: y + h*.92 - botH, W: w * .36, H: botH}, col.Mix(ui.Transparent, .12), 1)
 	}
 	if flow > .05 && flow < .98 {
-		p.Fill(ui.Rect{x + w*.46, y + h*.45, w * .08, h * .08}, col, 1)
+		p.Fill(ui.Rect{X: x + w*.46, Y: y + h*.45, W: w * .08, H: h * .08}, col, 1)
 	}
 }

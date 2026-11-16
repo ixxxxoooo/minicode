@@ -7,7 +7,7 @@ import (
 )
 
 func TestFlowWidthTiersAndLegacyMigrate(t *testing.T) {
-	a, _ := sessionApp(t, "width-tiers")
+	a, _ := sessionApp(t, "flow-gaps-b4")
 	a.chatW = 1200
 	a.prefs.Set(pWidthLegacy, 0)
 	if got := a.flowWidthIndex(); got != 1 {
@@ -22,6 +22,7 @@ func TestFlowWidthTiersAndLegacyMigrate(t *testing.T) {
 		t.Fatalf("特宽档应为 1040,得 %v", w)
 	}
 	a.prefs.Set(pFlowWidth, flowWidthFull)
+	a.chatW = 0 // 没有容器宽度约束
 	if w := a.flowMaxWidth(); w != flowWidthCapPx {
 		t.Fatalf("占满档在无 chatW 约束时应封顶 %d,得 %v", flowWidthCapPx, w)
 	}
@@ -33,7 +34,7 @@ func TestFlowWidthTiersAndLegacyMigrate(t *testing.T) {
 }
 
 func TestFlowNarrowContainer(t *testing.T) {
-	a, _ := sessionApp(t, "width-narrow")
+	a, _ := sessionApp(t, "flow-gaps-b4")
 	a.prefs.Set(pFlowWidth, 3)
 	a.chatW = 500
 	a.flowPad() // warm tier
@@ -44,7 +45,7 @@ func TestFlowNarrowContainer(t *testing.T) {
 }
 
 func TestSettingsContentWidth(t *testing.T) {
-	a, _ := sessionApp(t, "set-w")
+	a, _ := sessionApp(t, "flow-gaps-b4")
 	a.winW = 1200
 	if w := a.settingsContentWidth(); w != 760 {
 		t.Fatalf("默认设置列宽 760,得 %v", w)
@@ -60,13 +61,13 @@ func TestSettingsContentWidth(t *testing.T) {
 }
 
 func TestFontPresetApply(t *testing.T) {
-	a, _ := sessionApp(t, "font-preset")
+	a, _ := sessionApp(t, "flow-gaps-b4")
 	a.applyFontPresetChoice(0)
-	if a.prefs.Int(pUIScale, 0) != 100 || a.prefs.Int(pFontScale, 0) != 100 {
+	if a.prefs.Int(pUIScale, theme.DefaultUIScale) != 100 || a.prefs.Int(pFontScale, 100) != 100 {
 		t.Fatalf("紧凑预设应 100/100")
 	}
 	a.applyFontPresetChoice(2)
-	if a.prefs.Int(pUIScale, 0) != 120 || a.prefs.Int(pFontScale, 0) != 118 {
+	if a.prefs.Int(pUIScale, theme.DefaultUIScale) != 120 || a.prefs.Int(pFontScale, 100) != 118 {
 		t.Fatalf("舒适预设应 120/118")
 	}
 	if theme.UIScale() < 1.19 {

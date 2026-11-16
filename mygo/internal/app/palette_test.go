@@ -161,12 +161,12 @@ func TestPaletteMatchesDescription(t *testing.T) {
 	}
 	appearance := -1
 	for i, s := range titles {
-		if s == "设置:外观" {
+		if s == "设置:主题与布局" {
 			appearance = i
 		}
 	}
 	if appearance < 0 {
-		t.Fatalf("搜「主题」应命中「设置:外观」,实际 %v", titles)
+		t.Fatalf("搜「主题」应命中「设置:主题与布局」,实际 %v", titles)
 	}
 	if len(titles) == 0 || titles[0] != "主题:切换…" {
 		t.Fatalf("标题命中的「主题:切换…」应排第一,实际 %v", titles)
