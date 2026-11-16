@@ -208,6 +208,7 @@ type App struct {
 	autoBusy        map[int]bool         // 正在运行的自动化
 	autoLive        map[int]*autoLive    // 运行中输出的累积与取消
 	live            map[string]*liveSess // 切走时还在跑的会话:后端继续保活,事件归约到自己的状态
+	blinkPending    bool                 // 终端光标闪烁:已排好下一次切换的重绘
 	framePending    bool                 // frameSoon 已排队
 	extHold         bool                 // 窗口还没出来:系统要求打开的文件先排队
 	extQueue        []string             // 排队中的文件(窗口出来后依次处理)

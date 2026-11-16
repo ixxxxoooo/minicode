@@ -662,7 +662,7 @@ func (a *App) termRow(c *ui.Context, ln term.Line, cx int, focused bool, cellW f
 				cur.Top(0).Size(cellW, termLineH)
 			}
 			cur.Background(bg)
-			if blink && cur.Loop("tcur", 1100*time.Millisecond, ui.Linear) > .55 { // 闪烁:前半周期亮,后半周期暗
+			if blink && !a.cursorBlinkOn() { // 闪烁:前半周期亮,后半周期暗
 				cur.Opacity(.12)
 			}
 		}
@@ -779,4 +779,24 @@ func (tp *termPanel) overlayHit(x, y float32) bool {
 		}
 	}
 	return false
+}
+
+// cursorBlinkPeriod 光标亮 / 暗各占多久。
+const cursorBlinkPeriod = 550 * time.Millisecond
+
+// cursorBlinkOn 光标此刻是否该亮,并只在下一次切换的那一刻请求一帧。
+// 以前用 Loop 动画,整个界面每帧(60 fps)重建一遍,空闲时 CPU 常年 10%;改成离散切换后空闲时每秒只出两帧。
+func (a *App) cursorBlinkOn() bool {
+	now := time.Now()
+	ms := now.UnixMilli()
+	per := cursorBlinkPeriod.Milliseconds()
+	on := (ms/per)%2 == 0
+	if a.win != nil && !a.blinkPending {
+		a.blinkPending = true
+		wait := time.Duration(per-ms%per) * time.Millisecond
+		time.AfterFunc(wait+time.Millisecond, func() {
+			a.win.Update(func() { a.blinkPending = false })
+		})
+	}
+	return on
 }
