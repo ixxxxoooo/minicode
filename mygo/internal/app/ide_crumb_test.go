@@ -1,6 +1,10 @@
 package app
 
-import "testing"
+import (
+	"strings"
+	"testing"
+
+)
 
 func TestSiblingSymbols(t *testing.T) {
 	syms := []symbol{
@@ -18,3 +22,16 @@ func TestSiblingSymbols(t *testing.T) {
 		t.Fatalf("top-level siblings: %v", top)
 	}
 }
+
+func TestCrumbPathMenuTitle(t *testing.T) {
+	a, _ := demoIDE(t)
+	fs := a.ide.fs
+	parts := strings.Split("src/router.rs", "/")
+	if got := crumbPathMenuTitle(fs, parts, 0); got != fs.Name() {
+		t.Fatalf("根段标题=%q,想要 %q", got, fs.Name())
+	}
+	if got := crumbPathMenuTitle(fs, parts, 1); got != "src" {
+		t.Fatalf("文件段标题=%q", got)
+	}
+}
+

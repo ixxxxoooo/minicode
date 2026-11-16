@@ -11,6 +11,22 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
 
+// crumbMenuTitle 下拉顶部的灰色标题行(不可选)。
+func crumbMenuTitle(m *ui.Menu, title string) {
+	if title == "" {
+		return
+	}
+	m.Item(title).Disabled(true)
+}
+
+// crumbPathMenuTitle 路径段同级下拉的标题(所在文件夹名)。
+func crumbPathMenuTitle(fs workspace.FS, parts []string, partIx int) string {
+	if partIx <= 0 || partIx >= len(parts) {
+		return fs.Name()
+	}
+	return parts[partIx-1]
+}
+
 func sortCrumbEntries(es []workspace.Entry) {
 	sort.Slice(es, func(i, j int) bool {
 		if es[i].Dir != es[j].Dir {
@@ -28,6 +44,7 @@ func (a *App) crumbPartMenu(m *ui.Menu, tb *ideTab, partIx int) {
 	}
 	parent := strings.Join(parts[:partIx], "/")
 	cur := parts[partIx]
+	crumbMenuTitle(m, crumbPathMenuTitle(a.ide.fs, parts, partIx))
 	es, err := a.ide.fs.List(parent)
 	if err != nil {
 		m.Item("读取失败").Disabled(true)
@@ -115,6 +132,7 @@ func (a *App) crumbSymMenu(m *ui.Menu, tb *ideTab, syms []symbol, symIx int) {
 		m.Item("没有同级项").Disabled(true)
 		return
 	}
+	crumbMenuTitle(m, "同级符号")
 	sort.Slice(sibs, func(i, j int) bool { return syms[sibs[i]].Line < syms[sibs[j]].Line })
 	cur := syms[symIx]
 	for _, ix := range sibs {
