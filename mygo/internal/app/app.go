@@ -73,7 +73,10 @@ type App struct {
 	edThemeKey string
 	brTheme    *editor.Theme // 带括号深度色的编辑器配色(ide_brackets.go)
 	brThemeKey string
-	flowSt     ui.ScrollState // 会话流滚动状态(跟随底部)
+	flowSt     ui.ScrollState // 会话流滚动状态(与虚拟列表同步,供「回到最新」等读取)
+	flowList   ui.ListState   // 会话流虚拟列表(只构建视口内的行,见 flow_rows.go)
+	flowBox    ui.Rect        // 会话流列表上一帧的矩形(吸顶判断用)
+	flowPerf   flowPerf       // 会话流行构建统计(性能日志)
 	win        *mygo.Window
 
 	// 会话:当前显示的会话状态与它的后端
@@ -512,6 +515,7 @@ func (a *App) OpenSession(id string) {
 		a.curSess = id
 		a.screen = ScreenWork
 		a.flowSt = ui.ScrollState{}
+		a.flowList = ui.ListState{}
 		end()
 		log.Info("接回后台会话", "id", id, "耗时", time.Since(start))
 		return
@@ -540,6 +544,7 @@ func (a *App) OpenSession(id string) {
 	a.curSess = id
 	a.screen = ScreenWork
 	a.flowSt = ui.ScrollState{}
+	a.flowList = ui.ListState{}
 	a.pickOnReady = id == "" || strings.HasPrefix(id, "new:") // 新会话沿用上次选的模型与思考强度
 	if a.opener != nil {
 		a.Attach(a.opener(id))

@@ -49,6 +49,9 @@ func replayApp(t *testing.T, steps []demo.Step) (*App, *ui.Tester) {
 
 func TestFlowGapsTaskNoteAndFold(t *testing.T) {
 	a, tt := sessionApp(t, "flow-gaps-b4")
+	// 会话流已虚拟化,只构建可见行;把窗口拉高让整场景都落在视口内。
+	tt.SetSize(1280, 6000)
+	tt.Frame()
 	if !tt.HasText("cargo watch 已结束") {
 		t.Fatal("应渲染 TaskNote 通知行")
 	}

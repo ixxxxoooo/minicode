@@ -1,10 +1,7 @@
 package app
 
 import (
-	"math"
-
 	"github.com/egoist/mygo/ui"
-	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
@@ -58,26 +55,16 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		}
 		a.syncSteers()
 		a.chatHead(c, a.chatHeadTitle())
-		// 会话流:停在底部时随新内容跟随,用户上滑后不再抢滚动位置
+		// 会话流:虚拟列表自己贴底(FollowEnd);用户上滑离开底部后不再抢滚动位置。
 		displayItems := a.flowDisplayState().Items
-		if a.flowNoFollow && a.flowSt.MaxY-a.flowSt.Y < 8 { // 手动滚回底部:恢复跟随
+		if a.flowList.AtEnd() { // 在底部(或手动滚回底部):恢复跟随
 			a.flowNoFollow = false
-		}
-		if !a.flowNoFollow && a.flowSt.MaxY-a.flowSt.Y > 32 {
+		} else if !a.flowNoFollow && len(displayItems) > 0 {
 			a.flowNoFollow = true
 			a.flowAwayLen = flowTailMark(displayItems) // 记下离开时的末尾,之后有变化就点亮「有新内容」
 		}
-		if !a.flowNoFollow && a.flowSt.Y >= a.flowSt.MaxY-8 {
-			a.flowSt.Y = math.MaxFloat32
-		}
 		a.withFlowDisplay(func() {
-			kit.VScroll(c).Key("flow").TrackScroll(&a.flowSt).Grow(1).MinHeight(0).Children(func() {
-				a.morphWrap(c, "chat", func() {
-					ui.Column(c).AlignItems(ui.Center).Children(func() {
-						a.flowCol(c, func() { a.flow(c) })
-					})
-				})
-			})
+			a.morphWrap(c, "chat", func() { a.flowListView(c) })
 			if a.editingUser() {
 				ui.ButtonBase(c).Absolute().Left(0).Right(0).Top(0).Bottom(120).ZIndex(1).Cursor(ui.CursorDefault).
 					OnClick(a.cancelUserEdit)

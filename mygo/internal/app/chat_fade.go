@@ -7,7 +7,7 @@ import (
 
 // flowFadeMask 在贴底跟随时于输入框上方叠一层渐隐,避免流突然截断。
 func (a *App) flowFadeMask(c *ui.Context) {
-	if a.flowNoFollow || a.flowSt.MaxY-a.flowSt.Y > 8 {
+	if a.flowNoFollow || !a.flowList.AtEnd() {
 		return
 	}
 	t := a.tk

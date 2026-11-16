@@ -10,8 +10,7 @@ import (
 // 离开期间有新内容时右上角亮一个强调色小圆点。子 Agent 过程流(taskSt)同形态,居中放在各自滚动区底部。
 
 func (a *App) flowFollowBottom() bool {
-	const eps = 8
-	return !a.flowNoFollow && a.flowSt.MaxY-a.flowSt.Y < eps
+	return !a.flowNoFollow && a.flowList.AtEnd()
 }
 
 // flowTailMark 取会话末尾的「变化标记」:条目数 × 8 + 末条助手正文长度的粗粒度,流式输出时也会变。
@@ -52,14 +51,14 @@ func (a *App) toLatestBtn(c *ui.Context, key string, fresh bool, bottom float32,
 }
 
 func (a *App) flowScrollBtn(c *ui.Context) {
-	if a.flowFollowBottom() || a.flowSt.MaxY-a.flowSt.Y < 32 || len(a.st.Items) == 0 {
+	if a.flowFollowBottom() || a.flowList.AtEnd() || a.flowSt.MaxY-a.flowSt.Y < 32 || len(a.st.Items) == 0 {
 		return
 	}
 	fresh := flowTailMark(a.st.Items) != a.flowAwayLen
 	a.toLatestBtn(c, "to-latest", fresh, a.dockH+8, func() {
 		a.flowNoFollow = false
 		a.flowAwayLen = flowTailMark(a.st.Items)
-		a.flowSt.Y = 1e9
+		a.flowList.ScrollToEnd()
 	})
 }
 

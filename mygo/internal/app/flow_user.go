@@ -23,112 +23,6 @@ type userEdit struct {
 	id, draft string
 }
 
-// flowRounds 按「回合」渲染会话流(一轮 = 用户消息 + 后续条目直到下一条用户消息)。
-func (a *App) flowRounds(c *ui.Context) {
-	items := a.visibleItems()
-	i := 0
-	for i < len(items) {
-		u, ok := items[i].(*core.User)
-		if !ok {
-			a.flowTail(c, items, i)
-			i++
-			continue
-		}
-		j := i + 1
-		for j < len(items) {
-			if _, ok := items[j].(*core.User); ok {
-				break
-			}
-			j++
-		}
-		a.flowRound(c, u, items[i+1:j])
-		i = j
-	}
-}
-
-func (a *App) flowTail(c *ui.Context, items []core.Item, i int) {
-	if isStepItem(items[i]) {
-		j := i
-		for j < len(items) && isStepItem(items[j]) {
-			j++
-		}
-		a.stepGroup(c, items[i:j])
-		return
-	}
-	switch v := items[i].(type) {
-	case *core.Assistant:
-		a.assistant(c, v)
-	case *core.Notice:
-		a.notice(c, v)
-	case *core.TaskNote:
-		a.taskNoteLine(c, v)
-	case *core.PlanApproval:
-		a.planCard(c, v)
-	case *core.QuestionRequest:
-		if v.Answered {
-			a.askEcho(c, v)
-		}
-	}
-}
-
-func turnEndRound(rest []core.Item, i int, uid string) (string, bool) {
-	if i+1 < len(rest) {
-		return "", false
-	}
-	return uid, true
-}
-
-func (a *App) flowRound(c *ui.Context, u *core.User, rest []core.Item) {
-	foldTurn := a.shouldFoldTurn(u.ID, rest, a.roundComplete(u.ID))
-	var allSteps []core.Item
-	if foldTurn {
-		allSteps = turnStepItems(rest)
-	}
-	foldedSteps := false
-	round := ui.Column(c).Key("round-" + u.ID).Gap(8).AlignItems(ui.Stretch)
-	// 上一帧回合的顶边:提问卡的顶边比它低,说明正被吸顶(Bounds 是上一帧的矩形,第一帧为空)。
-	roundTop := round.Bounds()
-	round.Children(func() {
-		a.userMsg(c, u, roundTop)
-		for i := 0; i < len(rest); {
-			last := i
-			if isStepItem(rest[i]) {
-				if foldTurn {
-					if !foldedSteps {
-						a.turnFoldGroup(c, u.ID, allSteps)
-						foldedSteps = true
-					}
-					j := i
-					for j < len(rest) && isStepItem(rest[j]) {
-						j++
-					}
-					last = j - 1
-				} else {
-					j := i
-					for j < len(rest) && isStepItem(rest[j]) {
-						j++
-					}
-					a.stepGroup(c, rest[i:j])
-					last = j - 1
-				}
-			} else {
-				if !(foldTurn && foldedSteps && turnFoldedItem(rest[i])) {
-					a.flowTail(c, rest, i)
-				}
-				last = i
-			}
-			if uid, ok := turnEndRound(rest, last, u.ID); ok {
-				// 改动卡汇总的是整个会话的改动,只放在最后一轮,免得每一轮都显示同一份累计数字。
-				if last == len(rest)-1 && a.st.Phase != core.PhaseRunning && rest[last] == a.st.Items[len(a.st.Items)-1] {
-					a.changesCard(c)
-				}
-				a.turnFooterActions(c, uid)
-			}
-			i = last + 1
-		}
-	})
-}
-
 // userLinesCap 是 estimatedUserLines 的上限:折叠 / 展开只关心「是否超过 6 / 24 行」,
 // 数到这里就停,避免几万字的粘贴日志每帧从头数到尾。
 const userLinesCap = 100
@@ -210,7 +104,7 @@ func (a *App) beginUserEdit(u *core.User) {
 
 func (a *App) cancelUserEdit() { a.userEd = userEdit{} }
 
-func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
+func (a *App) userMsg(c *ui.Context, u *core.User, rowIdx int) {
 	t := a.tk
 	style := a.prefs.Int(pFlowStyle, 0)
 	sticky := a.prefs.Bool(pStickyUser, true)
@@ -223,13 +117,11 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 		return
 	}
 	card := ui.ButtonBase(c).Key("user-"+u.ID).Background(t.Raised).Radius(t.RMd()).Padding(7, 11).AlignItems(ui.Stretch).Column()
-	// 正被吸顶:上一帧提问卡的顶边比所属回合的顶边低(设计稿 .msg-u.stuck)。
+	// 正被吸顶(设计稿 .msg-u.stuck):用户消息是列表的分节标题,库把它钉在列表顶部。
+	// 判断(上一帧的数据):标题行已滚出视口(首个可见行在它之后),或它贴着列表顶边且内容确实滚过。
 	stuck := false
 	if sticky {
-		card = card.Sticky().Top(0).ZIndex(2)
-		if b := card.Bounds(); b.H > 0 && roundBox.H > 0 && b.Y > roundBox.Y+0.5 {
-			stuck = true
-		}
+		stuck = a.userStuck(card.Bounds(), rowIdx)
 	}
 	// 吸顶的卡必须不透明,否则下面滚过来的内容会透出来叠成一团:
 	// Fill1 之类的半透明填充要先叠在底色 BG 上。

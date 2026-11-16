@@ -18,13 +18,18 @@ func (a *App) flowCol(c *ui.Context, inner func()) {
 	if a.mode == ModeIDE {
 		pad = 12
 	}
-	col := ui.Column(c).MaxWidth([]float32{640, theme.WCol, 860}[a.prefs.Int("appearance.width", 1)%3]).PaddingX(pad)
+	col := ui.Column(c).MaxWidth(a.flowMaxWidth()).PaddingX(pad)
 	if w, ok := a.flowSnapWidth(); ok {
 		col.Width(w)
 	} else {
 		col.WidthPercent(100)
 	}
 	col.Children(inner)
+}
+
+// flowMaxWidth 是会话流内容列的最大宽度(偏好「内容宽度」三档)。
+func (a *App) flowMaxWidth() float32 {
+	return []float32{640, theme.WCol, 860}[a.prefs.Int("appearance.width", 1)%3]
 }
 
 // morphSnapStep 形态切换期间会话流内容宽度的吸附台阶(px)。
@@ -49,14 +54,6 @@ func (a *App) flowSnapWidth() (float32, bool) {
 		return 0, false
 	}
 	return snapDown(a.chatW, morphSnapStep), true
-}
-
-// flow 渲染整条时间线:按回合分组(用户消息吸顶),步骤组、助手正文、回合尾部。
-func (a *App) flow(c *ui.Context) {
-	ui.Column(c).Gap(8).Padding(12, 0, 18, 0).Children(func() {
-		a.flowRounds(c)
-		a.flowRewindCard(c)
-	})
 }
 
 // isStepItem 属于「步骤行」的条目(会收进一个活动组)。
