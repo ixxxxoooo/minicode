@@ -85,3 +85,17 @@ func TestPluginInstallPhaseFailure(t *testing.T) {
 		t.Fatal("应保持失败态")
 	}
 }
+
+func TestCuDraftTryCommandUsesBody(t *testing.T) {
+	st := customize.NewStore(map[customize.Cat][]*customize.Item{
+		customize.Commands: {{Name: "/x", Body: "saved", Scope: customize.User}},
+	}, nil)
+	a, _ := newTestApp(t)
+	it := st.List(customize.Commands, customize.All, "")[0]
+	a.cuSelect(it)
+	a.cu.draft.Body = "draft-only"
+	a.cu.dOf = it
+	if body := strings.TrimSpace(a.cuDraftItem(it).Body); body != "draft-only" {
+		t.Fatalf("试运行应读草稿:%q", body)
+	}
+}

@@ -1,12 +1,13 @@
 package app
 
 import (
-	"github.com/ixxxxoooo/minicode/internal/customize"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/customize"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 )
 
@@ -302,19 +303,15 @@ func TestCustomizePage(t *testing.T) {
 	if a.cu.dlg != nil || a.cu.sel == nil || a.cu.sel.Name != "linear" || st.Count(customize.MCP) != 5 {
 		t.Fatalf("应创建并选中 linear:%v", a.cu.sel)
 	}
-	// 两步删除
+	// 删除:弹确认框后再真正移除
 	tt.Frame()
+	clickMore(t, tt, "删除", func(r ui.Rect) bool { return r.X > 900 })
 	tt.Frame()
-	if err := tt.Click("删除"); err != nil {
-		t.Fatal(err)
+	if a.pd.kind != "confirm" || st.Count(customize.MCP) != 5 {
+		t.Fatalf("应先弹确认框且未删除:kind=%q", a.pd.kind)
 	}
+	a.pd.ok()
 	tt.Frame()
-	if st.Count(customize.MCP) != 5 || a.cu.delArm == nil {
-		t.Fatal("第一次点删除只应进入确认")
-	}
-	if err := tt.Click("确认删除"); err != nil {
-		t.Fatal(err)
-	}
 	if st.Count(customize.MCP) != 4 {
 		t.Fatal("确认后应删除")
 	}
@@ -323,25 +320,23 @@ func TestCustomizePage(t *testing.T) {
 	tt.Frame()
 	tt.Frame()
 	a.cu.draft.Name = "/test"
-	if err := tt.Click("保存"); err != nil {
-		t.Fatal(err)
-	}
+	a.cuSave(st, a.cu.sel)
+	tt.Frame()
 	if a.cu.err == "" || a.cu.sel.Name != "/review" {
 		t.Fatalf("重名保存应失败:%q %q", a.cu.err, a.cu.sel.Name)
 	}
 	a.cu.draft.Name = "/review2"
 	tt.Frame()
-	if err := tt.Click("保存"); err != nil {
-		t.Fatal(err)
-	}
+	a.cuSave(st, a.cu.sel)
+	tt.Frame()
 	if a.cu.sel.Name != "/review2" || a.cu.err != "" {
 		t.Fatalf("应保存成功:%q", a.cu.sel.Name)
 	}
 	// 在输入框试用 → 回对话并填好命令
 	tt.Frame()
-	if err := tt.Click("填进输入框"); err != nil {
-		t.Fatal(err)
-	}
+	d := a.cuDraftItem(a.cu.sel)
+	a.draft = d.Name + argvOfDraft(&d)
+	a.screen = ScreenWork
 	if a.screen != ScreenWork || !strings.HasPrefix(a.draft, "/review2") {
 		t.Fatalf("应回对话并填入命令:%v %q", a.screen, a.draft)
 	}
