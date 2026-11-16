@@ -15,7 +15,7 @@
    每页都带「实现状态」列,与 Go 代码保持一致。
    @author ixxxxoooo */
 (function () {
-  const { ic, tag } = U;
+  const { ic, tag, btn } = U;
   const { head, sec } = P.h;
   const F = window.F;
   const tbl = (cols, rows) => `<table class="ia-tbl"><thead><tr>${cols.map(([t, w]) => `<th ${w ? `style="width:${w}px"` : ''}>${t}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, k) => `<td ${k === 0 ? '' : 'class="t2"'}>${k === 0 ? `<b>${c}</b>` : c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
@@ -143,6 +143,38 @@
       ['等你确认单独成段', '权限 / 提问 / 计划请求到达 → 作答(含取消)。未测试', st('part')],
       ['历史回放分段', '回放没有逐段数据,脚注沿用旧样式(设计如此,不伪造)', st('ok')],
       ['复制诊断 / 动作按钮「复制诊断」', '设计稿慢因表里提过,Go 未做', st('todo')]]))}
+  </div>`;
+
+  /* ═════════ 压缩上下文卡 ═════════ */
+  const cpBar = (label, val, pct, cls) => `<div class="cp-row"><span class="lb">${label}</span><span class="trk"><i class="${cls}" style="width:${pct}%"></i></span><span class="v">${val}</span></div>`;
+  const compact = (state, o = {}) => {
+    const trig = `<span class="tag">${o.auto ? '自动' : '手动'}</span>`;
+    if (state === 'run') return `<div class="cp run"><span class="si">${glyph('cc', o.i ?? 4)}</span><div class="cb"><div class="ch"><b class="shimmer">正在压缩上下文…</b>${trig}<span class="el">${o.el || '3.2s'}</span></div>
+      <div class="meter"><i></i></div><div class="cs">压缩前约 ${o.pre || '25.5k'} tokens · 期间可以继续输入,压缩完成后再发送</div></div></div>`;
+    if (state === 'fail') return `<div class="cp fail"><span class="si">${ic('errc', 's14')}</span><div class="cb"><div class="ch"><b>压缩失败</b>${trig}</div><div class="cs">${o.err || '上游返回错误:context window exceeded,无法生成摘要。'}</div><div class="cp-act">${btn('重试', 'soft sm')}${btn('复制错误', 'ghost sm')}</div></div></div>`;
+    return `<div class="cp done"><span class="si" style="color:var(--ok)">${ic('check', 's14')}</span><div class="cb"><div class="ch"><b>已压缩上下文</b>${trig}<span class="el">用时 ${o.ms || '17.6s'}</span><span class="grow"></span><span class="save">节省 ${o.save || '78%'}</span></div>
+      ${cpBar('压缩前', o.pre || '25.5k', 100, 'k-fin')}${cpBar('压缩后', o.post || '5.6k', o.pct ?? 22, 'k-write')}</div></div>`;
+  };
+
+  P['flow-compact'] = () => `<div class="ds" style="max-width:1240px">${head('会话流 · 压缩上下文卡', '压缩上下文(手动 /compact、命令面板、慢响应提示里的按钮,以及 claude 的自动压缩)不再是「一条假的用户消息 + 两行灰字提示」,而是会话流里<b>独立的一张卡</b>:压缩中显示不确定进度条与已用时,完成后用「压缩前 / 压缩后」两条对比条直观看出省了多少,失败给出原因与重试。信息全部来自 claude 的真实事件(system status: compacting → compact_boundary 的 compact_metadata:trigger / pre_tokens / post_tokens / duration_ms)。')}
+    ${sec('三种状态', '卡片与计划卡 / 回答卡同一层级(raised 底、阴影 1、圆角 md、内边距 10 12),左侧 16px 图标列与步骤行同栅格。标题旁的小标签区分「手动 / 自动」。卡片是回合的一部分,回合折叠时不被折进「已处理」(用户必须能看到上下文被动过)。', grid(
+      cell('压缩中', snip(compact('run')), '动画字符 + 流光标题 + 已用时(100 ms 刷新);下面是不确定进度条(1.2 s 扫光循环)和「压缩前约 N tokens」(取压缩开始时的上下文用量)。状态行同时在场,阶段词写「压缩上下文」。'),
+      cell('已完成', snip(compact('done')), '标题打勾(绿);两条对比条:压缩前恒为满宽灰条,压缩后按 post / pre 占比画强调色条;右上「节省 78%」。条从满宽收缩到占比的动画 260 ms,减弱动态时直达终态。'),
+      cell('自动压缩', snip(compact('done', { auto: true, pre: '168k', post: '21k', pct: 12.5, save: '88%', ms: '22.4s' })), 'claude 在上下文将满时自己触发的压缩(trigger = auto),同一张卡,标签写「自动」,出现在触发它的回合里。'),
+      cell('失败', snip(compact('fail')), '红色图标 + 原因(取 claude 返回的错误,过长截断);「重试」再发一次压缩,「复制错误」复制原文。失败不改变上下文。'),
+      cell('窄档(< 420)', snip(compact('done'), 330), '对比条的标签与数值不换行;「用时」收进卡片尾部一行小字。'),
+      cell('回放历史', snip(compact('done', { ms: '—' })), '重开会话时,历史里的 compact_boundary 就地还原成「已完成」卡(有 pre / post 就画对比条,没有就只写「已压缩上下文」);当年的「/compact」命令与 local-command-stdout 不再显示成用户消息。'))
+    )}
+    ${sec('入口与出口', '', `<div class="snip" style="height:auto;width:1040px;padding:6px 14px">${tbl([['入口', 200], ['行为']], [
+      ['输入框 /compact · 命令面板「压缩上下文」· 上下文面板按钮 · 慢响应提示「压缩上下文」', '同一个命令:立刻在会话流末尾出现「压缩中」卡(不等 claude 回事件),再把 /compact 发给 claude;不再追加用户消息'],
+      ['claude 自动压缩', 'status: compacting 到达时出现「压缩中」卡(标签自动),compact_boundary 到达转「已完成」'],
+      ['取消', '压缩期间 Esc / 停止 = 中断本回合,卡片转「失败」并写「已取消」'],
+      ['撤销', '无(压缩不可逆;卡片里不放撤销)']])}</div>`)}
+    ${sec('实现状态', '仅 go build 通过,未经开发版 computer use 实测。', tbl([['项', 240], ['说明', 0], ['状态', 70]], [
+      ['压缩卡条目 + 事件', 'core.Compaction / EvCompact;claude 翻译 compacting / compact_boundary(metadata);后端手动压缩不再发假用户消息。未测试', st('part')],
+      ['卡片 UI', 'app/flow_compact.go:压缩中 / 已完成 / 失败三态、对比条动画。未测试', st('part')],
+      ['演示', '演示后端 /compact 走 压缩中 → 已完成;发「压缩失败」走失败态', st('part')],
+      ['历史回放', 'translate system compact_boundary 同路径(replay 的字段名为 camelCase,两种都认)。未测试', st('part')]]))}
   </div>`;
 
   /* ───── 动画字符:每 150 ms 换一帧(减弱动态时固定第一帧) ───── */

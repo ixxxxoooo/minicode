@@ -245,3 +245,17 @@ body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 
 .rt-gl { display: inline-block; width: 14px; text-align: center; color: var(--ac); font-size: 14px; line-height: 1; }
 .rt-st .rt-meta { color: var(--tx-4); white-space: nowrap; } .rt-st .vb { flex: none; } .rt-st .rt-meta .rt-sw { animation: fade var(--dur-base) var(--ease-out); }
 .rt-st.slow, .rt-st.slow .rt-meta, .rt-st.ask { color: var(--warn); } .rt-st.slow .rt-gl { color: var(--warn); }
+
+/* 压缩上下文卡(flow-compact 页) */
+.cp { display: flex; gap: 10px; padding: 10px 12px; border-radius: var(--r-md); background: var(--bg-raised); box-shadow: var(--sh-1), inset 0 0 0 1px var(--bd-1); color: var(--tx-2); font-size: 12px; }
+.cp .si { width: 16px; height: 16px; display: grid; place-items: center; flex: none; margin-top: 1px; }
+.cp .cb { flex: 1; min-width: 0; display: grid; gap: 7px; }
+.cp .ch { display: flex; align-items: center; gap: 8px; } .cp .ch b { color: var(--tx-1); font-weight: 600; }
+.cp .el { color: var(--tx-4); font-variant-numeric: tabular-nums; } .cp .save { color: var(--ok); font-weight: 600; }
+.cp .cs { color: var(--tx-3); line-height: 1.55; }
+.cp .meter { height: 3px; border-radius: 2px; background: var(--fill-2); overflow: hidden; } .cp .meter i { display: block; height: 100%; width: 38%; border-radius: inherit; background: var(--ac); animation: sweep-ind 1.2s var(--ease-io) infinite; }
+@keyframes sweep-ind { from { transform: translateX(-100%); } to { transform: translateX(270%); } }
+.cp-row { display: grid; grid-template-columns: 48px 1fr 40px; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
+.cp-row .lb { color: var(--tx-3); } .cp-row .v { text-align: right; color: var(--tx-1); }
+.cp-row .trk { height: 6px; border-radius: 3px; background: var(--fill-1); overflow: hidden; } .cp-row .trk i { display: block; height: 100%; border-radius: 3px; }
+.cp.fail { background: var(--err-soft); } .cp.fail .si { color: var(--err); } .cp-act { display: flex; gap: 6px; }
