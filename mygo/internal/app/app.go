@@ -251,6 +251,7 @@ type App struct {
 	subSt           ui.ScrollState      // 子 Agent 标签「过程」区滚动
 	q               promptQueue         // 排队的消息
 	qa              map[string]*qaState // 提问向导的本地进度
+	sessLoad        sessLoadState       // 切换会话载入中(抑制欢迎页闪现)
 	dockDraft       string              // 审批卡顶替输入框时保存的草稿
 	dockStash       bool
 	composerInAt    time.Time // 输入框淡入动画起点
@@ -387,6 +388,7 @@ func (a *App) Attach(be backend.Backend) {
 
 // afterEvent 归约之后的界面侧反应:回合结束时处理排队。
 func (a *App) afterEvent(ev core.Event) {
+	a.onSessLoadEvent(ev)
 	// 新会话的 id 在握手后才知道:记下来,侧栏就能高亮它(演示后端的占位 id 不记)
 	if e, ok := ev.(core.EvReady); ok {
 		if a.pickOnReady {
@@ -463,13 +465,16 @@ func (a *App) SetSessionOpener(f func(id string) backend.Backend) { a.opener = f
 
 // OpenSession 切到某个会话:关掉旧后端、清空状态与排队、接上新后端(空 id = 新会话)。
 func (a *App) OpenSession(id string) {
+	start := time.Now()
 	log.Info("切换会话", "from", a.curSess, "to", id)
+	end := diag.SpanSlow("app", "打开会话", 300*time.Millisecond, "from", a.curSess, "to", id)
 	a.maybeLeaveWorkspace(id)
 	a.recordSess(id)
 	a.parkOrClose()
 	if lv := a.live[id]; lv != nil && id != "" { // 回到一个在后台跑着的会话:接回它的后端与状态
 		delete(a.live, id)
 		a.be, a.st = lv.be, lv.st
+		a.sessLoad = sessLoadState{}
 		a.q.reset()
 		a.qa = nil
 		a.folds = map[string]bool{}
@@ -482,9 +487,11 @@ func (a *App) OpenSession(id string) {
 		a.curSess = id
 		a.screen = ScreenWork
 		a.flowSt = ui.ScrollState{}
-		log.Info("接回后台会话", "id", id)
+		end()
+		log.Info("接回后台会话", "id", id, "耗时", time.Since(start))
 		return
 	}
+	a.beginSessLoad(id)
 	a.st = core.NewState()
 	a.q.reset()
 	a.qa = nil
@@ -508,6 +515,8 @@ func (a *App) OpenSession(id string) {
 	if strings.HasPrefix(id, "new:") { // 项目内新会话:对界面来说仍是「还没有 id 的新会话」
 		a.curSess = ""
 	}
+	end()
+	log.Info("会话切换已排队", "to", id, "耗时", time.Since(start))
 }
 
 // NewSessionIn 在某个项目里开新会话(侧栏项目行的「+」)。
