@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui"
-	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/diff"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -302,21 +301,6 @@ func planTitle(md string) string {
 	return "实施计划"
 }
 
-// planCardBody 去掉计划开头的标题行(标题已在卡片头部显示),卡片里只留摘要。
-func planCardBody(md string) string {
-	lines := strings.Split(md, "\n")
-	for i, ln := range lines {
-		if strings.TrimSpace(ln) == "" {
-			continue
-		}
-		if strings.HasPrefix(strings.TrimSpace(ln), "#") {
-			return strings.TrimLeft(strings.Join(lines[i+1:], "\n"), "\n")
-		}
-		break
-	}
-	return md
-}
-
 func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 	t := a.tk
 	box := ui.Column(c).Key("plan-"+p.ID).Background(t.Raised).Radius(t.RMd()).Padding(8, 11).Gap(5)
@@ -343,13 +327,7 @@ func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 			ui.Spacer(c).Grow(1)
 			kit.Btn(c, "查看", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "ext", Tip: "在工作区打开计划"}).OnClick(func() { a.OpenWorkspaceTab(vPlan, p.ID) })
 		})
-		if body := planCardBody(p.Markdown); strings.TrimSpace(body) != "" {
-			if p.Streaming {
-				markdown.Stream(c, body, a.mdOptions())
-			} else {
-				markdown.View(c, body, a.mdOptions())
-			}
-		}
+		// 会话流里只留一张紧凑小卡(标题 + 状态 + 查看),计划全文在工作区「计划」标签里看,这里不展示内容。
 		if !p.Streaming && p.Approved == nil {
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Wrap().Children(func() {
 				resolve := func(ok bool, m core.PermissionMode) {
