@@ -2,6 +2,7 @@
    插件(已安装 / 市场 / 安装进度)、MCP(状态与动作 / 工具开关 / 运行参数)、Skills(文件树 + 预览)、斜杠命令(编辑器)、
    子 Agent(工具权限表单)、规则与记忆(编辑 / 预览 + 加载顺序)、钩子(事件 / 匹配 / 命令 / 试运行)。
    数据放在本文件里并随交互真的改动(开关、新建、删除、安装),由 behave.js 驱动局部刷新。
+   删除:详情标题行垃圾桶 → 居中确认框「删除 xxx? / 此操作不可撤销 / 取消·删除」→ 选中项落到相邻行,列表空时左侧空态。
    @author ixxxxoooo */
 (function () {
   const { ic, btn, ib, chip, tag, cnt, seg, tog, inp, field, area, esc } = U;
@@ -76,7 +77,7 @@
   const empty = (i, t, d, a = '') => `<div class="empty" style="padding:36px 12px">${ic(i, 's20 t4')}<b>${t}</b><div class="t3 fs-cap" style="line-height:1.5">${d}</div>${a}</div>`;
   const lbl = (t, c) => `<div class="fc g2"><span class="t3 fs-cap m">${t}</span>${c}</div>`;
   const kv = (rows) => `<div class="kv">${rows.map(([k, v]) => `<span class="t3">${k}</span><span class="${/\/|npx|--|\.md|\.sh/.test(String(v)) ? 'mono' : ''}" style="word-break:break-all">${v}</span>`).join('')}</div>`;
-  const dhead = (i, name, extra = '') => `<div class="f ai g3">${ic(i, 'c-ac')}<b class="grow ell">${name}</b>${extra}${ib('more', 'sm', '更多')}</div>`;
+  const dhead = (i, name, extra = '', del = true) => `<div class="f ai g3">${ic(i, 'c-ac')}<b class="grow ell">${name}</b>${extra}${del ? ib('trash', 'sm', '删除', 'data-act="cu-del"') : ''}${ib('more', 'sm', '更多')}</div>`;
   const banner = (lv, icon, text, acts = '') => `<div class="notice ${lv}" style="gap:8px">${ic(icon, { err: 'c-err', warn: 'c-warn', info: 'c-info', ok: 'c-ok' }[lv])}<div class="grow" style="line-height:1.5">${text}</div>${acts}</div>`;
   const selI = (st, c, vis) => { const k = vis.includes(st.cuSel) ? st.cuSel : vis[0]; st.cuSel = k === undefined ? 0 : k; return k; };
   const saveBtn = (extra = '') => `<span class="grow"></span>${extra}${btn('保存', 'pri', '', 'data-act="cu-save"')}`;
@@ -98,14 +99,14 @@
   const DETAIL = {
     plugins: (st) => {
       if (st.cuTab === 'market') { const m = MARKET[st.cuSel] || MARKET[0];
-        return `${dhead('plug', m.n, tag(m.by, 'ac'))}<div class="t2" style="line-height:1.6">${m.d}。安装后会把它包含的 Skills、命令、子 Agent 与钩子一并加入。</div>${kv([['来源', 'claude-plugins-official'], ['热度', '★ ' + m.stars], ['安装到', '用户(所有项目)']])}${lbl('将包含', `<div class="card" style="padding:2px 4px">${[['spark', 'Skills', 6], ['slash', '斜杠命令', 2], ['bot', '子 Agent', 1]].map(([i, n, v]) => `<div class="row">${ic(i, 's12')}<span class="grow">${n}</span><span class="t3 num">${v}</span></div>`).join('')}</div>`)}<span class="grow"></span><div class="f g2">${m.inst ? tag('已安装', 'ok') : btn('安装', 'pri', 'download', `data-act="plug-install" data-i="${st.cuSel}"`)}<span class="grow"></span>${btn('查看源码', 'ghost', 'ext')}</div>`; }
+        return `${dhead('plug', m.n, tag(m.by, 'ac'), false)}<div class="t2" style="line-height:1.6">${m.d}。安装后会把它包含的 Skills、命令、子 Agent 与钩子一并加入。</div>${kv([['来源', 'claude-plugins-official'], ['热度', '★ ' + m.stars], ['安装到', '用户(所有项目)']])}${lbl('将包含', `<div class="card" style="padding:2px 4px">${[['spark', 'Skills', 6], ['slash', '斜杠命令', 2], ['bot', '子 Agent', 1]].map(([i, n, v]) => `<div class="row">${ic(i, 's12')}<span class="grow">${n}</span><span class="t3 num">${v}</span></div>`).join('')}</div>`)}<div class="cu-foot f g2">${m.inst ? tag('已安装', 'ok') : btn('安装', 'pri', 'download', `data-act="plug-install" data-i="${st.cuSel}"`)}<span class="grow"></span>${btn('查看源码', 'ghost', 'ext')}</div>`; }
       const r = DATA.plugins[st.cuSel] || DATA.plugins[0], k = DATA.plugins.indexOf(r);
       return `${dhead('plug', esc(r.n), tag('v' + r.ver))}
         ${r.upd ? banner('info', 'download', `有新版本 <b>${r.upd}</b>`, btn('更新', 'sm soft', '', `data-act="plug-update" data-i="${k}"`)) : ''}
         <div class="t2" style="line-height:1.6">${r.about}</div>
         ${kv([['来源', r.src], ['版本', r.ver], ['安装到', seg(['用户', '项目'], r.sc === 'p' ? 1 : 0)]])}
         ${lbl('包含内容', `<div class="card" style="padding:2px 4px">${r.inc.map(([n, v]) => `<div class="row"><span class="grow">${n}</span><span class="t3 num">${v}</span>${tog(1)}</div>`).join('')}</div>`)}
-        <span class="grow"></span><div class="f g2">${btn('卸载', 'danger ghost', 'trash', 'data-act="cu-del"')}<span class="grow"></span>${btn(r.on ? '停用' : '启用', '', '', `data-act="plug-onoff" data-i="${k}"`)}</div>`;
+        <div class="cu-foot f g2"><span class="grow"></span>${btn(r.on ? '停用' : '启用', '', '', `data-act="plug-onoff" data-i="${k}"`)}</div>`;
     },
     mcp: (st) => { const r = DATA.mcp[st.cuSel] || DATA.mcp[0], k = DATA.mcp.indexOf(r);
       const bn = r.st === 'ok' ? banner('ok', 'okc', `已连接 · ${r.tools.length} 个工具 · 延迟 23 ms`, btn('重新连接', 'sm', 'refresh', `data-act="mcp-reconnect" data-i="${k}"`))
@@ -117,7 +118,7 @@
         <div class="f ai"><b class="grow">工具(${r.tools.length})</b><span class="t3 fs-cap">逐项开关 · 写入本地层 deny 规则</span></div>
         ${r.tools.length ? `<div class="fc" style="max-height:132px;overflow:auto">${r.tools.map(([n, on], j) => `<div class="row"><span class="grow ell mono">${n}</span>${tog(on, `data-cu-tool="${k}:${j}"`)}</div>`).join('')}</div>` : `<div class="t4 fs-cap" style="padding:4px 0">${r.st === 'ok' ? '没有工具' : '连接成功后才会列出工具'}</div>`}
         <div class="card" style="padding:2px 4px"><div class="row" style="height:auto;padding:5px 8px"><div class="grow"><div class="m">按需加载工具</div><div class="t3 fs-micro">ENABLE_TOOL_SEARCH · 工具很多时只在需要时加载描述,节省上下文</div></div>${tog(1)}</div></div>
-        <span class="grow"></span><div class="f g2">${btn('删除', 'danger ghost', 'trash', 'data-act="cu-del"')}<span class="grow"></span>${btn('编辑配置', '', 'edit')}</div>`; },
+        <div class="cu-foot f g2"><span class="grow"></span>${btn('编辑配置', '', 'edit')}</div>`; },
     skills: (st) => { const r = DATA.skills[st.cuSel] || DATA.skills[0];
       return `${dhead('spark', esc(r.n))}${kv([['范围', SC[r.sc]], ['位置', r.path]])}
         ${lbl('文件', `<div class="card" style="padding:3px 4px">${r.files.map(([n, ind, on, dir]) => `<div class="row ${on ? 'on' : ''}" style="padding-left:${8 + ind * 14}px">${ic(dir ? 'folder' : 'fileText', 's12')}<span class="grow ell mono">${n}</span></div>`).join('')}</div>`)}
@@ -131,14 +132,14 @@
         ${lbl('模型', seg(MODELS.map(m => m.replace('继承会话', '继承')), r.model))}
         ${lbl('提示词 <span class="t4" style="font-weight:400">$ARGUMENTS 会被命令后面的文字替换</span>', area(r.body, { mono: 1, id: 'cmd-b', rows: 5 }))}
         <div class="t3 fs-cap" style="line-height:1.5">输入 <span class="mono c-ac">${esc(r.n)}${r.hint ? ' 123' : ''}</span> 时,<span class="mono">$ARGUMENTS</span> = <span class="mono">${r.hint ? '123' : '(空)'}</span></div>
-        <span class="grow"></span><div class="f g2">${btn('删除', 'danger ghost', 'trash', 'data-act="cu-del"')}<span class="grow"></span>${btn('在输入框试用', '', 'send', 'data-act="toast" data-msg="已把命令填进输入框"')}${btn('保存', 'pri', '', 'data-act="cu-save"')}</div>`; },
+        <div class="cu-foot f g2"><span class="grow"></span>${btn('在输入框试用', '', 'send', 'data-act="toast" data-msg="已把命令填进输入框"')}${btn('保存', 'pri', '', 'data-act="cu-save"')}</div>`; },
     agents: (st) => { const r = DATA.agents[st.cuSel] || DATA.agents[0], ro = !r.tools.some(t => ['Edit', 'Write', 'Bash'].includes(t)), all = r.tools.length === TOOLS.length;
       return `${dhead('bot', esc(r.n), `<span class="dot" style="background:var(${COLORS[r.color]})"></span>`)}
         <div class="fc g3">${lbl('名称', field(r.n, 0, { mono: 1, attr: 'style="width:100%"' }))}${lbl('什么时候委派给它', field(r.desc, 0, { attr: 'style="width:100%"' }))}</div>
         <div class="f ai g4">${lbl('模型', seg(MODELS.map(m => m.replace('继承会话', '继承').replace(' 5.5', '')), r.model))}${lbl('颜色', `<span class="f g2">${COLORS.map((c, j) => `<span class="swatch ${j === r.color ? 'on' : ''}" data-act="accent-pick" tabindex="0" style="background:var(${c})"></span>`).join('')}</span>`)}</div>
         ${lbl('工具权限', `${seg(['只读', '可编辑', '全部'], all ? 2 : ro ? 0 : 1, '', 'agent-preset')}<div class="f g2 wrap tgrid" style="margin-top:4px">${TOOLS.map(t => toolChip(t, r.tools.includes(t))).join('')}</div>`)}
         ${lbl('系统提示词', area(r.prompt, { id: 'ag-p', rows: 5 }))}
-        <span class="grow"></span><div class="f g2">${btn('删除', 'danger ghost', 'trash', 'data-act="cu-del"')}<span class="grow"></span>${btn('试运行', '', 'play', 'data-act="toast" data-msg="已用一个示例任务试运行,结果见新会话"')}${btn('保存', 'pri', '', 'data-act="cu-save"')}</div>`; },
+        <div class="cu-foot f g2"><span class="grow"></span>${btn('试运行', '', 'play', 'data-act="toast" data-msg="已用一个示例任务试运行,结果见新会话"')}${btn('保存', 'pri', '', 'data-act="cu-save"')}</div>`; },
     rules: (st) => { const r = DATA.rules[st.cuSel] || DATA.rules[0];
       const md = r.body.split('\n').map(l => l.startsWith('# ') ? `<div class="b fs-title" style="margin:2px 0 4px">${esc(l.slice(2))}</div>` : l.startsWith('- ') ? `<div class="f g3"><span class="dot ac" style="margin-top:7px"></span><span>${esc(l.slice(2))}</span></div>` : l ? `<div>${esc(l)}</div>` : '<div style="height:6px"></div>').join('');
       return `${dhead('fileText', esc(r.n))}
@@ -146,7 +147,7 @@
         <div id="rule-ed">${area(r.body, { mono: 1, id: 'rule-b', rows: 8 })}</div><div id="rule-pv" class="mdprev" hidden>${md}</div>
         ${lbl('加载顺序(后加载的优先)', `<div class="f ai g2 fs-cap">${['用户', '项目', '本地'].map((n, j) => `<span class="chip ${'upl'[j] === r.sc ? 'on' : 'line'}">${n}</span>${j < 2 ? ic('chevR', 's12 t4') : ''}`).join('')}</div>`)}
         <div class="card" style="padding:2px 4px"><div class="row" style="height:auto;padding:5px 8px"><div class="grow"><div class="m">加载 CLAUDE.md 记忆文件</div><div class="t3 fs-micro">关闭后新会话不读任何记忆文件(CLAUDE_CODE_DISABLE_CLAUDE_MDS=1)</div></div>${tog(1)}</div></div>
-        <span class="grow"></span><div class="f g2">${btn('删除', 'danger ghost', 'trash', 'data-act="cu-del"')}<span class="grow"></span>${btn('在 IDE 中打开', '', 'code', `data-act="open-ide" data-file="${esc(r.n)}"`)}${btn('保存', 'pri', '', 'data-act="cu-save"')}</div>`; },
+        <div class="cu-foot f g2"><span class="grow"></span>${btn('在 IDE 中打开', '', 'code', `data-act="open-ide" data-file="${esc(r.n)}"`)}${btn('保存', 'pri', '', 'data-act="cu-save"')}</div>`; },
     hooks: (st) => { const r = DATA.hooks[st.cuSel] || DATA.hooks[0];
       return `${dhead('bolt', esc(r.n))}
         ${r.sc === 'p' && !r.trust ? banner('warn', 'shield', '这个项目的钩子还没有被信任,不会运行。', btn('信任', 'sm soft', '', 'data-act="hook-trust"')) : ''}
@@ -154,7 +155,7 @@
         <div class="fc g3">${lbl('匹配(工具名,可用 | 分隔)', field(r.match, 0, { mono: 1, ph: '留空 = 全部', attr: 'style="width:100%"' }))}${lbl('命令', area(r.cmd, { mono: 1, id: 'hk-c', rows: 2 }))}</div>
         <div class="f ai g4">${lbl('超时', `<span class="stp" data-min="1" data-max="120" data-step="1"><button data-act="step" data-d="-1">−</button><b class="num">${r.to}</b><span class="t3">秒</span><button data-act="step" data-d="1">+</button></span>`)}${lbl('范围', seg(['用户', '项目', '本地'], 'upl'.indexOf(r.sc)))}</div>
         <div id="hk-out" class="mdprev mono" hidden></div>
-        <span class="grow"></span><div class="f g2">${btn('删除', 'danger ghost', 'trash', 'data-act="cu-del"')}<span class="grow"></span>${btn('试运行', '', 'play', 'data-act="hook-test"')}${btn('保存', 'pri', '', 'data-act="cu-save"')}</div>`; },
+        <div class="cu-foot f g2"><span class="grow"></span>${btn('试运行', '', 'play', 'data-act="hook-test"')}${btn('保存', 'pri', '', 'data-act="cu-save"')}</div>`; },
   };
   const drawer = (st) => { const c = cur(st);
     if (c !== 'plugins' || st.cuTab !== 'market') { const vis = visible(st, c); if (!vis.length) return `<div class="t4 fs-cap" style="padding:20px 0;text-align:center">没有可显示的${CATS[c].noun}</div>`; selI(st, c, vis); }

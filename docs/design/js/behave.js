@@ -427,7 +427,7 @@
 
   /** 删除 / 卸载(确认 + 撤销) */
   ACT['cu-del'] = () => { const c = cc(), k = st.cuSel, r = cu.DATA[c][k]; if (!r) return; const un = c === 'plugins';
-    modal({ icon: 'trash', lvl: 'err', title: `${un ? '卸载' : '删除'}「${esc(r.n)}」?`, body: un ? '它包含的 Skills、命令、子 Agent 与钩子会一并移除。' : c === 'rules' || c === 'skills' ? '会删除磁盘上的对应文件,无法在回收站找回。' : '会从对应配置层移除,可在提示条里撤销。', ok: un ? '卸载' : '删除', danger: true,
+    modal({ icon: 'trash', lvl: 'err', title: `${un ? '卸载' : '删除'}「${esc(r.n)}」?`, body: (un ? '它包含的 Skills、命令、子 Agent 与钩子会一并移除。' : c === 'rules' || c === 'skills' ? '会删除磁盘上的对应文件,无法在回收站找回。' : '这会从当前范围移除它的配置。') + '此操作不可撤销。', ok: un ? '卸载' : '删除', danger: true,
       onOk: () => { const row = $$('.cu-row').find(x => +x.dataset.i === k); if (row) { row.style.maxHeight = row.offsetHeight + 'px'; void row.offsetHeight; row.classList.add('rm'); }
         later(row ? 320 : 0, () => { cu.remove(c, k); refreshCu(); });
         toast((un ? '已卸载 ' : '已删除 ') + r.n, { lvl: 'info', act: { label: '撤销', fn: () => { cu.DATA[c].splice(k, 0, r); st.cuSel = k; if (cc() === c) refreshCu(); } } }); } }); };
