@@ -233,7 +233,7 @@ func (a *App) ActivateWorkspace(id string) {
 		a.lspReset()
 		a.closeTerm()
 	}
-	a.ide.useFS(multi, map[string]string{}, a.headOfRepo)
+	a.ide.useFS(a.wrapIDE(multi), map[string]string{}, a.headOfRepo)
 	a.ide.termLines = nil
 	a.repoAct = 0
 	a.sc = scmState{gen: a.sc.gen + 1}
@@ -371,6 +371,9 @@ func (a *App) treePath(rel string) string {
 
 // repoAt 文件树路径 → 它所在的仓库与仓库内相对路径(单项目时就是 a.repo)。
 func (a *App) repoAt(p string) (vcs.Repo, string) {
+	if workspace.IsExternalPath(p) {
+		return nil, ""
+	}
 	if a.multiRoot() {
 		if i, rest, ok := a.repoIndexOf(p); ok {
 			return a.repos[i].repo, rest

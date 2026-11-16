@@ -8,6 +8,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/lsp"
+	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
 
 // 语言服务的「改动类」动作:重命名、格式化,以及转到类型定义 / 实现。
@@ -292,6 +293,12 @@ func (a *App) editorMenu(tb *ideTab, m *ui.Menu) {
 
 // absPath 项目相对路径 → 绝对路径(演示模式没有真实目录,原样返回)。
 func (a *App) absPath(rel string) string {
+	if workspace.IsExternalPath(rel) {
+		if a.ide != nil && a.ide.fs != nil {
+			return a.ide.fs.Abs(rel)
+		}
+		return filepath.Clean(rel)
+	}
 	if a.proj == "" {
 		return rel
 	}

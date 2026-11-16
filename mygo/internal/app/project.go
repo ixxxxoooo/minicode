@@ -42,7 +42,7 @@ func (a *App) SetProject(dir string) {
 	log.Info("切换项目", "dir", dir)
 	a.SetRepo(nil)
 	a.sc = scmState{gen: a.sc.gen + 1}
-	a.ide.useFS(workspace.NewOS(dir), map[string]string{}, a.headOfRepo)
+	a.ide.useFS(a.wrapIDE(workspace.NewOS(dir)), map[string]string{}, a.headOfRepo)
 	a.ide.termLines = nil
 	a.lspReset()
 	a.closeTerm() // 终端跟着项目走:旧目录里的 shell 结束,下次打开面板在新目录重开
@@ -63,6 +63,9 @@ func (a *App) SetProject(dir string) {
 
 // headOfRepo 取 HEAD 里某文件的内容(没有仓库或文件不在 HEAD 里时 ok=false)。
 func (a *App) headOfRepo(p string) (string, bool) {
+	if workspace.IsExternalPath(p) {
+		return "", false
+	}
 	r, rel := a.repoAt(p)
 	if r == nil {
 		return "", false

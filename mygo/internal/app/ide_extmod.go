@@ -28,7 +28,7 @@ const (
 // diskBacked 是否值得对磁盘做 Stat(演示内存、Multi 里含 OS 根时仍轮询)。
 func diskBacked(fs workspace.FS) bool {
 	switch fs.(type) {
-	case *workspace.OS, *workspace.Multi:
+	case *workspace.OS, *workspace.Multi, *workspace.WithExternal:
 		return true
 	default:
 		return false

@@ -13,7 +13,10 @@ import (
 	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/lsp"
+	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
+
+var lspLog = diag.L("app.lsp")
 
 // 语言服务(LSP)接入:打开文件时按扩展名选服务器(rust-analyzer / gopls / Pyright / lua-language-server …),
 // 后台启动并同步文本;诊断画成波浪线并汇入「问题」面板与状态栏;悬停 / 转到定义 / 引用 / 补全
@@ -146,8 +149,13 @@ func (a *App) lspFor(rel string) *lspSess {
 	if spec == nil {
 		return nil
 	}
-	abs := filepath.Join(a.proj, rel)
-	root := spec.Root(abs, a.proj)
+	abs := a.absPath(rel)
+	fallback := a.proj
+	if workspace.IsExternalPath(rel) {
+		fallback = filepath.Dir(abs)
+		lspLog.Debug("工作区外文件接语言服务", "path", abs, "root", fallback)
+	}
+	root := spec.Root(abs, fallback)
 	key := root + "|" + spec.ID
 	if s := a.lspH.sess[key]; s != nil {
 		return s
@@ -273,7 +281,7 @@ func (a *App) lspTick(tb *ideTab) {
 	if s.state != lspReady {
 		return
 	}
-	uri := lsp.PathToURI(filepath.Join(a.proj, tb.path))
+	uri := lsp.PathToURI(a.absPath(tb.path))
 	v := tb.buf.Version()
 	d := s.docs[tb.path]
 	switch {
@@ -308,7 +316,7 @@ func (a *App) lspSaved(rel string) {
 	if tb := a.ide.tab(rel); tb != nil && tb.buf != nil {
 		a.lspTick(tb)
 	}
-	uri := lsp.PathToURI(filepath.Join(a.proj, rel))
+	uri := lsp.PathToURI(a.absPath(rel))
 	if s.docs[rel] != nil {
 		s.do(func() { _ = s.c.DidSave(uri) })
 	}
@@ -448,7 +456,7 @@ func (a *App) lspDefinition(tb *ideTab, off int, fallback func()) bool {
 	if s == nil {
 		return false
 	}
-	uri := lsp.PathToURI(filepath.Join(a.proj, tb.path))
+	uri := lsp.PathToURI(a.absPath(tb.path))
 	pos := lspPos(tb, off)
 	here := tb.path
 	a.lspJob("def", s, func() func() {
@@ -497,7 +505,7 @@ func (a *App) lspReferences(tb *ideTab, off int, word string, fallback func()) b
 	if s == nil {
 		return false
 	}
-	uri := lsp.PathToURI(filepath.Join(a.proj, tb.path))
+	uri := lsp.PathToURI(a.absPath(tb.path))
 	pos := lspPos(tb, off)
 	a.lspJob("refs", s, func() func() {
 		locs, err := s.c.References(uri, pos)
@@ -541,7 +549,7 @@ func (a *App) lspHover(tb *ideTab, req editor.HoverRequest, start, end int, fall
 	if s == nil {
 		return false
 	}
-	uri := lsp.PathToURI(filepath.Join(a.proj, tb.path))
+	uri := lsp.PathToURI(a.absPath(tb.path))
 	pos := lspPos(tb, req.Offset)
 	a.lspJob("hover", s, func() func() {
 		text, err := s.c.Hover(uri, pos)
@@ -569,7 +577,7 @@ func (a *App) lspCompletion(tb *ideTab, req editor.CompletionRequest, fallback f
 	if s == nil {
 		return false
 	}
-	uri := lsp.PathToURI(filepath.Join(a.proj, tb.path))
+	uri := lsp.PathToURI(a.absPath(tb.path))
 	pos := lspPos(tb, req.Offset)
 	a.lspJob("complete", s, func() func() {
 		list, err := s.c.Completion(uri, pos)
