@@ -223,8 +223,8 @@
   .welcome .starters { flex-wrap: wrap; justify-content: center; }
   .msg-u { max-width: 100%; }
 }
-/* 助手回复脚注:420–519 放不下 5 段,缓存 / 费用收进悬停卡,留模型 · 用时 · token */
-@container chat (min-width: 420px) and (max-width: 519px) {
+/* 助手回复脚注:420–639 放不下 5 段(含分段条),缓存 / 费用收进悬停卡,留模型 · 用时 · token */
+@container chat (min-width: 420px) and (max-width: 639px) {
   .tfoot .meta span:nth-child(n+4) { display: none; }
 }
 @container chat (max-width: 419px) {
