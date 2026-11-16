@@ -38,6 +38,26 @@ func (a *App) setFold(key string, on bool) {
 	}
 }
 
+// foldScroll 取(必要时新建)某个折叠正文的滚动状态。运行中的输出默认贴底,
+// 用户上滚后不再拉回,滚回底部(8px 内)自动恢复贴底。
+func (a *App) foldScroll(key string, live bool) *ui.ScrollState {
+	if a.foldSt == nil {
+		a.foldSt = map[string]*ui.ScrollState{}
+	}
+	st := a.foldSt[key]
+	if st == nil {
+		st = &ui.ScrollState{}
+		if live {
+			st.Y = math.MaxFloat32
+		}
+		a.foldSt[key] = st
+	}
+	if live && st.Y >= st.MaxY-8 {
+		st.Y = math.MaxFloat32
+	}
+	return st
+}
+
 // foldBody 渲染可折叠的等宽正文;live 为真时展开区滚到底。
 func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, copy func()) {
 	t := a.tk
@@ -54,13 +74,18 @@ func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, co
 		maxH = foldMaxH
 		show = lines[:foldLineCap]
 	}
-	var st ui.ScrollState
-	if live {
-		st.Y = math.MaxFloat32
-	}
+	// 滚动位置必须跨帧保留:原先每帧 new 一个 ScrollState 再 TrackScroll,容器每帧都被拉回顶部,
+	// 滚轮在代码块里「滚不动 / 弹回去」,到底了也传不到外层。
+	st := a.foldScroll(key, live)
+	// 围栏代码块在 Markdown 里,选区由 Markdown 视图统一管;命令 / 输出卡自己带选区(拖选、双击选词、⌘C)。
+	own := !strings.HasPrefix(key, "cb:")
 	// 只创建一个元素:先建 Column 再换成 Scroll 会让同一个键注册两次(同父下重复键 panic)。
 	inner := func() {
-		ui.Column(c).Padding(6, 10).Gap(0).Children(func() {
+		body := ui.Column(c).Padding(6, 10).Gap(0)
+		if own {
+			body.Selectable()
+		}
+		body.Children(func() {
 			for i, ln := range show {
 				row := ui.Row(c).Key(i).Height(a.flowMonoLH()).AlignItems(ui.Center)
 				if mono {
@@ -77,10 +102,7 @@ func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, co
 		})
 	}
 	if needFold || exp {
-		if live && st.Y >= st.MaxY {
-			st.Y = math.MaxFloat32
-		}
-		ui.Scroll(c).TrackScroll(&st).MaxHeight(float32(maxH)).Key("foldout-" + key).Children(inner)
+		ui.Scroll(c).TrackScroll(st).MaxHeight(float32(maxH)).Key("foldout-" + key).Children(inner)
 	} else {
 		ui.Column(c).Key("foldout-" + key).Children(inner)
 	}
