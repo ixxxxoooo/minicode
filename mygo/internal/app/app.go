@@ -382,8 +382,8 @@ func New(o Options) *App {
 // retheme 重新解析令牌(换主题 / 方案 / 强调色后调用)。
 func (a *App) retheme() {
 	sch := a.sch
-	sch.RK *= [3]float32{.55, 1, 1.35}[a.radius] // 圆角倍率
-	sch.RowH += float32(a.density-1) * 2         // 行高 ±2
+	sch.RK *= [3]float32{.55, 1, 1.35}[a.radius]           // 圆角倍率
+	sch.RowH = theme.Px(sch.RowH) + float32(a.density-1)*2 // 行高随界面大小缩放,再按密度 ±2
 	a.tk = theme.Resolve(a.pal, sch, a.accent)
 	kit.Use(a.tk)
 	a.md = nil
@@ -399,6 +399,7 @@ func (a *App) retheme() {
 func (a *App) Attach(be backend.Backend) {
 	a.be = be
 	a.warmAttach(be)
+	co := &deltaCoalescer{}
 	be.Start(func(ev core.Event) {
 		apply := func() {
 			if a.be != be {
@@ -411,11 +412,25 @@ func (a *App) Attach(be backend.Backend) {
 			end()
 		}
 		if a.win != nil {
-			a.win.Update(apply)
+			co.push(ev, func() { a.win.Update(apply) }, func(m core.Event) func() {
+				return func() { a.win.Update(func() { a.applyEv(be, m) }) }
+			})
 		} else {
 			apply()
 		}
 	})
+}
+
+// applyEv 在主线程归约一个(可能是合并过的)事件。
+func (a *App) applyEv(be backend.Backend, ev core.Event) {
+	if a.be != be {
+		a.applyParked(be, ev)
+		return
+	}
+	end := diag.SpanSlow("app", "归约事件", 8*time.Millisecond, "ev", evName(ev))
+	a.st.Apply(ev)
+	a.afterEvent(ev)
+	end()
 }
 
 // afterEvent 归约之后的界面侧反应:回合结束时处理排队。
