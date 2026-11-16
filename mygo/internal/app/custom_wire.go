@@ -497,6 +497,12 @@ func (a *App) usageRefreshLimits(force bool) {
 	if !force && a.use.limitsAt > 0 && time.Now().Unix()-a.use.limitsAt < core.LimitsTTLSecs {
 		return
 	}
+	// 自动路径(用量页每帧都会走到这里)必须节流:查询失败时 limitsAt 仍是 0,
+	// 没有节流就每帧重发 CmdRefreshUsage,状态在「更新中 / 查询失败」之间来回翻,整页闪烁。
+	if !force && time.Since(a.use.limitsTry) < time.Duration(core.LimitsTTLSecs)*time.Second {
+		return
+	}
+	a.use.limitsTry = time.Now()
 	a.use.limitsState = core.LimitsChecking
 	a.send(core.CmdRefreshUsage{Limits: true, Force: force})
 }

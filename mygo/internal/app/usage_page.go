@@ -13,12 +13,16 @@ import (
 // 用量与成本整页(设计稿 usage.js):范围切换会重算图表与汇总;右侧是账户限额与建议。
 // 数据源是 a.usageSrc(演示用 demo.Usage,真实后端接上后换成扫描 ~/.claude/projects 的结果)。
 
+// usageRevealDur 是骨架 → 内容交叉淡入的时长(只播一次)。
+const usageRevealDur = 700 * time.Millisecond
+
 type usageState struct {
 	rng           int // 0 = 7 天 / 1 = 30 天 / 2 = 本月
 	set           bool
 	limits        []core.Limit
 	limitsAt      int64
 	limitsState   core.LimitsState
+	limitsTry     time.Time // 上次自动发起限额查询的时刻(节流:失败也别每帧重发)
 	limitsUpdated string
 	loadEmpty     bool      // 上一帧仍在等统计
 	revealAt      time.Time // 骨架 → 内容交叉淡入起点
@@ -105,13 +109,13 @@ func (a *App) usagePage(c *ui.Context) {
 			a.frameSoon()
 		}
 	}
-	reveal := !a.use.revealAt.IsZero()
+	reveal := !a.use.revealAt.IsZero() && time.Since(a.use.revealAt) < usageRevealDur
 	a.pane(c).Grow(1).Children(func() {
 		root := ui.Box(c).Grow(1)
 		root.Children(func() {
 			var skel, body ui.Element
 			if reveal {
-				skel = ui.Column(c)
+				skel = ui.Column(c).Absolute().Left(0).Right(0).Top(0) // 叠在内容上淡出,不占位、不挤动内容
 				skel.Children(func() {
 					ui.Row(c).Gap(10).Padding(8, 12).AlignItems(ui.Center).Children(func() {
 						kit.SkelLine(c, .5, 14)
@@ -124,7 +128,7 @@ func (a *App) usagePage(c *ui.Context) {
 			}
 			body.Children(func() { a.usageBody(c, u) })
 			if reveal {
-				kit.Crossfade(skel, body, a.use.revealAt, 3200*time.Millisecond, a.frameSoon)
+				kit.Crossfade(skel, body, a.use.revealAt, usageRevealDur, a.frameSoon)
 			}
 		})
 	})
