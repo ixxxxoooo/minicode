@@ -126,7 +126,7 @@ func (a *App) finishOpenDiskReadOnly(abs, src string, r lsp.Range) {
 		t = &ideTab{id: abs, path: abs, diskRO: true, preview: false}
 		t.buf = editor.NewBuffer(src)
 		t.buf.SetLanguage(editor.LanguageFor(filepath.Base(abs)))
-		t.saved = src
+		t.saved = t.buf.String()
 		t.st = &editor.State{Buffer: t.buf, ReadOnly: true, WrapGuides: nil}
 		d.addTab(t)
 	} else {
@@ -136,7 +136,7 @@ func (a *App) finishOpenDiskReadOnly(abs, src string, r lsp.Range) {
 		}
 		if t.buf != nil && t.buf.String() != src && !t.dirty() {
 			t.buf.Reset(src)
-			t.saved = src
+			t.saved = t.buf.String()
 		}
 	}
 	t.reveal = &[3]int{r.Start.Line, c0, c1}

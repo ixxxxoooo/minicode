@@ -217,7 +217,8 @@ func (a *App) applyExtmod(tb *ideTab, snap diskSnap, dirty bool) {
 		for _, t := range a.tabsForPath(tb.path) {
 			if t.buf != nil {
 				setKeepCursor(t, src)
-				t.saved = src
+				t.saved = normEOL(src)
+				t.eol, t.eolDisk = detectEOL(src), detectEOL(src)
 				t.buf.MarkSaved()
 				t.extBanner = false
 				extResetFlags(tb.path)
@@ -258,7 +259,8 @@ func (a *App) reloadTabFromDisk(tb *ideTab, user bool) {
 			continue
 		}
 		setKeepCursor(t, src)
-		t.saved = src
+		t.saved = normEOL(src)
+		t.eol, t.eolDisk = detectEOL(src), detectEOL(src)
 		t.buf.MarkSaved()
 		t.extBanner = false
 		extResetFlags(tb.path)

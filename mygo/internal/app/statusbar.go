@@ -82,7 +82,8 @@ func (a *App) statusbar(c *ui.Context) {
 				if tab.diskRO {
 					a.sbItem(c, "ro", func() { ui.Text(c, "只读") })
 				}
-				a.sbItem(c, "enc", func() { ui.Text(c, "UTF-8") })
+				a.sbItem(c, "enc", func() { ui.Text(c, "UTF-8") }).Tooltip("文件编码(目前只支持 UTF-8)").Menu(a.encMenu)
+				a.sbItem(c, "eol", func() { ui.Text(c, eolLabel(tab.eolNow())) }).Tooltip("行尾序列(点击切换)").Menu(a.eolMenu)
 				lang := "纯文本"
 				if l := tab.buf.Language(); l != nil {
 					lang = l.Name

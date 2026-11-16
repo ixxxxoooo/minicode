@@ -27,7 +27,9 @@ type ideTab struct {
 	buf     *editor.Buffer
 	st      *editor.State
 	dv      *editor.DiffState
-	saved   string  // 最近一次落盘的内容(判断是否有未保存修改)
+	saved   string  // 最近一次落盘的内容(已把 \r\n 归一成 \n,与缓冲区同口径;判断是否有未保存修改)
+	eol     string  // 保存时使用的行尾(空 = LF;状态栏可切换,ide_eol.go)
+	eolDisk string  // 磁盘上现在的行尾
 	err     string  // 读取失败 / 太大时的提示
 	reveal  *[3]int // 待选中的范围:行、起止列(下一次渲染时应用)
 	headKey string  // 上次用于 DiffBase 的 HEAD 文本摘要(ide_gutter.go)
@@ -66,7 +68,24 @@ type ideTab struct {
 	diskRO     bool // 工作区外只读(语言服务器跳转开的标准库 / 依赖,不可保存)
 }
 
-func (t *ideTab) dirty() bool { return !t.diff && t.buf != nil && t.buf.String() != t.saved }
+func (t *ideTab) dirty() bool {
+	return !t.diff && t.buf != nil && (t.buf.String() != t.saved || t.eolNow() != t.eolSaved())
+}
+
+// eolNow / eolSaved:当前选用的行尾 / 磁盘上的行尾(空 = LF)。改行尾本身也算未保存修改。
+func (t *ideTab) eolNow() string {
+	if t.eol == "" {
+		return eolLF
+	}
+	return t.eol
+}
+
+func (t *ideTab) eolSaved() string {
+	if t.eolDisk == "" {
+		return eolLF
+	}
+	return t.eolDisk
+}
 
 func (t *ideTab) diffLabel() string {
 	if t.label != "" {
@@ -297,7 +316,9 @@ func (d *ide) loadText(t *ideTab) {
 		t.err = ""
 		t.buf = editor.NewBuffer(src)
 		t.buf.SetLanguage(editor.LanguageFor(path.Base(p)))
-		t.saved = src
+		t.saved = t.buf.String() // 缓冲区已把 \r\n 归一;用原文比较会让 CRLF 文件一打开就显示未保存
+		t.eol = detectEOL(src)
+		t.eolDisk = t.eol
 		ro := workspace.IsExternalPath(p) && t.diskRO
 		t.st = &editor.State{Buffer: t.buf, ReadOnly: ro, WrapGuides: nil}
 		if head, ok := d.headOf(p); ok && !ro {
@@ -312,9 +333,10 @@ func (d *ide) reloadOpen() {
 		if t.diff || t.buf == nil || t.dirty() {
 			continue
 		}
-		if src, err := d.fs.Read(t.path); err == nil && src != t.saved {
+		if src, err := d.fs.Read(t.path); err == nil && normEOL(src) != t.saved {
 			t.buf.Reset(src)
-			t.saved = src
+			t.saved = t.buf.String()
+			t.eol, t.eolDisk = detectEOL(src), detectEOL(src)
 		}
 	}
 }
@@ -458,11 +480,12 @@ func (d *ide) save() error {
 		d.beforeSave(t)
 	}
 	s := t.buf.String()
-	if err := d.fs.Write(t.path, s); err != nil {
+	if err := d.fs.Write(t.path, withEOL(s, t.eolNow())); err != nil {
 		ideLog.Error("保存失败", "path", t.path, "err", err)
 		return err
 	}
 	t.saved = s
+	t.eolDisk = t.eolNow()
 	t.buf.MarkSaved()
 	if d.onSaved != nil {
 		d.onSaved(t.path)

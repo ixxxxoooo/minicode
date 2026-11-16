@@ -220,7 +220,7 @@ func (a *App) writeWork(t *ideTab) {
 	t.dvNew = src
 	if ft := d.tab(t.path); ft != nil && ft.buf != nil && !ft.dirty() {
 		ft.buf.Reset(src)
-		ft.saved = src
+		ft.saved = normEOL(src)
 		ft.mm = nil
 	}
 	a.sc.last = a.sc.last.Add(-scmRefreshEvery) // 让 SCM 尽快重读

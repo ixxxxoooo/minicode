@@ -50,7 +50,7 @@ func (a *App) openSharedInPane(pane int8, src *ideTab) {
 			return
 		}
 	}
-	t := &ideTab{id: src.path, path: src.path, preview: false, buf: src.buf, saved: src.saved, hooked: false}
+	t := &ideTab{id: src.path, path: src.path, preview: false, buf: src.buf, saved: src.saved, eol: src.eol, eolDisk: src.eolDisk, hooked: false}
 	t.buf = src.buf
 	t.st = &editor.State{Buffer: src.buf, WrapGuides: nil}
 	if head, ok := d.headOf(src.path); ok {
