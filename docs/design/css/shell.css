@@ -39,7 +39,7 @@
 .side-foot { display: flex; align-items: center; gap: 2px; padding: 6px 8px; flex: none; }
 .proj { font-weight: var(--fw-medium); color: var(--tx-1); gap: 5px; }
 /* 项目 / 工作区行不再有行首展开箭头:图标本身表达展开(folder ⇄ folderOpen,layers ⇄ layersOpen),图标 16px */
-.sess { padding-left: 39px; }
+.sess { margin-left: 18px; } /* 会话整行(含选中高亮 / 竖条)用外边距缩进,标题落在项目名右侧约 14px;不要在行内左边留空白 */
 .new-chat { color: var(--tx-1); font-weight: var(--fw-medium); margin: 0 6px 4px; }
 
 /* 对话栏 */

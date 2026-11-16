@@ -218,7 +218,9 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 		kit.CollapseHide(r, t0, t.Scheme.RowH, a.frameSoon)
 	}
 	if indent {
-		r.PaddingStart(39) // 项目 / 工作区行没有箭头后,会话再多缩进一级(≈ 项目图标 16 + 间距 + 一级缩进)
+		// 整行(含选中高亮与左侧竖条)用外边距缩进,而不是在行内左边留一块空白:
+		// 会话标题落在项目名右侧约 14px,高亮从项目图标之后开始。
+		r.Margin(0, 0, 0, 18)
 	}
 	hov := r.Hovered()
 	if a.ren.id == s.ID { // 行内重命名:整行换成输入框
