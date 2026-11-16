@@ -71,6 +71,9 @@ type Translator struct {
 	// apiError:本回合 claude 发来的 API 错误合成消息的文字(随后的 result 带同样文字,只显示一份)
 	apiError string
 	seq      uint64
+	// CompactManual 本次压缩是用户手动发起的(compacting 状态事件里没有 trigger,靠它区分手动 / 自动)。
+	CompactManual bool
+
 	// IDGen 是实时条目 id 的代号:进程重启后序号从头开始,靠它区分,避免与旧进程的条目撞 id。
 	IDGen int
 	// liveTasks:本进程见过、还没收到终态通知的后台任务。历史里遗留的任务不在其中,无法再停止。
@@ -175,10 +178,29 @@ func (t *Translator) system(v obj) []core.Event {
 			return []core.Event{core.EvMcpServers{Servers: l}}
 		}
 	case "compact_boundary":
-		return []core.Event{notice(core.NoticeInfo, "已压缩上下文")}
+		// 实测(2.1.325):compact_metadata {trigger: manual|auto, pre_tokens, post_tokens, duration_ms, …}
+		md := sub(v, "compact_metadata")
+		if md == nil {
+			md = sub(v, "compactMetadata")
+		}
+		pre, _ := num(md, "pre_tokens")
+		post, _ := num(md, "post_tokens")
+		ms, _ := num(md, "duration_ms")
+		auto := str(md, "trigger") == "auto" || (str(md, "trigger") == "" && !t.CompactManual)
+		t.CompactManual = false
+		return []core.Event{core.EvCompact{State: core.CompactDone, Auto: auto, Pre: uint64(pre), Post: uint64(post), Ms: int64(ms)}}
 	case "status":
 		if str(v, "status") == "compacting" {
-			return []core.Event{notice(core.NoticeInfo, "正在压缩上下文…")}
+			return []core.Event{core.EvCompact{State: core.CompactRunning, Auto: !t.CompactManual}}
+		}
+		// 压缩结束:成功由随后的 compact_boundary 给出(带前后 token 数),这里只处理失败
+		if r := str(v, "compact_result"); r != "" && r != "success" {
+			t.CompactManual = false
+			msg := str(v, "compact_error")
+			if msg == "" {
+				msg = "claude 没有给出原因(compact_result=" + r + ")"
+			}
+			return []core.Event{core.EvCompact{State: core.CompactFailed, Err: msg}}
 		}
 		// 权限模式每次变化都会带上当前模式(批准计划、set_permission_mode 之后)
 		if m, ok := core.ParseMode(str(v, "permissionMode")); ok {

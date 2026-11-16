@@ -281,6 +281,8 @@ func (s *State) Apply(ev Event) {
 			}
 			s.Timings[uid] = e.Timing
 		}
+	case EvCompact:
+		s.applyCompact(e)
 	case EvUserUUID:
 		s.UserUUIDs[e.ID] = e.UUID
 	case EvRewind:
@@ -525,6 +527,15 @@ func (s *State) finishStreaming(cancelled bool) {
 				x.Streaming = false
 			case *Thinking:
 				x.Streaming = false
+			case *Compaction:
+				if x.State == CompactRunning { // 回合结束了还没有结果:取消 / 没有完成,不能一直转
+					x.State, x.DoneAt = CompactFailed, time.Now()
+					if cancelled {
+						x.Err = "已取消"
+					} else {
+						x.Err = "压缩没有完成(没有收到结果)"
+					}
+				}
 			case *ToolCall:
 				if cancelled && !x.Status.Finished() {
 					x.Status = ToolInterrupted
@@ -722,5 +733,41 @@ func (s *State) tasksChanged(list []*BackgroundTask) {
 			t.Status, t.EndedMs = TaskStopped, now
 			s.syncCard(t)
 		}
+	}
+}
+
+// applyCompact 归约压缩事件:复用时间线末尾进行中的卡片,没有就新建。
+func (s *State) applyCompact(e EvCompact) {
+	now := time.Now()
+	var cur *Compaction
+	for i := len(s.Items) - 1; i >= 0; i-- {
+		if c, ok := s.Items[i].(*Compaction); ok && c.State == CompactRunning {
+			cur = c
+			break
+		}
+		if _, ok := s.Items[i].(*User); ok { // 只看当前回合
+			break
+		}
+	}
+	if cur == nil {
+		if e.State == CompactRunning || e.State == CompactDone || e.State == CompactFailed {
+			s.noticeSeq++
+			cur = &Compaction{ID: fmt.Sprintf("cp%d", s.noticeSeq), Auto: e.Auto, StartedAt: now}
+			s.Items = append(s.Items, cur)
+		}
+	}
+	if cur == nil {
+		return
+	}
+	if e.Auto {
+		cur.Auto = true
+	}
+	switch e.State {
+	case CompactRunning:
+		if cur.StartedAt.IsZero() {
+			cur.StartedAt = now
+		}
+	case CompactDone, CompactFailed:
+		cur.State, cur.Pre, cur.Post, cur.Ms, cur.Err, cur.DoneAt = e.State, e.Pre, e.Post, e.Ms, e.Err, now
 	}
 }

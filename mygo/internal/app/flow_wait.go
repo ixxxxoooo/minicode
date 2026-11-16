@@ -64,6 +64,11 @@ func (a *App) turnStartTime() time.Time {
 
 // stageWord 括号里的阶段词。
 func (a *App) stageWord() string {
+	if n := len(a.st.Items); n > 0 { // 压缩期间,阶段词写「压缩上下文」
+		if cp, ok := a.st.Items[n-1].(*core.Compaction); ok && cp.State == core.CompactRunning {
+			return "压缩上下文"
+		}
+	}
 	if ls := a.st.Live; ls != nil {
 		switch ls.Kind {
 		case core.StageTool:

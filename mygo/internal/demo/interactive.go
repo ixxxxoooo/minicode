@@ -76,10 +76,10 @@ func (b *Backend) Send(cmd core.Command) {
 		sink := b.sink
 		b.mu.Unlock()
 		if sink != nil {
-			sink(core.EvAppend{Item: &core.Notice{Level: core.NoticeInfo, Text: "正在压缩上下文…"}})
+			sink(core.EvCompact{State: core.CompactRunning})
 		}
 		go func() {
-			time.Sleep(900 * time.Millisecond)
+			time.Sleep(time.Duration(float64(2400*time.Millisecond) * b.speed))
 			b.mu.Lock()
 			s := b.sink
 			b.mu.Unlock()
@@ -87,9 +87,10 @@ func (b *Backend) Send(cmd core.Command) {
 				return
 			}
 			u := demoContextUsage()
-			u.ContextUsed = u.ContextUsed * 6 / 10
+			pre := u.ContextUsed
+			u.ContextUsed = pre * 22 / 100
 			s(core.EvUsage{Usage: u})
-			s(core.EvAppend{Item: &core.Notice{Level: core.NoticeInfo, Text: "已压缩上下文"}})
+			s(core.EvCompact{State: core.CompactDone, Pre: pre, Post: u.ContextUsed, Ms: 2400})
 		}()
 	case core.CmdRestartTask:
 		b.mu.Lock()
@@ -181,6 +182,8 @@ func (b *Backend) prompt(p core.CmdPrompt) {
 	head := []Step{{0, user}, {ms(250), core.EvTurnStarted{}}}
 	text := strings.ToLower(p.Text)
 	switch {
+	case strings.Contains(text, "压缩失败"):
+		head = append(head, b.compactFailScene()...)
 	case strings.Contains(text, "慢"):
 		head = append(head, b.slowWaitScene(uid)...)
 	case strings.Contains(text, "多次"):

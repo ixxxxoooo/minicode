@@ -91,3 +91,12 @@ func (b *Backend) multiCallScene(uid string) []Step {
 	s = append(s, r[:n]...)
 	return append(s, Step{0, timingEv(uid, 0, phases, cacheCalls(2))}, r[n])
 }
+
+// compactFailScene 压缩失败:压缩中 → 失败(原因 + 重试),回合结束。
+func (b *Backend) compactFailScene() []Step {
+	return []Step{
+		{ms(200), core.EvCompact{State: core.CompactRunning}},
+		{ms(1800), core.EvCompact{State: core.CompactFailed, Err: "上游返回错误:context window exceeded,无法生成摘要。"}},
+		{0, core.EvTurnEnded{Reason: core.StopEndTurn}},
+	}
+}

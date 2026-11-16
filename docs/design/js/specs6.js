@@ -174,7 +174,7 @@
       ['压缩卡条目 + 事件', 'core.Compaction / EvCompact;claude 翻译 compacting / compact_boundary(metadata);后端手动压缩不再发假用户消息。未测试', st('part')],
       ['卡片 UI', 'app/flow_compact.go:压缩中 / 已完成 / 失败三态、对比条动画。未测试', st('part')],
       ['演示', '演示后端 /compact 走 压缩中 → 已完成;发「压缩失败」走失败态', st('part')],
-      ['历史回放', 'translate system compact_boundary 同路径(replay 的字段名为 camelCase,两种都认)。未测试', st('part')]]))}
+      ['历史回放', '本机历史记录里没有 compact_boundary 样本可核对字段,重开会话时还不会还原成卡(旧的 /compact 命令消息仍被过滤);待有样本后补', st('todo')]]))}
   </div>`;
 
   /* ───── 动画字符:每 150 ms 换一帧(减弱动态时固定第一帧) ───── */

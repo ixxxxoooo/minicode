@@ -148,7 +148,7 @@ func (a *App) addRoundRows(add func(flowRow), u *core.User, rest []core.Item, st
 // flowTailVisible 这类条目在会话流里会画出东西(其余类型 tailItem 什么都不画,不要留空行)。
 func flowTailVisible(it core.Item) bool {
 	switch v := it.(type) {
-	case *core.Assistant, *core.Notice, *core.TaskNote, *core.PlanApproval:
+	case *core.Assistant, *core.Notice, *core.TaskNote, *core.PlanApproval, *core.Compaction:
 		return true
 	case *core.QuestionRequest:
 		return v.Answered
@@ -167,6 +167,8 @@ func (a *App) tailItem(c *ui.Context, it core.Item) {
 		a.taskNoteLine(c, v)
 	case *core.PlanApproval:
 		a.planCard(c, v)
+	case *core.Compaction:
+		a.compactCard(c, v)
 	case *core.QuestionRequest:
 		if v.Answered {
 			a.askEcho(c, v)

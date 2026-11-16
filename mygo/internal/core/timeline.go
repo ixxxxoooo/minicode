@@ -1,5 +1,7 @@
 package core
 
+import "time"
+
 // Item 是时间线上的一个条目。具体类型都是指针,归约器原地修改它们。
 type Item interface{ ItemID() string }
 
@@ -190,6 +192,27 @@ type Notice struct {
 	Text  string
 }
 
+// CompactState 压缩上下文的进行状态。
+type CompactState int
+
+const (
+	CompactRunning CompactState = iota
+	CompactDone
+	CompactFailed
+)
+
+// Compaction 是会话流里「压缩上下文」的独立卡片(设计稿 flow-compact 页):压缩中 / 已完成(前后对比)/ 失败。
+type Compaction struct {
+	ID        string
+	Auto      bool // claude 自动触发(上下文将满);否则是手动 /compact
+	State     CompactState
+	Pre, Post uint64 // 压缩前后的 token 数;0 = 不知道
+	Ms        int64  // claude 报告的压缩用时
+	Err       string
+	StartedAt time.Time // 界面拿到「开始」事件的时刻(压缩中的已用时)
+	DoneAt    time.Time // 转为已完成 / 失败的时刻(对比条的收缩动画)
+}
+
 // Canvas 是画布卡片。
 type Canvas struct{ ID, Title string }
 
@@ -215,6 +238,7 @@ type TaskNote struct {
 func (x *User) ItemID() string              { return x.ID }
 func (x *Assistant) ItemID() string         { return x.ID }
 func (x *Thinking) ItemID() string          { return x.ID }
+func (x *Compaction) ItemID() string        { return x.ID }
 func (x *ToolCall) ItemID() string          { return x.ID }
 func (x *Todos) ItemID() string             { return x.ID }
 func (x *SubagentCard) ItemID() string      { return x.ID }

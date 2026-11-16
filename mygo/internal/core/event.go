@@ -143,6 +143,15 @@ type (
 		Call      int
 		Cache     *CacheTokens
 	}
+	// EvCompact 压缩上下文的进度:Running 时若时间线末尾已有一张进行中的压缩卡就复用,否则追加新卡;
+	// Done / Failed 更新那张卡(没有进行中的卡时补一张,如历史回放里只有 compact_boundary)。
+	EvCompact struct {
+		State     CompactState
+		Auto      bool
+		Pre, Post uint64
+		Ms        int64
+		Err       string
+	}
 	// EvConn claude 进程的连接状态变化(惰性启动 / 预热 / 空闲回收 / 退出);Why 是给日志与提示用的原因。
 	EvConn struct {
 		State ConnState
@@ -206,6 +215,7 @@ func (EvTasksChanged) event()        {}
 func (EvTaskOutput) event()          {}
 func (EvTurnStats) event()           {}
 func (EvTurnEnded) event()           {}
+func (EvCompact) event()             {}
 func (EvTurnPhase) event()           {}
 func (EvTurnTiming) event()          {}
 
