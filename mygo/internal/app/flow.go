@@ -299,7 +299,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 		})
 		mqOn := a.thinkMarqueeVisible(sp, open)
 		var obj ui.Element
-		if sp.state == "run" && sp.fam != famThink {
+		if sp.state == "run" && (sp.fam != famThink || !mqOn) { // 思考行有跑马灯时标题常驻静态,其余运行中的行(含没有跑马灯的思考)都是流光
 			if sp.verb != "" {
 				kit.RunTextS(c, sp.verb, t.Tx1, func(e ui.Element) ui.Element { return e.TextColor(t.Tx2).Shrink(0).SingleLine() })
 			}
