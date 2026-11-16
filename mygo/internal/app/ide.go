@@ -109,6 +109,7 @@ type ide struct {
 	lastActive string       // 自动保存(失焦):上一帧的活动标签
 
 	sections map[string]bool // 资源管理器区块折叠(大纲 / 时间线)
+	rootShut bool            // 「文件夹」区块(文件树本体)是否已折叠
 
 	tabSt          ui.ScrollState     // 标签条的横向滚动
 	tabSeen        string             // 已滚动到可见的标签
@@ -155,7 +156,7 @@ func newIDE() *ide {
 		bottomTab:  "term",
 		sections:   map[string]bool{},
 	}
-	d.useFS(demo.Sandbox(), demo.GitStatus(), demo.HeadOf)
+	d.useFS(workspace.NewWithExternal(demo.Sandbox()), demo.GitStatus(), demo.HeadOf)
 	d.termLines = demoTermLinesFrom(demo.TermDemoLines())
 	return d
 }

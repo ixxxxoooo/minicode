@@ -23,12 +23,25 @@ func (a *App) filesView(c *ui.Context) {
 		ui.Scroll(c).Key("files").Grow(1).MinHeight(0).Children(func() {
 			ui.Column(c).Children(func() {
 				ui.Row(c).Height(24).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Children(func() {
-					kit.Ic(c, "chevD", kit.S12)
 					title := strings.ToUpper(d.fs.Name())
 					if a.multiRoot() {
 						title = strings.ToUpper(a.ws.Name) + "(工作区)"
 					}
-					ui.Text(c, title).Grow(1).SingleLine()
+					// 标题 + 箭头整块可点,点一下折叠 / 展开整棵文件树(与「大纲 / 时间线」区块一致)
+					head := ui.ButtonBase(c).Key("tree-root-head").Grow(1).Height(24).Justify(ui.Start).Gap(5).AlignItems(ui.Center).
+						TextColor(t.Tx3).FontSize(10.5).FontWeight(700).Cursor(ui.CursorDefault)
+					if head.Clicked() {
+						d.rootShut = !d.rootShut
+						diag.L("ide").Info("折叠文件树根", "折叠", d.rootShut)
+					}
+					head.Children(func() {
+						icon := "chevD"
+						if d.rootShut {
+							icon = "chevR"
+						}
+						kit.Ic(c, icon, kit.S12)
+						ui.Text(c, title).Grow(1).SingleLine()
+					})
 					if a.multiRoot() {
 						kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "添加文件夹"}).OnClick(func() {
 							a.pickFolders(true, func(ps []string) { a.wsAddFolders(a.ws.ID, ps) })
@@ -38,7 +51,9 @@ func (a *App) filesView(c *ui.Context) {
 					kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache, d.filesCache = nil, nil })
 					kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.treeHeadMenu)
 				})
-				a.treeDir(c, "", 0)
+				if !d.rootShut {
+					a.treeDir(c, "", 0)
+				}
 			})
 		})
 		ui.Column(c).Children(func() {
