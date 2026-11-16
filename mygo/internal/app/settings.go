@@ -354,7 +354,8 @@ func (a *App) settingsMain(c *ui.Context) {
 	}
 	ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 		kit.VScroll(c).Key("set-main").TrackScroll(&a.set.mainSt).Grow(1).MinHeight(0).Children(func() {
-			ui.Row(c).Justify(ui.Center).Padding(18, 0, 28, 0).Children(func() {
+			// 左右各留 16 的边距:窄窗口(内容列撑满整宽)时不贴边;宽窗口里内容列定宽居中,不受影响
+			ui.Row(c).Justify(ui.Center).Padding(18, 16, 28, 16).Children(func() {
 				col := ui.Column(c).Shrink(1).MinWidth(0).Gap(14)
 				if sw := a.settingsContentWidth(); sw > 0 {
 					col.Width(sw)
