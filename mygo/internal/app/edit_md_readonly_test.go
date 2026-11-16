@@ -15,10 +15,7 @@ func TestMarkdownManualReadOnly(t *testing.T) {
 	if !tb.md.readOnly || !a.mdPreviewReadOnly(tb) {
 		t.Fatalf("应进入手动只读:%+v", tb.md)
 	}
-	tt.Frame()
-	if a.mdPreviewReadOnly(tb) && tb.md.doc != nil {
-		// 只读视图走渲染分支,doc 可仍在内存里
-	}
+	tt.Frame() // 只读视图走渲染分支,能出一帧不 panic
 	a.toggleMdReadOnly(tb)
 	if tb.md.readOnly || a.mdPreviewReadOnly(tb) {
 		t.Fatal("再次切换应恢复可编辑")
