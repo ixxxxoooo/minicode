@@ -1,4 +1,4 @@
-//go:build !darwin || nocgo
+//go:build !darwin || !cgo
 
 package app
 
