@@ -163,6 +163,9 @@ func (s *Store) Activate(provider, model string) {
 	}
 	same := s.Mapping.Provider == provider
 	pick := strings.TrimSpace(model)
+	if pick == "" {
+		pick = s.ResolveProviderPick(provider)
+	}
 	if pick == "" && same {
 		pick = strings.TrimSpace(s.Mapping.Default)
 	}
@@ -173,6 +176,9 @@ func (s *Store) Activate(provider, model string) {
 	m.Enabled = true
 	m.Provider = provider
 	m.Default = pick
+	if pick != "" {
+		s.SetPick(provider, pick)
+	}
 	if !same {
 		for _, sl := range Slots {
 			v := strings.TrimSpace(m.Get(sl.Key))
@@ -181,6 +187,7 @@ func (s *Store) Activate(provider, model string) {
 			}
 		}
 	}
+	s.SanitizePicks()
 }
 
 // PickerGroup 是会话里模型选择器的一个服务商分组(不含 Claude 官方,官方的模型由 claude 自己报)。

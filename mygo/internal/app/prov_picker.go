@@ -47,12 +47,14 @@ func (a *App) cfgModels(c *ui.Context) {
 			// 官方组
 			a.cfgGroupHead(c, "official", "claude", "Claude 官方", strconv.Itoa(len(a.st.Models))+" 个模型", "", activeID == "")
 			if a.cfgGroupOpen("official", activeID == "") {
+				offPick := a.pvOfficialPick()
 				for _, m := range a.st.Models {
 					m := m
-					if a.mi(c, "model-"+m.ID, "logo:claude", m.Name, shortDesc(m), activeID == "" && a.st.Model == m.ID).Clicked() {
+					if a.mi(c, "model-"+m.ID, "logo:claude", m.Name, shortDesc(m), activeID == "" && offPick == m.ID).Clicked() {
 						if activeID != "" {
 							a.pvActivate("", "")
 						}
+						a.pvSetOfficialPick(m.ID)
 						a.pickModel(m.ID)
 						a.toast = "已切换到 " + m.Name + modelSwitchToastNote()
 					}
@@ -65,9 +67,10 @@ func (a *App) cfgModels(c *ui.Context) {
 				if g.Blocked != "" || !a.cfgGroupOpen(g.ID, g.Active) {
 					continue
 				}
+				grpPick := p.store.ResolveProviderPick(g.ID)
 				for _, m := range g.Models {
 					m := m
-					row := a.mi(c, "pm-"+g.ID+"-"+m, "logo:"+modelBrand(m, pb), m, "", g.Active && p.store.Mapping.Default == m)
+					row := a.mi(c, "pm-"+g.ID+"-"+m, "logo:"+modelBrand(m, pb), m, "", g.Active && grpPick == m)
 					if row.Clicked() {
 						a.pvPickModel(g.ID, g.Name, m)
 					}
@@ -120,6 +123,8 @@ func (a *App) cfgGroupHead(c *ui.Context, id, brand, name, count, blocked string
 
 // pvPickModel 在选择器里点了某个服务商的模型:切到该服务商并把它设为默认槽位的模型。
 func (a *App) pvPickModel(providerID, providerName, model string) {
+	p := a.pvLoad()
+	p.store.SetPick(providerID, model)
 	a.pvActivate(providerID, model)
 	a.send(core.CmdSetModel{Model: "default"}) // 用 ANTHROPIC_MODEL 映射出的默认模型
 	a.st.Model = "default"

@@ -72,6 +72,7 @@ func (a *App) pvLoad() *provState {
 	if p.keys == nil {
 		p.keys = map[string]string{}
 	}
+	p.store.SanitizePicks()
 	return p
 }
 
@@ -160,4 +161,46 @@ func (a *App) pvModelLabel() (string, string) {
 	}
 	m := strings.TrimSpace(a.pvStore().Mapping.Default)
 	return p.Name, m
+}
+
+// pvOfficialPick 运行配置弹层里官方分组记住的模型;无效时退回当前 st.Model。
+func (a *App) pvOfficialPick() string {
+	st := a.pvStore()
+	if st.Picks != nil {
+		if m := strings.TrimSpace(st.Picks[claudecfg.PickOfficial]); m != "" {
+			for _, mi := range a.st.Models {
+				if mi.ID == m {
+					return m
+				}
+			}
+		}
+	}
+	if a.st.Model != "" {
+		return a.st.Model
+	}
+	return "sonnet"
+}
+
+// pvSetOfficialPick 记住官方模型选择(演示只改内存)。
+func (a *App) pvSetOfficialPick(model string) {
+	p := a.pvLoad()
+	p.store.SetPick(claudecfg.PickOfficial, model)
+	a.pvPersist()
+}
+
+// pvModelChipText 第三方运行配置胶囊:短文案 + tooltip「服务商 · 模型 ID」。
+func (a *App) pvModelChipText() (short, tip string) {
+	prov, m := a.pvModelLabel()
+	if prov == "" {
+		return "", ""
+	}
+	if m == "" {
+		return "未选模型", prov + " · —"
+	}
+	tip = prov + " · " + m
+	short = m
+	if len([]rune(m)) > 16 {
+		short = provAbbr(prov)
+	}
+	return short, tip
 }

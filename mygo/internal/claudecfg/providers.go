@@ -101,10 +101,14 @@ var Presets = []Preset{
 	{"Anthropic API", "https://api.anthropic.com", AuthXAPIKey, []string{"claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"}},
 }
 
+// PickOfficial 是会话弹层里 Claude 官方分组在 picks 里用的键(与 ActiveID 空串区分)。
+const PickOfficial = "official"
+
 // Store 是 providers.json 的内容:服务商列表 + 模型映射。
 type Store struct {
-	Providers []Provider `json:"providers"`
-	Mapping   Mapping    `json:"mapping"`
+	Providers []Provider        `json:"providers"`
+	Mapping   Mapping           `json:"mapping"`
+	Picks     map[string]string `json:"picks,omitempty"` // 各服务商在运行配置弹层里上次选的模型
 }
 
 func providersPath() string {
