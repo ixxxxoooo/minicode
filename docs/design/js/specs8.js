@@ -85,7 +85,7 @@
       ['CC Switch(会话查看器)', '整回合一行「步骤 · 44 · 27 条命令 · 2 个文件改动 · 1 失败」,失败标红', '取:精简档摘要 + 失败计数红字'],
       ['通用 ChatToolCalls', '按相邻同名成组,单个不套壳,默认折叠', '取:≥2 才成组、单个不套壳'],
       ['hmanlab TUI', '只读调用并成一块,展开任一条会把它拆出组', '不取:拆组会让行位置跳动']]))}
-    ${sec('实现状态', '未测试:Go 侧仅 go build + cmd/shot(-detail 0|1|2)截图。', `<table class="ia-tbl"><thead><tr><th style="width:240px">项</th><th>说明</th><th style="width:70px">状态</th></tr></thead><tbody>
+    ${sec('实现状态', '未测试:Go 侧仅 go build + cmd/shot(-detail 0|1|2)截图;后加的几行只有单测文件(flow_group_perm_test.go,未运行),未用 computer use 实测。', `<table class="ia-tbl"><thead><tr><th style="width:240px">项</th><th>说明</th><th style="width:70px">状态</th></tr></thead><tbody>
       ${[
         ['精简档合并摘要', 'flow_merge.go 相邻 ≥2 合并;进行中 / 失败 / 窄档短句已接线', 'part'],
         ['精简档进行中 / 失败态', '最新一步 + 「已 N 步」;红 errc + 「N 项失败」;结束后 120ms 摘要淡入未接', 'part'],
@@ -93,7 +93,15 @@
         ['标准档默认折叠(失败 / 运行中例外)', 'present.go applyToolDefaultOpen', 'part'],
         ['详细档探索组默认展开', 'exploreGroup ToolDetailLevel==2 默认展开', 'part'],
         ['断组条目(思考 / 子 Agent / 卡片)', 'stepGroup 已按条目类型断开;核对压缩卡 / 错误卡', 'part'],
-        ['思考行宽度分配', '标题常驻 + 跑马灯 flex(max 52%、<96px 隐藏);cmd/shot -ed thinking 截图,未 computer use', 'part']
+        ['思考行宽度分配', '标题常驻 + 跑马灯 flex(max 52%、<96px 隐藏);cmd/shot -ed thinking 截图,未 computer use', 'part'],
+        ['已处理的权限请求并入分组', 'mergeable / isExplore 用 doneToolOf 解开权限请求里的工具调用,「需要确认的编辑 / 命令」不再把相邻一串截断;被拒绝的留在组里、计入「N 项失败」(仅编译,未测试)', 'part'],
+        ['组内每一条可展开', 'groupChild:探索组与精简摘要组的逐条都是普通步骤行(点才展开入参 / 结果),失败 / 被拒绝 / 进行中的自动展开,展开不拆组', 'part'],
+        ['回合折叠展开后按档位再成组', 'turnFoldGroup 经 stepSeq 再排一次(精简 = 摘要行,标准 = 探索组 + 逐行),已答提问卡把串断开', 'part'],
+        ['命令运行中展开、结束后不自动收起', 'applyToolDefaultOpen 把运行中自动展开记进 folds;用户运行期间自己收起的不覆盖', 'part'],
+        ['差异限高', 'diffCard:详细档 > 8 行、其余 > 12 行内部滚动 + 「展开全部 · 共 N 行 / 收起」,展开上限 480px', 'part'],
+        ['工具令牌补全', '后台 Bash(后台运行 + 已启动)/ Monitor(监听)/ 后台输出 / 结束后台任务 / 联网搜索(N 条结果)/ Glob(N 个文件)各有动词与图标', 'part'],
+        ['失败 / 拒绝 / 中断的右侧结果', '失败的命令写「退出码 N」(红),被拒绝「已拒绝」,被中断「已中断」', 'part'],
+        ['精简摘要行结束时 120 ms 淡入换句', '未做:进行中 → 摘要句目前是直接切换', 'todo']
       ].map(([a, b, c]) => `<tr><td><b>${a}</b></td><td class="t2">${b}</td><td>${st(c)}</td></tr>`).join('')}
     </tbody></table>`)}
   </div>`;
