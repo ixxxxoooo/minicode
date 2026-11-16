@@ -171,33 +171,46 @@ func (a *App) wsSplit(c *ui.Context, cur *ideTab) {
 }
 
 // splitHandle 是两个组之间的分隔线(左右拆分拖横向,上下拆分拖纵向),双击还原 50%。
+// 外观与其它分隔线一致:平时只是 1px 描边线,命中区是 7px 的透明带,悬停 / 拖动时亮出 2px 强调色线。
 // 拖动按「每帧的位移 ÷ 拆分区尺寸」累加到比例上,与分隔线自己所在的坐标系无关。
 func (a *App) splitHandle(c *ui.Context, vertical bool) {
 	t := a.tk
-	el := ui.Box(c).Key("split-h").Cursor(map[bool]ui.Cursor{true: ui.CursorResizeEW, false: ui.CursorResizeNS}[vertical])
+	line := ui.Box(c).Key("split-line").Background(t.Bd1).Shrink(0)
 	if vertical {
-		el.Width(4).FillHeight().Shrink(0)
+		line.Width(1).FillHeight()
 	} else {
-		el.Height(4).FillWidth().Shrink(0)
+		line.Height(1).FillWidth()
 	}
-	dx, dy, dragging := el.Dragged()
-	if dragging {
-		total, delta := a.splitBox.W, dx
-		if !vertical {
-			total, delta = a.splitBox.H, dy
+	line.Children(func() {
+		h := ui.Box(c).Key("split-h").Absolute().Cursor(map[bool]ui.Cursor{true: ui.CursorResizeEW, false: ui.CursorResizeNS}[vertical])
+		if vertical {
+			h.Top(0).Bottom(0).Left(-3).Width(7)
+		} else {
+			h.Left(0).Right(0).Top(-3).Height(7)
 		}
-		if total > splitMin*2 && delta != 0 {
-			a.ide.splitFrac = clamp32(a.ide.splitFrac+delta/total, splitMin/total, 1-splitMin/total)
+		dx, dy, dragging := h.Dragged()
+		if dragging {
+			total, delta := a.splitBox.W, dx
+			if !vertical {
+				total, delta = a.splitBox.H, dy
+			}
+			if total > splitMin*2 && delta != 0 {
+				a.ide.splitFrac = clamp32(a.ide.splitFrac+delta/total, splitMin/total, 1-splitMin/total)
+			}
 		}
-	}
-	if el.DoubleClicked() {
-		a.ide.splitFrac = 0.5
-	}
-	if dragging || el.Hovered() {
-		el.Background(t.Ac.Alpha(.5))
-	} else {
-		el.Background(t.Bd1)
-	}
+		if h.DoubleClicked() {
+			a.ide.splitFrac = 0.5
+		}
+		lit := dragging || h.Hovered()
+		h.Children(func() {
+			ln := ui.Box(c).Background(t.Ac).Opacity(h.AnimateTo("lit", map[bool]float32{true: .85, false: 0}[lit], uiFade))
+			if vertical {
+				ln.Absolute().Top(0).Bottom(0).Left(2.5).Width(2)
+			} else {
+				ln.Absolute().Left(0).Right(0).Top(2.5).Height(2)
+			}
+		})
+	})
 }
 
 // etabsSplitBar 拆分态下顶部的全局条(合并 + 更多)。
