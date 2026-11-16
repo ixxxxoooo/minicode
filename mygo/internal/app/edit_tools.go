@@ -28,21 +28,23 @@ func (a *App) toggleWrap() {
 }
 
 // crumbTools 画面包屑条右侧的一组工具。
+// mdModeSeg 是 Markdown 标签的「预览 | 源码」分段:放在面包屑行的最左边(位置固定)。
+// 以前和换行 / 格式化图标挤在右侧一组里,切到预览时那两个图标消失,分段就跟着往右跳。
+func (a *App) mdModeSeg(c *ui.Context, tb *ideTab) {
+	on := 0
+	if a.mdSource(tb) {
+		on = 1
+	}
+	if i := kit.Seg(c, []kit.SegItem{{Text: "预览", Tip: "渲染后的文档,可直接编辑"}, {Text: "源码", Tip: "显示 Markdown 原文"}}, on, kit.SegOpt{Key: "md-view"}); i >= 0 && i != on {
+		a.setMdMode(tb, i == 1)
+	}
+}
+
 func (a *App) crumbTools(c *ui.Context, tb *ideTab) {
 	t := a.tk
 	ui.Row(c).Shrink(0).Gap(2).AlignItems(ui.Center).Children(func() {
 		md := tb.buf != nil && isMarkdownFile(tb.path)
 		src := a.mdSource(tb)
-		if md {
-			on := 0
-			if src {
-				on = 1
-			}
-			if i := kit.Seg(c, []kit.SegItem{{Text: "预览", Tip: "渲染后的文档,可直接编辑"}, {Text: "源码", Tip: "显示 Markdown 原文"}}, on, kit.SegOpt{Key: "md-view"}); i >= 0 && i != on {
-				a.setMdMode(tb, i == 1)
-			}
-			ui.Box(c).Size(6, 1)
-		}
 		if !md || src { // 所见即所得里文字本来就按宽度折行,换行开关只对源码有意义
 			wrap := a.prefs.Bool(pEdWrap, false)
 			tip := "自动换行 ⌥Z"

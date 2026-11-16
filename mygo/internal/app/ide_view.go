@@ -19,6 +19,9 @@ func (a *App) crumbs(c *ui.Context, tb *ideTab) {
 	}
 	t := a.tk
 	ui.Row(c).Height(theme.Px(24)).Shrink(0).PaddingX(14).Gap(8).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(11.5)).Children(func() {
+		if tb.buf != nil && isMarkdownFile(tb.path) {
+			a.mdModeSeg(c, tb)
+		}
 		kit.HScroll(c).Key("crumb-scroll").Grow(1).MinWidth(0).Children(func() {
 			ui.Row(c).Gap(3).AlignItems(ui.Center).Children(func() {
 				if a.isExternalTab(tb) {

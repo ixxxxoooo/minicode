@@ -147,7 +147,7 @@ func (a *App) wsSplit(c *ui.Context, cur *ideTab) {
 		col.Children(func() { child(i) })
 	}
 	if d.splitDir == 2 {
-		box := ui.Column(c).Key("split-box").Grow(1).MinHeight(0).MinWidth(0)
+		box := ui.Column(c).Key("split-box").Grow(1).MinHeight(0).MinWidth(0).AlignItems(ui.Stretch)
 		if b := box.Bounds(); b.H > 0 {
 			a.splitBox = b
 		}
@@ -157,7 +157,7 @@ func (a *App) wsSplit(c *ui.Context, cur *ideTab) {
 			pane(1, 1-frac, false)
 		})
 	} else {
-		box := ui.Row(c).Key("split-box").Grow(1).MinWidth(0).MinHeight(0)
+		box := ui.Row(c).Key("split-box").Grow(1).MinWidth(0).MinHeight(0).AlignItems(ui.Stretch) // 不拉伸的话两个组只有内容那么高,居中悬在半空
 		if b := box.Bounds(); b.W > 0 {
 			a.splitBox = b
 		}
