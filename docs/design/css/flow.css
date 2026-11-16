@@ -203,3 +203,37 @@ body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 
 .to-latest { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--bg-raised); color: var(--tx-2); box-shadow: inset 0 0 0 1px var(--bd-2), var(--sh-2); cursor: default; transition: background var(--dur-fast), color var(--dur-fast), transform var(--dur-fast) var(--ease-out); z-index: 5; }
 .to-latest:hover { background: linear-gradient(var(--fill-2), var(--fill-2)), var(--bg-raised); /* 悬停底色必须不透明:fill-2 叠在 raised 上,否则会露出后面滚动的文字 */ color: var(--tx-1); transform: translateX(-50%) translateY(-1px); }
 .to-latest.fresh::after { content: ''; position: absolute; top: 3px; right: 3px; width: 7px; height: 7px; border-radius: 50%; background: var(--ac); box-shadow: 0 0 0 2px var(--bg-raised); }
+
+/* ───── 响应耗时:等待行 / 脚注分段条 / 瀑布弹卡(设计稿 v3.8,resp-time 页) ───── */
+.rt-wait { display: flex; align-items: center; gap: 8px; min-height: 26px; padding: 0 8px; margin: 0 -8px; border-radius: var(--r-sm); color: var(--tx-3); font-variant-numeric: tabular-nums; animation: rise var(--dur-base) var(--ease-out); }
+.rt-wait .si { width: 16px; height: 16px; display: grid; place-items: center; flex: none; }
+.rt-wait .el { color: var(--tx-4); margin-left: 2px; }
+.rt-wait .chip { display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 6px; border-radius: 9px; background: var(--fill-1); color: var(--tx-3); font-size: 11px; }
+.rt-wait .chip.ok { color: var(--ok); background: var(--ok-soft); }
+.rt-wait .chip.warn { color: var(--warn); background: var(--warn-soft); }
+.rt-wait.slow { color: var(--warn); }
+.rt-wait.slow .el { color: var(--warn); }
+.rt-hint { margin: 2px 0 4px 16px; padding: 7px 10px; border-radius: var(--r-md); background: var(--warn-soft); color: var(--tx-2); font-size: 12px; line-height: 1.6; display: flex; gap: 8px; }
+.rt-steps { margin: 2px 0 4px 16px; display: grid; gap: 3px; font-size: 12px; color: var(--tx-3); font-variant-numeric: tabular-nums; }
+.rt-steps .r { display: flex; align-items: center; gap: 8px; }
+.rt-steps .r .n { margin-left: auto; color: var(--tx-4); }
+.rt-steps .r.now { color: var(--tx-1); }
+.rt-bar { display: inline-flex; height: 4px; width: 56px; border-radius: 2px; overflow: hidden; background: var(--fill-2); gap: 1px; flex: none; }
+.rt-bar i { display: block; height: 100%; min-width: 2px; }
+.k-conn { background: var(--tx-4); } .k-prep { background: var(--tx-4); } .k-wait { background: var(--warn); }
+.k-think { background: var(--tool-think); } .k-write { background: var(--ac); } .k-tool { background: var(--tool-exec); }
+.k-ask { background: var(--info, var(--ac)); } .k-fin { background: var(--fill-3); }
+.rt-pop { width: 340px; padding: 12px 14px; border-radius: var(--r-lg); background: var(--bg-raised); box-shadow: var(--sh-2), inset 0 0 0 1px var(--bd-2); font-size: 12px; color: var(--tx-2); font-variant-numeric: tabular-nums; }
+.rt-pop .h { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.rt-pop .h b { font-size: 13px; color: var(--tx-1); } .rt-pop .h .t { margin-left: auto; color: var(--tx-1); font-weight: 600; }
+.rt-pop .row { display: grid; grid-template-columns: 74px 1fr 52px; align-items: center; gap: 8px; min-height: 20px; }
+.rt-pop .row .lb { color: var(--tx-3); white-space: nowrap; } .rt-pop .row .ms { text-align: right; color: var(--tx-1); }
+.rt-pop .row .trk { position: relative; height: 6px; border-radius: 3px; background: var(--fill-1); }
+.rt-pop .row .trk i { position: absolute; top: 0; height: 100%; border-radius: 3px; min-width: 2px; }
+.rt-pop .row.slow .ms { color: var(--warn); font-weight: 600; }
+.rt-pop .rtsub { margin: -1px 0 3px 82px; color: var(--tx-4); font-size: 11px; }
+.rt-pop .sep { height: 1px; background: var(--bd-1); margin: 9px -14px; }
+.rt-pop .kv { display: flex; gap: 6px; align-items: baseline; min-height: 20px; } .rt-pop .kv span:first-child { color: var(--tx-3); width: 74px; flex: none; }
+.rt-pop .tip { margin-top: 8px; padding: 6px 8px; border-radius: var(--r-md); background: var(--warn-soft); line-height: 1.6; }
+.tfoot .rt-foot { display: inline-flex; align-items: center; gap: 6px; height: 20px; padding: 0 6px; border-radius: var(--r-sm); cursor: default; transition: background var(--dur-fast); }
+.tfoot .rt-foot:hover, .tfoot .rt-foot.on { background: var(--fill-1); color: var(--tx-2); }
