@@ -240,8 +240,8 @@ func (a *App) usageChart(c *ui.Context, u core.UsageReport) {
 		a.frameSoon()
 	}
 	frac := float32(1)
+	dur := kit.DurSlow + time.Duration(len(u.Days))*24*time.Millisecond
 	if kit.MotionOn() {
-		dur := kit.DurSlow + time.Duration(len(u.Days))*24*time.Millisecond
 		frac = float32(time.Since(a.use.chartAt)) / float32(dur)
 		if frac < 1 {
 			a.frameSoon()
@@ -263,7 +263,7 @@ func (a *App) usageChart(c *ui.Context, u core.UsageReport) {
 					col = t.Ac
 				}
 				b := ui.Box(c.Key("bar-" + itoa(i))).Grow(1).Basis(0).HeightPercent(h).Radius(2).Background(col).Tooltip(d.Label + " · " + core.FormatMoney(d.Cost))
-				kit.GrowY(b, frac, time.Duration(i)*24*time.Millisecond)
+				kit.GrowY(b, frac, time.Duration(i)*24*time.Millisecond, dur)
 				if b.Hovered() {
 					b.Background(t.Ac)
 				}
