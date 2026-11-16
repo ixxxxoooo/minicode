@@ -73,7 +73,7 @@ func (a *App) mcpPopup(c *ui.Context, anchor ui.Element) {
 					} else if tokSum > 0 || ratio > 0 {
 						ui.Text(c, fmt.Sprintf("工具定义占上下文 %s · %.1f%%", fmtTok(tokSum), ratio)).FontSize(theme.FsCap).TextColor(t.Tx3)
 					} else if !a.mcpRuntimeReady() {
-						ui.Text(c, "会话未启动;已显示配置层服务器,点刷新重读配置").FontSize(theme.FsCap).TextColor(t.Tx4)
+						ui.Text(c, "会话未启动:只列出配置文件里的服务器;账号连接器与连接状态要会话启动后才查得到").FontSize(theme.FsCap).TextColor(t.Tx4)
 					} else if a.mcpRuntimeAt > 0 {
 						ui.Text(c, "运行时状态更新于 "+relTime(a.now(), time.Unix(a.mcpRuntimeAt, 0))).FontSize(theme.FsCap).TextColor(t.Tx4)
 					}

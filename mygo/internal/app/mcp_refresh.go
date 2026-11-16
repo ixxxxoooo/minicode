@@ -38,12 +38,14 @@ func (a *App) mcpRefresh(opts mcpRefreshOpts) {
 	if runtime && !a.mcpRuntimeReady() && !opts.StartProc {
 		runtime = false
 	}
-	a.mcpRefreshing = true
+	// 只有真的会向 Claude 查运行时状态才进入「刷新中」(没有进程时后端不会回事件,否则会一直转)
+	a.mcpRefreshing = runtime
 	if a.be == nil {
 		a.mcpRefreshing = false
 		return
 	}
 	if a.be.Name() == "demo" {
+		a.mcpRefreshing = true
 		a.send(core.CmdRefreshMcp{Runtime: true, Force: true})
 		return
 	}

@@ -130,7 +130,7 @@ func (a *App) cuSkillPreview(c *ui.Context) {
 		ui.Text(c, "加载中…").FontSize(theme.FsCap).TextColor(t.Tx3).Padding(8, 10)
 		return
 	}
-	ui.Scroll(c).MaxHeight(180).Children(func() {
+	kit.VScroll(c).Key("sk-prev").MaxHeight(180).Children(func() {
 		kit.Mono(c, a.cu.skillPrev, t.Tx2).Padding(8, 10).LineHeight(1.45)
 	})
 }
@@ -138,7 +138,7 @@ func (a *App) cuSkillPreview(c *ui.Context) {
 func (a *App) cuSkillFileList(c *ui.Context, it *customize.Item) {
 	t := a.tk
 	a.cuEnsureSkillFile(it)
-	ui.Scroll(c).MaxHeight(160).Children(func() {
+	kit.VScroll(c).Key("sk-files").MaxHeight(160).Children(func() {
 		for _, f := range it.Files {
 			f := f
 			sel := a.cu.skillFile == f.Name
