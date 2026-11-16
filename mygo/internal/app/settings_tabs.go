@@ -244,25 +244,6 @@ func ruleRows(a *App, c *ui.Context, kind string, rules []string) {
 	}
 }
 
-func provRow(a *App, c *ui.Context, first bool, name, url, status string) {
-	rowBox(a, c, first, 44).Children(func() {
-		iconBox(a, c, "server")
-		ui.Column(c).Grow(1).MinWidth(0).Gap(1).Children(func() {
-			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, name).FontWeight(500)
-				switch status {
-				case "已连通":
-					kit.Tag(c, status, kit.KOk)
-				case "未验证":
-					kit.Tag(c, status, kit.KWarn)
-				}
-			})
-			ui.Text(c, url).Font("monospace").FontSize(theme.FsCap).TextColor(a.tk.Tx3).SingleLine()
-		})
-		kit.Btn(c, "测试", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() { a.flash("连通性检测需要真实后端,稍后接入") })
-	})
-}
-
 func spark(a *App, c *ui.Context, vals []float64) {
 	t := a.tk
 	box := ui.Box(c).Size(120, 26).Shrink(0)
