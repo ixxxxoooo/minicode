@@ -584,6 +584,8 @@ func (a *App) palList(c *ui.Context, items []palItem, run func(int)) {
 					if it.theme != "" {
 						p := theme.Find(it.theme)
 						ui.Box(c).Size(8, 8).Radius(4).Background(ui.Hex(p.Accent)).Shrink(0)
+					} else if it.path != "" {
+						a.fileIc(c, it.title)
 					} else {
 						kit.Ic(c, it.icon, kit.S12)
 					}
@@ -621,7 +623,10 @@ func (a *App) palPreview(c *ui.Context, items []palItem) {
 		showThemes := a.pq.sub == "theme" || cur.title == "主题:切换…"
 		switch {
 		case cur.path != "":
-			ui.Text(c, cur.title).FontWeight(600).SingleLine()
+			ui.Row(c).Gap(6).AlignItems(ui.Center).Margin(0, 0, 4, 0).Children(func() {
+				a.fileIc(c, cur.title)
+				ui.Text(c, cur.title).FontWeight(600).SingleLine()
+			})
 			ui.Text(c, cur.path).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Margin(2, 0, 8, 0)
 			for _, ln := range a.filePreview(cur.path, 16) {
 				kit.Mono(c, ln, t.Tx2).FontSize(10.5).SingleLine()
