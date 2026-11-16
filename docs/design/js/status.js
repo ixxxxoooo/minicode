@@ -80,7 +80,7 @@
       R('⇧⌘N 新窗口(再起一个进程)', '--new-window / 菜单 / 命令面板;从属进程不写偏好,窗口错开 32px', 'ok', 'B6'),
       R('关闭 ⌘W 按所在位置分流(编辑器标签 / 终端标签 / 窗口)', 'close_ctx.go:ObserveInput 记最近输入所在区域 + 键盘焦点换区 + 刚点开的标签;文件 → 关闭(⌘W)走 closeHere;主窗口只隐藏不退出,从属窗口真关闭。仅 go build,未测试', 'part', 'B6'),
       R('启动形态(Agent / IDE / 上次)', 'general.start + layout.lastMode 已接 main 启动', 'ok', 'B6'),
-      R('形态切换的内容编排(甘特图)', 'morph_content.go:工作区内容晚 90ms 淡入 / 回 Agent 先淡出(120ms)再回右侧(+60ms);对话栏整块 chat-dock / chat-center(自 ∓34% 滑入 + 透明度 .4→1,440ms ease-morph,motion_layout.go chatSlide);左栏内容 a-swap(自左 8px 滑入 + 淡入,180ms ease-out,kit.SwapIn);标题栏形态滑块 180ms spring;状态栏 IDE 项 max-width 0↔420(440ms)+ 透明度 260ms;motion 关时直达。未测试', 'part', 'B6'),
+      R('形态切换的内容编排(甘特图)——设计稿已改为「传送带」整体平移(旧工作区 | 对话栏 | 新工作区同走一段距离,IDE → Agent 向左、Agent → IDE 向右,被挤出的旧工作区是克隆的幽灵);下面是程序的旧做法,尚未跟进改成传送带', '旧做法:morph_content.go:工作区内容晚 90ms 淡入 / 回 Agent 先淡出(120ms)再回右侧(+60ms);对话栏整块 chat-dock / chat-center(自 ∓34% 滑入 + 透明度 .4→1,440ms ease-morph,motion_layout.go chatSlide);左栏内容 a-swap(自左 8px 滑入 + 淡入,180ms ease-out,kit.SwapIn);标题栏形态滑块 180ms spring;状态栏 IDE 项 max-width 0↔420(440ms)+ 透明度 260ms;motion 关时直达。未测试', 'part', 'B6'),
       R('左栏 / 右栏 / 底部面板开合动画', '左栏 width 260ms ease-io + opacity 120ms ease;右栏(Agent 工作区 / IDE 对话栏)width / margin 440ms ease-morph + opacity 260ms ease-io,收起期间内容保留到宽度归零;底部面板 height 260ms ease-io + opacity 120ms,内容固定展开高度只做裁切(终端不反复改行数)。motion_layout.go keepWhile;拖动分隔线 / 拖窗口边缘期间关过渡。未测试', 'part', 'B6'),
       R('左栏四分段切换的内容过渡', '换分段 / 换形态时 side.go 的 nav-swap 容器播 a-swap(外层 Clip 裁掉滑出左缘的部分),分段滑块 180ms spring 已有。自动化 / 浏览器 / 自定义页里的 a-swap(抽屉换选中项、周切换、浏览器页签)未接。未测试', 'part', 'B6')],
     ia: [

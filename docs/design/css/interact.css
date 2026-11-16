@@ -106,8 +106,12 @@ textarea.ta:hover { box-shadow: inset 0 0 0 1px var(--bd-3); } textarea.ta:focus
 .sb-pop .ring.big { width: 34px; height: 34px; -webkit-mask: radial-gradient(circle, transparent 11px, #000 12px); mask: radial-gradient(circle, transparent 11px, #000 12px); }
 
 /* ───────── Agent ⇄ IDE 形态切换的编排 ─────────
-   对话栏与工作区交换主位:宽度走 --dur-morph,对话栏同时在「中间 ⇄ 右侧停靠」之间滑动(ws.css)。 */
-.win.morphing { pointer-events: none; } .win.morphing .pane { will-change: width; }
+   对话栏与工作区交换主位,像传送带一样整体平移:IDE → Agent 向左(对话栏移到中间,旧编辑区被挤出左缘,工作区自右缘移进来),
+   Agent → IDE 向右(反过来)。时长 --dur-morph、曲线 --ease-morph;平移由 app.js beltPrepare 完成,期间 .belt 关掉面板自带的 width 过渡,
+   舞台裁切溢出,被挤出的旧工作区是一份克隆的「幽灵」(.belt-ghost),动画结束即移除。 */
+.win.belt .stage { position: relative; overflow: hidden; }
+.win.belt .pane { transition: none; }
+.win.morphing { pointer-events: none; }
 .win.morphing .flow-wrap { overflow: hidden; }
 .pane.page, .set { animation: fade var(--dur-base) var(--ease-out) both; }
 .set-col .set-grp { animation: rise var(--dur-base) var(--ease-out) both; }

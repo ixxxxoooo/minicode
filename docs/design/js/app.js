@@ -80,13 +80,51 @@
   };
   /** 切换 Agent / IDE:改 data-mode,面板宽度由 shell.css / interact.css 的过渡完成变形。
       每种形态各自记住导航栏、右侧栏、底部面板的开合;内容(会话 / 标签 / 终端)全窗口只有一份,切换期间锁定指针事件。 */
+  /** 形态切换的「传送带」平移:旧工作区 | 对话栏 | 新工作区 是一条刚性的带子,整体平移同一段距离(= 对话栏自己的位移)。
+      IDE → Agent:带子向左,对话栏从右侧停靠移到中间,旧编辑区被挤出左缘,工作区从右缘移进来;Agent → IDE 完全反过来(向右)。
+      做法(FLIP):切换前记下对话栏 / 工作区的位置并克隆旧工作区作为「出场幽灵」,切换后让对话栏与新工作区从「旧位置」平移回终态,幽灵平移出舞台。
+      返回在切换完成后调用的函数;动效关闭(时长归零)或没有舞台(整页功能)时返回 null,直接跳到终态。 */
+  const beltPrepare = (win) => {
+    if (win._beltEnd) win._beltEnd();
+    const stage = $('.stage', win), chat = stage && stage.querySelector(':scope > .pane.chat'), ws = stage && stage.querySelector(':scope > .pane.ws');
+    const dur = parseFloat(getComputedStyle(win).getPropertyValue('--dur-morph')) || 0;
+    if (!chat || !ws || dur <= 8 || !stage.animate) return null;
+    win.classList.add('belt'); // 先加:关掉 .pane 的 width 过渡,下面量到的才是终态
+    const rel = (el, s) => { const r = el.getBoundingClientRect(); return { x: r.left - s.left, y: r.top - s.top, w: r.width, h: r.height, op: +getComputedStyle(el).opacity }; };
+    const s0 = stage.getBoundingClientRect(), c0 = rel(chat, s0), w0 = rel(ws, s0);
+    let ghost = null;
+    if (w0.w > 2 && w0.op > .05) {
+      ghost = ws.cloneNode(true); ghost.removeAttribute('id'); ghost.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+      ghost.classList.add('belt-ghost');
+      Object.assign(ghost.style, { position: 'absolute', left: w0.x + 'px', top: w0.y + 'px', width: w0.w + 'px', height: w0.h + 'px', margin: '0', opacity: '1', pointerEvents: 'none' });
+      stage.appendChild(ghost);
+    }
+    return () => {
+      const s1 = stage.getBoundingClientRect(), c1 = rel(chat, s1), w1 = rel(ws, s1);
+      const dx = c1.x - c0.x; // 带子的位移:向左为负(IDE → Agent),向右为正(Agent → IDE)
+      const opt = { duration: dur, easing: getComputedStyle(win).getPropertyValue('--ease-morph').trim() || 'ease' };
+      const anims = [];
+      // 对话栏:位置与宽度一起从旧值变到新值(宽度写死成终态,期间不让 flex 重新分配)
+      Object.assign(chat.style, { flex: 'none', width: c1.w + 'px' });
+      anims.push(chat.animate([{ transform: `translateX(${-dx}px)`, width: c0.w + 'px', opacity: c0.op }, { transform: 'translateX(0)', width: c1.w + 'px', opacity: c1.op }], opt));
+      // 新工作区:从带子上与对话栏相邻的那一侧移进来(IDE → Agent 自右缘,Agent → IDE 自左缘)
+      if (w1.w > 2) anims.push(ws.animate([{ transform: `translateX(${-dx}px)` }, { transform: 'translateX(0)' }], opt));
+      // 旧工作区(幽灵):被对话栏挤出舞台
+      if (ghost) anims.push(ghost.animate([{ transform: 'none' }, { transform: `translateX(${dx}px)` }], opt));
+      const end = () => { anims.forEach(a => a.cancel()); if (ghost) ghost.remove(); chat.style.flex = ''; chat.style.width = ''; win.classList.remove('belt'); win._beltEnd = null; };
+      win._beltEnd = end;
+      Promise.all(anims.map(a => a.finished.catch(() => {}))).then(() => { if (win._beltEnd === end) end(); });
+    };
+  };
   const setMode = (win, mode) => {
     if (win.dataset.mode === mode) return;
+    const belt = beltPrepare(win);
     win._mem = win._mem || { agent: { side: 'on', right: 'on', panel: 'off' }, ide: { side: 'on', right: 'on', panel: 'on' } };
     win._mem[win.dataset.mode] = { side: win.dataset.side, right: win.dataset.right, panel: win.dataset.panel };
     win.dataset.mode = mode;
     const m = win._mem[mode]; win.dataset.side = m.side; win.dataset.right = m.right; win.dataset.panel = m.panel;
     if (APP.syncBars) APP.syncBars(win);
+    if (belt) belt();
     win.classList.add('morphing'); clearTimeout(win._mt); win._mt = setTimeout(() => win.classList.remove('morphing'), 470);
     $$('button[data-act="mode"]', win).forEach(b => { const on = (b.dataset.i === '1') === (mode === 'ide'); b.classList.toggle('on', on); if (on) b.parentElement.style.setProperty('--i', b.dataset.i); });
     setNav(win, mode === 'ide' ? 'files' : 'chat');
