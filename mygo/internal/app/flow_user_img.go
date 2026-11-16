@@ -53,7 +53,7 @@ func (a *App) userMsgImages(c *ui.Context, u *core.User) {
 			abs := a.resolveUserImage(raw)
 			if abs == "" {
 				ui.Row(c).Height(56).Padding(0, 10).Radius(t.RSm()).Background(t.Fill1).AlignItems(ui.Center).Children(func() {
-					kit.Ic(c, "image", kit.S12).TextColor(t.Tx4)
+					a.fileIc(c, baseName(raw))
 					ui.Text(c, baseName(raw)).FontSize(theme.FsMicro).TextColor(t.Tx4).Margin(0, 0, 0, 6)
 				})
 				continue

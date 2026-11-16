@@ -249,22 +249,28 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 
 func (a *App) userMsgBody(c *ui.Context, u *core.User) {
 	t := a.tk
-	var spans []ui.Span
 	txt := u.Text
-	last := 0
-	for _, m := range userTok.FindAllStringSubmatchIndex(txt, -1) {
-		if m[0] > last {
-			spans = append(spans, ui.Span{Text: txt[last:m[0]]})
-		}
-		if m[2] >= 0 {
-			spans = append(spans, ui.Span{Text: txt[m[2]:m[3]], Font: "monospace", Size: a.FlowMonoSize(), Background: t.Fill2, Radius: t.RXs(), PaddingX: 3})
-		} else {
-			spans = append(spans, ui.Span{Text: " " + baseName(txt[m[4]:m[5]]) + " ", Size: a.FlowCapFont(), Color: t.Info, Background: t.InfoSoft, Radius: t.RXs(), PaddingX: 4})
-		}
-		last = m[1]
+	if !userTok.MatchString(txt) {
+		ui.RichText(c, ui.Span{Text: txt}).FontSize(a.FlowFontSize()).LineHeight(1.55).TextColor(t.Tx1)
+		return
 	}
-	if last < len(txt) {
-		spans = append(spans, ui.Span{Text: txt[last:]})
-	}
-	ui.RichText(c, spans...).FontSize(a.FlowFontSize()).LineHeight(1.55).TextColor(t.Tx1)
+	ui.Row(c).Wrap().Gap(4).AlignItems(ui.Center).Children(func() {
+		last := 0
+		for _, m := range userTok.FindAllStringSubmatchIndex(txt, -1) {
+			if m[0] > last {
+				ui.Text(c, txt[last:m[0]]).FontSize(a.FlowFontSize()).LineHeight(1.55).TextColor(t.Tx1)
+			}
+			if m[2] >= 0 {
+				code := txt[m[2]:m[3]]
+				ui.Text(c, code).Font("monospace").FontSize(a.FlowMonoSize()).LineHeight(1.55).TextColor(t.Tx1).
+					Background(t.Fill2).Radius(t.RXs()).PaddingX(3)
+			} else {
+				a.userRefChip(c, txt[m[4]:m[5]])
+			}
+			last = m[1]
+		}
+		if last < len(txt) {
+			ui.Text(c, txt[last:]).FontSize(a.FlowFontSize()).LineHeight(1.55).TextColor(t.Tx1)
+		}
+	})
 }

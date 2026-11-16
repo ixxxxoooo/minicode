@@ -203,7 +203,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			case sp.state == "err":
 				kit.Ic(c, sp.icon, kit.S12).TextColor(t.Err)
 			case sp.path != "": // 文件相关的步骤:显示文件 / 语言图标(按扩展名上色),点图标跳到文件
-				kit.Ic(c, fileIcon(sp.path), kit.S12).TextColor(a.fileTint(sp.path, t.Tx3.Mix(tone, .78)))
+				a.fileIc(c, baseName(sp.path))
 			default:
 				kit.Ic(c, sp.icon, kit.S12).TextColor(t.Tx3.Mix(tone, .78))
 			}
@@ -362,7 +362,7 @@ func (a *App) diffCard(c *ui.Context, d *core.DiffBlock, head bool) {
 	var h func()
 	if head {
 		h = func() {
-			kit.Ic(c, "diff", kit.S12)
+			a.fileIc(c, baseName(d.Path))
 			ui.Text(c, d.Path).Grow(1).SingleLine()
 			ui.Text(c, "+"+itoa(add)).Font("monospace").FontSize(a.FlowMonoSize()).TextColor(t.Ok)
 			ui.Text(c, "−"+itoa(del)).Font("monospace").FontSize(a.FlowMonoSize()).TextColor(t.Err)

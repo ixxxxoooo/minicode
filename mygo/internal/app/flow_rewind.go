@@ -94,7 +94,7 @@ func (a *App) flowRewindCard(c *ui.Context) {
 				}
 				for i, p := range show {
 					ui.Row(c).Key(i).Gap(6).Padding(3, 4).AlignItems(ui.Center).Children(func() {
-						kit.Ic(c, "code", kit.S12).TextColor(t.Tx3)
+						a.fileIc(c, baseName(p))
 						ui.Text(c, baseName(p)).SingleLine().Shrink(0)
 						ui.Text(c, trimSlash(dirOf(p))).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().Grow(1)
 					})
