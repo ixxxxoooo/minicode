@@ -58,4 +58,22 @@ func (a *App) mdOptions() *markdown.Options {
 	return a.md
 }
 
+// planMdOptions 计划小卡概要的 Markdown 选项:在会话流样式基础上缩到说明字号、正文用次要色、行距收紧。
+func (a *App) planMdOptions() *markdown.Options {
+	key := a.mdThemeKey + "|plan|" + fmt.Sprint(a.FlowCapFont())
+	if a.planMd == nil || a.planMdKey != key || a.md == nil {
+		base := a.mdOptions()
+		th := a.mdTheme()
+		th.FontSize = a.FlowCapFont()
+		th.LineHeight = 1.5
+		th.Text = a.tk.Tx2
+		th.BlockSpacing = .3
+		th.CodeSize = 11 / theme.FsCap
+		o := *base
+		o.Theme = th
+		a.planMd, a.planMdKey = &o, a.mdThemeKey+"|plan|"+fmt.Sprint(a.FlowCapFont())
+	}
+	return a.planMd
+}
+
 var _ = ui.Transparent

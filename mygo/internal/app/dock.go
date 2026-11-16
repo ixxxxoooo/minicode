@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/diff"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -301,39 +302,28 @@ func planTitle(md string) string {
 	return "实施计划"
 }
 
-// planCardMaxLines 会话流计划小卡里最多展示的概要条数。
+// planCardMaxLines 会话流计划小卡里最多展示的概要行数(Markdown 源行)。
 const planCardMaxLines = 2
 
-// planCardSummary 取计划的概要:跳过所有标题行(卡头已显示标题、「Context」之类的小节名没有信息量),
-// 取前 planCardMaxLines 条正文,去掉列表符号与 Markdown 标记当纯文本展示;more 是被省略的条数。
-// 完整内容在工作区「计划」标签里看。
-func planCardSummary(md string) (lines []string, more int) {
-	fenced := false
+// planCardSummary 取计划的概要(Markdown 源):跳过所有标题行(卡头已显示标题,「Context」之类的小节名
+// 没有信息量),取前 planCardMaxLines 行正文(列表 / 加粗 / 行内代码照常渲染);遇到代码围栏就停。
+// more 表示后面还有内容(用于底部淡出)。完整内容在工作区「计划」标签里看。
+func planCardSummary(md string) (head string, more bool) {
+	var keep []string
 	for _, ln := range strings.Split(md, "\n") {
 		tl := strings.TrimSpace(ln)
+		if tl == "" || strings.HasPrefix(tl, "#") {
+			continue
+		}
 		if strings.HasPrefix(tl, "```") {
-			fenced = !fenced
-			continue
+			return strings.Join(keep, "\n\n"), true
 		}
-		if tl == "" || fenced || strings.HasPrefix(tl, "#") {
-			continue
+		if len(keep) >= planCardMaxLines {
+			return strings.Join(keep, "\n\n"), true
 		}
-		if len(lines) >= planCardMaxLines {
-			more++
-			continue
-		}
-		lines = append(lines, planPlain(tl))
+		keep = append(keep, ln)
 	}
-	return lines, more
-}
-
-// planPlain 去掉行首的列表 / 引用符号与常见行内标记(`、**、__),留纯文本。
-func planPlain(s string) string {
-	s = strings.TrimLeft(s, "-*+> ")
-	if k := strings.Index(s, ". "); k > 0 && k <= 3 && strings.Trim(s[:k], "0123456789") == "" {
-		s = s[k+2:]
-	}
-	return strings.NewReplacer("`", "", "**", "", "__", "").Replace(strings.TrimSpace(s))
+	return strings.Join(keep, "\n\n"), false
 }
 
 func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
@@ -364,30 +354,37 @@ func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 		})
 		// 会话流里只留一张紧凑小卡:标题 + 状态 + 查看 + 前几行概要,全文在工作区「计划」标签里看。
 		sum, more := planCardSummary(p.Markdown)
-		if len(sum) > 0 {
-			// 概要:小号灰字、每条最多 2 行,左侧一条细线与标题区隔开(不渲染标题 / 列表,避免大字号撑满卡片)
-			ui.Row(c).Gap(8).MinWidth(0).AlignItems(ui.Stretch).Margin(1, 0, 2, 0).Children(func() {
-				ui.Box(c).Width(2).Background(t.Bd2).Shrink(0)
-				ui.Column(c).Grow(1).MinWidth(0).Gap(3).Children(func() {
-					for _, ln := range sum {
-						ui.Text(c, ln).FontSize(a.FlowCapFont()).LineHeight(1.5).TextColor(t.Tx2).MaxLines(2)
-					}
-				})
+		if strings.TrimSpace(sum) != "" {
+			// 概要:Markdown 小号渲染(列表 / 加粗 / 行内代码照常),限高裁切;后面还有内容时底部淡出到卡片底色。
+			const sumH = 64
+			bg := t.Raised
+			ui.Box(c).Key("plan-sum-"+p.ID).MaxHeight(sumH).Clip().Margin(1, 0, 0, 0).Children(func() {
+				if p.Streaming {
+					markdown.Stream(c, sum, a.planMdOptions())
+				} else {
+					markdown.View(c, sum, a.planMdOptions())
+				}
+				if more {
+					ui.Box(c).Absolute().Left(0).Right(0).Bottom(0).Height(16).Background(bg).HitTest(func(_, _ float32, _ ui.Rect) bool { return false }).
+						MaskLinearGradient(ui.LinearGradient{
+							Angle: 0,
+							Stops: []ui.GradientStop{
+								{Color: ui.Transparent, At: 0},
+								{Color: t.Tx1.Alpha(.55), At: .6},
+								{Color: t.Tx1.Alpha(.8), At: 1},
+							},
+						})
+				}
 			})
 		}
-		hint := func() {
-			if more > 0 && !p.Streaming {
-				ui.Text(c, "另有 "+itoa(more)+" 项").FontSize(theme.FsCap).TextColor(t.Tx4).Margin(0, 0, 0, 10).Tooltip("点「查看」看全文")
-			}
-		}
-		hint()
 		if !p.Streaming && p.Approved == nil {
-			ui.Row(c).Gap(6).AlignItems(ui.Center).Wrap().Margin(2, 0, 0, 0).Children(func() {
+			// 操作按钮靠右,主操作「开始实施」在最右(与工作区计划标签头部同序)
+			ui.Row(c).Gap(6).AlignItems(ui.Center).Margin(2, 0, 0, 0).Children(func() {
 				resolve := func(ok bool, m core.PermissionMode) {
 					mm := m
 					a.send(core.CmdResolvePlan{ID: p.ID, Approve: ok, Mode: &mm})
 				}
-				kit.Btn(c, "开始实施", kit.BtnOpt{Variant: kit.BtnPri, Small: true, Icon: "play"}).OnClick(func() { resolve(true, core.ModeDefault) })
+				ui.Spacer(c).Grow(1)
 				if a.chatTier() == tierNarrow { // 窄档:次要按钮(自动模式 / 继续规划)收进「更多」
 					kit.Btn(c, "更多", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "chevD"}).Menu(func(m *ui.Menu) {
 						if menuItem(m, "自动模式").Chosen() {
@@ -397,10 +394,11 @@ func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 							resolve(false, a.st.Mode)
 						}
 					})
-					return
+				} else {
+					kit.Btn(c, "继续规划", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(func() { resolve(false, a.st.Mode) })
+					kit.Btn(c, "自动模式", kit.BtnOpt{Small: true}).OnClick(func() { resolve(true, core.ModeAuto) })
 				}
-				kit.Btn(c, "自动模式", kit.BtnOpt{Small: true}).OnClick(func() { resolve(true, core.ModeAuto) })
-				kit.Btn(c, "继续规划", kit.BtnOpt{Variant: kit.BtnGhost, Small: true}).OnClick(func() { resolve(false, a.st.Mode) })
+				kit.Btn(c, "开始实施", kit.BtnOpt{Variant: kit.BtnPri, Small: true, Icon: "play"}).OnClick(func() { resolve(true, core.ModeDefault) })
 			})
 		}
 	})

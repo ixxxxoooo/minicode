@@ -195,6 +195,8 @@ type App struct {
 	// Markdown 选项(随主题重建)
 	md         *markdown.Options
 	mdThemeKey string
+	planMd     *markdown.Options // 计划小卡概要用的小号 Markdown 选项
+	planMdKey  string
 
 	// 会话切换:由入口注入,按 id 造后端(空串 = 新会话)
 	opener func(id string) backend.Backend
