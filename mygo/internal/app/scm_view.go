@@ -169,7 +169,7 @@ func (a *App) scmCommitBox(c *ui.Context, nStaged int) {
 				return false
 			})
 			if s.genning {
-				in.Opacity(.35)
+				in.Opacity(.35).Placeholder("") // 生成中只留上面那行流光提示,不再叠一行占位文字
 			}
 			ui.Row(c).Height(22).PaddingX(4).AlignItems(ui.Center).Children(func() {
 				if s.amend {
