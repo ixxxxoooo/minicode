@@ -28,6 +28,7 @@ func (a *App) foldExpanded(key string) bool {
 }
 
 func (a *App) setFold(key string, on bool) {
+	a.flowList.HoldPlace() // 展开 / 收起时会话流别贴底,被点的那一行留在原地,内容向下长
 	if a.outFold == nil {
 		a.outFold = map[string]bool{}
 	}

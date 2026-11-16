@@ -216,7 +216,14 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 	}
 	switch {
 	case body != nil && sp.hasBody:
-		row.OnClick(func() { a.folds[sp.id] = !open; a.foldAt[sp.id] = time.Now() })
+		row.OnClick(func() {
+			// 会话流默认贴底:不拦的话,在底部展开会把整段内容向上顶,点的那一行跟着跑,
+			// 鼠标不动再点就点到别的东西。HoldPlace 让这一帧不贴底,被点的行留在原地、内容向下长,
+			// 再点一次(鼠标没动)就原地收起。
+			a.flowList.HoldPlace()
+			a.folds[sp.id] = !open
+			a.foldAt[sp.id] = time.Now()
+		})
 	case sp.path != "": // 没有可展开内容的文件步骤(读取):点整行 = 在工作区打开文件
 		row.Cursor(ui.CursorPointer).OnClick(func() {
 			if !a.openPathRef(joinRef(sp.path, sp.line)) {
@@ -385,10 +392,13 @@ func (a *App) cardHead(c *ui.Context, head func(), menu func(m *ui.Menu), body f
 	a.cardHov = box.Hovered()
 	box.Children(func() {
 		if head != nil {
-			hr := ui.Row(c).Height(24).Padding(0, 4, 0, 9).Gap(6).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.FsCap).
-				BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1)
+			// 注意:ui.Row(c) 一构造就进了父节点,不能先建一个再换另一个(多出来的空行就是一条空白标题栏)
+			var hr ui.Element
 			if top {
 				hr = ui.Row(c).MinHeight(24).Padding(3, 4, 3, 9).Gap(6).AlignItems(ui.Start).TextColor(t.Tx3).FontSize(theme.FsCap).
+					BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1)
+			} else {
+				hr = ui.Row(c).Height(24).Padding(0, 4, 0, 9).Gap(6).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.FsCap).
 					BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1)
 			}
 			if menu != nil {
