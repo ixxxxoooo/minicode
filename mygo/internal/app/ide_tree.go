@@ -194,7 +194,7 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 		d.treeHit = d.treeIdx
 	}
 	d.treeIdx++
-	r := kit.RowEl(c, on).Key("tr-" + e.Path).PaddingStart(6 + float32(depth)*14).Gap(6)
+	r := a.navDrop(kit.RowEl(c, on).Key("tr-" + e.Path)).PaddingStart(6 + float32(depth)*14).Gap(6)
 	dragRef(r, e.Path, e.Dir) // 拖到对话栏 = 引用
 	if e.Dir {
 		if ref, ok := ui.Drop[fileRef](r); ok && !ref.Dir {

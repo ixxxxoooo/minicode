@@ -70,6 +70,7 @@ func (a *App) side(c *ui.Context) {
 	col := ui.Column(c).Key("side").Width(target).Shrink(0).ClipX().Transition(a.sideTransition())
 	col.Opacity(col.AnimateWith("op", map[bool]float32{true: 1, false: 0}[a.sideOpen], kit.DurFast, kit.EaseCSS))
 	a.syncNavSwap()
+	a.syncNavDrop()
 	col.Children(func() {
 		if a.sideOpen {
 			a.resizeHandle(c, lySide, "r", w, a.sideWidth(), 180, 420, func(v float32) { a.ly.side = v })
@@ -187,7 +188,7 @@ func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 	t := a.tk
 	open := a.projOpen[p.ID]
 	on := a.ctxIsProject(p)
-	r := kit.RowEl(c, false).Key("proj-" + p.ID).Gap(5).TextColor(t.Tx1).FontWeight(500)
+	r := a.navDrop(kit.RowEl(c, false).Key("proj-" + p.ID)).Gap(5).TextColor(t.Tx1).FontWeight(500)
 	hov := r.Hovered()
 	r.OnClick(func() {
 		if !on {
@@ -220,7 +221,7 @@ func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 	t := a.tk
 	on := s.ID == a.curSess
-	r := kit.RowEl(c, on).Key("sess-" + s.ID)
+	r := a.navDrop(kit.RowEl(c, on).Key("sess-" + s.ID))
 	if t0, hide := a.sessHide[s.ID]; hide {
 		kit.CollapseHide(r, t0, t.Scheme.RowH, a.frameSoon)
 	}
@@ -304,7 +305,7 @@ func (a *App) sessionsB(c *ui.Context) {
 					}
 					if g != cur {
 						cur = g
-						kit.Grp(c, cur)
+						a.navDrop(kit.Grp(c, cur))
 					}
 					ss.Label = ss.Clock
 					a.sessRow(c, ss, false)

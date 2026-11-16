@@ -80,6 +80,7 @@
   const track = (name, val, d, e) => `<div class="mrow"><span class="m">${name}</span><span class="t3 mono">${val}</span><div class="track" style="--d:${d};--e:${e}"><i></i></div></div>`;
   P.demos = [
     ['行进入 rise', '--dur-base · --ease-out · 逐行延迟 30ms', () => `<div class="stagger" style="width:100%">${F.step('read', 'router.rs', 'src/', '86 行')}${F.step('grep', '"match_path"', '', '5 处')}${F.step('edit', 'router.rs', 'src/', '<span class="c-ok">+4</span>')}</div>`],
+    ['导航栏逐行落下 drop', '--dur-slow · --ease-out · 自上方 10px 落下,逐行延迟 30ms(换分段 / 换形态 / 换项目)', () => `<div class="cascade" style="width:100%">${F.step('read', 'router.rs', 'src/', '86 行')}${F.step('grep', '"match_path"', '', '5 处')}${F.step('edit', 'router.rs', 'src/', '<span class="c-ok">+4</span>')}</div>`],
     ['弹层 pop', '--dur-base · --ease-out · 自锚点缩放 96%', () => `<div class="pop a-pop" style="width:170px"><div class="mi on">Sonnet 5.5</div><div class="mi">Opus 5.5</div><div class="mi">Haiku 5.5</div></div>`],
     ['就地变形 pop-up + glow', '输入框 → 权限卡,呼吸描边提示待处理', () => `<div style="width:100%">${F.perm()}</div>`],
     ['流光 shimmer', '--dur-loop 线性循环,只用于「正在进行」', () => `<div style="width:100%">${F.step('bash', 'cargo build --release', '', '', { state: 'run' })}<div class="ticker" data-ticks="read|router.rs;grep|match_path;edit|server.rs"></div></div>`],

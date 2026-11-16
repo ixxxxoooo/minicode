@@ -231,7 +231,7 @@ func (a *App) scmGroup(c *ui.Context, id, title string, cs []vcs.Change, actIcon
 	if len(cs) == 0 && id == "changes" {
 		return
 	}
-	h := ui.ButtonBase(c).Key("scm-h-" + id).Height(theme.Px(24)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3)
+	h := a.navDrop(ui.ButtonBase(c).Key("scm-h-" + id)).Height(theme.Px(24)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3)
 	if h.Hovered() {
 		h.Background(t.Fill1)
 	}
@@ -283,7 +283,7 @@ func statusLetter(st byte) string {
 
 // scmFile 是一个文件行:图标 + 名 + 目录;悬停显示 打开 / 放弃 / 暂存 操作,否则显示 +N −N 与状态字母。
 func (a *App) scmFile(c *ui.Context, grp string, ch vcs.Change) {
-	r := ui.ButtonBase(c).Key("scm-f-" + grp + "-" + ch.Path).Height(theme.Px(22)).PaddingX(4).PaddingStart(14).Gap(5).AlignItems(ui.Center).Radius(a.tk.RSm()).Cursor(ui.CursorPointer)
+	r := a.navDrop(ui.ButtonBase(c).Key("scm-f-" + grp + "-" + ch.Path)).Height(theme.Px(22)).PaddingX(4).PaddingStart(14).Gap(5).AlignItems(ui.Center).Radius(a.tk.RSm()).Cursor(ui.CursorPointer)
 	dragRef(r, ch.Path, false)
 	a.scmFileInner(c, grp, ch, r)
 }
@@ -305,7 +305,7 @@ func (a *App) scmStat(c *ui.Context, ch vcs.Change) {
 func (a *App) scmGraph(c *ui.Context) {
 	t := a.tk
 	s := &a.sc
-	h := ui.ButtonBase(c).Key("scm-h-graph").Height(theme.Px(24)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3).Margin(8, 0, 0, 0)
+	h := a.navDrop(ui.ButtonBase(c).Key("scm-h-graph")).Height(theme.Px(24)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3).Margin(8, 0, 0, 0)
 	if h.Hovered() {
 		h.Background(t.Fill1)
 	}
@@ -343,7 +343,7 @@ func (a *App) scmCommitRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow,
 	t := a.tk
 	s := &a.sc
 	open := s.expanded == cm.Hash
-	r := ui.ButtonBase(c).Key("scm-c-" + cm.Hash).Height(graphRowH).PaddingX(2).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx2)
+	r := a.navDrop(ui.ButtonBase(c).Key("scm-c-" + cm.Hash)).Height(graphRowH).PaddingX(2).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx2)
 	if open && t.Scheme.ID == "b" {
 		r.Background(t.Raised)
 		for _, sh := range t.Shadow1() {
@@ -499,7 +499,7 @@ func (a *App) scmStashes(c *ui.Context) {
 	if len(s.stashes) == 0 {
 		return
 	}
-	h := ui.ButtonBase(c).Key("scm-h-stash").Height(theme.Px(24)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3).Margin(8, 0, 0, 0)
+	h := a.navDrop(ui.ButtonBase(c).Key("scm-h-stash")).Height(theme.Px(24)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3).Margin(8, 0, 0, 0)
 	if h.Hovered() {
 		h.Background(t.Fill1)
 	}
@@ -547,7 +547,7 @@ func (a *App) scmReviewRow(c *ui.Context) {
 	if n == 0 {
 		return
 	}
-	r := ui.ButtonBase(c).Key("scm-review").Height(theme.Px(28)).PaddingX(8).Gap(6).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).
+	r := a.navDrop(ui.ButtonBase(c).Key("scm-review")).Height(theme.Px(28)).PaddingX(8).Gap(6).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).
 		Background(t.AcSoft).Margin(0, 2, 6, 2).Shrink(0)
 	r.OnClick(a.OpenReview)
 	r.Children(func() {

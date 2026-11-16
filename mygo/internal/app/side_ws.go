@@ -72,7 +72,7 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 	t := a.tk
 	open := a.projOpen[w.ID]
 	on := a.ws != nil && a.ws.ID == w.ID
-	r := kit.RowEl(c, false).Key("ws-" + w.ID).Gap(5).TextColor(t.Tx1).FontWeight(500)
+	r := a.navDrop(kit.RowEl(c, false).Key("ws-" + w.ID)).Gap(5).TextColor(t.Tx1).FontWeight(500)
 	r.Drag(wsDrag{ID: w.ID}) // 拖动换位
 	if d, ok := ui.Drop[wsDrag](r); ok {
 		a.moveWorkspace(d.ID, w.ID)

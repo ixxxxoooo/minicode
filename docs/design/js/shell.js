@@ -47,10 +47,10 @@
   /** 会话列表:只有标题与时间,不带任何运行状态。A / C 按项目分组,B 只看当前项目并按时间分段 */
   const sessions = (scheme) => scheme === 'b'
     ? `<div class="f g2" style="padding:0 0 6px">${chip(`${ic('folder', 's12')}<b class="grow">router-demo</b>${ic('chevUD', 's12 car')}`, '', 'line grow', 'style="height:26px;flex:1"')}${ib('edit', '', '新对话 ⌘N', 'style="width:26px;height:26px"')}</div>
-      <div class="stagger"><div class="grp-h">今天</div>${sess('完整修复一个 Bug:路由大小写匹配', '刚刚', 1, 1)}${sess('权限请求:修改配置与执行命令', '5 分钟', 0, 1)}${sess('文件读写:梳理并整理路由层', '1 小时', 0, 1)}
+      <div class="cascade"><div class="grp-h">今天</div>${sess('完整修复一个 Bug:路由大小写匹配', '刚刚', 1, 1)}${sess('权限请求:修改配置与执行命令', '5 分钟', 0, 1)}${sess('文件读写:梳理并整理路由层', '1 小时', 0, 1)}
       <div class="grp-h">昨天</div>${sess('Markdown 与代码高亮:发布说明', '18:20', 0, 1)}${sess('补充集成测试并修复 CI', '11:02', 0, 1)}
       <div class="grp-h">更早</div>${sess('重构 handlers 模块的错误处理', '周一', 0, 1)}${sess('2000 轮长会话:滚动与加载', '11月2日', 0, 1)}${sess('调研:axum 与 actix 的路由差异', '10月28日', 0, 1)}</div>`
-    : `${newChat}<div class="stagger">${proj('router-demo', 4, 1)}${sess('完整修复一个 Bug:路由大小写匹配', '刚刚', 1)}${sess('权限请求:修改配置与执行命令', '5 分钟')}${sess('文件读写:梳理并整理路由层', '1 小时')}${sess('Markdown 与代码高亮:发布说明', '昨天')}
+    : `${newChat}<div class="cascade">${proj('router-demo', 4, 1)}${sess('完整修复一个 Bug:路由大小写匹配', '刚刚', 1)}${sess('权限请求:修改配置与执行命令', '5 分钟')}${sess('文件读写:梳理并整理路由层', '1 小时')}${sess('Markdown 与代码高亮:发布说明', '昨天')}
       ${proj('web-dashboard', 2, 1)}${sess('内置浏览器:排查指标看板报错', '2 小时')}${sess('子 Agent:代码审查与调研', '昨天')}
       ${proj('docs-site', 6)}${proj('scenario-lab', 61)}</div>`;
   W.panel = (nav, scheme, o = {}) => `<div class="a-swap">${nav === 'chat' ? sessions(scheme) : nav === 'files' ? IDE.tree() : nav === 'search' ? IDE.search(o) : IDE.scm(o)}</div>`;

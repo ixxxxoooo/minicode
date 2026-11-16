@@ -62,7 +62,7 @@ func (a *App) scmGroupFiles(c *ui.Context, id string, cs []vcs.Change) {
 	for _, d := range dirs {
 		key := id + ":" + d
 		open := !s.dirFold[key]
-		h := ui.ButtonBase(c).Key("scm-dir-" + key).Height(theme.Px(22)).PaddingX(4).PaddingStart(10).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3)
+		h := a.navDrop(ui.ButtonBase(c).Key("scm-dir-" + key)).Height(theme.Px(22)).PaddingX(4).PaddingStart(10).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3)
 		if h.Hovered() {
 			h.Background(t.Fill1)
 		}
@@ -80,7 +80,7 @@ func (a *App) scmGroupFiles(c *ui.Context, id string, cs []vcs.Change) {
 			continue
 		}
 		for _, ch := range byDir[d] {
-			row := ui.ButtonBase(c).Key("scm-f-" + id + "-" + ch.Path).Height(theme.Px(22)).PaddingX(4).PaddingStart(22).Gap(5).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
+			row := a.navDrop(ui.ButtonBase(c).Key("scm-f-" + id + "-" + ch.Path)).Height(theme.Px(22)).PaddingX(4).PaddingStart(22).Gap(5).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
 			row.Children(func() { a.scmFileInner(c, id, ch, row) })
 		}
 	}
