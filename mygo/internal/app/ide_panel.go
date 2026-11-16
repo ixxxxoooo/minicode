@@ -22,6 +22,7 @@ func (a *App) bottomPanel(c *ui.Context) {
 	} else {
 		box.Height(h).Shrink(0)
 	}
+	a.zoneMarkPanel(box)
 	if b := box.Bounds(); b.H > 0 {
 		a.ide.panelTop = b.Y // 上一帧量到的面板上缘(测试与浮层定位用)
 	}

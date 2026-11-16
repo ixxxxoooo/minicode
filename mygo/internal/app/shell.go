@@ -23,6 +23,10 @@ func (a *App) root(c *ui.Context) {
 	} else {
 		root.Background(t.Chrome)
 	}
+	// 「你在哪」(⌘W 关标签还是关窗口,见 close_ctx.go):根上先记成「其它」,工作区 / 底部面板再各自覆盖
+	root.ObserveInput(a.zoneObserve(zoneOther))
+	a.zoneBegin()
+	defer func() { a.zoneSync(root.FocusWithin()) }()
 	root.Children(func() {
 		a.titlebar(c)
 		if a.screen == ScreenSettings {

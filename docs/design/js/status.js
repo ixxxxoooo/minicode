@@ -74,6 +74,7 @@
     forms: [
       R('单窗口、无融合 / 独立 IDE 窗口;两种形态共享会话 / 编辑器 / 终端', '', 'ok'),
       R('⇧⌘N 新窗口(再起一个进程)', '--new-window / 菜单 / 命令面板;从属进程不写偏好,窗口错开 32px', 'ok', 'B6'),
+      R('关闭 ⌘W 按所在位置分流(编辑器标签 / 终端标签 / 窗口)', 'close_ctx.go:ObserveInput 记最近输入所在区域 + 键盘焦点换区 + 刚点开的标签;文件 → 关闭(⌘W)走 closeHere;主窗口只隐藏不退出,从属窗口真关闭。仅 go build,未测试', 'part', 'B6'),
       R('启动形态(Agent / IDE / 上次)', 'general.start + layout.lastMode 已接 main 启动', 'ok', 'B6'),
       R('形态切换的内容编排(甘特图)', 'morph_content.go morphWrap 已挂 chat/side/workspace 三轨;标题栏形态滑块未分轨(仍跟 morph.go 整体变形);motion 关时直达。未测试', 'part', 'B6')],
     ia: [

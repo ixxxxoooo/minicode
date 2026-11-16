@@ -130,11 +130,10 @@ func (a *App) OpenRecentProject(path string) {
 	}
 }
 
-// installAppMenu 注册系统菜单(文件 → 新窗口 / 最近项目)。
+// installAppMenu 注册系统菜单(文件 → 新窗口 / 最近项目 / 关闭)。
+// 从属窗口(⇧⌘N 起的进程)也装:否则它用的是库的默认菜单,⌘W 直接关窗口,不会先关标签;
+// 它不能再开新窗口、不写最近项目,这两项不放。
 func (a *App) installAppMenu() {
-	if a.secondary {
-		return
-	}
 	recent := func() []*mygo.MenuItem {
 		var items []*mygo.MenuItem
 		for _, p := range a.recentProjects() {
@@ -155,6 +154,24 @@ func (a *App) installAppMenu() {
 	settings := func(tab string) func(*mygo.MenuItem, *mygo.Window) {
 		return func(*mygo.MenuItem, *mygo.Window) { a.openSettings(tab) }
 	}
+	fileMenu := []*mygo.MenuItem{
+		{Label: "新建会话", Click: func(*mygo.MenuItem, *mygo.Window) { a.NewSession() }},
+	}
+	if !a.secondary {
+		fileMenu = append(fileMenu,
+			&mygo.MenuItem{Label: "新建窗口", Accelerator: "CmdOrCtrl+Shift+N", Click: func(*mygo.MenuItem, *mygo.Window) {
+				a.SpawnNewWindow(a.proj)
+			}},
+			&mygo.MenuItem{Type: mygo.MenuItemSeparator},
+			&mygo.MenuItem{Label: "打开最近的项目", Submenu: recent()},
+		)
+	}
+	fileMenu = append(fileMenu,
+		&mygo.MenuItem{Type: mygo.MenuItemSeparator},
+		// 不用 RoleClose(它直接关窗口):⌘W 先看你在哪——在编辑器 / 终端的标签里只关标签,否则才关窗口(close_ctx.go)。
+		// ⌘W 是系统约定的键位,不进可改键的快捷键表,所以挂在菜单上。
+		&mygo.MenuItem{Label: "关闭", Accelerator: "CmdOrCtrl+W", Click: func(*mygo.MenuItem, *mygo.Window) { a.closeHere() }},
+	)
 	mygo.App.SetMenu(mygo.NewMenu([]*mygo.MenuItem{
 		{Label: "MiniCode", Submenu: []*mygo.MenuItem{
 			{Role: mygo.RoleAbout},
@@ -175,16 +192,7 @@ func (a *App) installAppMenu() {
 			{Type: mygo.MenuItemSeparator},
 			{Role: mygo.RoleQuit},
 		}},
-		{Label: "文件", Submenu: []*mygo.MenuItem{
-			{Label: "新建会话", Click: func(*mygo.MenuItem, *mygo.Window) { a.NewSession() }},
-			{Label: "新建窗口", Accelerator: "CmdOrCtrl+Shift+N", Click: func(*mygo.MenuItem, *mygo.Window) {
-				a.SpawnNewWindow(a.proj)
-			}},
-			{Type: mygo.MenuItemSeparator},
-			{Label: "打开最近的项目", Submenu: recent()},
-			{Type: mygo.MenuItemSeparator},
-			{Role: mygo.RoleClose},
-		}},
+		{Label: "文件", Submenu: fileMenu},
 		{Role: mygo.RoleEditMenu},
 		{Label: "视图", Submenu: []*mygo.MenuItem{
 			{Label: "Agent 形态", Click: func(*mygo.MenuItem, *mygo.Window) { a.SetMode(ModeAgent) }},

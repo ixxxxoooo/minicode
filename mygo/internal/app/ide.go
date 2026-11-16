@@ -92,9 +92,10 @@ type ide struct {
 	active    string
 	tabs2     []*ideTab // 第二编辑器组(拆分)
 	active2   string
-	splitDir  int8    // 0 无 / 1 向右 / 2 向下(ide_split.go)
-	splitFrac float32 // 主组占比 0.2–0.8,默认 0.5
-	paneSel   int8    // 当前键盘焦点在哪个组
+	splitDir  int8      // 0 无 / 1 向右 / 2 向下(ide_split.go)
+	splitFrac float32   // 主组占比 0.2–0.8,默认 0.5
+	paneSel   int8      // 当前键盘焦点在哪个组
+	cz        zoneTrack // 「你在哪」:⌘W 关标签还是关窗口(close_ctx.go)
 
 	open map[string]bool // 文件树里展开的目录
 	sel  string          // 文件树里选中的路径

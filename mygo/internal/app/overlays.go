@@ -38,6 +38,7 @@ func (a *App) wsOverlay(c *ui.Context) {
 				col.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 			}
 			kit.DrawerSlide(col, a.wsOvlAt, true, a.frameSoon)
+			a.zoneMarkEditor(col)
 			col.Children(func() { a.workspace(c) })
 		})
 }

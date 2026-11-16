@@ -69,6 +69,7 @@ func (a *App) wsPane(c *ui.Context, gap float32, left bool) {
 	}
 	p.Children(func() {
 		inner := ui.Column(c).Grow(1).MinHeight(0)
+		a.zoneMarkEditor(inner)
 		if !left {
 			inner.Width(a.wsRW())
 			a.resizeHandle(c, lyWs, "l", a.wsRW(), theme.WWs, 360, max(360, a.winW-a.sideW()-360), func(v float32) { a.ly.ws = v })
