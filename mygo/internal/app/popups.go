@@ -346,7 +346,9 @@ func (a *App) avatarSized(c *ui.Context, size, font float32, initial string) ui.
 func (a *App) openSettings(tab string) {
 	a.screen = ScreenSettings
 	if tab != "" {
-		a.setTab = tab
+		a.setTab = resolveSetTabID(tab)
+	} else if a.setTab != "" {
+		a.setTab = resolveSetTabID(a.setTab)
 	}
 	a.set.query = ""
 }

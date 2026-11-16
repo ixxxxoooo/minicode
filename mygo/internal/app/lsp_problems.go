@@ -149,8 +149,8 @@ func (a *App) problemWsChrome(c *ui.Context) {
 			kit.Ic(c, "alert", kit.S14).TextColor(t.Warn)
 			ui.Text(c, "已达上限 "+itoa(limit)+" 个文件,只显示前 "+itoa(limit)+" 个").Grow(1).FontSize(theme.FsCap)
 			kit.Btn(c, "调高上限…", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "sliders"}).OnClick(func() {
-				a.jumpSettingRow("editor", setRow{key: "lsp.workspaceDiagLimit", title: "工作区扫描文件上限"})
-				a.openSettings("editor")
+				a.jumpSettingRow("lsp", setRow{key: "lsp.workspaceDiagLimit", title: "工作区扫描文件上限"})
+				a.openSettings("lsp")
 			})
 		})
 	}

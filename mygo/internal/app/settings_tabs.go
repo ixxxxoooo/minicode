@@ -266,9 +266,9 @@ func spark(a *App, c *ui.Context, vals []float64) {
 	})
 }
 
-// settingsTabs 是全部 14 个分类(顺序无关,导航顺序见 setNavGroups)。
+// settingsTabs 是全部 19 个分类(顺序无关,导航顺序见 setNavGroups)。
 var settingsTabs = []setTabDef{
-	{id: "general", title: "通用", icon: "sliders", desc: "启动、窗口、输入、通知与语言。", groups: []setGroup{
+	{id: "general", title: "通用", icon: "sliders", desc: "启动、窗口、输入与界面语言。", groups: []setGroup{
 		{title: "启动与窗口", rows: []setRow{
 			rSeg("general.start", "启动时的形态", "Agent 与 IDE 是同一个窗口的两种形态;「上次」沿用关闭时的形态", 2, "Agent", "IDE", "上次"),
 			rTog("general.restore", "恢复上次的会话与布局", "项目、会话、右栏标签、面板开合、编辑器标签", true),
@@ -281,23 +281,29 @@ var settingsTabs = []setTabDef{
 			rTog(pIDECtx, "发送时附带 IDE 上下文", "把当前文件、光标行、选中的代码和打开的文件名告诉 Claude(相同内容不重复发;选区限 4000 字)。关闭后只发你输入的文字", true),
 			rTog("general.paste", "粘贴长文本时折叠为附件", "超过 2000 字时作为文本附件加入,不撑开输入框", true),
 		}},
-		{title: "连接", rows: []setRow{
-			rSeg("chat.warm", "预热 Claude 连接", "打开会话时 = 切到该会话就提前连接,发送不用再等启动;输入时 = 只在开始打字时连接;不预热 = 第一条消息才启动。状态栏会显示连接状态", 0, "打开会话时", "输入时", "不预热"),
-			rSeg("chat.idle", "空闲后释放连接", "闲置超过这个时间就结束 claude 进程省内存,会话保留,再发送自动接着聊;回合进行中或有后台任务时不释放;窗口在后台时用三分之一的时间", 1, "5 分钟", "10 分钟", "30 分钟", "不释放"),
-		}},
-		{title: "通知与菜单栏", rows: []setRow{
-			rTog("general.notify", "任务完成时通知", "回合结束且 MiniCode 不在前台时发送系统通知", true),
-			rTog("general.notifyAsk", "需要确认时提醒", "权限请求、提问在后台出现时弹通知", true),
-			rTog("general.pauseNotify", "暂停通知", "暂停后不发系统通知、不播提示音,菜单栏图标变为半透明暂停态;通知中心照常记录。限时暂停(1 小时 / 到明天)在菜单栏图标菜单里", false),
-			rSeg("general.sound", "通知声音", "", 1, "静音", "轻提示"),
-			rTog("general.tray", "菜单栏图标", "在系统菜单栏显示 MiniCode 图标", true),
-		}},
 		{title: "语言", rows: []setRow{
 			rCustom("界面语言", "目前仅提供简体中文", func(a *App, c *ui.Context) { kit.Chip(c, "简体中文", kit.ChipOpt{Line: true}) }),
 		}},
-	}, note: ""},
+	}, note: "想同时看另一个项目?⇧⌘N 新开一个完整窗口,它同样可以在 Agent / IDE 之间切换。"},
 
-	{id: "appearance", title: "外观", icon: "palette", desc: "布局、主题、密度与动效。改动即时生效。", groups: []setGroup{
+	{id: "notify", title: "通知", icon: "bell", desc: "系统通知、提示音与菜单栏入口。", groups: []setGroup{
+		{title: "系统通知", rows: []setRow{
+			rTog("general.notify", "任务完成时通知", "回合结束且 MiniCode 不在前台时发送系统通知", true),
+			rTog("general.notifyAsk", "需要确认时提醒", "权限请求、提问在后台出现时弹通知", true),
+			rTog("general.pauseNotify", "暂停通知", "暂停后不发系统通知、不播提示音,菜单栏图标变为半透明暂停态;限时暂停在菜单栏图标菜单里", false),
+			rSeg("general.sound", "通知声音", "", 1, "静音", "轻提示"),
+		}},
+		{title: "菜单栏", rows: []setRow{
+			rCustom("菜单栏图标与托盘", "是否显示、样式、状态徽标与动画在「应用与菜单栏图标」", func(a *App, c *ui.Context) {
+				kit.Btn(c, "前往", kit.BtnOpt{Small: true, Icon: "arrow"}).OnClick(func() {
+					a.setTab, a.set.query = "brand", ""
+					a.set.lastTab = ""
+				})
+			}),
+		}},
+	}},
+
+	{id: "appearance", title: "主题与布局", icon: "palette", desc: "界面布局、主题、强调色与密度。改动即时生效。", groups: []setGroup{
 		{title: "界面布局", body: func(a *App, c *ui.Context) { layCards(a, c) }},
 		{title: "主题", body: func(a *App, c *ui.Context) {
 			ui.Column(c).Padding(10, 12).Children(func() { themeCards(a, c) })
@@ -307,32 +313,39 @@ var settingsTabs = []setTabDef{
 			{key: kAccent, title: "强调色", desc: "按钮、选中态、焦点环、选区、链接等使用的主题色;每个主题单独记忆,并按明暗自动调整明度", kind: kNone, def: 0,
 				right: func(a *App, c *ui.Context) { accentSwatches(a, c) }},
 		}},
-		brandAppGroup(), // 设计稿顺序:强调色 → 应用图标 → 菜单栏图标 → 密度与形状
-		brandTrayGroup(),
-		{title: "字号与大小", rows: []setRow{
-			rStp(pUIScale, "界面大小", "侧栏、列表、菜单、按钮、文件树等所有界面文字、图标与行高整体缩放(90%–150%,默认 110%)", theme.DefaultUIScale, theme.MinUIScale, theme.MaxUIScale, 5, "%"),
-			rStp(pFontScale, "正文字号", "会话里你的消息与 Claude 回复正文、Markdown 预览的字号(85%–150%),不影响其余界面文字", 100, 85, 150, 5, "%"),
-		}},
 		{title: "密度与形状", rows: []setRow{
 			{key: kDensity, title: "界面密度", desc: "行高:紧凑 −2 / 标准 / 宽松 +2(在当前布局的基础上)", kind: kSeg, def: 1, opts: []string{"紧凑", "标准", "宽松"}},
 			{key: kRadius, title: "圆角", desc: "圆角大小:利落 ×0.55 / 适中 / 圆润 ×1.35", kind: kSeg, def: 1, opts: []string{"利落", "适中", "圆润"}},
 		}},
-		{title: "Agent 会话", rows: []setRow{
-			rSeg("appearance.flowStyle", "会话样式", "对话:你的消息靠右成气泡;通栏:与正文同宽的整行卡片", 0, "跟随布局", "对话", "通栏"),
+	}},
+
+	{id: "typography", title: "字体与尺寸", icon: "align", desc: "界面缩放、会话正文字号与内容宽度。", groups: []setGroup{
+		{title: "界面与正文", rows: []setRow{
+			rStp(pUIScale, "界面大小", "侧栏、列表、菜单、按钮、文件树等所有界面文字、图标与行高整体缩放(90%–150%,默认 110%)", theme.DefaultUIScale, theme.MinUIScale, theme.MaxUIScale, 5, "%"),
+			rStp(pFontScale, "会话正文字号", "会话里你的消息与 Claude 回复正文、Markdown 预览的字号(85%–150%),不影响其余界面文字", 100, 85, 150, 5, "%"),
+		}},
+		{title: "会话布局", rows: []setRow{
 			rSeg("appearance.width", "内容宽度", "会话时间线与输入框的最大宽度;窄屏或分屏时会自动收窄", 1, "窄", "标准", "宽"),
-			rSeg("appearance.density2", "工具调用详细程度", "精简只显示动词与对象;详细默认展开输出", 1, "精简", "标准", "详细"),
 		}},
 		{title: "文件树", rows: []setRow{
-			rTog("appearance.fileIcons", "彩色文件图标", "按文件类型给图标上色(Rust 橙、Go 蓝、Python 绿…);关闭后全部用灰色。作用于文件树、标签、搜索与源代码管理", true),
+			rTog("appearance.fileIcons", "彩色文件图标", "按文件类型给图标上色;关闭后全部用灰色。作用于文件树、标签、搜索与源代码管理", true),
 		}},
+	}, note: "状态栏、侧栏等独立字号调节将补在本分类(预留位置,无新偏好键)。"},
+
+	{id: "motion", title: "动效与反馈", icon: "spark", desc: "动画、形态切换、等待指示与滚动条。", groups: []setGroup{
 		{title: "动效", rows: []setRow{
 			rTog("appearance.motion", "动效", "流光、滑入与布局变形;关闭后所有动画直接到位(也跟随系统「减弱动态效果」)", true),
 			rSeg("appearance.morph", "形态切换动画", "Agent ⇄ IDE 的布局变形,约 0.44 秒;「简化」只淡入淡出", 0, "流畅", "简化", "无"),
 			rSeg("appearance.shimmer", "流光样式", "「正在进行」的文字扫光", 0, "流光", "呼吸", "无"),
-			rSeg("appearance.spinner", "等待动画", "回合进行中的字符动画", 2, "经典", "趣味", "Claude", "诗意", "极客", "极简"),
-			rSeg(pWaitAnim, "等待动画", "转圈的样式", 0, "圆环", "点阵", "脉冲"),
-			rSeg(pScrollbar, "滚动条", "自动隐藏:滚动时出现,停止约 3 秒后隐藏(指针停在滚动条上或拖动时保持);跟随系统:MyGo 默认(悬停内容区显示);始终显示", 1, "跟随系统", "自动隐藏", "始终显示"),
+			rSeg("appearance.spinner", "等待字符动画", "状态行与回合进行中的字符动画", 2, "经典", "趣味", "Claude", "诗意", "极客", "极简"),
+			rSeg(pWaitAnim, "等待指示样式", "步骤行 / 子代理 / 任务坞 / 状态栏;按钮 loading 仍用小圆环", 0, "沙漏", "圆环", "点阵", "脉冲"),
+			rSeg(pScrollbar, "滚动条", "自动隐藏:滚动时出现,停止约 3 秒后隐藏;跟随系统:MyGo 默认;始终显示", 1, "跟随系统", "自动隐藏", "始终显示"),
 		}},
+	}},
+
+	{id: "brand", title: "应用与菜单栏图标", icon: "grid", desc: "Dock 应用图标与菜单栏托盘图标的样式与行为。", groups: []setGroup{
+		brandAppGroup(),
+		brandTrayGroup(),
 	}},
 
 	{id: "shortcuts", title: "快捷键", icon: "kbd", desc: "点键帽录制;冲突会当场提示;恢复默认会清掉自定义组合。", groups: shortcutGroupsLive()},
@@ -354,6 +367,10 @@ var settingsTabs = []setTabDef{
 	}},
 
 	{id: "chat", title: "对话与提示词", icon: "chat", desc: "会话流的显示与回合行为,以及追加到系统提示词的内容。", groups: []setGroup{
+		{title: "会话样式", rows: []setRow{
+			rSeg("appearance.flowStyle", "会话样式", "对话:你的消息靠右成气泡;通栏:与正文同宽的整行卡片", 0, "跟随布局", "对话", "通栏"),
+			rSeg("appearance.density2", "工具调用详细程度", "精简只显示动词与对象;详细默认展开输出", 1, "精简", "标准", "详细"),
+		}},
 		{title: "显示", rows: []setRow{
 			rTog("chat.thinkOpen", "思考内容默认展开", "关闭时只显示「思考 · 4 秒」一行", false),
 			rTog("chat.fold", "回合结束后折叠过程", "把本回合的工具步骤折成「已处理 1 分 13 秒」", true),
@@ -393,7 +410,11 @@ var settingsTabs = []setTabDef{
 		{title: "项目信任", body: func(a *App, c *ui.Context) { a.trustBody(a, c) }},
 	}, note: "陌生项目带来的钩子与 MCP 默认不运行,信任后才生效。"},
 
-	{id: "runtime", title: "运行环境", icon: "cube", desc: "MiniCode 如何找到并启动 claude:可执行文件、代理与网络、环境变量。", groups: []setGroup{
+	{id: "runtime", title: "运行环境", icon: "cube", desc: "MiniCode 如何找到并启动 claude:可执行文件、连接、代理与网络、环境变量。", groups: []setGroup{
+		{title: "连接", rows: []setRow{
+			rSeg("chat.warm", "预热 Claude 连接", "打开会话时 = 切到该会话就提前连接,发送不用再等启动;输入时 = 只在开始打字时连接;不预热 = 第一条消息才启动。状态栏会显示连接状态", 0, "打开会话时", "输入时", "不预热"),
+			rSeg("chat.idle", "空闲后释放连接", "闲置超过这个时间就结束 claude 进程省内存,会话保留,再发送自动接着聊;回合进行中或有后台任务时不释放;窗口在后台时用三分之一的时间", 1, "5 分钟", "10 分钟", "30 分钟", "不释放"),
+		}},
 		{title: "claude 命令行", body: func(a *App, c *ui.Context) { a.claudeCmdRow(c) }},
 		{title: "代理与网络", rows: []setRow{
 			rSeg("runtime.proxy", "代理模式", "跟随系统:沿用继承的 HTTP(S)_PROXY;直连:清空代理变量", 0, "跟随系统", "直连", "自定义"),
@@ -405,7 +426,7 @@ var settingsTabs = []setTabDef{
 		{title: "连通性", body: func(a *App, c *ui.Context) { a.netCheckBody(a, c) }},
 	}},
 
-	{id: "editor", title: "编辑器与语言服务", icon: "code", desc: "代码编辑器的显示、括号与 Git 追溯,以及语言服务器(LSP)与搜索忽略规则。", groups: []setGroup{
+	{id: "editor", title: "编辑器", icon: "code", desc: "代码编辑器的字体、显示、格式化与 Git 追溯。", groups: []setGroup{
 		{title: "字体与缩进", rows: []setRow{
 			rStp("editor.fontSize", "字号", "", 12, 9, 24, 1, "px"),
 			rSeg("editor.indent", "缩进", "", 1, "2 空格", "4 空格", "Tab"),
@@ -435,6 +456,9 @@ var settingsTabs = []setTabDef{
 			rTog("editor.blameInline", "行内追溯", "光标行末尾显示作者与时间", true),
 			rTog("editor.blameGutter", "追溯栏", "行号左侧逐行显示提交", false),
 		}},
+	}},
+
+	{id: "lsp", title: "语言服务", icon: "brain", desc: "语言服务器(LSP)与工作区诊断、忽略规则。", groups: []setGroup{
 		{title: "语言服务", rows: []setRow{
 			rTog("editor.lsp", "启用语言服务", "悬停、补全、转到定义、诊断", true),
 			rTog("editor.inlay", "内联提示", "类型与参数名(inlayHint);无能力时自动跳过", true),
@@ -455,6 +479,7 @@ var settingsTabs = []setTabDef{
 			rTog("term.blink", "光标闪烁", "", true),
 			rFld("term.scrollback", "回看行数", "滚轮可回看的历史输出行数;对之后新开的终端生效", "10000", 90, false, ""),
 			rTog("term.nerdFallback", "无 Nerd Font 时回退系统等宽", "图标显示成方框时可开启", true),
+			rSeg("term.tabs", "标签排列", "终端 ≥2 时横排在面板头或竖排在右侧;面板宽 <560 或窄档强制横向", 2, "横向", "竖向", "自动"),
 		}},
 		{title: "Shell", rows: []setRow{
 			rFld("term.shell", "Shell 程序", "留空使用环境变量 $SHELL;失焦或回车应用", "", 160, true, "跟随 $SHELL"),

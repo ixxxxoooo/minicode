@@ -176,10 +176,10 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 	common[add("branch", "源代码管理", "⌃⇧G", "查看改动、暂存与提交,浏览提交图谱。", func() { a.OpenSCM() })] = true
 	common[add("branch", "Git:切换分支…", "", "搜索本地与远程分支并切换;输入新名字可创建并切换。", func() { a.OpenQuick("branch", "") })] = true
 	common[add("history", "历史会话…", "", "按标题搜索并打开历史会话。", func() { a.OpenQuick("history", "") })] = true
-	common[add("sliders", "设置:外观", a.shortcutLabel("settings"), "打开设置的「外观」:主题、布局方案、强调色。", func() { a.openSettings("appearance") })] = true
+	common[add("sliders", "设置:主题与布局", a.shortcutLabel("settings"), "打开设置的「主题与布局」:界面方案、主题与强调色。", func() { a.openSettings("appearance") })] = true
 	common[add("gear", "设置:通用", "", "打开设置的「通用」。", func() { a.openSettings("general") })] = true
 	for _, tab := range settingsTabs {
-		if tab.id == "appearance" || tab.id == "general" {
+		if tab.id == "appearance" || tab.id == "general" || tab.id == "notify" || tab.id == "shortcuts" {
 			continue
 		}
 		tab := tab

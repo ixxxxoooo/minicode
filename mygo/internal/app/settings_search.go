@@ -17,7 +17,7 @@ func rowFlashID(r setRow) string {
 
 // jumpSettingRow 从搜索结果跳进分类并准备滚动与高亮。
 func (a *App) jumpSettingRow(tab string, r setRow) {
-	a.setTab, a.set.query = tab, ""
+	a.setTab, a.set.query = resolveSetTabID(tab), ""
 	a.set.jumpKey = rowFlashID(r)
 	a.set.flashKey = a.set.jumpKey
 	a.set.flashUntil = time.Now().Add(setFlashDur)

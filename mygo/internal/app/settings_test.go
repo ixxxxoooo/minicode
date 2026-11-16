@@ -115,8 +115,8 @@ func TestSettingsAllTabsRender(t *testing.T) {
 			t.Fatalf("分类 %s 异常", tab.id)
 		}
 	}
-	if len(settingsTabs) != 14 {
-		t.Fatalf("应有 14 个分类,实际 %d", len(settingsTabs))
+	if len(settingsTabs) != 19 {
+		t.Fatalf("应有 19 个分类,实际 %d", len(settingsTabs))
 	}
 }
 
