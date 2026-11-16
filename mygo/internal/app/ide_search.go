@@ -31,6 +31,7 @@ type searchState struct {
 	sig                   string
 	folded                map[string]bool
 	ignored               map[string]bool // 被忽略的匹配:path:line:col
+	selMatch              string          // 最近点开的匹配(mkey),行显示选中外观
 	list                  ui.ListState
 	rows                  []srow
 	cancel                context.CancelFunc
@@ -445,11 +446,14 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 	m := *r.match
 	ign := s.ignored[mkey(m)]
 	row := ui.ButtonBase(c).Key("sm-" + mkey(m)).Height(theme.Px(20)).PaddingX(4).PaddingStart(22).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
-	if row.Hovered() {
+	if s.selMatch == mkey(m) {
+		kit.SelStyle(row) // 点开过的匹配:选中外观(方案 B 白色浮起卡)
+	} else if row.Hovered() {
 		row.Background(t.Fill1)
 	}
 	row.ContextMenu(func(menu *ui.Menu) { a.searchMatchMenu(menu, m) })
 	row.OnClick(func() {
+		s.selMatch = mkey(m)
 		a.ide.navMark()
 		a.ide.openAt(m.Path, m.Line, m.Col, m.End, false)
 		a.ide.sel = m.Path
