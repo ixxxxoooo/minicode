@@ -96,6 +96,14 @@ func (a *App) wsSplit(c *ui.Context, cur *ideTab) {
 		d.splitFrac = 0.5
 	}
 	frac := d.splitFrac
+	focusPane := func(pane int8) func(ui.InputEvent) { // 在哪个组里按下 / 打字,哪个组就是焦点组(捕获阶段,不吃事件)
+		return func(ev ui.InputEvent) {
+			switch ev.Kind {
+			case ui.InputPointerDown, ui.InputKeyDown, ui.InputText:
+				d.paneSel = pane
+			}
+		}
+	}
 	child := func(pane int8) {
 		a.etabsPane(c, pane)
 		pcur := d.curOn(pane)
@@ -127,15 +135,15 @@ func (a *App) wsSplit(c *ui.Context, cur *ideTab) {
 	}
 	if d.splitDir == 2 {
 		ui.Column(c).Grow(1).MinHeight(0).Children(func() {
-			ui.Column(c).Grow(frac).MinHeight(splitMin).Children(func() { child(0) })
+			ui.Column(c).Grow(frac).MinHeight(splitMin).ObserveInput(focusPane(0)).Children(func() { child(0) })
 			a.splitHandle(c, false)
-			ui.Column(c).Grow(1 - frac).MinHeight(splitMin).Children(func() { child(1) })
+			ui.Column(c).Grow(1 - frac).MinHeight(splitMin).ObserveInput(focusPane(1)).Children(func() { child(1) })
 		})
 	} else {
 		ui.Row(c).Grow(1).MinWidth(0).Children(func() {
-			ui.Column(c).Grow(frac).MinWidth(splitMin).Children(func() { child(0) })
+			ui.Column(c).Grow(frac).MinWidth(splitMin).ObserveInput(focusPane(0)).Children(func() { child(0) })
 			a.splitHandle(c, true)
-			ui.Column(c).Grow(1 - frac).MinWidth(splitMin).Children(func() { child(1) })
+			ui.Column(c).Grow(1 - frac).MinWidth(splitMin).ObserveInput(focusPane(1)).Children(func() { child(1) })
 		})
 	}
 	_ = cur
@@ -182,9 +190,10 @@ func (a *App) etabsPane(c *ui.Context, pane int8) {
 	active := *d.paneActive(pane)
 	ui.Row(c).Height(theme.HTab - 2).Gap(1).PaddingX(4).AlignItems(ui.Center).Children(func() {
 		for _, tb := range tabs {
-			if tb.id == active {
-				d.paneSel = pane
-			}
+			// 注意:这里不能因为「这是该组的当前标签」就改 d.paneSel——两个组各有一个当前标签,
+			// 每帧后画的次组都会把焦点组抢成 1,保存 / ⌘W / 状态栏 / 搜索定位全落到次组上。
+			// 焦点组只由点击标签、点击组里的任意位置(wsSplit 的 ObserveInput)和键盘输入决定。
+			_ = active
 			a.etabPane(c, tb, pane)
 		}
 	})
