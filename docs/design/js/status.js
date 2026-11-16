@@ -59,10 +59,10 @@
       R('偏好未接线 · 权限 / 运行环境', 'FillClaudeConfig:runtime.bin→ClaudePath、perm.mode、ExtraPermDirs、RuntimeExtraEnv(代理/超时);SyncClaudeSettingsFromPrefs 写权限/思考到 claude 设置;Bash 沙盒开关无 Claude 键(置灰)。未测试;额外目录与代理是否被 claude 子进程采纳需真后端核', 'part', 'B6'),
       R('偏好未接线 · 编辑器 / 终端 / SCM / 浏览器', 'editor.syntax→applyEditorPrefs;editor.blameGutter→ide_blame_ui;TermStartOpts 读 term.login/cwd/shell/scrollback;scm.diffMax/fetch 与 ScmFetchTick;worktree 列表+新建已接(settings_scm_wire,Computer Use 实测过新建/删除)。缺口:browser.reader 仅设置行未读。未测试', 'part', 'B6'),
       R('偏好未接线 · 隐私 / 高级 / 关于', 'privacy.level→ApplyDiagPrefs;adv.watchdog/LiveTaskOutput 已接;appearance.system→ApplySystemAppearance 切换浅深主题对。仍只存:privacy.crash/usage(行内写明无上报)、about.autoUpdate/about.channel(更新器未读);adv.flowMeasure 只存且注明不生效。未测试', 'part', 'B6'),
-      R('设计稿有、设置页没有的行', '已补:appearance.waitAnim→SpinStyled;滚动条分段(仅 UI,运行时未读 pScrollbar)、claude 检测/版本、环境变量遮盖、运行环境三主机 netCheckBody、诊断包导出、doctor 折叠、崩溃列表、settings 导入导出、Worktree 列表、关于页 GitHub 链。仍弱:输出风格无键;开源致谢非完整许可列表;服务商行内「测试」已走真实 testProvider + ProbeProvider(settings_tabs.go 里遗留的 provRow 占位未被使用,待清理)。未测试', 'part', 'B6'),
+      R('设计稿有、设置页没有的行', '已补:appearance.waitAnim→SpinStyled;滚动条分段(仅 UI,运行时未读 pScrollbar)、claude 检测/版本、环境变量遮盖、运行环境三主机 netCheckBody、诊断包导出、doctor 折叠、崩溃列表、settings 导入导出、Worktree 列表、关于页 GitHub 链。仍弱:输出风格无键;开源致谢非完整许可列表;服务商行内「测试」已走真实 testProvider + ProbeProvider。未测试', 'part', 'B6'),
       R('设置里「检查器」措辞与设计稿不一致', 'Go:general.insp 与快捷键分组已用「右侧工作区/右侧栏」(settings_shortcuts 无「检查器」);layout_mem 读 general.insp。缺口:Go 源码注释(pages.go)仍写检查器;设计稿 overview 方案卡示意图是否仍用旧名未在本任务核对', 'part', 'B6'),
       R('规则 / 环境变量 / 语言服务器 / 项目信任', 'settings_rules_env + claudecfg 三层规则/环境变量;settings_lsp 后台检测与 lsp.server.*;settings_trust 读写 hasTrustDialogAccepted。单测覆盖;界面未测试', 'ok'),
-      R('服务商自定义与预设', 'prov_settings.go + claudecfg:预设/自定义 CRUD、密钥 0600、ProbeProvider/FetchModels(含 Real DeepSeek 联调)。包内单测通过;设置页全链路未测试。缺口:官方行缺「官方账号」meta、模型清单空态缺「获取 + 手动添加」双按钮、演示映射默认未启用(与设计「当前 DeepSeek」不一致)、连通成功只在行内标签(无 toast)', 'part', 'B6'),
+      R('服务商自定义与预设', 'prov_settings.go + claudecfg:预设/自定义 CRUD、密钥 0600、ProbeProvider/FetchModels(含 Real DeepSeek 联调);官方行 meta(OAuth/演示账号)、清单空态「获取+手动添加」双按钮、演示 Mapping.Enabled 对齐 providers.js defaultState。包内单测通过;设置页全链路未测试。缺口:连通成功只在行内标签(无 toast)。未测试', 'part', 'B6'),
       R('获取模型列表与勾选', 'prov_settings provInventory:FetchModels 骨架/空/失败/不支持/缺密钥、手动添加、过滤/全选/清空;演示 demo.DemoFetchModels 覆盖 example.com/legacy。未测试', 'part', 'B6'),
       R('模型映射下拉', 'claudecfg.Slots/MappingStatus + ProviderEnv;prov_settings 五槽 UI;运行中 pvPushEnv 跳过(与设计一致)。未测试;环境变量是否进真实 claude 请求需 MINI_REAL_CLAUDE 核', 'part', 'B6'),
       R('会话内按服务商选模型', 'prov_picker cfgModels、popups cfgPopup、composer/statusbar 分组与管理入口已接;官方槽仍读 a.st.Models;切换 toast 的「下一条消息起生效」副句已有(modelSwitchToastNote);弹层 picks 已写入 providers.json 并按服务商恢复;胶囊缩写 + tooltip 已接(cfgChip/statusbar)。映射→环境变量有 MINI_REAL_CLAUDE 集成测试;界面未测试', 'part', 'B6'),
@@ -75,7 +75,7 @@
       R('形态切换的内容编排(甘特图)', 'morph_content.go morphWrap 已挂 chat/side/workspace 三轨;标题栏形态滑块未分轨(仍跟 morph.go 整体变形);motion 关时直达。未测试', 'part', 'B6')],
     ia: [
       R('信息架构四条原则、4 组 14 类设置树、迁移对照表', '以 settings 页的实现为准,设置搜索兜底(settingsHits / jumpSettingRow)已接', 'ok', 'B0'),
-      R('「服务商状态与交互清单」(8 行)', 'ia 页 8 行映射 settings 服务商 CRUD/模型列表/映射/会话选择四块;prov_settings + prov_picker 等已接线。弹层 picks 已持久化;运行配置胶囊第三方 logo + 缩写/短模型名 + tooltip 全名已接。缺口:`settings_tabs.go` 里遗留未使用的 provRow 占位。未测试', 'part', 'B6'),
+      R('「服务商状态与交互清单」(8 行)', 'ia 页 8 行映射 settings 服务商 CRUD/模型列表/映射/会话选择四块;prov_settings + prov_picker 等已接线。弹层 picks 已持久化;运行配置胶囊第三方 logo + 缩写/短模型名 + tooltip 全名已接。未测试', 'part', 'B6'),
       R('入口矩阵 ENTRY(同一内容别处只是跳转)', '工作区虚拟标签入口都走 openVirtual', 'ok', 'B0')],
     flows: [
       R('没有「检查器」:详情只落在工作区标签,每个内容一个家', '', 'ok'),
