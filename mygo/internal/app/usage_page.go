@@ -52,6 +52,20 @@ func (a *App) SetUsageSource(f func(rng int) core.UsageReport) { a.usageSrc = f 
 // SetUsageRange 切换用量范围(测试 / 截图用)。
 func (a *App) SetUsageRange(r int) { a.use.rng, a.use.set = r, true }
 
+// closeUsage 关闭用量整页,回到工作台(没有侧栏图标入口,这是它唯一的显式出口)。
+func (a *App) closeUsage() {
+	if a.screen != ScreenUsage {
+		return
+	}
+	log.Info("关闭用量页")
+	a.screen = ScreenWork
+}
+
+// usageCloseBtn 是页头最右的「×」关闭按钮(设计稿 usage.js:关闭 Esc)。
+func (a *App) usageCloseBtn(c *ui.Context) {
+	kit.Ib(c, "x", kit.IbOpt{Tip: "关闭 Esc"}).OnClick(a.closeUsage)
+}
+
 func (a *App) usagePage(c *ui.Context) {
 	t := a.tk
 	if !a.use.set {
@@ -68,7 +82,7 @@ func (a *App) usagePage(c *ui.Context) {
 			msg = "新账户还没有可统计的会话费用(演示空数据)。"
 		}
 		a.pane(c).Grow(1).Children(func() {
-			a.pageHead(c, "用量与成本", "本机各会话的 token 与费用估算。", nil)
+			a.pageHead(c, "用量与成本", "本机各会话的 token 与费用估算。", func() { a.usageCloseBtn(c) })
 			if msg == "正在统计会话记录…" {
 				ui.Row(c).Gap(10).Padding(16, 16, 8, 16).AlignItems(ui.Center).Children(func() {
 					kit.Ring(c, -1, t.Ac)
@@ -127,6 +141,7 @@ func (a *App) usageBody(c *ui.Context, u core.UsageReport) {
 			a.use.rng = i
 		}
 		kit.Btn(c, "导出 CSV", kit.BtnOpt{Icon: "download"}).OnClick(func() { a.exportUsage(u) })
+		a.usageCloseBtn(c)
 	})
 	main := func() {
 		pct := func(f float64) string { // 极端涨幅(上一段几乎为 0)写成「>999%」,免得读起来像 bug

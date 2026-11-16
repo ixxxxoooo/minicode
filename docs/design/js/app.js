@@ -173,7 +173,7 @@
     if (mod && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'b' && win) { e.preventDefault(); ACT.side(null, win); return; }
     if (mod && e.altKey && e.key.toLowerCase() === 'b' && win) { e.preventDefault(); ACT.right(null, win); return; }
     if (mod && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'j' && win) { e.preventDefault(); ACT.panel(null, win); return; }
-    if (e.key === 'Escape') { if (APP.closeLayer && APP.closeLayer()) return; if (typing) { t.blur(); return; } if (st.page === 'palette' || st.page === 'settings') go('work'); }
+    if (e.key === 'Escape') { if (APP.closeLayer && APP.closeLayer()) return; if (typing) { t.blur(); return; } if (st.page === 'palette' || st.page === 'settings' || st.page === 'usage') go('work'); }
   });
   document.addEventListener('click', (e) => {
     const el = e.target.closest('[data-act]'); if (!el) return;

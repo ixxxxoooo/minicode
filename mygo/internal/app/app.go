@@ -758,6 +758,8 @@ func (a *App) shortcuts(c *ui.Context) {
 		a.cyclePermissionMode()
 	case a.screen == ScreenSettings && !a.paletteOn && a.set.query == "" && c.Shortcut(0, ui.KeyEscape):
 		a.closeSettings()
+	case a.screen == ScreenUsage && !a.paletteOn && a.qp == nil && a.popup == "" && c.Shortcut(0, ui.KeyEscape):
+		a.closeUsage() // Esc:退出用量整页
 	}
 }
 
