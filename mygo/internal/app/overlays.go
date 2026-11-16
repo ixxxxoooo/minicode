@@ -13,6 +13,11 @@ func (a *App) overlayLayer(c *ui.Context) {
 	if a.useSideDrawer() && a.sideOpen {
 		a.sideDrawerOverlay(c)
 	}
+	// 工作区浮层 / 对话栏图标条只属于工作台;设置、自定义、用量等整页上没有工作区和对话栏,
+	// 不能再浮一个气泡按钮在页面右上角。
+	if a.screen != ScreenWork {
+		return
+	}
 	if a.useWsOverlay() && a.rightOn && a.wsFloat {
 		a.wsOverlay(c)
 	}
