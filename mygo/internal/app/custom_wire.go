@@ -89,17 +89,10 @@ func (a *App) cuOpenOK(it *customize.Item) bool {
 }
 
 func (a *App) cuOpenPath(p string) {
-	p = strings.TrimSpace(p)
-	if p == "" {
+	abs, ok := a.resolveUserPath(p)
+	if !ok {
+		a.toast = "路径无效或无法解析"
 		return
-	}
-	abs := p
-	if strings.HasPrefix(p, "~") {
-		if h, err := os.UserHomeDir(); err == nil {
-			abs = filepath.Join(h, strings.TrimPrefix(p, "~/"))
-		}
-	} else if a.proj != "" && !filepath.IsAbs(p) {
-		abs = filepath.Join(a.proj, p)
 	}
 	if cat := a.cuCat(); cat == customize.Skills {
 		abs = filepath.Join(abs, "SKILL.md")
@@ -171,8 +164,17 @@ func (a *App) cuMCPTool(it *customize.Item, i int) {
 	}
 }
 
+// cuDraftBody 返回当前项的草稿正文(详情里编辑的是 draft,试运行应跟表单一致)。
+func (a *App) cuDraftItem(it *customize.Item) customize.Item {
+	s := &a.cu
+	if s.dOf == it {
+		return s.draft
+	}
+	return it.Clone()
+}
+
 func (a *App) cuTryCommand(it *customize.Item) {
-	prompt := strings.TrimSpace(it.Body)
+	prompt := strings.TrimSpace(a.cuDraftItem(it).Body)
 	if prompt == "" {
 		a.toast = "提示词为空"
 		return
@@ -195,7 +197,8 @@ func (a *App) cuTryCommand(it *customize.Item) {
 }
 
 func (a *App) cuTryAgent(it *customize.Item) {
-	prompt := strings.TrimSpace(it.Body)
+	d := a.cuDraftItem(it)
+	prompt := strings.TrimSpace(d.Body)
 	if prompt == "" {
 		a.toast = "系统提示词为空"
 		return
@@ -206,10 +209,10 @@ func (a *App) cuTryAgent(it *customize.Item) {
 	}
 	a.cu.runOut = "正在试运行…"
 	a.bg("子Agent试运行", func() func() {
-		wrapped := "你是子 Agent「" + it.Name + "」。\n\n" + prompt + "\n\n用一句话确认你已就绪。"
+		wrapped := "你是子 Agent「" + d.Name + "」。\n\n" + prompt + "\n\n用一句话确认你已就绪。"
 		model := ""
-		if it.Model > 0 && it.Model < len(customize.Models) {
-			switch it.Model {
+		if d.Model > 0 && d.Model < len(customize.Models) {
+			switch d.Model {
 			case 1:
 				model = "sonnet"
 			case 2:
