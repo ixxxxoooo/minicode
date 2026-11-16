@@ -50,7 +50,7 @@ func (a *App) userFloat(c *ui.Context, u *core.User, anchor ui.Element) {
 				lines := estimatedUserLines(userDisplayText(u.Text), 44)
 				maxH := float32(userFoldExp) * a.FlowFontSize() * 1.55
 				body := func() {
-					ui.Column(c).Key("ufl-body-" + u.ID).Selectable().Children(func() { a.userMsgBody(c, u) })
+					ui.Column(c).Key("ufl-body-" + u.ID).Selectable().Children(func() { a.userMsgBody(c, u, false) })
 				}
 				if lines > userFoldExp {
 					ui.Scroll(c).Key("ufl-scroll-" + u.ID).MaxHeight(maxH).Children(body)

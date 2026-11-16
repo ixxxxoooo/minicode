@@ -129,15 +129,29 @@ func (a *App) flowRound(c *ui.Context, u *core.User, rest []core.Item) {
 	})
 }
 
+// userLinesCap 是 estimatedUserLines 的上限:折叠 / 展开只关心「是否超过 6 / 24 行」,
+// 数到这里就停,避免几万字的粘贴日志每帧从头数到尾。
+const userLinesCap = 100
+
+// estimatedUserLines 估算文字排成多少行(按 col 个半角宽度折行),最多数到 userLinesCap。
 func estimatedUserLines(text string, col int) int {
 	if col < 20 {
 		col = 44
 	}
 	lines := 0
-	for _, para := range strings.Split(text, "\n") {
+	for rest := text; ; {
+		para := rest
+		nl := strings.IndexByte(rest, '\n')
+		if nl >= 0 {
+			para = rest[:nl]
+		}
 		w := 0
 		for _, r := range para {
-			w += map[bool]int{true: 2, false: 1}[r > 127 || unicode.Is(unicode.Han, r)]
+			if r > 127 || unicode.Is(unicode.Han, r) {
+				w += 2
+			} else {
+				w++
+			}
 			if w >= col {
 				lines++
 				w = 0
@@ -146,11 +160,44 @@ func estimatedUserLines(text string, col int) int {
 		if w > 0 || para == "" {
 			lines++
 		}
+		if lines >= userLinesCap {
+			return userLinesCap
+		}
+		if nl < 0 {
+			break
+		}
+		rest = rest[nl+1:]
 	}
 	if lines == 0 {
 		lines = 1
 	}
 	return lines
+}
+
+// userPreviewRunes 是折叠态送进排版的最大字符数:最宽的内容列(860px)一行约 110~140 个半角字符,
+// 1000 个字符足够排满折叠的 6 行,视觉与整篇排版后再裁剪一致。
+const userPreviewRunes = 1000
+
+// userFoldPreview 返回折叠态用户卡需要的文字前缀:前 userFoldMax 个物理行、且不超过 userPreviewRunes 个字符。
+// 折叠只是把正文裁成 6 行高,但整段文字仍会被排版;一条 3 万字的粘贴日志在每个过渡帧(宽度逐帧变化)
+// 都要整篇重新断行,实测每帧约 41 ms,连续切换形态时叠成 1 秒以上的停滞。
+func userFoldPreview(txt string) string {
+	if len(txt) <= userPreviewRunes { // 字节数不超过上限,字符数一定不超过
+		return txt
+	}
+	n, nl := 0, 0
+	for i, r := range txt {
+		if n >= userPreviewRunes {
+			return txt[:i]
+		}
+		if r == '\n' {
+			if nl++; nl >= userFoldMax {
+				return txt[:i]
+			}
+		}
+		n++
+	}
+	return txt
 }
 
 func (a *App) userExpanded(id string) bool {
@@ -222,14 +269,14 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 		if clamp && exp && lines > userFoldExp {
 			fs := a.FlowFontSize()
 			ui.Scroll(c).MaxHeight(float32(userFoldExp) * fs * 1.55).Key("user-scroll-" + u.ID).Children(func() {
-				a.userMsgBody(c, u)
+				a.userMsgBody(c, u, false)
 			})
 		} else {
 			body := ui.Column(c)
 			if clamp && !exp {
 				body = body.MaxHeight(float32(userFoldMax)*a.FlowFontSize()*1.55 + 8).Clip()
 			}
-			body.Children(func() { a.userMsgBody(c, u) })
+			body.Children(func() { a.userMsgBody(c, u, clamp && !exp) })
 		}
 		a.userMsgImages(c, u)
 		if hov {
@@ -266,9 +313,13 @@ func userDisplayText(s string) string {
 	return strings.TrimSpace(userImgMark.ReplaceAllString(s, ""))
 }
 
-func (a *App) userMsgBody(c *ui.Context, u *core.User) {
+// userMsgBody 画用户消息正文。folded = true 是折叠态:只排版前缀(见 userFoldPreview),外面的卡片负责裁成 6 行高。
+func (a *App) userMsgBody(c *ui.Context, u *core.User, folded bool) {
 	t := a.tk
 	txt := userDisplayText(u.Text)
+	if folded {
+		txt = userFoldPreview(txt)
+	}
 	if txt == "" && len(u.Images) > 0 {
 		return // 只有图片:不留空文字行
 	}
