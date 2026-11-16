@@ -24,6 +24,20 @@ func (a *App) assistant(c *ui.Context, m *core.Assistant) {
 	})
 }
 
+// assistantChunk 画长正文的一块;流式输出时只有最后一块走流式渲染,前面的块内容已定,走带缓存的静态渲染。
+func (a *App) assistantChunk(c *ui.Context, m *core.Assistant, text string, last bool) {
+	if strings.TrimSpace(text) == "" {
+		return
+	}
+	ui.Column(c).Key("asst-" + m.ID).Children(func() { // 每块在自己的行上下文里,键不会冲突;不能带随内容变化的值
+		if m.Streaming && last {
+			markdown.Stream(c, padCode(text), a.mdOptions())
+		} else {
+			markdown.View(c, padCode(text), a.mdOptions())
+		}
+	})
+}
+
 // turnEnd 返回 items[i] 是不是某个回合的最后一项(下一项是用户消息或已到末尾),以及该回合的用户消息 id。
 func turnEnd(items []core.Item, i int) (string, bool) {
 	if i+1 < len(items) {

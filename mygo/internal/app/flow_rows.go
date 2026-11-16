@@ -93,7 +93,7 @@ func (a *App) addTailRow(add func(flowRow), seg []core.Item) {
 		return
 	}
 	if flowTailVisible(first) {
-		add(flowRow{key: "i:" + first.ItemID(), build: plainRow(func(c *ui.Context) { a.tailItem(c, first) })})
+		a.addItemRows(add, first)
 	}
 }
 
@@ -125,8 +125,7 @@ func (a *App) addRoundRows(add func(flowRow), u *core.User, rest []core.Item, st
 			last = j - 1
 		} else {
 			if !(foldTurn && foldedSteps && turnFoldedItem(rest[i])) && flowTailVisible(rest[i]) {
-				it := rest[i]
-				add(flowRow{key: "i:" + it.ItemID(), build: plainRow(func(c *ui.Context) { a.tailItem(c, it) })})
+				a.addItemRows(add, rest[i])
 			}
 			last = i
 		}
@@ -143,6 +142,21 @@ func (a *App) addRoundRows(add func(flowRow), u *core.User, rest []core.Item, st
 		}
 		i = last + 1
 	}
+}
+
+// addItemRows 为一条非步骤条目加行。助手正文很长时按 splitMarkdownChunks 切成多行,
+// 虚拟列表只构建视口附近的块(整条放一行时,露出一角就要整段解析与排版)。
+func (a *App) addItemRows(add func(flowRow), it core.Item) {
+	if m, ok := it.(*core.Assistant); ok && len(m.Text) > mdChunkMin {
+		if chunks := a.chunksOf(m); len(chunks) > 1 {
+			for k, ch := range chunks {
+				ch, last := ch, k == len(chunks)-1
+				add(flowRow{key: "i:" + m.ID + "~" + itoa(k), build: plainRow(func(c *ui.Context) { a.assistantChunk(c, m, ch, last) })})
+			}
+			return
+		}
+	}
+	add(flowRow{key: "i:" + it.ItemID(), build: plainRow(func(c *ui.Context) { a.tailItem(c, it) })})
 }
 
 // flowTailVisible 这类条目在会话流里会画出东西(其余类型 tailItem 什么都不画,不要留空行)。
@@ -281,4 +295,22 @@ func (p *flowPerf) endFrame(items int) {
 	for k := range p.kinds {
 		delete(p.kinds, k)
 	}
+}
+
+// chunksOf 取助手正文的分块,按「条目 id + 文本长度」缓存(正文只会在末尾增长),免得每帧都把几十万字扫一遍。
+func (a *App) chunksOf(m *core.Assistant) []string {
+	if e, ok := a.mdChunks[m.ID]; ok && e.n == len(m.Text) {
+		return e.chunks
+	}
+	if a.mdChunks == nil || len(a.mdChunks) > 64 {
+		a.mdChunks = map[string]mdChunkEntry{}
+	}
+	ch := splitMarkdownChunks(m.Text)
+	a.mdChunks[m.ID] = mdChunkEntry{n: len(m.Text), chunks: ch}
+	return ch
+}
+
+type mdChunkEntry struct {
+	n      int
+	chunks []string
 }
