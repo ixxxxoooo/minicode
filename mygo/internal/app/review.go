@@ -33,6 +33,7 @@ type reviewState struct {
 	draft      string
 	side       bool            // 左右对比(默认行内)
 	grpClosed  map[string]bool // 多仓库分组是否折叠(键 g<序号>)
+	chgAll     bool            // 改动卡是否展开了全部文件
 	revAt      map[string]int  // 块撤销时「改动前文本」写进文件的字节位置(「重新应用」按它校验后写回)
 
 	chg changedCache // changedFiles 的缓存(按会话状态的 Rev)

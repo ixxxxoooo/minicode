@@ -16,16 +16,16 @@
   /** 图标。n:图标名;c:附加类(s12 / s16 / s20、颜色类) */
   const ic = (n, c = '') => `<svg class="ic ${c}" viewBox="0 0 24 24">${ICONS[n] || ''}</svg>`;
   /**
-   * 文件类型图标(对标 Cursor / VS Code 图标主题):已知语言用「语言缩写 + 主题色」的小圆角徽标,
+   * 文件类型图标(对标 Cursor):已知语言用主题色的语言缩写字母(JS / GO / # …,不带底色),
    * 其余退回线条图标。颜色取主题令牌,换主题自动跟着变;设置 → 外观「彩色文件图标」关闭时一律灰色线条图标。
    * Go 实现:mygo/internal/app/file_icon.go,两边的扩展名表保持一致。
    */
   const FILE_KINDS = {
     js: ['JS', 'warn'], mjs: ['JS', 'warn'], cjs: ['JS', 'warn'], jsx: ['JSX', 'warn'],
-    ts: ['TS', 'info'], tsx: ['TSX', 'info'], go: ['GO', 'info'], rs: ['RS', 'warn'], py: ['PY', 'ok'],
+    ts: ['TS', 'info'], tsx: ['TSX', 'info'], go: ['GO', 'c-cyan'], rs: ['RS', 'warn'], py: ['PY', 'ok'],
     swift: ['SW', 'err'], java: ['JV', 'err'], kt: ['KT', 'vio'], c: ['C', 'info'], h: ['H', 'info'], cpp: ['C++', 'info'], hpp: ['H++', 'info'],
     rb: ['RB', 'err'], php: ['PHP', 'vio'], lua: ['LU', 'info'], sh: ['SH', 'ok'], zsh: ['SH', 'ok'], bash: ['SH', 'ok'],
-    html: ['HT', 'err'], css: ['CS', 'info'], scss: ['SC', 'vio'], vue: ['VU', 'ok'],
+    html: ['HT', 'err'], css: ['#', 'c-pink'], scss: ['#', 'c-pink'], less: ['#', 'c-pink'], vue: ['VU', 'ok'],
     md: ['MD', 'tx-2'], mdx: ['MD', 'tx-2'], json: ['{}', 'warn'], toml: ['TM', 'tx-2'], yaml: ['YM', 'err'], yml: ['YM', 'err'],
     sql: ['SQ', 'vio'], csv: ['CS', 'ok'], xml: ['XM', 'warn'],
   };

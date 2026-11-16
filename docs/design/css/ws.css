@@ -193,15 +193,23 @@
 .chat.maxed { }
 .chg-card { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 10px; border-radius: var(--r-md); background: var(--bg-raised); box-shadow: var(--sh-1); }
 .chg-card .files { display: flex; gap: 4px; flex-wrap: wrap; min-width: 0; flex: 1; }
-/* 改动卡 v2(对标 Cursor):标题行 + 文件列表,一行一个文件,只写文件名(不带目录,目录在悬停提示里),整行可点 = 打开该文件;超过 3 个折叠成「还有 N 个」 */
-.chg-card.v2 { flex-direction: column; align-items: stretch; gap: 2px; padding: 8px 11px; }
-.chg-card.v2 .hd { display: flex; align-items: center; gap: 8px; }
+/* 改动卡 v2(对标 Cursor):细边框无阴影;标题行左「N 个文件已改动」、右纯文字「撤销 / 审查」;
+   每个文件一行 = 类型图标 + 文件名 + 右侧该文件的 +增 −删,整行悬停变灰、点击打开文件(目录在悬停提示里);
+   超过 3 个折成「··· 还有 N 个文件」,点开就地展开,再点收起 */
+.chg-card.v2 { flex-direction: column; align-items: stretch; gap: 0; padding: 3px; border: 1px solid var(--bd-2); box-shadow: none; }
+.chg-card.v2 .hd { display: flex; align-items: center; gap: 2px; height: 28px; padding: 0 8px; font-size: 11.5px; font-weight: 500; color: var(--tx-2); }
 .chg-card.v2 .hd .grow { flex: 1; }
-.chg-card.v2 .frow { display: flex; align-items: center; gap: 6px; height: 22px; padding: 0 6px 0 4px; margin-left: 16px; border-radius: var(--r-xs); color: var(--tx-2); font-size: 11.5px; cursor: pointer; }
+.chg-card.v2 .lk { height: 22px; padding: 0 7px; border-radius: var(--r-sm); color: var(--tx-3); font-size: 11.5px; cursor: pointer; display: inline-flex; align-items: center; }
+.chg-card.v2 .lk.rv { color: var(--tx-2); }
+.chg-card.v2 .lk:hover { background: var(--fill-1); color: var(--tx-1); }
+.chg-card.v2 .frow { display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 8px; border-radius: var(--r-sm); color: var(--tx-2); font-size: 11.5px; cursor: pointer; }
 .chg-card.v2 .frow:hover { background: var(--fill-1); color: var(--tx-1); }
-.chg-card.v2 .frow .more { margin-left: auto; color: var(--tx-4); font-size: 10.5px; }
-/* 文件类型图标:语言缩写 + 主题色的小圆角徽标(js 黄 / ts 蓝 / py 绿 …),Go 实现见 file_icon.go */
-.fi { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 14px; height: 14px; border-radius: 3px; background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); font: 700 7px/1 var(--font-ui, system-ui); letter-spacing: -.2px; }
+.chg-card.v2 .frow .nm { flex: 1; min-width: 0; }
+.chg-card.v2 .frow .st { flex: none; font-family: var(--font-mono, monospace); font-size: 11.5px; }
+.chg-card.v2 .frow .ad { color: var(--ok); } .chg-card.v2 .frow .dl { color: var(--err); }
+.chg-card.v2 .frow.more { color: var(--tx-3); } .chg-card.v2 .frow.more .ic { color: var(--tx-4); }
+/* 文件类型图标:主题色的语言缩写字母,不带底色(JS 黄 / GO 青 / # 粉 / TS 蓝 …),Go 实现见 file_icon.go */
+.fi { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 14px; height: 14px; color: var(--c); font: 600 9.5px/1 var(--font-ui, system-ui); letter-spacing: -.3px; }
 .fi-img { display: inline-flex; flex: none; }
 .tdock .chip.pop-on { background: var(--fill-2); }
 .tpop { position: absolute; left: 0; right: 0; bottom: 100%; z-index: 20; margin-bottom: 4px; padding: 4px; }

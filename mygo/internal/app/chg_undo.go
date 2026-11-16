@@ -2,7 +2,6 @@ package app
 
 import (
 	"github.com/egoist/mygo/ui"
-	"github.com/ixxxxoooo/minicode/internal/kit"
 )
 
 // undoTurnChanges 撤销本回合改动卡里列出的文件(逐文件还原第一个未撤销块)。
@@ -35,7 +34,5 @@ func (a *App) undoTurnChanges() {
 
 // changesCardUndoBtn 改动卡头部的撤销按钮。
 func (a *App) changesCardUndoBtn(c *ui.Context) {
-	kit.Btn(c, "撤销", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "undo"}).OnClick(func() {
-		a.undoTurnChanges()
-	})
+	a.chgLink(c, "chg-undo", "撤销", a.tk.Tx3, a.undoTurnChanges)
 }

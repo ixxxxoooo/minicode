@@ -20,6 +20,8 @@ const (
 	toneWarn
 	toneInfo
 	toneVio
+	toneCyan
+	tonePink
 	toneMuted
 )
 
@@ -31,12 +33,12 @@ type fileKind struct {
 // fileKinds 按小写扩展名(不带点)查徽标。
 var fileKinds = map[string]fileKind{
 	"js": {"JS", toneWarn}, "mjs": {"JS", toneWarn}, "cjs": {"JS", toneWarn}, "jsx": {"JSX", toneWarn},
-	"ts": {"TS", toneInfo}, "tsx": {"TSX", toneInfo}, "go": {"GO", toneInfo}, "rs": {"RS", toneWarn}, "py": {"PY", toneOk},
+	"ts": {"TS", toneInfo}, "tsx": {"TSX", toneInfo}, "go": {"GO", toneCyan}, "rs": {"RS", toneWarn}, "py": {"PY", toneOk},
 	"swift": {"SW", toneErr}, "java": {"JV", toneErr}, "kt": {"KT", toneVio},
 	"c": {"C", toneInfo}, "h": {"H", toneInfo}, "cpp": {"C++", toneInfo}, "hpp": {"H++", toneInfo},
 	"rb": {"RB", toneErr}, "php": {"PHP", toneVio}, "lua": {"LU", toneInfo},
 	"sh": {"SH", toneOk}, "zsh": {"SH", toneOk}, "bash": {"SH", toneOk},
-	"html": {"HT", toneErr}, "css": {"CS", toneInfo}, "scss": {"SC", toneVio}, "vue": {"VU", toneOk},
+	"html": {"HT", toneErr}, "css": {"#", tonePink}, "scss": {"#", tonePink}, "less": {"#", tonePink}, "vue": {"VU", toneOk},
 	"md": {"MD", toneMuted}, "mdx": {"MD", toneMuted}, "json": {"{}", toneWarn},
 	"toml": {"TM", toneMuted}, "yaml": {"YM", toneErr}, "yml": {"YM", toneErr},
 	"sql": {"SQ", toneVio}, "csv": {"CS", toneOk}, "xml": {"XM", toneWarn},
@@ -65,19 +67,25 @@ func (a *App) fileKindColor(tone fileKindTone) ui.Color {
 		return t.Info
 	case toneVio:
 		return t.Vio
+	case toneCyan:
+		return t.Cyan
+	case tonePink:
+		return t.Pink
 	}
 	return t.Tx2
 }
 
-// fileBadge 画语言徽标:14×14 圆角底(主题色 18% 透明度)+ 居中的缩写字母。
+// fileBadge 画语言图标(对标 Cursor):不带底色,只有主题色的缩写字母(JS / GO / #…),14×14 的槽位居中。
 func (a *App) fileBadge(c *ui.Context, k fileKind) ui.Element {
 	col := a.fileKindColor(k.tone)
-	size := float32(8)
-	if len([]rune(k.label)) >= 3 {
-		size = 6.5
+	size := float32(9.5)
+	switch n := len([]rune(k.label)); {
+	case n >= 3:
+		size = 7.5
+	case k.label == "#":
+		size = 12
 	}
-	return ui.Row(c).Size(14, 14).Shrink(0).Justify(ui.Center).AlignItems(ui.Center).Radius(3).
-		Background(col.Alpha(.18)).Children(func() {
-		ui.Text(c, k.label).FontSize(size).FontWeight(700).LineHeight(1).TextColor(col).NoWrap()
+	return ui.Row(c).Size(14, 14).Shrink(0).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
+		ui.Text(c, k.label).FontSize(size).FontWeight(600).LineHeight(1).TextColor(col).NoWrap()
 	})
 }
