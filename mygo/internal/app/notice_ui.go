@@ -20,7 +20,7 @@ func noticeIcon(t *theme.Tokens, lv string) (string, ui.Color) {
 	return "info", t.Info
 }
 
-// noticeBell 状态栏铃铛(IDE)或标题栏铃铛;返回可挂载 noticePanel 的锚点。
+// noticeBell 标题栏铃铛(设计稿只有标题栏一处,状态栏没有);返回可挂载 noticePanel 的锚点。
 func (a *App) noticeBell(c *ui.Context) ui.Element {
 	a.noticeInit()
 	n := 0

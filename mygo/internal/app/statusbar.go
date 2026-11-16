@@ -139,10 +139,6 @@ func (a *App) statusbar(c *ui.Context) {
 			upd.OnClick(func() { a.togglePop("upd") })
 			a.updPopup(c, upd)
 		}
-		if a.mode == ModeIDE {
-			bell := a.noticeBell(c)
-			a.noticePanel(c, bell)
-		}
 		if a.devBadge != "" && t.Scheme.ID != "x" {
 			kit.Tag(c, a.devBadge, kit.KAc)
 		}
