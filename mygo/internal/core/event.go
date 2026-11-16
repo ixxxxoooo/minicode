@@ -133,10 +133,39 @@ type (
 		ID     string
 		Timing TurnTiming
 	}
+	// EvConn claude 进程的连接状态变化(惰性启动 / 预热 / 空闲回收 / 退出);Why 是给日志与提示用的原因。
+	EvConn struct {
+		State ConnState
+		Why   string
+	}
 )
+
+// ConnState 是会话背后 claude 进程的连接状态。
+type ConnState int
+
+const (
+	ConnNone     ConnState = iota // 没有进程:还没启动,或空闲回收 / 退出了;下一条消息会自动启动并接着聊
+	ConnStarting                  // 进程已拉起,正在握手
+	ConnReady                     // 握手完成,发送即响应
+	ConnFailed                    // 启动失败 / 握手超时,发送时会再试一次
+)
+
+// Label 状态栏上的文字。
+func (c ConnState) Label() string {
+	switch c {
+	case ConnStarting:
+		return "连接中"
+	case ConnReady:
+		return "已连接"
+	case ConnFailed:
+		return "连接失败"
+	}
+	return "未连接"
+}
 
 func (EvReady) event()               {}
 func (EvTurnStarted) event()         {}
+func (EvConn) event()                {}
 func (EvDuration) event()            {}
 func (EvUserUUID) event()            {}
 func (EvRewind) event()              {}
@@ -229,6 +258,9 @@ type (
 	// CmdWarmup 预热:用户开始在输入框里打字时先把 claude 进程拉起来(惰性后端的冷启动是「点发送后迟迟没反应」的主要来源),
 	// 之后真正发送就不用再等进程启动与握手。进程已在运行 / 演示后端 = 无操作;失败只记日志,不打扰界面。
 	CmdWarmup struct{}
+	// CmdRelease 空闲回收:结束 claude 进程但保留会话,下一条消息 / 预热会 --resume 接着聊。
+	// 回合进行中、有未完成请求或还在跑的后台任务时后端会拒绝(后台任务随进程一起死,不能回收)。
+	CmdRelease struct{ Why string }
 )
 
 // EnvVar 是一个环境变量。
@@ -252,3 +284,4 @@ func (CmdRewindFiles) command()       {}
 func (CmdRunScenario) command()       {}
 func (CmdShutdown) command()          {}
 func (CmdWarmup) command()            {}
+func (CmdRelease) command()           {}

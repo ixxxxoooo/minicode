@@ -125,6 +125,8 @@ type Backend struct {
 	resume        string
 	fork          bool
 	started       bool
+	released      bool      // 上一个进程是被空闲回收的(重新启动时不提示「进程已重新启动」)
+	warmFailAt    time.Time // 最近一次预热失败的时间,60 秒内不再自动重试
 	models        []core.ModelInfo
 	pendingEdit   *pendingUserEdit
 }
@@ -302,11 +304,14 @@ func (b *Backend) startProc() error {
 	b.tr = NewTranslator(b.cfg.Cwd)
 	b.tr.IDGen = int(idGen.Add(1)) - 1
 	b.tr.SessionID = opts.EffectiveSessionID()
-	if b.started {
+	if b.started && !b.released {
 		log.Info("claude 进程已重新启动", "resume", b.resume)
 		b.emit(notice(core.NoticeInfo, "claude 进程已重新启动,继续当前会话"))
+	} else if b.released {
+		log.Info("空闲回收后重新连接", "resume", b.resume)
 	}
-	b.started = true
+	b.started, b.released = true, false
+	b.emit(core.EvConn{State: core.ConnStarting})
 	log.Info("claude 已启动", "pid", p.pid, "path", path, "cwd", b.cfg.Cwd, "resume", opts.Resume != "")
 
 	send := func(m msg) bool {
@@ -373,6 +378,7 @@ func (b *Backend) killProc() {
 	}
 	go func() { _ = p.cmd.Wait() }()
 	b.p = nil
+	b.emit(core.EvConn{State: core.ConnNone})
 }
 
 // shutdown 先把挂起的请求都拒绝掉,让 claude 干净退出,再结束进程。
@@ -445,7 +451,7 @@ func (b *Backend) ensureProc() bool {
 	}
 	if err := b.startProc(); err != nil {
 		log.Error("启动 claude 失败", "err", err)
-		b.emit(notice(core.NoticeError, err.Error()))
+		b.emit(notice(core.NoticeError, err.Error()), core.EvConn{State: core.ConnFailed, Why: err.Error()})
 		if b.turnActive {
 			b.turnActive = false
 			b.emit(core.EvTurnEnded{Reason: core.StopError})
@@ -471,6 +477,8 @@ func (b *Backend) onCommand(c core.Command) {
 			b.tr.Interrupted = true
 			b.request(req{kind: rkOther, what: "中断"}, Interrupt)
 		}
+	case core.CmdRelease:
+		b.release(c.Why)
 	case core.CmdWarmup:
 		b.warmup()
 	case core.CmdSetModel:
@@ -639,11 +647,41 @@ func (b *Backend) warmup() {
 	if b.p != nil || b.turnActive {
 		return
 	}
+	if !b.warmFailAt.IsZero() && time.Since(b.warmFailAt) < 60*time.Second { // 刚失败过:别每次打字都重试
+		return
+	}
 	if err := b.startProc(); err != nil {
+		b.warmFailAt = time.Now()
 		log.Warn("预热 claude 失败(发送时会再试)", "err", err)
+		b.emit(core.EvConn{State: core.ConnFailed, Why: err.Error()})
 		return
 	}
 	log.Info("预热 claude 进程", "pid", b.p.pid)
+}
+
+// release 空闲回收:进程闲着时结束它省内存,会话保留(下次 --resume)。有回合 / 未完成请求 / 后台任务时拒绝。
+func (b *Backend) release(why string) {
+	if b.p == nil {
+		return
+	}
+	if b.turnActive {
+		log.Info("拒绝空闲回收:回合进行中")
+		return
+	}
+	if n := len(b.reqs); n > 1 || (n == 1 && !b.hasReq(rkInit)) { // 只允许还在握手的 init 请求存在
+		log.Info("拒绝空闲回收:还有未完成的请求", "n", n)
+		return
+	}
+	if b.tr != nil && len(b.tr.liveTasks) > 0 {
+		log.Info("拒绝空闲回收:还有后台任务在跑", "n", len(b.tr.liveTasks))
+		return
+	}
+	uptime := time.Since(b.p.started).Round(time.Second)
+	pid := b.p.pid
+	b.restartConfig() // 已落盘就 --resume,没落盘(从没发过消息)就用同一个 session id 新开
+	b.released = true
+	b.killProc()
+	log.Info("空闲回收 claude 进程", "pid", pid, "原因", why, "存活", uptime)
 }
 
 // turnTiming 回合结束时汇总本回合的实测耗时并清掉计时;不是本程序发出的回合(claude 自行开启的)返回 false。
@@ -778,6 +816,11 @@ func (b *Backend) onControlResponse(v obj) {
 		if !success {
 			evs = append(evs, warn("初始化"))
 		}
+		if success {
+			evs = append(evs, core.EvConn{State: core.ConnReady})
+		} else {
+			evs = append(evs, core.EvConn{State: core.ConnFailed, Why: errText})
+		}
 		b.emit(evs...)
 	case rkSetModel:
 		if success {
@@ -875,6 +918,7 @@ func (b *Backend) onInitTimeout() {
 	}
 	b.emit(notice(core.NoticeError, text))
 	b.killProc() // 进程随后被 kill,它的退出不再另报一次
+	b.emit(core.EvConn{State: core.ConnFailed, Why: "握手超时"})
 	b.restartConfig()
 }
 
@@ -922,7 +966,7 @@ func (b *Backend) onExit() {
 		b.turnActive = false
 		b.emit(core.EvTurnEnded{Reason: core.StopError})
 	}
-	b.emit(notice(core.NoticeError, text))
+	b.emit(notice(core.NoticeError, text), core.EvConn{State: core.ConnNone, Why: "进程退出"})
 }
 
 // mergeManagedEnv 用 next 替换模型映射管理的那几个环境变量(见 claudecfg.ManagedEnvKeys),其余原样保留。
