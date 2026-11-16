@@ -75,6 +75,19 @@ func outTail(path string, n int) []string {
 	return ls
 }
 
+// selectedString 把 Selectable 容器的选区取成纯文本:每段取被选中的字符,段间换行。
+func selectedString(parts []ui.SelectedText) string {
+	var out []string
+	for _, p := range parts {
+		r := []rune(p.Text)
+		s, e := max(0, min(p.Start, len(r))), max(0, min(p.End, len(r)))
+		if e > s {
+			out = append(out, string(r[s:e]))
+		}
+	}
+	return strings.Join(out, "\n")
+}
+
 func (a *App) outPanel(c *ui.Context) {
 	t := a.tk
 	o := &a.out
@@ -115,7 +128,10 @@ func (a *App) outPanel(c *ui.Context) {
 	}
 	atEnd := o.st.Y >= o.st.MaxY-24
 	ui.Scroll(c).Key("out-scroll").TrackScroll(&o.st).Grow(1).MinHeight(0).Children(func() {
-		ui.Column(c).Padding(2, 12).Children(func() {
+		// 整列文字共用一个选区:鼠标拖选 / 双击选词 / 三击选行 / ⇧+方向键扩选,⌘C 复制(多行以换行连接)。
+		var sel ui.Element
+		sel = ui.Column(c).Padding(2, 12).Selectable()
+		sel.Children(func() {
 			for i, ln := range lines {
 				col := t.Tx2
 				switch {
@@ -126,7 +142,15 @@ func (a *App) outPanel(c *ui.Context) {
 				}
 				ln := ln
 				ui.Text(c, ln).Key("o" + itoa(i)).Font("monospace").FontSize(11.5).LineHeight(1.5).TextColor(col).SingleLine().
-					ContextMenu(func(m *ui.Menu) { a.outputMenu(m, ln, lines) })
+					ContextMenu(func(m *ui.Menu) {
+						// 行上的菜单盖过了选区容器自带的菜单,所以「复制所选」要自己补(没有选区时置灰并写明原因)。
+						picked := selectedString(sel.SelectedTexts())
+						if menuItem(m, "复制所选  ⌘C").Disabled(picked == "").Tooltip(map[bool]string{true: "先用鼠标拖选要复制的文字"}[picked == ""]).Chosen() {
+							a.copyOut(picked, "所选文字")
+						}
+						m.Separator()
+						a.outputMenu(m, ln, lines)
+					})
 			}
 		})
 	})
