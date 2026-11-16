@@ -241,6 +241,7 @@ type App struct {
 	projRefresh     func() []core.ProjectInfo      // 真实模式:立即重扫 ~/.claude/projects
 	delUndo         kit.UndoSlot                   // 全局删除撤销(会话 / 自定义等)
 	sessHide        map[string]time.Time           // 折叠删除中的会话行
+	todoDockOpen    bool                           // 输入框上方的待办坞是否展开(见 todo_dock.go)
 	sessDelWait     map[string]func()              // 延迟落盘的取消函数
 	redrawPending   bool                           // redrawSoon 已排了定时重画
 	pickOnReady     bool                           // 新会话握手后应用已记住的模型 / 思考强度

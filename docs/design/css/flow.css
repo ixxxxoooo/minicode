@@ -113,6 +113,15 @@
 
 /* 任务坞 + 排队卡 + 输入框 */
 .tdock { display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
+/* 待办坞:会话里有待办时固定在输入框上方的一行(进度环 + 进度 + 当前这一步),点开看完整清单 */
+.todock { margin-bottom: 6px; border-radius: var(--r-md); background: var(--bg-raised); box-shadow: 0 0 0 1px var(--bd-2); overflow: hidden; }
+.todock > summary { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; cursor: pointer; list-style: none; }
+.todock > summary::-webkit-details-marker { display: none; }
+.todock > summary:hover { background: var(--fill-1); }
+.todock .now { flex: 1; min-width: 0; color: var(--tx-2); }
+.todock .car { transition: transform var(--dur-base); }
+.todock[open] .car { transform: rotate(180deg); }
+.todock-body { padding: 6px 10px 8px; max-height: 180px; overflow: auto; box-shadow: inset 0 1px var(--bd-1); }
 .queue { margin: 0 12px; background: var(--bg-raised); border-radius: var(--r-md) var(--r-md) 0 0; box-shadow: var(--sh-1); padding: 4px; }
 .cmp { background: var(--bg-raised); border-radius: var(--r-lg); box-shadow: inset 0 0 0 1px var(--bd-2), var(--sh-1); transition: box-shadow var(--dur-base) var(--ease-out); position: relative; }
 .cmp.focus, .cmp:hover { box-shadow: inset 0 0 0 1px var(--ac-line), var(--ring), var(--sh-1); }

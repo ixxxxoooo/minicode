@@ -149,6 +149,7 @@ func (a *App) chatDockColumn(c *ui.Context) {
 		a.flowCol(c, func() {
 			a.syncDockComposer()
 			a.taskDock(c)
+			a.todoDock(c)
 			if !a.dockCard(c) {
 				a.queueCard(c)
 				a.composer(c)

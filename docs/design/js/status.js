@@ -184,6 +184,7 @@
       R('区块出错 · 故障隔离(界面构建 panic 不闪退)', 'safe_view.go guard:标题栏 / 状态栏出错 = 红色小条(重试)、导航栏 / 页面 / 对话 / 每个编辑标签 / 底部面板 = 出错卡片(重试 / 复制错误信息)、浮层 = 不画 + 5 秒后自动重试;日志 + crashes/ 留调用栈;测试环境不吞 panic;go test TestGuardIsolatesPanic;实机未测', 'ok'),
       R('命令面板、历史会话、分支选择器、账号菜单、运行配置弹层', '', 'ok'),
       R('IDE 通知中心(标题栏铃铛 / 历史 / 右下角叠放)', 'notice_ui.go 标题栏铃铛(状态栏不放铃铛)/面板/noticeToasts(shell.go);.app 内 mac_notify OpenSessionFromNotify;测试/裸二进制无 UN 点击回会话;未测试', 'part'),
+      R('待办坞:待办固定在输入框上方,可展开看进度', 'todo_dock.go todoDock(chatDockColumn 里任务坞之下);演示场景的待办可直接到达;未测试', 'ok'),
       R('任务坞停滞 / 已结束 / 监听 / 工作流胶囊', 'chat.go taskDock(task_dock.go)六类胶囊+停滞/停止;flow_test TestTaskDockCapsules;未测试', 'ok'),
       R('上下文弹层(输入框圆环 / 状态栏;分类明细 / 阈值刻度 / 账户限额 / 刷新 / 压缩;常态 / 接近阈值 / 压缩中 / 加载 / 无限额 / 失败)', 'ctx_panel+history 估算+点开才 get_context_usage(3s 防抖)+启动并查询;限额单独 CmdRefreshUsage.Limits;未测试', 'part'),
       R('Claude 连接预热与空闲释放(状态栏「连接中 / 已连接 / 未连接 / 连接失败」)', 'core.EvConn/ConnState;claude/backend.go warmup(失败 60 秒退避)/release(回合 / 请求 / 后台任务时拒绝)/空闲回收后重连不提示「已重新启动」;app/warm.go 策略:Attach 去抖 0.35 秒预热、窗口在前台才预热、输入与回前台补预热、空闲 chat.idle 分钟释放(窗口在后台 ⅓);设置 通用 → 连接 chat.warm / chat.idle;单测 + 真实 claude 剖析(real_profile_test);未测试', 'part'),

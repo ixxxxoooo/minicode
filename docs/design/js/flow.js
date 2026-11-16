@@ -89,6 +89,8 @@ ${live ? 'test matches_trailing_slash ... <span class="caret"></span>' : 'test r
 
   /** 输入框上方的任务坞:宽时按类别分胶囊,窄时并成一个「任务 N」;点胶囊弹出列表,点列表项在工作区打开对应标签 */
   F.tdock = () => `<div class="tdock">${chip(`子代理 <b class="num">2</b>`, 'bot', 'line split', 'data-act="tpop" data-k="agent"')}${chip(`后台命令 <b class="num">1</b>`, 'terminal', 'line split', 'data-act="tpop" data-k="cmd"')}${chip(`任务 <b class="num">3</b>`, 'activity', 'line merged', 'data-act="tpop" data-k="all"')}</div>`;
+  /** 待办坞:固定在输入框上方(任务坞之下)。done:已完成条数;open:是否展开清单。全部完成且回合结束后自动消失 */
+  F.todoDock = (done = 1, open = false) => `<details class="todock" ${open ? 'open' : ''}><summary><span class="ring" style="--p:${Math.round(done / 3 * 100)}"></span><b>待办</b><span class="t3 num">${done} / 3</span><span class="now ell">${['定位大小写敏感的来源', '统一用 normalize 归一化路径', '补充大小写与末尾斜杠的测试', '全部完成'][done]}</span>${ic('chevD', 's12 car')}</summary><div class="todock-body">${F.todo(done)}</div></details>`;
   F.tpop = (k) => { const hg = ic('hourglass', 's12 hg-wait'), row = (ico, t, d, time, id) => `<div class="row" data-act="open" data-id="${id}"><span style="margin-top:2px;flex:none">${ico}</span><div class="grow" style="min-width:0"><div class="m ell" style="color:var(--tx-1)">${t}</div><div class="t3 fs-cap ell">${d}</div></div><span class="aux">${time}</span></div>`;
     const agents = row(hg, '审查 handlers 的错误处理', '搜索 "expect("', '48 秒', 'sub:handlers') + row(ic('check', 's12 c-ok'), '调研 axum 的路由匹配', '已完成 · 1 分 20 秒', '昨天', 'sub:handlers');
     const cmds = row(hg, 'cargo watch -x test', '等待文件变化…', '6 分', 'task:watch');
