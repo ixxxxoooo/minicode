@@ -2,6 +2,7 @@ package app
 
 import (
 	"strings"
+	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/diag"
@@ -77,7 +78,9 @@ func (a *App) pendingQuestionID() string {
 // SeedSteers 登记引导行(截图用):from = 当前条目数,回合需保持进行中且其后无新非用户条目,状态才稳定。
 func (a *App) SeedSteers(texts ...string) {
 	from := len(a.st.Items)
-	now := a.now()
+	// 必须与 syncSteers / 真实的 steerSend 一样用真实时钟:截图注入的是固定的 a.now()(昨天),
+	// 用它登记会被 20 秒兜底超时立刻放出,引导行就看不到了。
+	now := time.Now()
 	for _, t := range texts {
 		show := t
 		if len(show) > 48 {
