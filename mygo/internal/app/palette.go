@@ -166,6 +166,12 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 		add("search", "编辑器:缩小字号", "⌘-", "编辑器字号 −1(最小 9 px)。", func() { a.setEditorFont(a.prefs.Int(pEdFont, edFontDefault) - 1) })
 		add("refresh", "编辑器:重置字号", "⌘0", "把编辑器字号恢复为默认的 12 px。", a.resetEditorFont)
 		add("list", "转到行…", a.shortcutLabel("gotoLine"), "在当前文件跳到指定行,支持 行:列。", a.openGotoLine)
+		if a.foldWhy(tb) == "" {
+			add("chevD", "折叠当前块", "⌘⌥[", "折叠光标所在的代码块(函数、类型、括号块、缩进块)。", func() { a.foldRun(tb, editor.Fold, "折叠") })
+			add("chevR", "展开当前块", "⌘⌥]", "展开光标所在位置折叠起来的块。", func() { a.foldRun(tb, editor.Unfold, "展开") })
+			add("chevD", "全部折叠", "⌘K ⌘0", "把文件里所有可折叠的块折起来。", func() { a.foldRun(tb, editor.FoldAll, "全部折叠") })
+			add("chevR", "全部展开", "⌘K ⌘J", "展开文件里所有折叠的块。", func() { a.foldRun(tb, editor.UnfoldAll, "全部展开") })
+		}
 		add("layers", "块注释", a.shortcutLabel("blockComment"), "用块注释包裹选区;无块注释时改用行注释。", a.toggleBlockComment)
 		okMc, whyMc := a.tbCodeEditable(tb)
 		addPal("cursor", "添加下一个匹配", a.shortcutLabel("selectNext"), "在当前词上重复添加选区。", okMc, whyMc, func() { a.mcRun(tb, editor.SelectNext) })

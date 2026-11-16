@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/lsp"
 	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
@@ -233,6 +234,25 @@ func (a *App) editorMenu(tb *ideTab, m *ui.Menu) {
 		it.Disabled(true).Tooltip(why)
 	} else if it.Chosen() {
 		a.openActs()
+	}
+	m.Separator()
+	foldWhy := a.foldWhy(tb)
+	for _, f := range []struct {
+		label string
+		cmd   editor.Command
+		what  string
+	}{
+		{"折叠当前块  ⌘⌥[", editor.Fold, "折叠"},
+		{"展开当前块  ⌘⌥]", editor.Unfold, "展开"},
+		{"全部折叠  ⌘K ⌘0", editor.FoldAll, "全部折叠"},
+		{"全部展开  ⌘K ⌘J", editor.UnfoldAll, "全部展开"},
+	} {
+		fi := menuItem(m, f.label)
+		if foldWhy != "" {
+			fi.Disabled(true).Tooltip(foldWhy)
+		} else if fi.Chosen() {
+			a.foldRun(tb, f.cmd, f.what)
+		}
 	}
 	m.Separator()
 	if !tb.diff && tb.path != "" {
