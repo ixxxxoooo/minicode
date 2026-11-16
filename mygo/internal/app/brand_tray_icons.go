@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"image/png"
 	"math"
+	"os"
 	"sync"
 
 	"github.com/egoist/mygo"
@@ -42,10 +43,12 @@ func trayMarkIcon(kind string) *mygo.MenuIcon {
 	}
 	var b bytes.Buffer
 	var out *mygo.MenuIcon
-	if err := png.Encode(&b, img); err == nil {
-		if ic, err := mygo.NewMenuIcon(b.Bytes(), template); err == nil {
-			out = ic
-		}
+	if err := png.Encode(&b, img); err != nil {
+		brandLog.Warn("托盘标记图编码失败", "kind", kind, "err", err)
+	} else if ic, err := mygo.NewMenuIcon(b.Bytes(), template); err != nil {
+		brandLog.Warn("托盘标记图创建失败", "kind", kind, "err", err)
+	} else {
+		out = ic
 	}
 	trayMarkCache[kind] = out
 	return out
@@ -69,3 +72,21 @@ func drawDisc(img *image.NRGBA, cx, cy, r float64, c color.NRGBA) {
 		}
 	}
 }
+
+// trayMarkText 图标不可用时的文字标记(彩色圆点字符在所有系统版本都能显示);
+// 没有状态的行用等宽的空格占位,让标题左缘对齐。
+func trayMarkText(kind string) string {
+	switch kind {
+	case "run":
+		return "⁘\u2002"
+	case "wait":
+		return "🟠\u2002"
+	case "unread":
+		return "🔵\u2002"
+	}
+	return "\u2003\u2002"
+}
+
+// trayMarkAsText 托盘菜单一律用文字标记:库的菜单图标(MenuItem.Icon)在托盘菜单里实机不渲染(两次实测),
+// 改环境变量 MINI_TRAY_ICON=1 可强制改用图标,方便以后复测。
+func trayMarkAsText() bool { return os.Getenv("MINI_TRAY_ICON") != "1" }

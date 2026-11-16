@@ -180,7 +180,7 @@ func TestTrayMenuGroupedWithRestart(t *testing.T) {
 		if it.Disabled && it.Label == a.projectName() {
 			groupHdr = true
 		}
-		if n := len([]rune(it.Label)); n > 26 {
+		if n := len([]rune(it.Label)); n > 30 {
 			t.Fatalf("菜单项过长会撑宽菜单:%q(%d)", it.Label, n)
 		}
 	}

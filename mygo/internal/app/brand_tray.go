@@ -214,12 +214,18 @@ func (a *App) trayMenuFull() *mygo.Menu {
 		items = append(items, &mygo.MenuItem{Label: trayClip(g, 20), Disabled: true})
 		for _, s := range byProj[g] {
 			s := s
-			items = append(items, &mygo.MenuItem{
+			mk := trayMarkKind(s.kind)
+			it := &mygo.MenuItem{
 				Label:   trayClip(s.title, 24),
 				ToolTip: s.title,
-				Icon:    trayMarkIcon(trayMarkKind(s.kind)),
+				Icon:    trayMarkIcon(mk),
 				Click:   func(*mygo.MenuItem, *mygo.Window) { a.OpenSession(s.id); mygo.App.Focus() },
-			})
+			}
+			if it.Icon == nil || trayMarkAsText() {
+				it.Icon = nil                          // 文字标记与图标二选一,避免重复
+				it.Label = trayMarkText(mk) + it.Label // 图标建不出来(或实机不渲染)时退回文字标记
+			}
+			items = append(items, it)
 		}
 	}
 	if len(sess) == 0 {
