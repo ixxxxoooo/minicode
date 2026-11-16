@@ -164,19 +164,16 @@ func scrollOnBar(id string, x, y float32, horiz, vert bool) bool {
 func applyScrollPolicy(el ui.Element, id string, st *ui.ScrollState, horiz, vert bool) ui.Element {
 	if id != "" {
 		scrollSize(id, el.Bounds())
-		el = el.HandleInput(func(ev ui.InputEvent) bool {
-			switch ev.Kind {
-			case ui.InputScroll:
-				markScrollActivity(id)
-			case ui.InputPointerMove:
-				setScrollEdge(id, scrollOnBar(id, ev.X, ev.Y, horiz, vert))
-			case ui.InputPointerDown:
-				if scrollOnBar(id, ev.X, ev.Y, horiz, vert) {
-					markScrollActivity(id)
-				}
+		// 不能用 HandleInput:框架只把指针事件交给命中链上最里面的处理器,滚动区挂了处理器,
+		// 它外面容器(终端正文、可拖拽区域……)的按下 / 移动就收不到了(终端无法鼠标选择就是这样来的)。
+		// 滚轮 / 拖动 / 键盘引起的滚动由 scrollShown 比较偏移发现,「靠近滚动条」每帧按指针位置判断。
+		onBar := false
+		if el.Hovered() {
+			if x, y, ok := el.PointerPosition(); ok {
+				onBar = scrollOnBar(id, x, y, horiz, vert)
 			}
-			return false // 只观察,不吞事件(Shift 横滚等仍由框架处理)
-		})
+		}
+		setScrollEdge(id, onBar)
 	}
 	switch ScrollbarMode() {
 	case ScrollbarAlways:
