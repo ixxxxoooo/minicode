@@ -18,6 +18,7 @@ const (
 	edGutter = 46.0 // 行号栏宽(编辑器的行号 + 折叠 + 改动条)
 	edChar   = 7.2  // 12px 等宽字的字宽
 	edLineH  = 20.0
+	edTrackW = 10.0 // 编辑器自带滚动条轨道宽(常驻留位,迷你地图 / 标尺在它右边)
 )
 
 // ideOv 是代码区当前打开的浮层(同时只有一个)。
@@ -75,7 +76,7 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 	a.syncBracketLang(tb) // 括号按深度染字色;适用时把 st.Theme 换成带括号色的那份
 	st.Font = ui.Font{Family: "monospace", Size: 12}
 	st.LineHeight = 20.0 / 12.0
-	st.NoScrollbars = true
+	st.NoScrollbars = false // 滚动条恢复:轨道在文字与迷你地图之间,滑块显隐按「滚动条」设置(始终显示 = KeepScrollbars)
 	a.attachEditor(tb)
 	if st.RenderFindBar == nil { // 记下查找词,迷你地图 / 标尺据此画命中刻度
 		st.RenderFindBar = func(c *ui.Context, bar ui.Element, f *editor.FindBar) {
@@ -109,7 +110,7 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 	col.Children(func() {
 		a.blockCmtBanner(c, tb)
 		a.extmodBanner(c, tb)
-		ui.Row(c).Grow(1).MinHeight(0).Children(func() {
+		ui.Row(c).Grow(1).MinHeight(0).Clip().Children(func() { // 裁剪:编辑器画不出自己的矩形(拖动面板时落后一帧也不盖住底部面板)
 			ev := editor.View(c.Key("ed-"+tb.id), st).Grow(1).MinWidth(0).FillHeight()
 			if h := ev.Bounds().H; h > 0 {
 				a.ide.edViewH = h
@@ -213,7 +214,7 @@ func (a *App) stickyScroll(c *ui.Context, tb *ideTab) {
 	if len(rows) > 2 {
 		rows = rows[len(rows)-2:]
 	}
-	rail := a.mmWidth() + mmRulW + 6
+	rail := a.mmWidth() + mmRulW + edTrackW + 6
 	ui.Column(c).Key("sticky").Absolute().Left(0).Right(rail).Top(0).Background(t.Raised).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd2).Children(func() {
 		for _, s := range rows {
 			r := ui.ButtonBase(c).Key("st-" + itoa(s.Line)).Height(22).PaddingStart(edGutter).PaddingEnd(8).Justify(ui.Start).AlignItems(ui.Center).Gap(6).
@@ -486,7 +487,7 @@ func (a *App) peekPanel(c *ui.Context, tb *ideTab, y float32) {
 	ov.peekSt.Theme = a.editorTheme()
 	ov.peekSt.Font = ui.Font{Family: "monospace", Size: 12}
 	ov.peekSt.LineHeight = 20.0 / 12.0
-	el := ui.Column(c).Key("ov-peek").Absolute().Left(16).Right(a.mmWidth()+mmRulW+14).Top(y+4).Height(180).Background(t.BG).Radius(t.RLg()).Border(1, t.Ac).Clip()
+	el := ui.Column(c).Key("ov-peek").Absolute().Left(16).Right(a.mmWidth()+mmRulW+edTrackW+14).Top(y+4).Height(180).Background(t.BG).Radius(t.RLg()).Border(1, t.Ac).Clip()
 	for _, s := range t.Shadow2() {
 		el.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}

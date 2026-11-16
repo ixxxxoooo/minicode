@@ -3,6 +3,7 @@ package app
 import (
 	"math"
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/diff"
@@ -17,6 +18,8 @@ const (
 	mmRowH  = float32(3.5)
 	mmChar  = float32(0.6)
 	mmMaxPx = float32(52)
+
+	mmThumbIdle = 3 * time.Second // 停止滚动后视口滑块再显示多久
 )
 
 // run 是一行里的一段同色文字(列按字节)。
@@ -189,6 +192,17 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 	total := float32(st.LineTop(tb.buf.LineCount()))
 	view := float32(st.ViewportHeight())
 	scroll := float32(st.ScrollY())
+	// 滚动中:滑块与行范围显示,停止后 3 秒隐藏(偏好「滑块 → 常驻」则一直显示滑块)
+	now := a.now()
+	if y := st.ScrollY(); !tb.mmInit {
+		tb.mmY, tb.mmInit = y, true
+	} else if y != tb.mmY {
+		tb.mmY, tb.mmAt = y, now
+	}
+	scrolling := !tb.mmAt.IsZero() && now.Sub(tb.mmAt) < mmThumbIdle
+	if scrolling {
+		a.redrawSoon() // 持续出帧到过期那一刻,滑块才会按时收起
+	}
 	box := ui.Box(c).Key("mm-"+tb.id).Width(mmW+mmRulW).FillHeight().Shrink(0).BorderWidth(0, 0, 0, 1).BorderColor(t.Bd1).Clip() // 必须裁剪:色块按整篇行数画,长文件会溢出盖住底部面板
 	hoverLine := -1
 	if box.Hovered() {
@@ -215,7 +229,7 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 	}
 	box.Draw(func(p *ui.Painter, r ui.Rect) {
 		y0 := r.Y + 4
-		showThumb := a.prefs.Int(pMmSlider, 0) == 1 || box.Hovered() || box.Dragging()
+		showThumb := a.prefs.Int(pMmSlider, 0) == 1 || box.Hovered() || box.Dragging() || scrolling
 		if showThumb && total > 0 && view > 0 {
 			vy := y0 + scroll/total*mmRowH*float32(n)
 			vh := view / total * mmRowH * float32(n)
@@ -324,6 +338,15 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 		}
 		tick(cursorLine, t.Tx2, 0, mmRulW)
 	})
+	if (scrolling || box.Dragging()) && total > 0 && view > 0 && a.prefs.Int(pMmSlider, 0) != 1 {
+		// 行范围标签:贴在滑块左侧,告诉用户「滚到哪了」
+		first, last := st.VisibleLines()
+		vy := 4 + scroll/total*mmRowH*float32(n)
+		ui.Box(c).Key("mm-range").Absolute().Right(mmW+mmRulW+edTrackW+6).Top(vy).Padding(2, 8).PassThrough().
+			Background(t.Raised).Radius(t.RSm()).Border(1, t.Bd1).Children(func() {
+			ui.Text(c, "第 "+itoa(first+1)+"–"+itoa(last+1)+" 行 / 共 "+itoa(tb.buf.LineCount())).Font("monospace").FontSize(11).TextColor(t.Tx2).SingleLine()
+		})
+	}
 	if a.mmTip != "" && box.Hovered() {
 		ui.Box(c).Absolute().Left(4).Right(mmRulW+4).Bottom(4).MaxHeight(80).Padding(6, 8).
 			Background(t.Raised).Radius(t.RSm()).Border(1, t.Bd1).Children(func() {

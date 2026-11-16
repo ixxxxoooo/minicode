@@ -100,7 +100,7 @@ func (a *App) blameCardOverlay(c *ui.Context, tb *ideTab) {
 	}
 	_, y := cursorXY(tb, line, 0)
 	rowH := monoLH * edScale
-	hit := ui.ButtonBase(c).Key("blame-hover").Absolute().Right(a.mmWidth() + mmRulW + 12).Top(y).Height(rowH).MinWidth(120).
+	hit := ui.ButtonBase(c).Key("blame-hover").Absolute().Right(a.mmWidth() + mmRulW + edTrackW + 12).Top(y).Height(rowH).MinWidth(120).
 		Cursor(ui.CursorPointer).Opacity(0.01)
 	if hit.Hovered() {
 		a.ide.blameLine = line
@@ -129,10 +129,10 @@ func (a *App) blameCardOverlay(c *ui.Context, tb *ideTab) {
 	}
 	// 下方放不下(贴着底部面板)就翻到光标行上方,避免被面板截掉
 	if h := a.ide.edViewH; h > 0 && below+blameCardH > h && y-rowH-blameCardH-4 > 0 {
-		a.drawCommitCard(c, tb, bl, a.mmWidth()+mmRulW+20, h-(y-rowH-4), true)
+		a.drawCommitCard(c, tb, bl, a.mmWidth()+mmRulW+edTrackW+20, h-(y-rowH-4), true)
 		return
 	}
-	a.drawCommitCard(c, tb, bl, a.mmWidth()+mmRulW+20, below, false)
+	a.drawCommitCard(c, tb, bl, a.mmWidth()+mmRulW+edTrackW+20, below, false)
 }
 
 // blameKeepOpen 鼠标已离开追溯文字与提交卡:从离开那一刻起再保持 blameCloseDelay,期间返回 true。

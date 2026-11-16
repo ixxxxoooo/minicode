@@ -157,38 +157,97 @@ func (a *App) etabs(c *ui.Context) {
 	}
 	bar.Children(func() {
 		d := a.ide
-		strip := kit.ApplyNativeScroll(ui.ScrollHorizontal(c).Key("etabs-scroll").TrackScroll(&d.tabSt).Grow(1).MinWidth(0).AlignItems(ui.Stretch), "etabs-scroll", &d.tabSt, true, false)
-		if w := strip.Bounds().W; w > 0 && d.tabSeen != d.active { // 当前标签变了:滚到可见(用上一帧量到的位置)
-			var left, wid float32
-			for _, tb := range d.tabs {
-				if tb.id == d.active {
-					wid = d.tabW[tb.id]
-					break
-				}
-				left += d.tabW[tb.id]
-			}
-			switch {
-			case wid == 0:
-			case left < d.tabSt.X:
-				d.tabSt.X = left
-			case left+wid > d.tabSt.X+w:
-				d.tabSt.X = left + wid - w
-			}
-			d.tabSeen = d.active
-		}
-		strip.Children(func() {
-			ui.Row(c).AlignItems(ui.Stretch).Children(func() {
+		// 标签条永远没有滚动条(设计稿 scroll-spec「标签条」):放不下就横向滚动(滚轮 / Shift + 滚轮 / 触控板),
+		// 被遮住的一侧边缘渐隐,溢出时工具区多一个「全部标签」菜单;所以这里不接 kit 的滚动条策略。
+		holder := ui.Row(c).Key("etabs-holder").Grow(1).MinWidth(0).AlignItems(ui.Stretch)
+		var over, fadeL, fadeR bool
+		holder.Children(func() {
+			strip := ui.ScrollHorizontal(c).Key("etabs-scroll").TrackScroll(&d.tabSt).Grow(1).MinWidth(0).AlignItems(ui.Stretch).Scrollbars(false)
+			w := strip.Bounds().W
+			if w > 0 && d.tabSeen != d.active { // 当前标签变了:滚到可见(用上一帧量到的位置)
+				var left, wid float32
 				for _, tb := range d.tabs {
-					a.etabPane(c, tb, 0)
+					if tb.id == d.active {
+						wid = d.tabW[tb.id]
+						break
+					}
+					left += d.tabW[tb.id]
 				}
+				switch {
+				case wid == 0:
+				case left < d.tabSt.X:
+					d.tabSt.X = left
+				case left+wid > d.tabSt.X+w:
+					d.tabSt.X = left + wid - w
+				}
+				d.tabSeen = d.active
+			}
+			var total float32
+			for _, tb := range d.tabs {
+				total += d.tabW[tb.id]
+			}
+			over = w > 0 && total > w+1
+			fadeL = over && d.tabSt.X > 1
+			fadeR = over && d.tabSt.X < total-w-1
+			strip.Children(func() {
+				ui.Row(c).AlignItems(ui.Stretch).Children(func() {
+					for _, tb := range d.tabs {
+						a.etabPane(c, tb, 0)
+					}
+				})
 			})
+			a.etabFades(c, fadeL, fadeR)
 		})
 		ui.Row(c).Gap(1).PaddingX(6).AlignItems(ui.Center).Shrink(0).Children(func() {
+			if over {
+				kit.Ib(c, "chevD", kit.IbOpt{Small: true, Tip: "全部标签(" + itoa(len(d.tabs)) + ")"}).Menu(a.tabListMenu)
+			}
 			kit.Ib(c, "cols", kit.IbOpt{Small: true, Tip: "向右拆分 ⌘\\"}).OnClick(func() { a.splitEditor(1) })
 			kit.Ib(c, "rows", kit.IbOpt{Small: true, Tip: "向下拆分"}).OnClick(func() { a.splitEditor(2) })
 			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.tabStripMenu)
 		})
 	})
+}
+
+// etabFades 在标签条被遮住的一侧画 22px 渐隐(不吃指针),提示那边还有标签。
+func (a *App) etabFades(c *ui.Context, left, right bool) {
+	t := a.tk
+	bg := t.BG
+	if t.Scheme.ID == "a" {
+		bg = t.Chrome
+	}
+	clear := bg.Alpha(0)
+	if left {
+		ui.Box(c).Key("etab-fade-l").Absolute().Left(0).Top(0).Bottom(0).Width(22).PassThrough().
+			LinearGradient(ui.LinearGradient{Angle: 90, Stops: []ui.GradientStop{{Color: bg, At: 0}, {Color: clear, At: 1}}})
+	}
+	if right {
+		ui.Box(c).Key("etab-fade-r").Absolute().Right(0).Top(0).Bottom(0).Width(22).PassThrough().
+			LinearGradient(ui.LinearGradient{Angle: 270, Stops: []ui.GradientStop{{Color: bg, At: 0}, {Color: clear, At: 1}}})
+	}
+}
+
+// tabListMenu 是「全部标签」菜单:按标签条顺序列出,未保存的行尾加圆点,当前标签打勾;选中即切换并滚到可见。
+func (a *App) tabListMenu(m *ui.Menu) {
+	d := a.ide
+	for _, tb := range d.tabs {
+		it := m.Item(a.tabTitle(tb)).ID("etab-list-" + tb.id).Checked(tb.id == d.active)
+		if tb.path != "" {
+			if dir := path.Dir(tb.path); dir != "." && dir != "/" {
+				it.Subtitle(dir)
+			}
+		}
+		if tb.dirty() {
+			it.Trailing("●")
+		}
+		if it.Chosen() {
+			d.active, d.paneSel = tb.id, 0
+			if tb.path != "" {
+				d.sel = tb.path
+			}
+			a.ide.tabSeen = "" // 让标签条把它滚进可见区
+		}
+	}
 }
 
 func (a *App) etab(c *ui.Context, tb *ideTab) { a.etabPane(c, tb, 0) }

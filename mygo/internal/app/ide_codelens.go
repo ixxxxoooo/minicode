@@ -81,7 +81,7 @@ func (a *App) codeLens(c *ui.Context, tb *ideTab) {
 // codeLensRight 胶囊离编辑区右缘的距离:让开迷你地图 / 概览标尺与滚动条。
 func (a *App) codeLensRight() float32 {
 	if !a.wsNarrowMM() && a.prefs.Bool(pMinimap, true) {
-		return 110
+		return 110 + edTrackW
 	}
-	return 24
+	return 24 + edTrackW
 }

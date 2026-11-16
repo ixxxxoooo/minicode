@@ -34,14 +34,17 @@ type ideTab struct {
 	virt    string  // 虚拟标签的种类(review / plan / sub / task / conflict),空 = 文件或对比
 	ref     string  // 虚拟标签引用的对象 id(子 Agent / 任务 id、冲突文件路径)
 
-	lay     int8    // 差异视图:0 跟随偏好 scm.diff,1 左右,2 统一(用户在标签上点过的选择,窄档只是临时强制统一、不改它)
-	dk      string  // 差异来源:head / work / staged(空 = 提交里的差异)
-	hooked  bool    // 已接上悬停 / 转到定义 / 补全
-	diagSet bool    // 演示诊断已装
-	diagGen int     // 已铺到编辑器的语言服务诊断代数(+1)
-	fq      *string // 编辑器查找条的查询词(迷你地图画命中刻度)
-	fcs     *bool   // 查找是否区分大小写
-	mm      *mmInfo // 迷你地图叠加数据缓存
+	lay     int8      // 差异视图:0 跟随偏好 scm.diff,1 左右,2 统一(用户在标签上点过的选择,窄档只是临时强制统一、不改它)
+	dk      string    // 差异来源:head / work / staged(空 = 提交里的差异)
+	hooked  bool      // 已接上悬停 / 转到定义 / 补全
+	diagSet bool      // 演示诊断已装
+	diagGen int       // 已铺到编辑器的语言服务诊断代数(+1)
+	fq      *string   // 编辑器查找条的查询词(迷你地图画命中刻度)
+	fcs     *bool     // 查找是否区分大小写
+	mm      *mmInfo   // 迷你地图叠加数据缓存
+	mmY     float64   // 上次看到的滚动位置(变了 = 正在滚动)
+	mmAt    time.Time // 最近一次滚动的时刻:其后 3 秒内迷你地图显示视口滑块与行范围
+	mmInit  bool      // mmY 已初始化(打开标签时恢复的滚动位置不算「滚动」)
 
 	asVer      uint64    // 自动保存:上次看到的缓冲区版本
 	asAt       time.Time // 自动保存:版本变化的时间
