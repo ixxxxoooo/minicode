@@ -133,7 +133,7 @@
       R('会话流 · 回合折叠「已处理 1 分 13 秒」', 'flow_turn_fold.go 读 chat.fold;flow_user.go flowRound 折叠步骤组;失败/运行中/待处理保持展开;未测试', 'ok'),
       R('用户消息 · 悬停动作条(回退文件 / 重试 / 复制)', 'flow_user.go userMsg 悬停→userMsgHoverBar(flow_user_actions.go)回退/重试/复制;未测试', 'ok'),
       R('「回退文件」预览对话框(用户消息入口)', 'flow_rewind.go userRewindBegin→CmdRewindFiles 预览;flow.go flowRewindCard 确认;审查页 review_turn.go 亦有入口;未测试', 'ok'),
-      R('用户消息里的图片引用 / 缩略图 / 全屏', 'flow_user_img.go userMsgImages+img_cache 后台解码;未测试', 'ok'),
+      R('用户消息里的图片引用 / 缩略图 / 全屏', 'flow_user_img.go userMsgImages+img_cache 后台解码;文字里的「[Image #N]」占位标记不再显示,缩略图固定高 64、宽按比例夹在 64–112 并整排排在文字下方,点哪张在下方展开哪张(按比例缩到 360×280 内);未测试', 'ok'),
       R('输入框「+」添加附件与斜杠命令', 'composer.go plusAttachMenu(composer_attach.go)+slashPopup(composer_slash.go);超长粘贴发送前 expandPasteRefs;自定义斜杠选中后仅填入草稿;未测试', 'ok'),
       R('审批多张排队「1 / 3」与处理后输入框淡入、恢复草稿', 'dock_pending.go dockBadge 1/N+dock_ask 接线;syncDockComposer 处理后 composerInAt 淡入并恢复草稿;未测试', 'ok'),
       R('排队卡「停止并发送」', 'dock.go queueCard 悬停停止图标→composer_queue.go qStopAndSend;未测试', 'ok'),

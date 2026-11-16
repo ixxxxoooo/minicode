@@ -1,6 +1,7 @@
 package app
 
 import (
+	"regexp"
 	"strings"
 	"unicode"
 
@@ -157,7 +158,7 @@ func (a *App) userExpanded(id string) bool {
 }
 
 func (a *App) beginUserEdit(u *core.User) {
-	a.userEd = userEdit{id: u.ID, draft: u.Text}
+	a.userEd = userEdit{id: u.ID, draft: userDisplayText(u.Text)}
 }
 
 func (a *App) cancelUserEdit() { a.userEd = userEdit{} }
@@ -166,7 +167,7 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 	t := a.tk
 	style := a.prefs.Int(pFlowStyle, 0)
 	sticky := a.prefs.Bool(pStickyUser, true)
-	lines := estimatedUserLines(u.Text, 44)
+	lines := estimatedUserLines(userDisplayText(u.Text), 44)
 	clamp := lines > userFoldMax
 	exp := a.userExpanded(u.ID)
 	editing := a.userEd.id == u.ID
@@ -247,9 +248,25 @@ func (a *App) userMsg(c *ui.Context, u *core.User, roundBox ui.Rect) {
 	})
 }
 
+// userImgMark 是 Claude 在用户文字里为图片插入的占位标记(如「[Image #16]」),
+// 图片本身已经以缩略图显示在文字下方,标记只会让文字显得杂乱。
+var userImgMark = regexp.MustCompile(`\[Image #\d+\]\s*`)
+
+// userDisplayText 返回会话流里展示的用户文字:去掉图片占位标记并修剪首尾空白。
+// 只用于显示,原文(u.Text)保持不变,编辑 / 回退 / 复制仍用原文。
+func userDisplayText(s string) string {
+	if !strings.Contains(s, "[Image #") {
+		return s
+	}
+	return strings.TrimSpace(userImgMark.ReplaceAllString(s, ""))
+}
+
 func (a *App) userMsgBody(c *ui.Context, u *core.User) {
 	t := a.tk
-	txt := u.Text
+	txt := userDisplayText(u.Text)
+	if txt == "" && len(u.Images) > 0 {
+		return // 只有图片:不留空文字行
+	}
 	if !userTok.MatchString(txt) {
 		ui.RichText(c, ui.Span{Text: txt}).FontSize(a.FlowFontSize()).LineHeight(1.55).TextColor(t.Tx1)
 		return

@@ -36,7 +36,7 @@ func (a *App) userMsgHoverBar(c *ui.Context, u *core.User) {
 			retry.Opacity(0.35).Cursor(ui.CursorDefault)
 		}
 		if kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制消息正文"}).Clicked() {
-			a.copyOut(u.Text, "消息")
+			a.copyOut(userDisplayText(u.Text), "消息")
 		}
 	})
 }
