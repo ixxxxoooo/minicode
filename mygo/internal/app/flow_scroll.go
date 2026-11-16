@@ -37,7 +37,8 @@ func (a *App) toLatestBtn(c *ui.Context, key string, fresh bool, bottom float32,
 		}
 		col := t.Tx2
 		if b.Hovered() {
-			b.Background(t.Fill2)
+			// Fill2 是半透明的墨色;直接当底色会让按钮变透明、露出后面滚动的文字,要先叠在不透明的 Raised 上。
+			b.Background(t.Fill2.Over(t.Raised))
 			col = t.Tx1
 		}
 		b.OnClick(onClick)
