@@ -65,7 +65,7 @@
       R('服务商自定义与预设', 'prov_settings.go + claudecfg:预设/自定义 CRUD、密钥 0600、ProbeProvider/FetchModels(含 Real DeepSeek 联调)。包内单测通过;设置页全链路未测试。缺口:官方行缺「官方账号」meta、模型清单空态缺「获取 + 手动添加」双按钮、演示映射默认未启用(与设计「当前 DeepSeek」不一致)、连通成功只在行内标签(无 toast)', 'part', 'B6'),
       R('获取模型列表与勾选', 'prov_settings provInventory:FetchModels 骨架/空/失败/不支持/缺密钥、手动添加、过滤/全选/清空;演示 demo.DemoFetchModels 覆盖 example.com/legacy。未测试', 'part', 'B6'),
       R('模型映射下拉', 'claudecfg.Slots/MappingStatus + ProviderEnv;prov_settings 五槽 UI;运行中 pvPushEnv 跳过(与设计一致)。未测试;环境变量是否进真实 claude 请求需 MINI_REAL_CLAUDE 核', 'part', 'B6'),
-      R('会话内按服务商选模型', 'prov_picker cfgModels、popups cfgPopup、composer/statusbar 分组与管理入口已接;官方槽仍读 a.st.Models;切换 toast 的「下一条消息起生效」副句已有(modelSwitchToastNote);弹层 picks 已写入 providers.json 并按服务商恢复。缺口:胶囊缩写 + tooltip。映射→环境变量有 MINI_REAL_CLAUDE 集成测试;界面未测试', 'part', 'B6'),
+      R('会话内按服务商选模型', 'prov_picker cfgModels、popups cfgPopup、composer/statusbar 分组与管理入口已接;官方槽仍读 a.st.Models;切换 toast 的「下一条消息起生效」副句已有(modelSwitchToastNote);弹层 picks 已写入 providers.json 并按服务商恢复;胶囊缩写 + tooltip 已接(cfgChip/statusbar)。映射→环境变量有 MINI_REAL_CLAUDE 集成测试;界面未测试', 'part', 'B6'),
       R('模型品牌 logo', 'gen-logos.py→kit/logos_gen;prov/composer/statusbar/ctx_panel 等已 kit.Logo。缺口:单色无渐变(稿面可选);与设计彩色渐变版未对齐。未测试', 'part', 'B6'),
       R('窄于 900 时左侧分类收成下拉', '左侧栏隐藏,顶部分类下拉', 'ok', 'B6')],
     forms: [
@@ -75,7 +75,7 @@
       R('形态切换的内容编排(甘特图)', 'morph_content.go morphWrap 已挂 chat/side/workspace 三轨;标题栏形态滑块未分轨(仍跟 morph.go 整体变形);motion 关时直达。未测试', 'part', 'B6')],
     ia: [
       R('信息架构四条原则、4 组 14 类设置树、迁移对照表', '以 settings 页的实现为准,设置搜索兜底(settingsHits / jumpSettingRow)已接', 'ok', 'B0'),
-      R('「服务商状态与交互清单」(8 行)', 'ia 页 8 行映射 settings 服务商 CRUD/模型列表/映射/会话选择四块;prov_settings + prov_picker 等已接线。弹层 picks 已持久化(设计 picks 对齐);缺口:运行配置胶囊第三方只显示模型 ID(无缩写 + tooltip 全名)、`settings_tabs.go` 里遗留未使用的 provRow 占位。未测试', 'part', 'B6'),
+      R('「服务商状态与交互清单」(8 行)', 'ia 页 8 行映射 settings 服务商 CRUD/模型列表/映射/会话选择四块;prov_settings + prov_picker 等已接线。弹层 picks 已持久化;运行配置胶囊第三方 logo + 缩写/短模型名 + tooltip 全名已接。缺口:`settings_tabs.go` 里遗留未使用的 provRow 占位。未测试', 'part', 'B6'),
       R('入口矩阵 ENTRY(同一内容别处只是跳转)', '工作区虚拟标签入口都走 openVirtual', 'ok', 'B0')],
     flows: [
       R('没有「检查器」:详情只落在工作区标签,每个内容一个家', '', 'ok'),

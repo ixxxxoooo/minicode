@@ -94,7 +94,14 @@ func (a *App) statusbar(c *ui.Context) {
 		mode := a.sbItem(c, "mode", func() { kit.Ic(c, modeIcon(a.st.Mode), kit.S12); ui.Text(c, a.st.Mode.Label()) })
 		mode.OnClick(func() { a.togglePop("sbcfg") })
 		a.cfgPopup(c, "sbcfg", mode, true)
-		model := a.sbItem(c, "model", func() {
+		mb := ui.ButtonBase(c).Key("sb-model").Height(18).PaddingX(5).Gap(4).Radius(t.RXs()).AlignItems(ui.Center).Cursor(ui.CursorPointer).Shrink(0).Transition(kit.Fade)
+		if mb.Hovered() {
+			mb.Background(t.Fill1).TextColor(t.Tx1)
+		}
+		if tip := a.pvModelChipTip(); tip != "" {
+			mb.Tooltip(tip)
+		}
+		mb.Children(func() {
 			if prov, mid := a.pvModelLabel(); prov != "" {
 				_, pr := a.pvActive()
 				pb := ""
@@ -107,7 +114,7 @@ func (a *App) statusbar(c *ui.Context) {
 			}
 			ui.Text(c, a.modelName())
 		})
-		model.OnClick(func() { a.togglePop("sbcfg") })
+		mb.OnClick(func() { a.togglePop("sbcfg") })
 		ctx := a.sbItem(c, "ctx", func() {
 			ui.Text(c, "上下文 "+itoa(int(a.st.Usage.ContextRatio()*100+.5))+"%").FontFeatures("tnum")
 		})

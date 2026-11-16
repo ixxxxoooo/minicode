@@ -152,6 +152,9 @@ func (a *App) cfgChip(c *ui.Context, wide bool) {
 		b.Background(t.Fill2).TextColor(t.Tx1)
 	}
 	b.OnClick(func() { a.togglePop("cfg") })
+	if tip := a.pvModelChipTip(); tip != "" {
+		b.Tooltip(tip)
+	}
 	b.Children(func() {
 		div := func() { ui.Box(c).Size(1, 10).Background(t.Bd3).Shrink(0) }
 		kit.Ic(c, modeIcon(a.st.Mode), kit.S12)
@@ -205,13 +208,17 @@ func effortLabel(e core.Effort) string {
 	return "中"
 }
 
+// pvModelChipTip 第三方胶囊 tooltip;官方返回空。
+func (a *App) pvModelChipTip() string {
+	_, tip := a.pvModelChipText()
+	return tip
+}
+
 // modelName 当前模型的显示名。
 func (a *App) modelName() string {
-	if prov, m := a.pvModelLabel(); prov != "" { // 第三方服务商:显示映射的默认模型 ID
-		if m == "" {
-			return "未选模型"
-		}
-		return m
+	if prov, _ := a.pvModelLabel(); prov != "" { // 第三方:缩写或简短模型名(见 providers.js cfgChipHtml)
+		short, _ := a.pvModelChipText()
+		return short
 	}
 	for _, m := range a.st.Models {
 		if m.ID == a.st.Model {
