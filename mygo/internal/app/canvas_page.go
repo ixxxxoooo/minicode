@@ -52,6 +52,11 @@ func (a *App) canvasPage(c *ui.Context) {
 	if v.pos == nil {
 		v.pos = map[string]float32{}
 	}
+	if s == nil || len(s.Versions) == 0 {
+		// 画布库里一张都没有(刚删完最后一张 / 文件损坏):给空态与新建入口,不能解引用空指针
+		a.canvasEmpty(c)
+		return
+	}
 	a.canvasViewerOverlay(c)
 	narrow := a.winW > 0 && a.winW < 900
 	a.pane(c).Grow(1).Children(func() {
@@ -156,6 +161,10 @@ func (a *App) canvasPersist() {
 
 func (a *App) exportCanvas() {
 	s := a.cvStore()
+	if s == nil {
+		a.toast = "没有可导出的画布"
+		return
+	}
 	p, err := writeTemp("canvas.md", s.Doc.Markdown())
 	if err != nil {
 		a.toast = "导出失败:" + err.Error()

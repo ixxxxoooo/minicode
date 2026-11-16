@@ -8,6 +8,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/canvas"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 func (a *App) cvLib() *canvas.Library {
@@ -81,5 +82,43 @@ func (a *App) canvasList(c *ui.Context) {
 			}
 			a.canvasListRow(c, l, id, s, l.Active() == id)
 		}
+	})
+}
+
+// newBlankCanvas 新建一张空白画布并设为当前;失败只记日志并提示,不抛出。
+func (a *App) newBlankCanvas() {
+	l := a.cvLib()
+	doc := canvas.Doc{Title: "未命名画布", Status: "草稿", Blocks: []canvas.Block{
+		{ID: "p1", Kind: canvas.Para, Lead: true, Anchor: "概述", Text: "在这里写下想法,或点「让 Claude 修改」让它帮你起草。"},
+	}}
+	s, id, err := l.New("未命名画布", doc, "你", "新建", a.now())
+	if err != nil {
+		log.Warn("新建画布失败", "err", err)
+		a.toast = "新建画布失败:" + err.Error()
+	}
+	if s != nil {
+		a.canv = s
+		l.SetActive(id)
+		a.cv.verIx = 0
+		a.cv.preview, a.cv.code = false, false
+		if err == nil {
+			a.toast = "已新建画布"
+		}
+	}
+}
+
+// canvasEmpty 画布库为空时的整页空态(左侧仍保留列表与撤销条,方便撤销刚做的删除)。
+func (a *App) canvasEmpty(c *ui.Context) {
+	t := a.tk
+	a.pane(c).Grow(1).Children(func() {
+		ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
+			a.canvasList(c)
+			ui.Column(c).Grow(1).Justify(ui.Center).AlignItems(ui.Center).Gap(10).Children(func() {
+				kit.Ic(c, "canvas", kit.S16).TextColor(t.Tx4)
+				ui.Text(c, "还没有画布").FontWeight(500)
+				ui.Text(c, "新建一张,或让 Claude 在对话里起草").FontSize(theme.FsCap).TextColor(t.Tx3)
+				kit.Btn(c, "新建画布", kit.BtnOpt{Icon: "plus"}).OnClick(a.newBlankCanvas)
+			})
+		})
 	})
 }

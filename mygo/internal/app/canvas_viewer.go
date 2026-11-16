@@ -31,6 +31,10 @@ func (a *App) canvasViewerOverlay(c *ui.Context) {
 		return
 	}
 	s := a.cvStore()
+	if s == nil {
+		v.open = false
+		return
+	}
 	var dg *canvas.Diagram
 	for i := range s.Doc.Blocks {
 		if s.Doc.Blocks[i].ID == v.block && s.Doc.Blocks[i].Diagram != nil {
