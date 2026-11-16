@@ -287,10 +287,19 @@ func (a *App) refsPanel(c *ui.Context) {
 					})
 				}
 				i, it := i, it
-				kit.RowEl(c, false).Key("rf-" + itoa(i)).Gap(8).Children(func() {
+				raw := it.text
+				hitLo, hitHi := it.col, it.col+len(r.word)
+				if raw == "" {
+					hitLo, hitHi = 0, 0
+				}
+				row := kit.RowEl(c, false).Key("rf-" + itoa(i)).Gap(8)
+				row.OnClick(func() { a.jumpTo(it.path, it.line, it.col, it.col+len(r.word)) })
+				row.Children(func() {
 					ui.Text(c, itoa(it.line+1)).FontSize(theme.FsMicro).TextColor(t.Tx4).Width(28).NoWrap()
-					ui.Text(c, it.text).Font("monospace").FontSize(11.5).Grow(1).SingleLine()
-				}).OnClick(func() { a.jumpTo(it.path, it.line, it.col, it.col+len(r.word)) })
+					ui.Box(c).Grow(1).Shrink(1).MinWidth(0).Clip().Children(func() {
+						ui.RichText(c, a.refLineSpans(it.path, raw, hitLo, hitHi)...).NoWrap()
+					})
+				})
 			}
 		})
 	})
