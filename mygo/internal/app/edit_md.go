@@ -247,25 +247,29 @@ func (a *App) mdView(c *ui.Context, tb *ideTab) {
 		}
 		a.mdApplyReveal(tb, md)
 		ui.Row(c).Grow(1).MinHeight(0).Justify(ui.Center).AlignItems(ui.Stretch).Children(func() {
-			ui.Column(c).Grow(1).MinWidth(0).MaxWidth(900).Padding(10, 30, 6, 30).Children(func() {
-				ed := richtext.EditorBase(c.Key("md-"+tb.id), md.doc, richtext.EditorOptions{
-					Label:       "Markdown 文档",
-					Placeholder: "开始写点什么……  # 空格 变标题,- 空格 变列表",
-					Font:        ui.Font{Size: 14},
-					Theme:       a.rtTheme(),
-					OnLink:      a.openMdLink,
-					OnKey: func(key ui.Key, mods ui.Modifiers) bool {
-						if mods == ui.Cmd && key == ui.KeyV {
-							if a.mdTryPasteImage(c, tb, md) {
-								return true
+			ui.Column(c).Grow(1).MinWidth(0).MinHeight(0).MaxWidth(900).Padding(10, 30, 6, 30).Children(func() {
+				// 库里 Box.Clip 只裁子元素、不裁自己的 Draw,富文本编辑器是自绘的,滚动后整段会画出自己的矩形
+				// (盖住上面的提示条、下面的底部面板),所以套一层不带内边距的裁剪容器。
+				ui.Column(c).Grow(1).MinWidth(0).MinHeight(0).Clip().Children(func() {
+					ed := richtext.EditorBase(c.Key("md-"+tb.id), md.doc, richtext.EditorOptions{
+						Label:       "Markdown 文档",
+						Placeholder: "开始写点什么……  # 空格 变标题,- 空格 变列表",
+						Font:        ui.Font{Size: 14},
+						Theme:       a.rtTheme(),
+						OnLink:      a.openMdLink,
+						OnKey: func(key ui.Key, mods ui.Modifiers) bool {
+							if mods == ui.Cmd && key == ui.KeyV {
+								if a.mdTryPasteImage(c, tb, md) {
+									return true
+								}
 							}
-						}
-						return false
-					},
-				}).Fill()
-				if ed.Changed() {
-					a.mdWrite(tb, md)
-				}
+							return false
+						},
+					}).Fill()
+					if ed.Changed() {
+						a.mdWrite(tb, md)
+					}
+				})
 			})
 		})
 	})
