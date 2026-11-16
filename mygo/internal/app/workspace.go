@@ -200,7 +200,7 @@ func (a *App) etabs(c *ui.Context) {
 		})
 		ui.Row(c).Gap(1).PaddingX(6).AlignItems(ui.Center).Shrink(0).Children(func() {
 			if over {
-				kit.Ib(c, "chevD", kit.IbOpt{Small: true, Tip: "全部标签(" + itoa(len(d.tabs)) + ")"}).Menu(a.tabListMenu)
+				a.etabListBtn(c)
 			}
 			kit.Ib(c, "cols", kit.IbOpt{Small: true, Tip: "向右拆分 ⌘\\"}).OnClick(func() { a.splitEditor(1) })
 			kit.Ib(c, "rows", kit.IbOpt{Small: true, Tip: "向下拆分"}).OnClick(func() { a.splitEditor(2) })
@@ -227,29 +227,6 @@ func (a *App) etabFades(c *ui.Context, left, right bool) {
 	}
 }
 
-// tabListMenu 是「全部标签」菜单:按标签条顺序列出,未保存的行尾加圆点,当前标签打勾;选中即切换并滚到可见。
-func (a *App) tabListMenu(m *ui.Menu) {
-	d := a.ide
-	for _, tb := range d.tabs {
-		it := m.Item(a.tabTitle(tb)).ID("etab-list-" + tb.id).Checked(tb.id == d.active)
-		if tb.path != "" {
-			if dir := path.Dir(tb.path); dir != "." && dir != "/" {
-				it.Subtitle(dir)
-			}
-		}
-		if tb.dirty() {
-			it.Trailing("●")
-		}
-		if it.Chosen() {
-			d.active, d.paneSel = tb.id, 0
-			if tb.path != "" {
-				d.sel = tb.path
-			}
-			a.ide.tabSeen = "" // 让标签条把它滚进可见区
-		}
-	}
-}
-
 func (a *App) etab(c *ui.Context, tb *ideTab) { a.etabPane(c, tb, 0) }
 
 func (a *App) etabPane(c *ui.Context, tb *ideTab, pane int8) {
@@ -269,6 +246,11 @@ func (a *App) etabPane(c *ui.Context, tb *ideTab, pane int8) {
 		a.etabDrag(el, tb, pane)
 	}
 	el.ContextMenu(func(m *ui.Menu) { a.tabMenu(m, tb) })
+	// 鼠标中键关闭标签(对标 VS Code / 浏览器)
+	a.onMiddleClick(el, tb.id, func() {
+		ideLog.Info("中键关闭标签", "tab", tb.id)
+		a.closeWsTab(tb.id)
+	})
 	hov := el.Hovered()
 	if on || hov {
 		el.TextColor(t.Tx1)

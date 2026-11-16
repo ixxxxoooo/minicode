@@ -121,6 +121,7 @@ type ide struct {
 
 	tabSt          ui.ScrollState     // 标签条的横向滚动
 	tabSeen        string             // 已滚动到可见的标签
+	midDown        string             // 鼠标中键按下时所在的标签 id(抬起仍在同一标签才关闭)
 	tabW           map[string]float32 // 各标签上一帧的宽度
 	nav            []navPos           // 导航历史(位置栈)
 	ni             int                // 历史里当前项的下标

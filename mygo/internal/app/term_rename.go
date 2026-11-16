@@ -83,6 +83,9 @@ func (a *App) termChip(c *ui.Context, i int) {
 	if ch.DoubleClicked() {
 		a.beginTermRename(i)
 	}
+	if len(a.ide.tps) > 1 { // 中键关闭终端标签(至少保留一个)
+		a.onMiddleClick(ch, "term-"+itoa(i), func() { a.askCloseTermTab(i) })
+	}
 	ch.ContextMenu(func(m *ui.Menu) {
 		if menuItem(m, "重命名…").Chosen() {
 			a.beginTermRename(i)
