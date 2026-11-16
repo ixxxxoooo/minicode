@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
@@ -12,13 +14,44 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
+// imgExist 缓存「图片文件是否存在」的判断(界面每帧都会重建会话流,
+// 每条带图片的用户消息每帧都 os.Stat 一次会在界面线程上累计阻塞 IO,长会话里十几张图 × 每帧)。
+// 结果缓存 imgExistTTL,过期后下一次访问再查;文件之后出现 / 消失最多延迟这么久才反映到界面上。
+var imgExist = struct {
+	sync.Mutex
+	m map[string]imgExistEntry
+}{m: map[string]imgExistEntry{}}
+
+type imgExistEntry struct {
+	ok bool
+	at time.Time
+}
+
+const imgExistTTL = 3 * time.Second
+
+func fileExistsCached(path string) bool {
+	now := time.Now()
+	imgExist.Lock()
+	e, hit := imgExist.m[path]
+	imgExist.Unlock()
+	if hit && now.Sub(e.at) < imgExistTTL {
+		return e.ok
+	}
+	_, err := os.Stat(path)
+	e = imgExistEntry{ok: err == nil, at: now}
+	imgExist.Lock()
+	imgExist.m[path] = e
+	imgExist.Unlock()
+	return e.ok
+}
+
 func (a *App) resolveUserImage(p string) string {
 	p = strings.TrimSpace(p)
 	if p == "" {
 		return ""
 	}
 	if filepath.IsAbs(p) {
-		if _, err := os.Stat(p); err == nil {
+		if fileExistsCached(p) {
 			return p
 		}
 		return ""
@@ -27,14 +60,14 @@ func (a *App) resolveUserImage(p string) string {
 		rel := strings.TrimPrefix(p, "/demo/")
 		if a.ide != nil && a.ide.fs != nil {
 			abs := a.ide.fs.Abs(rel)
-			if _, err := os.Stat(abs); err == nil {
+			if fileExistsCached(abs) {
 				return abs
 			}
 		}
 	}
 	if a.proj != "" {
 		abs := filepath.Join(a.proj, p)
-		if _, err := os.Stat(abs); err == nil {
+		if fileExistsCached(abs) {
 			return abs
 		}
 	}
