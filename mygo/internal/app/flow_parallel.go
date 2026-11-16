@@ -5,8 +5,6 @@ import (
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
-	"github.com/ixxxxoooo/minicode/internal/kit"
-	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 // parallelSubGroup 把连续 ≥2 个子 Agent 卡收成「并行 N 个」汇总步骤行。
@@ -55,11 +53,5 @@ func (a *App) parallelSubGroup(c *ui.Context, cards []*core.SubagentCard) {
 }
 
 func (a *App) groupLatestSub(c *ui.Context, grpID string, s *core.SubagentCard) {
-	t := a.tk
-	row := ui.Row(c).Key("tick-sub-"+grpID).Height(theme.Px(22)).Margin(0, 0, 2, theme.FlowInset).Gap(6).AlignItems(ui.Center).
-		TextColor(t.Tx3).FontSize(theme.FsCap).Clip()
-	row.Children(func() {
-		kit.Spin(c, t.ToolAgent)
-		kit.RunText(ui.Text(c, s.Description).SingleLine().Grow(1).MinWidth(0))
-	})
+	a.tickerRow(c, "psub-"+grpID, s.ID, tickRow{spin: true, tone: a.tk.ToolAgent, text: s.Description})
 }

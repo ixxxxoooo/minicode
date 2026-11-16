@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 
@@ -140,6 +141,15 @@ func (a *App) mergeGroup(c *ui.Context, g []*core.ToolCall) {
 	}
 	if set, ok := a.folds[id]; ok {
 		sp.open = set
+	}
+	// 进行中 → 结束:「最新一步」换成摘要句时淡入 120 ms(stepRow 按 fadeAt 画)
+	if a.runWas[id] && !running {
+		a.fadeAt[id] = time.Now()
+	}
+	if running {
+		a.runWas[id] = true
+	} else {
+		delete(a.runWas, id)
 	}
 	a.stepRow(c, sp, func() {
 		a.nest(c, func() {

@@ -251,6 +251,14 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 	if hov {
 		row.Background(t.Fill1)
 	}
+	if at, ok := a.fadeAt[sp.id]; ok { // 精简摘要行结束换句:淡入 120 ms(设计稿 flow-detail)
+		if p := float32(time.Since(at)) / float32(120*time.Millisecond); kit.MotionOn() && p < 1 {
+			row.Opacity(p)
+			a.frameSoon()
+		} else {
+			delete(a.fadeAt, sp.id)
+		}
+	}
 	if stepHasMenu(sp) { // 右键:复制路径 / 命令 / 输出 / 网址、在访达中显示、查看差异…(按这一行的类型)
 		row.ContextMenu(func(m *ui.Menu) { a.stepMenu(m, sp) })
 	}

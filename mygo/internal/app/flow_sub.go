@@ -141,26 +141,16 @@ func (a *App) subPromptBlock(c *ui.Context, s *core.SubagentCard) {
 }
 
 func (a *App) subLatestTicker(c *ui.Context, s *core.SubagentCard, step string) {
-	t := a.tk
-	row := ui.Row(c).Key("sub-tick-"+s.ID).Height(theme.Px(22)).Margin(0, 0, 0, theme.FlowInset).Gap(6).AlignItems(ui.Center).
-		TextColor(t.Tx3).FontSize(theme.FsCtl * a.ChatFontScale()).Clip()
-	row.Children(func() {
-		a.subTickerIcon(c, s)
-		kit.RunText(ui.Text(c, step).SingleLine().Grow(1).MinWidth(0))
-	})
-}
-
-func (a *App) subTickerIcon(c *ui.Context, s *core.SubagentCard) {
-	for i := len(s.Children) - 1; i >= 0; i-- {
+	row := tickRow{spin: true, tone: a.tk.ToolAgent, text: step}
+	for i := len(s.Children) - 1; i >= 0; i-- { // 图标取最近一个工具调用的(按工具族上色)
 		if tc, ok := s.Children[i].(*core.ToolCall); ok {
-			st := a.presentTool(tc)
-			if st.icon != "" {
-				kit.Ic(c, st.icon, kit.S12).TextColor(a.famColor(st.fam))
-				return
+			if st := a.presentTool(tc); st.icon != "" {
+				row = tickRow{icon: st.icon, tone: a.famColor(st.fam), tint: true, text: step}
+				break
 			}
 		}
 	}
-	kit.Spin(c, a.tk.ToolAgent)
+	a.tickerRow(c, "sub-"+s.ID, step, row)
 }
 
 // compactSubRow 用于「并行 N 个」组内:不占满一张大卡,只留一行摘要 + 最新一步。

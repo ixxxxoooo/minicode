@@ -179,8 +179,9 @@ type App struct {
 	refHlKey     string                     // 引用面板语法色缓存键(主题)
 	refHlCache   map[string][]ui.Span       // path+行内容 → 着色 span(ide_refs_hl.go)
 	foldSt       map[string]*ui.ScrollState // 命令卡 / 代码块输出的内部滚动位置(按 foldKey,必须跨帧保留)
-	tickTool     map[string]string          // 工具组 → 当前展示的最新工具 id
-	tickAt       map[string]time.Time       // 最新一步滑入动画起点
+	tick         map[string]*tickState      // 「最新一步」行的翻滚动画状态(按行键,flow_group.go)
+	runWas       map[string]bool            // 精简摘要行上一帧是否在运行(结束时 120 ms 淡入换句)
+	fadeAt       map[string]time.Time       // 精简摘要行结束换句的淡入起点
 	termLive     map[string]string          // 运行中命令 output_file 尾读缓存
 	planOpened   map[string]bool            // 已因流式自动打开过的计划
 	userEd       userEdit                   // 正在就地编辑的用户消息
@@ -355,8 +356,9 @@ func New(o Options) *App {
 		thinkMqHide:  map[string]time.Time{},
 		thinkWasLive: map[string]bool{},
 		outFold:      map[string]bool{},
-		tickTool:     map[string]string{},
-		tickAt:       map[string]time.Time{},
+		tick:         map[string]*tickState{},
+		runWas:       map[string]bool{},
+		fadeAt:       map[string]time.Time{},
 		termLive:     map[string]string{},
 		planOpened:   map[string]bool{},
 		foldAt:       map[string]time.Time{},
@@ -583,8 +585,8 @@ func (a *App) OpenSession(id string) {
 	a.folds = map[string]bool{}
 	a.thinkMq, a.thinkMqHide, a.thinkWasLive = map[string]thinkMqSt{}, map[string]time.Time{}, map[string]bool{}
 	a.outFold = map[string]bool{}
-	a.tickTool = map[string]string{}
-	a.tickAt = map[string]time.Time{}
+	a.tick = map[string]*tickState{}
+	a.runWas, a.fadeAt = map[string]bool{}, map[string]time.Time{}
 	a.termLive = map[string]string{}
 	a.planOpened = map[string]bool{}
 	a.userEd = userEdit{}
