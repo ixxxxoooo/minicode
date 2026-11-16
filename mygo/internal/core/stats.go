@@ -284,3 +284,37 @@ func (t TurnStats) DetailText() string {
 	}
 	return strings.Join(lines, "\n")
 }
+
+// TurnTiming 是一个回合从「点发送」起的实测耗时(墙钟,含进程冷启动、握手、排队、思考、工具执行)。
+type TurnTiming struct {
+	StartupMs int64 // 发送时 claude 进程还没起,从启动到握手完成的耗时;进程已就绪 = 0
+	FirstMs   int64 // 点发送 → 收到第一个响应(思考 / 文字 / 工具)的耗时;0 = 没测到
+	TotalMs   int64 // 点发送 → 回合结束
+}
+
+// FormatResp 响应耗时的文案:不到 1 秒写毫秒,10 秒内保留一位小数,再长沿用「3 分 05 秒」。
+func FormatResp(ms int64) string {
+	switch {
+	case ms < 1000:
+		return fmt.Sprintf("%d 毫秒", ms)
+	case ms < 10_000:
+		return fmt.Sprintf("%.1f 秒", float64(ms)/1000)
+	}
+	return FormatElapsed(ms)
+}
+
+// ShortText 回复脚注上的简短文案:`用时 18.4 秒`。
+func (t TurnTiming) ShortText() string { return "用时 " + FormatResp(t.TotalMs) }
+
+// DetailText 悬停明细:启动 / 首个响应 / 总耗时逐项列出,方便判断慢在哪一段。
+func (t TurnTiming) DetailText() string {
+	var lines []string
+	if t.StartupMs > 0 {
+		lines = append(lines, "启动 claude 进程并握手 "+FormatResp(t.StartupMs))
+	}
+	if t.FirstMs > 0 {
+		lines = append(lines, "发送 → 第一个响应 "+FormatResp(t.FirstMs))
+	}
+	lines = append(lines, "发送 → 回合结束 "+FormatResp(t.TotalMs))
+	return strings.Join(lines, "\n")
+}

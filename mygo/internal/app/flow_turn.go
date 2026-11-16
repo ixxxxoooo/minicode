@@ -42,8 +42,10 @@ func (a *App) userText(uid string) string {
 
 func (a *App) turnFooterActions(c *ui.Context, uid string) {
 	t := a.tk
-	stats, ok := a.st.TurnStats[uid]
-	if !ok {
+	stats, hasStats := a.st.TurnStats[uid]
+	timing, hasTiming := a.st.Timings[uid]
+	dur, hasDur := a.st.Durations[uid]
+	if !hasStats && !hasTiming && !(hasDur && dur > 0) { // 一样统计都没有:不画脚注行
 		return
 	}
 	showStats := a.prefs.Bool(pStats, true)
@@ -66,21 +68,39 @@ func (a *App) turnFooterActions(c *ui.Context, uid string) {
 		} else {
 			fb.Opacity(0.35).Cursor(ui.CursorDefault)
 		}
-		if !showStats {
-			return
-		}
+		// 响应耗时始终显示;模型 / token / 费用跟「回合统计」偏好走
 		var parts []string
-		if l := stats.ModelLabel(); l != "" {
+		if l := stats.ModelLabel(); l != "" && showStats {
 			parts = append(parts, l)
 		}
-		if d, ok := a.st.Durations[uid]; ok && d > 0 {
-			parts = append(parts, core.FormatElapsed(int64(d)*1000))
+		// 响应耗时:本次运行里发出的回合用实测墙钟(含冷启动与首响应),历史回放的回合用记录时间差
+		switch {
+		case hasTiming:
+			parts = append(parts, timing.ShortText())
+		case hasDur && dur > 0:
+			parts = append(parts, "用时 "+core.FormatElapsed(int64(dur)*1000))
 		}
-		parts = append(parts, strings.Split(stats.ShortText(), " · ")...)
+		if hasStats && showStats {
+			parts = append(parts, strings.Split(stats.ShortText(), " · ")...)
+		}
+		if len(parts) == 0 {
+			return
+		}
 		if a.chatTier() == tierNarrow && len(parts) > 2 { // 窄档脚注只留模型与用时
 			parts = parts[:2]
 		}
-		ui.Row(c).Margin(0, 0, 0, 6).Gap(6).AlignItems(ui.Center).Children(func() {
+		var tips []string // 悬停明细:慢在哪一段(启动 / 首响应 / 总耗时)+ token 与费用
+		if hasTiming {
+			tips = append(tips, timing.DetailText())
+		}
+		if hasStats && showStats {
+			tips = append(tips, stats.DetailText())
+		}
+		row := ui.Row(c).Margin(0, 0, 0, 6).Gap(6).AlignItems(ui.Center)
+		if len(tips) > 0 {
+			row.Tooltip(strings.Join(tips, "\n"))
+		}
+		row.Children(func() {
 			for i, p := range parts {
 				if i > 0 {
 					ui.Text(c, "·")

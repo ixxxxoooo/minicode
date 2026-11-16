@@ -80,8 +80,9 @@ type App struct {
 	win        *mygo.Window
 
 	// 会话:当前显示的会话状态与它的后端
-	st *core.State
-	be backend.Backend
+	st     *core.State
+	be     backend.Backend
+	warmBe backend.Backend // 已为它发过预热命令的后端(换会话 = 换后端,会再预热一次)
 
 	// 外观
 	pal    theme.Palette

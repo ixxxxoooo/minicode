@@ -55,6 +55,11 @@ func (s *State) cleanupAfterTruncate(keepUser string) {
 			delete(s.Durations, id)
 		}
 	}
+	for id := range s.Timings {
+		if id != keepUser {
+			delete(s.Timings, id)
+		}
+	}
 	s.Rewind = nil
 	s.Phase = PhaseIdle
 }

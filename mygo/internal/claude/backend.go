@@ -64,6 +64,7 @@ type proc struct {
 	stdin        io.WriteCloser
 	pid          int
 	started      time.Time
+	initAt       time.Time     // 握手完成的时刻(零值 = 还没完成)
 	stop         chan struct{} // 关闭 = 不再投递消息
 	timer        *time.Timer
 	stderrTail   []string
@@ -109,10 +110,14 @@ type Backend struct {
 	once sync.Once
 
 	// 以下只在 run 循环里访问
-	p             *proc
-	tr            *Translator
-	turnActive    bool
-	reqs          map[string]req
+	p          *proc
+	tr         *Translator
+	turnActive bool
+	reqs       map[string]req
+	// 本回合的实测耗时(墙钟):发送时刻、第一个响应、发送时进程是否还没起(冷启动)
+	turnT0        time.Time
+	turnFirst     time.Duration
+	turnCold      bool
 	reqSeq        int
 	usageAsked    time.Time
 	confirmedMode core.PermissionMode
@@ -466,6 +471,8 @@ func (b *Backend) onCommand(c core.Command) {
 			b.tr.Interrupted = true
 			b.request(req{kind: rkOther, what: "中断"}, Interrupt)
 		}
+	case core.CmdWarmup:
+		b.warmup()
 	case core.CmdSetModel:
 		b.cfg.Model = c.Model
 		if c.Model == "default" {
@@ -611,6 +618,8 @@ func (b *Backend) onPrompt(c core.CmdPrompt) {
 		if b.tr != nil {
 			b.tr.Interrupted = false
 		}
+		b.turnT0, b.turnFirst = time.Now(), 0
+		b.turnCold = b.p == nil
 		b.emit(core.EvTurnStarted{})
 	}
 	if !b.ensureProc() {
@@ -620,6 +629,34 @@ func (b *Backend) onPrompt(c core.CmdPrompt) {
 	uuid := newUUID()
 	b.emit(b.tr.UserPrompt(c.Text, c.Images, uuid)...)
 	b.write(UserMessage(c.Text, c.Images, steering, uuid))
+	if !steering {
+		log.Info("提示已写入 claude", "冷启动", b.turnCold, "写入耗时", time.Since(b.turnT0).Round(time.Millisecond), "pid", b.p.pid)
+	}
+}
+
+// warmup 预热:用户还在输入框里打字时先把进程拉起来,点发送后就省掉进程启动与握手。
+func (b *Backend) warmup() {
+	if b.p != nil || b.turnActive {
+		return
+	}
+	if err := b.startProc(); err != nil {
+		log.Warn("预热 claude 失败(发送时会再试)", "err", err)
+		return
+	}
+	log.Info("预热 claude 进程", "pid", b.p.pid)
+}
+
+// turnTiming 回合结束时汇总本回合的实测耗时并清掉计时;不是本程序发出的回合(claude 自行开启的)返回 false。
+func (b *Backend) turnTiming() (core.TurnTiming, bool) {
+	if b.turnT0.IsZero() {
+		return core.TurnTiming{}, false
+	}
+	t := core.TurnTiming{TotalMs: time.Since(b.turnT0).Milliseconds(), FirstMs: b.turnFirst.Milliseconds()}
+	if b.turnCold && b.p != nil && !b.p.initAt.IsZero() {
+		t.StartupMs = b.p.initAt.Sub(b.p.started).Milliseconds()
+	}
+	b.turnT0, b.turnFirst, b.turnCold = time.Time{}, 0, false
+	return t, true
 }
 
 // ---------- claude 输出 ----------
@@ -674,8 +711,17 @@ func (b *Backend) onLine(line string) {
 		b.emit(core.EvTurnStarted{})
 	}
 	evs := b.tr.Handle(v)
+	if b.turnFirst == 0 && !b.turnT0.IsZero() && len(evs) > 0 && (ty == "stream_event" || ty == "assistant") {
+		b.turnFirst = max(time.Since(b.turnT0), time.Millisecond)
+		log.Info("收到第一个响应", "首响应", b.turnFirst.Round(time.Millisecond), "冷启动", b.turnCold, "类型", ty)
+	}
 	if ty == "result" {
 		b.turnActive = false
+		if tm, ok := b.turnTiming(); ok {
+			log.Info("回合完成", "总耗时", time.Duration(tm.TotalMs)*time.Millisecond, "首响应", time.Duration(tm.FirstMs)*time.Millisecond,
+				"启动握手", time.Duration(tm.StartupMs)*time.Millisecond)
+			b.emit(core.EvTurnTiming{Timing: tm})
+		}
 	}
 	b.emit(evs...)
 }
@@ -700,6 +746,10 @@ func (b *Backend) onControlResponse(v obj) {
 	case rkInit:
 		if b.p != nil && b.p.timer != nil {
 			b.p.timer.Stop()
+		}
+		if b.p != nil {
+			b.p.initAt = time.Now()
+			log.Info("claude 握手完成", "耗时", b.p.initAt.Sub(b.p.started).Round(time.Millisecond), "pid", b.p.pid)
 		}
 		var models []core.ModelInfo
 		for _, m := range arr(body, "models") {

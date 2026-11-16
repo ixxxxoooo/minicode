@@ -128,6 +128,11 @@ type (
 		Stats TurnStats
 	}
 	EvTurnEnded struct{ Reason StopReason }
+	// EvTurnTiming 本回合从「发送」起的实测耗时;ID 为用户消息 id,空表示最近一条用户消息。
+	EvTurnTiming struct {
+		ID     string
+		Timing TurnTiming
+	}
 )
 
 func (EvReady) event()               {}
@@ -162,6 +167,7 @@ func (EvTasksChanged) event()        {}
 func (EvTaskOutput) event()          {}
 func (EvTurnStats) event()           {}
 func (EvTurnEnded) event()           {}
+func (EvTurnTiming) event()          {}
 
 // Command 是界面发给后端的命令。
 type Command interface{ command() }
@@ -220,6 +226,9 @@ type (
 	CmdRunScenario struct{ ID string }
 	// CmdShutdown 关闭后端(结束子进程)。
 	CmdShutdown struct{}
+	// CmdWarmup 预热:用户开始在输入框里打字时先把 claude 进程拉起来(惰性后端的冷启动是「点发送后迟迟没反应」的主要来源),
+	// 之后真正发送就不用再等进程启动与握手。进程已在运行 / 演示后端 = 无操作;失败只记日志,不打扰界面。
+	CmdWarmup struct{}
 )
 
 // EnvVar 是一个环境变量。
@@ -242,3 +251,4 @@ func (CmdSetEnv) command()            {}
 func (CmdRewindFiles) command()       {}
 func (CmdRunScenario) command()       {}
 func (CmdShutdown) command()          {}
+func (CmdWarmup) command()            {}

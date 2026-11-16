@@ -132,7 +132,9 @@ func (a *App) addRoundRows(add func(flowRow), u *core.User, rest []core.Item, st
 			if a.st.Phase != core.PhaseRunning && rest[last] == a.st.Items[len(a.st.Items)-1] && len(a.changedFiles()) > 0 {
 				add(flowRow{key: "chg:" + uid, build: plainRow(a.changesCard)})
 			}
-			if _, ok := a.st.TurnStats[uid]; ok {
+			_, hasStats := a.st.TurnStats[uid]
+			_, hasTiming := a.st.Timings[uid]
+			if dur := a.st.Durations[uid]; hasStats || hasTiming || dur > 0 { // 有用时记录也要画脚注(没有 token 统计的回合)
 				add(flowRow{key: "foot:" + uid, build: plainRow(func(c *ui.Context) { a.turnFooterActions(c, uid) })})
 			}
 		}

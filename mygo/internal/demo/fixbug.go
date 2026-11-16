@@ -126,6 +126,8 @@ func FixBug(withPermission bool) []Step {
 	apiMs, ttft, calls := uint64(61000), uint64(900), 6
 	add(0, core.EvTurnStats{ID: "u1", Stats: core.TurnStats{Model: "claude-sonnet-5-5", Input: 44100, Output: 624, CacheRead: 400000, CacheWrite: 4000, CostUSD: &cost, ApiMs: &apiMs, TtftMs: &ttft, Calls: &calls}})
 	add(0, core.EvDuration{ID: "u1", Secs: 73})
+	// 实测响应耗时(冷启动 1.9 秒 + 首个响应 3.2 秒 + 整个回合 73 秒),脚注显示「用时 1 分 13 秒」,悬停看分段
+	add(0, core.EvTurnTiming{ID: "u1", Timing: core.TurnTiming{StartupMs: 1900, FirstMs: 3200, TotalMs: 73000}})
 	add(0, core.EvUsage{Usage: core.Usage{ContextUsed: 76000, ContextSize: 200000, CostUSD: 12.4}})
 	add(0, core.EvTurnEnded{Reason: core.StopEndTurn})
 	return s

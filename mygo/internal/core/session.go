@@ -40,6 +40,8 @@ type State struct {
 	Durations map[string]uint64
 	// TurnStats:用户消息条目 id → 该回合的消耗统计。
 	TurnStats map[string]TurnStats
+	// Timings:用户消息条目 id → 本回合从「点发送」到各节点的实测耗时(只有本次运行里发出的回合才有)。
+	Timings   map[string]TurnTiming
 	Tasks     []*BackgroundTask // 后台任务表(按开始顺序);含已结束的
 	UserUUIDs map[string]string // 用户消息条目 id → claude 消息 uuid(文件检查点回退用)
 	Rewind    *RewindPrompt     // 进行中的文件回退确认(一次只有一条)
@@ -80,6 +82,7 @@ func NewState() *State {
 		Effort:    EffortMedium,
 		Durations: map[string]uint64{},
 		TurnStats: map[string]TurnStats{},
+		Timings:   map[string]TurnTiming{},
 		UserUUIDs: map[string]string{},
 		Now:       func() int64 { return time.Now().UnixMilli() },
 	}
@@ -232,6 +235,22 @@ func (s *State) Apply(ev Event) {
 		}
 		if uid != "" && !e.Stats.Empty() {
 			s.TurnStats[uid] = e.Stats
+		}
+	case EvTurnTiming:
+		uid := e.ID
+		if uid == "" {
+			for i := len(s.Items) - 1; i >= 0; i-- {
+				if u, ok := s.Items[i].(*User); ok {
+					uid = u.ID
+					break
+				}
+			}
+		}
+		if uid != "" && e.Timing.TotalMs > 0 {
+			if s.Timings == nil {
+				s.Timings = map[string]TurnTiming{}
+			}
+			s.Timings[uid] = e.Timing
 		}
 	case EvUserUUID:
 		s.UserUUIDs[e.ID] = e.UUID
