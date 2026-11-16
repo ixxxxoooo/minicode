@@ -79,7 +79,8 @@
 .md { font-size: var(--fs-read); line-height: var(--lh-read); color: var(--tx-1); }
 .md p { margin: 0 0 6px; } .md h3 { font-size: var(--fs-title); margin: 8px 0 4px; font-weight: 650; letter-spacing: -.005em; }
 .md ul { margin: 0 0 6px; padding-left: 18px; } .md li { margin: 1px 0; } .md li::marker { color: var(--tx-4); }
-.md code { font: 11.5px var(--font-mono); background: var(--fill-2); padding: 1px 4px; border-radius: var(--r-xs); }
+/* 行内代码跟随主题强调色:字色 ac-tx、底色强调色 11%,左右各 5px 内边距;助手正文与用户消息共用 */
+.md code, .msg-u code { font: 11.5px var(--font-mono); color: var(--ac-tx); background: color-mix(in srgb, var(--ac) 11%, transparent); padding: 1px 5px; border-radius: var(--r-xs); }
 .tfoot { display: flex; align-items: center; gap: 2px; color: var(--tx-4); font-size: var(--fs-cap); height: 22px; margin-left: -4px; font-variant-numeric: tabular-nums; }
 .tfoot .meta { margin-left: 6px; display: flex; gap: 6px; align-items: center; }
 

@@ -122,6 +122,7 @@
       R('发送 / 停止按钮为圆形', '设计稿与 Go 版同步', 'ok', 'B4'),
       R('会话样式(跟随布局 / 对话气泡 / 通栏=与正文同宽的圆角卡片;设置 → 外观 → Agent 会话)', 'appearance.flowStyle 三档', 'ok', 'B4'),
       R('用户消息吸顶(回合内 sticky,下一轮顶走上一张,最多一张;点击就地编辑 / 取消 / 发送;设置 → 对话与提示词,默认开)', 'flow_user.go:Sticky+chat.stickyUser、不透明 Raised.Over(BG)、吸顶时短阴影 ShadowStuck+细描边(去掉大偏移 Shadow2 与下沿渐隐,它们叠起来会拖出长暗带);编辑态卡片外圈一道描边、内部输入区无框无聚焦环;未测试', 'ok'),
+      R('行内代码跟随主题色(助手正文 + 用户消息)', 'mdtheme.go inlineCodeColors:字色 AcTx、底色强调色 11%,左右 5px;mdOptions 缓存键含强调色;设计稿 flow.css `.md code, .msg-u code`;未测试', 'ok'),
       R('侧栏工作区 / 项目右键与「编辑项目」', '工作区展开只列会话;右键 = 编辑工作区… / 编辑项目…(新对话 · 编辑 · 访达 / 复制 · 移除);全应用右键菜单改为窗口内自绘(SetMenuPresentation);其余菜单的图标与快捷键提示已经 menu_item.go 的 menuItem 统一补齐;未测试', 'ok', 'B2'),
       R('右键菜单图标与快捷键提示统一(menuItem 单点维护)', 'menu_item.go:文字 → 设计稿图标表,「文字  快捷键」拆成右侧提示;图标名取自 kit.iconPaths;未测试', 'ok', 'B2'),
       R('会话流步骤行 / 差异卡头 / 命令卡头右键菜单', 'menu_extra.go stepMenu + flow.go cardM:复制路径 / 命令 / 输出 / 网址、访达、查看差异 / 审查标签、终端面板;未测试', 'ok', 'B2'),

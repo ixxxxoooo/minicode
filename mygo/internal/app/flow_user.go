@@ -279,8 +279,9 @@ func (a *App) userMsgBody(c *ui.Context, u *core.User) {
 			}
 			if m[2] >= 0 {
 				code := txt[m[2]:m[3]]
-				ui.Text(c, code).Font("monospace").FontSize(a.FlowMonoSize()).LineHeight(1.55).TextColor(t.Tx1).
-					Background(t.Fill2).Radius(t.RXs()).PaddingX(3)
+				fg, bg := a.inlineCodeColors()
+				ui.Text(c, code).Font("monospace").FontSize(a.FlowMonoSize()).LineHeight(1.55).TextColor(fg).
+					Background(bg).Radius(t.RXs()).PaddingX(5)
 			} else {
 				a.userRefChip(c, txt[m[4]:m[5]])
 			}

@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/theme"
@@ -15,8 +17,8 @@ func (a *App) mdTheme() *markdown.Theme {
 	th.Text, th.Strong, th.Muted = t.Tx1, t.Tx1, t.Tx3
 	th.Link = t.AcTx
 	th.CodeSize = 11.5 / theme.FsRead
-	th.CodeBackground = t.Fill2
-	th.Code = t.Tx1
+	// 行内代码跟随主题强调色(设计稿 .md code):字色 AcTx,底色强调色 11%。
+	th.Code, th.CodeBackground = a.inlineCodeColors()
 	th.BlockSpacing = .46
 	th.ItemSpacing = .08
 	th.ListIndent = 1.4
@@ -30,11 +32,20 @@ func (a *App) mdTheme() *markdown.Theme {
 	return th
 }
 
+// inlineCodeColors 返回行内代码的字色与底色:都取自当前主题的强调色,换主题 / 换强调色自动跟随。
+// 助手正文(Markdown)与用户消息共用,保证两处一致。
+func (a *App) inlineCodeColors() (fg, bg ui.Color) {
+	t := a.tk
+	return t.AcTx, t.Ac.Alpha(.11)
+}
+
 // mdOptions 返回(并缓存)会话流用的 Markdown 选项;换主题时清掉。
 func (a *App) mdOptions() *markdown.Options {
 	th := a.mdTheme()
-	if a.md == nil || a.mdThemeKey != a.pal.ID+"|"+itoa(a.prefs.Int(pFontScale, 100)) {
-		a.mdThemeKey = a.pal.ID + "|" + itoa(a.prefs.Int(pFontScale, 100))
+	// 缓存键含强调色:行内代码与链接都取强调色,只改强调色(主题不变)也要重建。
+	key := a.pal.ID + "|" + itoa(a.prefs.Int(pFontScale, 100)) + "|" + fmt.Sprint(a.tk.Ac)
+	if a.md == nil || a.mdThemeKey != key {
+		a.mdThemeKey = key
 		opts := &markdown.Options{Theme: th, OnLink: a.openMdLink, LinkMenu: a.linkMenu}
 		if a.proj != "" {
 			opts.LoadImage = markdown.FileImages(a.proj)
