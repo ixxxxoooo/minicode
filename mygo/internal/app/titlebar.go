@@ -64,10 +64,14 @@ func (a *App) titlebar(c *ui.Context) {
 				case "a":
 					a.modeSeg(c)
 				case "b":
-					a.cmdk(c)
+					if !a.compactTitle() { // <900:命令栏收成右侧的搜索图标,不与分段 / 面包屑叠在一起
+						a.cmdk(c)
+					}
 				case "c":
 					a.modeSeg(c)
-					a.cmdk(c)
+					if !a.compactTitle() {
+						a.cmdk(c)
+					}
 				}
 			}
 		})

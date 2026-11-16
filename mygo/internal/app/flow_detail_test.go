@@ -104,3 +104,22 @@ func TestSlowHintHiddenWhileCompacting(t *testing.T) {
 		}
 	}
 }
+
+// 标题栏命令栏:窗口 <900 收成搜索图标,三套方案都不能与 Agent|IDE 分段叠在一起。
+func TestTitlebarCmdkCollapsesBelow900(t *testing.T) {
+	for _, scheme := range []string{"a", "b", "c"} {
+		a := New(Options{Palette: "paper", Scheme: scheme, FakeLights: true})
+		a.SetProjects(demo.Projects(), "fixbug")
+		tt := ui.NewTester(a.View, 1280, 800)
+		tt.Frame()
+		if !tt.HasText("搜索会话、文件与命令") {
+			t.Errorf("方案 %s:宽窗口应显示命令栏", scheme)
+		}
+		tt.SetSize(800, 700)
+		tt.Frame()
+		tt.Frame()
+		if tt.HasText("搜索会话、文件与命令") {
+			t.Errorf("方案 %s:800 宽应收成搜索图标", scheme)
+		}
+	}
+}
