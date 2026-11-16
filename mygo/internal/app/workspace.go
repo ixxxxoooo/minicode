@@ -1,6 +1,7 @@
 package app
 
 import (
+	"path"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -244,11 +245,13 @@ func (a *App) etabPane(c *ui.Context, tb *ideTab, pane int8) {
 		if on && t.Scheme.ID == "c" {
 			ui.Box(c).Absolute().Left(10).Right(10).Bottom(0).Height(2).Radius(2, 2, 0, 0).Background(t.Ac)
 		}
-		ic := kit.Ic(c, a.tabIcon(tb), kit.S12)
-		if tb.virt == vReview || tb.virt == vPlan {
-			ic.TextColor(t.Ac)
-		} else if tb.virt == "" {
-			ic.TextColor(a.fileTint(tb.path, t.Tx3))
+		if tb.virt == "" { // 文件 / 差异标签:与文件树一致的类型图标(认识的语言用徽标)
+			a.fileIc(c, path.Base(tb.path))
+		} else {
+			ic := kit.Ic(c, a.tabIcon(tb), kit.S12)
+			if tb.virt == vReview || tb.virt == vPlan {
+				ic.TextColor(t.Ac)
+			}
 		}
 		nm := ui.Text(c, a.tabTitle(tb)).SingleLine()
 		if tb.preview {

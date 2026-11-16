@@ -305,7 +305,12 @@ func (a *App) fileTint(name string, fallback ui.Color) ui.Color {
 	return fallback
 }
 
-// fileIc 画带类型色的文件图标。
+// fileIc 画文件图标:认识的语言用徽标(file_icon.go),其余是带类型色的线条图标。
 func (a *App) fileIc(c *ui.Context, name string) ui.Element {
+	if a.prefs.Bool("appearance.fileIcons", true) {
+		if k, ok := fileKindOf(name); ok {
+			return a.fileBadge(c, k)
+		}
+	}
 	return kit.Ic(c, fileIcon(name), kit.S12).TextColor(a.fileTint(name, a.tk.Tx3))
 }

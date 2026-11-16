@@ -35,17 +35,49 @@ func (a *App) changesCard(c *ui.Context) {
 			kit.Btn(c, "审查", kit.BtnOpt{Variant: kit.BtnSoft, Small: true, Icon: "eye"}).OnClick(a.OpenReview)
 		})
 		for i, f := range files {
-			if i >= 3 {
+			if i >= chgCardMax {
 				break
 			}
-			ui.Row(c).Gap(6).AlignItems(ui.Center).PaddingStart(20).Children(func() {
-				a.fileIc(c, baseName(f.path))
-				ui.Text(c, baseName(f.path)).FontSize(theme.FsCap).TextColor(t.Tx2).SingleLine().Shrink(0)
-				ui.Text(c, trimSlash(dirOf(a.wsRel(f.path)))).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().Grow(1)
+			f := f
+			a.changesFileRow(c, i, f)
+		}
+		if n := len(files) - chgCardMax; n > 0 { // 超出的折叠成一行,点开 = 审查页(全部文件在那里)
+			r := kit.RowEl(c, false).Key("chg-more").Height(22).Margin(0, 0, 0, 12).Gap(6).Cursor(ui.CursorPointer)
+			if r.Clicked() {
+				a.OpenReview()
+			}
+			r.Children(func() {
+				ui.Box(c).Size(14, 14).Shrink(0) // 与上面文件行的图标对齐
+				ui.Text(c, "还有 "+itoa(n)+" 个文件").FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 			})
 		}
 	})
 	_ = core.PhaseRunning
+}
+
+// chgCardMax 是改动卡最多直接列出的文件数。
+const chgCardMax = 3
+
+// changesFileRow 是改动卡里的一个文件:文件类型图标 + 文件名,整行可点 = 打开这个文件(定位到第一处改动)。
+// 目录不再写在行尾(太长、信息量低),悬停提示里给出完整路径。
+func (a *App) changesFileRow(c *ui.Context, i int, f chFile) {
+	name := baseName(f.path)
+	r := kit.RowEl(c, false).Key("chg-f-"+itoa(i)).Height(22).Margin(0, 0, 0, 12).Gap(6).Cursor(ui.CursorPointer)
+	r.Tooltip(a.shortPath(f.path) + " · 点击打开")
+	if r.Clicked() {
+		line := 0
+		if len(f.blocks) > 0 {
+			line = f.blocks[0].Line
+		}
+		log.Info("改动卡打开文件", "path", f.path, "line", line)
+		if !a.openPathRef(joinRef(f.path, line)) {
+			a.toast = "文件已不存在:" + name
+		}
+	}
+	r.Children(func() {
+		a.fileIc(c, name)
+		ui.Text(c, name).FontSize(theme.FsCap).SingleLine().Grow(1).MinWidth(0)
+	})
 }
 
 // viewInPanel 在底部终端面板开一个只读标签,查看这条命令的输出。

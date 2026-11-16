@@ -193,6 +193,16 @@
 .chat.maxed { }
 .chg-card { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 10px; border-radius: var(--r-md); background: var(--bg-raised); box-shadow: var(--sh-1); }
 .chg-card .files { display: flex; gap: 4px; flex-wrap: wrap; min-width: 0; flex: 1; }
+/* 改动卡 v2(对标 Cursor):标题行 + 文件列表,一行一个文件,只写文件名(不带目录,目录在悬停提示里),整行可点 = 打开该文件;超过 3 个折叠成「还有 N 个」 */
+.chg-card.v2 { flex-direction: column; align-items: stretch; gap: 2px; padding: 8px 11px; }
+.chg-card.v2 .hd { display: flex; align-items: center; gap: 8px; }
+.chg-card.v2 .hd .grow { flex: 1; }
+.chg-card.v2 .frow { display: flex; align-items: center; gap: 6px; height: 22px; padding: 0 6px 0 4px; margin-left: 16px; border-radius: var(--r-xs); color: var(--tx-2); font-size: 11.5px; cursor: pointer; }
+.chg-card.v2 .frow:hover { background: var(--fill-1); color: var(--tx-1); }
+.chg-card.v2 .frow .more { margin-left: auto; color: var(--tx-4); font-size: 10.5px; }
+/* 文件类型图标:语言缩写 + 主题色的小圆角徽标(js 黄 / ts 蓝 / py 绿 …),Go 实现见 file_icon.go */
+.fi { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 14px; height: 14px; border-radius: 3px; background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); font: 700 7px/1 var(--font-ui, system-ui); letter-spacing: -.2px; }
+.fi-img { display: inline-flex; flex: none; }
 .tdock .chip.pop-on { background: var(--fill-2); }
 .tpop { position: absolute; left: 0; right: 0; bottom: 100%; z-index: 20; margin-bottom: 4px; padding: 4px; }
 .tpop .row { height: auto; min-height: 30px; padding: 4px 8px; align-items: flex-start; }

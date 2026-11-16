@@ -15,6 +15,27 @@
 
   /** 图标。n:图标名;c:附加类(s12 / s16 / s20、颜色类) */
   const ic = (n, c = '') => `<svg class="ic ${c}" viewBox="0 0 24 24">${ICONS[n] || ''}</svg>`;
+  /**
+   * 文件类型图标(对标 Cursor / VS Code 图标主题):已知语言用「语言缩写 + 主题色」的小圆角徽标,
+   * 其余退回线条图标。颜色取主题令牌,换主题自动跟着变;设置 → 外观「彩色文件图标」关闭时一律灰色线条图标。
+   * Go 实现:mygo/internal/app/file_icon.go,两边的扩展名表保持一致。
+   */
+  const FILE_KINDS = {
+    js: ['JS', 'warn'], mjs: ['JS', 'warn'], cjs: ['JS', 'warn'], jsx: ['JSX', 'warn'],
+    ts: ['TS', 'info'], tsx: ['TSX', 'info'], go: ['GO', 'info'], rs: ['RS', 'warn'], py: ['PY', 'ok'],
+    swift: ['SW', 'err'], java: ['JV', 'err'], kt: ['KT', 'vio'], c: ['C', 'info'], h: ['H', 'info'], cpp: ['C++', 'info'], hpp: ['H++', 'info'],
+    rb: ['RB', 'err'], php: ['PHP', 'vio'], lua: ['LU', 'info'], sh: ['SH', 'ok'], zsh: ['SH', 'ok'], bash: ['SH', 'ok'],
+    html: ['HT', 'err'], css: ['CS', 'info'], scss: ['SC', 'vio'], vue: ['VU', 'ok'],
+    md: ['MD', 'tx-2'], mdx: ['MD', 'tx-2'], json: ['{}', 'warn'], toml: ['TM', 'tx-2'], yaml: ['YM', 'err'], yml: ['YM', 'err'],
+    sql: ['SQ', 'vio'], csv: ['CS', 'ok'], xml: ['XM', 'warn'],
+  };
+  const FILE_IMG = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico'];
+  const fi = (name, c = '') => {
+    const ext = String(name).toLowerCase().split('.').pop(), k = String(name).includes('.') ? FILE_KINDS[ext] : null;
+    if (k) return `<span class="fi ${c}" style="--c:var(--${k[1]})">${k[0]}</span>`;
+    if (FILE_IMG.includes(ext)) return `<span class="fi-img ${c}" style="color:var(--c-vio)">${ic('image', 's12')}</span>`;
+    return ic('fileText', `s12 t3 ${c}`);
+  };
   /** 按钮。t:文字;c:pri / soft / ghost / sm / danger;icon:前置图标;attr:附加属性 */
   const btn = (t, c = '', icon = '', attr = '') => `<button class="btn ${c}" ${attr}>${icon ? ic(icon, 's12') : ''}${t}</button>`;
   /** 图标按钮。tip:悬停提示 */
@@ -92,5 +113,5 @@
     plan: { icon: 'list', verb: '计划', fam: 'plan', cn: 'ExitPlanMode' },
   };
 
-  window.U = { ic, btn, ib, chip, tag, cnt, kbd, tog, seg, chk, sel, esc, rust, inp, field, area, THEMES, SCHEMES, TOOLS };
+  window.U = { ic, fi, btn, ib, chip, tag, cnt, kbd, tog, seg, chk, sel, esc, rust, inp, field, area, THEMES, SCHEMES, TOOLS };
 })();
