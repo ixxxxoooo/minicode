@@ -324,7 +324,7 @@ func (a *App) EditorDemo(spec string) {
 				a.addRefs("@" + p)
 			}
 			continue
-		case "drag": // drag:@路径:对话栏显示「松手引用」可放态
+		case "drag": // drag:@路径:对话栏显示「松手插入」可放态
 			a.ux.demoHint = arg
 			continue
 		case "mdedit": // mdedit:在所见即所得里把整篇换成给定 Markdown(用 \n 表示换行),演示「改过」状态

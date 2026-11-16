@@ -137,7 +137,7 @@ func (a *App) pickAttachRefs() {
 			for _, p := range paths {
 				refs = append(refs, refText(a.relRefForAttach(p), false))
 			}
-			a.addRefs(refs...)
+			a.draft = appendRefs(a.draft, refs...)
 			a.ux.focusDraft = true
 			attachLog.Info("添加文件引用", "n", len(refs))
 		}

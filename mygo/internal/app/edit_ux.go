@@ -67,12 +67,15 @@ func appendRefs(draft string, refs ...string) string {
 	return draft + " " + tail
 }
 
-// dropRefs 是落到对话栏的结果:引用写进输入框并把焦点交给它。
+// dropRefs 是落到对话栏的结果:「@路径」直接写进输入框正文(与打的字在一起),并把焦点交给它。
+// 只有图片不一样(走输入框顶部的缩略图附件),不经过这里。
 func (a *App) dropRefs(refs ...string) {
-	if a.addRefs(refs...) == 0 {
+	next := appendRefs(a.draft, refs...)
+	if next == a.draft {
 		a.toast = "已经引用过了"
 		return
 	}
+	a.draft = next
 	a.ux.focusDraft = true
 	uxLog.Info("拖入引用", "n", len(refs))
 	a.toast = "已引用 " + itoa(len(refs)) + " 项到对话"
@@ -125,7 +128,7 @@ func (a *App) dropOverlay(c *ui.Context, what string) {
 		}
 		pill.Children(func() {
 			kit.Ic(c, "link", kit.S12).TextColor(t.AcTx)
-			ui.Text(c, "松手引用").FontWeight(500)
+			ui.Text(c, "松手插入").FontWeight(500)
 			ui.Text(c, what).Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx2).SingleLine()
 		})
 	})

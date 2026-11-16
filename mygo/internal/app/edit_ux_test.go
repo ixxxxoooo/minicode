@@ -294,11 +294,8 @@ func TestDragFileToChat(t *testing.T) {
 	if !tt.DropFiles(chatX, chatY, "/x/y.txt") {
 		t.Fatal("对话栏应接住拖入的文件")
 	}
-	if len(a.refs) != 1 || a.refs[0] != "@/x/y.txt" {
-		t.Fatalf("应以胶囊引用绝对路径:%v", a.refs)
-	}
-	if a.draft != "" {
-		t.Fatalf("引用胶囊不应再往输入框正文里写 @ 文字:%q", a.draft)
+	if a.draft != "@/x/y.txt " || len(a.refs) != 0 {
+		t.Fatalf("应把绝对路径引用写进输入框正文,不开顶部胶囊:%q %v", a.draft, a.refs)
 	}
 	tt.Frame()
 	if a.ux.focusDraft {
@@ -318,8 +315,8 @@ func TestDragFileToChat(t *testing.T) {
 		t.Fatal(err)
 	}
 	tt.Frame()
-	if len(a.refs) != 1 || !strings.Contains(a.refs[0], "router.rs") {
-		t.Fatalf("文件树引用到对话栏应加一枚引用胶囊,得 %v", a.refs)
+	if !strings.Contains(a.draft, "@") || !strings.Contains(a.draft, "router.rs") || len(a.refs) != 0 {
+		t.Fatalf("文件树引用到对话栏应把 @路径 写进正文,得 %q %v", a.draft, a.refs)
 	}
 }
 
