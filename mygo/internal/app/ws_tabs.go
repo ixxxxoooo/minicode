@@ -48,6 +48,25 @@ func (d *ide) openVirtual(kind, ref string, pin bool) *ideTab {
 	return t
 }
 
+// closeSessionVirtuals 切会话时关掉绑定在旧会话上的虚拟标签(子 Agent / 后台任务输出按 id 引用旧会话的条目,
+// 留着只会是「已不在当前会话里」的空壳)。计划 / 审查读的是当前会话,保留。
+func (a *App) closeSessionVirtuals() {
+	if a.ide == nil {
+		return
+	}
+	var ids []string
+	for _, tabs := range [][]*ideTab{a.ide.tabs, a.ide.tabs2} {
+		for _, t := range tabs {
+			if t.virt == vSub || t.virt == vTask {
+				ids = append(ids, t.id)
+			}
+		}
+	}
+	for _, id := range ids {
+		a.ide.closeTab(id)
+	}
+}
+
 // OpenWorkspaceTab 打开工作区里的虚拟标签:Agent 形态下工作区收起时先展开并闪一下边框,
 // IDE 形态下对话栏占满时先恢复。所有入口(会话流卡片、任务坞、SCM、命令面板)都走这里。
 func (a *App) OpenWorkspaceTab(kind, ref string) {

@@ -23,3 +23,18 @@ func TestSubagentCompactCardRenders(t *testing.T) {
 	}
 	tt.Frame()
 }
+
+// 切会话后,绑定旧会话的子 Agent / 任务输出标签要关掉,不留「已不在当前会话里」的空壳。
+func TestSessionSwitchClosesSubTabs(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true})
+	a.SetProjects(demo.Projects(), "fixbug")
+	a.ide.openVirtual(vSub, "sub-x", true)
+	a.ide.openVirtual(vPlan, "", true)
+	a.OpenSession("")
+	if a.ide.tab(virtID(vSub, "sub-x")) != nil {
+		t.Fatal("子 Agent 标签应随会话切换关闭")
+	}
+	if a.ide.tab(virtID(vPlan, "")) == nil {
+		t.Fatal("计划标签应保留")
+	}
+}

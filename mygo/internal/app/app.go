@@ -537,6 +537,7 @@ func (a *App) OpenSession(id string) {
 	a.maybeLeaveWorkspace(id)
 	a.recordSess(id)
 	a.parkOrClose()
+	a.closeSessionVirtuals()
 	delete(a.sessUnread, id)                     // 打开 = 看过了
 	if lv := a.live[id]; lv != nil && id != "" { // 回到一个在后台跑着的会话:接回它的后端与状态
 		delete(a.live, id)
