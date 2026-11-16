@@ -161,10 +161,17 @@ func (a *App) stepItem(c *ui.Context, it core.Item) {
 	switch v := it.(type) {
 	case *core.Thinking:
 		sp := step{id: v.ID, icon: "brain", verb: "思考", obj: thinkTitle(v.Text), fam: famThink, hasBody: strings.TrimSpace(v.Text) != "", open: a.prefs.Bool(pThinkOpen, false)}
+		sp.thinkText = v.Text
 		if v.Streaming {
-			sp.state = "run"
-		} else if d, ok := a.st.Durations[v.ID]; ok && d > 0 {
-			sp.right = core.FormatElapsed(int64(d) * 1000)
+			sp.state, sp.thinkLive = "run", true
+			a.thinkWasLive[v.ID] = true
+		} else {
+			if a.thinkWasLive[v.ID] {
+				a.noteThinkStreamEnd(v.ID)
+			}
+			if d, ok := a.st.Durations[v.ID]; ok && d > 0 {
+				sp.right = core.FormatElapsed(int64(d) * 1000)
+			}
 		}
 		a.stepRow(c, sp, func() { a.thinkBody(c, v.Text) })
 	case *core.ToolCall:
@@ -249,11 +256,21 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 				kit.Ic(c, sp.icon, kit.S12).TextColor(t.Tx3.Mix(tone, .78))
 			}
 		})
-		verb := ui.Text(c, sp.verb).TextColor(t.Tx3).Shrink(0).SingleLine()
-		obj := ui.Text(c, sp.obj).FontWeight(500).TextColor(t.Tx1).SingleLine().Shrink(1)
-		if sp.state == "run" { // 运行中的步骤文字呼吸
-			kit.RunText(verb)
-			kit.RunText(obj)
+		var obj ui.Element
+		if sp.state == "run" {
+			kit.RunTextS(c, sp.verb, t.Tx3, func(e ui.Element) ui.Element { return e.TextColor(t.Tx3).Shrink(0).SingleLine() })
+			obj = kit.RunTextS(c, sp.obj, t.Tx1, func(e ui.Element) ui.Element { return e.FontWeight(500).TextColor(t.Tx1).SingleLine().Shrink(1) })
+		} else {
+			ui.Text(c, sp.verb).TextColor(t.Tx3).Shrink(0).SingleLine()
+			obj = ui.Text(c, sp.obj).FontWeight(500).TextColor(t.Tx1).SingleLine().Shrink(1)
+		}
+		mq := a.thinkMarqueeRow(c, sp, tone, open)
+		if at, ok := a.thinkMqHide[sp.id]; ok && kit.MotionOn() {
+			age := float32(a.now().Sub(at)) / float32(kit.DurFast)
+			if age < 1 {
+				mq.Opacity(1 - age)
+				a.frameSoon()
+			}
 		}
 		if sp.state == "deny" {
 			obj.Strikethrough().TextColor(t.Tx3)

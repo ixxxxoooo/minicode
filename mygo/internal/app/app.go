@@ -171,6 +171,9 @@ type App struct {
 
 	// 会话流的折叠状态:条目 id → 是否展开(没有记录就用默认)
 	folds        map[string]bool
+	thinkMq      map[string]thinkMqSt
+	thinkMqHide  map[string]time.Time
+	thinkWasLive map[string]bool
 	outFold      map[string]bool            // 长输出 / 用户消息展开
 	hlKey        string                     // 命令 / 输出高亮缓存对应的「主题|强调色|字号」
 	hlCache      map[string][]ui.Span       // 命令 / 输出行高亮结果(flow_hl.go)
@@ -543,6 +546,7 @@ func (a *App) OpenSession(id string) {
 		a.q.reset()
 		a.qa = nil
 		a.folds = map[string]bool{}
+		a.thinkMq, a.thinkMqHide, a.thinkWasLive = map[string]thinkMqSt{}, map[string]time.Time{}, map[string]bool{}
 		a.outFold = map[string]bool{}
 		a.termLive = map[string]string{}
 		a.userEd = userEdit{}
@@ -569,6 +573,7 @@ func (a *App) OpenSession(id string) {
 	a.q.reset()
 	a.qa = nil
 	a.folds = map[string]bool{}
+	a.thinkMq, a.thinkMqHide, a.thinkWasLive = map[string]thinkMqSt{}, map[string]time.Time{}, map[string]bool{}
 	a.outFold = map[string]bool{}
 	a.tickTool = map[string]string{}
 	a.tickAt = map[string]time.Time{}
@@ -681,6 +686,7 @@ type layMem struct {
 // View 是窗口的根视图。
 func (a *App) View(c *ui.Context) {
 	defer diag.SpanSlow("app", "构建界面", 33*time.Millisecond)()
+	kit.SetViewActive(a.win != nil && a.win.IsFocused())
 	// 界面构建中 panic:不能吞(控件树做到一半会错乱),但崩溃前必须把调用栈写进日志与 crashes/,
 	// 否则只剩一条「上次运行异常退出」,无从排查(审查页空指针闪退就是这样静默消失的)。
 	defer func() {

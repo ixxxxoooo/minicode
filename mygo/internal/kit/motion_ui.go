@@ -20,7 +20,7 @@ func SetShimmer(mode int) {
 	}
 }
 
-// RunText 对「进行中」文字应用流光或呼吸(依偏好)。
+// RunText 对「进行中」文字应用流光或呼吸(依偏好);无附文案时仍走旧透明度路径。
 func RunText(e ui.Element) ui.Element {
 	switch shimmerMode {
 	case 0:
@@ -30,13 +30,12 @@ func RunText(e ui.Element) ui.Element {
 	}
 }
 
-// TextShimmer 用移动的高光透明度模拟文字扫光(MyGo 暂无 background-clip:text)。
+// TextShimmer 降级:长文案或未走 RunTextS 时整段呼吸。
 func TextShimmer(e ui.Element) ui.Element {
-	if !MotionOn() || shimmerMode != 0 {
+	if !MotionOn() || shimmerMode != 0 || !viewOK() {
 		return e
 	}
 	x := e.Loop("shimmer", DurLoop, ui.Linear)
-	// 0.35~1.0 的透明度波
 	bright := .35 + .65*(.5-.5*float32(math.Cos(float64(x*2*math.Pi))))
 	return e.Opacity(bright)
 }
@@ -137,10 +136,6 @@ func FoldHeight(el ui.Element, open bool, fullH float32, toggledAt time.Time, fr
 		return
 	}
 	p := float32(time.Since(toggledAt)) / float32(DurSlow)
-	if open {
-		_ = float32(1)
-	}
-	// 从上一状态插值:简化 — 打开时 0→1,关闭时 1→0
 	if p >= 1 {
 		if open {
 			return
