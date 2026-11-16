@@ -106,3 +106,19 @@ func TestCloseOtherTermTabs(t *testing.T) {
 		t.Fatalf("应只剩一个且选中索引回落: n=%d sel=%d", len(a.ide.tps), a.ide.tpSel)
 	}
 }
+
+// 默认 OSC 标题「user@host:路径」只留路径;不是这个形态的(命令、邮箱样的单词)不动。
+func TestTermNormalizeUserHostPrefix(t *testing.T) {
+	cases := map[string]string{
+		"demo@demodeMacBook-Pro:~/MiniCode": "~/MiniCode",
+		"me@host: ~":     "~",
+		"vim main.go":    "vim main.go",
+		"ssh me@host:22": "ssh me@host:22", // 冒号前有空格,不是标题前缀
+		"me@host":        "me@host",
+	}
+	for in, want := range cases {
+		if got := termNormalizeTitle(in); got != want {
+			t.Errorf("termNormalizeTitle(%q) = %q,想要 %q", in, got, want)
+		}
+	}
+}

@@ -145,7 +145,8 @@ func (a *App) terminal(c *ui.Context) {
 	}
 	if a.proj != "" {
 		if a.termTabsVertical(a.ide.panelW) && a.ide.termSel == "" {
-			ui.Row(c).Grow(1).MinHeight(0).Children(func() {
+			// Stretch:竖向列表要贴着面板顶部撑满高度(默认的居中对齐会让它漂在中间)
+			ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
 				ui.Column(c).Grow(1).MinWidth(0).MinHeight(0).Children(func() {
 					a.realTerminal(c)
 				})

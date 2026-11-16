@@ -59,6 +59,14 @@ func termNormalizeTitle(raw string) string {
 	if raw == "" {
 		return raw
 	}
+	// zsh / bash 默认的 OSC 标题是「user@host:路径」:前缀对区分终端没有用,只留路径
+	if at := strings.IndexByte(raw, '@'); at > 0 {
+		if c := strings.IndexByte(raw, ':'); c > at && !strings.ContainsAny(raw[:c], " /") {
+			if rest := strings.TrimSpace(raw[c+1:]); rest != "" {
+				raw = rest
+			}
+		}
+	}
 	sp := strings.IndexByte(raw, ' ')
 	if sp <= 0 {
 		return raw
