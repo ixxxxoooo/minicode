@@ -135,9 +135,20 @@ func (a *App) permCard(c *ui.Context, r *core.PermissionRequest) {
 			}
 		})
 		if d := a.permDetail(r); d != "" {
-			ui.Column(c).Background(t.Sunken).Radius(t.RSm()).Border(1, t.Bd1).Padding(6, 9).Children(func() {
-				ui.Text(c, d).Font("monospace").FontSize(11.5).LineHeight(1.5).TextColor(t.Tx1)
-			})
+			filePath := ""
+			if r.Tool != nil {
+				filePath = inputStr(r.Tool, "file_path")
+			}
+			if filePath != "" {
+				ui.Row(c).Gap(6).Padding(6, 8).AlignItems(ui.Center).Background(t.Sunken).Radius(t.RSm()).Border(1, t.Bd1).Children(func() {
+					a.fileIc(c, baseName(filePath))
+					ui.Text(c, d).Font("monospace").FontSize(11.5).LineHeight(1.5).TextColor(t.Tx1).Grow(1).SingleLine()
+				})
+			} else {
+				ui.Column(c).Background(t.Sunken).Radius(t.RSm()).Border(1, t.Bd1).Padding(6, 9).Children(func() {
+					ui.Text(c, d).Font("monospace").FontSize(11.5).LineHeight(1.5).TextColor(t.Tx1)
+				})
+			}
 		}
 		a.permDiffPreview(c, r)
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
