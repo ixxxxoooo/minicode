@@ -391,7 +391,8 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 // nest 是嵌套的下一级(分组展开的子项):左侧一条细引导线。
 func (a *App) nest(c *ui.Context, inner func()) {
 	t := a.tk
-	ui.Column(c).Margin(0, 0, 0, 7.5).Gap(1).Children(func() {
+	// 展开内容整体缩进 FlowInset(22),这里回拉 14 → 线落在上一行图标列(16px)的中线;子项图标再缩进 9px。
+	ui.Column(c).Margin(0, 0, 0, 8-theme.FlowInset).Gap(1).Children(func() {
 		// 行内 flex 子项的自动最小宽度 = 子树最小内容宽度:内层 Column 与外层 Row 都要显式 MinWidth(0),
 		// 否则组里超长的命令 / 输出行会把所有卡片撑出会话流内容列(回合折叠「已处理」与探索组共用这里)。
 		ui.Row(c).MinWidth(0).AlignItems(ui.Stretch).Children(func() {
