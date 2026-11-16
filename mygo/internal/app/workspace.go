@@ -254,6 +254,9 @@ func (a *App) etabPane(c *ui.Context, tb *ideTab, pane int8) {
 		if tb.preview {
 			nm.Italic()
 		}
+		if a.isExternalTab(tb) {
+			a.externalChip(c)
+		}
 		if tb.extDeleted && !tb.extOrphan {
 			nm.TextColor(t.Tx4).Strikethrough()
 		}

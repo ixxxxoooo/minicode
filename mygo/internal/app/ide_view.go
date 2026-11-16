@@ -1,12 +1,14 @@
 package app
 
 import (
+	"path/filepath"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
+	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
 
 // ───────── 面包屑 ─────────
@@ -18,7 +20,16 @@ func (a *App) crumbs(c *ui.Context, tb *ideTab) {
 	t := a.tk
 	ui.Row(c).Height(24).Shrink(0).PaddingX(14).Gap(8).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(11.5).Children(func() {
 		ui.Row(c).Grow(1).MinWidth(0).Gap(3).AlignItems(ui.Center).Clip().Children(func() {
-			parts := strings.Split(tb.path, "/")
+			if a.isExternalTab(tb) {
+				ui.Text(c, a.pathDisplay(tb.path)).SingleLine().TextColor(t.Tx2).FontSize(11.5)
+				a.externalChip(c)
+				return
+			}
+			sep := "/"
+			if workspace.IsExternalPath(tb.path) {
+				sep = string(filepath.Separator)
+			}
+			parts := strings.Split(tb.path, sep)
 			for i, p := range parts {
 				if i > 0 {
 					kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
