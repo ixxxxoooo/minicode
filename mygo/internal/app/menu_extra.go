@@ -30,11 +30,11 @@ func (a *App) mdMenuItems(m *ui.Menu) {
 	if menuItem(m, label).Chosen() {
 		a.setMdMode(tb, !src)
 	}
-	// 含表格 / HTML / 脚注的文档不冒险改写,所见即所得里只读;这一项只反映状态,不可点
+	// 含 HTML / 脚注 / 列表里表格的文档不冒险改写,所见即所得里只读(顶层表格可在预览里编辑);这一项只反映状态,不可点
 	unsafe := tb.md != nil && tb.md.unsafe != ""
 	why := "当前文档可以直接在预览里编辑"
 	if unsafe {
-		why = "含表格 / HTML / 脚注,在预览里编辑会改写它,所以只读显示;切到源码再编辑"
+		why = "含 " + tb.md.unsafe + ",在预览里编辑会改写它,所以只读显示;切到源码再编辑"
 	}
 	menuItem(m, "只读预览").Icon(kit.MenuIcon("eye")).Checked(unsafe && !src).Disabled(true).Tooltip(why)
 	if menuItem(m, "格式化文档  ⇧⌥F").Chosen() {

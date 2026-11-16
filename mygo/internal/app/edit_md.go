@@ -37,10 +37,15 @@ type mdState struct {
 	doc    *richtext.Document
 	ver    uint64      // 文档是按缓冲区的这一版建的
 	front  string      // 文件开头的 YAML 头(原样保留,不进文档)
-	unsafe string      // 非空 = 含无法往返的内容(表格 / HTML / 脚注),只读预览
+	unsafe string      // 非空 = 含无法往返的内容(HTML / 脚注 / 列表里的表格),只读预览
 	notes  int         // 若编辑对应块会被规范化的非空行数
 	edited bool        // 在所见即所得里改过
 	body   mdBodySplit // 读入时切分的正文块(写回时只替换变了的块)
+
+	loaded   bool     // 已按 ver 这一版读入过(只读预览也没有 doc,不能再靠 doc 判断)
+	segs     []*mdSeg // 含顶层表格时:按「正文 / 表格」切成的段(此时 doc 为 nil),见 edit_md_table.go
+	pend     []mdPend // 表格上排队等执行的结构修改
+	tblFocus string   // 下一次构建里要聚焦的表格单元格键
 }
 
 // mdSource 此刻该标签是否显示源码:标签上的选择优先,否则看偏好 editor.mdView。
@@ -104,7 +109,20 @@ var (
 )
 
 // mdUnsafe 找无法在所见即所得里无损表示的内容,返回它的名字("" = 没有)。围栏代码块里的不算。
+// 顶层表格有自己的可编辑网格(edit_md_table.go),不算;缩进在列表 / 引用里的表格仍算。
 func mdUnsafe(body string) string {
+	for _, s := range mdSplitSegs(body) {
+		if s.table {
+			continue
+		}
+		if u := mdUnsafeText(s.pre + s.raw + s.post); u != "" {
+			return u
+		}
+	}
+	return ""
+}
+
+func mdUnsafeText(body string) string {
 	fence := ""
 	for _, ln := range strings.Split(body, "\n") {
 		trim := strings.TrimSpace(ln)
@@ -142,7 +160,7 @@ func (a *App) mdEnsure(tb *ideTab) *mdState {
 		md = &mdState{}
 		tb.md = md
 	}
-	if md.doc != nil && md.ver == tb.buf.Version() {
+	if md.loaded && md.ver == tb.buf.Version() {
 		return md
 	}
 	defer diag.SpanSlow("edit", "Markdown 解析", 30*time.Millisecond, "path", tb.path)()
@@ -152,7 +170,23 @@ func (a *App) mdEnsure(tb *ideTab) *mdState {
 	md.unsafe = mdUnsafe(body)
 	md.notes = 0
 	md.body = mdSplitBodyBlocks(body)
-	if md.unsafe == "" {
+	md.segs, md.pend = nil, nil
+	if md.unsafe != "" {
+		md.doc = nil
+	} else if segs := mdSplitSegs(body); mdSegsHaveTable(segs) {
+		// 含顶层表格:按段编辑,正文段各一份富文本文档,表格段是网格
+		md.doc = nil
+		for _, sg := range segs {
+			if sg.table {
+				continue
+			}
+			md.notes += mdNormalized(sg.raw)
+			sg.doc = richtext.NewDocument(richtext.ParseMarkdown(sg.raw))
+			sg.doc.SetSelection(0, 0)
+			sg.h = float32(sg.doc.Text().ParagraphCount())*30 + 30
+		}
+		md.segs = segs
+	} else {
 		md.notes = mdNormalized(body)
 		text := richtext.ParseMarkdown(body)
 		if md.doc == nil {
@@ -163,6 +197,7 @@ func (a *App) mdEnsure(tb *ideTab) *mdState {
 		md.doc.SetSelection(0, 0) // 光标在开头:编辑器会滚到光标处,默认落在末尾会一上来就滚到文末
 	}
 	md.ver = tb.buf.Version()
+	md.loaded = true
 	return md
 }
 
@@ -242,6 +277,11 @@ func (a *App) mdView(c *ui.Context, tb *ideTab) {
 			})
 		}
 		a.mdFront(c, md.front)
+		if md.segs != nil { // 含表格:正文 + 可编辑网格分段显示
+			a.mdApplyReveal(tb, md)
+			a.mdSegsView(c, tb, md)
+			return
+		}
 		if mdShowFormatBar { // 预览不再显示格式条(设计稿 ide-md),快捷键照常生效
 			a.mdFormatBar(c, md.doc)
 		}

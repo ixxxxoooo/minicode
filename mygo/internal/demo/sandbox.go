@@ -91,6 +91,7 @@ pub fn build() -> Server {
 		"docs/logo.svg":           `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="160" viewBox="0 0 240 160"><rect width="240" height="160" rx="24" fill="#E8EEFF"/><circle cx="84" cy="80" r="40" fill="#4F6BED"/><rect x="132" y="48" width="64" height="64" rx="12" fill="#F5A524"/></svg>`,
 		"data/blob.bin":           "MC\x00\x01\x02\x03",
 		"docs/api.md":             "# 接口\n\n| 方法 | 路径 | 说明 |\n| --- | --- | --- |\n| GET | /users | 用户列表 |\n| POST | /users | 新建用户 |\n\n以上接口都返回 JSON。\n",
+		"docs/embed.md":           "# 内嵌 HTML\n\n<details>\n<summary>展开</summary>\n\n含 HTML 的文档在预览里只读,要改请切到源码。\n\n</details>\n\n| 列 | 说明 |\n| --- | --- |\n| a | 只读时表格也只是显示 |\n",
 		".cursor/rules/style.mdc": "---\ndescription: 代码风格\nglobs: src/**/*.rs\nalwaysApply: false\n---\n\n# 风格\n\n- 公开函数写文档注释\n- 不用 `unwrap()`\n",
 		"Cargo.toml": `[package]
 name = "router-demo"

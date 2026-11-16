@@ -87,7 +87,8 @@ func TestMarkdownHelpers(t *testing.T) {
 		t.Fatal("没有结束线不算 YAML 头")
 	}
 	for src, want := range map[string]string{
-		"| a | b |\n| --- | --- |\n| 1 | 2 |\n": "表格",
+		"| a | b |\n| --- | --- |\n| 1 | 2 |\n": "",   // 顶层表格有可编辑网格,不算
+		"- 项\n  | a |\n  | - |\n":               "表格", // 缩进在列表里的表格写回会丢缩进,仍算
 		"正文\n\n<details>\n</details>\n":         "HTML",
 		"见[^1]\n\n[^1]: 脚注\n":                   "脚注",
 		"```\n| a |\n| - |\n<div>\n```\n":       "", // 代码块里的不算
@@ -146,14 +147,25 @@ func TestMarkdownWysiwyg(t *testing.T) {
 	}
 	a.prefs.Reset(pMdView)
 
-	// 含表格:只读预览,不建文档、不改写文件
+	// 含顶层表格:按段预览(正文 + 可编辑网格),不建整篇文档,打开也不改写文件
 	d.openFile("docs/api.md", true)
 	tt.Frame()
 	api := d.cur()
-	if api.md == nil || api.md.unsafe != "表格" || api.md.doc != nil {
-		t.Fatalf("含表格应只读预览:%+v", api.md)
+	if api.md == nil || api.md.unsafe != "" || api.md.doc != nil || !mdSegsHaveTable(api.md.segs) {
+		t.Fatalf("含表格应分段预览:%+v", api.md)
 	}
 	if api.dirty() {
+		t.Fatal("只浏览不能弄脏文件")
+	}
+
+	// 含 HTML:只读预览,不建文档、不改写文件
+	d.openFile("docs/embed.md", true)
+	tt.Frame()
+	emb := d.cur()
+	if emb.md == nil || emb.md.unsafe != "HTML" || emb.md.doc != nil || emb.md.segs != nil {
+		t.Fatalf("含 HTML 应只读预览:%+v", emb.md)
+	}
+	if emb.dirty() {
 		t.Fatal("只读预览不能弄脏文件")
 	}
 
