@@ -198,7 +198,14 @@ func (a *App) reviewHover(c *ui.Context, tb *ideTab) {
 	}
 	t := a.tk
 	_, y := cursorXY(tb, line, 0)
-	bar := ui.Row(c).Key("rv-hov").Absolute().Right(a.mmWidth()+mmRulW+20).Top(y).Height(22).Gap(6).PaddingX(8).
+	// 审查条贴在光标行上方,不盖住行尾的追溯文字与下面的提交卡;第一行放不下才退到行下方
+	a.ide.rvBarBelow = false
+	barTop := y - edLineH*edScale - 24
+	if barTop < 2 {
+		barTop = y + 2
+		a.ide.rvBarBelow = true
+	}
+	bar := ui.Row(c).Key("rv-hov").Absolute().Right(a.mmWidth()+mmRulW+20).Top(barTop).Height(22).Gap(6).PaddingX(8).
 		Background(t.Raised).Radius(t.RSm()).Border(1, t.Bd1).FontSize(theme.FsMicro)
 	bar.Children(func() {
 		ui.Text(c, "Claude 改动").TextColor(t.Ac)

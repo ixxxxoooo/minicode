@@ -110,7 +110,10 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 		a.blockCmtBanner(c, tb)
 		a.extmodBanner(c, tb)
 		ui.Row(c).Grow(1).MinHeight(0).Children(func() {
-			editor.View(c.Key("ed-"+tb.id), st).Grow(1).MinWidth(0).FillHeight()
+			ev := editor.View(c.Key("ed-"+tb.id), st).Grow(1).MinWidth(0).FillHeight()
+			if h := ev.Bounds().H; h > 0 {
+				a.ide.edViewH = h
+			}
 			if !a.wsNarrowMM() && a.prefs.Bool(pMinimap, true) {
 				a.minimap(c, tb)
 			}

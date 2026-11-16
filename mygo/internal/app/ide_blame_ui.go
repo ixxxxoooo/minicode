@@ -123,7 +123,16 @@ func (a *App) blameCardOverlay(c *ui.Context, tb *ideTab) {
 	if !a.ide.blameCardShow {
 		return
 	}
-	a.drawCommitCard(c, tb, bl, a.mmWidth()+mmRulW+20, y+rowH+4)
+	below := y + 4
+	if a.ide.rvBarBelow {
+		below += 26 // 审查条占着行下方
+	}
+	// 下方放不下(贴着底部面板)就翻到光标行上方,避免被面板截掉
+	if h := a.ide.edViewH; h > 0 && below+blameCardH > h && y-rowH-blameCardH-4 > 0 {
+		a.drawCommitCard(c, tb, bl, a.mmWidth()+mmRulW+20, h-(y-rowH-4), true)
+		return
+	}
+	a.drawCommitCard(c, tb, bl, a.mmWidth()+mmRulW+20, below, false)
 }
 
 // blameKeepOpen 鼠标已离开追溯文字与提交卡:从离开那一刻起再保持 blameCloseDelay,期间返回 true。
@@ -134,10 +143,19 @@ func (a *App) blameKeepOpen() bool {
 	return time.Since(a.ide.blameLeaveAt) < blameCloseDelay
 }
 
-func (a *App) drawCommitCard(c *ui.Context, tb *ideTab, bl vcs.BlameLine, right, top float32) {
+// blameCardH 是提交卡的估计高度(头部 + 说明 + 元信息 + 按钮行),只用来判断翻到上方。
+const blameCardH = 156
+
+// drawCommitCard 画提交卡;flip = false 时 off 是距顶部的偏移,flip = true 时 off 是距底部的偏移(翻到光标行上方,卡的下沿贴住行上沿)。
+func (a *App) drawCommitCard(c *ui.Context, tb *ideTab, bl vcs.BlameLine, right, off float32, flip bool) {
 	t := a.tk
-	card := ui.Column(c).Key("blame-card").Absolute().Right(right).Top(top).Width(300).Padding(10, 12).Gap(6).
+	card := ui.Column(c).Key("blame-card").Absolute().Right(right).Width(300).Padding(10, 12).Gap(6).
 		Background(t.Raised).Radius(t.RLg()).Border(1, t.Bd1)
+	if flip {
+		card.Bottom(off)
+	} else {
+		card.Top(off)
+	}
 	if card.Hovered() {
 		a.ide.blameCardHover = true
 	} else {
