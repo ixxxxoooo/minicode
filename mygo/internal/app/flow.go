@@ -299,7 +299,9 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 		var obj ui.Element
 		sep := func() { // 读取 / 编辑 / 写入:文件类型图标(GO / JS / MD…)放在文件名前面;左侧图标列仍是设计稿的工具族图标
 			if sp.path != "" && sp.fam != famThink && sp.obj == baseName(sp.path) {
-				a.fileIc(c, baseName(sp.path))
+				// 14px 的小字徽标按槽位正中居中,而旁边的正文是按行盒居中、字形整体偏下:
+				// 大写缩写看着比文件名高半截。顶部补 3px 外边距把徽标整体向下推约 1.5px,与文字中线对齐
+				a.fileIc(c, baseName(sp.path)).Margin(3, 0, 0, 0)
 			}
 		}
 		if sp.state == "run" && (sp.fam != famThink || !mqOn) { // 思考行有跑马灯时标题常驻静态,其余运行中的行(含没有跑马灯的思考)都是流光
