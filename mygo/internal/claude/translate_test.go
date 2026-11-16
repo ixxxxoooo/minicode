@@ -279,6 +279,31 @@ func TestPlanStreamingThenPermission(t *testing.T) {
 	}
 }
 
+func TestSubagentPromptField(t *testing.T) {
+	tr := NewTranslator("/w")
+	st := reduce(t, tr,
+		`{"type":"assistant","message":{"id":"a","content":[{"type":"tool_use","id":"ag1","name":"Task","input":{"description":"审查","subagent_type":"general-purpose","prompt":"只读检查 handlers"}}]}}`,
+	)
+	c := st.Items[0].(*core.SubagentCard)
+	if c.Prompt != "只读检查 handlers" {
+		t.Fatalf("应保存任务提示词:%q", c.Prompt)
+	}
+}
+
+func TestSubagentParentHardening(t *testing.T) {
+	tr := NewTranslator("/w")
+	tr.tools["ag1"] = &toolInfo{name: "Task"}
+	st := core.NewState()
+	st.Apply(core.EvAppend{Item: core.NewSubagent("ag1", "general-purpose", "审查", core.SubRunning)})
+	for _, e := range tr.Handle(parseLine(`{"type":"assistant","parent_tool_use_id":"ag1","message":{"id":"c","content":[{"type":"tool_use","id":"r2","name":"Grep","input":{"pattern":"TODO"}}]}}`)) {
+		st.Apply(e)
+	}
+	card := st.Items[0].(*core.SubagentCard)
+	if len(card.Children) != 1 {
+		t.Fatalf("parentOf 应从 tools 表补登记并嵌套:%#v", card.Children)
+	}
+}
+
 func TestSubagentAndBackgroundTask(t *testing.T) {
 	tr := NewTranslator("/w")
 	st := reduce(t, tr,

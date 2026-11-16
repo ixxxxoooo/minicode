@@ -1,6 +1,9 @@
 package core
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // Item 是时间线上的一个条目。具体类型都是指针,归约器原地修改它们。
 type Item interface{ ItemID() string }
@@ -120,6 +123,7 @@ type QuestionRequest struct {
 // SubagentCard 是子 Agent 卡片,内部嵌套它自己的时间线。
 type SubagentCard struct {
 	ID, AgentType, Description string
+	Prompt                     string // Task/Agent 的 input.prompt,在子代理标签里当「任务」展示
 	Status                     SubagentStatus
 	Children                   []Item
 	TaskID                     string
@@ -139,6 +143,46 @@ func NewSubagent(id, agentType, desc string, st SubagentStatus) *SubagentCard {
 
 // Active 是否仍在运行(含后台)。
 func (s *SubagentCard) Active() bool { return s.Status.Active() }
+
+// PendingPermissions 统计子代理时间线里尚未处理的权限请求数(用于主流调用卡徽标)。
+func (s *SubagentCard) PendingPermissions() int {
+	n := 0
+	var walk func(items []Item)
+	walk = func(items []Item) {
+		for _, it := range items {
+			switch v := it.(type) {
+			case *PermissionRequest:
+				if v.Resolved == "" {
+					n++
+				}
+			case *SubagentCard:
+				walk(v.Children)
+			}
+		}
+	}
+	walk(s.Children)
+	return n
+}
+
+// SubLatestStep 返回子代理当前在做什么的一句话(工具标题或 LastTool)。
+func (s *SubagentCard) SubLatestStep() string {
+	if s.LastTool != "" {
+		return s.LastTool
+	}
+	for i := len(s.Children) - 1; i >= 0; i-- {
+		switch v := s.Children[i].(type) {
+		case *ToolCall:
+			if v.Status == ToolRunning || v.Title != "" {
+				return v.Title
+			}
+		case *Thinking:
+			if strings.TrimSpace(v.Text) != "" {
+				return "思考"
+			}
+		}
+	}
+	return ""
+}
 
 // StampStart 运行中的卡片第一次进入时间线时记录开始时间与最近活动。
 func (s *SubagentCard) StampStart(now int64) {

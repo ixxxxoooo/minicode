@@ -153,7 +153,16 @@ func (t *Translator) Handle(v obj) []core.Event {
 }
 
 func (t *Translator) parentOf(v obj) string {
-	if p := str(v, "parent_tool_use_id"); p != "" && t.subagents[p] {
+	p := str(v, "parent_tool_use_id")
+	if p == "" {
+		return ""
+	}
+	if !t.subagents[p] {
+		if info := t.tools[p]; info != nil && (info.name == "Task" || info.name == "Agent") {
+			t.subagents[p] = true
+		}
+	}
+	if t.subagents[p] {
 		return p
 	}
 	return ""
@@ -495,6 +504,7 @@ func (t *Translator) toolUse(block obj, parent string) []core.Event {
 			st = core.SubBackground
 		}
 		card := core.NewSubagent(id, typ, str(input, "description"), st)
+		card.Prompt = str(input, "prompt")
 		return []core.Event{core.EvAppend{Parent: parent, Item: card}}
 	}
 	return []core.Event{core.EvAppend{Parent: parent, Item: BuildTool(id, name, input, t.Cwd)}}
