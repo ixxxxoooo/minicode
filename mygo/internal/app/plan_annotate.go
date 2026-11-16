@@ -54,13 +54,18 @@ func splitPlanBlocks(md string) []string {
 }
 
 func (a *App) planPara(c *ui.Context, planID string, ix int, text string) {
-	ui.Row(c).Key("plan-p-"+itoa(ix)).Gap(8).AlignItems(ui.Start).Margin(0, 0, 4, 0).Children(func() {
+	row := ui.Row(c).Key("plan-p-"+itoa(ix)).Gap(8).AlignItems(ui.Start).Margin(0, 0, 4, 0)
+	hov := row.Hovered() // 批注按钮只在悬停到这一段时出现,平时不占眼
+	row.Children(func() {
 		ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 			markdown.View(c, padCode(text), a.mdOptions())
 		})
-		kit.Ib(c, "chat", kit.IbOpt{Small: true, Tip: "批注并继续规划"}).OnClick(func() {
+		btn := kit.Ib(c, "chat", kit.IbOpt{Small: true, Tip: "批注并继续规划"}).OnClick(func() {
 			a.annotatePlan(planID, text)
 		})
+		if !hov {
+			btn.Opacity(0)
+		}
 	})
 }
 
