@@ -29,6 +29,7 @@ func mdPreserveBody(origBody string, orig mdBodySplit, newBody string) string {
 		out := mdPreserveRoundTripBody(origBody, newBody)
 		return out
 	}
+	newBody = mdFixMarks(origBody, newBody)
 	neu := mdSplitBodyBlocks(newBody)
 	merged := mdMergeBlockParts(orig.parts, orig.lead, neu.parts, neu.lead, newBody, origBody)
 	return merged
@@ -74,7 +75,7 @@ func mdBlockWouldNormalize(raw string) bool {
 	if trim == "" || mdIsThematicBreak(trim) { // 分隔线序列化会丢,但没改动的块保持原样,编辑别的段落不受影响,不算
 		return false
 	}
-	ser := strings.TrimSpace(richtext.ParseMarkdown(raw).Markdown())
+	ser := mdFixMarks(trim, strings.TrimSpace(richtext.ParseMarkdown(raw).Markdown()))
 	return mdLooseKey(trim) != mdLooseKey(ser)
 }
 
@@ -541,4 +542,19 @@ func fenceLangs(body string) []string {
 		}
 	}
 	return langs
+}
+
+// mdFixMarks 把序列化器擅自改写成 HTML 的强调标记换回 Markdown。
+// 库(richtext/markdown.go)序列化后会读回校验,块里只要有一个分隔符读不回原样,就把这一块里所有加粗 / 斜体 / 删除线
+// 整块写成 <strong> / <em> / <del>——「**看门狗会记栈**:…」这种中文紧跟全角标点的写法就会这样,编辑该段落后原文被换成 HTML 标签。
+// 原文里本来就没有这个标签、结果里却多出来的,是库改写的,换回 ** / * / ~~(原文里的 ** 本来就被解析成了加粗)。
+func mdFixMarks(orig, out string) string {
+	for _, m := range [][3]string{{"strong", "**", "**"}, {"em", "*", "*"}, {"del", "~~", "~~"}} {
+		open, closeTag := "<"+m[0]+">", "</"+m[0]+">"
+		if strings.Contains(orig, open) || !strings.Contains(out, open) {
+			continue
+		}
+		out = strings.ReplaceAll(strings.ReplaceAll(out, open, m[1]), closeTag, m[2])
+	}
+	return out
 }

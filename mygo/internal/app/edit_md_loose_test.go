@@ -26,3 +26,16 @@ func TestMdNormalizedIgnoresEquivalentSyntax(t *testing.T) {
 		t.Errorf("只含等价写法的文档应为 0,实际 %d", got)
 	}
 }
+
+// 序列化器把「**中文**:全角标点」整块写成 <strong> 时,换回 **;原文自己写的 <strong> 不动。
+func TestMdFixMarks(t *testing.T) {
+	if got := mdFixMarks("- **看门狗**:x", "- <strong>看门狗</strong>:x"); got != "- **看门狗**:x" {
+		t.Errorf("应换回 **:%q", got)
+	}
+	if got := mdFixMarks("原文 <strong>a</strong>", "原文 <strong>a</strong>"); got != "原文 <strong>a</strong>" {
+		t.Errorf("原文自带的标签不应被改:%q", got)
+	}
+	if mdBlockWouldNormalize("- **看门狗会记栈**:主线程停滞超过 400 ms,`diag.Watchdog` 每 100 ms 记一次。") {
+		t.Error("加粗被序列化成 HTML 后换回,不应再算规范化")
+	}
+}
