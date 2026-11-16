@@ -27,13 +27,19 @@
   /** 阶段:key → [名称, 色类] */
   const K = { conn: ['连接 Claude', 'k-conn'], prep: ['本地准备', 'k-prep'], wait: ['等待模型', 'k-wait'], think: ['思考', 'k-think'], write: ['生成', 'k-write'], tool: ['工具', 'k-tool'], ask: ['等你确认', 'k-ask'], fin: ['收尾', 'k-fin'] };
 
-  /** 等待行:state = conn / wait / slow / think / fin;el = 已等秒数 */
-  const waitRow = (state, el, o = {}) => {
-    const label = { conn: '正在连接 Claude…', wait: '等待模型响应…', slow: '等待模型响应…', think: '思考中…', fin: '收尾中…' }[state];
-    const chips = (o.chips || []).map(([c, t]) => `<span class="chip ${c}">${t}</span>`).join('');
-    return `<div class="rt-wait ${state === 'slow' ? 'slow' : ''}" data-act="rt-steps"><span class="si"><span class="spin"></span></span><span class="shimmer">${label}</span><span class="el">${el}</span>${chips}</div>${o.hint ? `<div class="rt-hint">${ic('alert', 's12')}<div>${o.hint}</div></div>` : ''}${o.steps ? waitSteps(o.steps) : ''}`;
+  /** 动画字符帧(Claude Code 同款;主分支 appearance.rs 的 SPINNERS 同源) */
+  const GLYPHS = { cc: ['·', '✢', '✳', '✶', '✻', '✽', '✻', '✶', '✳', '✢'], poetic: ['◜', '◠', '◝', '◞', '◡', '◟'], geek: ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'], min: ['●', '◉', '○', '◉'] };
+  const glyph = (set = 'cc', i = 4, cls = '') => `<span class="rt-gl ${cls}" data-set="${set}" data-i="${i}">${GLYPHS[set][i % GLYPHS[set].length]}</span>`;
+
+  /** 状态行:整个回合里始终在场。state = conn / wait / think / write / tool / fin / ask / slow;el = 已用时 */
+  const STAGE_WORD = { conn: '连接 Claude', wait: '等待模型', think: '思考', write: '生成', tool: '运行 Bash', fin: '收尾', slow: '等待模型' };
+  const statusRow = (state, el, o = {}) => {
+    if (state === 'ask') return `<div class="rt-st ask"><span class="gc">${ic('pause', 's12')}</span><span>等待你的批准</span></div>`;
+    const verb = o.verb || '沉思中…';
+    const meta = `${el} · <span class="rt-sw">${STAGE_WORD[state]}</span> · Esc 中断`;
+    return `<div class="rt-st ${state === 'slow' ? 'slow' : ''}" data-act="rt-steps"><span class="gc">${glyph(o.set || 'cc', o.i ?? 4)}</span><span class="shimmer vb">${verb}</span><span class="rt-meta">(${meta})</span></div>${o.hint ? `<div class="rt-hint">${ic('alert', 's12')}<div>${o.hint}</div></div>` : ''}${o.steps ? waitSteps(o.steps) : ''}`;
   };
-  const waitSteps = (rows) => `<div class="rt-steps">${rows.map(([ok, name, n]) => `<div class="r ${ok === 'now' ? 'now' : ''}"><span class="si" style="width:16px;display:grid;place-items:center">${ok === 'now' ? '<span class="spin"></span>' : ic('check', 's12 c-ok')}</span>${name}<span class="n">${n}</span></div>`).join('')}</div>`;
+  const waitSteps = (rows) => `<div class="rt-steps">${rows.map(([ok, name, n]) => `<div class="r ${ok === 'now' ? 'now' : ''}"><span class="si" style="width:16px;display:grid;place-items:center">${ok === 'now' ? glyph('cc', 4) : ic('check', 's12 c-ok')}</span>${name}<span class="n">${n}</span></div>`).join('')}</div>`;
 
   /** 脚注里的迷你分段条:segs = [[key, 占比]] */
   const bar = (segs) => `<span class="rt-bar">${segs.map(([k, w]) => `<i class="${K[k][1]}" style="flex:${w}"></i>`).join('')}</span>`;
@@ -47,7 +53,7 @@
   const cacheBlock = `<div class="kv"><span>缓存</span><span><b style="color:var(--ok)">命中 98%</b> · 读 25.7k · 写 17 · 未缓存 4</span></div>
     <div class="kv"><span>上下文</span><span>26.2k tokens · 工作区 5 个文件夹</span></div>`;
 
-  P['resp-time'] = () => `<div class="ds" style="max-width:1240px">${head('会话流 · 响应耗时与等待', '解决「点发送后十几秒没反应、不知道慢在哪」。三件事:① 发送后立刻出现一行「等待行」(旋转 + 阶段 + 已等秒数),拿到第一个字才让位给正文,慢到一定程度直接写出可能的原因;② 助手回复脚注的「用时」带一条迷你分段条,点开是 Chrome DevTools Timing 式的瀑布弹卡,逐阶段、逐次模型调用列出耗时;③ 每次模型调用「有没有命中缓存」在第一个字到达时就知道,逐次记录并显示在瀑布弹卡里。')}
+  P['resp-time'] = () => `<div class="ds" style="max-width:1240px">${head('会话流 · 响应耗时与等待', '解决「点发送后十几秒没反应、不知道慢在哪」。三件事:① 发送的同一帧起,会话流尾有一行始终在场的「状态行」(Claude Code 式动画字符 + 动词 + 已用时 · 当前阶段),直到回合结束,中间任何阶段都不留白,慢到一定程度写出可能的原因;② 助手回复脚注的「用时」带一条迷你分段条,点开是 Chrome DevTools Timing 式的瀑布弹卡,逐阶段、逐次模型调用列出耗时;③ 每次模型调用「有没有命中缓存」在第一个字到达时就知道,逐次记录并显示在瀑布弹卡里。')}
     ${sec('一个回合的阶段(哪一段算谁的)', '全部来自 claude 的真实事件,不靠猜。每段都能回答「这时在等谁」:自己、模型、工具,还是你。', `<div class="snip" style="height:auto;width:1040px;padding:6px 14px">${tbl([['阶段', 120], ['起止(事件)', 300], ['在等谁', 90], ['说明', 0]], [
       [`<span class="rt-bar" style="width:18px;vertical-align:middle"><i class="k-conn"></i></span> 连接 Claude`, '发送 → 进程握手完成(仅冷启动才有)', '本机', '预热过的进程没有这一段;冷启动实测 0.2~0.6 s'],
       [`<span class="rt-bar" style="width:18px;vertical-align:middle"><i class="k-prep"></i></span> 本地准备`, '写入提示 → 收到 system status: requesting', '本机', '通常 < 0.1 s;小于 100 ms 不单独画'],
@@ -57,14 +63,36 @@
       [`<span class="rt-bar" style="width:18px;vertical-align:middle"><i class="k-tool"></i></span> 工具`, 'message_stop(stop_reason = tool_use)→ 第一个 tool_result', '本机', '命令 / 读写文件 / MCP;和步骤行里的耗时是同一段'],
       [`<span class="rt-bar" style="width:18px;vertical-align:middle"><i class="k-ask"></i></span> 等你确认`, '权限 / 提问 / 计划请求到达 → 你作答', '你', '<b>不算慢</b>:从「等待」里扣掉,单独成段,避免把你的思考时间算成模型慢'],
       [`<span class="rt-bar" style="width:18px;vertical-align:middle"><i class="k-fin"></i></span> 收尾`, '最后一个 message_stop → result', '上游 / 后台', '正常 < 0.5 s;实测过一次 53 s(上游迟迟不关流),超过 3 s 要在弹卡里点名']])}</div>`)}
-    ${sec('等待行:发送后立刻出现,拿到第一个字才让位', '对标 Claude Code(发送即出 spinner + 已用时)。行放在会话流末尾、刚发出的用户消息下面,和步骤行同一栅格(16px 图标列 + 文字);只在「还没有任何可读内容」的阶段出现:连接 / 等待模型 / 思考 / 收尾。第一个文字或工具步骤出现的那一帧,等待行淡出(120 ms),不留空位、不抖动。已用时 0.5 秒以后才开始显示(之前只有旋转),每 100 ms 刷新一位小数,tabular-nums 防抖。', grid(
-      cell('冷启动:连接中', snip(waitRow('conn', '0.4 s', { chips: [['', '首次启动']] })), '进程没预热 / 被空闲回收后第一次发送。预热过(状态栏「已连接」)不会出现这一态。'),
-      cell('等待模型(正常)', snip(waitRow('wait', '2.1 s', { chips: [['', '上下文 26k']] })), '请求已发出,等上游第一个字节。右侧 chip 给本次请求的体量(上次回合结束时的上下文用量),让用户知道「为什么要等」。'),
-      cell('等待较久(> 8 s)', snip(waitRow('slow', '11.3 s', { chips: [['', '上下文 52k']], hint: '比平时慢。这次请求带着约 <b>52k tokens</b> 的上下文;工作区有 <b>4 个附加文件夹</b>并读取了它们的 CLAUDE.md,这部分每次都计入。 <a data-act="rt-tip">[编辑工作区…]</a>' })), '8 秒起整行与已用时转琥珀色,下面多一张提示卡,按「慢因规则」(见下表)挑最可能的一条写,尾部可带一个动作按钮;不弹窗、不打断,可关闭(设置 → 对话 → 显示慢响应提示)。'),
-      cell('展开:阶段清单', snip(waitRow('wait', '5.8 s', { steps: [['ok', '连接 Claude', '已就绪'], ['ok', '本地准备', '0.1 s'], ['now', '等待模型 · 第 1 次调用', '5.7 s']] })), '点等待行展开 / 收起(再点收起)。已完成的阶段打勾带耗时,当前阶段旋转;展开状态随回合结束丢弃。'),
-      cell('工具之后再次等待', snip(`${F.step('bash', 'echo hi', 'Bash', '0.8 s')}${waitRow('wait', '3.9 s', { chips: [['', '上下文 26k']] })}`), '第 2 次模型调用同样出现等待行(工具步骤在上、等待行在下)。第一个字节一到,等待行就让位,所以缓存结论不在等待行里,放在回合结束后的瀑布弹卡。'),
-      cell('收尾', snip(waitRow('fin', '12.4 s', { hint: '最后一段回复已经出完,Claude 还没返回「完成」。常见于上游迟迟不关流或有后台任务在收尾;可以直接发新消息,不用等。' })), '最后一个字之后超过 3 秒仍没结束才出现(否则不画),并转琥珀色;输入框始终可用。'))
+    ${sec('状态行:整个回合里始终在场,永不留白', '对标 Claude Code 与主分支(Rust 版)的「处理中」行:发送的同一帧就出现,直到回合结束才消失,中间不管模型在想、在写、在跑工具,流尾始终有一行会动的状态。形态:动画字符(· ✢ ✳ ✶ ✻ ✽,每 150 ms 换一帧,强调色)+ 动词(「沉思中…」,一个回合内固定不换,文字流光)+ 灰色括号 (已用时 · 当前阶段 · Esc 中断)。动词与字符跟「等待动画」风格走(设置 → 外观,6 种,默认 Claude Code)。阶段词在换阶段时淡入(120 ms),不整行重绘。', grid(
+      cell('发送瞬间(冷启动)', snip(`<div class="t3" style="margin-bottom:8px">${F.user('看一下路由大小写问题')}</div>${statusRow('conn', '0.4s')}`), '点发送的<b>同一帧</b>:用户消息已在流里,状态行已在流尾——不等后端回「回合开始」,也不等进程启动(冷启动时后端先发用户消息再启动进程)。'),
+      cell('等待模型(正常)', snip(statusRow('wait', '2.1s')), '动词固定为一个(本回合「沉思中…」),阶段词写「等待模型」。已用时 1 秒内不显示数字,之后每 100 ms 刷新,tabular-nums 防抖。'),
+      cell('思考 / 生成 / 工具', snip(`${F.note('brain', '思考 · 3 秒')}${statusRow('think', '5.8s', { i: 7 })}`), '状态行不因为别处有内容就消失:思考块、正文、工具行各自有自己的动态,状态行仍在最下面陪着;阶段词随之换成「思考 / 生成 / 运行 Bash」。'),
+      cell('正文流式输出中', snip(`<div class="md"><p>问题出在路由表直接用原始路径做键,大小写不同的请求会……</p></div>${statusRow('write', '9.4s', { i: 2 })}`), '正文在状态行<b>上方</b>长高,状态行始终贴在最后一行下面、高度固定 26px,所以内容再长也不会出现「文字写完了、下面空一截」。'),
+      cell('等待较久(> 8 s)', snip(statusRow('slow', '11.3s', { i: 6, hint: '比平时慢。这次请求带着约 <b>52k tokens</b> 的上下文;工作区有 <b>4 个附加文件夹</b>并读取了它们的 CLAUDE.md,这部分每次都计入。 <a data-act="rt-tip">[编辑工作区…]</a>' })), '8 秒起整行转琥珀,下面多一张提示卡(规则见下表);点状态行展开阶段清单。'),
+      cell('展开:阶段清单', snip(statusRow('wait', '5.8s', { steps: [['ok', '连接 Claude', '已就绪'], ['ok', '本地准备', '0.1s'], ['now', '等待模型 · 第 1 次调用', '5.7s']] })), '点状态行展开 / 收起(再点收起)。已完成的阶段打勾带耗时,当前阶段用同一个动画字符。'),
+      cell('收尾', snip(statusRow('fin', '12.4s', { i: 3, hint: '最后一段回复已经出完,Claude 还没返回「完成」。常见于上游迟迟不关流或有后台任务在收尾;可以直接发新消息,不用等。' })), '最后一个字之后立刻显示「收尾」(不再等 3 秒才出现),超过 3 秒转琥珀并给提示;输入框始终可用。'),
+      cell('等你确认', snip(statusRow('ask', '')), '权限 / 提问 / 计划卡在输入框位置,状态行换成静止的「等待你的批准」(暂停图标、琥珀、不动),不再假装在转;作答后立刻恢复动画。'),
+      cell('回合结束:收进脚注', snip(`<div class="md"><p>已修复,测试通过。</p></div><div style="opacity:.55;transform:translateY(0)">${statusRow('fin', '17.9s')}</div>${foot('用时 17.9 秒', [['wait', 5.7], ['write', .5], ['tool', .8], ['wait', 3.9], ['write', .6]])}`), '结束时状态行淡出(160 ms)并把高度收到 0(CollapseHide),同一时刻脚注淡入;下面的内容不跳、不留 26px 空洞。'))
     )}
+    ${sec('不留白保证:每个时刻都有会动的东西', '把一个回合逐阶段摊开,列出「流里能看到什么在动」。任何一行的「状态行」列都不能是空——这就是本节的验收标准;「额外在动」列是它之外的动态,有就更好,没有也不能空。', `<div class="snip" style="height:auto;width:1040px;padding:6px 14px">${tbl([['时刻', 190], ['状态行写什么', 220], ['额外在动', 260], ['过渡']], [
+      ['点发送的同一帧', '连接 Claude / 本地准备', '用户消息已入流', '用户消息与状态行同帧淡入下落(120 ms)'],
+      ['请求已发出,等第一个字节', '等待模型 + 已用时', '(无)', '阶段词淡入;8 s 转琥珀'],
+      ['第一个字节到,思考块开始', '思考', '思考行转圈 +「思考中」', '思考行自上而下淡入,状态行不动'],
+      ['正文流式输出', '生成', '正文逐字增长', '正文在状态行上方长高'],
+      ['tool_use 参数在流、工具还没开始', '生成', '工具行出现(运行态)', '工具行淡入'],
+      ['工具运行中', '运行 <工具名>', '工具行转圈、命令输出实时尾读', '—'],
+      ['工具结束 → 下一次请求之间', '等待模型(第 2 次调用)', '工具行已完成态', '阶段词由「运行」淡入成「等待模型」,不空档'],
+      ['权限 / 提问 / 计划卡待处理', '等待你的批准(静止)', '输入框位置的卡片', '作答后立刻恢复动画'],
+      ['最后一个字之后、result 之前', '收尾', '(无)', '> 3 s 转琥珀 + 提示'],
+      ['回合结束', '(淡出 160 ms)', '脚注淡入', '高度收折,无跳动'],
+      ['出错 / 中断', '(淡出)', '错误提示卡 / 「已中断」行', '同回合结束']])}</div>`)}
+    ${sec('等待动画风格(设置 → 外观 → 等待动画)', '直接沿用主分支的 6 种风格,字符与动词表一致;选中后状态行、思考行、各步骤的转圈都用同一种字符动画,预览行在设置里实时显示。默认 Claude Code。', `<div class="snip" style="height:auto;width:1040px;padding:6px 14px">${tbl([['风格', 110], ['动画字符', 200], ['动词(每个回合固定挑一个)']], [
+      ['经典', glyph('cc', 5) + ' &nbsp;· ✢ ✳ ✶ ✻ ✽ ✻ ✶ ✳ ✢', '思考中 · 琢磨中 · 推敲中 · 构思中 · 斟酌中 · 酝酿中 · 梳理中 · 盘算中'],
+      ['趣味', glyph('cc', 3) + ' &nbsp;同上', '摸鱼中 · 炼丹中 · 薅头发中 · 掐指一算中 · 憋大招中 · 搬砖中 · 喂猫中 · 冲咖啡中'],
+      ['Claude Code(默认)', glyph('cc', 4) + ' &nbsp;同上', '沉思中 · 踱步中 · 冥想中 · 酿造中 · 蹦跶中 · 琢磨透中 · 神游中 · 凝思中'],
+      ['诗意', glyph('poetic', 2) + ' &nbsp;◜ ◠ ◝ ◞ ◡ ◟', '凝神中 · 遐思中 · 斟字酌句中 · 静待花开中 · 拾掇思绪中 · 望月沉吟中 · 研墨中 · 听风中'],
+      ['极客', glyph('geek', 4) + ' &nbsp;⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏', '编译宇宙中 · 梳理依赖中 · 调优中 · 遍历语法树中 · 回收内存中 · 预热缓存中 · 握手中 · 解析意图中'],
+      ['极简', glyph('min', 1) + ' &nbsp;● ◉ ○ ◉', '工作中']])}<div class="t3 fs-cap" style="padding:8px 4px;line-height:1.7">动词按「会话 id + 回合开始时刻」稳定挑选,同一回合不会乱跳;有进行中的待办时,动词换成待办的进行时(如「补充大小写测试…」),对标 Claude Code 的状态行。动画限频 10 帧 / 秒(换帧间隔 150 ms),已用时 100 ms 刷新一次——不为一个转圈让整个会话流每秒重排 60 次。减弱动态 / 动效关闭时:字符固定为第一帧、不流光,已用时照常更新。</div></div>`)}
     ${sec('慢因规则(只写能从事件里判断出来的)', '提示只给「最可能的一条」,按优先级匹配;文案写事实 + 下一步,不猜测、不责怪。只用等待那一刻就能确定的事实(上下文大小、工作区设置),<b>不</b>在等待中猜「缓存没命中」「思考强度高」——这两件事要等第一个字节到达后才知道,放在回合结束后的瀑布弹卡里。整组提示可在设置里关掉。', `<div class="snip" style="height:auto;width:1040px;padding:6px 14px">${tbl([['条件(按优先级)', 300], ['文案', 0], ['下一步']], [
       ['等待模型 > 8 s 且上下文 > 20k 且工作区读取了 ≥ 1 个附加文件夹的 CLAUDE.md', '比平时慢。这次请求带着约 N k tokens 的上下文;工作区有 N 个附加文件夹并读取了它们的 CLAUDE.md,这部分每次都计入。', '按钮「编辑工作区…」:关掉「读取 CLAUDE.md」(Claude Code 默认也不读)'],
       ['等待模型 > 8 s 且上下文 > 40k', '比平时慢。这次请求带着约 N k tokens 的上下文,模型要先读完才会出第一个字;长会话可以压缩上下文。', '按钮「压缩上下文」'],
@@ -105,7 +133,8 @@
     ${sec('实现状态', '与 Go 代码逐项对应;仅 go build 通过,未经开发版 computer use 实测的一律「未测试」。演示后端触发词:发「慢」= 冷启动 + 11 秒等待 + 收尾;「多次」= 两次模型调用 + 工具 + 缓存命中;其余普通提问 = 1.4 秒短等待。', tbl([['项', 240], ['说明', 0], ['状态', 70]], [
       ['后端分阶段计时', 'claude/stages.go stageClock(连接 / 本地准备 / 等待模型 / 思考 / 生成 / 工具 / 等你 / 收尾 + 每次调用的缓存,子 Agent 事件不参与);backend.go 接入;日志「回合完成」带「阶段 / 调用次数 / 缓存」;stages_test.go 已写、未运行', st('part')],
       ['实时阶段事件', 'core.EvTurnPhase → State.Live / LiveDone;演示后端同样发出(demo/stages_demo.go)。未测试', st('part')],
-      ['等待行', 'app/flow_wait.go:发送后立刻出现(连接 / 准备 / 等待模型,收尾 > 3 s)、出字即让位、8 秒转琥珀、点击展开阶段清单、上下文 chip。未测试', st('part')],
+      ['状态行(始终在场)', 'app/flow_wait.go:发送同一帧出现(界面先把回合置为运行中,后端再确认)、整个回合不消失、阶段词淡入、8 秒转琥珀、点击展开阶段清单、结束时淡出并收折;后端先发用户消息再启动进程。未测试', st('part')],
+      ['等待动画风格(6 种)', 'app/spinner_style.go:字符帧与动词表移植自主分支;设置 → 外观 → 等待动画(appearance.spinner,默认 Claude Code)。未测试', st('part')],
       ['慢因提示卡', 'app/flow_wait_hint.go 按上表;设置 → 对话 → 显示慢响应提示(chat.slowHint);动作按钮「编辑工作区…」「压缩上下文」。未测试', st('part')],
       ['脚注迷你分段条 + 瀑布弹卡', 'app/turn_timing_pop.go:点击「用时」开弹卡,窄档隐藏条;最多 10 行;含「等你确认」时标题写「模型 x s」;底部缓存 / 上下文 / 一句结论。设计稿里的「悬停即开」Go 版改为点击(避免鼠标经过误触)。未测试', st('part')],
       ['缓存判定', 'core.CallInfo.Verdict / Text(命中 / 部分命中 / 首次写入 / 未命中;第三方不返回缓存字段时不判);弹卡里逐次调用显示。等待行不放缓存 chip(见上)', st('part')],
@@ -113,6 +142,12 @@
       ['历史回放分段', '回放没有逐段数据,脚注沿用旧样式(设计如此,不伪造)', st('ok')],
       ['复制诊断 / 动作按钮「复制诊断」', '设计稿慢因表里提过,Go 未做', st('todo')]]))}
   </div>`;
+
+  /* ───── 动画字符:每 150 ms 换一帧(减弱动态时固定第一帧) ───── */
+  setInterval(() => {
+    if (document.body.classList.contains('no-motion')) return;
+    document.querySelectorAll('.rt-gl').forEach((g) => { const set = GLYPHS[g.dataset.set] || GLYPHS.cc; const i = (+g.dataset.i + 1) % set.length; g.dataset.i = i; g.textContent = set[i]; });
+  }, 150);
 
   /* ───── 交互:展开阶段清单、脚注弹卡 ───── */
   document.addEventListener('click', (e) => {

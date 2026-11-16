@@ -23,6 +23,7 @@
     spark: '<path d="M12 4v4M12 16v4M4 12h4M16 12h4M7 7l2 2M15 15l2 2M17 7l-2 2M9 15l-2 2"/>',
     wand: '<path d="m5 19 9-9M13 5v3M16.5 6.5 14.5 8.5M18 10h3M7 5v2M6 6h2"/>',
     send: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+    pause: '<path d="M8 5v14M16 5v14"/>',
     stop: '<rect x="7.5" y="7.5" width="9" height="9" rx="1.8" fill="currentColor"/>',
     panelL: '<rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M9.5 4.5v15"/>',
     panelR: '<rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M14.5 4.5v15"/>',

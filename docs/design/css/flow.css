@@ -237,3 +237,11 @@ body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 
 .rt-pop .tip { margin-top: 8px; padding: 6px 8px; border-radius: var(--r-md); background: var(--warn-soft); line-height: 1.6; }
 .tfoot .rt-foot { display: inline-flex; align-items: center; gap: 6px; height: 20px; padding: 0 6px; border-radius: var(--r-sm); cursor: default; transition: background var(--dur-fast); }
 .tfoot .rt-foot:hover, .tfoot .rt-foot.on { background: var(--fill-1); color: var(--tx-2); }
+
+/* 状态行:整个回合里始终在场(resp-time 页) */
+.rt-st { display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 8px; margin: 0 -8px; border-radius: var(--r-sm); color: var(--tx-3); font-variant-numeric: tabular-nums; cursor: default; animation: rise var(--dur-base) var(--ease-out); }
+.rt-st:hover { background: var(--fill-1); }
+.rt-st .gc { width: 16px; height: 16px; display: grid; place-items: center; flex: none; }
+.rt-gl { display: inline-block; width: 14px; text-align: center; color: var(--ac); font-size: 14px; line-height: 1; }
+.rt-st .rt-meta { color: var(--tx-4); white-space: nowrap; } .rt-st .vb { flex: none; } .rt-st .rt-meta .rt-sw { animation: fade var(--dur-base) var(--ease-out); }
+.rt-st.slow, .rt-st.slow .rt-meta, .rt-st.ask { color: var(--warn); } .rt-st.slow .rt-gl { color: var(--warn); }
