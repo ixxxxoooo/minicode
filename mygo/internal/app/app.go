@@ -663,6 +663,16 @@ func (a *App) SeedDemoExtras() {
 	a.SeedUpdateDemo("download", 42)
 }
 
+// SeedDemoData 演示模式启动时调用:只补各整页功能的演示数据源(自动化列表、画布 / 浏览器 / 自定义的演示源、
+// 输出面板预置),让演示版与设计稿一致、且不再读写用户真实的 ~/.minicode/canvases / automations.json。
+// 不打开编辑器标签、不选中审查标签(那是设计稿截图状态,见 SeedDemoExtras),以免和「恢复上次现场」冲突。
+func (a *App) SeedDemoData() {
+	a.demoExtra = true
+	a.auto = automation.NewStore(demo.AutomationsFor(a.demoPgAuto, a.now()))
+	a.au.sel = 2 // 设计稿里选中的是第二张卡
+	demo.SeedOutput(a.outAppend)
+}
+
 // ScrollFlowTop 把会话流滚到最上面(截图与设计稿对照用:设计稿的流停在顶部)。
 func (a *App) ScrollFlowTop() {
 	a.flowSt.Y = 0

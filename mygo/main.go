@@ -246,6 +246,8 @@ func main() {
 		a.SetRepo(demo.Repo())
 		a.SetProjects(demo.Projects(), "fixbug")
 		a.SeedDemoRegistry()
+		// 自动化 / 画布 / 浏览器 / 自定义用演示数据源,不碰真实 ~/.minicode 数据
+		a.SeedDemoData()
 		if os.Getenv("MINI_WS") != "" { // 调试 / 截图:启动即进入演示工作区
 			a.ActivateWorkspace("ws-fullstack")
 		}
