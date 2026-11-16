@@ -604,9 +604,7 @@ func (a *App) termMenu(c *ui.Context, body ui.Element, tp *termPanel) {
 			a.copyText = tp.selectedText()
 		}
 		if menuItem(m, "粘贴").Trailing("⌘V").Disabled(!live).Tooltip(map[bool]string{true: "终端还没启动"}[!live]).Chosen() && live {
-			if s := c.ReadClipboard(); s != "" {
-				tp.t.Paste(s)
-			}
+			a.termPasteReq = true
 		}
 		if menuItem(m, "全选").Trailing("⌘A").Chosen() {
 			tp.selectAll()
@@ -705,6 +703,11 @@ func (a *App) termSettings(c *ui.Context, anchor ui.Element) {
 			row("光标", func() {
 				if i := kit.Seg(c, []kit.SegItem{{Text: "块"}, {Text: "竖线"}, {Text: "下划线"}}, a.prefs.Int("term.cursor", 0), kit.SegOpt{Key: "tcur"}); i >= 0 {
 					a.prefs.Set("term.cursor", i)
+				}
+			})
+			row("选择即复制", func() {
+				if kit.Tog(c, a.prefs.Bool(pTermCopyOnSelect, false), "tcos") {
+					a.prefs.Set(pTermCopyOnSelect, !a.prefs.Bool(pTermCopyOnSelect, false))
 				}
 			})
 			ui.Text(c, "字体").TextColor(t.Tx3).FontSize(theme.FsCap).Margin(6, 0, 2, 4)

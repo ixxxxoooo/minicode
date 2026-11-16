@@ -5,6 +5,9 @@ import (
 	"strings"
 )
 
+// pTermCopyOnSelect 偏好:选择即复制(默认关,键与设置页 term.copyOnSelect 一致)。
+const pTermCopyOnSelect = "term.copyOnSelect"
+
 // termScrollback 读偏好 term.scrollback(默认 10000),夹紧到合理范围。
 func (a *App) termScrollback() int {
 	s := strings.TrimSpace(a.prefs.Str("term.scrollback", "10000"))

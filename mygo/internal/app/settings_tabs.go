@@ -489,6 +489,7 @@ var settingsTabs = []setTabDef{
 			rSeg("term.lineHeight", "行高", "", 1, "紧凑", "标准", "宽松"),
 			rSeg("term.cursor", "光标形状", "", 0, "块", "竖线", "下划线"),
 			rTog("term.blink", "光标闪烁", "", true),
+			rTog("term.copyOnSelect", "选择即复制", "在终端里选中文字(拖选、双击选词、三击选行)松手后自动复制到剪贴板", false),
 			rFld("term.scrollback", "回看行数", "滚轮可回看的历史输出行数;对之后新开的终端生效", "10000", 90, false, ""),
 			rTog("term.nerdFallback", "无 Nerd Font 时回退系统等宽", "图标显示成方框时可开启", true),
 			rSeg("term.tabs", "标签排列", "终端 ≥2 时横排在面板头或竖排在右侧;面板宽 <560 或窄档强制横向", 2, "横向", "竖向", "自动"),

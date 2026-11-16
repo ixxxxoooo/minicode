@@ -46,6 +46,7 @@ type termPanel struct {
 	compose   bool   // 输入法正在组字
 	preedit   string // 组字中的文字(显示在光标处,提交时由 InputText 送入)
 	focusIt   bool   // 下一帧把键盘焦点给终端(刚启动 / 刚重启)
+	selFresh  bool   // 这一次按下产生了新选区,松手时若开了「选择即复制」就复制
 	initCmd   string // shell 起来后自动输入的一条命令(安装语言服务器用)
 	cwd       string // 起始目录(空 = 项目根;文件树「在此处打开终端」用)
 
@@ -314,6 +315,7 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 				return true
 			}
 		}
+		tp.selFresh = true
 		switch {
 		case ev.Clicks >= 3:
 			tp.selectLine(p)
@@ -344,6 +346,16 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 	case ui.InputPointerUp:
 		if tp.t.MouseTracking() && ev.Mods&ui.Alt == 0 {
 			if a.termPointerToMouse(tp, ev) {
+				return true
+			}
+		}
+		fresh := tp.selFresh
+		tp.selFresh = false
+		if fresh && a.prefs.Bool(pTermCopyOnSelect, false) { // 选择即复制:拖选 / 双击选词 / 三击选行松手后
+			if s := tp.selectedText(); s != "" {
+				a.copyText = s
+				a.toast = "已复制选中的终端文字"
+				tp.sel.drag = false
 				return true
 			}
 		}

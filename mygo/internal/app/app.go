@@ -259,6 +259,7 @@ type App struct {
 	repo            vcs.Repo                       // 当前项目的仓库(演示为内存实现)
 	branch          string                         // 当前分支名(缓存,避免每帧查 git)
 	copyText        string                         // 待写入剪贴板的文字(需要 ui.Context 才能写,下一帧消费)
+	termPasteReq    bool                           // 终端右键「粘贴」:下一帧在 shortcuts 里读剪贴板粘进当前终端
 	toast           string                         // 待显示的一条轻提示(渲染时消费)
 	welcomeFocus    bool                           // 欢迎页的输入框自动聚焦
 	cardHov         bool                           // 当前这张工具卡是否被悬停(卡片内容里的悬停按钮用)
@@ -797,6 +798,15 @@ func (a *App) shortcuts(c *ui.Context) {
 	if a.copyText != "" {
 		c.WriteClipboard(a.copyText)
 		a.copyText = ""
+	}
+	if a.termPasteReq { // 终端右键菜单的「粘贴」:菜单回调里没有可靠的上下文,置标记在这里读剪贴板
+		a.termPasteReq = false
+		if tp := a.ide.tpc(); tp != nil && tp.t != nil {
+			if s := c.ReadClipboard(); s != "" {
+				tp.t.Paste(s)
+			}
+			tp.focusIt = true
+		}
 	}
 	if a.termShortcuts(c) {
 		return
