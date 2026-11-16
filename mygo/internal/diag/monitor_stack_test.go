@@ -11,6 +11,9 @@ func TestMainStackSummary(t *testing.T) {
 	if s == "" {
 		t.Fatal("栈摘要为空")
 	}
+	if strings.Contains(s, "mainStackSummary") {
+		t.Fatalf("取到了调用者自己的栈而不是 1 号 goroutine:%q", s)
+	}
 	frames := strings.Split(s, " <- ")
 	if len(frames) > 5 {
 		t.Fatalf("超过上限 5 帧:%d", len(frames))

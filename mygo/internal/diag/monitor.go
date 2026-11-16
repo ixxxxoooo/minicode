@@ -321,11 +321,18 @@ func mainStackSummary(limit int) string {
 	buf := make([]byte, 256<<10)
 	n := runtime.Stack(buf, true)
 	text := string(buf[:n])
-	// 1 号 goroutine 总是第一块,到第一个空行为止
-	if i := strings.Index(text, "\n\n"); i >= 0 {
-		text = text[:i]
+	// all=true 时第一块是「当前 goroutine」(看门狗自己),要按标题找 1 号块;块之间以空行分隔
+	var block string
+	for _, b := range strings.Split(text, "\n\n") {
+		if strings.HasPrefix(b, "goroutine 1 [") {
+			block = b
+			break
+		}
 	}
-	lines := strings.Split(text, "\n")
+	if block == "" {
+		return ""
+	}
+	lines := strings.Split(block, "\n")
 	var out []string
 	for i := 1; i+1 < len(lines) && len(out) < limit; i++ {
 		fn, loc := lines[i], lines[i+1]
