@@ -82,10 +82,17 @@ func (a *App) thinkMarqueeRow(c *ui.Context, sp step, tone ui.Color, open bool) 
 		st.Show = target
 	}
 	box.Children(func() {
-		tx := ui.Text(c, preview).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().NoWrap().Shrink(0)
-		if w := tx.Bounds().W; w > 0 {
-			st.TW = w
+		// 平移的是内层(文字),外框只负责裁剪;平移外框会把整个窗口一起移走
+		inner := ui.Row(c).Height(20).Shrink(0).AlignItems(ui.Center)
+		if st.Show > 0 {
+			inner.Translate(-st.Show, 0)
 		}
+		inner.Children(func() {
+			tx := ui.Text(c, preview).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().NoWrap().Shrink(0)
+			if w := tx.Bounds().W; w > 0 {
+				st.TW = w
+			}
+		})
 		if target > 0 { // 文本没有溢出时不画左侧渐隐
 			bg := t.BG.Over(t.Fill1)
 			ui.Box(c).Width(28).Height(20).Absolute().HitTest(func(_, _ float32, _ ui.Rect) bool { return false }).
@@ -99,9 +106,6 @@ func (a *App) thinkMarqueeRow(c *ui.Context, sp step, tone ui.Color, open bool) 
 		}
 	})
 	a.thinkMq[id] = st
-	if st.Show > 0 {
-		box.Translate(-st.Show, 0)
-	}
 	if !still {
 		_ = box.Loop("think-mq", 33*time.Millisecond, ui.Linear)
 	}
