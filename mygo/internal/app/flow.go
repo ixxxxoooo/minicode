@@ -299,30 +299,29 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 		var obj ui.Element
 		sep := func() { // 读取 / 编辑 / 写入:文件类型图标(GO / JS / MD…)放在文件名前面;左侧图标列仍是设计稿的工具族图标
 			if sp.path != "" && sp.fam != famThink && sp.obj == baseName(sp.path) {
-				// 14px 的小字徽标按槽位正中居中,而旁边的正文是按行盒居中、字形整体偏下:
-				// 大写缩写看着比文件名高半截。顶部补 3px 外边距把徽标整体向下推约 1.5px,与文字中线对齐
-				a.fileIc(c, baseName(sp.path)).Margin(3, 0, 0, 0)
+				// 徽标 / 动词 / 文件名 / 附注统一 LineHeight(1):行盒 = 字高,垂直居中时字形中线才在同一条水平线上
+				a.fileIc(c, baseName(sp.path))
 			}
 		}
 		if sp.state == "run" && (sp.fam != famThink || !mqOn) { // 思考行有跑马灯时标题常驻静态,其余运行中的行(含没有跑马灯的思考)都是流光
 			if sp.verb != "" {
-				kit.RunTextS(c, sp.verb, t.Tx1, func(e ui.Element) ui.Element { return e.TextColor(t.Tx2).Shrink(0).SingleLine() })
+				kit.RunTextS(c, sp.verb, t.Tx1, func(e ui.Element) ui.Element { return e.TextColor(t.Tx2).Shrink(0).SingleLine().LineHeight(1) })
 			}
 			// 设计稿:动词与对象一样的 .shimmer(底色 tx-3,高亮带扫到 tx-1),字号颜色同源,不让对象单独提亮成深色
 			sep()
-			obj = kit.RunTextS(c, sp.obj, t.Tx1, func(e ui.Element) ui.Element { return e.TextColor(t.Tx2).SingleLine().Shrink(1).MinWidth(0) })
+			obj = kit.RunTextS(c, sp.obj, t.Tx1, func(e ui.Element) ui.Element { return e.TextColor(t.Tx2).SingleLine().Shrink(1).MinWidth(0).LineHeight(1) })
 		} else {
 			// 字重规范(设计稿 v4):工具行的动词与对象都是常规字重,靠颜色分层——动词 Tx3 → 对象 Tx2 → 附注 Tx3 → 结果 Tx4;
 			// 思考行对象用 Tx3;流式折叠时标题常驻,跑马灯占标题与用时之间的剩余宽度。
 			if sp.verb != "" {
-				ui.Text(c, sp.verb).TextColor(t.Tx3).Shrink(0).SingleLine()
+				ui.Text(c, sp.verb).TextColor(t.Tx3).Shrink(0).SingleLine().LineHeight(1)
 			}
 			sep()
 			objCol := t.Tx2
-			if sp.fam == famThink || sp.fam == famExec { // 命令行的对象与动词「运行」同色(设计稿:命令是等宽长串,不比动词更深)
+			if sp.fam == famThink || sp.fam == famExec || sp.path != "" { // 命令与文件名同色(Tx3,与动词一致):对象是长串 / 文件名,不比动词更深
 				objCol = t.Tx3
 			}
-			obj = ui.Text(c, sp.obj).TextColor(objCol).SingleLine().Shrink(1).MinWidth(0)
+			obj = ui.Text(c, sp.obj).TextColor(objCol).SingleLine().Shrink(1).MinWidth(0).LineHeight(1)
 		}
 		mq := a.thinkMarqueeRow(c, sp, tone, open, row)
 		if at, ok := a.thinkMqHide[sp.id]; ok && kit.MotionOn() {
@@ -335,7 +334,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			obj.Strikethrough().TextColor(t.Tx3)
 		}
 		if sp.meta != "" && a.chatTier() != tierNarrow { // 窄档:附注(路径、行区间)让位
-			ui.Text(c, sp.meta).Font("monospace").FontSize(theme.Px(11)).TextColor(t.Tx3).SingleLine().Shrink(1).MinWidth(0)
+			ui.Text(c, sp.meta).Font("monospace").FontSize(theme.Px(11)).TextColor(t.Tx3).SingleLine().Shrink(1).MinWidth(0).LineHeight(1)
 		}
 		if !mqOn {
 			ui.Spacer(c).Grow(1)
