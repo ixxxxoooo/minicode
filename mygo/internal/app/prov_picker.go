@@ -44,7 +44,7 @@ func (a *App) cfgModels(c *ui.Context) {
 	t := a.tk
 	p := a.pvLoad()
 	activeID := p.store.ActiveID()
-	ui.Scroll(c).Key("cfg-models").MaxHeight(280).Children(func() {
+	kit.VScroll(c).Key("cfg-models").MaxHeight(280).Children(func() {
 		ui.Column(c).Children(func() {
 			// 官方组
 			a.cfgGroupHead(c, "official", "claude", "Claude 官方", strconv.Itoa(len(a.st.Models))+" 个模型", "", activeID == "")

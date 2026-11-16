@@ -171,7 +171,7 @@ func (a *App) sessions(c *ui.Context) {
 			})
 		}
 		a.projectsHeader(c, t.Scheme.ID != "c")
-		ui.Scroll(c).Key("sess").Grow(1).MinHeight(0).Children(func() {
+		kit.VScroll(c).Key("sess").Grow(1).MinHeight(0).Children(func() {
 			ui.Column(c).Children(func() { a.projectsList(c) })
 		})
 	})
@@ -263,7 +263,7 @@ func (a *App) sessionsB(c *ui.Context) {
 			kit.Ib(c, "edit", kit.IbOpt{Tip: "新对话 ⌘N"}).Size(26, 26).OnClick(a.NewSession)
 			a.addMenuButton(c)
 		})
-		ui.Scroll(c).Key("sessb").Grow(1).MinHeight(0).Children(func() {
+		kit.VScroll(c).Key("sessb").Grow(1).MinHeight(0).Children(func() {
 			ui.Column(c).Children(func() {
 				cur := ""
 				live, arch := sessionsSplit(proj) // 置顶的排最前

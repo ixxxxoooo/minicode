@@ -357,7 +357,7 @@ func (a *App) qpList(c *ui.Context, rows []qpRow, run func(int)) {
 	if n > qpMaxH {
 		n = qpMaxH
 	}
-	ui.Scroll(c).Key("qp-list").TrackScroll(&s.listSt).Height(n).Children(func() {
+	kit.VScroll(c).Key("qp-list").TrackScroll(&s.listSt).Height(n).Children(func() {
 		ui.Column(c).Padding(4).Children(func() {
 			last := "\x00"
 			for i, r := range rows {

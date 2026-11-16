@@ -79,7 +79,7 @@ func (a *App) scmBody(c *ui.Context) {
 		a.wizardBar(c)
 		a.scmCommitBox(c, len(staged))
 		a.scmReviewRow(c)
-		ui.Scroll(c).Key("scm").Grow(1).MinHeight(0).Children(func() {
+		kit.VScroll(c).Key("scm").Grow(1).MinHeight(0).Children(func() {
 			ui.Column(c).Padding(0, 0, 8, 0).Children(func() {
 				a.scmNestedHints(c)
 				if len(conf) > 0 {

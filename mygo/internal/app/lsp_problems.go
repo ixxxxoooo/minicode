@@ -29,7 +29,7 @@ func (a *App) realProblems(c *ui.Context) {
 		if scope == "ws" {
 			a.problemWsChrome(c)
 		}
-		ui.Scroll(c).Key("probs").Grow(1).MinHeight(0).Children(func() {
+		kit.VScroll(c).Key("probs").Grow(1).MinHeight(0).Children(func() {
 			ui.Column(c).Padding(4, 8).Gap(2).Children(func() {
 				for _, s := range sessions {
 					if s.state == lspReady {

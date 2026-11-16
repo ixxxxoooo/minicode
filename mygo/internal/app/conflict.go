@@ -282,7 +282,7 @@ func (a *App) conflictView(c *ui.Context, tb *ideTab) {
 			a.finishConflict(tb, s)
 		}
 	})
-	ui.Scroll(c).Key("conf-" + tb.ref).Grow(1).MinHeight(0).Children(func() {
+	kit.VScroll(c).Key("conf-" + tb.ref).Grow(1).MinHeight(0).Children(func() {
 		ui.Column(c).Padding(12).Gap(12).Children(func() {
 			if total == 0 {
 				ui.Text(c, "这个文件里没有冲突标记。").TextColor(t.Tx3)

@@ -52,7 +52,7 @@ func (a *App) scmExpandAllView(c *ui.Context) {
 			ui.Text(c, "全部展开").FontSize(theme.FsMicro).TextColor(t.Ac).Shrink(0)
 			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多"}).Menu(a.repoOverviewMenu)
 		})
-		ui.Scroll(c).Key("scm-expand").Grow(1).MinHeight(0).Children(func() {
+		kit.VScroll(c).Key("scm-expand").Grow(1).MinHeight(0).Children(func() {
 			ui.Column(c).Padding(0, 0, 8, 0).Gap(10).Children(func() {
 				for _, i := range a.repoOrder() {
 					i := i

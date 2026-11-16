@@ -74,7 +74,7 @@ func (a *App) noticePanel(c *ui.Context, anchor ui.Element) {
 				ui.Text(c, "没有通知").TextColor(t.Tx3).Padding(12, 10)
 				return
 			}
-			ui.Scroll(c).MaxHeight(360).Children(func() {
+			kit.VScroll(c).MaxHeight(360).Children(func() {
 				ui.Column(c).Padding(4).Children(func() {
 					for _, it := range a.nt.items {
 						a.noticeRow(c, it)

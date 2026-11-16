@@ -82,7 +82,7 @@ func (a *App) mdWriteSegs(tb *ideTab, md *mdState, s *mdSeg) {
 // mdSegsView 是含表格的 Markdown 的预览:一个整页滚动容器,里面按顺序放正文编辑器与表格网格。
 func (a *App) mdSegsView(c *ui.Context, tb *ideTab, md *mdState) {
 	a.mdRunPend(tb, md)
-	ui.Scroll(c).Key("mdsegs-" + tb.id).Grow(1).MinHeight(0).Children(func() {
+	kit.VScroll(c).Key("mdsegs-" + tb.id).Grow(1).MinHeight(0).Children(func() {
 		ui.Row(c).Justify(ui.Center).Children(func() {
 			ui.Column(c).Grow(1).MinWidth(0).MaxWidth(900).Padding(10, 30, 24, 30).Children(func() {
 				var changed *mdSeg

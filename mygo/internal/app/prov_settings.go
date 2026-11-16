@@ -523,7 +523,7 @@ func (a *App) provInventory(c *ui.Context) {
 				kit.Btn(c, "全选", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).Key("prov-all").OnClick(func() { d.SelectAll(rows) })
 				kit.Btn(c, "清空", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).Key("prov-none").OnClick(func() { d.SelectNone(rows) })
 			})
-			ui.Scroll(c).Key("prov-models").MaxHeight(220).Children(func() {
+			kit.VScroll(c).Key("prov-models").MaxHeight(220).Children(func() {
 				ui.Column(c).Gap(1).Children(func() {
 					for _, m := range rows {
 						a.provModelRow(c, d, m)

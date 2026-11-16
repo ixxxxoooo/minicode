@@ -114,7 +114,7 @@ func (a *App) graphView(c *ui.Context) {
 		hd("日期", 84)
 		hd("哈希", 60)
 	})
-	ui.Scroll(c).Key("graph-scroll").Grow(1).MinHeight(0).Children(func() {
+	kit.VScroll(c).Key("graph-scroll").Grow(1).MinHeight(0).Children(func() {
 		for i, cm := range s.log {
 			a.graphBigRow(c, i, cm, s.rows[i], gw, m.hit(cm))
 		}
@@ -204,7 +204,7 @@ func (a *App) graphDetail(c *ui.Context) {
 				g.sel = ""
 			}
 		})
-		ui.Scroll(c).Key("graph-files").Grow(1).MinHeight(0).PaddingX(6).Children(func() {
+		kit.VScroll(c).Key("graph-files").Grow(1).MinHeight(0).PaddingX(6).Children(func() {
 			files, ok := a.sc.files[cm.Hash]
 			if !ok {
 				ui.Text(c, "正在读取…").FontSize(theme.FsCap).TextColor(t.Tx4).Padding(4, 6)

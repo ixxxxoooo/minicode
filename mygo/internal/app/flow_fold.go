@@ -102,7 +102,7 @@ func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, co
 		})
 	}
 	if needFold || exp {
-		ui.Scroll(c).TrackScroll(st).MaxHeight(float32(maxH)).Key("foldout-" + key).Children(inner)
+		kit.XYScroll(c).TrackScroll(st).MaxHeight(float32(maxH)).Key("foldout-" + key).Children(inner)
 	} else {
 		ui.Column(c).Key("foldout-" + key).Children(inner)
 	}

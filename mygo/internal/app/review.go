@@ -348,7 +348,7 @@ func (a *App) reviewView(c *ui.Context) {
 		kit.Btn(c, "全部接受", kit.BtnOpt{Variant: kit.BtnSoft, Small: true, Icon: "check"}).OnClick(func() { a.reviewAll(files, "ok") })
 		kit.Btn(c, "提交…", kit.BtnOpt{Variant: kit.BtnPri, Small: true}).OnClick(a.OpenSCM)
 	})
-	ui.Scroll(c).Key("review").Grow(1).MinHeight(0).Children(func() {
+	kit.VScroll(c).Key("review").Grow(1).MinHeight(0).Children(func() {
 		ui.Column(c).Gap(8).Padding(10, 12, 12, 12).Children(func() {
 			if len(files) == 0 {
 				ui.Column(c).Padding(40, 0).AlignItems(ui.Center).Gap(4).Children(func() {

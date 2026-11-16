@@ -200,7 +200,7 @@ func (a *App) usageBody(c *ui.Context, u core.UsageReport) {
 		}
 	}
 	if a.pageNarrowMid() {
-		ui.Scroll(c).Key("use-main-n").Grow(1).MinHeight(0).Children(func() {
+		kit.VScroll(c).Key("use-main-n").Grow(1).MinHeight(0).Children(func() {
 			ui.Column(c).Padding(4, 20, 24, 20).Children(main)
 		})
 	} else {

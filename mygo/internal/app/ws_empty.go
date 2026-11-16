@@ -155,7 +155,7 @@ func (a *App) wsEmpty(c *ui.Context) {
 	if n := len(ents); n > 1 {
 		termTitle += " · " + itoa(n) + " 个"
 	}
-	ui.Scroll(c).Key("ws-empty").Grow(1).MinHeight(0).Children(func() {
+	kit.VScroll(c).Key("ws-empty").Grow(1).MinHeight(0).Children(func() {
 		ui.Column(c).Padding(22, 20).Gap(16).AlignItems(ui.Stretch).MaxWidth(560).MarginX(ui.Auto).Children(func() {
 			ui.Column(c).Gap(3).Children(func() {
 				ui.Text(c, "工作区").FontSize(theme.FsTitle).FontWeight(600).TextColor(t.Tx1)

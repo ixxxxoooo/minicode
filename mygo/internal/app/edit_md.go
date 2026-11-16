@@ -281,7 +281,7 @@ func (a *App) mdView(c *ui.Context, tb *ideTab) {
 			if md.unsafe != "" {
 				a.mdBanner(c, tb, true, "这个文件含"+md.unsafe+",预览里编辑会把它压成普通段落,所以只读显示。", nil)
 			}
-			ui.Scroll(c).Key("mdprev-" + tb.id).Grow(1).MinHeight(0).Children(func() {
+			kit.VScroll(c).Key("mdprev-" + tb.id).Grow(1).MinHeight(0).Children(func() {
 				ui.Column(c).Padding(14, 34, 28, 34).MaxWidth(860).Children(func() {
 					markdown.View(c, tb.buf.String(), a.mdOptions())
 				})

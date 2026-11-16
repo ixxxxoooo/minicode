@@ -127,7 +127,7 @@ func (a *App) outPanel(c *ui.Context) {
 		return
 	}
 	atEnd := o.st.Y >= o.st.MaxY-24
-	ui.Scroll(c).Key("out-scroll").TrackScroll(&o.st).Grow(1).MinHeight(0).Children(func() {
+	kit.VScroll(c).Key("out-scroll").TrackScroll(&o.st).Grow(1).MinHeight(0).Children(func() {
 		// 整列文字共用一个选区:鼠标拖选 / 双击选词 / 三击选行 / ⇧+方向键扩选,⌘C 复制(多行以换行连接)。
 		var sel ui.Element
 		sel = ui.Column(c).Padding(2, 12).ClipX().Selectable()

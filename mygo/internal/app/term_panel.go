@@ -215,7 +215,7 @@ func (a *App) realTerminal(c *ui.Context) {
 		if tp.st.Y >= tp.st.MaxY-1 { // 停在底部就一直跟随输出
 			tp.st.Y = math.MaxFloat32
 		}
-		ui.Scroll(c).Key("term").TrackScroll(&tp.st).Grow(1).MinHeight(0).Children(func() {
+		kit.VScroll(c).Key("term").TrackScroll(&tp.st).Grow(1).MinHeight(0).Children(func() {
 			ui.Column(c).Padding(padY, padX).Children(func() {
 				for y, ln := range scr.Lines {
 					cx := -1

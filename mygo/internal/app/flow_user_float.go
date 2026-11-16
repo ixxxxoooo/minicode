@@ -53,7 +53,7 @@ func (a *App) userFloat(c *ui.Context, u *core.User, anchor ui.Element) {
 					ui.Column(c).Key("ufl-body-" + u.ID).Selectable().Children(func() { a.userMsgBody(c, u, false) })
 				}
 				if lines > userFoldExp {
-					ui.Scroll(c).Key("ufl-scroll-" + u.ID).MaxHeight(maxH).Children(body)
+					kit.VScroll(c).Key("ufl-scroll-" + u.ID).MaxHeight(maxH).Children(body)
 				} else {
 					body()
 				}

@@ -295,7 +295,7 @@ func (a *App) settingsNav(c *ui.Context) {
 			in := ui.TextInputBase(c.Key("set-q"), &a.set.query).Grow(1).FontSize(theme.FsCap + .5).Placeholder("搜索设置").PlaceholderColor(t.Tx4)
 			in.OnShortcut(0, ui.KeyEscape, func() { a.set.query = "" })
 		})
-		ui.Scroll(c).Key("set-nav").Grow(1).MinHeight(0).Children(func() {
+		kit.VScroll(c).Key("set-nav").Grow(1).MinHeight(0).Children(func() {
 			ui.Column(c).Gap(1).Children(func() {
 				for gi, g := range setNavGroups {
 					h := kit.Grp(c, g.name)
@@ -341,7 +341,7 @@ func (a *App) settingsMain(c *ui.Context) {
 		a.set.enterAt = time.Now()
 	}
 	ui.Column(c).Grow(1).MinWidth(0).Children(func() {
-		ui.Scroll(c).Key("set-main").TrackScroll(&a.set.mainSt).Grow(1).MinHeight(0).Children(func() {
+		kit.VScroll(c).Key("set-main").TrackScroll(&a.set.mainSt).Grow(1).MinHeight(0).Children(func() {
 			ui.Row(c).Justify(ui.Center).Padding(18, 0, 28, 0).Children(func() {
 				col := ui.Column(c).Width(620).Shrink(1).MinWidth(0).Gap(14)
 				if a.settingsNarrow() {

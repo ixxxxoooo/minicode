@@ -103,7 +103,7 @@ func (a *App) chatHeadTitle() string {
 func (a *App) chatSessionLoading(c *ui.Context) {
 	t := a.tk
 	a.chatHead(c, a.chatHeadTitle())
-	ui.Scroll(c).Key("flow").TrackScroll(&a.flowSt).Grow(1).MinHeight(0).Children(func() {
+	kit.VScroll(c).Key("flow").TrackScroll(&a.flowSt).Grow(1).MinHeight(0).Children(func() {
 		ui.Column(c).Grow(1).Padding(16, 20).Gap(12).Children(func() {
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 				kit.SpinStyled(c, t.Tx3)
@@ -122,7 +122,7 @@ func (a *App) chatSessionLoadFailed(c *ui.Context) {
 		msg = "无法打开此会话"
 	}
 	a.chatHead(c, a.chatHeadTitle())
-	ui.Scroll(c).Key("flow").TrackScroll(&a.flowSt).Grow(1).MinHeight(0).Children(func() {
+	kit.VScroll(c).Key("flow").TrackScroll(&a.flowSt).Grow(1).MinHeight(0).Children(func() {
 		ui.Column(c).Grow(1).Padding(20, 24).Gap(8).Justify(ui.Center).Children(func() {
 			kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
 			ui.Text(c, msg).TextColor(t.Tx2).Wrap()

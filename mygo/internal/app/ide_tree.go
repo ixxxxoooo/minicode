@@ -20,7 +20,7 @@ func (a *App) filesView(c *ui.Context) {
 	d := a.ide
 	// 外层竖排:文件树自己滚动,「大纲 / 时间线」像 VS Code 的分区那样钉在底部。
 	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
-		files := ui.Scroll(c).Key("files").Grow(1).MinHeight(0)
+		files := kit.VScroll(c).Key("files").Grow(1).MinHeight(0)
 		files.OnShortcut(0, ui.KeyF2, func() {
 			if a.ide.sel == "" {
 				return
@@ -82,7 +82,7 @@ func (a *App) filesView(c *ui.Context) {
 					ui.Text(c, name)
 				})
 				if open {
-					ui.Scroll(c).Key("sec-body-" + name).MaxHeight(200).Children(func() {
+					kit.VScroll(c).Key("sec-body-" + name).MaxHeight(200).Children(func() {
 						ui.Column(c).Children(func() {
 							if name == "大纲" {
 								a.outlineRows(c)

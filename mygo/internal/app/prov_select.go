@@ -72,7 +72,7 @@ func (a *App) selectBox(c *ui.Context, key string, w float32, items []selItem, c
 				})
 			}
 			shown := 0
-			ui.Scroll(c).Key("sel-sc-" + key).MaxHeight(260).Children(func() {
+			kit.VScroll(c).Key("sel-sc-" + key).MaxHeight(260).Children(func() {
 				ui.Column(c).Children(func() {
 					for _, it := range items {
 						if q != "" && !strings.Contains(strings.ToLower(it.label+" "+it.id), q) {

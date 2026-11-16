@@ -46,7 +46,7 @@ func (a *App) projPickPopup(c *ui.Context, anchor ui.Element) {
 		ui.PopoverBase(c, anchor, open, func(panel ui.Element) {
 			a.popPanel(panel, 280).AttachTo(anchor, ui.AnchorTopLeft, ui.AnchorBottomLeft).Margin(4, 0, 0, 0)
 			ws := a.registry().Workspaces()
-			ui.Scroll(c).Key("pp-scroll").MaxHeight(projPickMaxH).Children(func() {
+			kit.VScroll(c).Key("pp-scroll").MaxHeight(projPickMaxH).Children(func() {
 				ui.Column(c).Children(func() {
 					if len(ws) > 0 {
 						kit.Cap(c, "工作区")

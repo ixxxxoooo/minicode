@@ -56,7 +56,7 @@ func (a *App) pageSplit(c *ui.Context, key string, main func(), drawer func()) {
 func (a *App) pageSplitW(c *ui.Context, key string, w float32, st *ui.ScrollState, main func(), drawer func()) {
 	t := a.tk
 	ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
-		sc := ui.Scroll(c).Key(key + "-main").Grow(1).MinWidth(0)
+		sc := kit.VScroll(c).Key(key + "-main").Grow(1).MinWidth(0)
 		if st != nil {
 			sc.TrackScroll(st)
 		}

@@ -350,8 +350,8 @@ func (a *App) imageView(c *ui.Context, tb *ideTab) {
 			})
 			return
 		}
-		ui.Scroll(c).Key("imgscroll-" + tb.id).Grow(1).MinHeight(0).Children(func() {
-			ui.ScrollHorizontal(c).Key("imgscrollx-" + tb.id).Children(func() {
+		kit.VScroll(c).Key("imgscroll-" + tb.id).Grow(1).MinHeight(0).Children(func() {
+			kit.HScroll(c).Key("imgscrollx-" + tb.id).Children(func() {
 				ui.Column(c).Padding(24).Children(func() {
 					ui.Image(c, v.img).Size(w, h)
 				})

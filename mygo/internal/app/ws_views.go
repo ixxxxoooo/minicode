@@ -77,7 +77,7 @@ func (a *App) planView(c *ui.Context) {
 			kit.Btn(c, "开始实施", kit.BtnOpt{Variant: kit.BtnPri, Small: true, Icon: "play"}).OnClick(func() { resolve(true, core.ModeDefault) })
 		}
 	})
-	ui.Scroll(c).Key("planview").Grow(1).MinHeight(0).Children(func() {
+	kit.VScroll(c).Key("planview").Grow(1).MinHeight(0).Children(func() {
 		ui.Column(c).Padding(14, 18, 20, 18).Gap(12).MaxWidth(720).Children(func() {
 			// 执行进度:最新一份待办
 			if td := a.latestTodos(); td != nil {
@@ -152,7 +152,7 @@ func (a *App) subView(c *ui.Context, id string) {
 	if run {
 		st.Y = 1e9
 	}
-	ui.Scroll(c).Key("subview-" + id).TrackScroll(st).Grow(1).MinHeight(0).Children(func() {
+	kit.VScroll(c).Key("subview-" + id).TrackScroll(st).Grow(1).MinHeight(0).Children(func() {
 		ui.Column(c).Padding(14, 18, 20, 18).Gap(10).MaxWidth(720).Children(func() {
 			wsSection(c, t, "任务")
 			ui.Column(c).Padding(8, 12).Background(t.Sunken).Radius(t.RMd()).Border(1, t.Bd1).Children(func() {
@@ -243,7 +243,7 @@ func (a *App) taskView(c *ui.Context, id string) {
 	if a.taskFollowOn() {
 		st.Y = 1e9
 	}
-	ui.Scroll(c).Key("taskout-" + id).TrackScroll(st).Grow(1).MinHeight(0).Children(func() {
+	kit.VScroll(c).Key("taskout-" + id).TrackScroll(st).Grow(1).MinHeight(0).Children(func() {
 		ui.Column(c).Margin(0, 12, 12, 12).Padding(8, 12).Background(t.Sunken).Radius(t.RMd()).Border(1, t.Bd1).Children(func() {
 			out := strings.TrimRight(tk.Output, "\n")
 			if out == "" {

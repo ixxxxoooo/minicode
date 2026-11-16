@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
@@ -70,7 +71,7 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 			a.flowSt.Y = math.MaxFloat32
 		}
 		a.withFlowDisplay(func() {
-			ui.Scroll(c).Key("flow").TrackScroll(&a.flowSt).Grow(1).MinHeight(0).Children(func() {
+			kit.VScroll(c).Key("flow").TrackScroll(&a.flowSt).Grow(1).MinHeight(0).Children(func() {
 				a.morphWrap(c, "chat", func() {
 					ui.Column(c).AlignItems(ui.Center).Children(func() {
 						a.flowCol(c, func() { a.flow(c) })
