@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/prefs"
 	"github.com/ixxxxoooo/minicode/internal/projects"
 )
@@ -153,14 +154,38 @@ func TestTrayModePriority(t *testing.T) {
 	}
 }
 
-// 菜单里的会话状态点:三种状态各有不同的彩色圆点。
-func TestTrayDot(t *testing.T) {
+// 菜单里的会话标记:运行 / 待确认 / 未读各不相同,看过的会话用透明占位(对齐文字)。
+func TestTrayMarkKind(t *testing.T) {
 	seen := map[string]bool{}
-	for _, k := range []string{"run", "wait", "ok"} {
-		seen[trayDot(k)] = true
+	for _, k := range []string{"run", "wait", "unread", "idle"} {
+		seen[trayMarkKind(k)] = true
 	}
-	if len(seen) != 3 {
-		t.Fatalf("三种状态应各用不同的状态点,得到 %v", seen)
+	if len(seen) != 4 || trayMarkKind("idle") != "blank" || trayMarkKind("ok") != "blank" {
+		t.Fatalf("四种状态应各有标记种类、其余为 blank,得到 %v", seen)
+	}
+}
+
+// 托盘菜单:按项目分组(灰色组名)、含「重启 MiniCode」、会话行带标记、标题截短不撑宽。
+func TestTrayMenuGroupedWithRestart(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true, Prefs: prefs.Memory()})
+	a.curSess = "s1"
+	a.projects = []core.ProjectInfo{{ID: "p", Name: "MiniCode", Sessions: []core.SessionInfo{{ID: "s1", Title: "这是一个特别特别特别特别特别特别长的会话标题"}}}}
+	var labels []string
+	var restart, groupHdr bool
+	for _, it := range a.trayMenuFull().Items() {
+		labels = append(labels, it.Label)
+		if it.Label == "重启 MiniCode" {
+			restart = true
+		}
+		if it.Disabled && it.Label == a.projectName() {
+			groupHdr = true
+		}
+		if n := len([]rune(it.Label)); n > 26 {
+			t.Fatalf("菜单项过长会撑宽菜单:%q(%d)", it.Label, n)
+		}
+	}
+	if !restart || !groupHdr {
+		t.Fatalf("应有重启项与项目组名,restart=%v group=%v labels=%v", restart, groupHdr, labels)
 	}
 }
 

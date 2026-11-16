@@ -116,7 +116,7 @@ body.no-motion .bi-tray .lv, body.no-motion .bi-tray, body.no-motion .dk.bounce 
 .tray-card .pr { display: flex; gap: 4px; } .tray-card b { font-size: 11.5px; } .tray-card span.en { font-size: 10px; color: var(--tx-3); margin-top: -4px; }
 
 /* NSMenu */
-.nsmenu { width: 100%; max-width: 300px; padding: 5px; border-radius: 10px; background: rgba(246, 246, 249, .84); backdrop-filter: blur(30px) saturate(1.8); box-shadow: 0 0 0 .5px rgba(0, 0, 0, .18), 0 14px 34px -6px rgba(0, 0, 0, .3); color: rgba(0, 0, 0, .88); font: 13px/1 -apple-system, "SF Pro Text", "PingFang SC", sans-serif; box-sizing: border-box; }
+.nsmenu { width: 100%; max-width: 236px; padding: 5px; border-radius: 10px; background: rgba(246, 246, 249, .84); backdrop-filter: blur(30px) saturate(1.8); box-shadow: 0 0 0 .5px rgba(0, 0, 0, .18), 0 14px 34px -6px rgba(0, 0, 0, .3); color: rgba(0, 0, 0, .88); font: 13px/1 -apple-system, "SF Pro Text", "PingFang SC", sans-serif; box-sizing: border-box; }
 .nsmenu.d { background: rgba(44, 44, 52, .82); color: rgba(255, 255, 255, .94); box-shadow: 0 0 0 .5px rgba(255, 255, 255, .16), 0 14px 34px -6px rgba(0, 0, 0, .55); }
 .nsmenu .mn { height: 24px; padding: 0 9px; display: flex; align-items: center; gap: 8px; border-radius: 5px; white-space: nowrap; }
 .nsmenu .mn small { margin-left: auto; opacity: .5; font-size: 12px; } .nsmenu .mn .ell { overflow: hidden; text-overflow: ellipsis; }
@@ -124,7 +124,12 @@ body.no-motion .bi-tray .lv, body.no-motion .bi-tray, body.no-motion .dk.bounce 
 .nsmenu .hd { padding: 5px 9px 3px; font-size: 11px; font-weight: 600; opacity: .5; }
 .nsmenu hr { border: 0; height: 1px; margin: 5px 9px; background: rgba(0, 0, 0, .12); } .nsmenu.d hr { background: rgba(255, 255, 255, .16); }
 .nsmenu .sd { width: 14px; height: 14px; flex: none; display: grid; place-items: center; }
-.nsmenu .sd i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .5; } .nsmenu .sd.run i { background: #0a84ff; opacity: 1; } .nsmenu .sd.wait i { background: #f59e0b; opacity: 1; } .nsmenu .sd.ok i { background: #30b05d; opacity: 1; }
+/* 行首标记:运行 = 四点(跟随文字色)、待确认 = 橙点、未读 / 刚完成 = 蓝点、其余留空占位(文字左缘对齐) */
+.nsmenu .sd i { width: 8px; height: 8px; border-radius: 50%; background: transparent; }
+.nsmenu .sd.wait i { background: #f59e0b; } .nsmenu .sd.unread i { background: #2f7fdb; }
+.nsmenu .sd b { width: 12px; height: 12px; background: radial-gradient(circle at 50% 12%, currentColor 0 1.6px, transparent 1.8px), radial-gradient(circle at 12% 50%, currentColor 0 1.6px, transparent 1.8px), radial-gradient(circle at 88% 50%, currentColor 0 1.6px, transparent 1.8px), radial-gradient(circle at 50% 88%, currentColor 0 1.6px, transparent 1.8px); }
+.nsmenu .gh { padding: 3px 9px 4px; font-size: 12px; opacity: .45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nsmenu .mn .ell { max-width: 170px; }
 .nsmenu .pj { opacity: .5; font-size: 12px; }
 
 /* ───────── 页面版式 ───────── */

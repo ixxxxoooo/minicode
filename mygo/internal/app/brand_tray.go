@@ -133,7 +133,10 @@ func (a *App) brandSessions() []traySess {
 		out = append(out, traySess{id: id, title: title, project: proj, kind: kind})
 	}
 	if a.st != nil && a.curSess != "" {
-		kind := "ok"
+		kind := "idle" // 看过的会话不放标记;不在前台时刚完成的才是「未读」(蓝点)
+		if a.brand.trayUnread {
+			kind = "unread"
+		}
 		if a.st.AwaitingUser() {
 			kind = "wait"
 		} else if a.st.Phase == core.PhaseRunning {
@@ -148,11 +151,11 @@ func (a *App) brandSessions() []traySess {
 		}
 		add(id, a.sessionTitle(id), brandPathBase(lv.id), kind)
 	}
-	// 待确认排最前,其次运行中,最后已完成;最多 5 个
-	rank := map[string]int{"wait": 0, "run": 1, "ok": 2}
+	// 待确认排最前,其次运行中,再是未读,最后没有标记的;最多 6 个
+	rank := map[string]int{"wait": 0, "run": 1, "unread": 2, "idle": 3}
 	sort.SliceStable(out, func(i, j int) bool { return rank[out[i].kind] < rank[out[j].kind] })
-	if len(out) > 5 {
-		out = out[:5]
+	if len(out) > 6 {
+		out = out[:6]
 	}
 	return out
 }
@@ -185,18 +188,6 @@ func brandPathBase(id string) string {
 	return id
 }
 
-// trayDot 菜单里会话行前的状态点(蓝 = 运行中、橙 = 待确认、绿 = 刚完成,与应用内会话列表同一套)。
-// 用彩色圆点字符而不是菜单图标:库的菜单图标在托盘菜单里实机不渲染(实测),字符在所有系统版本都稳定。
-func trayDot(kind string) string {
-	switch kind {
-	case "wait":
-		return "🟠"
-	case "run":
-		return "🔵"
-	}
-	return "🟢"
-}
-
 func (a *App) trayMenuFull() *mygo.Menu {
 	sum := a.brandSummarize()
 	var items []*mygo.MenuItem
@@ -207,16 +198,32 @@ func (a *App) trayMenuFull() *mygo.Menu {
 	if head != "" {
 		items = append(items, &mygo.MenuItem{Label: head, Disabled: true})
 	}
+	// 会话按项目分组:组名是灰色小标题(禁用项),行首只放一个小标记(运行 = 四点、待确认 = 橙点、未读 = 蓝点,其余留空对齐)
 	sess := a.brandSessions()
+	var groups []string
+	byProj := map[string][]traySess{}
 	for _, s := range sess {
-		s := s
-		items = append(items, &mygo.MenuItem{
-			Label: trayDot(s.kind) + "  " + trayClip(s.title, 26) + "  ·  " + s.project,
-			Click: func(*mygo.MenuItem, *mygo.Window) { a.OpenSession(s.id); mygo.App.Focus() },
-		})
+		if _, ok := byProj[s.project]; !ok {
+			groups = append(groups, s.project)
+		}
+		byProj[s.project] = append(byProj[s.project], s)
+	}
+	for _, g := range groups {
+		items = append(items, &mygo.MenuItem{Type: mygo.MenuItemSeparator})
+		items = append(items, &mygo.MenuItem{Label: trayClip(g, 20), Disabled: true})
+		for _, s := range byProj[g] {
+			s := s
+			items = append(items, &mygo.MenuItem{
+				Label:   trayClip(s.title, 24),
+				ToolTip: s.title,
+				Icon:    trayMarkIcon(trayMarkKind(s.kind)),
+				Click:   func(*mygo.MenuItem, *mygo.Window) { a.OpenSession(s.id); mygo.App.Focus() },
+			})
+		}
 	}
 	if len(sess) == 0 {
-		items = append(items, &mygo.MenuItem{Label: "没有进行中的会话", Disabled: true})
+		items = append(items, &mygo.MenuItem{Type: mygo.MenuItemSeparator},
+			&mygo.MenuItem{Label: "没有进行中的会话", Disabled: true})
 	}
 	items = append(items,
 		&mygo.MenuItem{Type: mygo.MenuItemSeparator},
@@ -230,9 +237,48 @@ func (a *App) trayMenuFull() *mygo.Menu {
 			a.checkUpdateAsync()
 			mygo.App.Focus()
 		}},
+		&mygo.MenuItem{Label: "重启 MiniCode", Click: func(*mygo.MenuItem, *mygo.Window) { a.trayRestart() }},
 		&mygo.MenuItem{Label: "退出 MiniCode", Role: mygo.RoleQuit},
 	)
 	return mygo.NewMenu(items)
+}
+
+// trayMarkKind 会话状态 → 标记图标种类(没有状态的行用透明占位,文字左缘才对得齐)。
+func trayMarkKind(kind string) string {
+	switch kind {
+	case "wait", "run", "unread":
+		return kind
+	}
+	return "blank"
+}
+
+// trayRestart 托盘「重启 MiniCode」:有正在运行的回合或未保存的文件时先回到窗口确认,否则直接重启。
+// 不改「真实 / 演示」记忆,新进程继承当前环境与参数,模式不变。
+func (a *App) trayRestart() {
+	running := a.countRunningSessions()
+	dirty := 0
+	if a.ide != nil {
+		for _, tb := range a.allFileTabs() {
+			if tb.buf != nil && tb.dirty() {
+				dirty++
+			}
+		}
+	}
+	setLog.Info("托盘请求重启", "running", running, "dirty", dirty)
+	if running == 0 && dirty == 0 {
+		a.restartApp("托盘菜单", false)
+		return
+	}
+	mygo.App.Focus()
+	var body string
+	if running > 0 && dirty > 0 {
+		body = strconv.Itoa(running) + " 个会话正在运行,另有 " + strconv.Itoa(dirty) + " 个文件未保存,重启会丢失这些内容。"
+	} else if running > 0 {
+		body = strconv.Itoa(running) + " 个会话正在运行,重启会中断它们(可稍后用「继续」接上)。"
+	} else {
+		body = strconv.Itoa(dirty) + " 个文件有未保存的修改,重启会丢失这些修改。"
+	}
+	a.confirmDlg("重启 MiniCode?", body, "重启", true, func() { a.restartApp("托盘菜单", false) })
 }
 
 func (a *App) brandSummarize() traySum {

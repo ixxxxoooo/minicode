@@ -8,8 +8,11 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/diag"
 )
 
-// restartForSettings 自启动同一可执行文件并退出(需重启条与运行模式切换用)。
-func (a *App) restartForSettings(reason string) {
+// restartForSettings 自启动同一可执行文件并退出(需重启条与运行模式切换用,会写入运行模式记忆)。
+func (a *App) restartForSettings(reason string) { a.restartApp(reason, true) }
+
+// restartApp 自启动同一可执行文件并退出;persistMode 为真时先把设置里的「真实 / 演示」写入 dev-mode。
+func (a *App) restartApp(reason string, persistMode bool) {
 	exe, err := os.Executable()
 	if err != nil {
 		setLog.Error("重启失败:无法解析可执行文件", "err", err)
@@ -30,8 +33,10 @@ func (a *App) restartForSettings(reason string) {
 	if wd, err := os.UserHomeDir(); err == nil {
 		cmd.Dir = wd
 	}
-	a.persistRunModeChoice()
-	setLog.Info("设置触发重启", "reason", reason, "exe", exe, "args", len(args))
+	if persistMode {
+		a.persistRunModeChoice()
+	}
+	setLog.Info("触发重启", "reason", reason, "exe", exe, "args", len(args))
 	if err := cmd.Start(); err != nil {
 		setLog.Error("启动新进程失败", "err", err)
 		return
