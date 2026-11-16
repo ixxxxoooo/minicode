@@ -14,6 +14,7 @@ import textwrap
 
 OUT = pathlib.Path(__file__).parent
 LAYERS = OUT / "layers"
+THEME_OUT = None  # 由 --theme-dir 指定:各主题配色图标的 SVG 输出目录
 
 # Go appearance.appIcon 下标 → 样式 id(与设计稿 brand.js::STYLES、settings_brand.appStyles 顺序一致,默认下标 0 = 织纹)
 STYLES = ("weave", "warp", "prompt", "grid", "lines", "braces")
@@ -122,8 +123,21 @@ PAPER = dict(
 )
 
 
-def resolve_appearance(mode: str, dark: bool = False):
-    p = PAPER
+# 六套主题的图标配色(与设计稿 brand.js::PAL 一致;paper / ink 共用 PAPER,所以只有五组不同色)。
+# ac:浅色底上的纬线渐变;acd:深色底上的(更亮);L / D:背景上下色与经线(墨)色。
+PALS = dict(
+    paper=PAPER,
+    mist=dict(ac=("#7A92FF", "#3550E0"), acd=("#93A6FF", "#5A74F5"), L=("#FDFEFF", "#E3E8F1", "#1A1D24"), D=("#2B2F3A", "#14161D", "#E6E9F2")),
+    celadon=dict(ac=("#2DBBA0", "#0B7765"), acd=("#4ED6BA", "#16A58E"), L=("#FDFFFD", "#DFE9E2", "#18201C"), D=("#262F2B", "#111513", "#E4EEE9")),
+    graphite=dict(ac=("#8EA4FF", "#4C69F0"), acd=("#A3B6FF", "#5F7CFF"), L=("#FDFDFE", "#E4E5EA", "#1B1C20"), D=("#2B2D33", "#121316", "#E8EAEE")),
+    aurora=dict(ac=("#B9A2FF", "#7A58F0"), acd=("#CBB8FF", "#8F6DFA"), L=("#FEFDFF", "#E7E4F4", "#1E1B33"), D=("#232749", "#0A0C1B", "#E6E8F7")),
+)
+# 除默认(paper)外需要单独出图的主题配色;素材名 app-<配色>-style<N><后缀>.png
+THEME_PALS = ("mist", "celadon", "graphite", "aurora")
+
+
+def resolve_appearance(mode: str, dark: bool = False, pal: str = "paper"):
+    p = PALS[pal]
     th = p["acd"] if dark else p["ac"]
     if mode == "clear":
         return dict(
@@ -218,9 +232,8 @@ def art_svg(style: str, ink: str, th_ref: str) -> str:
     raise ValueError(style)
 
 
-def app_icon_svg(style: str, mode: str, uid: str = "a") -> str:
-    dark = mode == "dark" or (mode == "tint")
-    r = resolve_appearance(mode, dark=mode in ("dark", "tint"))
+def app_icon_svg(style: str, mode: str, uid: str = "a", pal: str = "paper") -> str:
+    r = resolve_appearance(mode, dark=mode in ("dark", "tint"), pal=pal)
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
 <defs>
   <linearGradient id="{uid}b" x1="0" y1="100" x2="0" y2="924" gradientUnits="userSpaceOnUse">
@@ -419,6 +432,14 @@ def generate_all():
                 suf = "-dark"
             name = f"app-style{si}{suf}.svg"
             (OUT / name).write_text(app_icon_svg(st, mode, f"s{si}{mode}"))
+    # 其余四套主题配色:SVG 写进临时目录(只作渲染中间产物,不提交),由 build_all.sh 渲染并同步内嵌素材
+    if THEME_OUT is not None:
+        THEME_OUT.mkdir(parents=True, exist_ok=True)
+        for pal in THEME_PALS:
+            for si, st in enumerate(STYLES):
+                for mode in APPEARANCES:
+                    suf = {"light": "", "dark": "-dark"}.get(mode, f"-{mode}")
+                    (THEME_OUT / f"app-{pal}-style{si}{suf}.svg").write_text(app_icon_svg(st, mode, f"{pal[:2]}{si}{mode[:2]}", pal))
     for si, tst in enumerate(TRAY_STYLES):
         for state in TRAY_STATES:
             (OUT / tray_file(si, state)).write_text(tray_icon_svg(state, None, tst))
@@ -435,7 +456,11 @@ def main():
     p.add_argument("cmd", nargs="?", default="all", choices=("all", "legacy", "tray", "layers"))
     p.add_argument("--style", type=int, default=2)
     p.add_argument("--mode", default="light")
+    p.add_argument("--theme-dir", default=None, help="各主题配色图标 SVG 的输出目录(缺省不生成)")
     args = p.parse_args()
+    global THEME_OUT
+    if args.theme_dir:
+        THEME_OUT = pathlib.Path(args.theme_dir)
     if args.cmd == "all":
         generate_all()
     elif args.cmd == "legacy":

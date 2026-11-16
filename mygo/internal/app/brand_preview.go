@@ -68,10 +68,20 @@ func recolorInk(data []byte, c color.NRGBA) []byte {
 	return buf.Bytes()
 }
 
-// appIconName 某样式在当前外观偏好下的素材名。
+// appIconName 某样式在当前配色与外观偏好下的素材名;配色素材缺失时退回默认配色。
 func (a *App) appIconName(style int) string {
-	suffix, _ := a.dockIconSuffix(a.tk != nil && a.tk.Palette.Dark)
-	return "app-style" + itoa(style) + suffix + ".png"
+	return a.appIconNameFor(style, a.appIconPal(), a.tk != nil && a.tk.Palette.Dark)
+}
+
+// appIconNameFor 指定配色与「自动外观下的深浅」时的素材名(配色色板的小预览用)。
+func (a *App) appIconNameFor(style int, pal string, dark bool) string {
+	suffix, _ := a.dockIconSuffix(dark)
+	if pal != "" {
+		if name := appIconAsset(style, pal, suffix); embeddedHas(name) {
+			return name
+		}
+	}
+	return appIconAsset(style, "", suffix)
 }
 
 // brandAppImg 画一枚应用图标;素材缺失时画占位方块(不会空白)。

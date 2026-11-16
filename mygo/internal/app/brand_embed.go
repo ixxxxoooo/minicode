@@ -24,6 +24,12 @@ func embeddedIcon(name string) ([]byte, bool) {
 	return b, true
 }
 
+// embeddedHas 内嵌素材是否存在。
+func embeddedHas(name string) bool {
+	_, ok := embeddedIcon(name)
+	return ok
+}
+
 // 徽标状态的几何(36 画布,与 assets/icon/gen.py::tray_badge 一致):圆心与半径。
 const (
 	trayBadgeX = 28.2

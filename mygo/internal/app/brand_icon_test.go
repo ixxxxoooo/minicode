@@ -33,6 +33,19 @@ func TestEmbeddedAppIconsComplete(t *testing.T) {
 	}
 }
 
+// 四套主题配色 × 六种样式 × 四种外观的内嵌素材也必须齐全(跟随主题的 Dock 图标用)。
+func TestEmbeddedThemeIconsComplete(t *testing.T) {
+	for _, pal := range []string{"mist", "celadon", "graphite", "aurora"} {
+		for si := range appStyles {
+			for _, suf := range []string{"", "-dark", "-clear", "-tint"} {
+				if !embeddedHas(appIconAsset(si, pal, suf)) {
+					t.Errorf("缺少内嵌素材 %s", appIconAsset(si, pal, suf))
+				}
+			}
+		}
+	}
+}
+
 // 五种托盘样式 × 全部状态(含运行动画三帧)的内嵌素材必须齐全。
 func TestEmbeddedTrayIconsComplete(t *testing.T) {
 	states := []string{"idle", "running", "running-0", "running-1", "running-2", "waiting", "unread", "error", "update", "paused", "demo"}

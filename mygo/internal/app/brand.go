@@ -57,12 +57,10 @@ func (a *App) syncBrand() {
 	// 重建托盘菜单与重画图标并不便宜(随会话数增长,实测 25~130 ms),超过阈值要留痕
 	defer diag.SpanSlow("brand", "同步托盘与Dock", 50*time.Millisecond)()
 	dark := a.tk != nil && a.tk.Palette.Dark
-	// Dock 图标按「样式 + 外观后缀 + 深浅」的签名判断是否需要重设:
-	// 只比较深浅会让设置里改样式 / 外观(浅色、深色、透明、着色)时 Dock 图标不更新。
+	// Dock 图标按「样式 + 配色 + 外观后缀 + 深浅」的签名判断是否需要重设:
+	// 只比较深浅会让设置里改样式 / 外观 / 配色、或者切换主题时 Dock 图标不更新。
+	// 「自动」外观随当前主题的深浅(设计稿 brand.js::resolve),配色默认跟随当前主题。
 	dockDark := dark
-	if a.prefs != nil && a.prefs.Int(pAppMode, 0) == 0 {
-		dockDark = systemIsDark() // 「自动」随系统深浅
-	}
 	if sig := a.dockSignature(dockDark); sig != a.brand.dockSig {
 		a.brand.dockSig = sig
 		brandLog.Info("更新 Dock 图标", "sig", sig)

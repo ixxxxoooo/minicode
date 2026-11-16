@@ -35,7 +35,7 @@ func (a *App) syncFinderIcon(dark bool) {
 	suffix, _ := a.dockIconSuffix(dark)
 	sig := "off"
 	if on {
-		sig = "on|" + itoa(a.prefs.Int(pAppStyle, 0)) + suffix
+		sig = "on|" + itoa(a.prefs.Int(pAppStyle, 0)) + "|" + a.appIconPal() + suffix
 	}
 	if sig == a.brand.finderSig || (sig == "off" && a.brand.finderSig == "") {
 		a.brand.finderSig = sig

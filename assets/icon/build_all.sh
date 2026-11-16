@@ -60,3 +60,5 @@ for p in sorted(glob.glob("app-style*.png")):
     Image.open(p).convert("RGBA").resize((512, 512), Image.LANCZOS).save(os.path.join(dest, os.path.basename(p)), optimize=True)
 print("已同步内嵌素材:", len(os.listdir(dest)), "个")
 PY
+# 四套主题配色的应用图标(跟随主题的 Dock 图标用)
+sh ./build_themes.sh

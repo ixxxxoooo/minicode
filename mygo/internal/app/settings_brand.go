@@ -27,25 +27,47 @@ const (
 var appStyles = []string{"织纹", "经纬", "提示符", "棋盘", "行", "花括号"}
 var trayStyles = []string{"织纹", "提示符", "棋盘", "行", "花括号"}
 
+// brandTintPick 「配色」:第一枚「跟随主题」(图标随当前主题变色),其后六枚固定为某一套主题的配色,
+// 每枚都是该配色下当前样式的图标小预览(设计稿 brand.js::tintPick)。
 func (a *App) brandTintPick(c *ui.Context) {
 	t := a.tk
 	cur := a.prefs.Int(pAppTint, 0)
-	ui.Row(c).Gap(6).Children(func() {
-		for i, label := range []string{"跟随主题", "宣纸", "墨夜", "雾霭", "湖烟", "杏笺", "暮岚"} {
-			if i > 0 && i-1 < len(theme.Palettes) {
-				_ = theme.Palettes[i-1]
+	style := a.prefs.Int(pAppStyle, 0) % len(appStyles)
+	set := func(i int) {
+		if i == 0 {
+			a.prefs.Reset(pAppTint)
+		} else {
+			a.prefs.Set(pAppTint, i)
+		}
+		setLog.Info("选择应用图标配色", "tint", i)
+		a.syncBrand()
+	}
+	ui.Row(c).Gap(8).AlignItems(ui.Center).Wrap().Children(func() {
+		ch := kit.Chip(c, "跟随主题", kit.ChipOpt{On: cur == 0, Line: cur != 0}).Key("ictint-0")
+		if cur == 0 {
+			ch.Background(t.AcSoft).TextColor(t.AcTx)
+		}
+		if ch.Clicked() {
+			set(0)
+		}
+		for i, p := range theme.Palettes {
+			i, p := i+1, p
+			on := cur == i
+			b := ui.ButtonBase(c).Key("ictint-"+itoa(i)).Size(40, 40).Radius(t.RMd()).Cursor(ui.CursorPointer).
+				Shrink(0).Tooltip(p.Name)
+			switch {
+			case on:
+				b.Background(t.AcSoft).Border(1.5, t.Ac)
+			case b.Hovered():
+				b.Background(t.Fill1).Border(1, t.Bd2)
+			default:
+				b.Border(1, t.Bd1)
 			}
-			ch := kit.Chip(c, label, kit.ChipOpt{On: cur == i, Line: cur != i}).Key("ictint-" + itoa(i))
-			if cur == i {
-				ch.Background(t.AcSoft).TextColor(t.AcTx)
-			}
-			if ch.Clicked() {
-				if i == 0 {
-					a.prefs.Reset(pAppTint)
-				} else {
-					a.prefs.Set(pAppTint, i)
-				}
-				a.syncBrand()
+			b.Justify(ui.Center).AlignItems(ui.Center).Children(func() {
+				a.brandAppImg(c, a.appIconNameFor(style, iconPalOf(p.ID), p.Dark), 28)
+			})
+			if b.Clicked() {
+				set(i)
 			}
 		}
 	})
@@ -71,8 +93,8 @@ func brandAppBody(a *App, c *ui.Context) {
 		})
 	}}, false)
 	rows := []setRow{
-		rSeg(pAppMode, "图标外观", "浅色 / 深色 / 透明 / 着色;「自动」随系统", 0, "自动", "浅色", "深色", "透明", "着色"),
-		{key: pAppTint, title: "配色", desc: "跟随当前主题或固定色板", kind: kNone, right: func(a *App, c *ui.Context) { a.brandTintPick(c) }},
+		rSeg(pAppMode, "图标外观", "浅色 / 深色 / 透明 / 着色;「自动」随当前主题深浅", 0, "自动", "浅色", "深色", "透明", "着色"),
+		{key: pAppTint, title: "配色", desc: "默认跟随当前主题变色,也可固定为某一套主题的配色", kind: kNone, right: func(a *App, c *ui.Context) { a.brandTintPick(c) }},
 		rSeg(pDockBadge, "Dock 角标", "", 1, "关", "待处理数", "运行中数"),
 		rSeg(pDockBnce, "需要确认时 Dock 弹跳", "", 1, "不弹", "一次", "直到处理"),
 		rTog(pDockProg, "Dock 图标显示进度", "", false),
