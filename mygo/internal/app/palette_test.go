@@ -172,3 +172,27 @@ func TestPaletteMatchesDescription(t *testing.T) {
 		t.Fatalf("标题命中的「主题:切换…」应排第一,实际 %v", titles)
 	}
 }
+
+// 点面板外的遮罩要关闭命令面板(此前只闪一下,面板还留着);点面板里面不关。
+func TestPaletteClickOutsideCloses(t *testing.T) {
+	a, tt := newTestApp(t)
+	a.OpenPalette("")
+	tt.Frame()
+	tt.Advance(300 * time.Millisecond)
+	tt.Frame()
+	if !a.paletteOn {
+		t.Fatal("应已打开")
+	}
+	tt.ClickAt(640, 118) // 面板内部的输入行(宽 620 居中,顶部留白 96,输入行高 44)
+	tt.Frame()
+	if !a.paletteOn {
+		t.Fatal("点面板里面不应关闭")
+	}
+	tt.ClickAt(30, 780) // 面板外的遮罩
+	tt.Frame()
+	tt.Advance(300 * time.Millisecond)
+	tt.Frame()
+	if a.paletteOn {
+		t.Fatal("点面板外应关闭命令面板")
+	}
+}

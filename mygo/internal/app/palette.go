@@ -549,6 +549,11 @@ func (a *App) paletteView(c *ui.Context) {
 				})
 			})
 		})
+		// 点面板外的遮罩(或 Esc)会把 *open 置 false;要同步回 paletteOn,否则面板只闪一下又留着
+		// (与项目对话框同一做法)。主题预览中关闭会还原主题。
+		if !*open && a.paletteOn {
+			a.closePalette()
+		}
 	})
 }
 
