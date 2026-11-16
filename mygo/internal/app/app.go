@@ -98,8 +98,6 @@ type App struct {
 	morphUntil   time.Time                                // 形态切换期间锁定指针(设计稿 .morphing)
 	morphAt      time.Time                                // 形态切换起点(内容分轨淡入 / 淡出)
 	morphFrom    Mode                                     // 切换前的形态
-	flowPinBy    map[Mode]flowPin                         // 各形态稳定时的会话流宽度(切换时钉宽,见 morph_pin.go)
-	pinInTest    bool                                     // 测试里也启用钉宽(默认只在真实窗口生效)
 	wsFloat      bool                                     // Agent 窄窗:工作区浮层打开
 	dockFloat    bool                                     // IDE 窄窗:对话栏浮层打开
 	sideDrawer   bool                                     // <720:导航栏以抽屉展示

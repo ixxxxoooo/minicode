@@ -26,13 +26,8 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		p.Children(func() {})
 		return
 	}
-	paneW := p.Bounds().W
-	if paneW > 0 {
-		a.chatW = paneW
-	}
-	pin, pinned := a.flowPinFor() // 形态切换期间:三档与文字断行都按终态宽度算,不随过渡逐帧重排
-	if pinned {
-		a.chatW = pin.paneW
+	if w := p.Bounds().W; w > 0 {
+		a.chatW = w
 	}
 	hint := a.chatDrop(p)
 	p.Children(func() {
@@ -77,13 +72,7 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		a.withFlowDisplay(func() {
 			ui.Scroll(c).Key("flow").TrackScroll(&a.flowSt).Grow(1).MinHeight(0).Children(func() {
 				a.morphWrap(c, "chat", func() {
-					col := ui.Column(c).AlignItems(ui.Center)
-					if pinned {
-						col.Width(pin.flowW).AlignSelf(ui.Start)
-					} else {
-						a.rememberFlowPin(paneW, col.Bounds().W)
-					}
-					col.Children(func() {
+					ui.Column(c).AlignItems(ui.Center).Children(func() {
 						a.flowCol(c, func() { a.flow(c) })
 					})
 				})
