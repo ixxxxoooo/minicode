@@ -40,7 +40,7 @@ func Ib(c *ui.Context, icon string, o ...IbOpt) ui.Element {
 		col = op.Color
 	}
 	if op.Disabled || op.Loading {
-		b.Disabled(true).Opacity(.4).Cursor(ui.CursorDefault)
+		b.Disabled(true).Opacity(.42).Cursor(ui.CursorDefault)
 	} else {
 		b.Cursor(ui.CursorPointer)
 	}
@@ -60,10 +60,10 @@ func Ib(c *ui.Context, icon string, o ...IbOpt) ui.Element {
 	if op.Error {
 		b.Border(1.5, T.Err)
 	}
-	clickFocusRing(b)
 	if !op.Disabled && !op.Loading {
 		clickPressScale(b)
 	}
+	clickFocusRing(b)
 	b.TextColor(col).Transition(Fade)
 	if op.Tip != "" {
 		b.Tooltip(op.Tip).Label(op.Tip)
@@ -121,10 +121,6 @@ func Btn(c *ui.Context, text string, o ...BtnOpt) ui.Element {
 	} else {
 		b.Cursor(ui.CursorPointer)
 	}
-	clickFocusRing(b)
-	if !op.Disabled && !op.Loading {
-		clickPressScale(b)
-	}
 	hov := b.Hovered() && !op.Disabled && !op.Loading
 	col := T.Tx1
 	switch op.Variant {
@@ -158,6 +154,10 @@ func Btn(c *ui.Context, text string, o ...BtnOpt) ui.Element {
 			bg = T.Raised.Mix(T.Tx1, .04)
 		}
 		b.Background(bg).Border(1, T.Bd2)
+	}
+	clickFocusRing(b)
+	if !op.Disabled && !op.Loading {
+		clickPressScale(b)
 	}
 	b.TextColor(col).Transition(Fade)
 	if op.Tip != "" {
@@ -196,8 +196,6 @@ func Chip(c *ui.Context, text string, o ...ChipOpt) ui.Element {
 		op = o[0]
 	}
 	b := ui.ButtonBase(c).Height(theme.Px(22)).PaddingX(7).Radius(T.RSm()).Gap(4).AlignItems(ui.Center).FontSize(theme.Px(11.5)).Cursor(ui.CursorPointer).Shrink(0)
-	clickFocusRing(b)
-	clickPressScale(b)
 	col := T.Tx2
 	if op.Line {
 		b.Background(T.Raised).Border(1, T.Bd2)
@@ -212,6 +210,8 @@ func Chip(c *ui.Context, text string, o ...ChipOpt) ui.Element {
 		}
 		col = T.Tx1
 	}
+	clickFocusRing(b)
+	clickPressScale(b)
 	b.TextColor(col).Transition(Fade)
 	if op.Tip != "" {
 		b.Tooltip(op.Tip)

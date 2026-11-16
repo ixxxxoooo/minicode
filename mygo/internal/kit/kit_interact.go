@@ -25,11 +25,11 @@ func clickPressScale(b ui.Element) {
 	}
 }
 
-// clickFocusRing 强化键盘聚焦环(库已区分 FocusVisible:仅 Tab 聚焦显示)。
+// clickFocusRing 强化键盘聚焦环(库已区分 FocusVisible:仅 Tab 聚焦显示;对标 --ring + --ac-line)。
 func clickFocusRing(b ui.Element) {
-	b.FocusRing(true).FocusRingOffset(2).FocusRingColor(T.Ac)
+	b.FocusRing(true).FocusRingOffset(0).FocusRingColor(T.Ring())
 	if b.FocusVisible() {
-		b.Border(1.5, T.Ac.Mix(T.Raised, .35))
+		b.Border(1, T.AcLine)
 	}
 }
 

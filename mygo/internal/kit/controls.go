@@ -113,6 +113,7 @@ func Seg(c *ui.Context, items []SegItem, on int, o ...SegOpt) int {
 				if it.Text == "" {
 					b.Label(it.Icon)
 				}
+				clickFocusRing(b)
 				b.Children(func() {
 					if it.Icon != "" {
 						Ic(c, it.Icon, S12)
@@ -151,7 +152,6 @@ func Tog(c *ui.Context, on bool, key string, o ...TogOpt) bool {
 	} else {
 		b.Cursor(ui.CursorPointer)
 	}
-	clickFocusRing(b)
 	b.Label("开关")
 	x := 2 * theme.UIScale()
 	if on {
@@ -161,6 +161,7 @@ func Tog(c *ui.Context, on bool, key string, o ...TogOpt) bool {
 		k := ui.Box(c).Absolute().Top(2*theme.UIScale()).Size(11*theme.UIScale(), 11*theme.UIScale()).Radius(6*theme.UIScale()).Background(ui.Hex("#FFFFFF")).Shadow(0, 1, 2, 0, ui.RGBA(0, 0, 0, .25))
 		k.Left(k.AnimateTo("x", x, thumbSpring))
 	})
+	clickFocusRing(b)
 	if op.Disabled {
 		return false
 	}

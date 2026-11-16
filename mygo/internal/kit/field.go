@@ -23,10 +23,11 @@ func Field(c *ui.Context, key string, o FieldOpt, build func(row ui.Element)) {
 		if o.Desc != "" {
 			ui.Text(c, o.Desc).FontSize(theme.Px(10.5)).TextColor(t.Tx3).LineHeight(theme.LhCap)
 		}
-		box := ui.Row(c).Key(key+"-fld").MinWidth(0).Height(theme.Px(28)).PaddingX(8).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Border(1, t.Bd2)
+		box := ui.Row(c).Key(key+"-fld").MinWidth(0).Height(theme.Px(26)).PaddingX(8).Gap(6).AlignItems(ui.Center).Background(t.Raised).Radius(t.RSm()).Border(1, t.Bd2)
 		bad := o.Err != ""
 		if box.FocusWithin() && !bad {
-			box.BorderColor(t.Ac)
+			box.BorderColor(t.AcLine)
+			box.FocusRing(true).FocusRingOffset(0).FocusRingColor(t.Ring())
 		}
 		if bad {
 			box.BorderColor(t.Err)

@@ -15,7 +15,6 @@ func Card(c *ui.Context, o ...CardOpt) ui.Element {
 	}
 	el := ui.ButtonBase(c).Padding(12, 14).Radius(T.RMd()).Background(T.Raised).Border(1, T.Bd1).
 		Cursor(ui.CursorPointer).Justify(ui.Start).AlignItems(ui.Stretch).Transition(Fade)
-	clickFocusRing(el)
 	switch {
 	case op.On:
 		el.BorderColor(T.AcLine).Border(1, T.AcLine)
@@ -34,6 +33,7 @@ func Card(c *ui.Context, o ...CardOpt) ui.Element {
 	if el.Pressed() {
 		clickPressScale(el)
 	}
+	clickFocusRing(el)
 	return el
 }
 
