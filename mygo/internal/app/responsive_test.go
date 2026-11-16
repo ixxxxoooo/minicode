@@ -33,6 +33,17 @@ func TestUseWsOverlay(t *testing.T) {
 	}
 }
 
+func TestFitPanelsDrawerClosed(t *testing.T) {
+	a, _ := demoIDE(t)
+	a.SetMode(ModeAgent)
+	a.sideOpen = true
+	a.winW = 700
+	a.fitPanels()
+	if a.sideOpen || !a.fit.side {
+		t.Fatal("<720 导航抽屉默认应收起并记自动标记")
+	}
+}
+
 func TestFitPanelsSideRestore(t *testing.T) {
 	a, _ := demoIDE(t)
 	a.SetMode(ModeIDE)

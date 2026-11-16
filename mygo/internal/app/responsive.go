@@ -101,12 +101,24 @@ func (a *App) fitPanels() {
 
 	tier := a.winTier()
 	switch {
+	case a.useSideDrawer() && a.sideOpen && (first || shrinking):
+		// 抽屉模式默认应收起(由标题栏按钮滑出);否则会像并排导航一样盖住主内容(cmd/shot w=700 即如此)。
+		a.sideOpen, f.side = false, true
+		respLog.Info("窗口变窄:导航抽屉收起", "w", w, "tier", tier)
 	case tier >= 1 && a.mode == ModeIDE && a.sideOpen && (first || shrinking):
 		a.sideOpen, f.side = false, true
 		respLog.Info("窗口变窄:收起导航栏", "w", w, "tier", tier)
 	case tier < 1 && f.side:
 		a.sideOpen, f.side = true, false
 		respLog.Info("窗口变宽:恢复导航栏", "w", w)
+	case !a.useSideDrawer() && f.side && w > f.w:
+		// 离开 <720 抽屉档:Agent 或宽窗恢复并排导航;IDE 中档仍保持收起。
+		if a.winTier() < 1 || a.mode == ModeAgent {
+			a.sideOpen, f.side = true, false
+			respLog.Info("窗口变宽:恢复导航栏", "w", w, "tier", tier)
+		} else {
+			f.side = false
+		}
 	}
 
 	switch {
