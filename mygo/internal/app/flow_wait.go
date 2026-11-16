@@ -173,7 +173,7 @@ func (a *App) statusRow(c *ui.Context) {
 			}
 		}
 	})
-	if ls := a.st.Live; ls != nil && slow && a.prefs.Bool(pSlowHint, true) {
+	if ls := a.st.Live; ls != nil && slow && a.prefs.Bool(pSlowHint, true) && a.stageWord() != "压缩上下文" { // 正在压缩时慢是预期,不再建议「压缩上下文」
 		a.slowHint(c, *ls)
 	}
 	if a.rtOpen && a.st.Live != nil {

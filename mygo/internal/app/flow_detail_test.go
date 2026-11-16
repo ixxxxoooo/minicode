@@ -91,3 +91,16 @@ func TestStreamingThinkingRendersOnFreshApp(t *testing.T) {
 	a.State().Apply(core.EvAppend{Item: &core.Thinking{ID: "th-done", Text: "已经想完了", Streaming: false}})
 	tt.Frame()
 }
+
+// 慢响应提示:普通等待超过阈值会建议「压缩上下文」;正在压缩时慢是预期,不再重复建议。
+func TestSlowHintHiddenWhileCompacting(t *testing.T) {
+	for _, tc := range []struct {
+		id   string
+		want bool
+	}{{"resp-wait-slow", true}, {"compact-running", false}} {
+		_, tt := sessionApp(t, tc.id)
+		if got := tt.HasText("比平时慢"); got != tc.want {
+			t.Errorf("%s:「比平时慢」提示显示应为 %v,实际 %v", tc.id, tc.want, got)
+		}
+	}
+}
