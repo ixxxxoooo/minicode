@@ -30,7 +30,7 @@ func virtID(kind, ref string) string {
 }
 
 // isVirt 是否虚拟标签。
-func (t *ideTab) isVirt() bool { return t.virt != "" }
+func (t *ideTab) isVirt() bool { return t != nil && t.virt != "" }
 
 // openVirtual 打开(或激活)一个虚拟标签。
 func (d *ide) openVirtual(kind, ref string, pin bool) *ideTab {

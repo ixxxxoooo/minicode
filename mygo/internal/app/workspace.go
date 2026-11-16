@@ -115,7 +115,7 @@ func (a *App) workspace(c *ui.Context) {
 	switch {
 	case cur == nil && a.ide.splitDir == 0:
 		a.wsEmpty(c)
-	case a.ide.splitDir != 0 && !cur.isVirt():
+	case a.ide.splitDir != 0 && !cur.isVirt(): // 拆分后焦点组可能没有标签(cur 为 nil),两个组各自显示空态
 		if cur != nil {
 			a.crumbs(c, cur)
 		}

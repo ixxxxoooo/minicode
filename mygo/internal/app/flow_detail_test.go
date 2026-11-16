@@ -123,3 +123,18 @@ func TestTitlebarCmdkCollapsesBelow900(t *testing.T) {
 		}
 	}
 }
+
+// 回归:IDE 里没有任何标签时点「向右 / 向下拆分」,焦点组为空,不能空指针崩溃。
+func TestSplitWithoutTabsDoesNotPanic(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a", Mode: ModeIDE, FakeLights: true})
+	a.SetProjects(demo.Projects(), "fixbug")
+	tt := ui.NewTester(a.View, 1280, 800)
+	tt.Frame()
+	for _, dir := range []int8{1, 2} {
+		a.splitEditor(dir)
+		tt.Frame()
+		tt.Frame()
+		a.mergeSplit()
+		tt.Frame()
+	}
+}
