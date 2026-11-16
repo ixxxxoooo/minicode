@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 )
 
@@ -43,6 +44,14 @@ func (a *App) flowDebug(name, arg string) bool {
 		}
 		a.SetAskCur(qid, cur, false)
 		flowDbgLog.Info("调试问答题号", "id", qid, "cur", cur)
+		return true
+	case "thinking":
+		demo.Replay(a.State(), demo.ThinkMarqueeReplay())
+		a.st.Apply(core.EvTurnStarted{})
+		if a.thinkMq == nil {
+			a.thinkMq = map[string]thinkMqSt{}
+		}
+		flowDbgLog.Info("调试思考跑马灯", "折叠", !a.prefs.Bool(pThinkOpen, false))
 		return true
 	case "latest":
 		fresh := arg == "fresh"

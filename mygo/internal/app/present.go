@@ -65,6 +65,9 @@ type step struct {
 	term    *core.TerminalBlock // 命令输出(可在终端面板查看)
 	url     string              // 抓取的网址
 	copyStr string              // 「复制」的内容(命令 / 路径 / 网址 / 搜索词)
+
+	thinkText string // 思考正文(跑马灯预览)
+	thinkLive bool   // 思考流式中
 }
 
 func baseName(p string) string { return filepath.Base(p) }
