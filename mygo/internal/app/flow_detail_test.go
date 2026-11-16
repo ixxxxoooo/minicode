@@ -3,7 +3,9 @@ package app
 import (
 	"testing"
 
+	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/demo"
 )
 
 // 设计稿 flow-detail「默认展开矩阵」:标准档编辑 / 命令默认折叠(失败、被拒绝、运行中、非 0 退出码例外),
@@ -77,4 +79,15 @@ func TestThinkTitle(t *testing.T) {
 	if r := []rune(thinkTitle(long)); len(r) > 29 {
 		t.Fatalf("标题最多 28 字加省略号,实际 %d", len(r))
 	}
+}
+
+// 回归:全新 App 第一次渲染流式思考行不能因跑马灯状态表未初始化而 panic(开发版启动即崩)。
+func TestStreamingThinkingRendersOnFreshApp(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true})
+	a.SetProjects(demo.Projects(), "fixbug")
+	a.State().Apply(core.EvAppend{Item: &core.Thinking{ID: "th-live", Text: "先看路由表。再看测试", Streaming: true}})
+	tt := ui.NewTester(a.View, 1280, 800)
+	tt.Frame()
+	a.State().Apply(core.EvAppend{Item: &core.Thinking{ID: "th-done", Text: "已经想完了", Streaming: false}})
+	tt.Frame()
 }
