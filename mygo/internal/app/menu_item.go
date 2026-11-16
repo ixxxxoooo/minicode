@@ -21,7 +21,7 @@ var menuIconTable = map[string]string{
 	"在审查标签中查看": "eye", "在终端面板查看": "terminal",
 	"在侧边打开": "split", "在侧边预览": "eye", "向右拆分": "split", "向下拆分": "split",
 	"在浏览器中打开": "globe", "在新窗口中打开": "arrow", "在此处打开终端": "terminal",
-	"在文件树中定位": "tree", "全部折叠": "tree", "全部展开": "tree",
+	"在文件树中定位": "tree", "全部折叠": "collapseAll", "全部展开": "tree",
 	"转到定义": "arrow", "转到类型定义": "arrow", "转到实现": "arrow", "转到位置": "arrow",
 	"预览定义": "eye", "查找所有引用": "search",
 	"在文件夹中搜索": "search", "仅在此文件夹搜索": "search", "查找": "search", "在终端中查找": "search",
@@ -30,7 +30,7 @@ var menuIconTable = map[string]string{
 	"源代码操作": "spark", "自动换行": "wrap", "开启自动换行": "wrap", "关闭自动换行": "wrap",
 	"默认以预览打开 Markdown": "code", "切换为源码": "code", "切换为预览": "code",
 	"命令面板": "cmd", "全选": "list", "剪切": "copy", "粘贴": "copy",
-	"新建文件": "plus", "新建文件夹": "folder", "新建终端": "plus",
+	"新建文件": "filePlus", "新建文件夹": "folderPlus", "新建终端": "plus",
 	// 会话 / Claude
 	"问 Claude": "spark", "行内编辑": "spark", "让 Claude": "spark", "让 Claude 解释": "spark", "让 Claude 修复": "spark",
 	"让 Claude 修改这段代码": "spark", "引用到对话": "chat",

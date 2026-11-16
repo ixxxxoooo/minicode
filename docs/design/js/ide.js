@@ -157,7 +157,7 @@ test result: <span class="p">ok</span>. 12 passed; 0 failed
 
   const tr = (d, name, o = {}) => `<div class="row tr ${o.dir ? 'dir' : ''} ${o.on ? 'on' : ''} ${o.g ? 'g' + o.g.toLowerCase() : ''}" style="--d:${d}">${o.dir ? ic(o.open ? 'chevD' : 'chevR', 's12 car') : '<span style="width:12px"></span>'}${ic(o.dir ? 'folder' : o.icon || 'fileText', 's12')}<span class="ell">${name}</span>${o.g ? `<span class="g">${o.g}</span>` : ''}</div>`;
   /** 文件树。head:是否带区块标题 */
-  IDE.tree = (head = true) => `${head ? `<div class="grp-h">${ic('chevD', 's12')}<span class="grow">ROUTER-DEMO</span>${ib('plus', 'sm', '新建文件')}${ib('refresh', 'sm', '刷新')}</div>` : ''}
+  IDE.tree = (head = true) => `${head ? `<div class="grp-h">${ic('chevD', 's12')}<span class="grow">ROUTER-DEMO</span>${ib('filePlus', 'sm', '新建文件')}${ib('folderPlus', 'sm', '新建文件夹')}${ib('collapseAll', 'sm', '全部收起')}${ib('refresh', 'sm', '刷新')}</div>` : ''}
     <div class="stagger">${tr(0, 'src', { dir: 1, open: 1 })}${tr(1, 'handlers', { dir: 1 })}${tr(1, 'main.rs', { icon: 'code' })}${tr(1, 'router.rs', { icon: 'code', on: 1, g: 'M' })}${tr(1, 'server.rs', { icon: 'code' })}
     ${tr(0, 'tests', { dir: 1, open: 1 })}${tr(1, 'router_test.rs', { icon: 'code', g: 'M' })}${tr(1, 'case_test.rs', { icon: 'code', g: 'A' })}
     ${tr(0, 'docs', { dir: 1 })}${tr(0, 'Cargo.toml', { icon: 'gear' })}${tr(0, 'CLAUDE.md')}${tr(0, 'README.md')}</div>

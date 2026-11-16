@@ -71,7 +71,7 @@
       spec('确认框 · 删除会话', ['.dlg', '--err'], `<div class="dlg" style="width:auto"><div class="f ai g3"><span class="dlg-i err">${ic('trash')}</span><b class="fs-title">删除这个会话?</b></div><div class="t3" style="line-height:1.55">会话记录会从磁盘移除,无法恢复。</div><div class="f g2" style="justify-content:flex-end">${btn('取消', 'ghost')}${btn('删除', 'danger', 'trash')}</div></div>`),
       spec('编辑器右键菜单', ['.pop', '.mi', 'kbd'], ctx([['code', '转到定义', 'F12'], ['code', '转到实现'], ['search', '查找所有引用', '⇧F12'], '-', ['edit', '重命名符号', 'F2'], ['sliders', '格式化文档', '⇧⌥F'], ['wand', '重构…'], '-', ['branch', 'Git Blame'], ['history', '显示文件历史'], ['cmd', '命令面板…', '⇧⌘P']])),
       spec('标签右键菜单', ['.pop', '.sep'], ctx([['x', '关闭', '⌘W'], ['x', '关闭其他'], ['x', '关闭已保存的'], '-', ['cols', '向右拆分', '⌘\\'], ['cols', '向下拆分'], '-', ['pin', '固定标签'], ['folder', '在访达中显示'], ['copy', '复制路径']])),
-      spec('文件树右键菜单', ['.pop', '--r-lg'], ctx([['file', '新建文件…'], ['folder', '新建文件夹…'], '-', ['spark', '让 Claude 处理这个文件'], ['at', '引用到对话', '⌥⌘K'], '-', ['edit', '重命名…', '⏎'], ['copy', '复制'], ['trash', '删除', '⌘⌫']]))));
+      spec('文件树右键菜单', ['.pop', '--r-lg'], ctx([['filePlus', '新建文件…'], ['folderPlus', '新建文件夹…'], '-', ['spark', '让 Claude 处理这个文件'], ['at', '引用到对话', '⌥⌘K'], '-', ['edit', '重命名…', '⏎'], ['copy', '复制'], ['trash', '删除', '⌘⌫']]))));
 
   /* ───────── 空状态与错误 ───────── */
   const empty = (i, t, d, a = '') => `<div class="empty">${ic(i, 's20 t4')}<b>${t}</b><div class="t3 fs-cap" style="line-height:1.5">${d}</div>${a}</div>`;

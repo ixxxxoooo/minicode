@@ -50,12 +50,34 @@ func (a *App) filesView(c *ui.Context) {
 						kit.Ic(c, icon, kit.S12)
 						ui.Text(c, title).Grow(1).SingleLine()
 					})
+					// 图标各有各的含义:添加文件夹 / 新建文件夹 = 带加号的文件夹,新建文件 = 带加号的文件,
+					// 全部收起 = 两枚相对的箭头夹一条线;多根时「新建文件夹」只留在 ··· 菜单(顶层要先选文件夹)
+					_, ro := a.mutable()
 					if a.multiRoot() {
-						kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "添加文件夹"}).OnClick(func() {
+						kit.Ib(c, "folderPlus", kit.IbOpt{Small: true, Tip: "添加文件夹到工作区"}).OnClick(func() {
 							a.pickFolders(true, func(ps []string) { a.wsAddFolders(a.ws.ID, ps) })
 						})
 					}
-					kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建文件"}).OnClick(func() { a.beginNew(a.newTargetDir(), false) })
+					newFile := kit.Ib(c, "filePlus", kit.IbOpt{Small: true, Tip: map[bool]string{true: "新建文件", false: ro}[ro == ""]})
+					if ro == "" {
+						newFile.OnClick(func() { a.beginNew(a.newTargetDir(), false) })
+					} else {
+						newFile.Opacity(0.4).Cursor(ui.CursorDefault)
+					}
+					if !a.multiRoot() {
+						newDir := kit.Ib(c, "folderPlus", kit.IbOpt{Small: true, Tip: map[bool]string{true: "新建文件夹", false: ro}[ro == ""]})
+						if ro == "" {
+							newDir.OnClick(func() { a.beginNew(a.newTargetDir(), true) })
+						} else {
+							newDir.Opacity(0.4).Cursor(ui.CursorDefault)
+						}
+					}
+					shut := kit.Ib(c, "collapseAll", kit.IbOpt{Small: true, Tip: map[bool]string{true: "全部收起", false: "没有展开的文件夹"}[a.treeOpenCount() > 0]})
+					if a.treeOpenCount() > 0 {
+						shut.OnClick(a.collapseTree)
+					} else {
+						shut.Opacity(0.4).Cursor(ui.CursorDefault)
+					}
 					kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache, d.filesCache = nil, nil })
 					kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.treeHeadMenu)
 				})
@@ -321,4 +343,30 @@ func (a *App) fileIc(c *ui.Context, name string) ui.Element {
 		}
 	}
 	return kit.Ic(c, fileIcon(name), kit.S12).TextColor(a.fileTint(name, a.tk.Tx3))
+}
+
+// treeOpenCount 文件树里当前展开的文件夹数。
+func (a *App) treeOpenCount() int {
+	n := 0
+	for _, on := range a.ide.open {
+		if on {
+			n++
+		}
+	}
+	return n
+}
+
+// collapseTree 一键收起整棵文件树(标题行按钮与 ··· 菜单共用);选中项若落在被收起的文件夹里,改选它所在的最外层文件夹,避免选中一个看不见的行。
+func (a *App) collapseTree() {
+	d := a.ide
+	n := a.treeOpenCount()
+	for k := range d.open {
+		delete(d.open, k)
+	}
+	if d.sel != "" {
+		if top, _, ok := strings.Cut(d.sel, "/"); ok {
+			d.sel = top
+		}
+	}
+	diag.L("ide").Info("全部收起文件树", "收起", n)
 }

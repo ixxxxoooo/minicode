@@ -304,10 +304,8 @@ func (a *App) treeHeadMenu(m *ui.Menu) {
 	if menuItem(m, "刷新").Chosen() {
 		a.ide.listCache, a.ide.filesCache = nil, nil
 	}
-	if menuItem(m, "全部折叠").Chosen() {
-		for k := range a.ide.open {
-			delete(a.ide.open, k)
-		}
+	if menuItem(m, "全部折叠").Disabled(a.treeOpenCount() == 0).Tooltip(map[bool]string{true: "没有展开的文件夹"}[a.treeOpenCount() == 0]).Chosen() {
+		a.collapseTree()
 	}
 	m.Separator()
 	if menuItem(m, "在访达中显示项目").Disabled(a.proj == "").Tooltip(map[bool]string{true: "演示模式没有真实目录"}[a.proj == ""]).Chosen() {
