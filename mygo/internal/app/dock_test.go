@@ -202,3 +202,24 @@ func TestQueueWithImages(t *testing.T) {
 		t.Fatalf("队首应已发送,len=%d", a.q.len())
 	}
 }
+
+// 引用胶囊随消息发出:空闲时直接发送,正文里 @路径 在最前;回合进行中排队的也已并进正文。
+func TestRefChipsSentWithPrompt(t *testing.T) {
+	a, tt, fb := pendingApp(t, demo.FixBug(false))
+	tt.Frame()
+	a.addRefs("@src/a.rs", "@docs/")
+	a.submitKey("看一下", false)
+	if got := fb.last(); !isPrompt(got, "@src/a.rs @docs/ 看一下", false) {
+		t.Fatalf("发送应带引用:%v", got)
+	}
+	if len(a.refs) != 0 {
+		t.Fatalf("发送后胶囊应清空:%v", a.refs)
+	}
+	a.st.Apply(core.EvTurnStarted{})
+	tt.Frame()
+	a.addRefs("@x.go")
+	a.submitKey("排队的", false)
+	if a.q.len() != 1 || a.q.items[0].Text != "@x.go 排队的" || len(a.refs) != 0 {
+		t.Fatalf("排队应已并入引用:%+v refs=%v", a.q.items, a.refs)
+	}
+}

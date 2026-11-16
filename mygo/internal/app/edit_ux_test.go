@@ -290,22 +290,25 @@ func TestDragFileToChat(t *testing.T) {
 		chatX, chatY = r.X+r.W/2, r.Y+r.H/2
 	}
 	// 访达拖入
-	a.draft = ""
+	a.draft, a.refs = "", nil
 	if !tt.DropFiles(chatX, chatY, "/x/y.txt") {
 		t.Fatal("对话栏应接住拖入的文件")
 	}
-	if !strings.Contains(a.draft, "@/x/y.txt") {
-		t.Fatalf("应引用绝对路径:%q", a.draft)
+	if len(a.refs) != 1 || a.refs[0] != "@/x/y.txt" {
+		t.Fatalf("应以胶囊引用绝对路径:%v", a.refs)
+	}
+	if a.draft != "" {
+		t.Fatalf("引用胶囊不应再往输入框正文里写 @ 文字:%q", a.draft)
 	}
 	tt.Frame()
 	if a.ux.focusDraft {
 		t.Fatal("焦点交给输入框后标志应清掉")
 	}
 	// 落在编辑区:不引用
-	a.draft = ""
+	a.draft, a.refs = "", nil
 	tt.DropFiles(500, 300, "/x/z.txt")
-	if a.draft != "" {
-		t.Fatalf("落在对话栏以外不应引用:%q", a.draft)
+	if a.draft != "" || len(a.refs) != 0 {
+		t.Fatalf("落在对话栏以外不应引用:%q %v", a.draft, a.refs)
 	}
 	// 文件树 → 对话栏(无头测试里用右键「引用到对话」,与拖放共用 dropRefs)
 	if err := tt.RightClick("router.rs"); err != nil {
@@ -315,7 +318,33 @@ func TestDragFileToChat(t *testing.T) {
 		t.Fatal(err)
 	}
 	tt.Frame()
-	if !strings.Contains(a.draft, "@") || !strings.Contains(a.draft, "router.rs") {
-		t.Fatalf("文件树引用到对话栏应写入路径,得 %q", a.draft)
+	if len(a.refs) != 1 || !strings.Contains(a.refs[0], "router.rs") {
+		t.Fatalf("文件树引用到对话栏应加一枚引用胶囊,得 %v", a.refs)
+	}
+}
+
+// 引用胶囊:去重、可移除、发送时并进正文最前并清空;正文里已写过的也算重复。
+func TestRefChipsFold(t *testing.T) {
+	a := &App{}
+	if n := a.addRefs("@a.go", "@b/", "@a.go"); n != 2 || len(a.refs) != 2 {
+		t.Fatalf("应去重:n=%d refs=%v", n, a.refs)
+	}
+	a.draft = "看 @c.go 吧"
+	if a.addRefs("@c.go") != 0 {
+		t.Fatal("正文里已有的引用不应再加胶囊")
+	}
+	a.removeRef("@b/")
+	if len(a.refs) != 1 || a.refs[0] != "@a.go" {
+		t.Fatalf("移除不对:%v", a.refs)
+	}
+	if got := a.foldRefs("解释一下"); got != "@a.go 解释一下" || a.refs != nil {
+		t.Fatalf("发送应把胶囊并进正文最前并清空:%q %v", got, a.refs)
+	}
+	a.addRefs("@x.go")
+	if got := a.foldRefs("  "); got != "@x.go" {
+		t.Fatalf("正文为空时只发引用:%q", got)
+	}
+	if got := a.foldRefs("原样"); got != "原样" {
+		t.Fatalf("没有胶囊应原样返回:%q", got)
 	}
 }

@@ -188,6 +188,7 @@ type App struct {
 
 	// 输入框
 	draft           string
+	refs            []string                                                   // 输入框顶部的文件引用胶囊(「@路径」,发送时并进正文,见 composer_refs.go)
 	sr              searchState                                                // 项目内搜索
 	gi              map[string]*gitInfo                                        // 文件的追溯 / 历史缓存
 	autoRun         func(it automation.Automation, dir string) (string, error) // 自动化运行器(nil = 演示:只记录)

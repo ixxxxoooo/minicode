@@ -69,9 +69,7 @@ func appendRefs(draft string, refs ...string) string {
 
 // dropRefs 是落到对话栏的结果:引用写进输入框并把焦点交给它。
 func (a *App) dropRefs(refs ...string) {
-	before := a.draft
-	a.draft = appendRefs(a.draft, refs...)
-	if a.draft == before {
+	if a.addRefs(refs...) == 0 {
 		a.toast = "已经引用过了"
 		return
 	}
