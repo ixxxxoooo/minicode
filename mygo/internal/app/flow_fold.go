@@ -123,7 +123,7 @@ func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, co
 	}
 	if n > foldLineCap {
 		ui.Row(c).Height(theme.Px(26)).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
-			label := "展开 · 共 " + itoa(n) + " 行"
+			label := "展开全部"
 			if exp {
 				label = "收起"
 			}

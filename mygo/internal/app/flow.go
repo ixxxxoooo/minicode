@@ -155,9 +155,11 @@ func (a *App) exploreGroup(c *ui.Context, g []*core.ToolCall) {
 	if running {
 		verb, obj, state = "正在探索", "项目代码", "run"
 	}
-	open := !a.prefs.Bool(pGroupFold, true)
+	open := a.ToolDetailLevel() == 2
 	if set, ok := a.folds[id]; ok {
 		open = set
+	} else if a.ToolDetailLevel() != 2 {
+		open = !a.prefs.Bool(pGroupFold, true)
 	}
 	sp := step{id: id, icon: "layers", verb: verb, obj: obj, fam: famExplore, state: state, hasBody: true, open: open}
 	a.stepRow(c, sp, func() {
@@ -273,25 +275,26 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 				kit.Ic(c, sp.icon, kit.S12).TextColor(t.Tx3.Mix(tone, .78))
 			}
 		})
+		mqOn := a.thinkMarqueeVisible(sp, open)
 		var obj ui.Element
-		if sp.state == "run" && a.thinkMarqueeVisible(sp, open) {
-			// 折叠的思考在流式输出:只留「思考」二字,右侧跑马灯占满整行(首句标题与预览重复,且会把预览挤到几个字宽)
-			kit.RunTextS(c, sp.verb, t.Tx3, func(e ui.Element) ui.Element { return e.TextColor(t.Tx3).Shrink(0).SingleLine() })
-			obj = ui.Box(c).Width(0).Shrink(0)
-		} else if sp.state == "run" {
-			kit.RunTextS(c, sp.verb, t.Tx3, func(e ui.Element) ui.Element { return e.TextColor(t.Tx3).Shrink(0).SingleLine() })
-			obj = kit.RunTextS(c, sp.obj, t.Tx1, func(e ui.Element) ui.Element { return e.TextColor(t.Tx1).SingleLine().Shrink(1) })
+		if sp.state == "run" && sp.fam != famThink {
+			if sp.verb != "" {
+				kit.RunTextS(c, sp.verb, t.Tx3, func(e ui.Element) ui.Element { return e.TextColor(t.Tx3).Shrink(0).SingleLine() })
+			}
+			obj = kit.RunTextS(c, sp.obj, t.Tx1, func(e ui.Element) ui.Element { return e.TextColor(t.Tx1).SingleLine().Shrink(1).MinWidth(0) })
 		} else {
 			// 字重规范(设计稿 v4):工具行的动词与对象都是常规字重,靠颜色分层——动词 Tx3 → 对象 Tx2 → 附注 Tx3 → 结果 Tx4;
-			// 只有进行中的一行对象提亮到 Tx1。思考行整行更淡(对象也用 Tx3),不抢正文。
-			ui.Text(c, sp.verb).TextColor(t.Tx3).Shrink(0).SingleLine()
+			// 思考行对象用 Tx3;流式折叠时标题常驻,跑马灯占标题与用时之间的剩余宽度。
+			if sp.verb != "" {
+				ui.Text(c, sp.verb).TextColor(t.Tx3).Shrink(0).SingleLine()
+			}
 			objCol := t.Tx2
 			if sp.fam == famThink {
 				objCol = t.Tx3
 			}
-			obj = ui.Text(c, sp.obj).TextColor(objCol).SingleLine().Shrink(1)
+			obj = ui.Text(c, sp.obj).TextColor(objCol).SingleLine().Shrink(1).MinWidth(0)
 		}
-		mq := a.thinkMarqueeRow(c, sp, tone, open)
+		mq := a.thinkMarqueeRow(c, sp, tone, open, row)
 		if at, ok := a.thinkMqHide[sp.id]; ok && kit.MotionOn() {
 			age := float32(a.now().Sub(at)) / float32(kit.DurFast)
 			if age < 1 {
@@ -303,9 +306,11 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			obj.Strikethrough().TextColor(t.Tx3)
 		}
 		if sp.meta != "" && a.chatTier() != tierNarrow { // 窄档:附注(路径、行区间)让位
-			ui.Text(c, sp.meta).Font("monospace").FontSize(theme.Px(11)).TextColor(t.Tx3).SingleLine().Shrink(1)
+			ui.Text(c, sp.meta).Font("monospace").FontSize(theme.Px(11)).TextColor(t.Tx3).SingleLine().Shrink(1).MinWidth(0)
 		}
-		ui.Spacer(c).Grow(1)
+		if !mqOn {
+			ui.Spacer(c).Grow(1)
+		}
 		// 右侧结果
 		ui.Row(c).Gap(6).PaddingStart(8).Shrink(0).AlignItems(ui.Center).Children(func() {
 			if hov && sp.state != "run" {
@@ -470,7 +475,7 @@ func (a *App) diffCard(c *ui.Context, d *core.DiffBlock, head bool) {
 			ui.Text(c, d.Path).Grow(1).SingleLine()
 			ui.Text(c, "+"+itoa(add)).Font("monospace").FontSize(a.FlowMonoSize()).TextColor(t.Ok)
 			ui.Text(c, "−"+itoa(del)).Font("monospace").FontSize(a.FlowMonoSize()).TextColor(t.Err)
-			kit.Ib(c, "ext", kit.IbOpt{Small: true, Tip: "在工作区查看差异"}).OnClick(func() { a.OpenDiffTab(d.Path) })
+			kit.Ib(c, "ext", kit.IbOpt{Small: true, Tip: "在工作区打开差异"}).OnClick(func() { a.OpenDiffTab(d.Path) })
 			kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制改动后的内容"}).OnClick(func() { a.copyOut(d.New, "改动后的内容") })
 		}
 	}
@@ -617,10 +622,10 @@ func (a *App) noticeActions(c *ui.Context, n *core.Notice) {
 	low := strings.ToLower(n.Text)
 	switch n.Level {
 	case core.NoticeError:
-		ui.Column(c).Gap(4).Shrink(0).Children(func() {
-			if a.st.Phase == core.PhaseRunning {
-				kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "refresh"}).Opacity(0.4).Cursor(ui.CursorDefault)
-			} else if kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "refresh"}).Clicked() {
+		if a.st.Phase == core.PhaseRunning {
+			kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "refresh"}).Opacity(0.4).Cursor(ui.CursorDefault)
+		} else {
+			kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "refresh"}).OnClick(func() {
 				if uid := a.lastUserID(); uid != "" {
 					if txt := a.userText(uid); txt != "" {
 						a.send(core.CmdPrompt{Text: txt})
@@ -629,11 +634,8 @@ func (a *App) noticeActions(c *ui.Context, n *core.Notice) {
 				} else {
 					a.toast = "没有可重试的提问"
 				}
-			}
-			if kit.Btn(c, "复制", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "copy"}).Clicked() {
-				a.copyOut(n.Text, "错误信息")
-			}
-		})
+			})
+		}
 	case core.NoticeWarning:
 		if strings.Contains(n.Text, "压缩") || strings.Contains(low, "context") || strings.Contains(n.Text, "%") {
 			kit.Btn(c, "压缩", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() {
