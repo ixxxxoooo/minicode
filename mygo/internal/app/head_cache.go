@@ -30,6 +30,44 @@ type headCache struct {
 	mu  sync.Mutex
 	tip string // 缓存对应的活动仓库最新提交哈希(仓库状态没读完时为空)
 	m   map[string]headEntry
+	// refreshing 是正在后台重读的键:TTL 过期后先继续用旧内容,后台重读完再换,
+	// 界面线程不会在每个 TTL 周期里卡一次 `git show`。
+	refreshing map[string]bool
+}
+
+// peek 与 get 类似,但过期的条目也返回(stale=true)。
+func (h *headCache) peek(p, tip string, now time.Time) (content string, ok, hit, stale bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.tip != tip {
+		h.tip, h.m, h.refreshing = tip, nil, nil
+		return "", false, false, false
+	}
+	e, found := h.m[p]
+	if !found {
+		return "", false, false, false
+	}
+	return e.content, e.ok, true, now.Sub(e.at) > headCacheTTL
+}
+
+// beginRefresh 登记一次后台重读;已有同键重读在进行时返回 false。
+func (h *headCache) beginRefresh(p string) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.refreshing[p] {
+		return false
+	}
+	if h.refreshing == nil {
+		h.refreshing = map[string]bool{}
+	}
+	h.refreshing[p] = true
+	return true
+}
+
+func (h *headCache) endRefresh(p string) {
+	h.mu.Lock()
+	delete(h.refreshing, p)
+	h.mu.Unlock()
 }
 
 // get 命中且未过期时返回缓存;tip 与缓存不一致视为 HEAD 已变,先清空。
@@ -62,7 +100,7 @@ func (h *headCache) put(p, tip string, content string, ok bool, now time.Time) {
 // reset 清空(切项目 / 切仓库 / 换文件系统)。
 func (h *headCache) reset() {
 	h.mu.Lock()
-	h.tip, h.m = "", nil
+	h.tip, h.m, h.refreshing = "", nil, nil
 	h.mu.Unlock()
 }
 
@@ -75,14 +113,29 @@ func (a *App) headTip() string {
 }
 
 // headShow 带缓存地读取「某仓库里某文件在 HEAD 的内容」。key 用文件树路径(多根时全局唯一),
-// 真正的读取交给 load(会起 git 子进程)。
+// 真正的读取交给 load(会起 git 子进程,只能用闭包捕获的值,不能碰 App 状态)。
+// 第一次读取同步完成(调用方这一帧就要内容);TTL 过期后继续返回旧内容,并在后台重读一次。
 func (a *App) headShow(key string, load func() (string, bool)) (string, bool) {
 	tip, now := a.headTip(), a.now()
-	if c, ok, hit := a.headC.get(key, tip, now); hit {
+	c, ok, hit, stale := a.headC.peek(key, tip, now)
+	if hit && !stale {
+		return c, ok
+	}
+	if hit && a.win != nil {
+		if a.headC.beginRefresh(key) {
+			a.bg("head-refresh", func() func() {
+				defer a.headC.endRefresh(key)
+				end := diag.SpanSlow("vcs", "后台重读HEAD内容", 500*time.Millisecond, "path", key)
+				nc, nok := load()
+				end()
+				a.headC.put(key, tip, nc, nok, a.now())
+				return func() { a.frameSoon() }
+			})
+		}
 		return c, ok
 	}
 	end := diag.SpanSlow("vcs", "读取HEAD内容", 200*time.Millisecond, "path", key)
-	c, ok := load()
+	c, ok = load()
 	end()
 	a.headC.put(key, tip, c, ok, now)
 	return c, ok
