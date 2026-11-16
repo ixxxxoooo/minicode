@@ -20,7 +20,7 @@ func (a *App) cuDrawer(c *ui.Context, st *customize.Store) {
 	if cat == customize.Commands || cat == customize.Agents || cat == customize.Rules || cat == customize.Hooks {
 		w = 360
 	}
-	col := ui.Column(c).Key("cu-drawer").Shrink(0)
+	col := ui.Column(c).Key("cu-drawer").Shrink(0).MinHeight(0).Clip()
 	if a.pageNarrowMid() {
 		col.Grow(1).MinWidth(0)
 	} else {
@@ -40,7 +40,7 @@ func (a *App) cuDrawer(c *ui.Context, st *customize.Store) {
 			s.draft, s.dOf = it.Clone(), it
 		}
 		var foot func()
-		ui.Scroll(c).Key("cu-dscroll-" + string(cat) + "-" + it.Name).Grow(1).MinHeight(0).Children(func() {
+		ui.Scroll(c).Key("cu-dscroll-" + string(cat) + "-" + it.Name).Grow(1).MinHeight(0).Clip().Children(func() {
 			ui.Column(c).Padding(14, 16, 14, 16).Gap(12).Children(func() {
 				switch cat {
 				case customize.Plugins:
@@ -58,11 +58,12 @@ func (a *App) cuDrawer(c *ui.Context, st *customize.Store) {
 				case customize.Hooks:
 					foot = a.cuHook(c, st, it)
 				}
+				if foot != nil {
+					ui.Row(c).Key("cu-foot").Margin(8, 0, 0, 0).Padding(10, 0, 0, 0).Gap(8).AlignItems(ui.Center).
+						BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(foot)
+				}
 			})
 		})
-		if foot != nil {
-			ui.Row(c).Padding(10, 16).Gap(8).AlignItems(ui.Center).Shrink(0).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(foot)
-		}
 	})
 }
 
@@ -154,18 +155,19 @@ func (a *App) cuToggleRow(c *ui.Context, key, title, sub string, on bool, flip f
 	})
 }
 
-// cuDelete 两步确认:先点「删除」再点「确认删除」;完成后给撤销窗口。
-func (a *App) cuDelete(c *ui.Context, st *customize.Store, it *customize.Item, verb string) {
-	if a.cu.delArm == it {
-		kit.Btn(c, "确认删除", kit.BtnOpt{Variant: kit.BtnDanger, Icon: "trash"}).OnClick(func() {
-			a.cuDeleteDo(st, it, verb)
-		})
-		kit.Btn(c, "取消", kit.BtnOpt{Variant: kit.BtnGhost}).OnClick(func() { a.cu.delArm = nil })
-		return
-	}
-	kit.Btn(c, verb, kit.BtnOpt{Variant: kit.BtnDangerGhost, Icon: "trash"}).OnClick(func() {
-		a.cu.delArm = it
+func (a *App) cuDeleteAsk(st *customize.Store, it *customize.Item, verb string) {
+	a.confirmDlg(verb+"「"+it.Name+"」?", "这会从当前范围移除它的配置。", verb, true, func() {
+		a.cuDeleteDo(st, it, verb)
 	})
+}
+
+// cuHeadDel 在详情标题行放删除(避免底部操作条被滚动层挡住点击)。
+func (a *App) cuHeadDel(c *ui.Context, st *customize.Store, it *customize.Item, verb string) func() {
+	return func() {
+		kit.Ib(c, "trash", kit.IbOpt{Small: true, Tip: verb}).Key("cu-del").OnClick(func() {
+			a.cuDeleteAsk(st, it, verb)
+		})
+	}
 }
 
 func (a *App) cuDeleteDo(st *customize.Store, it *customize.Item, verb string) {
@@ -268,7 +270,10 @@ func (a *App) cuMarketDetail(c *ui.Context, st *customize.Store) {
 
 func (a *App) cuPlugin(c *ui.Context, st *customize.Store, it *customize.Item) func() {
 	t := a.tk
-	a.cuHead(c, st, it, "plug", it.Name, func() { kit.Tag(c, "v"+it.Ver) })
+	a.cuHead(c, st, it, "plug", it.Name, func() {
+		kit.Tag(c, "v"+it.Ver)
+		a.cuHeadDel(c, st, it, "卸载")()
+	})
 	if it.Upd != "" {
 		a.cuBanner(c, kit.KInfo, "download", "有新版本 "+it.Upd, func() {
 			kit.Btn(c, "更新", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() {
@@ -303,7 +308,6 @@ func (a *App) cuPlugin(c *ui.Context, st *customize.Store, it *customize.Item) f
 		})
 	})
 	return func() {
-		a.cuDelete(c, st, it, "卸载")
 		ui.Spacer(c).Grow(1)
 		label := "启用"
 		if it.On {
@@ -317,7 +321,7 @@ func (a *App) cuPlugin(c *ui.Context, st *customize.Store, it *customize.Item) f
 
 func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func() {
 	t := a.tk
-	a.cuHead(c, st, it, "server", it.Name, nil)
+	a.cuHead(c, st, it, "server", it.Name, a.cuHeadDel(c, st, it, "删除"))
 	switch it.Status {
 	case customize.StOK:
 		a.cuBanner(c, kit.KOk, "check", "已连接 · "+itoa(len(it.Tools))+" 个工具", func() {
@@ -391,7 +395,6 @@ func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func
 		a.cuToggleRow(c, "cm-ondemand-"+it.Name, "按需加载工具", "ENABLE_TOOL_SEARCH · 工具很多时只在需要时加载描述,节省上下文", it.OnDemand, func() { it.OnDemand = !it.OnDemand })
 	})
 	return func() {
-		a.cuDelete(c, st, it, "删除")
 		ui.Spacer(c).Grow(1)
 		kit.Btn(c, "编辑配置", kit.BtnOpt{Icon: "edit"}).OnClick(func() { a.cuMCPStartEdit(it) })
 	}
@@ -414,7 +417,7 @@ func (a *App) cuSkill(c *ui.Context, it *customize.Item) func() {
 	t := a.tk
 	st := a.cuStore()
 	d := &a.cu.draft
-	a.cuHead(c, st, it, "spark", it.Name, nil)
+	a.cuHead(c, st, it, "spark", it.Name, a.cuHeadDel(c, st, it, "删除"))
 	a.cuLbl(c, "名称(重命名目录)", func() { a.cuField(c, "sk-n", &d.Name, false, "skill-name") })
 	a.cuKV(c, [][2]string{{"范围", it.Scope.Label()}, {"位置", it.Path}})
 	a.cuLbl(c, "文件", func() {
@@ -457,7 +460,6 @@ func (a *App) cuSkill(c *ui.Context, it *customize.Item) func() {
 		})
 	})
 	return func() {
-		a.cuDelete(c, st, it, "删除")
 		kit.Btn(c, "复制路径", kit.BtnOpt{Variant: kit.BtnGhost, Icon: "copy"}).OnClick(func() { a.toast = "已复制路径:" + it.Path })
 		ui.Spacer(c).Grow(1)
 		kit.Btn(c, "在编辑器打开", kit.BtnOpt{Variant: kit.BtnSoft, Icon: "code"}).OnClick(func() { a.cuOpenPath(it.Path) })
@@ -485,7 +487,7 @@ func (a *App) cuModelSeg(c *ui.Context, key string, m *int, short bool) {
 func (a *App) cuCommand(c *ui.Context, st *customize.Store, it *customize.Item) func() {
 	t := a.tk
 	d := &a.cu.draft
-	a.cuHead(c, st, it, "slash", it.Name, nil)
+	a.cuHead(c, st, it, "slash", it.Name, a.cuHeadDel(c, st, it, "删除"))
 	ui.Column(c).Gap(8).Children(func() {
 		a.cuLbl(c, "名称", func() { a.cuField(c, "cc-n", &d.Name, true, "/command") })
 		a.cuLbl(c, "说明", func() { a.cuField(c, "cc-d", &d.Note, false, "这个命令做什么") })
@@ -511,11 +513,11 @@ func (a *App) cuCommand(c *ui.Context, st *customize.Store, it *customize.Item) 
 	ui.RichText(c, ui.Span{Text: "输入 "}, ui.Span{Text: d.Name + argv, Color: t.Ac}, ui.Span{Text: " 时,$ARGUMENTS = " + arg}).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.5)
 	a.cuErr(c)
 	return func() {
-		a.cuDelete(c, st, it, "删除")
 		ui.Spacer(c).Grow(1)
 		kit.Btn(c, "试运行", kit.BtnOpt{Icon: "play"}).OnClick(func() { a.cuTryCommand(it) })
 		kit.Btn(c, "填进输入框", kit.BtnOpt{Icon: "send"}).OnClick(func() {
-			a.draft = it.Name + argvOf(it)
+			d := a.cuDraftItem(it)
+			a.draft = d.Name + argvOfDraft(&d)
 			a.screen = ScreenWork
 			a.toast = "已把命令填进输入框"
 		})
@@ -524,6 +526,10 @@ func (a *App) cuCommand(c *ui.Context, st *customize.Store, it *customize.Item) 
 }
 
 func argvOf(it *customize.Item) string {
+	return argvOfDraft(it)
+}
+
+func argvOfDraft(it *customize.Item) string {
 	if it.Hint != "" {
 		return " "
 	}
@@ -536,7 +542,10 @@ func (a *App) cuAgent(c *ui.Context, st *customize.Store, it *customize.Item) fu
 	t := a.tk
 	d := &a.cu.draft
 	colors := []ui.Color{t.Info, t.Ok, t.Vio, t.Cyan, t.Pink, t.Warn}
-	a.cuHead(c, st, it, "bot", it.Name, func() { ui.Box(c).Size(7, 7).Radius(4).Background(colors[d.Color%len(colors)]).Shrink(0) })
+	a.cuHead(c, st, it, "bot", it.Name, func() {
+		ui.Box(c).Size(7, 7).Radius(4).Background(colors[d.Color%len(colors)]).Shrink(0)
+		a.cuHeadDel(c, st, it, "删除")()
+	})
 	ui.Column(c).Gap(8).Children(func() {
 		a.cuLbl(c, "名称", func() { a.cuField(c, "ca-n", &d.Name, true, "my-agent") })
 		a.cuLbl(c, "什么时候委派给它", func() { a.cuField(c, "ca-d", &d.Note, false, "例如:审查安全问题") })
@@ -575,7 +584,6 @@ func (a *App) cuAgent(c *ui.Context, st *customize.Store, it *customize.Item) fu
 	}
 	a.cuErr(c)
 	return func() {
-		a.cuDelete(c, st, it, "删除")
 		ui.Spacer(c).Grow(1)
 		kit.Btn(c, "试运行", kit.BtnOpt{Icon: "play"}).OnClick(func() { a.cuTryAgent(it) })
 		kit.Btn(c, "保存", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(func() { a.cuSave(st, it) })
@@ -587,7 +595,7 @@ func (a *App) cuAgent(c *ui.Context, st *customize.Store, it *customize.Item) fu
 func (a *App) cuRule(c *ui.Context, st *customize.Store, it *customize.Item) func() {
 	t := a.tk
 	d := &a.cu.draft
-	a.cuHead(c, st, it, "fileText", it.Name, nil)
+	a.cuHead(c, st, it, "fileText", it.Name, a.cuHeadDel(c, st, it, "删除"))
 	ui.Row(c).AlignItems(ui.Center).Children(func() {
 		on := 0
 		if a.cu.rulePV {
@@ -635,7 +643,6 @@ func (a *App) cuRule(c *ui.Context, st *customize.Store, it *customize.Item) fun
 	})
 	a.cuErr(c)
 	return func() {
-		a.cuDelete(c, st, it, "删除")
 		ui.Spacer(c).Grow(1)
 		kit.Btn(c, "在编辑器打开", kit.BtnOpt{Icon: "code"}).OnClick(func() { a.cuOpenPath(it.Path) })
 		kit.Btn(c, "保存", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(func() { a.cuSave(st, it) })
@@ -652,7 +659,7 @@ func pct1(f float64) string {
 func (a *App) cuHook(c *ui.Context, st *customize.Store, it *customize.Item) func() {
 	t := a.tk
 	d := &a.cu.draft
-	a.cuHead(c, st, it, "bolt", it.Name, nil)
+	a.cuHead(c, st, it, "bolt", it.Name, a.cuHeadDel(c, st, it, "删除"))
 	if it.Scope == customize.Project && !it.Trusted {
 		a.cuBanner(c, kit.KWarn, "shield", "这个项目的钩子还没有被信任,不会运行。", func() {
 			kit.Btn(c, "信任", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() {
@@ -699,7 +706,6 @@ func (a *App) cuHook(c *ui.Context, st *customize.Store, it *customize.Item) fun
 	}
 	a.cuErr(c)
 	return func() {
-		a.cuDelete(c, st, it, "删除")
 		ui.Spacer(c).Grow(1)
 		kit.Btn(c, "试运行", kit.BtnOpt{Icon: "play"}).OnClick(func() { a.cuTryHook(d) })
 		kit.Btn(c, "保存", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(func() { a.cuSave(st, it) })

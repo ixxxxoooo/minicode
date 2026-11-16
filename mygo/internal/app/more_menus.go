@@ -256,16 +256,7 @@ func (a *App) cuMoreMenu(m *ui.Menu, st *customize.Store, it *customize.Item) {
 		verb = "卸载"
 	}
 	if menuItem(m, verb+"…").Danger().Chosen() {
-		a.confirmDlg(verb+"「"+it.Name+"」?", "这会从本机移除它的配置,无法撤销。", verb, true, func() {
-			if a.cuCat() == customize.Plugins {
-				st.Uninstall(it)
-			} else {
-				st.Remove(a.cuCat(), it)
-			}
-			log.Info("删除自定义项", "cat", a.cuCat(), "name", it.Name)
-			a.cu.sel, a.cu.dOf, a.cu.delArm = nil, nil, nil
-			a.toast = "已" + verb + "「" + it.Name + "」"
-		})
+		a.cuDeleteAsk(st, it, verb)
 	}
 }
 

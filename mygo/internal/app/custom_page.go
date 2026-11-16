@@ -91,14 +91,24 @@ func (a *App) cuCat() customize.Cat {
 // SetCustomize 直接选中某个分类(截图 / 调试用)。
 func (a *App) SetCustomize(cat string) {
 	a.cu.cat = customize.Cat(cat)
-	a.cu.sel, a.cu.mk = nil, nil
+	a.cuResetNav()
 }
 
 // cuSelect 选中一项并载入草稿。
 func (a *App) cuSelect(it *customize.Item) {
 	a.cu.sel = it
-	a.cu.delArm, a.cu.err, a.cu.hookOut = nil, "", ""
+	a.cu.dOf = nil
+	a.cu.delArm, a.cu.err, a.cu.hookOut, a.cu.runOut = nil, "", "", ""
 	a.cu.rulePV = false
+}
+
+// cuResetNav 切换分类或整页入口时清空详情与草稿,避免旧选中残留。
+func (a *App) cuResetNav() {
+	s := &a.cu
+	s.sel, s.mk, s.dOf, s.delArm = nil, nil, nil, nil
+	s.draft = customize.Item{}
+	s.err, s.hookOut, s.runOut, s.detail = "", "", "", false
+	s.rulePV = false
 }
 
 // cuCurrent 返回当前选中项:选中项不在筛选结果里(被筛掉 / 被删)就退回第一项。
@@ -145,7 +155,7 @@ func (a *App) customizePage(c *ui.Context) {
 			})
 		})
 	}
-	a.pane(c).Grow(1).Children(func() {
+	a.pane(c).Grow(1).MinHeight(0).Padding(0, 0, float32(theme.HStatus), 0).Children(func() {
 		switch {
 		case narrow && s.detail && s.sel != nil:
 			ui.Column(c).Grow(1).MinHeight(0).Children(func() {
@@ -167,7 +177,7 @@ func (a *App) customizePage(c *ui.Context) {
 		default:
 			ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
 				a.cuRail(c, st)
-				ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+				ui.Column(c).Grow(1).MinWidth(0).MinHeight(0).Children(func() {
 					head()
 					ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
 						a.cuMain(c, st)
@@ -194,7 +204,8 @@ func (a *App) cuCatsBar(c *ui.Context, st *customize.Store) {
 	}
 	if i := kit.Seg(c, items, cur, kit.SegOpt{Key: "cu-cats", Fill: true}); i >= 0 && customize.Cats[i] != s.cat {
 		s.cat = customize.Cats[i]
-		s.q, s.scope, s.market, s.sel, s.mk, s.err, s.detail = "", customize.All, false, nil, nil, "", false
+		s.q, s.scope, s.market = "", customize.All, false
+		a.cuResetNav()
 	}
 	ui.Box(c).Height(6)
 }
@@ -209,7 +220,8 @@ func (a *App) cuRail(c *ui.Context, st *customize.Store) {
 			r := kit.RowEl(c, cat == a.cuCat()).Key("cr-" + string(cat)).Justify(ui.Start)
 			r.OnClick(func() {
 				if s.cat != cat {
-					s.cat, s.q, s.scope, s.market, s.sel, s.mk, s.err = cat, "", customize.All, false, nil, nil, ""
+					s.cat, s.q, s.scope, s.market = cat, "", customize.All, false
+					a.cuResetNav()
 				}
 			})
 			r.Children(func() {
@@ -382,8 +394,19 @@ func (a *App) cuMarket(c *ui.Context, st *customize.Store) {
 			ms = append(ms, m)
 		}
 	}
-	if s.mk == nil && len(ms) > 0 {
-		s.mk = ms[0]
+	mkOK := false
+	for _, m := range ms {
+		if m == s.mk {
+			mkOK = true
+			break
+		}
+	}
+	if !mkOK {
+		if len(ms) > 0 {
+			s.mk = ms[0]
+		} else {
+			s.mk = nil
+		}
 	}
 	if len(ms) == 0 {
 		ui.Text(c, "没有符合条件的插件").TextColor(t.Tx3).Padding(20, 0)
@@ -426,8 +449,20 @@ func (a *App) cuMarket(c *ui.Context, st *customize.Store) {
 // cuDialog 是「新建」对话框。
 func (a *App) cuDialog(c *ui.Context, st *customize.Store) {
 	s := &a.cu
+	if a.dlgClosing == "cu-new" && time.Since(a.dlgCloseAt) >= kit.DurFast {
+		a.dlgClosing, a.dlgSeen = "", ""
+	}
 	d := s.dlg
 	if d == nil {
+		if a.dlgSeen == "cu-new" || a.dlgClosing == "cu-new" {
+			a.dialogOpen("cu-new", false, func(open *bool) {
+				t := a.tk
+				ui.DialogBase(c, open, func(backdrop, panel ui.Element) {
+					backdrop.Background(t.Scrim)
+					a.dialogIn("cu-new", backdrop, panel)
+				})
+			})
+		}
 		return
 	}
 	t := a.tk
@@ -460,13 +495,9 @@ func (a *App) cuDialog(c *ui.Context, st *customize.Store) {
 			}
 		}
 		s.dlg, s.scope, s.q = nil, customize.All, ""
+		a.dlgClosing, a.dlgSeen = "", "" // 成功创建直达终态,避免退场遮罩挡住详情操作
 		a.cuSelect(it)
 		a.toast = "已新建「" + it.Name + "」"
-	}
-	if a.dlgClosing == "cu-new" && time.Since(a.dlgCloseAt) >= kit.DurFast {
-		a.dlgClosing, a.dlgSeen = "", ""
-		s.dlg = nil
-		return
 	}
 	a.dialogOpen("cu-new", s.dlg != nil, func(open *bool) {
 		ui.DialogBase(c, open, func(backdrop, panel ui.Element) {
