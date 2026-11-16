@@ -178,7 +178,7 @@ func TestSchemeBPickerHasAddAndStaysShort(t *testing.T) {
 			t.Fatalf("下拉里应有「%s」", want)
 		}
 	}
-	if tt.HasText("成员") {
-		t.Fatal("下拉里不应再逐个列出成员文件夹")
+	if !tt.HasText("router-demo") {
+		t.Fatal("当前项目(即使是工作区成员)也要在下拉里能看到并选中")
 	}
 }

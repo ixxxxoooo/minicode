@@ -59,16 +59,8 @@ func (a *App) projPickPopup(c *ui.Context, anchor ui.Element) {
 						}
 					}
 					kit.Cap(c, "项目")
-					n := 0
-					for _, p := range a.sideProjects() {
-						if a.memberOfWorkspace(p.Path) {
-							continue
-						}
-						n++
+					for _, p := range a.sideProjects() { // 含工作区成员:单独选它 = 只看这个文件夹(退出工作区)
 						a.projPickRow(c, p)
-					}
-					if n == 0 {
-						kit.Cap(c, "还没有单独的项目")
 					}
 				})
 			})
@@ -92,7 +84,8 @@ func (a *App) projPickRow(c *ui.Context, p core.ProjectInfo) {
 	if p.Count > 0 {
 		right = itoa(p.Count)
 	}
-	if a.mi(c, key, "folder", p.Name, right, on).Clicked() {
+	// 同名项目(如多个 001)靠悬停提示里的完整路径区分
+	if a.mi(c, key, "folder", p.Name, right, on).Tooltip(tildePath(p.Path)).Clicked() {
 		a.popup = ""
 		a.selectProject(p)
 	}

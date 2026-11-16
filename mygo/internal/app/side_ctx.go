@@ -54,11 +54,31 @@ func (a *App) wsProject(w projects.Workspace) core.ProjectInfo {
 			out.Count += p.Count
 		}
 	}
-	sort.SliceStable(out.Sessions, func(i, j int) bool { return out.Sessions[i].Updated > out.Sessions[j].Updated })
+	// 先按「今天 / 昨天 / 更早」分段,段内按最近更新排序(演示数据没有时间戳时只按分段,保持各文件夹内原有顺序)
+	sort.SliceStable(out.Sessions, func(i, j int) bool {
+		a, b := out.Sessions[i], out.Sessions[j]
+		if ra, rb := groupRank(a.Group), groupRank(b.Group); ra != rb {
+			return ra < rb
+		}
+		return a.Updated > b.Updated
+	})
 	if out.Count == 0 {
 		out.Count = len(out.Sessions)
 	}
 	return out
+}
+
+// groupRank 会话分段的先后:今天 < 昨天 < 更早 < 其它。
+func groupRank(g string) int {
+	switch g {
+	case "今天":
+		return 0
+	case "昨天":
+		return 1
+	case "更早":
+		return 2
+	}
+	return 3
 }
 
 // startProject 工作区新会话要落在的「项目」(没有会话的文件夹也有一条空项目)。
