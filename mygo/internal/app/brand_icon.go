@@ -30,6 +30,16 @@ func (a *App) dockIconSuffix(dark bool) (suffix string, isDark bool) {
 	return suffix, dark
 }
 
+// dockSignature 把决定 Dock 图标的全部输入拼成签名:样式、外观后缀、深浅。
+func (a *App) dockSignature(dark bool) string {
+	style := 0
+	if a.prefs != nil {
+		style = a.prefs.Int(pAppStyle, 0)
+	}
+	suffix, d := a.dockIconSuffix(dark)
+	return itoa(style) + "|" + suffix + "|" + map[bool]string{true: "d", false: "l"}[d]
+}
+
 // dockIconData 按偏好 appearance.appIcon* 选 Dock 图标,返回 PNG 字节。
 // 顺序:内嵌的 512px 样式图 → 磁盘上的样式 icns / PNG → 包内默认织纹。
 func (a *App) dockIconData(dark bool) []byte {

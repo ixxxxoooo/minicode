@@ -22,7 +22,7 @@ type brand struct {
 	trayMode  string
 	trayFrame int
 	animStop  chan struct{}
-	dockDark  bool
+	dockSig   string // 上次设置 Dock 图标时的签名(样式|后缀|深浅),不变就不重复设置
 	lastBadge string
 	lastA11y  string
 	bounceID  int
@@ -52,17 +52,16 @@ func (a *App) syncBrand() {
 		return
 	}
 	dark := a.tk != nil && a.tk.Palette.Dark
-	if a.brand.dockDark != dark {
-		a.brand.dockDark = dark
-		a.setDockIconFromPrefs(dark)
+	// Dock 图标按「样式 + 外观后缀 + 深浅」的签名判断是否需要重设:
+	// 只比较深浅会让设置里改样式 / 外观(浅色、深色、透明、着色)时 Dock 图标不更新。
+	dockDark := dark
+	if a.prefs != nil && a.prefs.Int(pAppMode, 0) == 0 {
+		dockDark = systemIsDark() // 「自动」随系统深浅
 	}
-	if a.prefs != nil {
-		if mode := a.prefs.Int(pAppMode, 0); mode == 0 {
-			if sysDark := systemIsDark(); sysDark != a.brand.dockDark {
-				a.brand.dockDark = sysDark
-				a.setDockIconFromPrefs(sysDark)
-			}
-		}
+	if sig := a.dockSignature(dockDark); sig != a.brand.dockSig {
+		a.brand.dockSig = sig
+		brandLog.Info("更新 Dock 图标", "sig", sig)
+		a.setDockIconFromPrefs(dockDark)
 	}
 	a.syncFinderIcon(dark)
 	a.syncDockBadge()
