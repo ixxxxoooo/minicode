@@ -44,6 +44,14 @@ type SegOpt struct {
 
 var thumbSpring = ui.Animation{Duration: DurBase, Ease: EaseSpring}
 
+// segIconSize:纯图标分段(导航栏)用设计稿默认图标 --ic = 14px,图文并排的分段保持 12px。
+func segIconSize(it SegItem) float32 {
+	if it.Text == "" {
+		return S14
+	}
+	return S12
+}
+
 // Seg 是分段控件(设计稿 .seg):底色 fill-2,选中的滑块是 raised + 阴影,换段时滑块带轻微回弹滑过去。
 // 返回被点击的下标(没有点击返回 -1)。
 func Seg(c *ui.Context, items []SegItem, on int, o ...SegOpt) int {
@@ -63,7 +71,7 @@ func Seg(c *ui.Context, items []SegItem, on int, o ...SegOpt) int {
 		for _, it := range items {
 			cw := float32(0)
 			if it.Icon != "" {
-				cw += 12
+				cw += segIconSize(it)
 			}
 			if it.Text != "" {
 				if it.Icon != "" {
@@ -116,7 +124,7 @@ func Seg(c *ui.Context, items []SegItem, on int, o ...SegOpt) int {
 				clickFocusRing(b)
 				b.Children(func() {
 					if it.Icon != "" {
-						Ic(c, it.Icon, S12)
+						Ic(c, it.Icon, segIconSize(it))
 					}
 					if it.Text != "" {
 						ui.Text(c, it.Text).SingleLine()
