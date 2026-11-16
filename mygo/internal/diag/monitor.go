@@ -303,7 +303,7 @@ func Watchdog(ping func(done func()), warn, dump time.Duration) {
 				// 3 秒才落盘的完整栈抓不到 400~1000 ms 的短卡顿,而这类卡顿(切形态、开会话)正是最常见的。
 				if stall >= warn && snaps < 3 {
 					snaps++
-					write(LevelWarn, "hang", "主线程停滞时的调用栈", []any{"已停滞", stall.Round(time.Millisecond), "栈", mainStackSummary(28)})
+					write(LevelWarn, "hang", "主线程停滞时的调用栈", []any{"已停滞", stall.Round(time.Millisecond), "栈", mainStackAppFrames(10)})
 				}
 				if stall >= dump && !dumped {
 					dumped = true
@@ -354,6 +354,19 @@ func mainStackSummary(limit int) string {
 		}
 		out = append(out, fn+"@"+loc)
 		i++
+	}
+	return strings.Join(out, " <- ")
+}
+
+// mainStackAppFrames 与 mainStackSummary 同源,但给出「内层 inner 帧 + 其后所有本应用(app. / kit. / main.)帧」,
+// 用于看清卡顿是从哪块界面代码进去的(纯库内层帧在深度上会把应用帧挤出摘要)。
+func mainStackAppFrames(inner int) string {
+	all := strings.Split(mainStackSummary(400), " <- ")
+	var out []string
+	for i, f := range all {
+		if i < inner || strings.HasPrefix(f, "app.") || strings.HasPrefix(f, "kit.") || strings.HasPrefix(f, "main.") {
+			out = append(out, f)
+		}
 	}
 	return strings.Join(out, " <- ")
 }
