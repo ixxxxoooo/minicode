@@ -18,12 +18,13 @@ import (
 type ctlKind int
 
 const (
-	kNone  ctlKind = iota // 右侧没有标准控件(自定义或纯说明行)
-	kSeg                  // 分段:值是选中的下标
-	kTog                  // 开关
-	kStep                 // 步进器
-	kChips                // 单选胶囊:值是选中的下标
-	kField                // 单行输入
+	kNone    ctlKind = iota // 右侧没有标准控件(自定义或纯说明行)
+	kSeg                    // 分段:值是选中的下标
+	kTog                    // 开关
+	kStep                   // 步进器
+	kChips                  // 单选胶囊:值是选中的下标
+	kField                  // 单行输入
+	kPreview                // 设置页实时预览(无键、无右侧控件)
 )
 
 // setRow 是设置里的一行。
@@ -39,6 +40,7 @@ type setRow struct {
 	w                float32 // 输入框宽度
 	ph               string
 	right            func(a *App, c *ui.Context) // kNone 时的自定义右侧内容
+	pvID             string                      // kPreview:settings_preview.go 里的预览 id
 }
 
 // setGroup 是一个分组卡:rows 声明式的行,或 body 自定义整块内容。
@@ -407,8 +409,16 @@ func (a *App) settingsGroup(c *ui.Context, g setGroup, index int) {
 		}
 		card.Children(func() {
 			// 同一分组既有行又有自定义块时,先画行再画块(原先有块就丢掉了行)。
-			for i, r := range g.rows {
-				a.settingsRow(c, r, i == 0)
+			first := true
+			for _, r := range g.rows {
+				if r.kind == kPreview {
+					if r.pvID != "" {
+						a.settingsPreview(c, r.pvID)
+					}
+					continue
+				}
+				a.settingsRow(c, r, first)
+				first = false
 			}
 			if g.body != nil {
 				g.body(a, c)
@@ -590,7 +600,7 @@ func (a *App) settingsHits(q string) []setHit {
 				rows = []setRow{{title: g.title}} // 自定义块按分组标题可被搜到
 			}
 			for _, r := range rows {
-				if r.title == "" {
+				if r.kind == kPreview || r.title == "" {
 					continue
 				}
 				if strings.Contains(strings.ToLower(r.title+" "+r.desc+" "+g.title+" "+tab.title), k) {

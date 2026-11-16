@@ -11,9 +11,9 @@ import (
 // WaitSpinStyle:0 沙漏 / 1 圆环 / 2 点阵 / 3 脉冲。
 var WaitSpinStyle atomic.Int32
 
-// SpinStyled 按 appearance.waitAnim 偏好渲染等待动画。
-func SpinStyled(c *ui.Context, col ui.Color) ui.Element {
-	switch WaitSpinStyle.Load() {
+// SpinStyle 按指定样式画等待指示(0 沙漏 / 1 圆环 / 2 点阵 / 3 脉冲),不读全局偏好。
+func SpinStyle(c *ui.Context, col ui.Color, style int) ui.Element {
+	switch style {
 	case 1:
 		return SpinRing(c, col)
 	case 2:
@@ -23,6 +23,11 @@ func SpinStyled(c *ui.Context, col ui.Color) ui.Element {
 	default:
 		return Spin(c, col)
 	}
+}
+
+// SpinStyled 按 appearance.waitAnim 偏好渲染等待动画。
+func SpinStyled(c *ui.Context, col ui.Color) ui.Element {
+	return SpinStyle(c, col, int(WaitSpinStyle.Load()))
 }
 
 func spinDots(c *ui.Context, col ui.Color) ui.Element {

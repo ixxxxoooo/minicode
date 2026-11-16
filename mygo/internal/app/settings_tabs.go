@@ -30,7 +30,8 @@ func rFld(key, title, desc, def string, w float32, mono bool, ph string) setRow 
 func rCustom(title, desc string, right func(a *App, c *ui.Context)) setRow {
 	return setRow{title: title, desc: desc, kind: kNone, right: right}
 }
-func restart(r setRow) setRow { r.restart = true; return r }
+func rPreview(id string) setRow { return setRow{kind: kPreview, pvID: id} }
+func restart(r setRow) setRow   { r.restart = true; return r }
 
 // rowBox 是自定义块里的一行(与设置行同样的内边距与分隔线)。
 func rowBox(a *App, c *ui.Context, first bool, minH float32) ui.Element {
@@ -321,14 +322,16 @@ var settingsTabs = []setTabDef{
 
 	{id: "typography", title: "字体与尺寸", icon: "align", desc: "界面缩放、会话正文字号与内容宽度。", groups: []setGroup{
 		{title: "界面与正文", rows: []setRow{
+			rPreview("typo"),
 			rSeg(pFontPreset, "字号预设", "同时调整界面大小与会话正文字号;滑块偏离后自动显示「自定义」", 1, "紧凑", "标准", "舒适", "大字", "自定义"),
-			rStp(pUIScale, "界面大小", "侧栏、列表、菜单、按钮、文件树等所有界面文字、图标与行高整体缩放(90%–150%,默认 110%)", theme.DefaultUIScale, theme.MinUIScale, theme.MaxUIScale, 5, "%"),
+			rStp(pUIScale, "界面大小", "侧栏、列表、菜单、按钮、文件树等所有界面文字、图标与行高整体缩放(90%–150%,默认 100%)", theme.DefaultUIScale, theme.MinUIScale, theme.MaxUIScale, 5, "%"),
 			rStp(pFontScale, "会话正文字号", "会话里你的消息与 Claude 回复正文、Markdown 预览的字号(85%–150%),不影响其余界面文字", 100, 85, 150, 5, "%"),
-			rSeg(pLineHeight, "正文行距", "会话流、用户消息与输入框的行距;不影响编辑器与终端", 1, "紧凑", "标准", "宽松"),
+			rSeg(pLineHeight, "正文行距", "会话流、用户消息与输入框的行距(1.45 / 1.6 / 1.75);不影响编辑器与终端", 1, "紧凑", "标准", "宽松"),
 		}},
 		{title: "内容宽度", rows: []setRow{
 			rSeg(pFlowWidth, "会话内容宽度", "时间线、排队卡、任务坞与输入框同宽;窄屏自动收窄", 2, "窄", "紧凑", "标准", "宽", "特宽", "占满"),
 			rSeg(pSetWidth, "设置页内容宽度", "设置主栏内容列;窗口较窄时自动铺满", 1, "窄", "标准", "宽", "特宽", "占满"),
+			rPreview("width"),
 		}},
 		{title: "文件树", rows: []setRow{
 			rTog("appearance.fileIcons", "彩色文件图标", "按文件类型给图标上色;关闭后全部用灰色。作用于文件树、标签、搜索与源代码管理", true),
@@ -340,8 +343,11 @@ var settingsTabs = []setTabDef{
 			rTog("appearance.motion", "动效", "流光、滑入与布局变形;关闭后所有动画直接到位(也跟随系统「减弱动态效果」)", true),
 			rSeg("appearance.morph", "形态切换动画", "Agent ⇄ IDE 的布局变形,约 0.44 秒;「简化」只淡入淡出", 0, "流畅", "简化", "无"),
 			rSeg("appearance.shimmer", "流光样式", "「正在进行」的文字扫光", 0, "流光", "呼吸", "无"),
+			rPreview("shimmer"),
 			rSeg("appearance.spinner", "等待字符动画", "状态行与回合进行中的字符动画", 2, "经典", "趣味", "Claude", "诗意", "极客", "极简"),
+			rPreview("spinner"),
 			rSeg(pWaitAnim, "等待指示样式", "步骤行 / 子代理 / 任务坞 / 状态栏;按钮 loading 仍用小圆环", 0, "沙漏", "圆环", "点阵", "脉冲"),
+			rPreview("wait"),
 			rSeg(pScrollbar, "滚动条", "自动隐藏:滚动时出现,停止约 3 秒后隐藏;跟随系统:MyGo 默认;始终显示", 1, "跟随系统", "自动隐藏", "始终显示"),
 		}},
 	}},
@@ -372,7 +378,8 @@ var settingsTabs = []setTabDef{
 	{id: "chat", title: "对话与提示词", icon: "chat", desc: "会话流的显示与回合行为,以及追加到系统提示词的内容。", groups: []setGroup{
 		{title: "会话样式", rows: []setRow{
 			rSeg("appearance.flowStyle", "会话样式", "对话:你的消息靠右成气泡;通栏:与正文同宽的整行卡片", 0, "跟随布局", "对话", "通栏"),
-			rSeg("appearance.density2", "工具调用详细程度", "精简只显示动词与对象;详细默认展开输出", 1, "精简", "标准", "详细"),
+			rSeg("appearance.density2", "工具调用详细程度", "精简:相邻调用合并成一行摘要;标准:只合并连续的读取 / 搜索;详细:差异与命令输出直接显示在行下", 1, "精简", "标准", "详细"),
+			rPreview("tools"),
 		}},
 		{title: "显示", rows: []setRow{
 			rTog("chat.thinkOpen", "思考内容默认展开", "关闭时只显示「思考 · 4 秒」一行", false),

@@ -35,6 +35,49 @@ func shimmerBandPos() float32 {
 	return float32(t) / float32(shimmerSweep)
 }
 
+// RunTextMode 与 RunTextS 相同,但使用指定流光样式(设置页预览并排展示三种样式)。
+func RunTextMode(c *ui.Context, text string, hi ui.Color, mode int, style func(ui.Element) ui.Element) ui.Element {
+	switch mode {
+	case 2:
+		e := ui.Text(c, text)
+		if style != nil {
+			e = style(e)
+		}
+		return e
+	case 1:
+		e := ui.Text(c, text)
+		if style != nil {
+			e = style(e)
+		}
+		return Pulse(e)
+	default:
+		if !viewOK() {
+			e := ui.Text(c, text).TextColor(hi.Mix(T.Tx3, .35))
+			if style != nil {
+				e = style(e)
+			}
+			return e
+		}
+		n := utf8.RuneCountInString(text)
+		if n > shimmerMax {
+			e := ui.Text(c, text)
+			if style != nil {
+				e = style(e)
+			}
+			return Pulse(e)
+		}
+		dim := T.Tx3
+		pos := shimmerBandPos()
+		spans := shimmerSpans(text, hi, dim, pos)
+		rt := ui.RichText(c, spans...)
+		if style != nil {
+			rt = style(rt)
+		}
+		_ = rt.Loop("shimmer-prev-"+itoa(mode), shimmerTick, ui.Linear)
+		return rt
+	}
+}
+
 // RunTextS 为进行中标签上色(流光 / 呼吸);流光用 RichText 分段,限频约 30fps。
 func RunTextS(c *ui.Context, text string, hi ui.Color, style func(ui.Element) ui.Element) ui.Element {
 	switch shimmerMode {
