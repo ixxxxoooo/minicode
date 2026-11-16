@@ -14,7 +14,7 @@ const (
 	shimmerSweep = 1600 * time.Millisecond
 	shimmerTick  = 33 * time.Millisecond
 	shimmerBins  = 6
-	shimmerMax   = 48
+	shimmerMax   = 160 // 流光只扫前这么多字,更长的命令(单行裁切,多出的部分本来就看不见)后半段保持底色
 )
 
 var viewActive atomic.Bool
@@ -52,23 +52,23 @@ func RunTextMode(c *ui.Context, text string, hi ui.Color, mode int, style func(u
 		return Pulse(e)
 	default:
 		if !viewOK() {
-			e := ui.Text(c, text).TextColor(hi.Mix(T.Tx3, .35))
+			e := ui.Text(c, text).TextColor(T.Tx2) // 设计稿:减弱动态 / 失焦时 .shimmer 退回 tx-2,不跟高亮色走
 			if style != nil {
 				e = style(e)
 			}
 			return e
 		}
-		n := utf8.RuneCountInString(text)
-		if n > shimmerMax {
-			e := ui.Text(c, text)
-			if style != nil {
-				e = style(e)
-			}
-			return Pulse(e)
-		}
 		dim := T.Tx3
 		pos := shimmerBandPos()
-		spans := shimmerSpans(text, hi, dim, pos)
+		head, tail := text, ""
+		if utf8.RuneCountInString(text) > shimmerMax { // 长命令:只给前 shimmerMax 个字做扫光,余下按底色拼回(不再整段退回呼吸 + 深色)
+			r := []rune(text)
+			head, tail = string(r[:shimmerMax]), string(r[shimmerMax:])
+		}
+		spans := shimmerSpans(head, hi, dim, pos)
+		if tail != "" {
+			spans = append(spans, ui.Span{Text: tail, Color: dim})
+		}
 		rt := ui.RichText(c, spans...)
 		if style != nil {
 			rt = style(rt)
@@ -95,23 +95,23 @@ func RunTextS(c *ui.Context, text string, hi ui.Color, style func(ui.Element) ui
 		return Pulse(e)
 	default:
 		if !viewOK() {
-			e := ui.Text(c, text).TextColor(hi.Mix(T.Tx3, .35))
+			e := ui.Text(c, text).TextColor(T.Tx2) // 设计稿:减弱动态 / 失焦时 .shimmer 退回 tx-2,不跟高亮色走
 			if style != nil {
 				e = style(e)
 			}
 			return e
 		}
-		n := utf8.RuneCountInString(text)
-		if n > shimmerMax {
-			e := ui.Text(c, text)
-			if style != nil {
-				e = style(e)
-			}
-			return Pulse(e)
-		}
 		dim := T.Tx3
 		pos := shimmerBandPos()
-		spans := shimmerSpans(text, hi, dim, pos)
+		head, tail := text, ""
+		if utf8.RuneCountInString(text) > shimmerMax { // 长命令:只给前 shimmerMax 个字做扫光,余下按底色拼回(不再整段退回呼吸 + 深色)
+			r := []rune(text)
+			head, tail = string(r[:shimmerMax]), string(r[shimmerMax:])
+		}
+		spans := shimmerSpans(head, hi, dim, pos)
+		if tail != "" {
+			spans = append(spans, ui.Span{Text: tail, Color: dim})
+		}
 		rt := ui.RichText(c, spans...)
 		if style != nil {
 			rt = style(rt)
