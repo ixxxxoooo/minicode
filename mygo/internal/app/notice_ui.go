@@ -127,7 +127,7 @@ func (a *App) noticeRow(c *ui.Context, it noticeItem) {
 	})
 }
 
-// noticeToasts 右下角叠放(最后几条自动消失)。
+// noticeToasts 右上角叠放(标题栏下方)(最后几条自动消失)。
 func (a *App) noticeToasts(c *ui.Context) {
 	if a.nt == nil || len(a.nt.toasts) == 0 {
 		return
@@ -144,7 +144,7 @@ func (a *App) noticeToasts(c *ui.Context) {
 	if len(live) == 0 {
 		return
 	}
-	ui.Column(c).Absolute().Right(12).Bottom(12 + theme.HStatus).Gap(8).Width(280).Children(func() {
+	ui.Column(c).Absolute().Right(12).Top(theme.HBar + 8).Gap(8).Width(theme.Px(300)).Children(func() {
 		for _, it := range live {
 			icon, col := noticeIcon(t, it.level)
 			card := ui.Row(c).Key("toast-"+itoa64(it.id)).Gap(8).Padding(10, 12).Radius(t.RLg()).Background(t.Raised).Border(1, t.Bd1).AlignItems(ui.Start)

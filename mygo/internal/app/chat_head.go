@@ -46,7 +46,7 @@ func (a *App) chatHead(c *ui.Context, title string) {
 	narrow := a.chatTier() == tierNarrow
 	run := a.st.Phase == core.PhaseRunning
 	ui.Row(c).Height(theme.HTab).Padding(0, 8, 0, 14).Gap(6).Shrink(0).AlignItems(ui.Center).Children(func() {
-		ttl := ui.ButtonBase(c).Key("chat-ttl").Height(24).Gap(5).AlignItems(ui.Center).Radius(t.RSm()).Shrink(1).MinWidth(0).
+		ttl := ui.ButtonBase(c).Key("chat-ttl").Height(theme.Px(24)).Gap(5).AlignItems(ui.Center).Radius(t.RSm()).Shrink(1).MinWidth(0).
 			Cursor(ui.CursorDefault).Transition(kit.Fade)
 		if narrow {
 			ttl.PaddingX(6).Margin(0, 0, 0, -6)
@@ -68,7 +68,9 @@ func (a *App) chatHead(c *ui.Context, title string) {
 				kit.Ic(c, "chevD", kit.S12).TextColor(t.Tx3)
 			}
 		})
-		a.histPopup(c, ttl)
+		if narrow {
+			a.histPopup(c, ttl, false) // 窄档:标题就是下拉,弹层贴标题左缘
+		}
 		if !narrow && a.branch != "" {
 			kit.Chip(c, a.branch, kit.ChipOpt{Icon: "branch", Tip: "切换分支"}).OnClick(func() { a.OpenQuick("branch", "") })
 		}
@@ -76,7 +78,10 @@ func (a *App) chatHead(c *ui.Context, title string) {
 		if narrow {
 			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新会话 ⌘N"}).OnClick(a.NewSession)
 		}
-		kit.Ib(c, "history", kit.IbOpt{Small: true, Tip: "历史会话 ⌘⇧H", On: a.popup == "hist"}).OnClick(func() { a.togglePop("hist") })
+		histBtn := kit.Ib(c, "history", kit.IbOpt{Small: true, Tip: "历史会话 ⌘⇧H", On: a.popup == "hist"}).OnClick(func() { a.togglePop("hist") })
+		if !narrow {
+			a.histPopup(c, histBtn, true) // 宽 / 中档:弹层从历史按钮正下方展开、右缘对齐按钮,不再跑到标题下面
+		}
 		if a.mode == ModeIDE { // 占满与退出同一个按钮(占满后图标换成「还原」,Esc 也能退出)
 			ic, tip := "max", "对话占满 ⌘⇧M"
 			if a.chatMax {
@@ -93,13 +98,18 @@ type histState struct{ q string }
 
 // histPopup 是历史会话弹层(本项目最近的会话 + 搜索 + 全部历史)。
 // 它是「跳转」而不是第二份列表:会话列表的家仍是导航栏的「会话」。
-func (a *App) histPopup(c *ui.Context, anchor ui.Element) {
+func (a *App) histPopup(c *ui.Context, anchor ui.Element, alignRight bool) {
 	t := a.tk
 	a.popOpen("hist", func(open *bool) {
 		ui.PopoverBase(c, anchor, open, func(panel ui.Element) {
-			a.popPanel(panel, 300).AttachTo(anchor, ui.AnchorTopLeft, ui.AnchorBottomLeft).Margin(4, 0, 0, 0)
+			pw := theme.Px(300)
+			if alignRight {
+				a.popPanel(panel, pw).AttachTo(anchor, ui.AnchorTopRight, ui.AnchorBottomRight).Margin(4, 0, 0, 0)
+			} else {
+				a.popPanel(panel, pw).AttachTo(anchor, ui.AnchorTopLeft, ui.AnchorBottomLeft).Margin(4, 0, 0, 0)
+			}
 			proj := a.curProject()
-			ui.Row(c).Height(28).Margin(0, 0, 4, 0).PaddingX(8).Gap(6).AlignItems(ui.Center).Radius(t.RSm()).Background(t.Fill1).Children(func() {
+			ui.Row(c).Height(theme.Px(28)).Margin(0, 0, 4, 0).PaddingX(8).Gap(6).AlignItems(ui.Center).Radius(t.RSm()).Background(t.Fill1).Children(func() {
 				kit.Ic(c, "search", kit.S12).TextColor(t.Tx3)
 				ui.TextInputBase(c.Key("hist-q"), &a.hist.q).Grow(1).MinWidth(0).FontSize(theme.FsBody).Placeholder("搜索 " + proj.Name + " 的会话").
 					PlaceholderColor(t.Tx4).Background(ui.Transparent).BorderWidth(0).Padding(0).FocusRing(false)

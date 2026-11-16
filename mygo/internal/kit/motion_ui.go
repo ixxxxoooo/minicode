@@ -62,7 +62,7 @@ func DrawerSlide(panel ui.Element, openedAt time.Time, fromRight bool, frame fun
 	}
 }
 
-// ToastSlide 右下角提示条自右侧滑入。
+// ToastSlide 右上角提示条自右侧滑入。
 func ToastSlide(card ui.Element, at time.Time, frame func()) ui.Element {
 	if !MotionOn() || at.IsZero() {
 		return card
