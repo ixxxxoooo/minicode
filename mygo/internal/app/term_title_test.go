@@ -122,3 +122,16 @@ func TestTermNormalizeUserHostPrefix(t *testing.T) {
 		}
 	}
 }
+
+// 两个终端标题相同(同一目录开两个)时,后面的加序号;不同的、重命名过的不受影响。
+func TestTermTabRawTitleDedupe(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a"})
+	a.proj = "/tmp/demo"
+	a.ide.tps = []*termPanel{{demoTitle: "~/proj"}, {demoTitle: "~/proj"}, {demoTitle: "~/other"}, {label: "~/proj"}}
+	want := []string{"~/proj", "~/proj 2", "~/other", "~/proj 4"}
+	for i, w := range want {
+		if got := a.termTabRawTitle(i); got != w {
+			t.Errorf("第 %d 个标题 = %q,想要 %q", i, got, w)
+		}
+	}
+}

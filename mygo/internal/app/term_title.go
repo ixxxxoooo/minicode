@@ -27,8 +27,22 @@ const (
 	termTabAuto = 2
 )
 
-// termTabRawTitle 按设计稿优先级取标签标题全文(不截断)。
+// termTabRawTitle 按设计稿优先级取标签标题全文(不截断);同名的后面几个自动加序号,免得并排两个一模一样。
 func (a *App) termTabRawTitle(i int) string {
+	base := a.termTabRawTitle0(i)
+	if base == "" {
+		return base
+	}
+	for j := 0; j < i && j < len(a.ide.tps); j++ {
+		if termNormalizeTitle(a.termTabRawTitle0(j)) == termNormalizeTitle(base) {
+			return base + " " + itoa(i+1)
+		}
+	}
+	return base
+}
+
+// termTabRawTitle0 是去重前的标题。
+func (a *App) termTabRawTitle0(i int) string {
 	if i < 0 || i >= len(a.ide.tps) {
 		return ""
 	}
