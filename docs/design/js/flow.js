@@ -12,7 +12,7 @@
     const t = TOOLS[tool], st = o.state || '', sh = st === 'run' ? 'shimmer' : '';
     const icon = st === 'run' ? ic('hourglass', 's12 hg-wait') : ic(st === 'err' ? 'errc' : st === 'deny' ? 'lock' : t.icon, 's12');
     return `<div class="step ${st} ${o.open ? 'open' : ''}" data-tool="${tool}" ${o.body ? 'data-act="fold"' : ''}>
-      <span class="si">${icon}</span><span class="sv ${sh}">${o.verb || t.verb}</span><span class="so ell ${sh}">${obj}</span>${meta ? `<span class="sm ell">${meta}</span>` : ''}
+      <span class="si">${icon}</span>${o.verb === '' ? '' : `<span class="sv ${sh}">${o.verb || t.verb}</span>`}<span class="so ell ${sh}">${obj}</span>${meta ? `<span class="sm ell">${meta}</span>` : ''}
       <span class="sr">${right}${o.body ? ic('chevR', 's12 chev') : ''}</span></div>${o.body ? `<div class="fold"><div class="fold-in"><div>${o.body}</div></div></div>` : ''}`;
   };
   /** 「最新一步」行。tool:工具名;obj:对象 */
