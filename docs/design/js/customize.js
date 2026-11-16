@@ -117,7 +117,7 @@
         ${r.env.length ? lbl('环境变量(值已遮盖)', `<div class="card" style="padding:2px 4px">${r.env.map(n => `<div class="row"><span class="mono grow">${n}</span><span class="mono t3">••••••••</span></div>`).join('')}</div>`) : ''}
         <div class="f ai"><b class="grow">工具(${r.tools.length})</b><span class="t3 fs-cap">逐项开关 · 写入本地层 deny 规则</span></div>
         ${r.tools.length ? `<div class="fc" style="max-height:132px;overflow:auto">${r.tools.map(([n, on], j) => `<div class="row"><span class="grow ell mono">${n}</span>${tog(on, `data-cu-tool="${k}:${j}"`)}</div>`).join('')}</div>` : `<div class="t4 fs-cap" style="padding:4px 0">${r.st === 'ok' ? '没有工具' : '连接成功后才会列出工具'}</div>`}
-        <div class="card" style="padding:2px 4px"><div class="row" style="height:auto;padding:5px 8px"><div class="grow"><div class="m">按需加载工具</div><div class="t3 fs-micro">ENABLE_TOOL_SEARCH · 工具很多时只在需要时加载描述,节省上下文</div></div>${tog(1)}</div></div>
+        <div class="card" style="padding:2px 4px"><div class="row" style="height:auto;padding:5px 8px"><div class="grow"><div class="m">按需加载工具(全部 MCP)</div><div class="t3 fs-micro">ENABLE_TOOL_SEARCH · 工具很多时只在需要时加载描述,节省上下文;对所有 MCP 服务器生效,写入 Claude 设置(写在它当前生效的那一层:本地 &gt; 项目 &gt; 用户),新会话起效;使用第三方服务商时会被强制关闭</div></div>${tog(1)}</div></div>
         <div class="cu-foot f g2"><span class="grow"></span>${btn('编辑配置', '', 'edit')}</div>`; },
     skills: (st) => { const r = DATA.skills[st.cuSel] || DATA.skills[0];
       return `${dhead('spark', esc(r.n))}${kv([['范围', SC[r.sc]], ['位置', r.path]])}
@@ -128,7 +128,12 @@
     commands: (st) => { const r = DATA.commands[st.cuSel] || DATA.commands[0];
       return `${dhead('slash', esc(r.n))}
         <div class="fc g3">${lbl('名称', field(r.n, 0, { mono: 1, id: 'cmd-n', attr: 'style="width:100%"' }))}${lbl('说明', field(r.desc, 0, { id: 'cmd-d', attr: 'style="width:100%"' }))}${lbl('参数提示', field(r.hint, 0, { mono: 1, ph: '无参数', attr: 'style="width:100%"' }))}</div>
-        ${lbl('允许的工具', `<div class="f g2 wrap">${r.tools.map(t => toolChip(t, 1)).join('')}${chip('+ 添加', '', 'line', 'data-act="toast" data-msg="工具选择器(同权限规则语法)"')}</div>`)}
+        ${lbl('允许的工具', `<div class="f g2 wrap">${r.tools.map(t => toolChip(t, 1)).join('')}${chip('+ 添加', '', 'line', 'data-act="toast" data-msg="点一下弹出工具选择器(见下方示意)"')}</div>
+          <div class="pop" style="width:320px;margin-top:6px" data-spec="tool-picker"><div style="padding:4px 4px 6px"><div class="f ai g2" style="height:28px;padding:0 8px;background:var(--fill-1);border:1px solid var(--bd-2);border-radius:var(--r-sm)"><span class="grow t4 fs-cap">搜索或输入规则,如 Bash(git diff:*)</span>${btn('添加', 'sm soft')}</div></div>
+            <div class="cap">内置工具</div>${[['Read', 1], ['Grep', 1], ['Glob', 0], ['Edit', 0], ['Write', 0], ['Bash', 0], ['WebFetch', 0], ['WebSearch', 0]].map(([n, on]) => `<div class="mi ${on ? 'on' : ''}"><span class="grow ell">${n}</span>${on ? ic('check', 's12') : ''}</div>`).join('')}
+            <div class="sep"></div><div class="cap">MCP 工具(mcp__服务器 = 整台,再加 __工具名 = 单个)</div>${[['mcp__github', 0], ['mcp__github__create_issue', 0], ['mcp__filesystem__read_file', 1]].map(([n, on]) => `<div class="mi ${on ? 'on' : ''}"><span class="grow ell">${n}</span>${on ? ic('check', 's12') : ''}</div>`).join('')}
+            <div class="sep"></div><div class="cap">常用规则</div>${['Bash(git status:*)', 'Bash(git diff:*)', 'Bash(npm run:*)'].map(n => `<div class="mi"><span class="grow ell">${n}</span></div>`).join('')}
+            <div class="t3 fs-micro" style="padding:6px 8px 4px">写法错误(括号不配对、空括号、含逗号)时输入框描边变红并抖动,下方写明原因;已存在的规则提示「已经在允许的工具里了」。点已选项 = 移除;改的是草稿,点「保存」才写进 allowed-tools。</div></div>`)}
         ${lbl('模型', seg(MODELS.map(m => m.replace('继承会话', '继承')), r.model))}
         ${lbl('提示词 <span class="t4" style="font-weight:400">$ARGUMENTS 会被命令后面的文字替换</span>', area(r.body, { mono: 1, id: 'cmd-b', rows: 5 }))}
         <div class="t3 fs-cap" style="line-height:1.5">输入 <span class="mono c-ac">${esc(r.n)}${r.hint ? ' 123' : ''}</span> 时,<span class="mono">$ARGUMENTS</span> = <span class="mono">${r.hint ? '123' : '(空)'}</span></div>

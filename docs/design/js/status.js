@@ -115,6 +115,14 @@
       R('重启任务 / 显示 pid', '演示 CmdRestartTask;真实 claude 置灰+原因;run id / pid 行内显示', 'ok', 'B4'),
       R('正常运行时注入任务', 'translate task_*+任务坞+会话流 TaskNote(flow_note.go);后端 TestRealBackgroundTaskAndSubagent;界面仅 ui.Tester/无真实端到端;未测试', 'part')],
     flow: [
+      R('界面大小(默认 110%,90–150%)与正文字号', 'theme.SetUIScale / Px:字号令牌、行高、控件、图标一起缩放(设置 → 外观 → 字号与大小,appearance.uiScale);正文字号 appearance.fontScale 在其上再缩放;未测试', 'part', 'B6'),
+      R('列表选中态统一(强调色底 + 左侧 3px 竖线 + 半粗体):会话行 / 文件树 / 各列表', 'kit.RowEl + kit.SelBar;文件夹行选中也高亮;未测试', 'part', 'B6'),
+      R('文件树标题行工具按钮悬停才显示', 'ide_tree.go:按钮始终在布局里,Opacity 随标题行悬停淡入(菜单打开时不丢锚点);设计稿 .tree-h;未测试', 'part', 'B2'),
+      R('提示(toast)在右上角、历史会话弹层贴历史按钮右对齐', 'notice_ui.go noticeToasts Top(HBar+8);chat_head.go histPopup alignRight(窄档仍贴标题);设计稿 .toasts top:44px;未测试', 'part', 'B2'),
+      R('发送时附带 IDE 上下文(当前文件 / 光标行 / 选区 / 其他打开的文件 / 分支)', 'ide_context.go + claude.UserMessageCtx:随消息作为独立 `<ide-context>` 文本块发出,不进会话流、回放历史时滤掉;同样内容本会话只发一次;选区限 4000 字 / 120 行;设置 → 通用 → 输入「发送时附带 IDE 上下文」(chat.ideCtx,默认开);演示模式不发。go test 覆盖拼装 / 去重 / 截断 / 回放过滤;未用 computer use 实测', 'part', 'B4'),
+      R('长助手正文分块虚拟化(>4000 字按安全边界切成多行,只构建视口附近的块;流式时只有末块走流式渲染)', 'md_chunk.go + flow_rows.go addItemRows:边界 = 围栏代码块之外、空行之后、下一行不缩进且不是列表 / 引用;文本在末尾增长时已切块不变(行键稳定);分块结果按 id+长度缓存。go test 覆盖拼接还原 / 不切围栏 / 增长稳定 / 300 节长文只构建视口行;未用 computer use 实测', 'part', 'B4'),
+      R('命令队列不丢提示词 / 写入失败自动重启重发', 'claude.Backend.Send 队列满走溢出队列按序补投;onPrompt 写 stdin 失败 → 结束旧进程、--resume 重启再写一次,仍失败才提示并结束回合;界面无后端时发送 toast 提示;go test 覆盖顺序与不丢', 'ok', 'B4'),
+      R('切换服务商 / 模型映射不再结束 claude 进程', 'onSetEnv:对受管环境变量取差异,没变化不动;有变化经 control_request apply_flag_settings.env 热应用(空串 = 清除),并 set_model 对齐 ANTHROPIC_MODEL;热应用失败才退回重启。真实 claude 2.1.325 桩服务验证:切 B 家后请求落到 B、模型名正确、A 家无新请求(MINI_REAL_CLAUDE=1 的 ViaMappedProvider);回合进行中仍等回合结束再推送', 'ok', 'B4'),
       R('步骤行(进行 / 错误 / 拒绝)、探索分组、工具展开 diff / 终端、待办、权限 / 提问 / 计划卡、提示三级', '', 'ok'),
       R('长输出限高折叠(12 行 → 196px,展开 480px)', '工具 / 终端 / 文本与 Markdown 代码块', 'ok', 'B4'),
       R('折叠工具分组的「最新一步」滚动行', '探索组折叠且运行中 22px 滑入行', 'ok', 'B4'),
@@ -242,6 +250,8 @@
       R('「与此页面对话」的页面引用', '正文框选→@浏览器:url#段+填输入框;日志 RedactURL 脱敏', 'ok', 'B7'),
       R('系统浏览器打开 / 隐私设置', '地址栏外链;设置 browser.fetch 可关抓取', 'ok', 'B7')],
     customize: [
+      R('命令「允许的工具」选择器(+ 添加弹层:内置工具勾选 / MCP 整台或单工具 / 常用规则 / 手写规则并校验;allowed-tools 括号内逗号不拆)', 'custom_toolpick.go + customize/tools.go(SplitTools / ValidateToolRule / AddAllow / MCPToolRules);错误描边 + 抖动;改草稿、保存才写盘。go test 覆盖解析与校验;弹层本身未用 computer use 实测', 'part', 'B7'),
+      R('MCP「按需加载工具」开关真实落盘', '对应 ENABLE_TOOL_SEARCH,是全局设置不分服务器:写进它当前生效的层(本地 > 项目 > 用户,都没有写用户层:开 = auto / 关 = false),新会话生效;读取同样按三层优先级,第三方服务商会强制关闭(界面文案已写明)。go test 覆盖三层读写;演示只改内存', 'ok', 'B7'),
       R('七类左栏、筛选与作用域、开关 / 新建 / 删除、详情表单', '界面与校验完整;演示内存+演示多套;切换左栏分类或整页入口会清空选中与草稿(cuResetNav);删除改标题行垃圾桶+cuDeleteAsk 确认框,删除后选中相邻项;未测试', 'part'),
       R('读写真实的 ~/.claude 与项目 .claude', 'OpenDisk+Persist/SaveMCP 七类写盘;cuMCPEditDlg;Skill 重命名。缺口:已安装插件详情无编辑表单回写 JSON;演示不落盘;未测试', 'part', 'B7'),
       R('插件市场安装进度', 'cuInstallPlugin+RunPluginInstall;市场经「浏览市场」进入,详情安装条在滚动区内;演示四相位,真实安装中多仅 phase0 至结束;未测试', 'part', 'B7'),

@@ -80,7 +80,7 @@ textarea.ta:hover { box-shadow: inset 0 0 0 1px var(--bd-3); } textarea.ta:focus
 .st-cell { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; min-width: 0; } .st-cell > .t4 { font-size: var(--fs-micro); letter-spacing: .03em; }
 
 /* ───────── 提示条 / 模态 / 菜单 ───────── */
-.toasts { position: absolute; right: 14px; bottom: 32px; z-index: 80; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; pointer-events: none; }
+.toasts { position: absolute; right: 14px; top: 44px; z-index: 80; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; pointer-events: none; }
 .toast { pointer-events: auto; width: 292px; padding: 0; overflow: hidden; }
 .toast .nt { padding: 9px 11px; }
 .toast .meter { margin: 0 11px 9px; }
@@ -121,3 +121,7 @@ textarea.ta:hover { box-shadow: inset 0 0 0 1px var(--bd-3); } textarea.ta:focus
 .sel .car { flex: none; color: var(--tx-3); }
 .sel-pop { transform-origin: top left; }
 .sel-pop .mi.dim { opacity: .5; pointer-events: none; }
+
+/* 文件树标题行的工具按钮:默认隐藏,鼠标移到标题行才淡入(按钮始终在布局里,菜单打开时不会丢锚点) */
+.tree-h .tree-tools { display: inline-flex; opacity: 0; transition: opacity var(--dur-fast); }
+.tree-h:hover .tree-tools, .tree-h:focus-within .tree-tools { opacity: 1; }
