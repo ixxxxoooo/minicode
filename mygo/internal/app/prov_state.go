@@ -139,12 +139,27 @@ func (a *App) pvActivate(provider, model string) {
 	provLog.Info("切换服务商", "provider", provider, "model", model)
 }
 
+// pvActiveModel 第三方服务商生效时它的默认模型 id;官方登录(或没选)返回空串。
+func (a *App) pvActiveModel() string {
+	id, p := a.pvActive()
+	if id == "" || p == nil {
+		return ""
+	}
+	return strings.TrimSpace(a.pvStore().Mapping.Default)
+}
+
 // pvPushEnv 把当前映射对应的环境变量发给活动会话的后端(演示后端会忽略)。
-// 后端对这条命令的处理是:结束当前进程、下一条消息用新环境恢复会话,所以回合进行中不发。
+// 后端对这条命令的处理是:结束当前进程、下一条消息用新环境恢复会话,所以回合进行中不发:
+// 记成「待推送」,下一条消息发出前补发(此前回合进行中切换服务商会被永远丢掉,新消息还跑在旧环境上)。
 func (a *App) pvPushEnv() {
-	if a.demoWs() || a.st.Phase == core.PhaseRunning {
+	if a.demoWs() {
 		return
 	}
+	if a.st.Phase == core.PhaseRunning {
+		a.pvEnvPending = true
+		return
+	}
+	a.pvEnvPending = false
 	p := a.pvLoad()
 	var env []core.EnvVar
 	for _, e := range p.store.Env(p.keys) {

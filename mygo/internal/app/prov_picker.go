@@ -161,8 +161,10 @@ func (a *App) pvPickModel(providerID, providerName, model string) {
 	p := a.pvLoad()
 	p.store.SetPick(providerID, model)
 	a.pvActivate(providerID, model)
-	a.send(core.CmdSetModel{Model: "default"}) // 用 ANTHROPIC_MODEL 映射出的默认模型
-	a.st.Model = "default"
+	// 必须发确切的模型 id:实测 set_model "default" 会被 claude 解析成它自己的默认(opus),而不是 ANTHROPIC_MODEL;
+	// 而 --model <别名> 的优先级又高于 ANTHROPIC_MODEL,所以启动参数与运行中切换都要显式给 id(见 FillClaudeConfig)。
+	a.send(core.CmdSetModel{Model: model})
+	a.st.Model = model
 	a.popup = ""
 	a.toast = "已切换到 " + providerName + " · " + model + modelSwitchToastNote()
 }

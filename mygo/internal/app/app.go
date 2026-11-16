@@ -94,6 +94,7 @@ type App struct {
 	stEnd          time.Time       // 回合结束的时刻;状态行据此淡出并收折
 	frameInPending bool            // frameIn 的合并标记
 	sessUnread     map[string]bool // 后台跑完、还没打开看过的会话(侧栏行首小圆点)
+	pvEnvPending   bool            // 回合进行中切换了服务商 / 模型,环境还没推给后端
 	rtPop          string          // 脚注瀑布弹卡对应的回合(用户消息 id)
 
 	// 窗口形态与布局
@@ -601,6 +602,9 @@ func (a *App) send(cmd core.Command) {
 	}
 	if p, ok := cmd.(core.CmdPrompt); ok {
 		a.noteActive()
+		if a.pvEnvPending && !p.Steer && a.st.Phase != core.PhaseRunning { // 回合进行中切换的服务商 / 模型,在这条消息前生效
+			a.pvPushEnv()
+		}
 		// 发送的同一帧就进入运行态:状态行立刻出现,不等后端回「回合开始」(冷启动要几百毫秒;对标主分支 mark_running)。
 		// 后端随后的 EvTurnStarted 是幂等的;启动失败会回 EvTurnEnded,自然恢复。
 		if !p.Steer && a.st.Phase != core.PhaseRunning {
@@ -855,7 +859,9 @@ func (a *App) pickEffort(e core.Effort) {
 
 // applySavedPicks 把记住的模型 / 强度发给刚握手的新会话(模型要在列表里才用)。
 func (a *App) applySavedPicks() {
-	if m := a.prefs.Str(prefModel, ""); m != "" && m != a.st.Model {
+	if am := a.pvActiveModel(); am != "" { // 第三方服务商:模型已由 --model 给定,不能再套官方偏好
+		a.st.Model = am
+	} else if m := a.prefs.Str(prefModel, ""); m != "" && m != a.st.Model {
 		for _, mi := range a.st.Models {
 			if mi.ID == m {
 				a.send(core.CmdSetModel{Model: m})

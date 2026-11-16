@@ -30,7 +30,8 @@ type stageClock struct {
 	calls    []core.CallInfo
 	curCall  int
 	curLabel string
-	final    bool // 最后一个 message_stop 的 stop_reason 是 end_turn:回复已出完
+	model    string // 最近一次调用 message_start 里的实际模型(排查「选了 A 实际跑 B」)
+	final    bool   // 最后一个 message_stop 的 stop_reason 是 end_turn:回复已出完
 }
 
 // begin 开始一个回合:cold = 发送时进程还没起(先是「连接」)。
@@ -116,6 +117,7 @@ func (c *stageClock) line(v obj, now time.Time) (changed bool, cache *core.Cache
 				ct := core.CacheTokens{Read: u64(u, "cache_read_input_tokens"), Written: u64(u, "cache_creation_input_tokens"), Uncached: u64(u, "input_tokens")}
 				c.calls[n-1].Cache = ct
 				cache = &ct
+				c.model = str(sub(ev, "message"), "model")
 			}
 			c.stop = ""
 			// 第一个字节到了:等待结束;先记为「生成」,紧随其后的 content_block_start 若是 thinking 再改成「思考」。

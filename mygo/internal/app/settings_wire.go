@@ -130,6 +130,11 @@ func (a *App) FillClaudeConfig(cfg *claude.Config) {
 	if m := strings.TrimSpace(a.prefs.Str(prefModel, "")); m != "" {
 		cfg.Model = m
 	}
+	// 第三方服务商生效时 --model 必须是它的模型 id:--model sonnet 的优先级高于 ANTHROPIC_MODEL,
+	// 沿用官方偏好会让界面显示 deepseek、实际跑的却是 sonnet / opus(实测)。
+	if m := a.pvActiveModel(); m != "" {
+		cfg.Model = m
+	}
 	if a.prefs.Has(prefEffort) {
 		e := core.Effort(a.prefs.Int(prefEffort, int(core.EffortMedium)))
 		if e >= core.EffortLow && e <= core.EffortMax {

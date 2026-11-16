@@ -392,3 +392,10 @@ scripts/publish.sh                  # 发布:先在根 Cargo.toml 提升版本�
 - 历史在 `~/.claude/projects/<编码后的 cwd>/*.jsonl`,目录名把所有非字母数字字符替换成 `-`(有损,真实 cwd 取自会话内容)。
 
 - **编辑器叠层必须在绘制阶段定位**(括号竖线 `ide_pairs::guides`、当前块高亮线 `ide_guides::overlay`、行内追溯 `ide_blame::inline_blame`):编辑器的布局(`range_to_bounds` / `visible_row_range`)在它**自己的绘制**里才更新,渲染阶段读到的是上一帧的,滚动停下后叠层会停在原地。所以叠层一律做成盖住编辑区的 `canvas`(`absolute().size_full()`,排在编辑器之后),在 paint 闭包里读编辑器实体、算位置、`paint_quad` / `shape_line().paint`。**`text_bounds()` 不是可视区**:它是随滚动平移的内容区域(滚下去后 y 是很大的负数),裁剪请用 `ide_guides::text_view(ed, 画布范围)`(左边 = 内容原点 − 横向滚动量,上下 = 画布自己的范围)。画布闭包要 `'static`,所以共享状态(如 `PairState`)内部用 `Rc` 且可克隆。
+
+### 模型选择踩坑(实测 claude 2.1.325,界面显示与实际模型不一致,已修)
+
+- **`--model <别名>` 的优先级高于 `ANTHROPIC_MODEL`**:官方偏好 `claude.model=sonnet` 会让第三方服务商会话(界面显示 deepseek)实际跑 claude-sonnet-5-5;`FillClaudeConfig` 在第三方生效时必须用 `pvActiveModel()`(映射默认模型 id)覆盖 `cfg.Model`,`applySavedPicks` 也不能再套官方偏好。
+- **`set_model "default"` 会被解析成 claude 自己的默认模型(opus),不是 `ANTHROPIC_MODEL`**:切服务商 / 模型必须发确切的模型 id(`--model <id>` 与 `set_model <id>` 都实测有效)。
+- **回合进行中切换服务商,环境推送不能直接丢**:`pvPushEnv` 记 `pvEnvPending`,下一条消息发出前补发(`App.send`)。
+- 日志「回合完成」带 `模型=`(取自 `message_start.message.model`,是实际模型),排查「选了 A 跑了 B」先看它。

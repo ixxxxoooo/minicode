@@ -785,9 +785,10 @@ func (b *Backend) onLine(line string) {
 	}
 	if ty == "result" {
 		b.turnActive = false
+		model := b.stages.model
 		if tm, ok := b.turnTiming(); ok {
 			log.Info("回合完成", "总耗时", time.Duration(tm.TotalMs)*time.Millisecond, "首响应", time.Duration(tm.FirstMs)*time.Millisecond,
-				"启动握手", time.Duration(tm.StartupMs)*time.Millisecond, "阶段", tm.PhaseSummary(), "调用次数", len(tm.Calls), "缓存", callsCacheSummary(tm.Calls))
+				"启动握手", time.Duration(tm.StartupMs)*time.Millisecond, "阶段", tm.PhaseSummary(), "调用次数", len(tm.Calls), "缓存", callsCacheSummary(tm.Calls), "模型", model)
 			b.emit(core.EvTurnTiming{Timing: tm})
 		}
 	}
