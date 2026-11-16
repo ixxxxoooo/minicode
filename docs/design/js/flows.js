@@ -111,7 +111,7 @@
     <div class="pop" style="position:absolute;left:150px;top:34px;width:200px"><div class="cap">impl Router 中的符号</div>${[['add', 0], ['match_path', 1]].map(([n, on]) => `<div class="mi ${on ? 'on' : ''}">${ic('cube', 's12')}<span class="grow mono">${n}</span><span class="t3 fs-micro">${n === 'add' ? 11 : 17}</span></div>`).join('')}</div></div>`;
   P['ide-nav'] = () => `<div class="ds" style="max-width:1240px">${head('编辑器能力 · 跳转与浮层', '对标 VS Code / Zed / Cursor 的常用能力。每一项都由语言服务器(LSP)或编辑器本身提供,弹层位置全部相对代码区;Claude 相关的动作(问、改、审)是编辑器的一等公民,不用切到对话栏。')}
     ${sec('看得见的辅助(不用触发)', '迷你地图是缩略的「语法色块」:当前视口(滑块,可拖)、Git 改动竖条(左缘)、搜索命中(黄)、同词出现(蓝框)、Claude 改过的行(紫)。右边另有概览标尺(整篇缩放):错误 / 警告 / 搜索 / Git / 光标。点任意位置跳转。', `<div class="gal">
-      ${cell('迷你地图 + 概览标尺 + 同词高亮', '', snip({ mmTip: 1 }, 0, 560, 300), '光标在 <span class="mono">Handler</span> 上:所有同词浅蓝高亮,地图与标尺同步出刻度;行号旁折叠箭头悬停才出现;函数上方是 CodeLens(引用数 / 测试数 / 问 Claude),可点。')}
+      ${cell('迷你地图 + 概览标尺 + 同词高亮', '', snip({ mmTip: 1 }, 0, 560, 300), '光标在 <span class="mono">Handler</span> 上:所有同词浅蓝高亮,地图与标尺同步出刻度;行号旁折叠箭头悬停才出现;函数上方是 CodeLens(引用数 / 测试数 / 问 Claude),可点;既没有引用也没有测试的符号不显示(「0 个引用 · 问 Claude」没有信息量)。')}
       ${cell('粘性滚动', '', snip({ sticky: 1, scroll: 14 }, 0), '滚进长函数后,所属的 <span class="mono">impl</span> 与 <span class="mono">fn</span> 头固定在顶部,点击跳回该行(对标 VS Code sticky scroll)。')}</div>`)}
     ${sec('查找与替换', '⌘F 是当前文件,⌘⇧F 是项目(见「搜索与替换」)。命中会同时在迷你地图与标尺上出刻度。', `<div class="gal">
       ${cell('当前文件查找', ['⌘', 'F'], snip({ ov: 'find' }, 280, 560, 220), '计数、上一个 / 下一个、区分大小写 / 全词 / 正则、在选区中查找;Esc 关闭并把光标留在当前命中。')}

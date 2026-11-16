@@ -57,8 +57,13 @@ func (a *App) codeLens(c *ui.Context, tb *ideTab) {
 			}
 			n++
 		}
+		tc := a.testsForSymbol(tb, s)
+		// 没有任何引用、也没有测试的符号:「0 个引用 · 问 Claude」没有信息量,整条不显示(设计稿 ide-editor)。
+		if n == 0 && tc == 0 {
+			continue
+		}
 		lbl := itoa(n) + " 个引用"
-		if tc := a.testsForSymbol(tb, s); tc > 0 {
+		if tc > 0 {
 			lbl += " · " + itoa(tc) + " 测试"
 		}
 		row := ui.Row(c).Key("cl-" + itoa(s.Line)).Absolute().Right(a.codeLensRight()).Top(y).Height(14 * edScale).Gap(8).AlignItems(ui.Center).
@@ -70,7 +75,7 @@ func (a *App) codeLens(c *ui.Context, tb *ideTab) {
 			}
 			ask := ui.Text(c, "问 Claude").Cursor(ui.CursorPointer).TextColor(t.Ac)
 			if ask.Clicked() {
-				a.draft = appendRefs(a.draft, refText(tb.path, false))
+				a.addRefs(refText(tb.path, false))
 				a.draft = strings.TrimSpace(a.draft + "\n解释一下 " + s.Name)
 				a.ux.focusDraft = true
 			}
