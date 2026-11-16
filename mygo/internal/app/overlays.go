@@ -43,9 +43,10 @@ func (a *App) wsOverlay(c *ui.Context) {
 		})
 }
 
+// dockRail 是对话栏图标条:放在标签条(30)下面,不盖住工作区右上角的操作按钮。
 func (a *App) dockRail(c *ui.Context) {
 	t := a.tk
-	ui.Column(c).Absolute().Right(8).Top(theme.HBar + 8).Width(40).Gap(6).Children(func() {
+	ui.Column(c).Absolute().Right(8).Top(theme.HBar + 38).Width(40).Gap(6).Children(func() {
 		kit.Ib(c, "bot", kit.IbOpt{Tip: "对话栏", On: a.dockFloat}).OnClick(func() {
 			a.dockFloat = true
 		})

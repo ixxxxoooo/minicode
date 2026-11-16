@@ -151,7 +151,7 @@ func (a *App) composerBar(c *ui.Context) {
 func (a *App) cfgChip(c *ui.Context, wide bool) {
 	t := a.tk
 	b := ui.ButtonBase(c).Height(theme.Px(22)).PaddingX(7).Gap(5).Radius(t.RSm()).AlignItems(ui.Center).FontSize(theme.Px(11.5)).TextColor(t.Tx2).Cursor(ui.CursorPointer).
-		MinWidth(0).Clip().Transition(kit.Fade)
+		MinWidth(0).Clip().Shrink(1).Transition(kit.Fade) // 放不下时胶囊先缩(模型名省略),不把发送钮挤出去(设计稿 .cfg-mod ell)
 	if b.Hovered() || a.popup == "cfg" {
 		b.Background(t.Fill2).TextColor(t.Tx1)
 	}
