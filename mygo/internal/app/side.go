@@ -80,7 +80,10 @@ func (a *App) side(c *ui.Context) {
 			ui.Column(c).Grow(1).MinHeight(0).PaddingX(6).Clip().Children(func() {
 				// 换分段 / 换形态:内容自左 8px 滑入并淡入(a-swap);外层 Clip 把滑出左缘的部分裁掉
 				swap := ui.Column(c).Key("nav-swap").Grow(1).MinHeight(0)
-				kit.SwapIn(swap, a.navSwapAt, a.frameSoon)
+				// 整块只淡入(行以外的输入框、标题等);列表行另有自上而下的逐行落下(navDrop,见 side_drop.go)
+				if p := kit.SwapProgress(a.navSwapAt, a.frameSoon); p < 1 {
+					swap.Opacity(p)
+				}
 				swap.Children(func() {
 					a.morphWrap(c, "nav", func() {
 						switch a.NavID() {
