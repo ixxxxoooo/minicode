@@ -48,6 +48,7 @@ func main() {
 	dlg := flag.String("dlg", "", "打开项目对话框:add / ws / wsedit / confirm;add:路径 = 预填并提交")
 	repoIx := flag.Int("repo", -1, "多根时把第 N 个仓库设为源代码管理的活动仓库")
 	stress := flag.Bool("stress", false, "打开演示的极端数据(300 文件 bulk / 冲突 / 5 条储藏 / 220+ 提交),默认关闭以便与设计稿对照")
+	detail := flag.Int("detail", -1, "工具调用详细程度 0 精简 / 1 标准 / 2 详细(默认沿用偏好)")
 	flag.Parse()
 	demo.SetStress(*stress)
 
@@ -64,6 +65,9 @@ func main() {
 	a.SetRepo(demo.Repo())
 	a.SetClock(func() time.Time { return time.Date(2026, 11, 15, 12, 0, 0, 0, time.UTC) }) // 与设计稿的「今天」一致
 	a.SeedDemoExtras()
+	if *detail >= 0 {
+		a.SetDetailLevel(*detail)
+	}
 	if *noMotion {
 		kit.SetMotion(false) // 要放在应用创建之后,创建时会按偏好把动效重新打开
 	}

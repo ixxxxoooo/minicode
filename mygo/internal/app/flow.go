@@ -106,6 +106,23 @@ func (a *App) stepGroup(c *ui.Context, items []core.Item) {
 				}
 				_ = sa
 			}
+			if _, ok := mergeable(items[i]); ok && a.ToolDetailLevel() == 0 {
+				j := i
+				var grp []*core.ToolCall
+				for j < len(items) {
+					tc2, ok2 := mergeable(items[j])
+					if !ok2 {
+						break
+					}
+					grp = append(grp, tc2)
+					j++
+				}
+				if len(grp) >= 2 {
+					a.mergeGroup(c, grp)
+					i = j
+					continue
+				}
+			}
 			if tc, ok := isExplore(items[i]); ok {
 				_ = tc
 				j := i

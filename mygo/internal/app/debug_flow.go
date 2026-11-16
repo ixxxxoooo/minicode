@@ -162,3 +162,9 @@ func (a *App) AppendFlowTailForFresh() {
 	id := "dbg-tail"
 	a.st.Apply(core.EvAppend{Item: &core.Assistant{ID: id, Text: "（调试）回合又有新输出…"}})
 }
+
+// SetDetailLevel 调试用(cmd/shot -detail N):直接指定工具调用详细程度 0 精简 / 1 标准 / 2 详细,便于逐档截图对照设计稿。
+func (a *App) SetDetailLevel(n int) {
+	a.prefs.Set("appearance.density2", n)
+	a.applyPrefs()
+}
