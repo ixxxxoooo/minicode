@@ -46,6 +46,11 @@ func (a *App) filesView(c *ui.Context) {
 					// 标题 + 箭头整块可点,点一下折叠 / 展开整棵文件树(与「大纲 / 时间线」区块一致)
 					head := ui.ButtonBase(c).Key("tree-root-head").Grow(1).Height(theme.Px(26)).Justify(ui.Start).Gap(5).AlignItems(ui.Center).
 						TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(500).Cursor(ui.CursorDefault)
+					if hdrHot {
+						// 工具按钮叠在行尾且没有底色(导航栏底色随主题 / 方案不同,垫一块纯色会露出色差):
+						// 显示时给标题让出同样宽的位置,让标题自己截断,而不是被按钮压住
+						head.PaddingEnd(6*theme.Px(20) + 5 + 10 + 4)
+					}
 					if head.Clicked() {
 						d.rootShut = !d.rootShut
 						diag.L("ide").Info("折叠文件树根", "折叠", d.rootShut)
@@ -64,7 +69,7 @@ func (a *App) filesView(c *ui.Context) {
 					// 工具按钮默认隐藏,鼠标移到标题行上才淡入(叠在行尾,标题文字平时完整显示);按钮始终存在,
 					// 所以从 ··· 打开菜单后鼠标移走也不会丢掉菜单的锚点
 					tools := ui.Row(c).Key("tree-tools").Absolute().Right(0).Top(0).Bottom(0).PaddingStart(10).PaddingEnd(4).Gap(1).AlignItems(ui.Center).
-						Background(t.BG).Transition(kit.Fade)
+						Transition(kit.Fade)
 					if hdrHot {
 						tools.Opacity(1)
 					} else {
