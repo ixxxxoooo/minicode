@@ -309,7 +309,9 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			}
 			// 设计稿:动词与对象一样的 .shimmer(底色 tx-3,高亮带扫到 tx-1),字号颜色同源,不让对象单独提亮成深色
 			sep()
-			obj = kit.RunTextS(c, sp.obj, t.Tx1, func(e ui.Element) ui.Element { return e.TextColor(t.Tx2).SingleLine().Shrink(1).MinWidth(0).LineHeight(1) })
+			obj = kit.RunTextS(c, sp.obj, t.Tx1, func(e ui.Element) ui.Element {
+				return e.TextColor(t.Tx2).SingleLine().Shrink(1).MinWidth(0).LineHeight(1)
+			})
 		} else {
 			// 字重规范(设计稿 v4):工具行的动词与对象都是常规字重,靠颜色分层——动词 Tx3 → 对象 Tx2 → 附注 Tx3 → 结果 Tx4;
 			// 思考行对象用 Tx3;流式折叠时标题常驻,跑马灯占标题与用时之间的剩余宽度。
