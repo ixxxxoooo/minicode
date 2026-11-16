@@ -181,7 +181,11 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 			if strings.HasPrefix(txt, "Found ") {
 				n--
 			}
-			s.right = fmt.Sprintf("%d 处", n)
+			unit := "处" // 设计稿:Grep「5 处」,Glob「3 个文件」
+			if tc.Name == "Glob" {
+				unit = "个文件"
+			}
+			s.right = fmt.Sprintf("%d %s", n, unit)
 		}
 	case core.KindEdit, core.KindWrite:
 		s.fam = famEdit
@@ -200,6 +204,7 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 			s.obj = tc.Title
 		}
 		s.right = durText(tc.DurationMs)
+		a.execTokens(&s, tc)
 		s.copyStr = s.obj
 		for _, ct := range tc.Content {
 			if tb, ok := ct.(*core.TerminalBlock); ok {
@@ -210,6 +215,12 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 	case core.KindFetch:
 		s.fam = famWeb
 		s.icon, s.verb, s.obj = "globe", "抓取", firstNonEmpty(inputStr(tc, "url"), inputStr(tc, "query"), tc.Title)
+		if tc.Name == "WebSearch" { // 设计稿:联网搜索 <查询词>,右侧「N 条结果」
+			s.verb = "联网搜索"
+			if n := strings.Count(firstText(tc), `"url"`); n > 0 {
+				s.right = fmt.Sprintf("%d 条结果", n)
+			}
+		}
 		s.copyStr = s.obj
 		if u := inputStr(tc, "url"); strings.HasPrefix(u, "http") {
 			s.url = u
@@ -223,8 +234,9 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 	switch s.state {
 	case "err":
 		s.icon = "errc"
+		s.right = failedRight(tc, s.right)
 	case "deny":
-		s.icon = "lock"
+		s.icon, s.right = "lock", "已拒绝" // 设计稿:图标是锁、对象带删除线、右侧「已拒绝」
 	}
 	if !s.hasBody && toolHasDetail(tc) { // MCP / 浏览器 / 读取 / 搜索 / 抓取…:展开看入参与结果
 		s.hasBody = true
@@ -259,6 +271,11 @@ func (a *App) applyToolDefaultOpen(s *step, tc *core.ToolCall) {
 	if tc.Kind == core.KindExecute {
 		if s.state == "run" {
 			s.open = true
+			// 设计稿:运行中展开实时输出,结束后不自动收起(避免正在看的内容突然缩回、下面的行跳动)。
+			// 记进手动状态;用户在运行期间自己收起过的(folds 里已有记录)不覆盖。
+			if _, set := a.folds[s.id]; !set {
+				a.folds[s.id] = true
+			}
 			return
 		}
 		for _, ct := range tc.Content {
@@ -297,8 +314,8 @@ func thinkTitle(text string) string {
 
 // isExplore 探索类工具(读 / 搜 / 查找),连续的两个以上会收成一个分组行。
 func isExplore(it core.Item) (*core.ToolCall, bool) {
-	tc, ok := it.(*core.ToolCall)
-	if !ok {
+	tc := doneToolOf(it) // 已处理的权限请求里装的也是工具调用,不能把一串探索从中间截断
+	if tc == nil {
 		return nil, false
 	}
 	return tc, tc.Kind == core.KindRead || tc.Kind == core.KindSearch
@@ -325,4 +342,40 @@ func exploreSummary(g []*core.ToolCall) (string, bool) {
 		parts = append(parts, fmt.Sprintf("%d 次搜索", searches))
 	}
 	return strings.Join(parts, " · "), running
+}
+
+// execTokens 命令类工具的令牌(设计稿 flow 页「工具令牌」):后台 Bash = 「后台运行」+ 活动图标 + 右侧「已启动」,
+// Monitor = 「监听」+ 眼睛图标,后台输出 / 结束后台任务各有自己的动词,不再都叫「运行」。
+func (a *App) execTokens(s *step, tc *core.ToolCall) {
+	switch tc.Name {
+	case "Monitor":
+		s.icon, s.verb = "eye", "监听"
+		s.obj = firstNonEmpty(inputStr(tc, "description"), inputStr(tc, "command"), strings.TrimPrefix(tc.Title, "监听 "))
+	case "BashOutput", "TaskOutput":
+		s.icon, s.verb = "activity", "后台输出"
+		s.obj = firstNonEmpty(tc.TaskID, strings.TrimPrefix(tc.Title, "读取后台输出"))
+	case "KillShell", "KillBash", "TaskStop":
+		s.icon, s.verb = "stop", "结束后台任务"
+		s.obj = tc.TaskID
+	default:
+		if bg, _ := tc.Input["run_in_background"].(bool); bg {
+			s.icon, s.verb = "activity", "后台运行"
+			if tc.Status == core.ToolCompleted {
+				s.right = "已启动"
+			}
+		}
+	}
+}
+
+// failedRight 失败 / 被中断的步骤右侧写什么:命令给退出码(设计稿「退出码 101」,红字),被中断写「已中断」,其余沿用原右侧。
+func failedRight(tc *core.ToolCall, cur string) string {
+	if tc.Status == core.ToolInterrupted {
+		return "已中断"
+	}
+	for _, ct := range tc.Content {
+		if tb, ok := ct.(*core.TerminalBlock); ok && tb.ExitCode != nil && *tb.ExitCode != 0 {
+			return "退出码 " + strconv.Itoa(*tb.ExitCode)
+		}
+	}
+	return cur
 }
