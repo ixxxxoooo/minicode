@@ -31,7 +31,9 @@ func (a *App) cyclePermissionMode() {
 // rememberPermMode 记住在输入框里选的权限模式,新会话沿用(与模型 / 思考强度同一套做法)。
 // 「跳过权限确认」风险高,不记:下次新会话仍回到上一次记住的安全模式。
 func (a *App) rememberPermMode(m core.PermissionMode) {
-	if a.prefs == nil || m == core.ModeBypassPermissions {
+	// 绕过风险高不记;自动 / 不再询问在设置里没有对应选项(permModeIndex 会把它们折成「逐项确认」),也不记,
+	// 否则 ⇧Tab 循环经过它们会悄悄把「下次新会话的起始模式」改回逐项确认
+	if a.prefs == nil || m == core.ModeBypassPermissions || m == core.ModeAuto || m == core.ModeDontAsk {
 		return
 	}
 	if idx := permModeIndex(m); a.prefs.Int(pPermMode, 0) != idx || !a.prefs.Has(pPermMode) {

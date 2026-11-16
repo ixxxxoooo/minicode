@@ -372,7 +372,7 @@ var settingsTabs = []setTabDef{
 		{title: "策略", rows: []setRow{
 			rSeg("perm.layer", "配置层", "规则写入哪一层", 1, "用户", "项目", "本地"),
 			rSeg("perm.mode", "默认权限模式", "permissions.defaultMode", 0, "逐项确认", "自动接受编辑", "计划"),
-			rTog("perm.noBypass", "禁止绕过权限模式", "permissions.disableBypassPermissionsMode", false),
+			rTog("perm.noBypass", "禁止绕过权限模式", "开启后输入框里的「跳过权限确认」不可选,并把 disableBypassPermissionsMode 写进所选配置层(选「用户」层时,终端里的 claude 也会被禁止绕过)", false),
 			{key: "perm.sandbox", title: "Bash 沙盒", desc: "claude 暂不支持从外部开关,请在 claude 的 /sandbox 里设置", kind: kNone,
 				right: func(a *App, c *ui.Context) {
 					kit.Tog(c, false, "tog-perm.sandbox-disabled")

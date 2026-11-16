@@ -112,9 +112,24 @@ func (a *App) cfgPopup(c *ui.Context, key string, anchor ui.Element, compact boo
 				m    core.PermissionMode
 				icon string
 			}{{core.ModeDefault, "shield"}, {core.ModeAcceptEdits, "edit"}, {core.ModePlan, "list"}, {core.ModeBypassPermissions, "bolt"}}
+			hints := map[core.PermissionMode]string{
+				core.ModeDefault: "每次都问", core.ModeAcceptEdits: "命令仍会问", core.ModePlan: "只读规划", core.ModeBypassPermissions: "全部放行",
+			}
 			for _, md := range modes {
 				tint := a.modeTint(md.m)
-				if a.miTint(c, "mode-"+md.m.CLI(), md.icon, &tint, md.m.Label(), "", a.st.Mode == md.m).Clicked() {
+				right := hints[md.m]
+				blocked := md.m == core.ModeBypassPermissions && a.NoBypassPermissions()
+				if blocked { // 设置里禁止了绕过:不再让人点了没反应,直接写明原因,点击去设置里解除
+					right = "设置中已禁止"
+				}
+				if a.miTint(c, "mode-"+md.m.CLI(), md.icon, &tint, md.m.Label(), right, a.st.Mode == md.m && !blocked).Clicked() {
+					if blocked {
+						log.Info("跳过权限确认被设置禁止,转到权限设置")
+						a.popup = ""
+						a.openSettings("permissions")
+						a.toast = "已在设置里禁止绕过权限模式,关掉「禁止绕过权限模式」后才能选"
+						continue
+					}
 					a.send(core.CmdSetMode{Mode: md.m})
 					a.st.Mode = md.m // 乐观更新,后端确认后以事件为准
 					a.rememberPermMode(md.m)
