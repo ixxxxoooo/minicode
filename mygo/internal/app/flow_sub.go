@@ -21,8 +21,12 @@ func (a *App) subagentCard(c *ui.Context, s *core.SubagentCard) {
 	}
 	card.OnClick(func() { a.openSubTab(s.ID) })
 	card.Children(func() {
-		ui.Column(c).Gap(4).WidthPercent(100).Children(func() {
-			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+		ui.Column(c).Gap(5).WidthPercent(100).Children(func() {
+			hdr := ui.Row(c).Gap(6).AlignItems(ui.Center)
+			if a.chatTier() == tierNarrow {
+				hdr = hdr.Wrap()
+			}
+			hdr.Children(func() {
 				a.subStatusIcon(c, s)
 				ui.Text(c, s.Description).FontWeight(500).SingleLine().Shrink(1)
 				kit.Tag(c, s.AgentType)
@@ -36,7 +40,7 @@ func (a *App) subagentCard(c *ui.Context, s *core.SubagentCard) {
 			a.subStatRow(c, s)
 			if run {
 				if step := s.SubLatestStep(); step != "" {
-					a.subLatestTicker(c, s.ID, step)
+					a.subLatestTicker(c, s, step)
 				} else if s.Stalled(a.st.Now()) {
 					ui.Text(c, "疑似停滞").PaddingStart(22).FontSize(a.FlowCapFont()).TextColor(t.Warn)
 				}
@@ -62,16 +66,14 @@ func (a *App) subStatusIcon(c *ui.Context, s *core.SubagentCard) {
 }
 
 func (a *App) subCardActions(c *ui.Context, s *core.SubagentCard, run bool) {
+	kit.Btn(c, "查看过程", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "ext"}).OnClick(func() { a.openSubTab(s.ID) })
 	if run {
-		kit.Btn(c, "查看过程", kit.BtnOpt{Small: true, Icon: "ext"}).OnClick(func() { a.openSubTab(s.ID) })
 		kit.Ib(c, "stop", kit.IbOpt{Small: true, Tip: "停止"}).OnClick(func() {
 			if s.TaskID != "" {
 				a.send(core.CmdStopTask{TaskID: s.TaskID})
 				log.Info("停止子 Agent", "task", s.TaskID, "card", s.ID)
 			}
 		})
-	} else {
-		kit.Btn(c, "查看过程", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "ext"}).OnClick(func() { a.openSubTab(s.ID) })
 	}
 }
 
@@ -91,7 +93,7 @@ func (a *App) subStatRow(c *ui.Context, s *core.SubagentCard) {
 		meta = append(meta, core.FormatElapsed(el))
 	}
 	if n := s.Tools(); n > 0 {
-		meta = append(meta, itoa(n)+" 个工具")
+		meta = append(meta, itoa(n)+" 次工具")
 	}
 	if s.Tokens > 0 {
 		meta = append(meta, core.FormatTokens(s.Tokens))
@@ -130,22 +132,35 @@ func (a *App) subPromptBlock(c *ui.Context, s *core.SubagentCard) {
 		})
 		if expanded {
 			kit.VScroll(c).MaxHeight(160).Children(func() {
-				ui.Text(c, prompt).TextColor(t.Tx2).LineHeight(1.5).Selectable()
+				ui.Text(c, prompt).FontSize(a.FlowFontSize()).TextColor(t.Tx2).LineHeight(a.FlowReadLH()).Selectable()
 			})
 		} else {
-			ui.Text(c, prompt).TextColor(t.Tx2).LineHeight(1.5).MaxLines(2)
+			ui.Text(c, prompt).FontSize(a.FlowFontSize()).TextColor(t.Tx2).LineHeight(a.FlowReadLH()).MaxLines(2)
 		}
 	})
 }
 
-func (a *App) subLatestTicker(c *ui.Context, id, step string) {
+func (a *App) subLatestTicker(c *ui.Context, s *core.SubagentCard, step string) {
 	t := a.tk
-	row := ui.Row(c).Key("sub-tick-"+id).Height(theme.Px(22)).Margin(0, 0, 0, theme.FlowInset).Gap(6).AlignItems(ui.Center).
-		TextColor(t.Tx3).FontSize(theme.FsCap).Clip()
+	row := ui.Row(c).Key("sub-tick-"+s.ID).Height(theme.Px(22)).Margin(0, 0, 0, theme.FlowInset).Gap(6).AlignItems(ui.Center).
+		TextColor(t.Tx3).FontSize(theme.FsCtl * a.ChatFontScale()).Clip()
 	row.Children(func() {
-		kit.Spin(c, t.ToolAgent)
+		a.subTickerIcon(c, s)
 		kit.RunText(ui.Text(c, step).SingleLine().Grow(1).MinWidth(0))
 	})
+}
+
+func (a *App) subTickerIcon(c *ui.Context, s *core.SubagentCard) {
+	for i := len(s.Children) - 1; i >= 0; i-- {
+		if tc, ok := s.Children[i].(*core.ToolCall); ok {
+			st := a.presentTool(tc)
+			if st.icon != "" {
+				kit.Ic(c, st.icon, kit.S12).TextColor(a.famColor(st.fam))
+				return
+			}
+		}
+	}
+	kit.Spin(c, a.tk.ToolAgent)
 }
 
 // compactSubRow 用于「并行 N 个」组内:不占满一张大卡,只留一行摘要 + 最新一步。
@@ -157,7 +172,11 @@ func (a *App) compactSubRow(c *ui.Context, s *core.SubagentCard) {
 	row.OnClick(func() { a.openSubTab(s.ID) })
 	row.Children(func() {
 		ui.Column(c).Gap(3).WidthPercent(100).Children(func() {
-			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+			hdr := ui.Row(c).Gap(6).AlignItems(ui.Center)
+			if a.chatTier() == tierNarrow {
+				hdr = hdr.Wrap()
+			}
+			hdr.Children(func() {
 				a.subStatusIcon(c, s)
 				ui.Text(c, s.Description).FontWeight(500).SingleLine().Shrink(1)
 				if n := s.PendingPermissions(); n > 0 {
@@ -174,7 +193,7 @@ func (a *App) compactSubRow(c *ui.Context, s *core.SubagentCard) {
 			})
 			if run {
 				if step := s.SubLatestStep(); step != "" {
-					a.subLatestTicker(c, s.ID, step)
+					a.subLatestTicker(c, s, step)
 				}
 			}
 		})

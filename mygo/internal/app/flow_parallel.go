@@ -44,7 +44,7 @@ func (a *App) parallelSubGroup(c *ui.Context, cards []*core.SubagentCard) {
 		for i := len(cards) - 1; i >= 0; i-- {
 			if cards[i].Active() {
 				if step := cards[i].SubLatestStep(); step != "" {
-					a.subLatestTicker(c, cards[i].ID, step)
+					a.subLatestTicker(c, cards[i], step)
 				} else {
 					a.groupLatestSub(c, id, cards[i])
 				}
