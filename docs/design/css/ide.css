@@ -72,3 +72,16 @@
 [data-scheme="c"] .etabs { box-shadow: inset 0 -1px var(--bd-1); }
 [data-scheme="c"] .etab::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px; border-radius: 2px 2px 0 0; background: var(--ac); transform: scaleX(0); transition: transform var(--dur-base) var(--ease-out); }
 [data-scheme="c"] .etab.on::after { transform: scaleX(1); }
+
+/* 终端 · 竖向标签列表(与 Go term_tabs.go 对齐) */
+.term-side { width: 168px; flex: none; display: flex; flex-direction: column; border-left: 1px solid var(--bd-1); background: var(--bg); min-height: 0; }
+.term-side-h { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-bottom: 1px solid var(--bd-1); flex: none; }
+.term-side-row { height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 8px; color: var(--tx-2); cursor: default; }
+.term-side-row:hover { background: var(--fill-1); color: var(--tx-1); }
+.term-side-row.on { background: var(--fill-2); color: var(--tx-1); }
+.term-side-row .x { opacity: 0; }
+.term-side-row:hover .x, .term-side-row.on .x { opacity: 1; }
+.term-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--tx-4); }
+.term-dot.ok { background: var(--ok); }
+.term-dot.run { background: var(--ac); }
+.term-dot.err { background: var(--err); }
