@@ -529,6 +529,9 @@ func (t *Translator) user(v obj) []core.Event {
 			}
 			out = append(out, t.toolResult(block, tur, parent)...)
 		case "text":
+			if strings.HasPrefix(str(block, "text"), IDEContextTag) { // 随消息发出的 IDE 上下文,不是用户输入
+				continue
+			}
 			texts = append(texts, str(block, "text"))
 		}
 	}

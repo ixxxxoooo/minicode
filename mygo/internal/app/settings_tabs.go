@@ -278,6 +278,7 @@ var settingsTabs = []setTabDef{
 		{title: "输入", rows: []setRow{
 			rSeg("general.send", "发送键", "另一个键用于换行(Shift+Enter 始终换行)", 0, "Enter", "⌘ Enter"),
 			rSeg("general.busy", "回合进行中再发消息", "Enter = 排队;⌘Enter = 立即引导", 0, "排队", "立即引导"),
+			rTog(pIDECtx, "发送时附带 IDE 上下文", "把当前文件、光标行、选中的代码和打开的文件名告诉 Claude(相同内容不重复发;选区限 4000 字)。关闭后只发你输入的文字", true),
 			rTog("general.paste", "粘贴长文本时折叠为附件", "超过 2000 字时作为文本附件加入,不撑开输入框", true),
 		}},
 		{title: "连接", rows: []setRow{

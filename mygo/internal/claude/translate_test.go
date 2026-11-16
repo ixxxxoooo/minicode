@@ -525,3 +525,31 @@ func TestParseExitCode(t *testing.T) {
 		}
 	}
 }
+
+// 随消息发出的 IDE 上下文块在回放历史时不能显示成用户输入。
+func TestReplayDropsIDEContext(t *testing.T) {
+	lines := []string{
+		`{"type":"user","uuid":"u-1","timestamp":"2026-10-09T10:00:00.000Z","message":{"content":[{"type":"text","text":"<ide-context>\n当前文件:a.go\n</ide-context>"},{"type":"text","text":"帮我看看"}]}}`,
+	}
+	st := core.NewState()
+	for _, e := range ReplayLines(lines, "/w") {
+		st.Apply(e)
+	}
+	if len(st.Items) != 1 {
+		t.Fatalf("应只有一条用户消息:%d", len(st.Items))
+	}
+	if u, ok := st.Items[0].(*core.User); !ok || u.Text != "帮我看看" {
+		t.Fatalf("用户消息不应带上下文:%#v", st.Items[0])
+	}
+}
+
+func TestUserMessageCtxBlock(t *testing.T) {
+	m := UserMessageCtx("问题", nil, false, "u", "文件 a.go")
+	blocks := m["message"].(obj)["content"].([]any)
+	if len(blocks) != 2 || !strings.HasPrefix(blocks[0].(obj)["text"].(string), IDEContextTag) {
+		t.Fatalf("上下文应是正文前的独立文本块:%#v", blocks)
+	}
+	if m2 := UserMessage("问题", nil, false, "u"); len(m2["message"].(obj)["content"].([]any)) != 1 {
+		t.Fatal("无上下文时只有正文块")
+	}
+}

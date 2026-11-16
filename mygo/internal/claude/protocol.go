@@ -16,7 +16,18 @@ type obj = map[string]any
 // UserMessage 是用户消息。steer 为真时带 priority:next,让 claude 在当前回合两次工具调用之间就地吸收
 // (实测:now 会提前收尾当前回合,不是引导)。uuid 是这条消息的 claude 消息 id:文件检查点按它记录。
 func UserMessage(text string, images []string, steer bool, uuid string) obj {
+	return UserMessageCtx(text, images, steer, uuid, "")
+}
+
+// IDEContextTag 是 IDE 上下文文本块的标签;回放历史时整块滤掉,不当作用户输入显示。
+const IDEContextTag = "<ide-context>"
+
+// UserMessageCtx 同 UserMessage,ctx 非空时在正文前加一个独立的文本块(`<ide-context>…</ide-context>`)。
+func UserMessageCtx(text string, images []string, steer bool, uuid, ctx string) obj {
 	var content []any
+	if strings.TrimSpace(ctx) != "" {
+		content = append(content, obj{"type": "text", "text": IDEContextTag + "\n" + strings.TrimSpace(ctx) + "\n</ide-context>"})
+	}
 	for _, p := range images {
 		b, err := os.ReadFile(p)
 		if err != nil { // 读不到的图片退化成文字说明,避免整条消息发送失败

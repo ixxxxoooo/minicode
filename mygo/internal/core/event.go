@@ -230,6 +230,9 @@ type (
 		Text          string
 		Images, Files []string
 		Steer         bool
+		// Context 是随这条消息一起发给模型的 IDE 上下文(当前文件 / 选区 / 打开的标签);
+		// 不显示在会话流里,回放历史时也会被滤掉。
+		Context string
 	}
 	CmdCancel            struct{}
 	CmdSetModel          struct{ Model string }

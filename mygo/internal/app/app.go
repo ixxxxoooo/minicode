@@ -300,6 +300,7 @@ type App struct {
 	ctxRefreshAt      time.Time
 	mcpRefreshAt      time.Time
 	mcpRefreshing     bool
+	ctxSent           string          // 本会话已发给模型的 IDE 上下文(相同内容不重复发)
 	mcpListBusy       bool            // claude mcp list 正在后台跑(它会逐个探活,可能要几十秒,不能叠着起)
 	mcpListAt         time.Time       // 上次拿到 mcp list 结果的时间
 	mcpDeny           map[string]bool // 本地层被禁用的 MCP 工具规则(缓存,弹层打开 / 切换后后台重读)
@@ -398,6 +399,7 @@ func (a *App) retheme() {
 // win 为 nil 时(测试)直接在调用线程归约。
 func (a *App) Attach(be backend.Backend) {
 	a.be = be
+	a.ctxSent = ""
 	a.warmAttach(be)
 	co := &deltaCoalescer{}
 	be.Start(func(ev core.Event) {
@@ -619,6 +621,8 @@ func (a *App) send(cmd core.Command) {
 		return
 	}
 	if p, ok := cmd.(core.CmdPrompt); ok {
+		p = a.attachIDEContext(p)
+		cmd = p
 		a.noteActive()
 		if a.pvEnvPending && !p.Steer && a.st.Phase != core.PhaseRunning { // 回合进行中切换的服务商 / 模型,在这条消息前生效
 			a.pvPushEnv()

@@ -657,7 +657,7 @@ func (b *Backend) onPrompt(c core.CmdPrompt) {
 	if !steering && b.stages.connected(time.Now()) { // 冷启动的握手结束:「连接」→「本地准备」
 		b.emitStage(nil)
 	}
-	b.write(UserMessage(c.Text, c.Images, steering, uuid))
+	b.write(UserMessageCtx(c.Text, c.Images, steering, uuid, c.Context))
 	if !steering {
 		log.Info("提示已写入 claude", "冷启动", b.turnCold, "写入耗时", time.Since(b.turnT0).Round(time.Millisecond), "pid", b.p.pid)
 	}
