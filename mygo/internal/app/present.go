@@ -158,11 +158,20 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 	case core.KindRead:
 		s.icon, s.verb, s.obj = "fileText", "读取", baseName(path)
 		s.path, s.copyStr = path, path
-		s.line, _ = strconv.Atoi(inputStr(tc, "offset"))
+		// 读了哪几行:起点 = offset(缺省从第 1 行),行数 = 结果的行数(给了 limit 且结果更长时以 limit 为准);
+		// 还没有结果时只有 limit 才知道终点。读取行不展开(没有可看的内容,点整行 = 在工作区打开并定位到起点)。
+		start := max(inputInt(tc, "offset"), 1)
+		s.line = start
 		s.meta = dirOf(a.shortPath(path))
-		if n := textLines(firstText(tc)); n > 0 {
-			s.meta += fmt.Sprintf(" · L1–%d", n)
+		n := textLines(firstText(tc))
+		if lim := inputInt(tc, "limit"); lim > 0 && (n == 0 || n > lim) {
+			n = lim
+		}
+		if n > 0 {
+			s.meta += fmt.Sprintf(" · L%d–%d", start, start+n-1)
 			s.right = fmt.Sprintf("%d 行", n)
+		} else if inputInt(tc, "offset") > 0 {
+			s.meta += fmt.Sprintf(" · L%d 起", start)
 		}
 	case core.KindSearch:
 		pat := inputStr(tc, "pattern")
@@ -238,7 +247,9 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 	case "deny":
 		s.icon, s.right = "lock", "已拒绝" // 设计稿:图标是锁、对象带删除线、右侧「已拒绝」
 	}
-	if !s.hasBody && toolHasDetail(tc) { // MCP / 浏览器 / 读取 / 搜索 / 抓取…:展开看入参与结果
+	// 读取成功不展开(设计稿:读取行没有展开箭头,只写「读取 文件 路径 · L起–止」);失败 / 被拒绝仍可展开看原因
+	readPlain := tc.Kind == core.KindRead && s.state != "err" && s.state != "deny"
+	if !s.hasBody && !readPlain && toolHasDetail(tc) { // MCP / 浏览器 / 搜索 / 抓取…:展开看入参与结果
 		s.hasBody = true
 	}
 	a.applyToolDefaultOpen(&s, tc)
@@ -378,4 +389,20 @@ func failedRight(tc *core.ToolCall, cur string) string {
 		}
 	}
 	return cur
+}
+
+// inputInt 读入参里的整数(JSON 数字解出来是 float64;也兼容整型与数字字符串);没有或读不出返回 0。
+func inputInt(tc *core.ToolCall, k string) int {
+	switch v := tc.Input[k].(type) {
+	case float64:
+		return int(v)
+	case int:
+		return v
+	case int64:
+		return int(v)
+	case string:
+		n, _ := strconv.Atoi(v)
+		return n
+	}
+	return 0
 }
