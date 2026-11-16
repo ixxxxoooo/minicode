@@ -156,6 +156,8 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 - **追溯悬停卡**:离开文字与卡片 250 ms 后才收(`blameCloseDelay` / `blameKeepOpen`,需 `frameSoon()` 续帧)。仅单测。
 - **文件类型关联**(`open_external.go`,`settings_backup.go`):`mygo.App.OnOpenFile(a.OpenExternalFile)` 必须在 `Run` 前注册(Dock 拖放 / 最近打开 / 命令行同入口),`main.go` 先 `HoldExternalOpen(true)` 冷启动排队、`InitBrand()` 后放行;`.mccanvas`(= 画布库文件 JSON,`canvas.Library.Import/Export`)/ `.mcworkspace`(`projects.MarshalWorkspaceFile` / `ParseWorkspaceFile`,清掉 ID 与权限确认,缺失文件夹跳过并提示,全缺则拒绝,演示模式拒绝)/ `.mcsettings`(弹确认再合并,`isSecretPrefKey` 剔除密钥类键,导出同样剔除);出口:画布行 ··· 「导出为 .mccanvas」、工作区右键「导出为工作区文件…」、设置 → 高级。**实机踩坑**:`open -a` 必须用 `.app` 的绝对路径;Computer Use 的 app 目标点击需要最新截图的 `coordinate_token`,没有时可用 System Events 坐标点击(会卡住要及时 kill)。已用 `open -a` 在开发版实测画布 / 设置 / 工作区三种导入;Finder 里真双击图标与冷启动排队未实测。
 
+- **托盘菜单**(`brand_tray.go` / `brand_tray_icons.go`):会话按项目分组(灰色禁用项当组名),行首文字标记(`trayMarkText`:⁘ 运行 / 🟠 待确认 / 🔵 未读,看过的会话用全角空格占位对齐),标题截 24 字,整体窄;「重启 MiniCode」走 `restartApp(reason, false)`(不改真实 / 演示记忆),有运行中会话或未保存文件时先弹确认。**库的 `MenuItem.Icon` 在托盘菜单里实机不渲染**(两次实测,生成与传入都正确),`MINI_TRAY_ICON=1` 可强制改回图标复测。**`syncBrand` 的 Dock 图标要按「样式 + 外观后缀 + 深浅」签名判断是否重设**,只比深浅会让设置里改样式不生效。**`scripts/dev.sh` 先跑 `go vet ./...`**,别的会话留下的半成品测试文件会让开发版起不来;还有 `~/.claude.json` 项目条目缺 `disabledMcpServers` 曾让界面构建 panic(已修)。
+
 ### 排队引导 / 问答卡 / 回到最新(设计稿 `flow-queue` 页,`js/specs5.js`,仅 `go build` 通过,**未测试**)
 
 - **待发送区**(`dock.go::queueCard`、`queue.go`、`composer_queue.go`):排队(⏎,偏好 `general.busy` 可对调)与引导(⌘⏎)都先落在输入框正上方。引导 = `steerSend`:立刻 `CmdPrompt{Steer}` 发给 Claude,但登记成 `promptQueue.steers`,行内显示「引导 · 等 Claude 接收」,会话流里用 `visibleItems()` 藏起后端回显的那条用户消息;`syncSteers` 每帧启发式判定接收(其后出现新的非用户条目且停留 ≥ 700 ms,或回合结束)后才放进会话流(后端没有显式确认信号)。排队行悬停:改为引导 / 停止并发送 / 删除,点文字退回编辑。输入框占位随回合状态写明 ⏎ / ⌘⏎。
