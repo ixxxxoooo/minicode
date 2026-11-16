@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -24,7 +25,7 @@ func (a *App) overlayLayer(c *ui.Context) {
 
 func (a *App) wsOverlay(c *ui.Context) {
 	t := a.tk
-	w := min(a.wsRW(), a.winW*0.9)
+	w := min(a.wsPref(), a.winW*0.9)
 	if w < 360 {
 		w = min(360, a.winW-24)
 	}
@@ -43,23 +44,29 @@ func (a *App) wsOverlay(c *ui.Context) {
 		})
 }
 
-// dockRail 是对话栏图标条:放在标签条(30)下面,不盖住工作区右上角的操作按钮。
+// dockRail 是对话栏图标条(设计稿 resp「IDE 对话栏图标条」):只有一个「对话」气泡图标
+// (与导航栏「会话」同图标,不用机器人——那是 Agent 模式的标记),贴在工作区标签条下方右缘;
+// 右上角小圆点:强调色 = Claude 正在运行,橙色 = 在等你确认。
 func (a *App) dockRail(c *ui.Context) {
 	t := a.tk
-	ui.Column(c).Absolute().Right(8).Top(theme.HBar + 38).Width(40).Gap(6).Children(func() {
-		kit.Ib(c, "bot", kit.IbOpt{Tip: "对话栏", On: a.dockFloat}).OnClick(func() {
-			a.dockFloat = true
-		})
-		if a.st != nil && len(a.st.Items) > 0 {
-			kit.Ib(c, "chat", kit.IbOpt{Small: true, Tip: "会话"}).OnClick(func() { a.dockFloat = true })
+	dot := ui.Color{}
+	switch {
+	case len(a.pendingQueue()) > 0:
+		dot = t.Warn
+	case a.st != nil && a.st.Phase == core.PhaseRunning:
+		dot = t.Ac
+	}
+	ui.Box(c).Absolute().Right(8).Top(theme.HBar + 38).Children(func() {
+		kit.Ib(c, "chat", kit.IbOpt{Tip: "对话栏 ⌥⌘B", On: a.dockFloat}).OnClick(func() { a.dockFloat = true })
+		if dot != (ui.Color{}) {
+			ui.Box(c).Absolute().Right(3).Top(3).Size(6, 6).Radius(3).Background(dot)
 		}
-		_ = t
 	})
 }
 
 func (a *App) dockOverlay(c *ui.Context) {
 	t := a.tk
-	w := min(a.dockW(), a.winW*0.92)
+	w := min(a.dockPref(), a.winW*0.92)
 	if w < 300 {
 		w = min(300, a.winW-24)
 	}
