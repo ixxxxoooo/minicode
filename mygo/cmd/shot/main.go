@@ -71,6 +71,7 @@ func main() {
 	skipTop := false
 	switch *state {
 	case "welcome":
+		a.NewSession() // 欢迎页只在没有当前会话 id 时显示,SetProjects 已选中 fixbug,要显式开新会话
 	case "perm":
 		demo.Replay(a.State(), demo.PendingPermission())
 	case "ask":

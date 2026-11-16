@@ -15,7 +15,12 @@ func (a *App) cvLib() *canvas.Library {
 		return a.cvLibData
 	}
 	if a.demoExtra {
-		l, _ := canvas.OpenLibrary(filepath.Join(os.TempDir(), "minicode-demo-canvas"))
+		// 演示库每次运行用独立的临时目录:共用固定目录会跨次累积(测试 / 截图里列表越来越长)
+		dir, err := os.MkdirTemp("", "minicode-demo-canvas-")
+		if err != nil {
+			dir = filepath.Join(os.TempDir(), "minicode-demo-canvas")
+		}
+		l, _ := canvas.OpenLibrary(dir)
 		active, stores := demo.CanvasDemoLibrary(a.demoPgCanvas, a.now())
 		for id, s := range stores {
 			l.SeedDemo(id, s)
