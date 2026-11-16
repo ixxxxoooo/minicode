@@ -38,7 +38,7 @@ func (a *App) pageHead(c *ui.Context, title, desc string, actions func()) {
 	t := a.tk
 	ui.Row(c).Padding(16, 20, 10, 20).Gap(12).AlignItems(ui.Start).Shrink(0).Children(func() {
 		ui.Column(c).Grow(1).MinWidth(0).Gap(2).Children(func() {
-			ui.Text(c, title).FontSize(theme.FsHead).FontWeight(700)
+			ui.Text(c, title).FontSize(theme.FsHead).FontWeight(600)
 			ui.Text(c, desc).TextColor(t.Tx3).LineHeight(1.5)
 		})
 		if actions != nil {

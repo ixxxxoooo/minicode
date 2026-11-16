@@ -56,7 +56,7 @@ func (a *App) scmSubmoduleRow(c *ui.Context, ch vcs.Change) {
 	t := a.tk
 	ui.Row(c).Key("scm-submod-"+ch.Path).Height(theme.Px(24)).PaddingX(8).Gap(6).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Margin(0, 2, 2, 2).Children(func() {
 		a.fileIc(c, path.Base(ch.Path))
-		ui.Text(c, ch.Path).FontWeight(600).SingleLine().Grow(1)
+		ui.Text(c, ch.Path).FontWeight(500).SingleLine().Grow(1)
 		ui.Text(c, "子模块指针变更").FontSize(theme.FsMicro).TextColor(t.Tx3)
 		kit.Tag(c, "M", kit.KWarn)
 	})

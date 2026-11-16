@@ -379,7 +379,7 @@ func (a *App) hoverLocal(tb *ideTab, req editor.HoverRequest, w string, s, e int
 		ui.Column(c).Gap(6).Width(300).Children(func() {
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 				kit.Tag(c, h.sym.Kind, kit.KAc)
-				ui.Text(c, h.sym.Name).FontWeight(600)
+				ui.Text(c, h.sym.Name).FontWeight(500)
 				ui.Text(c, path.Base(h.path)+":"+itoa(h.sym.Line+1)).FontSize(theme.FsMicro).TextColor(t.Tx4)
 			})
 			ui.Text(c, h.sym.Detail).Font("monospace").FontSize(theme.Px(11.5)).TextColor(t.Tx2)

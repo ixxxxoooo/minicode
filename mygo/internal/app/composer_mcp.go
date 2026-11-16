@@ -60,7 +60,7 @@ func (a *App) mcpPopup(c *ui.Context, anchor ui.Element) {
 			ui.Row(c).Padding(8, 10).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 				ui.Column(c).Grow(1).Children(func() {
 					ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-						ui.Text(c, fmt.Sprintf("已启用 %d / %d", en, total)).FontWeight(600).Grow(1)
+						ui.Text(c, fmt.Sprintf("已启用 %d / %d", en, total)).FontWeight(500).Grow(1)
 						kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新 MCP 状态"}).OnClick(func() {
 							a.mcpManualRefresh(false)
 							if !a.mcpRuntimeReady() {

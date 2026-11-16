@@ -63,7 +63,7 @@ func (a *App) browserReaderSelectLayer(c *ui.Context, pg browser.Page) {
 	if sel.open && sel.snip != "" {
 		ui.Row(c).Absolute().Bottom(12).Left(12).Right(12).Padding(8, 10).Gap(8).Radius(t.RMd()).
 			Background(t.Raised).Border(1, t.Bd2).Children(func() {
-			ui.Text(c, "已选取段落").FontWeight(600)
+			ui.Text(c, "已选取段落").FontWeight(500)
 			ui.Text(c, sel.snip).FontSize(theme.FsCap).LineHeight(1.4).Grow(1).MinWidth(0).MaxHeight(48)
 			kit.Btn(c, "发给 Claude", kit.BtnOpt{Small: true, Variant: kit.BtnPri, Icon: "chat"}).OnClick(func() {
 				ref := fmt.Sprintf("@浏览器:%s#%d", browser.Normalize(v.url), sel.section)

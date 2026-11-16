@@ -17,7 +17,7 @@ func (a *App) repoOverview(c *ui.Context) {
 	t := a.tk
 	ui.Column(c).Shrink(0).Padding(0, 0, 4, 0).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Margin(0, 0, 6, 0).Children(func() {
 		ui.Row(c).Height(theme.Px(24)).PaddingX(4).Gap(2).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, "仓库").Grow(1).FontSize(theme.FsMicro).FontWeight(700).TextColor(t.Tx3)
+			ui.Text(c, "仓库").Grow(1).FontSize(theme.FsMicro).FontWeight(500).TextColor(t.Tx3)
 			ui.Text(c, itoa(len(a.repos))).FontSize(theme.FsMicro).TextColor(t.Tx4).Margin(0, 4, 0, 0)
 			if a.scmExpandAll() {
 				kit.Tag(c, "全部展开", kit.KAc)
@@ -56,7 +56,7 @@ func (a *App) repoOverview(c *ui.Context) {
 			r.Children(func() {
 				kit.Ic(c, "branch", kit.S12).TextColor(t.Tx3)
 				ui.Row(c).Grow(1).MinWidth(0).Gap(6).AlignItems(ui.Center).Children(func() {
-					ui.Text(c, e.name).FontWeight(600).SingleLine().Shrink(0)
+					ui.Text(c, e.name).FontWeight(500).SingleLine().Shrink(0)
 					ui.Text(c, br).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Shrink(1).MinWidth(0)
 					if e.kind != "" {
 						kit.Tag(c, e.kind)

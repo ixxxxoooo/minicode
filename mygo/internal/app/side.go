@@ -116,7 +116,7 @@ func (a *App) sideTop(c *ui.Context) {
 	}
 	r.Children(func() {
 		if t.Scheme.ID == "c" {
-			ui.Text(c, navTitle(a.NavID())).FontWeight(600).PaddingStart(6).Grow(1)
+			ui.Text(c, navTitle(a.NavID())).FontWeight(500).PaddingStart(6).Grow(1)
 			a.addMenuButton(c)
 			return
 		}

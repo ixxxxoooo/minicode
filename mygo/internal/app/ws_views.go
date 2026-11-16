@@ -32,7 +32,7 @@ func (a *App) wsHead(c *ui.Context, icon string, iconCol ui.Color, title string,
 	t := a.tk
 	ui.Row(c).Height(theme.Px(36)).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		kit.Ic(c, icon, kit.S12).TextColor(iconCol)
-		ui.Text(c, title).FontWeight(700).SingleLine().Shrink(1)
+		ui.Text(c, title).FontWeight(500).SingleLine().Shrink(1)
 		if left != nil {
 			left()
 		}
@@ -89,7 +89,7 @@ func (a *App) planView(c *ui.Context) {
 				}
 				ui.Column(c).Gap(6).Padding(10, 12).Background(t.Sunken).Radius(t.RMd()).Border(1, t.Bd1).Children(func() {
 					ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-						ui.Text(c, "执行进度").FontWeight(600)
+						ui.Text(c, "执行进度").FontWeight(500)
 						ui.Text(c, itoa(done)+" / "+itoa(len(td.Items))).TextColor(t.Tx3).FontFeatures("tnum")
 						ui.Spacer(c).Grow(1)
 						ui.Column(c).Width(120).Children(func() { kit.Meter(c, float32(done)/float32(max(1, len(td.Items)))*100) })
@@ -116,7 +116,7 @@ func (a *App) latestTodos() *core.Todos {
 
 // wsSection 是工作区内容里的小标题。
 func wsSection(c *ui.Context, t *theme.Tokens, s string) {
-	ui.Text(c, s).FontSize(theme.FsCap).FontWeight(600).TextColor(t.Tx3).Margin(4, 0, 0, 0)
+	ui.Text(c, s).FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3).Margin(4, 0, 0, 0)
 }
 
 // ───────── 后台任务输出 ─────────

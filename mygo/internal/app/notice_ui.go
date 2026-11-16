@@ -61,7 +61,7 @@ func (a *App) noticePanel(c *ui.Context, anchor ui.Element) {
 		ui.PopoverBase(c, anchor, open, func(panel ui.Element) {
 			a.popPanel(panel, 320).Padding(0).Clip().AttachTo(anchor, ui.AnchorTopRight, ui.AnchorBottomRight).Margin(0, 0, 6, 0)
 			ui.Row(c).Padding(8, 10).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
-				ui.Text(c, "通知").FontWeight(600).Grow(1)
+				ui.Text(c, "通知").FontWeight(500).Grow(1)
 				if a.nt.unread > 0 {
 					kit.Cnt(c, itoa(a.nt.unread), true)
 				}

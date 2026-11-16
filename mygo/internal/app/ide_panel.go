@@ -218,7 +218,7 @@ func (a *App) problems(c *ui.Context) {
 	kit.VScroll(c).Key("probs").Grow(1).Children(func() {
 		ui.Column(c).Padding(2, 6).Children(func() {
 			for _, g := range data {
-				ui.Row(c).Height(theme.Px(24)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(10.5)).FontWeight(700).Children(func() {
+				ui.Row(c).Height(theme.Px(24)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(10.5)).FontWeight(500).Children(func() {
 					kit.Ic(c, "chevD", kit.S12)
 					a.fileIc(c, g.file)
 					ui.Text(c, g.file).Grow(1)
@@ -304,7 +304,7 @@ func (a *App) refsPanel(c *ui.Context) {
 					if workspace.IsExternalPath(it.path) {
 						disp = a.pathDisplay(it.path)
 					}
-					ui.Row(c).Key("rg-" + it.path).Height(theme.Px(24)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(10.5)).FontWeight(700).Children(func() {
+					ui.Row(c).Key("rg-" + it.path).Height(theme.Px(24)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(10.5)).FontWeight(500).Children(func() {
 						kit.Ic(c, "chevD", kit.S12)
 						a.fileIc(c, path.Base(it.path))
 						ui.Text(c, disp).Grow(1)

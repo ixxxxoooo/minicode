@@ -89,7 +89,7 @@ func (a *App) wsPermDialog(c *ui.Context) {
 		ui.Row(c).Gap(10).AlignItems(ui.Start).Children(func() {
 			kit.Ic(c, "shield", 20).TextColor(t.Ac).Shrink(0)
 			ui.Column(c).Grow(1).Gap(6).Children(func() {
-				ui.Text(c, "Claude 将获得 "+itoa(n)+" 个附加文件夹的读写权限").FontWeight(700)
+				ui.Text(c, "Claude 将获得 "+itoa(n)+" 个附加文件夹的读写权限").FontWeight(600)
 				ui.Text(c, labels+"。可在 设置 → 权限与信任 → 附加目录 里随时撤销;"+sub).FontSize(theme.FsCap).TextColor(t.Tx2).LineHeight(theme.LhBody)
 				ui.Text(c, "只读授权 = 仍以 --add-dir 加入,并在系统提示里声明不要修改这些目录内的文件。").FontSize(theme.FsMicro).TextColor(t.Tx3)
 				ui.Row(c).Gap(8).Margin(4, 0, 0, 0).Children(func() {

@@ -129,7 +129,7 @@ func (a *App) updPopup(c *ui.Context, anchor ui.Element) {
 				title = a.updFailTitle("网络错误")
 			}
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, title).FontWeight(600).Grow(1)
+				ui.Text(c, title).FontWeight(500).Grow(1)
 				if a.updSt.Phase == updDownload {
 					kit.Tag(c, itoa(a.updSt.Percent)+"%", kit.KAc)
 				}

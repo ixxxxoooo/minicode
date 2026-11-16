@@ -98,7 +98,7 @@ func (a *App) toolDetail(c *ui.Context, tc *core.ToolCall) {
 // detailSection 是详情里的一节:小标题 + 内容。
 func (a *App) detailSection(c *ui.Context, title string, body func()) {
 	ui.Column(c).Gap(3).Children(func() {
-		ui.Text(c, title).FontSize(theme.FsMicro).FontWeight(600).LetterSpacing(.4).TextColor(a.tk.Tx3)
+		ui.Text(c, title).FontSize(theme.FsMicro).FontWeight(500).LetterSpacing(.4).TextColor(a.tk.Tx3)
 		body()
 	})
 }

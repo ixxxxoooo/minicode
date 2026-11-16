@@ -371,7 +371,7 @@ func (a *App) settingsMain(c *ui.Context) {
 						return
 					}
 					ui.Column(c).Gap(2).Children(func() {
-						ui.Text(c, tab.title).FontSize(theme.FsHead).FontWeight(700)
+						ui.Text(c, tab.title).FontSize(theme.FsHead).FontWeight(600)
 						if tab.desc != "" {
 							ui.Text(c, tab.desc).TextColor(t.Tx3).LineHeight(theme.LhBody)
 						}
@@ -401,7 +401,7 @@ func (a *App) settingsGroup(c *ui.Context, g setGroup, index int) {
 	kit.StaggerRise(grp, index, a.set.enterAt, a.frameSoon)
 	grp.Children(func() {
 		if g.title != "" {
-			ui.Text(c, g.title).FontSize(theme.FsCap).FontWeight(700).TextColor(t.Tx3).LetterSpacing(.2).Padding(0, 4)
+			ui.Text(c, g.title).FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3).LetterSpacing(.2).Padding(0, 4)
 		}
 		card := ui.Column(c).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd1)
 		for _, s := range t.Shadow1() {
@@ -618,7 +618,7 @@ func (a *App) settingsSearchView(c *ui.Context, q string) {
 	if len(hs) == 0 {
 		ui.Column(c).AlignItems(ui.Center).Gap(8).Padding(48, 12).Children(func() {
 			kit.Ic(c, "search", kit.S20).TextColor(t.Tx4)
-			ui.Text(c, "没有匹配「"+q+"」的设置").FontWeight(600)
+			ui.Text(c, "没有匹配「"+q+"」的设置").FontWeight(500)
 			ui.Text(c, "换个关键字试试,例如「主题」「代理」「快捷键」「服务商」。\n功能内容(MCP、Skills、命令……)在侧栏的「自定义」页。").
 				FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(theme.LhMono).TextAlign(ui.Center)
 			kit.Btn(c, "清除搜索", kit.BtnOpt{Small: true, Icon: "x"}).OnClick(func() { a.set.query = "" })
@@ -634,7 +634,7 @@ func (a *App) settingsSearchView(c *ui.Context, q string) {
 		by[h.tab] = append(by[h.tab], h)
 	}
 	ui.Column(c).Gap(2).Children(func() {
-		ui.Text(c, "搜索结果").FontSize(theme.FsHead).FontWeight(700)
+		ui.Text(c, "搜索结果").FontSize(theme.FsHead).FontWeight(600)
 		ui.Text(c, itoa(len(hs))+" 项,分布在 "+itoa(len(order))+" 个分类里 · 点一项直接跳过去 · Esc 清除").TextColor(t.Tx3)
 	})
 	for _, id := range order {
@@ -642,7 +642,7 @@ func (a *App) settingsSearchView(c *ui.Context, q string) {
 		ui.Column(c).Gap(5).Children(func() {
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Padding(0, 4).TextColor(t.Tx3).Children(func() {
 				kit.Ic(c, tab.icon, kit.S12)
-				ui.Text(c, tab.title).FontSize(theme.FsCap).FontWeight(700)
+				ui.Text(c, tab.title).FontSize(theme.FsCap).FontWeight(500)
 			})
 			ui.Column(c).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd1).Children(func() {
 				for i, h := range by[id] {

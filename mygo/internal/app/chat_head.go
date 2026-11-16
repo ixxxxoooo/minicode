@@ -63,7 +63,7 @@ func (a *App) chatHead(c *ui.Context, title string) {
 			if narrow && run {
 				kit.Dot(c, kit.KAc)
 			}
-			ui.Text(c, title).FontWeight(700).SingleLine().Shrink(1)
+			ui.Text(c, title).FontWeight(500).SingleLine().Shrink(1)
 			if narrow {
 				kit.Ic(c, "chevD", kit.S12).TextColor(t.Tx3)
 			}

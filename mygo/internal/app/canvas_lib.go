@@ -63,7 +63,7 @@ func (a *App) canvasList(c *ui.Context) {
 	l := a.cvLib()
 	ui.Column(c).Width(216).Shrink(0).Padding(12, 12, 0, 16).Gap(8).BorderWidth(0, 1, 0, 0).BorderColor(t.Bd1).Children(func() {
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, "画布").FontWeight(600).Grow(1)
+			ui.Text(c, "画布").FontWeight(500).Grow(1)
 			if kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建"}).Clicked() {
 				doc := canvas.Doc{Title: "未命名画布", Status: "草稿"}
 				if s, id, err := l.New("未命名画布", doc, "你", "新建", a.now()); err == nil {

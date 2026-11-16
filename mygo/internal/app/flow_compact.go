@@ -44,11 +44,11 @@ func (a *App) compactCard(c *ui.Context, cp *core.Compaction) {
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 				switch cp.State {
 				case core.CompactRunning:
-					kit.RunText(ui.Text(c, "正在压缩上下文…").FontWeight(600).TextColor(t.Tx1).SingleLine().Shrink(0))
+					kit.RunText(ui.Text(c, "正在压缩上下文…").FontWeight(500).TextColor(t.Tx1).SingleLine().Shrink(0))
 				case core.CompactFailed:
-					ui.Text(c, "压缩失败").FontWeight(600).TextColor(t.Tx1).SingleLine().Shrink(0)
+					ui.Text(c, "压缩失败").FontWeight(500).TextColor(t.Tx1).SingleLine().Shrink(0)
 				default:
-					ui.Text(c, "已压缩上下文").FontWeight(600).TextColor(t.Tx1).SingleLine().Shrink(0)
+					ui.Text(c, "已压缩上下文").FontWeight(500).TextColor(t.Tx1).SingleLine().Shrink(0)
 				}
 				kit.Tag(c, trig)
 				switch {

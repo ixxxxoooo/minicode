@@ -139,7 +139,7 @@ func (a *App) cfgGroupHead(c *ui.Context, id, brand, name, count, blocked string
 	b.Children(func() {
 		kit.Ic(c, map[bool]string{true: "chevD", false: "chevR"}[open], kit.S12).TextColor(t.Tx3)
 		kit.Logo(c, brand, 13, t.Tx2)
-		ui.Text(c, name).FontSize(theme.Px(10.5)).FontWeight(600).LetterSpacing(.3).TextColor(t.Tx2).SingleLine()
+		ui.Text(c, name).FontSize(theme.Px(10.5)).FontWeight(500).LetterSpacing(.3).TextColor(t.Tx2).SingleLine()
 		if active {
 			kit.Tag(c, "当前", kit.KAc)
 		}

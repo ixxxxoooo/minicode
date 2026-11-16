@@ -125,7 +125,7 @@ func (a *App) askCard(c *ui.Context, q *core.QuestionRequest) {
 			if n > 1 {
 				title = "需要你确认 " + itoa(n) + " 个问题"
 			}
-			ui.Text(c, title).FontWeight(700).Shrink(1)
+			ui.Text(c, title).FontWeight(500).Shrink(1)
 			ui.Spacer(c).Grow(1)
 			a.dockBadge(c)
 			if n > 1 {
@@ -166,7 +166,7 @@ func (a *App) askCard(c *ui.Context, q *core.QuestionRequest) {
 					})
 				}
 			})
-			ui.Text(c, qu.Question).FontWeight(600).LineHeight(1.45)
+			ui.Text(c, qu.Question).FontWeight(500).LineHeight(1.45)
 		}
 		if qu.MultiSelect && len(qu.Options) > 0 {
 			ui.Text(c, "可多选").FontSize(theme.FsCap).TextColor(t.Tx3)
@@ -256,7 +256,7 @@ func (a *App) askEcho(c *ui.Context, q *core.QuestionRequest) {
 	box.Children(func() {
 		ui.Row(c).Gap(7).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "check", kit.S12).TextColor(t.Ok)
-			ui.Text(c, "已回答 "+itoa(len(q.Questions))+" 个问题").FontWeight(700).Shrink(1)
+			ui.Text(c, "已回答 "+itoa(len(q.Questions))+" 个问题").FontWeight(600).Shrink(1)
 			ui.Spacer(c).Grow(1)
 			if skipped > 0 && len(q.Questions) > 1 {
 				kit.Tag(c, itoa(skipped)+" 个已跳过")

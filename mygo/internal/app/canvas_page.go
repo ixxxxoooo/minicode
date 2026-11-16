@@ -58,7 +58,7 @@ func (a *App) canvasPage(c *ui.Context) {
 		// 顶栏
 		ui.Row(c).Height(40).Padding(0, 16).Gap(8).AlignItems(ui.Center).Shrink(0).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 			kit.Ic(c, "canvas", kit.S12).TextColor(t.Ac)
-			ui.Text(c, s.Doc.Title).FontWeight(600).SingleLine()
+			ui.Text(c, s.Doc.Title).FontWeight(500).SingleLine()
 			kit.Tag(c, s.Doc.Status)
 			v0 := s.Versions[0]
 			ui.Text(c, "v"+itoa(v0.N)+" · "+canvas.Ago(a.now(), v0.At)+"由 "+v0.By+" 修改").FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Grow(1).MinWidth(0)
@@ -188,9 +188,9 @@ func (a *App) canvasDoc(c *ui.Context, s *canvas.Store) {
 			title := ui.Column(c)
 			title.Children(func() {
 				if v.preview {
-					ui.Text(c, viewDoc.Title).FontSize(theme.Px(22)).FontWeight(700)
+					ui.Text(c, viewDoc.Title).FontSize(theme.Px(22)).FontWeight(600)
 				} else {
-					ui.TextInput(c.Key("cv-title"), &s.Doc.Title).FontSize(theme.Px(22)).FontWeight(700).Background(ui.Transparent).BorderWidth(0).Padding(0)
+					ui.TextInput(c.Key("cv-title"), &s.Doc.Title).FontSize(theme.Px(22)).FontWeight(600).Background(ui.Transparent).BorderWidth(0).Padding(0)
 				}
 			})
 			v.pos["title"] = title.Bounds().Y - top
@@ -215,9 +215,9 @@ func (a *App) canvasBlock(c *ui.Context, b *canvas.Block) {
 	switch b.Kind {
 	case canvas.Heading:
 		if v.preview {
-			ui.Text(c, b.Text).FontSize(theme.Px(15)).FontWeight(700).Padding(18, 0, 8, 0)
+			ui.Text(c, b.Text).FontSize(theme.Px(15)).FontWeight(600).Padding(18, 0, 8, 0)
 		} else {
-			ui.TextInput(c.Key("cvh-"+b.ID), &b.Text).FontSize(theme.Px(15)).FontWeight(700).Background(ui.Transparent).BorderWidth(0).Padding(18, 0, 8, 0)
+			ui.TextInput(c.Key("cvh-"+b.ID), &b.Text).FontSize(theme.Px(15)).FontWeight(600).Background(ui.Transparent).BorderWidth(0).Padding(18, 0, 8, 0)
 		}
 	case canvas.Para:
 		if v.preview {

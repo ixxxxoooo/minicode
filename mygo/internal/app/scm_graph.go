@@ -67,7 +67,7 @@ func (a *App) graphView(c *ui.Context) {
 					g.sel = ""
 				})
 			} else {
-				ui.Text(c, e.name).FontWeight(600).TextColor(t.Tx2)
+				ui.Text(c, e.name).FontWeight(500).TextColor(t.Tx2)
 			}
 		}
 		if len(s.log) > 0 {
@@ -101,7 +101,7 @@ func (a *App) graphView(c *ui.Context) {
 	// 表头
 	ui.Row(c).Height(theme.Px(22)).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		hd := func(s string, w float32) {
-			e := ui.Text(c, s).FontSize(theme.FsMicro).TextColor(t.Tx4).FontWeight(600).SingleLine()
+			e := ui.Text(c, s).FontSize(theme.FsMicro).TextColor(t.Tx4).FontWeight(500).SingleLine()
 			if w > 0 {
 				e.Width(w).Shrink(0)
 			} else {
@@ -194,7 +194,7 @@ func (a *App) graphDetail(c *ui.Context) {
 	}
 	ui.Column(c).Key("graph-detail").Height(190).Shrink(0).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Background(t.Raised).Children(func() {
 		ui.Row(c).Height(theme.Px(30)).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, cm.Subject).FontWeight(600).SingleLine().Shrink(1).MinWidth(0)
+			ui.Text(c, cm.Subject).FontWeight(500).SingleLine().Shrink(1).MinWidth(0)
 			ui.Spacer(c).Grow(1)
 			ui.Text(c, cm.Short()+" · "+cm.Author+" · "+cm.When).FontSize(theme.FsCap).TextColor(t.Tx3).Font("monospace").SingleLine().Shrink(0)
 			if kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制完整哈希"}).Clicked() {

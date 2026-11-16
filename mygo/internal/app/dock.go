@@ -127,7 +127,7 @@ func (a *App) permCard(c *ui.Context, r *core.PermissionRequest) {
 	a.cardShell(c, "dock-perm").Children(func() {
 		ui.Row(c).Gap(7).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "shield", kit.S12).TextColor(t.AcTx)
-			ui.Text(c, permTitle(r)).FontWeight(700).SingleLine().Shrink(1)
+			ui.Text(c, permTitle(r)).FontWeight(500).SingleLine().Shrink(1)
 			ui.Spacer(c).Grow(1)
 			a.dockBadge(c)
 			if r.Tool != nil {
@@ -322,7 +322,7 @@ func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 	box.Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "list", kit.S12).TextColor(t.Warn)
-			ui.Text(c, planTitle(p.Markdown)).FontWeight(700).SingleLine().Shrink(1)
+			ui.Text(c, planTitle(p.Markdown)).FontWeight(500).SingleLine().Shrink(1)
 			switch {
 			case p.Streaming:
 				kit.Tag(c, "生成中…")

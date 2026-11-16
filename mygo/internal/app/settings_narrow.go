@@ -20,7 +20,7 @@ func (a *App) settingsTabPicker(c *ui.Context) {
 	}
 	head.Children(func() {
 		kit.Ic(c, cur.icon, kit.S12)
-		ui.Text(c, "分类: "+cur.title).Grow(1).FontWeight(600)
+		ui.Text(c, "分类: "+cur.title).Grow(1).FontWeight(500)
 		kit.Ic(c, "chevD", kit.S12).TextColor(t.Tx3)
 	})
 	if !a.set.navDrop {

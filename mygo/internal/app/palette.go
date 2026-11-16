@@ -574,7 +574,7 @@ func (a *App) palList(c *ui.Context, items []palItem, run func(int)) {
 			for i, it := range items {
 				if it.group != last {
 					last = it.group
-					ui.Row(c).Height(palCapH).PaddingX(8).AlignItems(ui.Center).FontSize(theme.FsMicro).FontWeight(600).TextColor(t.Tx3).
+					ui.Row(c).Height(palCapH).PaddingX(8).AlignItems(ui.Center).FontSize(theme.FsMicro).FontWeight(500).TextColor(t.Tx3).
 						Children(func() { ui.Text(c, it.group) })
 				}
 				i, it := i, it
@@ -642,7 +642,7 @@ func (a *App) palPreview(c *ui.Context, items []palItem) {
 		case cur.path != "":
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Margin(0, 0, 4, 0).Children(func() {
 				a.fileIc(c, cur.title)
-				ui.Text(c, cur.title).FontWeight(600).SingleLine()
+				ui.Text(c, cur.title).FontWeight(500).SingleLine()
 			})
 			ui.Text(c, cur.path).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Margin(2, 0, 8, 0)
 			for _, ln := range a.filePreview(cur.path, 16) {
@@ -653,7 +653,7 @@ func (a *App) palPreview(c *ui.Context, items []palItem) {
 			if a.pq.sub == "theme" {
 				title = "主题:切换…"
 			}
-			ui.Text(c, title).FontWeight(600)
+			ui.Text(c, title).FontWeight(500)
 			desc := cur.desc
 			if a.pq.sub == "theme" {
 				desc = "展开主题列表。上下移动时即时预览,回车确认,Esc 还原。"

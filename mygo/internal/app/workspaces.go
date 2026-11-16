@@ -549,7 +549,7 @@ func (a *App) rootBadges(c *ui.Context, name string) {
 			return
 		}
 		if _, _, _, n := a.repoSummary(i); n > 0 {
-			ui.Text(c, itoa(n)).FontSize(theme.FsMicro).FontWeight(700).TextColor(t.Warn).FontFeatures("tnum").Shrink(0)
+			ui.Text(c, itoa(n)).FontSize(theme.FsMicro).FontWeight(600).TextColor(t.Warn).FontFeatures("tnum").Shrink(0)
 		}
 		return
 	}

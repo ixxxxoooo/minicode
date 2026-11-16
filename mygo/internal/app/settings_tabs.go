@@ -110,7 +110,7 @@ func layCards(a *App, c *ui.Context) {
 				card.Children(func() {
 					layPreview(a, c, s.ID)
 					ui.Row(c).Justify(ui.SpaceBetween).AlignItems(ui.Center).Children(func() {
-						ui.Text(c, s.Name).FontWeight(700)
+						ui.Text(c, s.Name).FontWeight(500)
 						ui.Text(c, info[s.ID][0]).FontSize(theme.FsMicro).TextColor(t.Tx4)
 					})
 					ui.Text(c, info[s.ID][1]).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.4)
@@ -191,7 +191,7 @@ func themeCards(a *App, c *ui.Context) {
 					})
 				})
 				ui.Row(c).Justify(ui.SpaceBetween).AlignItems(ui.Center).Padding(5, 3, 1, 3).Children(func() {
-					ui.Text(c, p.Name).FontWeight(700)
+					ui.Text(c, p.Name).FontWeight(500)
 					d := "浅"
 					if p.Dark {
 						d = "深"
@@ -538,7 +538,7 @@ var settingsTabs = []setTabDef{
 			}),
 		}, body: func(a *App, c *ui.Context) {
 			ui.Column(c).Children(func() {
-				ui.Text(c, "崩溃与卡顿").FontSize(theme.FsCap).FontWeight(700).TextColor(a.tk.Tx3).Padding(8, 12, 4, 12)
+				ui.Text(c, "崩溃与卡顿").FontSize(theme.FsCap).FontWeight(500).TextColor(a.tk.Tx3).Padding(8, 12, 4, 12)
 				a.privacyCrashesBody(c)
 				rowBox(a, c, false, 36).Children(func() {
 					ui.Text(c, "claude doctor").FontWeight(500).Grow(1)
@@ -691,7 +691,7 @@ func perfBody(a *App, c *ui.Context) {
 			if vals != nil {
 				spark(a, c, vals)
 			}
-			ui.Text(c, val).FontWeight(700).FontFeatures("tnum").MinWidth(70).TextAlign(ui.End)
+			ui.Text(c, val).FontWeight(600).FontFeatures("tnum").MinWidth(70).TextAlign(ui.End)
 		})
 	}
 	line(true, "内存", "本进程堆上存活对象", memTxt, mem)
@@ -708,7 +708,7 @@ func aboutCard(a *App, c *ui.Context) {
 	t := a.tk
 	ui.Column(c).Padding(22).Gap(6).AlignItems(ui.Center).Children(func() {
 		a.brandLogo(c, 96, false)
-		ui.Text(c, "MiniCode").FontSize(theme.FsHead).FontWeight(700).Margin(6, 0, 0, 0)
+		ui.Text(c, "MiniCode").FontSize(theme.FsHead).FontWeight(600).Margin(6, 0, 0, 0)
 		ui.Text(c, "版本 "+Version).TextColor(t.Tx3)
 		if hint, ok := a.updAboutHint(); ok {
 			col := t.Ok

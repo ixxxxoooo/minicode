@@ -16,7 +16,7 @@ import (
 func (a *App) projectsHeader(c *ui.Context, withAdd bool) {
 	t := a.tk
 	ui.Row(c).Key("projhdr").Height(theme.Px(24)).PaddingX(8).Margin(6, 0, 0, 0).AlignItems(ui.Center).Gap(4).Shrink(0).Children(func() {
-		ui.Text(c, "项目与工作区").Grow(1).FontSize(theme.FsCap).FontWeight(600).TextColor(t.Tx2)
+		ui.Text(c, "项目与工作区").Grow(1).FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx2)
 		if withAdd {
 			a.addMenuButton(c)
 		}

@@ -249,7 +249,7 @@ func (a *App) usageChart(c *ui.Context, u core.UsageReport) {
 	}
 	a.box(c).Padding(12, 14).Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Padding(0, 0, 8, 0).Children(func() {
-			ui.Text(c, "每日费用").FontWeight(600)
+			ui.Text(c, "每日费用").FontWeight(500)
 			ui.Text(c, "悬停看每天的数值").FontSize(theme.FsCap).TextColor(t.Tx3)
 			ui.Spacer(c).Grow(1)
 			ui.Box(c).Size(6, 6).Radius(3).Background(t.Ac)
@@ -282,7 +282,7 @@ func (a *App) usageChart(c *ui.Context, u core.UsageReport) {
 func (a *App) usageModels(c *ui.Context, u core.UsageReport) {
 	t := a.tk
 	a.box(c).Grow(1).Basis(0).Padding(10, 14).Gap(4).Children(func() {
-		ui.Text(c, "按模型").FontWeight(600)
+		ui.Text(c, "按模型").FontWeight(500)
 		for _, m := range u.Models {
 			col := []ui.Color{t.Info, t.Vio, t.Ok}[m.Kind%3]
 			ui.Row(c).Height(theme.Px(28)).Gap(8).AlignItems(ui.Center).Children(func() {
@@ -299,7 +299,7 @@ func (a *App) usageModels(c *ui.Context, u core.UsageReport) {
 func (a *App) usageProjects(c *ui.Context, u core.UsageReport) {
 	t := a.tk
 	a.box(c).Grow(1).Basis(0).Padding(10, 14).Gap(4).Children(func() {
-		ui.Text(c, "按项目").FontWeight(600)
+		ui.Text(c, "按项目").FontWeight(500)
 		for _, p := range u.Projects {
 			ui.Row(c).Height(theme.Px(28)).Gap(8).AlignItems(ui.Center).Children(func() {
 				ui.Text(c, p.Name).Grow(1).SingleLine().MinWidth(0)
@@ -313,7 +313,7 @@ func (a *App) usageProjects(c *ui.Context, u core.UsageReport) {
 func (a *App) usageTop(c *ui.Context, u core.UsageReport) {
 	t := a.tk
 	a.box(c).Padding(10, 6).Children(func() {
-		ui.Text(c, "最贵的会话").FontWeight(600).Padding(0, 8, 4, 8)
+		ui.Text(c, "最贵的会话").FontWeight(500).Padding(0, 8, 4, 8)
 		for i, s := range u.TopSessions {
 			r := ui.ButtonBase(c).Key("top-" + itoa(i)).Height(theme.Px(30)).PaddingX(8).Gap(10).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
 			if r.Hovered() {
@@ -339,7 +339,7 @@ func (a *App) usageTop(c *ui.Context, u core.UsageReport) {
 func (a *App) usageDrawer(c *ui.Context, u core.UsageReport) {
 	t := a.tk
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-		ui.Text(c, "账户限额").FontWeight(600).Grow(1)
+		ui.Text(c, "账户限额").FontWeight(500).Grow(1)
 		if a.use.limitsState == core.LimitsChecking {
 			kit.Ring(c, -1, t.Ac)
 			ui.Text(c, "更新中…").FontSize(theme.FsCap).TextColor(t.Tx4)
@@ -380,7 +380,7 @@ func (a *App) usageDrawer(c *ui.Context, u core.UsageReport) {
 		}
 	})
 	kit.Sep(c)
-	ui.Text(c, "建议").FontWeight(600)
+	ui.Text(c, "建议").FontWeight(500)
 	ui.Column(c).Gap(10).Children(func() {
 		for _, tip := range u.Tips {
 			icon, col := []string{"okc", "alert", "info"}[tip.Level], []ui.Color{t.Ok, t.Warn, t.Info}[tip.Level]

@@ -142,7 +142,7 @@ func (a *App) browserReader(c *ui.Context, b *browser.Browser, pg browser.Page) 
 				a.box(c).Padding(12, 14).Gap(4).Margin(0, 0, 14, 0).Children(func() {
 					ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 						kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
-						ui.Text(c, "无法打开 "+v.url).FontWeight(600).SingleLine()
+						ui.Text(c, "无法打开 "+v.url).FontWeight(500).SingleLine()
 					})
 					ui.Text(c, b.Err.Error()+"。可尝试在系统浏览器中打开,或到 设置 → 浏览器 检查抓取开关与超时。").TextColor(t.Tx3).LineHeight(1.5)
 					kit.Btn(c, "在系统浏览器打开", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() { a.openExtBrowser(v.url) })
@@ -152,7 +152,7 @@ func (a *App) browserReader(c *ui.Context, b *browser.Browser, pg browser.Page) 
 				if b.Err == nil {
 					ui.Column(c).AlignItems(ui.Center).Gap(6).Padding(80, 0, 0, 0).Children(func() {
 						kit.Ic(c, "globe", kit.S20).TextColor(t.Tx4)
-						ui.Text(c, "阅读模式浏览器").FontWeight(600)
+						ui.Text(c, "阅读模式浏览器").FontWeight(500)
 						ui.Text(c, "在上方地址栏输入网址并回车,正文会以干净的版式显示,还能就这个页面向 Claude 提问。").
 							FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.5).TextAlign(ui.Center)
 					})
@@ -164,7 +164,7 @@ func (a *App) browserReader(c *ui.Context, b *browser.Browser, pg browser.Page) 
 				a.box(c).Padding(16, 14).Gap(6).Margin(0, 0, 14, 0).Children(func() {
 					ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 						kit.Ic(c, "file", kit.S12).TextColor(t.Tx3)
-						ui.Text(c, "这个页面没有可读取的正文").FontWeight(600).SingleLine()
+						ui.Text(c, "这个页面没有可读取的正文").FontWeight(500).SingleLine()
 					})
 					ui.Text(c, pg.Site+" 返回了内容,但阅读模式没找到文字:可能是纯文本 / 图片、需要脚本渲染的页面,或本身就是空页面。").
 						TextColor(t.Tx3).LineHeight(1.5)
@@ -178,9 +178,9 @@ func (a *App) browserReader(c *ui.Context, b *browser.Browser, pg browser.Page) 
 				el.Children(func() {
 					switch s.Level {
 					case 0:
-						ui.Text(c, s.Heading).FontSize(theme.Px(26)).FontWeight(700).Margin(2, 0, 14, 0)
+						ui.Text(c, s.Heading).FontSize(theme.Px(26)).FontWeight(600).Margin(2, 0, 14, 0)
 					case 1:
-						ui.Text(c, s.Heading).FontSize(theme.Px(15)).FontWeight(700).Padding(16, 0, 8, 0)
+						ui.Text(c, s.Heading).FontSize(theme.Px(15)).FontWeight(600).Padding(16, 0, 8, 0)
 					default:
 						ui.Text(c, s.Heading).FontSize(theme.Px(13)).FontWeight(650).Padding(12, 0, 6, 0)
 					}
@@ -196,7 +196,7 @@ func (a *App) browserDrawer(c *ui.Context, b *browser.Browser, pg browser.Page) 
 	t := a.tk
 	v := &a.brs
 	ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-		ui.Text(c, "与此页面对话").FontWeight(600).Grow(1).SingleLine()
+		ui.Text(c, "与此页面对话").FontWeight(500).Grow(1).SingleLine()
 		kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭"}).OnClick(func() { v.hideDr = true })
 	})
 	if id := kit.Tabs(c, []kit.TabItem{{ID: "sum", Text: "摘要"}, {ID: "out", Text: "大纲"}, {ID: "lnk", Text: "链接"}}, v.tab, 30, nil); id != "" {

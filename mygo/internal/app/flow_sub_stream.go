@@ -85,7 +85,7 @@ func (a *App) subFlowItems(c *ui.Context, s *core.SubagentCard) {
 func (a *App) subResultCard(c *ui.Context, summary string) {
 	t := a.tk
 	ui.Column(c).Gap(6).Margin(8, 0, 0, 0).Children(func() {
-		ui.Text(c, "结果").FontSize(theme.FsCap).FontWeight(600).TextColor(t.Tx3)
+		ui.Text(c, "结果").FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3)
 		ui.Column(c).Padding(10, 12).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd1).Children(func() {
 			ui.Text(c, summary).LineHeight(1.55)
 		})

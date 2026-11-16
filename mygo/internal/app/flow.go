@@ -263,10 +263,16 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			obj = ui.Box(c).Width(0).Shrink(0)
 		} else if sp.state == "run" {
 			kit.RunTextS(c, sp.verb, t.Tx3, func(e ui.Element) ui.Element { return e.TextColor(t.Tx3).Shrink(0).SingleLine() })
-			obj = kit.RunTextS(c, sp.obj, t.Tx1, func(e ui.Element) ui.Element { return e.FontWeight(500).TextColor(t.Tx1).SingleLine().Shrink(1) })
+			obj = kit.RunTextS(c, sp.obj, t.Tx1, func(e ui.Element) ui.Element { return e.TextColor(t.Tx1).SingleLine().Shrink(1) })
 		} else {
+			// 字重规范(设计稿 v4):工具行的动词与对象都是常规字重,靠颜色分层——动词 Tx3 → 对象 Tx2 → 附注 Tx3 → 结果 Tx4;
+			// 只有进行中的一行对象提亮到 Tx1。思考行整行更淡(对象也用 Tx3),不抢正文。
 			ui.Text(c, sp.verb).TextColor(t.Tx3).Shrink(0).SingleLine()
-			obj = ui.Text(c, sp.obj).FontWeight(500).TextColor(t.Tx1).SingleLine().Shrink(1)
+			objCol := t.Tx2
+			if sp.fam == famThink {
+				objCol = t.Tx3
+			}
+			obj = ui.Text(c, sp.obj).TextColor(objCol).SingleLine().Shrink(1)
 		}
 		mq := a.thinkMarqueeRow(c, sp, tone, open)
 		if at, ok := a.thinkMqHide[sp.id]; ok && kit.MotionOn() {

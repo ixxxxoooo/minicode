@@ -206,7 +206,7 @@ func (a *App) provEditor(c *ui.Context) {
 	}
 	ui.Column(c).Key("prov-editor").Gap(0).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Background(t.Fill1.Mix(t.BG, .5)).Children(func() {
 		rowBox(a, c, true, 34).Children(func() {
-			ui.Text(c, title).FontWeight(600).Grow(1)
+			ui.Text(c, title).FontWeight(500).Grow(1)
 			kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭"}).OnClick(func() { p.editing = false })
 		})
 		a.provFieldRow(c, "名称", "例如 DeepSeek", func() {
@@ -470,7 +470,7 @@ func (a *App) provInventory(c *ui.Context) {
 	hasKey := strings.TrimSpace(p.keyDraft) != "" || (!p.isNew && a.pvHasKey(d.ID))
 	ui.Column(c).Gap(8).Padding(10, 12).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, "模型清单").FontWeight(600)
+			ui.Text(c, "模型清单").FontWeight(500)
 			ui.Text(c, "已选 "+strconv.Itoa(picked)+" / 共 "+strconv.Itoa(len(all))).FontSize(theme.FsCap).TextColor(t.Tx3)
 			ui.Box(c).Grow(1)
 			if d.FetchedAt > 0 && !p.fetching {

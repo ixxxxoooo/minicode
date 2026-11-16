@@ -171,10 +171,10 @@ func (a *App) drawCommitCard(c *ui.Context, tb *ideTab, bl vcs.BlameLine, right,
 	card.Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 			ui.Box(c).Size(22, 22).Radius(11).Background(t.AcSoft).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, authorAbbr(bl.Author)).FontSize(theme.Px(10)).FontWeight(700).TextColor(t.AcTx)
+				ui.Text(c, authorAbbr(bl.Author)).FontSize(theme.Px(10)).FontWeight(600).TextColor(t.AcTx)
 			})
 			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
-				ui.Text(c, bl.Author).FontWeight(600).SingleLine()
+				ui.Text(c, bl.Author).FontWeight(500).SingleLine()
 				ui.Text(c, when).FontSize(theme.FsMicro).TextColor(t.Tx3).SingleLine()
 			})
 		})

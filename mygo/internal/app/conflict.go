@@ -315,7 +315,7 @@ func (a *App) conflictCard(c *ui.Context, s *confState, g confSeg, k int, narrow
 	ch := s.choice[k]
 	ui.Column(c).Key("cf-"+itoa(k)).Radius(t.RMd()).Border(1, t.Bd2).Background(t.Raised).Children(func() {
 		ui.Row(c).Height(theme.Px(30)).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
-			ui.Text(c, "冲突 "+itoa(k+1)).FontWeight(700)
+			ui.Text(c, "冲突 "+itoa(k+1)).FontWeight(600)
 			ui.Text(c, "第 "+itoa(g.line)+" 行").FontSize(theme.FsCap).TextColor(t.Tx4)
 			ui.Spacer(c).Grow(1)
 			if ch != chNone {
@@ -331,7 +331,7 @@ func (a *App) conflictCard(c *ui.Context, s *confState, g confSeg, k int, narrow
 			}
 			col.Children(func() {
 				ui.Row(c).Height(theme.Px(22)).PaddingX(10).Gap(6).AlignItems(ui.Center).Background(tint.Alpha(.12)).Children(func() {
-					ui.Text(c, title).FontSize(theme.FsCap).FontWeight(600).TextColor(tint)
+					ui.Text(c, title).FontSize(theme.FsCap).FontWeight(500).TextColor(tint)
 					ui.Text(c, tag).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().MinWidth(0)
 				})
 				ui.Column(c).Padding(6, 10).Children(func() {
@@ -389,7 +389,7 @@ func (a *App) conflictResult(c *ui.Context, s *confState) {
 	ui.Column(c).Radius(t.RMd()).Border(1, t.Bd2).Children(func() {
 		ui.Row(c).Height(theme.Px(26)).PaddingX(10).Gap(6).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 			kit.Ic(c, "merge", kit.S12).TextColor(t.Tx3)
-			ui.Text(c, "结果").FontSize(theme.FsCap).FontWeight(600).TextColor(t.Tx3)
+			ui.Text(c, "结果").FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3)
 			ui.Text(c, "选择上面的操作,或直接在这里编辑").FontSize(theme.FsMicro).TextColor(t.Tx4).Grow(1).SingleLine()
 		})
 		auto := composePreview(s.segs, s.choice)

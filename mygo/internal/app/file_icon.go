@@ -86,6 +86,6 @@ func (a *App) fileBadge(c *ui.Context, k fileKind) ui.Element {
 		size = 12
 	}
 	return ui.Row(c).Size(14, 14).Shrink(0).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
-		ui.Text(c, k.label).FontSize(size).FontWeight(600).LineHeight(1).TextColor(col).NoWrap()
+		ui.Text(c, k.label).FontSize(size).FontWeight(500).LineHeight(1).TextColor(col).NoWrap()
 	})
 }

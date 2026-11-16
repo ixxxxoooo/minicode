@@ -103,7 +103,7 @@ func (a *App) autoDlg(c *ui.Context, key string, w float32, title string, close 
 			a.dialogIn(key, backdrop, panel)
 			panel.Children(func() {
 				ui.Row(c).AlignItems(ui.Center).Children(func() {
-					ui.Text(c, title).FontSize(theme.FsHead).FontWeight(700).Grow(1)
+					ui.Text(c, title).FontSize(theme.FsHead).FontWeight(600).Grow(1)
 					kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭 Esc"}).OnClick(close)
 				})
 				body()

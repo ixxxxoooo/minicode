@@ -423,7 +423,7 @@ func (a *App) ovPanel(c *ui.Context, tb *ideTab) {
 	switch ov.kind {
 	case "rename":
 		panel("ov-rename", 280).Children(func() {
-			ui.Text(c, "重命名符号").FontSize(theme.FsMicro).TextColor(t.Tx4).FontWeight(700).Margin(2, 6)
+			ui.Text(c, "重命名符号").FontSize(theme.FsMicro).TextColor(t.Tx4).FontWeight(500).Margin(2, 6)
 			in := ui.TextInputBase(c.Key("ov-ren-in"), &ov.input).Height(theme.Px(28)).PaddingX(8).Radius(t.RSm()).Background(t.Fill1).Border(1, t.Ac).
 				Font("monospace").FontSize(theme.Px(12)).AutoFocus()
 			in.OnSubmit(func() { a.applyRename(ov.word, strings.TrimSpace(ov.input)) })
@@ -433,7 +433,7 @@ func (a *App) ovPanel(c *ui.Context, tb *ideTab) {
 		})
 	case "inline":
 		panel("ov-inline", 340).Children(func() {
-			ui.Text(c, "行内编辑 · 用一句话描述修改").FontSize(theme.FsMicro).TextColor(t.Tx4).FontWeight(700).Margin(2, 6)
+			ui.Text(c, "行内编辑 · 用一句话描述修改").FontSize(theme.FsMicro).TextColor(t.Tx4).FontWeight(500).Margin(2, 6)
 			in := ui.TextInputBase(c.Key("ov-inl-in"), &ov.input).Height(theme.Px(28)).PaddingX(8).Radius(t.RSm()).Background(t.Fill1).Border(1, t.Ac).AutoFocus().
 				Placeholder("例如:把它改成忽略大小写").PlaceholderColor(t.Tx4)
 			in.OnSubmit(func() {
@@ -449,7 +449,7 @@ func (a *App) ovPanel(c *ui.Context, tb *ideTab) {
 		})
 	case "acts":
 		panel("ov-acts", 260).Children(func() {
-			ui.Text(c, "代码操作").FontSize(theme.FsMicro).TextColor(t.Tx4).FontWeight(700).Margin(2, 6)
+			ui.Text(c, "代码操作").FontSize(theme.FsMicro).TextColor(t.Tx4).FontWeight(500).Margin(2, 6)
 			word := ov.word
 			item := func(key, icon, text, keys string, run func()) {
 				b := a.mi(c, key, icon, text, keys, false)

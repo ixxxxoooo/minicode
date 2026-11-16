@@ -156,7 +156,7 @@ func (a *App) customizePage(c *ui.Context) {
 	head := func() {
 		ui.Row(c).Padding(16, 20, 10, 20).Gap(12).AlignItems(ui.Start).Shrink(0).Children(func() {
 			ui.Column(c).Grow(1).MinWidth(0).Gap(2).Children(func() {
-				ui.Text(c, meta.title).FontSize(theme.FsHead).FontWeight(700)
+				ui.Text(c, meta.title).FontSize(theme.FsHead).FontWeight(600)
 				ui.Text(c, meta.desc).TextColor(t.Tx3).LineHeight(1.5)
 			})
 			ui.Row(c).Gap(8).Shrink(0).Children(func() {
@@ -178,7 +178,7 @@ func (a *App) customizePage(c *ui.Context) {
 			ui.Column(c).Grow(1).MinHeight(0).Children(func() {
 				ui.Row(c).Padding(12, 16, 6, 16).Gap(8).AlignItems(ui.Center).Shrink(0).Children(func() {
 					kit.Btn(c, "返回列表", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "chevL"}).OnClick(func() { s.detail = false })
-					ui.Text(c, s.sel.Name).FontWeight(600).SingleLine().Grow(1).MinWidth(0)
+					ui.Text(c, s.sel.Name).FontWeight(500).SingleLine().Grow(1).MinWidth(0)
 				})
 				a.cuCatsBar(c, st)
 				ui.Row(c).Grow(1).MinHeight(0).Children(func() {
@@ -325,11 +325,11 @@ func (a *App) cuEmpty(c *ui.Context, st *customize.Store) {
 			if m.title != "" && m.title[0] < 0x80 { // 英文开头的名称与「还没有」之间补空格
 				sp = " "
 			}
-			ui.Text(c, "还没有"+sp+m.title).FontWeight(600)
+			ui.Text(c, "还没有"+sp+m.title).FontWeight(500)
 			// 页头已经写过这类内容的说明,空态只告诉用户下一步
 			ui.Text(c, "点右上角的按钮添加第一个。").FontSize(theme.FsCap).TextColor(t.Tx3).TextAlign(ui.Center)
 		} else {
-			ui.Text(c, "没有符合条件的"+m.title).FontWeight(600)
+			ui.Text(c, "没有符合条件的"+m.title).FontWeight(500)
 			ui.Text(c, "换个关键字,或把范围切回「全部」。").FontSize(theme.FsCap).TextColor(t.Tx3)
 		}
 	})

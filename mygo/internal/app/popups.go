@@ -338,7 +338,7 @@ func (a *App) avatarSized(c *ui.Context, size, font float32, initial string) ui.
 		initial = "?"
 	}
 	return ui.Row(c).Size(size, size).Radius(size / 2).Background(t.AcSoft).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).Children(func() {
-		ui.Text(c, initial).FontSize(font).FontWeight(600).TextColor(t.AcTx)
+		ui.Text(c, initial).FontSize(font).FontWeight(500).TextColor(t.AcTx)
 	})
 }
 

@@ -231,7 +231,7 @@ func (a *App) mmTextLayer(c *ui.Context, sc *mermaid.Scene, scale float32) {
 			row.Left(t.X * scale)
 		}
 		if t.Bold {
-			row.FontWeight(600)
+			row.FontWeight(500)
 		}
 		row.Children(func() { ui.Text(c, t.Text).SingleLine() })
 	}

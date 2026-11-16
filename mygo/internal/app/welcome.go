@@ -76,7 +76,7 @@ func (a *App) welcome(c *ui.Context) {
 	ui.Column(c).Grow(1).MinHeight(0).AlignItems(ui.Center).Justify(ui.Center).Padding(0, 0, 48, 0).Gap(16).Children(func() {
 		ui.Column(c).Gap(3).AlignItems(ui.Center).Children(func() {
 			a.brandLogo(c, 64, true)
-			ui.Text(c, "今天想在 "+a.projectName()+" 里做点什么?").FontSize(theme.FsHead).FontWeight(700).Margin(2, 0, 0, 0)
+			ui.Text(c, "今天想在 "+a.projectName()+" 里做点什么?").FontSize(theme.FsHead).FontWeight(600).Margin(2, 0, 0, 0)
 			ui.Text(c, a.welcomeStatus()).TextColor(t.Tx3)
 		})
 		a.flowCol(c, func() {
@@ -121,7 +121,7 @@ func (a *App) welcomeRecentBlock(c *ui.Context, t *theme.Tokens) {
 		return
 	}
 	ui.Column(c).Gap(4).WidthPercent(100).MaxWidth(600).PaddingX(20).Margin(10, 0, 0, 0).Children(func() {
-		ui.Text(c, "最近会话").FontSize(theme.FsCap).FontWeight(600).TextColor(t.Tx3)
+		ui.Text(c, "最近会话").FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3)
 		for _, r := range rows {
 			r := r
 			key := r.ID
@@ -177,13 +177,13 @@ func (a *App) starterCard(c *ui.Context, s starter) {
 	b.Children(func() {
 		if narrow {
 			kit.Ic(c, s.icon, kit.S12).TextColor(t.AcTx)
-			ui.Text(c, s.title).FontWeight(700)
+			ui.Text(c, s.title).FontWeight(500)
 			return
 		}
 		ui.Column(c).Gap(3).Grow(1).MinWidth(0).Children(func() {
 			// 设计稿里图标是行内元素,所在行高约 20px
 			ui.Row(c).Height(theme.Px(20)).AlignItems(ui.Center).Children(func() { kit.Ic(c, s.icon, 14).TextColor(t.AcTx) })
-			ui.Text(c, s.title).FontWeight(700).SingleLine()
+			ui.Text(c, s.title).FontWeight(500).SingleLine()
 			ui.Text(c, s.desc).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.35)
 		})
 	})

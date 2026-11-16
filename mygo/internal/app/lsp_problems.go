@@ -131,7 +131,7 @@ func (a *App) problemWsChrome(c *ui.Context) {
 		ui.Row(c).MinHeight(36).Padding(8, 12).Gap(8).Background(t.Err.Mix(t.BG, .88)).Children(func() {
 			kit.Ic(c, "errc", kit.S14).TextColor(t.Err)
 			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
-				ui.Text(c, srv+" 没有响应").FontWeight(600)
+				ui.Text(c, srv+" 没有响应").FontWeight(500)
 				ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 			})
 			kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnPri}).OnClick(func() {
@@ -158,7 +158,7 @@ func (a *App) problemWsChrome(c *ui.Context) {
 
 func (a *App) problemFileGroup(c *ui.Context, f string, ds []lsp.Diagnostic) {
 	t := a.tk
-	ui.Row(c).Key("pg-" + f).Height(theme.Px(24)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(10.5)).FontWeight(700).Children(func() {
+	ui.Row(c).Key("pg-" + f).Height(theme.Px(24)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(10.5)).FontWeight(500).Children(func() {
 		kit.Ic(c, "chevD", kit.S12)
 		a.fileIc(c, f)
 		ui.Text(c, f).Grow(1).SingleLine()

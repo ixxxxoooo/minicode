@@ -50,7 +50,7 @@ func (a *App) scmPushGuide(c *ui.Context) {
 	ui.Column(c).Padding(6, 8).Gap(6).Background(t.WarnSoft).Radius(t.RSm()).Margin(0, 2, 4, 2).Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
-			ui.Text(c, title).FontWeight(600).TextColor(t.Tx1)
+			ui.Text(c, title).FontWeight(500).TextColor(t.Tx1)
 			ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Tx2).Grow(1)
 			kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭"}).OnClick(a.clearPushGuide)
 		})

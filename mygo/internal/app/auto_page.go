@@ -106,7 +106,7 @@ func (a *App) autoWeek(c *ui.Context, items []automation.Automation) {
 	}
 	rng += itoa(end.Day()) + " 日"
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Padding(0, 0, 8, 0).Children(func() {
-		ui.Text(c, title).FontWeight(600)
+		ui.Text(c, title).FontWeight(500)
 		ui.Text(c, rng).TextColor(t.Tx3)
 		ui.Spacer(c).Grow(1)
 		kit.Ib(c, "chevL", kit.IbOpt{Small: true, Tip: "上一周"}).OnClick(func() { s.weekOf-- })
@@ -125,7 +125,7 @@ func (a *App) autoWeek(c *ui.Context, items []automation.Automation) {
 			col.Children(func() {
 				ui.Row(c).AlignItems(ui.Center).Padding(0, 2).Children(func() {
 					ui.Text(c, names[i]).FontSize(theme.FsCap).TextColor(t.Tx3).Grow(1)
-					n := ui.Text(c, itoa(d.Day())).FontWeight(700).FontFeatures("tnum")
+					n := ui.Text(c, itoa(d.Day())).FontWeight(600).FontFeatures("tnum")
 					if today {
 						n.TextColor(t.AcTx)
 					}
@@ -165,7 +165,7 @@ func (a *App) autoList(c *ui.Context, items []automation.Automation) {
 	t := a.tk
 	s := &a.au
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Padding(0, 0, 8, 0).Children(func() {
-		ui.Text(c, "全部自动化").FontWeight(600)
+		ui.Text(c, "全部自动化").FontWeight(500)
 		kit.Cnt(c, itoa(len(items)), false)
 		ui.Spacer(c).Grow(1)
 		if i := kit.Seg(c, []kit.SegItem{{Text: "全部"}, {Text: "运行中"}, {Text: "已暂停"}}, s.filter, kit.SegOpt{Key: "au-filter"}); i >= 0 {
@@ -181,7 +181,7 @@ func (a *App) autoList(c *ui.Context, items []automation.Automation) {
 	if len(shown) == 0 {
 		a.box(c).Padding(30, 12).Gap(6).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "timer", 20).TextColor(t.Tx4)
-			ui.Text(c, map[int]string{1: "没有运行中的自动化", 2: "没有已暂停的自动化", 0: "还没有自动化"}[s.filter]).FontWeight(600)
+			ui.Text(c, map[int]string{1: "没有运行中的自动化", 2: "没有已暂停的自动化", 0: "还没有自动化"}[s.filter]).FontWeight(500)
 			hint := "切到「全部」看看。"
 			if s.filter == 0 {
 				hint = "点右上角「新建自动化」,让 Claude 按计划自动做事。"
@@ -265,7 +265,7 @@ func (a *App) autoDrawer(c *ui.Context) {
 	}
 	lbl := func(text string) { ui.Text(c, text).FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3) }
 	ui.Row(c).AlignItems(ui.Center).Children(func() {
-		ui.Text(c, "编辑自动化").FontWeight(600).Grow(1)
+		ui.Text(c, "编辑自动化").FontWeight(500).Grow(1)
 		kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭"})
 	})
 	field := func(key string, v *string, h float32) ui.Element {

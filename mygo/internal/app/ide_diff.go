@@ -269,7 +269,7 @@ func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 	hunks := dv.Hunks()
 	ui.Row(c).Height(theme.Px(30)).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		a.fileIc(c, path.Base(tb.path))
-		ui.Text(c, path.Base(tb.path)).FontWeight(600).SingleLine().Shrink(0)
+		ui.Text(c, path.Base(tb.path)).FontWeight(500).SingleLine().Shrink(0)
 		if !narrow { // 窄档:差异栏的灰字说明与「打开文件」按钮让位(后者在「更多」里)
 			ui.Text(c, tb.diffLabel()).TextColor(t.Tx3).SingleLine()
 		}

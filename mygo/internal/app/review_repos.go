@@ -212,7 +212,7 @@ func (a *App) wizardBar(c *ui.Context) {
 			if names := w.skippedNames(a); len(names) > 0 {
 				msg += " · 跳过 " + strings.Join(names, "、")
 			}
-			ui.Text(c, msg).Grow(1).FontWeight(600).SingleLine()
+			ui.Text(c, msg).Grow(1).FontWeight(500).SingleLine()
 			kit.Btn(c, "查看图谱", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "fork"}).OnClick(a.openGraph)
 		})
 		return
@@ -246,7 +246,7 @@ func (a *App) wizardBar(c *ui.Context) {
 	ui.Column(c).Shrink(0).Gap(3).Padding(6, 8).Margin(2, 2, 6, 2).Radius(t.RSm()).Background(t.AcSoft).Border(1, t.Ac).Children(func() {
 		ui.Row(c).Gap(5).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "commit", kit.S12).TextColor(t.Ac)
-			ui.Text(c, "逐个提交").FontWeight(700).SingleLine().Shrink(0)
+			ui.Text(c, "逐个提交").FontWeight(500).SingleLine().Shrink(0)
 			ui.Text(c, itoa(w.pos+1)+" / "+itoa(len(w.order))).TextColor(t.Tx3).FontSize(theme.FsCap).FontFeatures("tnum").Shrink(0)
 			ui.Row(c).Gap(3).Shrink(0).Children(func() {
 				for i := range w.order {
@@ -322,7 +322,7 @@ func (a *App) reviewGroupHead(c *ui.Context, g reviewGroup) {
 			icon = "folder"
 		}
 		kit.Ic(c, icon, kit.S12).TextColor(t.Tx3)
-		ui.Text(c, g.name).FontWeight(700).SingleLine().Shrink(0)
+		ui.Text(c, g.name).FontWeight(500).SingleLine().Shrink(0)
 		if g.hasRepo && g.branch != "" {
 			ui.Text(c, g.branch).TextColor(t.Tx3).SingleLine().Shrink(1).MinWidth(0)
 		}

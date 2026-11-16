@@ -178,7 +178,7 @@ func RowEl(c *ui.Context, on bool) ui.Element {
 	col := T.Tx2
 	switch {
 	case on:
-		r.Background(T.Sel).FontWeight(600)
+		r.Background(T.Sel).FontWeight(500)
 		col = T.Tx1
 	case r.Hovered():
 		r.Background(T.Fill1)
@@ -195,7 +195,7 @@ func SelBar(c *ui.Context) {
 // Grp 是分组小标题(.grp-h:24 高,10.5px 粗体,字距 .04em,tx-3)。
 func Grp(c *ui.Context, s string) ui.Element {
 	return ui.Row(c).Height(theme.Px(24)).PaddingX(8).AlignItems(ui.Center).Gap(5).Shrink(0).Children(func() {
-		ui.Text(c, s).FontSize(theme.Px(10.5)).FontWeight(600).LetterSpacing(.4).TextColor(T.Tx3).SingleLine()
+		ui.Text(c, s).FontSize(theme.Px(10.5)).FontWeight(500).LetterSpacing(.4).TextColor(T.Tx3).SingleLine()
 	})
 }
 

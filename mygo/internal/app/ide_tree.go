@@ -30,7 +30,7 @@ func (a *App) filesView(c *ui.Context) {
 		})
 		files.Children(func() {
 			ui.Column(c).Children(func() {
-				hdr := ui.Row(c).Key("tree-hdr").Height(theme.Px(26)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(700)
+				hdr := ui.Row(c).Key("tree-hdr").Height(theme.Px(26)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(600)
 				hdrHot := hdr.Hovered() || a.popup != ""
 				hdr.Children(func() {
 					title := strings.ToUpper(d.fs.Name())
@@ -39,7 +39,7 @@ func (a *App) filesView(c *ui.Context) {
 					}
 					// 标题 + 箭头整块可点,点一下折叠 / 展开整棵文件树(与「大纲 / 时间线」区块一致)
 					head := ui.ButtonBase(c).Key("tree-root-head").Grow(1).Height(theme.Px(26)).Justify(ui.Start).Gap(5).AlignItems(ui.Center).
-						TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(700).Cursor(ui.CursorDefault)
+						TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(500).Cursor(ui.CursorDefault)
 					if head.Clicked() {
 						d.rootShut = !d.rootShut
 						diag.L("ide").Info("折叠文件树根", "折叠", d.rootShut)
@@ -104,7 +104,7 @@ func (a *App) filesView(c *ui.Context) {
 			for _, name := range []string{"大纲", "时间线"} {
 				open := d.sections[name]
 				r := ui.ButtonBase(c).Key("sec-" + name).Height(theme.Px(26)).PaddingX(8).Justify(ui.Start).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).
-					FontSize(theme.Px(11.5)).FontWeight(700).Cursor(ui.CursorDefault)
+					FontSize(theme.Px(11.5)).FontWeight(500).Cursor(ui.CursorDefault)
 				if r.Clicked() {
 					d.sections[name] = !open
 				}
@@ -219,13 +219,13 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 		}
 		nm := ui.Text(c, e.Name).Grow(1).SingleLine()
 		if depth == 0 && e.Dir && a.multiRoot() { // 多根:顶层是各个文件夹,加粗并标注改动数 / 非仓库
-			nm.FontWeight(600)
+			nm.FontWeight(500)
 			a.rootBadges(c, e.Name)
 		} else if e.Dir && a.multiRoot() {
 			a.nestedBadges(c, e.Path) // 嵌套仓库 / 子模块的根目录:类别标签 + 改动数
 		}
 		if g != "" && !e.Dir {
-			ui.Text(c, g).FontSize(theme.Px(10)).FontWeight(700).Shrink(0)
+			ui.Text(c, g).FontSize(theme.Px(10)).FontWeight(600).Shrink(0)
 		}
 	})
 }

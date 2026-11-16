@@ -503,7 +503,7 @@ func (a *App) mdFront(c *ui.Context, front string) {
 	}
 	t := a.tk
 	ui.Row(c).Key("mdfront").Shrink(0).Padding(5, 12).Gap(8).AlignItems(ui.Center).Background(t.Fill1).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
-		ui.Text(c, "属性").FontSize(theme.FsMicro).FontWeight(600).TextColor(t.Tx4).Shrink(0)
+		ui.Text(c, "属性").FontSize(theme.FsMicro).FontWeight(500).TextColor(t.Tx4).Shrink(0)
 		for _, ln := range strings.Split(front, "\n") {
 			k, v, ok := strings.Cut(ln, ":")
 			if !ok || strings.TrimSpace(k) == "" || strings.HasPrefix(ln, " ") {

@@ -407,7 +407,7 @@ func (a *App) searchBox(c *ui.Context, key, icon string, v *string, ph string, t
 // toggleBtn 是小方块开关(设计稿 tgl)。
 func (a *App) toggleBtn(c *ui.Context, label string, on *bool, tip string) {
 	t := a.tk
-	b := ui.ButtonBase(c).Key("tg-"+label).Size(20, 18).Justify(ui.Center).AlignItems(ui.Center).Radius(t.RXs()).FontSize(theme.Px(10.5)).FontWeight(600).Cursor(ui.CursorPointer).Shrink(0).Tooltip(tip)
+	b := ui.ButtonBase(c).Key("tg-"+label).Size(20, 18).Justify(ui.Center).AlignItems(ui.Center).Radius(t.RXs()).FontSize(theme.Px(10.5)).FontWeight(500).Cursor(ui.CursorPointer).Shrink(0).Tooltip(tip)
 	switch {
 	case *on:
 		b.Background(t.AcSoft).TextColor(t.AcTx).Border(1, t.AcLine)

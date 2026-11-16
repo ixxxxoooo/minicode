@@ -73,7 +73,7 @@ func (a *App) scmGroupFiles(c *ui.Context, id string, cs []vcs.Change) {
 			if label == "" {
 				label = "(根)"
 			}
-			ui.Text(c, label).FontSize(theme.FsCap).FontWeight(600).SingleLine().Grow(1)
+			ui.Text(c, label).FontSize(theme.FsCap).FontWeight(500).SingleLine().Grow(1)
 			ui.Text(c, itoa(len(byDir[d]))).FontSize(theme.FsMicro).TextColor(t.Tx4)
 		})
 		if !open {

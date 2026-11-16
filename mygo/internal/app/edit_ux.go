@@ -125,7 +125,7 @@ func (a *App) dropOverlay(c *ui.Context, what string) {
 		}
 		pill.Children(func() {
 			kit.Ic(c, "link", kit.S12).TextColor(t.AcTx)
-			ui.Text(c, "松手引用").FontWeight(600)
+			ui.Text(c, "松手引用").FontWeight(500)
 			ui.Text(c, what).Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx2).SingleLine()
 		})
 	})

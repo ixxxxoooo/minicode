@@ -280,7 +280,7 @@ func Cnt(c *ui.Context, n string, accent bool) ui.Element {
 		w = float32(r)*theme.Px(6) + 8
 	}
 	return ui.Row(c).MinWidth(theme.Px(15)).Width(w).Height(theme.Px(15)).Radius(8).Background(bg).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).Children(func() {
-		ui.Text(c, n).FontSize(theme.Px(10)).FontWeight(700).TextColor(fg).SingleLine()
+		ui.Text(c, n).FontSize(theme.Px(10)).FontWeight(600).TextColor(fg).SingleLine()
 	})
 }
 

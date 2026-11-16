@@ -326,7 +326,7 @@ func (a *App) reviewView(c *ui.Context) {
 	// 头:标题 / 统计 / 视图切换 / 批量操作
 	ui.Row(c).Height(theme.Px(36)).Shrink(0).PaddingX(12).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		kit.Ic(c, "eye", kit.S12).TextColor(t.Ac)
-		ui.Text(c, "本轮改动").FontWeight(700)
+		ui.Text(c, "本轮改动").FontWeight(500)
 		count := itoa(len(files)) + " 个文件"
 		if gs := a.reviewGroups(files); repoGroupCount(gs) > 1 {
 			count += " · " + itoa(repoGroupCount(gs)) + " 个仓库"
@@ -454,7 +454,7 @@ func (a *App) reviewFile(c *ui.Context, f chFile, first bool) {
 			ch := kit.Ic(c, "chevD", kit.S12).TextColor(t.Tx3)
 			ch.Rotate(ch.AnimateWith("rot", map[bool]float32{true: -90, false: 0}[closed], kit.DurBase, kit.EaseOut))
 			a.fileIc(c, baseName(f.path))
-			ui.Text(c, baseName(f.path)).FontWeight(600).SingleLine().Shrink(0)
+			ui.Text(c, baseName(f.path)).FontWeight(500).SingleLine().Shrink(0)
 			ui.Text(c, a.fileDispDir(f.path)).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().Grow(1).Shrink(1)
 			if f.add > 0 {
 				ui.Text(c, "+"+itoa(f.add)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Ok)

@@ -55,7 +55,7 @@ func (a *App) submitRuleAdd() {
 func (a *App) envAddRow(a2 *App, c *ui.Context) {
 	t := a2.tk
 	ui.Column(c).Gap(6).Padding(8, 12).Children(func() {
-		ui.Text(c, "添加环境变量").FontSize(theme.FsCap).FontWeight(600).TextColor(t.Tx3)
+		ui.Text(c, "添加环境变量").FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3)
 		ui.Row(c).Gap(8).Children(func() {
 			ui.TextInput(c.Key("env-name"), &a2.set.envName).Width(180).Placeholder("变量名")
 			ui.TextInput(c.Key("env-val"), &a2.set.envVal).Grow(1).Placeholder("值(保存后遮盖)")

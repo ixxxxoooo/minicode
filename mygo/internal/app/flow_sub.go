@@ -24,7 +24,7 @@ func (a *App) subagentCard(c *ui.Context, s *core.SubagentCard) {
 		ui.Column(c).Gap(4).WidthPercent(100).Children(func() {
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 				a.subStatusIcon(c, s)
-				ui.Text(c, s.Description).FontWeight(600).SingleLine().Shrink(1)
+				ui.Text(c, s.Description).FontWeight(500).SingleLine().Shrink(1)
 				kit.Tag(c, s.AgentType)
 				if n := s.PendingPermissions(); n > 0 {
 					kit.Tag(c, fmt.Sprintf("待确认 %d", n), kit.KWarn)
@@ -119,7 +119,7 @@ func (a *App) subPromptBlock(c *ui.Context, s *core.SubagentCard) {
 	long := len([]rune(prompt)) > 120 || strings.Count(prompt, "\n") >= 2
 	ui.Column(c).Gap(4).PaddingStart(22).Children(func() {
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, "任务").FontSize(theme.FsCap).FontWeight(600).TextColor(t.Tx3).Shrink(0)
+			ui.Text(c, "任务").FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3).Shrink(0)
 			ui.Spacer(c).Grow(1)
 			kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制任务"}).OnClick(func() { c.WriteClipboard(prompt) })
 			if long {
@@ -159,7 +159,7 @@ func (a *App) compactSubRow(c *ui.Context, s *core.SubagentCard) {
 		ui.Column(c).Gap(3).WidthPercent(100).Children(func() {
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 				a.subStatusIcon(c, s)
-				ui.Text(c, s.Description).FontWeight(600).SingleLine().Shrink(1)
+				ui.Text(c, s.Description).FontWeight(500).SingleLine().Shrink(1)
 				if n := s.PendingPermissions(); n > 0 {
 					kit.Tag(c, fmt.Sprintf("待确认 %d", n), kit.KWarn)
 				}

@@ -364,7 +364,7 @@ func (a *App) qpList(c *ui.Context, rows []qpRow, run func(int)) {
 				if r.group != last {
 					last = r.group
 					if strings.TrimSpace(r.group) != "" {
-						ui.Row(c).Height(qpCapH).PaddingX(8).AlignItems(ui.Center).FontSize(theme.FsMicro).FontWeight(600).TextColor(t.Tx3).
+						ui.Row(c).Height(qpCapH).PaddingX(8).AlignItems(ui.Center).FontSize(theme.FsMicro).FontWeight(500).TextColor(t.Tx3).
 							Children(func() { ui.Text(c, r.group) })
 					} else {
 						ui.Box(c).Height(1).Background(t.Bd1).Margin(4, 4)

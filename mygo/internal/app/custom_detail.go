@@ -73,7 +73,7 @@ func (a *App) cuHead(c *ui.Context, st *customize.Store, it *customize.Item, ico
 	t := a.tk
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 		kit.Ic(c, icon, kit.S12).TextColor(t.Ac)
-		ui.Text(c, name).FontWeight(600).Grow(1).MinWidth(0).SingleLine()
+		ui.Text(c, name).FontWeight(500).Grow(1).MinWidth(0).SingleLine()
 		if extra != nil {
 			extra()
 		}
@@ -593,7 +593,7 @@ func (a *App) cuRule(c *ui.Context, st *customize.Store, it *customize.Item) fun
 			for _, l := range strings.Split(d.Body, "\n") {
 				switch {
 				case strings.HasPrefix(l, "# "):
-					ui.Text(c, l[2:]).FontSize(theme.FsTitle).FontWeight(700).Margin(2, 0, 4, 0)
+					ui.Text(c, l[2:]).FontSize(theme.FsTitle).FontWeight(600).Margin(2, 0, 4, 0)
 				case strings.HasPrefix(l, "- "):
 					ui.Row(c).Gap(7).AlignItems(ui.Start).Children(func() {
 						ui.Box(c).Size(5, 5).Radius(3).Background(t.Ac).Margin(7, 0, 0, 0).Shrink(0)

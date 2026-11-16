@@ -72,7 +72,7 @@ func (a *App) scmBody(c *ui.Context) {
 		if e := a.activeRepo(); e != nil { // 多仓库:提交前再确认一眼作用在哪个仓库
 			ui.Row(c).Height(18).PaddingX(4).Gap(4).AlignItems(ui.Center).Shrink(0).FontSize(theme.FsMicro).TextColor(t.Tx3).Children(func() {
 				ui.Text(c, "提交到").Shrink(0)
-				ui.Text(c, e.name).FontWeight(600).TextColor(t.Tx1).SingleLine().Shrink(1).MinWidth(0)
+				ui.Text(c, e.name).FontWeight(500).TextColor(t.Tx1).SingleLine().Shrink(1).MinWidth(0)
 				ui.Text(c, "· "+a.branch).SingleLine().Shrink(0)
 			})
 		}
@@ -239,7 +239,7 @@ func (a *App) scmGroup(c *ui.Context, id, title string, cs []vcs.Change, actIcon
 	h.ContextMenu(func(m *ui.Menu) { a.scmGroupMenu(m, id, cs) })
 	h.Children(func() {
 		kit.Ic(c, map[bool]string{true: "chevR", false: "chevD"}[s.folded[id]], kit.S12)
-		ui.Text(c, title).FontSize(theme.Px(10.5)).FontWeight(700).LetterSpacing(.3)
+		ui.Text(c, title).FontSize(theme.Px(10.5)).FontWeight(500).LetterSpacing(.3)
 		ui.Spacer(c).Grow(1)
 		if h.Hovered() && actIcon != "" {
 			paths := make([]string, len(cs))
@@ -297,7 +297,7 @@ func (a *App) scmStat(c *ui.Context, ch vcs.Change) {
 	if ch.Del > 0 {
 		ui.Text(c, "−"+itoa(ch.Del)).FontSize(theme.FsMicro).TextColor(t.Err).FontFeatures("tnum").Shrink(0)
 	}
-	ui.Text(c, statusLetter(ch.Status)).FontSize(theme.FsCap).FontWeight(600).TextColor(statusColor(t, ch.Status)).Width(12).Shrink(0)
+	ui.Text(c, statusLetter(ch.Status)).FontSize(theme.FsCap).FontWeight(500).TextColor(statusColor(t, ch.Status)).Width(12).Shrink(0)
 }
 
 // ───────── 图形 ─────────
@@ -312,7 +312,7 @@ func (a *App) scmGraph(c *ui.Context) {
 	h.OnClick(func() { s.folded["graph"] = !s.folded["graph"] })
 	h.Children(func() {
 		kit.Ic(c, map[bool]string{true: "chevR", false: "chevD"}[s.folded["graph"]], kit.S12)
-		ui.Text(c, "图形").FontSize(theme.Px(10.5)).FontWeight(700).LetterSpacing(.3)
+		ui.Text(c, "图形").FontSize(theme.Px(10.5)).FontWeight(500).LetterSpacing(.3)
 		ui.Spacer(c).Grow(1)
 		if len(s.log) > 0 {
 			ui.Text(c, itoa(len(s.log))+" 个提交").FontSize(theme.FsMicro).TextColor(t.Tx4)
@@ -499,7 +499,7 @@ func (a *App) scmStashes(c *ui.Context) {
 	h.OnClick(func() { s.folded["stash"] = !s.folded["stash"] })
 	h.Children(func() {
 		kit.Ic(c, map[bool]string{true: "chevR", false: "chevD"}[s.folded["stash"]], kit.S12)
-		ui.Text(c, "储藏").FontSize(theme.Px(10.5)).FontWeight(700).LetterSpacing(.3)
+		ui.Text(c, "储藏").FontSize(theme.Px(10.5)).FontWeight(500).LetterSpacing(.3)
 		ui.Spacer(c).Grow(1)
 		kit.Cnt(c, itoa(len(s.stashes)), false)
 	})

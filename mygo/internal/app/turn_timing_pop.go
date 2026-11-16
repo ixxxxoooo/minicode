@@ -73,7 +73,7 @@ func (a *App) timingPopBody(c *ui.Context, tm core.TurnTiming, stats core.TurnSt
 	total := float32(max(1, tm.TotalMs))
 	slowWait, _ := tm.SlowestWait()
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-		ui.Text(c, "响应耗时").FontWeight(700).FontSize(theme.Px(13))
+		ui.Text(c, "响应耗时").FontWeight(500).FontSize(theme.Px(13))
 		if slowWait >= int64(core.SlowWait/1e6) {
 			kit.Tag(c, "首字偏慢", kit.KWarn)
 		}
@@ -121,7 +121,7 @@ func (a *App) waterfallRow(c *ui.Context, tm core.TurnTiming, p core.TimingPhase
 		})
 		ms := ui.Text(c, core.FormatResp(p.Ms)).FontFeatures("tnum").Width(52).TextAlign(ui.End).SingleLine().Shrink(0)
 		if slow {
-			ms.TextColor(t.Warn).FontWeight(600)
+			ms.TextColor(t.Warn).FontWeight(500)
 		} else {
 			ms.TextColor(t.Tx1)
 		}

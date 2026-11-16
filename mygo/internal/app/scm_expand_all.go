@@ -48,7 +48,7 @@ func (a *App) scmExpandAllView(c *ui.Context) {
 	}
 	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
 		ui.Row(c).Height(theme.Px(24)).PaddingX(4).Gap(2).AlignItems(ui.Center).Shrink(0).Children(func() {
-			ui.Text(c, "仓库").Grow(1).FontSize(theme.FsMicro).FontWeight(700).TextColor(t.Tx3)
+			ui.Text(c, "仓库").Grow(1).FontSize(theme.FsMicro).FontWeight(500).TextColor(t.Tx3)
 			ui.Text(c, "全部展开").FontSize(theme.FsMicro).TextColor(t.Ac).Shrink(0)
 			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多"}).Menu(a.repoOverviewMenu)
 		})
@@ -76,7 +76,7 @@ func (a *App) scmExpandBlock(c *ui.Context, i int) {
 		r.OnClick(func() { a.setActiveRepo(i) })
 		r.Children(func() {
 			kit.Ic(c, "branch", kit.S12).TextColor(t.Tx3)
-			ui.Text(c, e.name).FontWeight(700).Shrink(0)
+			ui.Text(c, e.name).FontWeight(500).Shrink(0)
 			ui.Text(c, br).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Shrink(1)
 			if ah > 0 {
 				ui.Text(c, "↑"+itoa(ah)).FontSize(theme.FsMicro).TextColor(t.AcTx).Shrink(0)

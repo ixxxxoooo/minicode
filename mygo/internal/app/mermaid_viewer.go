@@ -31,7 +31,7 @@ func (a *App) mermaidViewerOverlay(c *ui.Context) {
 		panel.Grow(1).Background(t.BG).Column()
 		panel.Children(func() {
 			ui.Row(c).Height(44).Padding(0, 16).Gap(8).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, v.title).FontWeight(600).Grow(1).SingleLine()
+				ui.Text(c, v.title).FontWeight(500).Grow(1).SingleLine()
 				kit.Btn(c, "适应", kit.BtnOpt{Small: true}).OnClick(func() { v.fit = true })
 				kit.Btn(c, "100%", kit.BtnOpt{Small: true}).OnClick(func() { v.fit = false; v.scale = 1 })
 				kit.Btn(c, "＋", kit.BtnOpt{Small: true}).OnClick(func() { v.fit = false; v.scale = clamp(v.scale*1.15, 0.25, 4) })

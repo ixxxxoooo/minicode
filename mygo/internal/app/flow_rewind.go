@@ -76,7 +76,7 @@ func (a *App) flowRewindCard(c *ui.Context) {
 				ui.Text(c, "正在预览可回退的文件…").TextColor(t.Tx2)
 			})
 		case core.RewindReady:
-			ui.Text(c, "回退到这条消息之前?").FontWeight(600)
+			ui.Text(c, "回退到这条消息之前?").FontWeight(500)
 			o := r.Outcome
 			if !o.HasChanges() {
 				ui.Text(c, o.Reason()).TextColor(t.Tx3).FontSize(theme.FsCap)

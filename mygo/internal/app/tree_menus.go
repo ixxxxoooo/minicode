@@ -67,7 +67,7 @@ func (a *App) treeClaudeDialog(c *ui.Context) {
 			a.dialogIn("tree-claude", backdrop, panel)
 			panel.Children(func() {
 				ui.Row(c).AlignItems(ui.Center).Children(func() {
-					ui.Text(c, "让 Claude…").FontSize(theme.FsHead).FontWeight(700).Grow(1)
+					ui.Text(c, "让 Claude…").FontSize(theme.FsHead).FontWeight(600).Grow(1)
 					kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭 Esc"}).OnClick(func() { *open = false; a.closeTreeClaudeAsk() })
 				})
 				ui.Text(c, "输入要对 "+d.rel+" 说的话(回车确认):").FontSize(theme.FsCap).TextColor(t.Tx3)
