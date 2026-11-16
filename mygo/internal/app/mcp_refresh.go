@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/core"
-	"github.com/ixxxxoooo/minicode/internal/customize"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 )
 

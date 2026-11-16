@@ -11,13 +11,14 @@ func TestCuSkillFileListColumn(t *testing.T) {
 	a.SeedDemoExtras()
 	a.screen = ScreenCustomize
 	a.cu.cat = customize.Skills
-	st := a.cuStore()
-	for _, it := range st.List(customize.Skills, customize.All) {
-		if it.Name == "ok-skill" {
-			a.cuSelect(it)
-			break
-		}
+	// 直接构造一个带多文件的 Skill,避免依赖演示数据里是否包含它
+	it := &customize.Item{
+		Name: "ok-skill", Scope: customize.User, On: true, Path: "~/.claude/skills/ok",
+		Files: []customize.File{{Name: "SKILL.md", Active: true, Bytes: 1200}, {Name: "ref.md", Bytes: 340}, {Name: "examples/demo.sh", Bytes: 89}},
+		Body:  "---\nname: ok-skill\n---\n\n# OK\n\n短正文。",
 	}
+	a.cust = customize.NewStore(map[customize.Cat][]*customize.Item{customize.Skills: {it}}, nil)
+	a.cuSelect(it)
 	tt.Frame()
 	a.drainUI()
 	tt.Frame()

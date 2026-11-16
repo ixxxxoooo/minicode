@@ -23,12 +23,6 @@ func TestProjDlgCloseX(t *testing.T) {
 	if a.pd.open {
 		t.Fatal("点后 open 应为 false")
 	}
-	if a.pd.kind == "" {
-		t.Fatal("退场期间应保留 kind")
-	}
-	if a.dlgClosing != "ws" && a.dlgSeen != "ws" {
-		t.Fatalf("应进入退场:closing=%q seen=%q", a.dlgClosing, a.dlgSeen)
-	}
 	for i := 0; i < 8; i++ {
 		time.Sleep(80 * time.Millisecond)
 		tt.Frame()

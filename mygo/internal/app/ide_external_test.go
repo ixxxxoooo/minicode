@@ -39,7 +39,7 @@ func TestJumpToExternalReadOnly(t *testing.T) {
 
 	tb := a.ide.cur()
 	if tb == nil || tb.path != extFile {
-		t.Fatalf("应打开外部文件,得 %q", tb)
+		t.Fatalf("应打开外部文件,得 %+v", tb)
 	}
 	if !tb.diskRO || tb.st == nil || !tb.st.ReadOnly {
 		t.Fatalf("应是只读标签:%+v", tb)

@@ -16,7 +16,7 @@ func (a *App) refLineSpans(filePath, text string, hitLo, hitHi int) []ui.Span {
 		return []ui.Span{{Text: " ", Font: "monospace", Size: size}}
 	}
 	th := a.editorTheme()
-	key := fmt.Sprintf("%s|%s|%v|%v", a.pal.ID, a.tk.Ac, size, path.Ext(filePath))
+	key := fmt.Sprintf("%s|%v|%v|%v", a.pal.ID, a.tk.Ac, size, path.Ext(filePath))
 	if a.refHlKey != key || len(a.refHlCache) > 4000 {
 		a.refHlKey, a.refHlCache = key, map[string][]ui.Span{}
 	}
@@ -71,7 +71,7 @@ func tokenLineSpans(lang *editor.Language, text string, th *editor.Theme, size f
 }
 
 // applyRefHit 在已着色的 span 上叠加命中词底色(只改 hit 区间内的片段)。
-func applyRefHit(spans []ui.Span, text string, hitLo, hitHi, size float32, accent ui.Color) []ui.Span {
+func applyRefHit(spans []ui.Span, text string, hitLo, hitHi int, size float32, accent ui.Color) []ui.Span {
 	if hitLo < 0 || hitHi <= hitLo || hitHi > len(text) {
 		return spans
 	}

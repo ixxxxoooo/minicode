@@ -229,14 +229,3 @@ func (a *App) refLineTextBG(abs string, line int) (ln, body string) {
 	}
 	return ln, strings.TrimSpace(ln)
 }
-
-func humanBytes(n int64) string {
-	const mb = 1 << 20
-	if n >= mb {
-		return itoa(int((n+mb/2)/mb)) + " MB"
-	}
-	if n >= 1<<10 {
-		return itoa(int((n+512)/1024)) + " KB"
-	}
-	return itoa(int(n)) + " B"
-}

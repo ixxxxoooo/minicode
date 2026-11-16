@@ -30,4 +30,4 @@ func TestCtxDebounceNoDoubleCmd(t *testing.T) {
 
 type claudeFakeBE struct{ fakeBE }
 
-func (claudeFakeBE) Name() string { return "claude" }
+func (*claudeFakeBE) Name() string { return "claude" }
