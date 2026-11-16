@@ -63,8 +63,8 @@ func (a *App) FlowFontSize() float32 { return theme.FsRead * a.ChatFontScale() }
 // FlowCapFont 是会话流辅助文案(步骤行附注、子 Agent 摘要等)。
 func (a *App) FlowCapFont() float32 { return theme.FsCap * a.ChatFontScale() }
 
-// FlowMonoSize 是会话流等宽输出与代码块的基准字号。
-func (a *App) FlowMonoSize() float32 { return 11.5 * a.ChatFontScale() }
+// FlowMonoSize 是会话流等宽输出与代码块的基准字号(随会话正文字号缩放,不跟编辑器/终端)。
+func (a *App) FlowMonoSize() float32 { return theme.FsMono * a.ChatFontScale() }
 
 // ToolDetailLevel 是工具调用详细程度(0 精简 / 1 标准 / 2 详细);会话流读取点见 chat/flow。
 func (a *App) ToolDetailLevel() int {

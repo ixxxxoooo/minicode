@@ -160,13 +160,13 @@ func (a *App) userMsg(c *ui.Context, u *core.User, rowIdx int) {
 	card.Children(func() {
 		if clamp && exp && lines > userFoldExp {
 			fs := a.FlowFontSize()
-			kit.VScroll(c).MaxHeight(float32(userFoldExp) * fs * 1.55).Key("user-scroll-" + u.ID).Children(func() {
+			kit.VScroll(c).MaxHeight(float32(userFoldExp) * fs * a.FlowReadLH()).Key("user-scroll-" + u.ID).Children(func() {
 				a.userMsgBody(c, u, false)
 			})
 		} else {
 			body := ui.Column(c)
 			if clamp && !exp {
-				body = body.MaxHeight(float32(userFoldMax)*a.FlowFontSize()*1.55 + 8).Clip()
+				body = body.MaxHeight(float32(userFoldMax)*a.FlowFontSize()*a.FlowReadLH() + 8).Clip()
 			}
 			body.Children(func() { a.userMsgBody(c, u, clamp && !exp) })
 		}
@@ -216,19 +216,19 @@ func (a *App) userMsgBody(c *ui.Context, u *core.User, folded bool) {
 		return // 只有图片:不留空文字行
 	}
 	if !userTok.MatchString(txt) {
-		ui.RichText(c, ui.Span{Text: txt}).FontSize(a.FlowFontSize()).LineHeight(1.55).TextColor(t.Tx1)
+		ui.RichText(c, ui.Span{Text: txt}).FontSize(a.FlowFontSize()).LineHeight(a.FlowReadLH()).TextColor(t.Tx1)
 		return
 	}
 	ui.Row(c).Wrap().Gap(4).AlignItems(ui.Center).Children(func() {
 		last := 0
 		for _, m := range userTok.FindAllStringSubmatchIndex(txt, -1) {
 			if m[0] > last {
-				ui.Text(c, txt[last:m[0]]).FontSize(a.FlowFontSize()).LineHeight(1.55).TextColor(t.Tx1)
+				ui.Text(c, txt[last:m[0]]).FontSize(a.FlowFontSize()).LineHeight(a.FlowReadLH()).TextColor(t.Tx1)
 			}
 			if m[2] >= 0 {
 				code := txt[m[2]:m[3]]
 				fg, bg := a.inlineCodeColors()
-				ui.Text(c, code).Font("monospace").FontSize(a.FlowMonoSize()).LineHeight(1.55).TextColor(fg).
+				ui.Text(c, code).Font("monospace").FontSize(a.FlowMonoSize()).LineHeight(a.FlowReadLH()).TextColor(fg).
 					Background(bg).Radius(t.RXs()).PaddingX(5)
 			} else {
 				a.userRefChip(c, txt[m[4]:m[5]])
@@ -236,7 +236,7 @@ func (a *App) userMsgBody(c *ui.Context, u *core.User, folded bool) {
 			last = m[1]
 		}
 		if last < len(txt) {
-			ui.Text(c, txt[last:]).FontSize(a.FlowFontSize()).LineHeight(1.55).TextColor(t.Tx1)
+			ui.Text(c, txt[last:]).FontSize(a.FlowFontSize()).LineHeight(a.FlowReadLH()).TextColor(t.Tx1)
 		}
 	})
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
-// 设置页(设计稿 v3:4 组 14 类)。内容由 settings_tabs.go 里的声明式定义给出,这里是引擎:
+// 设置页(设计稿 v3:5 组 19 类)。内容由 settings_tabs.go 里的声明式定义给出,这里是引擎:
 // 导航与搜索、行与控件的渲染、已修改标记与「恢复默认」、需重启条。
 // 每个控件对应偏好里的一个键(prefs.Store),只存与默认不同的项;
 // 会立刻影响界面的项(主题、布局、强调色、密度、圆角)在 applyPrefs 里生效。
@@ -60,9 +60,10 @@ var setNavGroups = []struct {
 	name string
 	ids  []string
 }{
-	{"客户端", []string{"general", "appearance", "shortcuts"}},
+	{"客户端", []string{"general", "notify", "shortcuts"}},
+	{"外观", []string{"appearance", "typography", "motion", "brand"}},
 	{"Claude Code", []string{"models", "chat", "permissions", "runtime"}},
-	{"工作台", []string{"editor", "terminal", "scm", "browser"}},
+	{"工作台", []string{"editor", "lsp", "terminal", "scm", "browser"}},
 	{"其他", []string{"privacy", "advanced", "about"}},
 }
 
@@ -137,12 +138,18 @@ type settingsState struct {
 }
 
 func (a *App) setTabByID(id string) *setTabDef {
+	id = resolveSetTabID(id)
 	for i := range settingsTabs {
 		if settingsTabs[i].id == id {
 			return &settingsTabs[i]
 		}
 	}
-	return &settingsTabs[1] // 外观
+	for i := range settingsTabs {
+		if settingsTabs[i].id == "appearance" {
+			return &settingsTabs[i]
+		}
+	}
+	return &settingsTabs[0]
 }
 
 // ───────── 偏好读写(带默认值) ─────────
@@ -172,6 +179,7 @@ func (a *App) setPref(r setRow, v any) {
 	} else {
 		a.prefs.Set(r.key, v)
 	}
+	a.onTypographyPref(r.key, v)
 	if r.restart {
 		if a.set.restart == nil {
 			a.set.restart = map[string]bool{}
@@ -262,6 +270,7 @@ func (a *App) applyPrefs() {
 // settingsPage 是整页设置:左侧导航(196)+ 右侧内容(620 居中)。
 func (a *App) settingsPage(c *ui.Context) {
 	t := a.tk
+	ensureTypographySettingsRows()
 	a.initSettingsConfig()
 	a.shortcutRecordCapture(c)
 	ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Background(t.BG).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2).Children(func() {
@@ -344,8 +353,10 @@ func (a *App) settingsMain(c *ui.Context) {
 	ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 		kit.VScroll(c).Key("set-main").TrackScroll(&a.set.mainSt).Grow(1).MinHeight(0).Children(func() {
 			ui.Row(c).Justify(ui.Center).Padding(18, 0, 28, 0).Children(func() {
-				col := ui.Column(c).Width(620).Shrink(1).MinWidth(0).Gap(14)
-				if a.settingsNarrow() {
+				col := ui.Column(c).Shrink(1).MinWidth(0).Gap(14)
+				if sw := a.settingsContentWidth(); sw > 0 {
+					col.Width(sw)
+				} else {
 					col.Width(0).Grow(1)
 				}
 				col.Children(func() {

@@ -34,9 +34,9 @@ func (a *App) flowPad() float32 {
 	return 10
 }
 
-// flowMaxWidth 是会话流内容列的最大宽度(偏好「内容宽度」三档)。
+// flowMaxWidth 是会话流与输入框等内容列的最大宽度(见 appearance.flowWidth 六档)。
 func (a *App) flowMaxWidth() float32 {
-	return []float32{640, theme.WCol, 860}[a.prefs.Int("appearance.width", 1)%3]
+	return a.flowContentMaxWidth()
 }
 
 // morphSnapStep 形态切换期间会话流内容宽度的吸附台阶(px)。

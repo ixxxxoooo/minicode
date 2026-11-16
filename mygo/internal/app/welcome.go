@@ -79,7 +79,7 @@ func (a *App) welcome(c *ui.Context) {
 			ui.Text(c, "今天想在 "+a.projectName()+" 里做点什么?").FontSize(theme.FsHead).FontWeight(700).Margin(2, 0, 0, 0)
 			ui.Text(c, a.welcomeStatus()).TextColor(t.Tx3)
 		})
-		ui.Column(c).WidthPercent(100).MaxWidth(600).PaddingX(20).Children(func() {
+		a.flowCol(c, func() {
 			a.welcomeFocus = true
 			a.composer(c)
 			a.welcomeFocus = false

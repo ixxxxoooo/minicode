@@ -84,13 +84,17 @@ var (
 	WSide   float32 = 228
 
 	FsMicro   float32 = 10
-	FsCap     float32 = 11
-	FsBody    float32 = 12
-	FsRead    float32 = 13
-	FsTitle   float32 = 14
-	FsHead    float32 = 18
+	FsCap     float32 = 12
+	FsBody    float32 = 13
+	FsRead    float32 = 15
+	FsTitle   float32 = 15
+	FsHead    float32 = 19.5
 	FsDisplay float32 = 26
+	FsMono    float32 = 13 // 会话流等宽,≈ FsRead×0.88
 )
+
+// 说明文字(cap)在界面缩到最小时也不低于此值(设计稿 typo-width)。
+const minCapPx float32 = 11.5
 
 // 界面大小的范围与默认值(百分数)。
 const (
@@ -117,8 +121,10 @@ func SetUIScale(pct int) {
 	HCtl, HCtlSm, HBar = Px(24), Px(20), Px(36)
 	HTab, HStatus = Px(30), Px(22)
 	WSide = float32(int(228*(1+(uiScale-1)*.8) + .5)) // 侧栏随字号略加宽,但不按全比例,免得挤占对话区
-	FsMicro, FsCap, FsBody, FsRead = Px(10), Px(11), Px(12), Px(13)
-	FsTitle, FsHead, FsDisplay = Px(14), Px(18), Px(26)
+	FsMicro, FsBody, FsRead = Px(10), Px(13), Px(15)
+	FsCap = max(Px(12), minCapPx)
+	FsTitle, FsHead, FsDisplay = Px(15), Px(19.5), Px(26)
+	FsMono = Px(13)
 }
 
 func init() { SetUIScale(DefaultUIScale) }

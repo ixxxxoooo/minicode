@@ -65,7 +65,7 @@ func (a *App) userEditCard(c *ui.Context, u *core.User) {
 		col.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
 	col.Children(func() {
-		ed := ui.TextArea(c.Key("uedit"), &a.userEd.draft).Lines(3, 10).FontSize(a.FlowFontSize()).LineHeight(1.55).
+		ed := ui.TextArea(c.Key("uedit"), &a.userEd.draft).Lines(3, 10).FontSize(a.FlowFontSize()).LineHeight(a.FlowReadLH()).
 			Background(ui.Transparent).BorderWidth(0).Padding(0).FocusRing(false).TextColor(t.Tx1).AutoFocus()
 		ed.OnShortcut(0, ui.KeyEscape, func() { a.cancelUserEdit() })
 		ui.Box(c).Height(1).Background(t.Bd1) // 与操作行之间的分隔线(设计稿 .ed-acts)

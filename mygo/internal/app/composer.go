@@ -36,7 +36,7 @@ func (a *App) composer(c *ui.Context) {
 		a.composerRefChips(c)
 		a.composerAttachRow(c)
 		in := ui.TextArea(c.Key("draft"), &a.draft).Lines(1, 8).Placeholder(a.composerHint()).
-			PlaceholderColor(t.Tx3).Background(ui.Transparent).BorderWidth(0).Padding(9, 12, 3, 12).FontSize(a.FlowFontSize()).LineHeight(1.55).
+			PlaceholderColor(t.Tx3).Background(ui.Transparent).BorderWidth(0).Padding(9, 12, 3, 12).FontSize(a.FlowFontSize()).LineHeight(a.FlowReadLH()).
 			MinHeight(36).TextColor(t.Tx1).FocusRing(false)
 		a.warmTypingSignal()
 		if a.welcomeFocus {

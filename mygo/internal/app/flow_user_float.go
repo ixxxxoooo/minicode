@@ -48,7 +48,7 @@ func (a *App) userFloat(c *ui.Context, u *core.User, anchor ui.Element) {
 			panel.Margin(4, 0, 0, 0)
 			panel.Children(func() {
 				lines := estimatedUserLines(userDisplayText(u.Text), 44)
-				maxH := float32(userFoldExp) * a.FlowFontSize() * 1.55
+				maxH := float32(userFoldExp) * a.FlowFontSize() * a.FlowReadLH()
 				body := func() {
 					ui.Column(c).Key("ufl-body-" + u.ID).Selectable().Children(func() { a.userMsgBody(c, u, false) })
 				}
