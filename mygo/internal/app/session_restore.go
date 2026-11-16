@@ -29,6 +29,20 @@ type lastRuntime struct {
 	EditorTabs []string `json:"editorTabs,omitempty"`
 	ActiveTab  string   `json:"activeTab,omitempty"`
 	BottomTab  string   `json:"bottomTab,omitempty"`
+
+	// 以下是「关闭时的窗口状态」:编辑器拆分、光标位置、Markdown 视图、树展开、项目展开、终端标签数、输入框草稿
+	SplitDir  int8              `json:"splitDir,omitempty"`
+	SplitFrac float32           `json:"splitFrac,omitempty"`
+	Tabs2     []string          `json:"tabs2,omitempty"`
+	Active2   string            `json:"active2,omitempty"`
+	PaneSel   int8              `json:"paneSel,omitempty"`
+	Cursors   map[string][2]int `json:"cursors,omitempty"` // 路径 → 行、列(0 起)
+	MdMode    map[string]int8   `json:"mdMode,omitempty"`  // 路径 → Markdown 视图(手动选的)
+	TreeOpen  []string          `json:"treeOpen,omitempty"`
+	ProjOpen  []string          `json:"projOpen,omitempty"`
+	TermCount int               `json:"termCount,omitempty"`
+	TermSel   int               `json:"termSel,omitempty"`
+	Draft     string            `json:"draft,omitempty"`
 }
 
 func lastStatePath(demo bool) string {
@@ -60,16 +74,59 @@ func (a *App) SaveRuntimeState() {
 		st.Workspace = a.ws.ID
 	}
 	st.NavAgent, st.NavIDE = a.navBy[ModeAgent], a.navBy[ModeIDE]
-	for _, tb := range a.ide.tabs {
-		if tb == nil || tb.virt != "" || tb.diff {
-			continue
+	st.Cursors, st.MdMode = map[string][2]int{}, map[string]int8{}
+	collect := func(tabs []*ideTab) (paths []string) {
+		for _, tb := range tabs {
+			if tb == nil || tb.virt != "" || tb.diff {
+				continue
+			}
+			p := strings.TrimSpace(tb.path)
+			if p == "" {
+				continue
+			}
+			paths = append(paths, p)
+			if tb.st != nil && tb.buf != nil { // 没画过的标签没有编辑器状态,光标无从谈起
+				pos := tb.st.CursorPos()
+				st.Cursors[p] = [2]int{pos.Line, pos.Col}
+			}
+			if tb.mdMode != 0 {
+				st.MdMode[p] = tb.mdMode
+			}
 		}
-		if p := strings.TrimSpace(tb.path); p != "" {
-			st.EditorTabs = append(st.EditorTabs, p)
-		}
+		return
 	}
+	st.EditorTabs = collect(a.ide.tabs)
 	if t := a.ide.tab(a.ide.active); t != nil && t.virt == "" && !t.diff {
 		st.ActiveTab = t.path
+	}
+	if a.ide.splitDir != 0 {
+		st.SplitDir, st.SplitFrac, st.PaneSel = a.ide.splitDir, a.ide.splitFrac, a.ide.paneSel
+		st.Tabs2 = collect(a.ide.tabs2)
+		for _, tb := range a.ide.tabs2 {
+			if tb != nil && tb.id == a.ide.active2 {
+				st.Active2 = tb.path
+			}
+		}
+	}
+	for p, on := range a.ide.open {
+		if on {
+			st.TreeOpen = append(st.TreeOpen, p)
+		}
+	}
+	for k, on := range a.projOpen {
+		if on {
+			st.ProjOpen = append(st.ProjOpen, k)
+		}
+	}
+	started := 0
+	for _, tp := range a.ide.tps {
+		if tp != nil && tp.t != nil {
+			started++
+		}
+	}
+	st.TermCount, st.TermSel = started, a.ide.tpSel // 只记「真起过 shell」的标签数;进程本身不能恢复,下次显示时各起一个新的
+	if !a.runDemo {
+		st.Draft = a.draft
 	}
 	sessRestoreLog.Info("保存运行状态", "session", st.Session, "project", st.Project, "tabs", len(st.EditorTabs))
 	end := diag.SpanSlow("session", "保存运行状态", 100*time.Millisecond)
@@ -140,6 +197,64 @@ func (a *App) ApplySavedRuntime() string {
 			a.ide.active = t.id
 		}
 	}
+	a.applySavedWindowState(st)
 	sessRestoreLog.Info("恢复运行状态", "session", st.Session, "tabs", len(st.EditorTabs))
 	return strings.TrimSpace(st.Session)
+}
+
+// applySavedWindowState 恢复编辑器拆分、光标位置、Markdown 视图、树 / 项目展开、终端标签数与输入框草稿。
+func (a *App) applySavedWindowState(st lastRuntime) {
+	d := a.ide
+	for p, m := range st.MdMode {
+		if t := d.tabByPath(p); t != nil {
+			t.mdMode = m
+		}
+	}
+	for p, lc := range st.Cursors { // Markdown 标签带 reveal 会被强制切源码,所以只恢复非 Markdown 文件的光标
+		if t := d.tabByPath(p); t != nil && t.buf != nil && !isMarkdownFile(p) {
+			t.reveal = &[3]int{lc[0], lc[1], lc[1]}
+		}
+	}
+	if st.SplitDir != 0 && len(st.Tabs2) > 0 {
+		d.splitDir, d.splitFrac, d.paneSel = st.SplitDir, st.SplitFrac, 0
+		for _, p := range st.Tabs2 {
+			if t := d.tabByPath(p); t != nil && t.buf != nil {
+				a.openSharedInPane(1, t) // 同一文件两组共享缓冲区
+			} else {
+				d.addTabTo(1, a.mkFileTab(p, false))
+			}
+		}
+		for _, t := range d.tabs2 {
+			if t.path == st.Active2 {
+				d.active2 = t.id
+			}
+		}
+		if d.active2 == "" && len(d.tabs2) > 0 {
+			d.active2 = d.tabs2[0].id
+		}
+		d.paneSel = st.PaneSel
+	}
+	if len(st.TreeOpen) > 0 {
+		if d.open == nil {
+			d.open = map[string]bool{}
+		}
+		for _, p := range st.TreeOpen {
+			d.open[p] = true
+		}
+	}
+	for _, k := range st.ProjOpen {
+		if a.projOpen == nil {
+			a.projOpen = map[string]bool{}
+		}
+		a.projOpen[k] = true
+	}
+	if st.TermCount > 1 && !a.runDemo { // 终端标签数:壳是下次显示面板时才起的,这里只补出空标签位
+		for len(d.tps) < st.TermCount {
+			d.tps = append(d.tps, &termPanel{})
+		}
+		d.tpSel = min(max(st.TermSel, 0), len(d.tps)-1)
+	}
+	if st.Draft != "" && !a.runDemo && a.draft == "" {
+		a.draft = st.Draft
+	}
 }
