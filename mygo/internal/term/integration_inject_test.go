@@ -18,6 +18,16 @@ func TestZshSilentInject(t *testing.T) {
 		t.Skip("没有 zsh")
 	}
 	home := t.TempDir()
+	// 清理按后进先出:这条排在 tm.Close 之后执行。zsh 被结束时可能还在往 HOME 写
+	// .zsh_history 等文件,直接让 TempDir 清理会偶发「目录非空」,所以先带重试地删一遍。
+	t.Cleanup(func() {
+		for i := 0; i < 20; i++ {
+			if os.RemoveAll(home) == nil {
+				return
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+	})
 	t.Setenv("HOME", home)
 	t.Setenv("ZDOTDIR", "")
 	os.Unsetenv("ZDOTDIR")
