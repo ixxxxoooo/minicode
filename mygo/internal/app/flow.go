@@ -303,9 +303,11 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 func (a *App) nest(c *ui.Context, inner func()) {
 	t := a.tk
 	ui.Column(c).Margin(0, 0, 0, 7.5).Gap(1).Children(func() {
-		ui.Row(c).Children(func() {
-			ui.Box(c).Width(1).Background(t.Bd2).Margin(0, 14, 0, 0)
-			ui.Column(c).Grow(1).Gap(1).Margin(0, 0, 0, -23).Children(inner)
+		// 行内 flex 子项的自动最小宽度 = 子树最小内容宽度:内层 Column 与外层 Row 都要显式 MinWidth(0),
+		// 否则组里超长的命令 / 输出行会把所有卡片撑出会话流内容列(回合折叠「已处理」与探索组共用这里)。
+		ui.Row(c).MinWidth(0).Children(func() {
+			ui.Box(c).Width(1).Background(t.Bd2).Margin(0, 14, 0, 0).Shrink(0)
+			ui.Column(c).Grow(1).MinWidth(0).Gap(1).Margin(0, 0, 0, -23).Children(inner)
 		})
 	})
 }
