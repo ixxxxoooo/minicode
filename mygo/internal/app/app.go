@@ -276,6 +276,8 @@ type App struct {
 	update          string // 状态栏更新提示文案(空 = 不显示)
 	updSt           updState
 	upd             *update.Runner
+	updSilent       bool   // 当前这次检查是后台静默检查(失败 / 已是最新都不打扰界面)
+	updNoticed      string // 已经为哪个版本发过「发现新版本」通知,避免每次检查都弹
 	nt              *noticeStore
 	mcpExp          map[string]bool // MCP 弹层里各服务器是否展开工具列表
 	ctxLoading      bool

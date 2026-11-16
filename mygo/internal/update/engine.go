@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/diag"
@@ -34,6 +35,8 @@ type Progress struct {
 	Err      string
 	ErrStage string // 出错的阶段:check / download / verify / unpack / install
 	UpToDate bool
+	// Found 表示发现了新版本但按偏好没有自动下载(Runner.CheckOnly),等用户点「下载并安装」。
+	Found bool
 }
 
 type Fetcher interface {
@@ -48,6 +51,9 @@ type GitHubAppcastFetcher struct {
 func (g GitHubAppcastFetcher) Check(ctx context.Context) (string, string, string, bool, error) {
 	end := diag.SpanSlow("update", "appcast", 3*time.Second)
 	defer end()
+	// 只限制「查询发布信息」这一步;下载是否超时由调用方的 ctx 决定
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
 	url := g.URL
 	if url == "" {
 		url = "https://github.com/ixxxxoooo/minicode/releases/latest/download/appcast.json"
@@ -101,7 +107,18 @@ type Runner struct {
 	CurrentVer  string
 	InstallFunc func(staging, pkgPath string) error
 	OnProgress  func(Progress)
-	workDir     string
+	// CheckOnly 为真时,发现新版本只上报 Progress.Found 并停下(偏好「自动下载更新」关闭);
+	// 之后由 Download 接着把已发现的版本下载下来。
+	CheckOnly bool
+	workDir   string
+
+	mu    sync.Mutex
+	found foundPkg
+}
+
+// foundPkg 是 CheckOnly 模式下记住的、已发现但未下载的版本。
+type foundPkg struct {
+	ver, url, sha string
 }
 
 func (r *Runner) WorkDir() string {
@@ -135,6 +152,39 @@ func (r *Runner) run(ctx context.Context) {
 		r.emit(Progress{Version: r.CurrentVer, UpToDate: true})
 		return
 	}
+	if r.CheckOnly {
+		r.mu.Lock()
+		r.found = foundPkg{ver: ver, url: url, sha: sha}
+		r.mu.Unlock()
+		r.emit(Progress{Version: ver, Found: true})
+		return
+	}
+	r.fetchAndStage(ctx, ver, url, sha)
+}
+
+// Download 下载并准备「已发现但按偏好没有自动下载」的版本(同步执行,调用方已在后台线程)。
+// 没有已发现的版本(没检查过 / 已经在下载)时报 check 阶段的错误。
+func (r *Runner) Download(ctx context.Context) {
+	r.mu.Lock()
+	f := r.found
+	r.found = foundPkg{}
+	r.mu.Unlock()
+	if f.ver == "" {
+		r.emit(Progress{Err: "没有可下载的新版本,请先检查更新", ErrStage: "check"})
+		return
+	}
+	r.fetchAndStage(ctx, f.ver, f.url, f.sha)
+}
+
+// FoundVersion 返回已发现但尚未下载的版本号(没有则为空)。
+func (r *Runner) FoundVersion() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.found.ver
+}
+
+// fetchAndStage 下载 → 校验 → 解包 → 交给 InstallFunc,各阶段都上报进度。
+func (r *Runner) fetchAndStage(ctx context.Context, ver, url, sha string) {
 	r.emit(Progress{Phase: PhaseDownload, Percent: 5, Version: ver})
 	path, err := r.download(ctx, url, func(p int) { r.emit(Progress{Phase: PhaseDownload, Percent: p, Version: ver}) })
 	if err != nil {

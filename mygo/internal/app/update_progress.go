@@ -30,6 +30,8 @@ type updState struct {
 	Version string
 	Title   string // 失败时的标题(空 = 按阶段用默认文案)
 	Msg     string // 失败时的一句原因 + 下一步(空 = 用默认文案)
+	// Manual 只用于 updFound:发现了新版本但「自动下载更新」关闭,等用户点「下载并安装」。
+	Manual bool
 }
 
 func (a *App) updLabel() string {
@@ -139,8 +141,14 @@ func (a *App) updPopup(c *ui.Context, anchor ui.Element) {
 			case updLatest:
 				ui.Text(c, "当前版本已是最新。").FontSize(theme.FsCap).TextColor(t.Tx3)
 			case updFound:
-				kit.Meter(c, 5)
-				ui.Text(c, "发现 "+ver+",准备下载…").FontSize(theme.FsCap).TextColor(t.Tx3)
+				if a.updSt.Manual {
+					// 偏好「自动下载更新」关闭:不动网络,等用户确认
+					ui.Text(c, "发现 "+ver+",没有自动下载(设置 → 关于)。").FontSize(theme.FsCap).TextColor(t.Tx3)
+					kit.Btn(c, "下载并安装", kit.BtnOpt{Variant: kit.BtnPri, Small: true, Icon: "download"}).OnClick(a.startUpdateDownload)
+				} else {
+					kit.Meter(c, 5)
+					ui.Text(c, "发现 "+ver+",准备下载…").FontSize(theme.FsCap).TextColor(t.Tx3)
+				}
 			case updDownload:
 				kit.Meter(c, float32(a.updSt.Percent))
 				ui.Text(c, "正在后台下载,完成后提示重启。").FontSize(theme.FsCap).TextColor(t.Tx3)
@@ -198,6 +206,9 @@ func (a *App) updAboutHint() (txt string, ok bool) {
 	case updNetErr:
 		return a.updFailTitle("网络错误"), true
 	case updFound:
+		if a.updSt.Manual {
+			return "发现新版本 " + a.updSt.Version + "(未自动下载)", true
+		}
 		return "发现新版本 " + a.updSt.Version, true
 	}
 	return "", false

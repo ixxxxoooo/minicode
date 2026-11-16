@@ -50,18 +50,52 @@ func (a *App) initUpdater(demo bool) {
 	}
 }
 
+// updAutoOn 是偏好「自动下载更新」(默认开):关闭后发现新版本只提示,由用户点「下载并安装」。
+func (a *App) updAutoOn() bool {
+	return a.prefs == nil || a.prefs.Bool(pAboutAuto, true)
+}
+
 func (a *App) onUpdateProgress(p update.Progress) {
 	if p.Err != "" {
-		log.Warn("更新失败", "stage", p.ErrStage, "err", p.Err)
+		log.Warn("更新失败", "stage", p.ErrStage, "err", p.Err, "silent", a.updSilent)
+		if a.updSilent && p.ErrStage == "check" {
+			// 后台静默检查失败(没网 / 还没发布):只写日志,不在状态栏冒红字
+			a.updSilent = false
+			return
+		}
+		a.updSilent = false
 		a.updSt = failedUpdState(p)
 		a.update = a.updLabel()
 		return
 	}
 	if p.UpToDate {
+		if a.updSilent {
+			a.updSilent = false
+			log.Info("后台检查更新:已是最新", "ver", p.Version)
+			return
+		}
 		a.updSt = updState{Phase: updLatest, Version: p.Version}
 		a.update = a.updLabel()
 		return
 	}
+	if p.Found {
+		a.updSilent = false
+		a.updSt = updState{Phase: updFound, Version: p.Version, Manual: true}
+		a.update = a.updLabel()
+		log.Info("发现新版本(未自动下载)", "ver", p.Version)
+		if a.updNoticed != p.Version {
+			a.updNoticed = p.Version
+			a.postNotice("info", "发现新版本 "+p.Version, "没有自动下载:点状态栏的更新胶囊「下载并安装」", nil)
+		}
+		if a.win != nil {
+			a.win.Update(func() { a.syncBrand() })
+		}
+		return
+	}
+	if a.updSilent && p.Phase == update.PhaseNone {
+		return // 静默检查开头的「检查中」信号:不让状态栏闪一下
+	}
+	a.updSilent = false
 	switch p.Phase {
 	case update.PhaseDownload:
 		a.updSt = updState{Phase: updDownload, Percent: p.Percent, Version: p.Version}
@@ -84,18 +118,69 @@ func (a *App) onUpdateProgress(p update.Progress) {
 	}
 }
 
-func (a *App) checkUpdateAsync() {
+// checkUpdateAsync 手动检查更新(设置 → 关于、托盘、更新胶囊的「重试」):状态栏显示「检查更新…」。
+func (a *App) checkUpdateAsync() { a.checkUpdate(false) }
+
+// updBusy 为真表示已有更新流程在下载 / 校验 / 解包 / 待重启,不能再被新的检查覆盖。
+func (a *App) updBusy() bool {
+	switch a.updSt.Phase {
+	case updDownload, updVerify, updUnpack, updReady:
+		return true
+	}
+	return false
+}
+
+// checkUpdate 检查更新。silent 为真是后台定时检查:不改状态栏、失败与「已是最新」都只写日志;
+// 偏好「自动下载更新」开着就接着下载,关着就停在「发现新版本」等用户点。
+func (a *App) checkUpdate(silent bool) {
+	if a.updBusy() {
+		return
+	}
 	if a.upd == nil {
 		demo := a.be != nil && a.be.Name() == "demo"
 		a.initUpdater(demo)
 	}
-	a.updSt = updState{Phase: updChecking}
+	a.upd.CheckOnly = !a.updAutoOn()
+	a.updSilent = silent
+	if !silent {
+		a.updSt = updState{Phase: updChecking}
+	}
+	log.Info("检查更新", "silent", silent, "auto", a.updAutoOn())
 	a.bg("update-check", func() func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+		// 整个流程(含下载)30 分钟上限;appcast 的查询自己另有 20 秒超时
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
 		a.upd.Run(ctx) // 同步跑完再 cancel;用 Start 会在返回瞬间把自己取消
 		return nil
 	})
+}
+
+// startUpdateDownload 用户在「发现新版本」里点「下载并安装」:接着下载已发现的版本。
+func (a *App) startUpdateDownload() {
+	if a.upd == nil || a.updBusy() {
+		return
+	}
+	log.Info("手动开始下载更新", "ver", a.updSt.Version)
+	a.updSt = updState{Phase: updDownload, Version: a.updSt.Version}
+	a.update = a.updLabel()
+	a.bg("update-download", func() func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		defer cancel()
+		a.upd.Download(ctx)
+		return nil
+	})
+}
+
+// UpdateAutoCheckEvery 是后台检查更新的间隔。
+const UpdateAutoCheckEvery = 6 * time.Hour
+
+// AutoUpdateTick 由 main 的定时器调用:真实、从 .app 包里运行的正式版才会在后台检查更新
+// (开发版、演示、go run 都跳过,它们既不能被替换也不该打扰)。
+func (a *App) AutoUpdateTick() {
+	if os.Getenv("MINI_DEV") == "1" || (a.be != nil && a.be.Name() == "demo") || update.BundlePath() == "" {
+		return
+	}
+	a.checkUpdate(true)
 }
 
 func (a *App) applyUpdateRestart() {
