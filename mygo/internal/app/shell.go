@@ -14,12 +14,8 @@ func (a *App) root(c *ui.Context) {
 	t := a.tk
 	root := ui.Column(c).Fill().FontSize(theme.FsBody).TextColor(t.Tx1)
 	if t.Scheme.ID == "b" {
-		// 方案 B:底色带一抹强调色光晕(径向渐变)
-		root.Background(t.Chrome)
-		root.RadialGradient(ui.RadialGradient{
-			Center: ui.Point{X: 0, Y: 0}, Radius: 1500,
-			Stops: []ui.GradientStop{{Color: t.Chrome.Mix(t.Ac, .09), At: 0}, {Color: t.Chrome, At: .55}},
-		})
+		// 方案 B:底色带一抹强调色光晕,画在 winGlow 里(root.Children 的第一个子元素)
+		root.Background(t.Chrome).Clip()
 	} else {
 		root.Background(t.Chrome)
 	}
@@ -28,6 +24,7 @@ func (a *App) root(c *ui.Context) {
 	a.zoneBegin()
 	defer func() { a.zoneSync(root.FocusWithin()) }()
 	root.Children(func() {
+		a.winGlow(c)
 		a.guard(c, "标题栏", "titlebar", guardChip, func() { a.titlebar(c) })
 		if a.screen == ScreenSettings {
 			a.guard(c, "设置", "settings", guardCard, func() { a.settingsPage(c) }) // 设置是整窗页面:没有导航栏与舞台
@@ -90,4 +87,26 @@ func (a *App) pagePlaceholder(c *ui.Context) {
 	a.pane(c).Grow(1).Children(func() {
 		ui.Text(c, string(a.screen)).Margin(24)
 	})
+}
+
+// winGlow 画方案 B 窗口底色上的强调色光晕,与设计稿 shell.css 的
+// radial-gradient(120% 90% at 0% 0%, 强调色 9%, 底色 55%) 一致:左上角为中心的椭圆,
+// 横向半径 = 窗口宽 × 1.2,纵向半径 = 窗口高 × 0.9,随窗口大小一起缩放。
+// 界面库的径向渐变只有正圆,所以先在一个更高的盒子里画半径 1.2 × 宽 的圆,再以左上角为原点纵向压扁成椭圆。
+// 参数 c:界面上下文。无返回值;其它方案或窗口尺寸未知时不画。
+func (a *App) winGlow(c *ui.Context) {
+	t := a.tk
+	w, h := a.winW, a.winH
+	if t.Scheme.ID != "b" || w <= 0 || h <= 0 {
+		return
+	}
+	rx, ry := w*1.2, h*.9
+	sy := ry / rx // 纵向压缩比
+	ui.Box(c).Key("win-glow").Absolute().ZIndex(-1).Left(0).Top(0).Size(w, h/sy).PassThrough().
+		TransformOrigin(0, 0).Scale(1, sy).
+		RadialGradient(ui.RadialGradient{
+			// 中心写零值会被当成「盒子正中」,所以用一个极小的非零值表示左上角
+			Center: ui.Point{X: 1e-6, Y: 1e-6}, Radius: rx,
+			Stops: []ui.GradientStop{{Color: t.Chrome.Mix(t.Ac, .09), At: 0}, {Color: t.Chrome, At: .55}},
+		})
 }
