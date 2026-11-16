@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/customize"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -29,26 +30,31 @@ var custCats = map[customize.Cat]custMeta{
 }
 
 type custState struct {
-	cat     customize.Cat
-	scope   customize.Scope
-	q       string
-	market  bool // 插件:浏览市场
-	detail  bool // <900px:列表 / 详情两级
-	sel     *customize.Item
-	mk      *customize.Market // 市场里选中的
-	draft   customize.Item    // 选中项的草稿副本(文本框绑它,保存才写回)
-	dOf     *customize.Item   // 草稿对应哪一项
-	rulePV  bool              // 规则:预览
-	hookOut string
-	runOut  string
-	err     string
-	delArm  *customize.Item // 点过一次「删除」,等待确认
-	dlg     *custDlg
-	ask     string
-	disk    *customize.DiskStore
-	plug    *pluginInstall
-	mcpEdit bool
-	mcpEnv  string
+	cat          customize.Cat
+	scope        customize.Scope
+	q            string
+	market       bool // 插件:浏览市场
+	detail       bool // <900px:列表 / 详情两级
+	sel          *customize.Item
+	mk           *customize.Market // 市场里选中的
+	draft        customize.Item    // 选中项的草稿副本(文本框绑它,保存才写回)
+	dOf          *customize.Item   // 草稿对应哪一项
+	rulePV       bool              // 规则:预览
+	hookOut      string
+	runOut       string
+	err          string
+	delArm       *customize.Item // 点过一次「删除」,等待确认
+	dlg          *custDlg
+	ask          string
+	disk         *customize.DiskStore
+	plug         *pluginInstall
+	mcpEdit      bool
+	mcpEnv       string
+	skillOf      string // 当前预览文件列表对应的 Skill id
+	skillFile    string
+	skillPrev    string
+	skillPrevErr string
+	skillLoad    int
 }
 
 // pluginInstall 跟踪市场插件安装进度(0 进行中 / 1 收尾 / 2 成功 / 3 失败)。
@@ -100,6 +106,7 @@ func (a *App) cuSelect(it *customize.Item) {
 	a.cu.dOf = nil
 	a.cu.delArm, a.cu.err, a.cu.hookOut, a.cu.runOut = nil, "", "", ""
 	a.cu.rulePV = false
+	a.cu.skillOf, a.cu.skillFile, a.cu.skillPrev, a.cu.skillPrevErr = "", "", "", ""
 }
 
 // cuResetNav 切换分类或整页入口时清空详情与草稿,避免旧选中残留。
@@ -109,6 +116,7 @@ func (a *App) cuResetNav() {
 	s.draft = customize.Item{}
 	s.err, s.hookOut, s.runOut, s.detail = "", "", "", false
 	s.rulePV = false
+	s.skillOf, s.skillFile, s.skillPrev, s.skillPrevErr = "", "", "", ""
 }
 
 // cuCurrent 返回当前选中项:选中项不在筛选结果里(被筛掉 / 被删)就退回第一项。
@@ -133,6 +141,10 @@ func (a *App) customizePage(c *ui.Context) {
 	st := a.cuStore()
 	cat := a.cuCat()
 	meta := custCats[cat]
+	if cat == customize.MCP && !a.cuMcpManageLoaded {
+		a.cuMcpManageLoaded = true
+		a.mcpOnOpenManage()
+	}
 	narrow := a.pageNarrowMid()
 	if !narrow {
 		s.detail = false
@@ -144,6 +156,9 @@ func (a *App) customizePage(c *ui.Context) {
 				ui.Text(c, meta.desc).TextColor(t.Tx3).LineHeight(1.5)
 			})
 			ui.Row(c).Gap(8).Shrink(0).Children(func() {
+				if cat == customize.MCP {
+					kit.Btn(c, "刷新状态", kit.BtnOpt{Icon: "refresh", Loading: a.mcpRefreshing}).OnClick(a.cuRefreshMCP)
+				}
 				if cat == customize.Plugins {
 					kit.Btn(c, "浏览市场", kit.BtnOpt{Icon: "search"}).OnClick(func() { s.market = true; s.mk = nil })
 					kit.Btn(c, "从本地目录安装", kit.BtnOpt{Variant: kit.BtnPri, Icon: "plus"}).OnClick(func() {
@@ -240,7 +255,7 @@ func (a *App) cuMain(c *ui.Context, st *customize.Store) {
 	t := a.tk
 	s := &a.cu
 	cat := a.cuCat()
-	ui.Scroll(c).Key("cu-main").Grow(1).MinWidth(0).Children(func() {
+	kit.VScroll(c).Key("cu-main").Grow(1).MinWidth(0).Children(func() {
 		ui.Column(c).Padding(4, 20, 24, 20).Gap(8).Children(func() {
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 				ui.Row(c.Key("cu-qbox")).Grow(1).MinWidth(0).Height(26).PaddingX(8).Gap(6).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Children(func() {
@@ -340,15 +355,25 @@ func (a *App) cuRow(c *ui.Context, st *customize.Store, it *customize.Item, on, 
 			kit.Ic(c, custCats[a.cuCat()].icon, kit.S12).TextColor(t.Tx2)
 		})
 		ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+			sub := it.Desc
+			if a.cuCat() == customize.MCP {
+				if row, ok := a.mcpLookup(it.Name); ok {
+					sub = row.Detail
+				}
+			}
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 				ui.Text(c, it.Name).FontWeight(500).SingleLine()
-				switch it.Status {
-				case customize.StOK:
-					kit.Dot(c, kit.KOk)
-				case customize.StWarn:
-					kit.Dot(c, kit.KWarn)
-				case customize.StErr:
-					kit.Dot(c, kit.KErr)
+				if a.cuCat() == customize.MCP {
+					a.cuMcpDot(c, it.Name)
+				} else {
+					switch it.Status {
+					case customize.StOK:
+						kit.Dot(c, kit.KOk)
+					case customize.StWarn:
+						kit.Dot(c, kit.KWarn)
+					case customize.StErr:
+						kit.Dot(c, kit.KErr)
+					}
 				}
 				if it.Upd != "" {
 					kit.Tag(c, "可更新", kit.KInfo)
@@ -357,7 +382,7 @@ func (a *App) cuRow(c *ui.Context, st *customize.Store, it *customize.Item, on, 
 					kit.Tag(c, "已停用")
 				}
 			})
-			ui.Text(c, it.Desc).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
+			ui.Text(c, sub).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 		})
 		kit.Tag(c, it.Scope.Label())
 		if it.Status == customize.StWarn {
@@ -372,6 +397,23 @@ func (a *App) cuRow(c *ui.Context, st *customize.Store, it *customize.Item, on, 
 			}
 		}
 	})
+}
+
+func (a *App) cuMcpDot(c *ui.Context, name string) {
+	if row, ok := a.mcpLookup(name); ok {
+		switch row.Conn {
+		case core.McpConnected:
+			kit.Dot(c, kit.KOk)
+		case core.McpNeedsAuth, core.McpPending:
+			kit.Dot(c, kit.KWarn)
+		case core.McpFailed:
+			kit.Dot(c, kit.KErr)
+		default:
+			kit.Dot(c, kit.KNeutral)
+		}
+		return
+	}
+	kit.Dot(c, kit.KNeutral)
 }
 
 func (a *App) cuAuth(it *customize.Item) {

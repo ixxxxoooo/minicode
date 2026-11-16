@@ -104,7 +104,7 @@
       ['选取元素发给 Claude', 'browser_select 框选+「发给 Claude」;browser_page 接线。未测试', st('ok')],
       ['隐私', '抓取只发生在本机,不经第三方;设置 → 浏览器可关', st('ok')]]))}
     ${sec('自定义页(7 类)', '参考 VS Code 扩展视图 + Claude Code 的 /plugin /mcp /skills:左侧分类,中间列表,右侧详情;「来源作用域」(用户 / 项目 / 本地)是每一行的一等属性。', tbl([['分类', 110], ['要点', 520], ['状态']], [
-      ['插件', 'custom_wire/custom_detail 市场 JSON+安装四态+CLI;演示内存/真实 OpenDisk。未测试', st('ok')], ['MCP', 'custom_mcp_edit+SaveMCP;composer_mcp 工具 deny。未测试', st('ok')], ['Skills', 'custom_skill_save 重命名目录+编辑器打开。未测试', st('ok')],
+      ['插件', 'custom_wire/custom_detail 市场 JSON+安装四态+CLI;演示内存/真实 OpenDisk。未测试', st('ok')], ['MCP', 'custom_mcp_edit+SaveMCP;composer_mcp 工具 deny。未测试', st('ok')], ['Skills', 'custom_skill_save 重命名;详情「文件」纵向列表(路径+大小、可滚动选中),下方预览选中文件;复制路径/在编辑器打开针对选中项。未测试', st('ok')],
       ['命令 / 子 Agent / 钩子', 'custom_wire 读写盘+试运行。未测试', st('ok')], ['规则与记忆', 'custom_wire CLAUDE.md/rules 原子写+编辑器。未测试', st('ok')]]))}
     <div class="t3" style="margin-top:14px;line-height:1.7">说明:浏览器 HTTP/框选已接线;画布版本步进在 canvas_page;会话流 Mermaid(flow_mermaid)全屏查看;均未做开发版实测。</div></div>`;
 

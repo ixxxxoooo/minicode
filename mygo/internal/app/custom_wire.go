@@ -55,10 +55,6 @@ func (a *App) cuEnsureDisk() {
 		return
 	}
 	a.cu.disk, a.cust = ds, ds.Store
-	a.bg("刷新MCP状态", func() func() {
-		ds.RefreshMCPStatus()
-		return func() {}
-	})
 	// 市场列表要起 claude 子进程,放到后台取;回主线程后替换兜底数据(仍是同一个仓库对象才应用)
 	a.bg("读取插件市场", func() func() {
 		defer diag.SpanSlow("customize", "插件市场列表", 2*time.Second)()
@@ -106,7 +102,9 @@ func (a *App) cuOpenPath(p string) {
 		return
 	}
 	if cat := a.cuCat(); cat == customize.Skills {
-		abs = filepath.Join(abs, "SKILL.md")
+		if st, err := os.Stat(abs); err != nil || st.IsDir() {
+			abs = filepath.Join(abs, "SKILL.md")
+		}
 	}
 	if a.mode != ModeIDE {
 		a.mode = ModeIDE
@@ -139,11 +137,12 @@ func (a *App) cuReconnectReal(it *customize.Item) {
 	}
 	a.bg("MCP重连", func() func() {
 		if ds := a.cuDisk(); ds != nil {
-			ds.RefreshMCPStatus()
+			ds.ReloadMCPConfig()
 		}
 		ok := it.Status == customize.StOK
 		name, desc := it.Name, it.Desc
 		return func() {
+			a.mcpManualRefresh(a.mcpRuntimeReady())
 			if ok {
 				a.toast = "已连接「" + name + "」"
 			} else {
@@ -333,14 +332,17 @@ func (a *App) cuInstallPlugin(st *customize.Store, m *customize.Market) {
 }
 
 func (a *App) cuRefreshMCP() {
-	if ds := a.cuDisk(); ds != nil {
-		a.bg("刷新MCP", func() func() {
-			ds.RefreshMCPStatus()
-			return func() { a.toast = "已刷新 MCP 状态" }
-		})
-	} else {
-		a.toast = "演示模式:mcp 状态为模拟数据"
+	if a.cuDemo() {
+		a.mcpManualRefresh(false)
+		a.toast = "演示模式:已刷新 MCP 状态"
+		return
 	}
+	a.mcpManualRefresh(false)
+	if !a.mcpRuntimeReady() {
+		a.toast = "已重读配置;发送第一条消息后可查看连接状态"
+		return
+	}
+	a.toast = "正在刷新 MCP 状态…"
 }
 
 func (a *App) cuRemoveDisk(st *customize.Store, it *customize.Item) {
@@ -406,7 +408,7 @@ func (a *App) usageRefreshLimits(force bool) {
 		return
 	}
 	a.use.limitsState = core.LimitsChecking
-	a.send(core.CmdRefreshUsage{Force: force})
+	a.send(core.CmdRefreshUsage{Limits: true, Force: force})
 }
 
 func relLimitsAge(at int64) string {

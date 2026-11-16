@@ -136,7 +136,7 @@ func customizeErrors() *c.Store {
 		c.Skills: {
 			{Name: "missing-skill", Desc: "缺 SKILL.md", Scope: c.Project, Path: ".claude/skills/missing", Files: []c.File{{Name: "README.md"}}},
 			{Name: "ok-skill", Desc: "正常", Scope: c.User, On: true, Path: "~/.claude/skills/ok",
-				Files: []c.File{{Name: "SKILL.md", Active: true}, {Name: "ref.md"}},
+				Files: []c.File{{Name: "SKILL.md", Active: true, Bytes: 1200}, {Name: "ref.md", Bytes: 340}, {Name: "examples/demo.sh", Bytes: 89}},
 				Body:  "---\nname: ok-skill\ntriggers:\n  - 审查\n---\n\n# OK\n\n短正文。"},
 		},
 		c.Commands: {

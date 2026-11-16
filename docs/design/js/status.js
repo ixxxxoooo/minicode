@@ -242,7 +242,7 @@
       R('插件市场安装进度', 'cuInstallPlugin+RunPluginInstall;市场经「浏览市场」进入,详情安装条在滚动区内;演示四相位,真实安装中多仅 phase0 至结束;未测试', 'part', 'B7'),
       R('MCP 授权 / 重连 / 工具开关接真实状态', 'mcp_status+mcp list 兜底+init 初值;login 仍手工', 'part', 'B7'),
       R('命令 / 子 Agent 试运行、钩子试运行', 'custom_wire.go:cuTryCommand/cuTryAgent/cuTryHook;「在输入框试用」读表单草稿(cuDraftItem)而非磁盘旧值;未测试', 'part'),
-      R('Skills / 规则「在编辑器里打开」', 'cuOpenPath 解析 ~/ 与相对路径,Skill 补 SKILL.md;未测试', 'ok')],
+      R('Skills / 规则「在编辑器里打开」', 'cuOpenPath 解析 ~/ 与相对路径;Skill 详情文件列表纵向可选中+预览,操作针对选中文件。未测试', 'ok')],
     usage: [
       R('7 天 / 30 天 / 本月、汇总卡、柱图悬停、按模型 / 项目 / 贵会话、导出 CSV、空数据加载态(真实扫描)', '', 'ok'),
       R('账户限额与刷新', 'CmdRefreshUsage+usage_page 抽屉;Checking/Unavailable 文案与重试;第三方网关常无限额数据;未测试', 'part', 'B7'),

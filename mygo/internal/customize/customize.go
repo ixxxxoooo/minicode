@@ -77,6 +77,7 @@ type File struct {
 	Indent int
 	Active bool
 	Dir    bool
+	Bytes  int64 // 磁盘字节数,演示数据可手写
 }
 
 // Item 是任一类别的一个条目;各类只用到自己那部分字段。

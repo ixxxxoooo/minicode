@@ -40,7 +40,7 @@ func (a *App) cuDrawer(c *ui.Context, st *customize.Store) {
 			s.draft, s.dOf = it.Clone(), it
 		}
 		var foot func()
-		ui.Scroll(c).Key("cu-dscroll-" + string(cat) + "-" + it.Name).Grow(1).MinHeight(0).Clip().Children(func() {
+		kit.VScroll(c).Key("cu-dscroll-" + string(cat) + "-" + it.Name).Grow(1).MinHeight(0).Clip().Children(func() {
 			ui.Column(c).Padding(14, 16, 14, 16).Gap(12).Children(func() {
 				switch cat {
 				case customize.Plugins:
@@ -137,7 +137,7 @@ func (a *App) cuArea(c *ui.Context, key string, v *string, h float32, mono bool)
 
 // cuCard 是带描边的小卡片(行之间不画线);复用 kit.Card 的悬停上浮与阴影。
 func (a *App) cuCard(c *ui.Context, body func()) {
-	kit.Card(c).Cursor(ui.CursorDefault).Padding(2, 4).Children(body)
+	kit.Card(c).Cursor(ui.CursorDefault).Padding(2, 4).Column().Children(body)
 }
 
 func (a *App) cuToggleRow(c *ui.Context, key, title, sub string, on bool, flip func()) {
@@ -222,7 +222,7 @@ func (a *App) cuMarketDetail(c *ui.Context, st *customize.Store) {
 	if m == nil {
 		return
 	}
-	ui.Scroll(c).Key("cu-mkscroll").Grow(1).MinHeight(0).Children(func() {
+	kit.VScroll(c).Key("cu-mkscroll").Grow(1).MinHeight(0).Children(func() {
 		ui.Column(c).Padding(14, 16).Gap(12).Children(func() {
 			a.cuHead(c, st, nil, "plug", m.Name, func() { kit.Tag(c, m.By, kit.KAc) })
 			ui.Text(c, m.Desc+"。安装后会把它包含的 Skills、命令、子 Agent 与钩子一并加入。").TextColor(t.Tx2).LineHeight(1.6)
@@ -420,35 +420,11 @@ func (a *App) cuSkill(c *ui.Context, it *customize.Item) func() {
 	a.cuLbl(c, "名称(重命名目录)", func() { a.cuField(c, "sk-n", &d.Name, false, "skill-name") })
 	a.cuKV(c, [][2]string{{"范围", it.Scope.Label()}, {"位置", it.Path}})
 	a.cuLbl(c, "文件", func() {
-		a.cuCard(c, func() {
-			for _, f := range it.Files {
-				r := ui.Row(c).Height(t.Scheme.RowH).PaddingStart(8 + float32(f.Indent)*14).PaddingEnd(8).Gap(6).AlignItems(ui.Center).Radius(t.RSm())
-				if f.Active {
-					r.Background(t.Fill2)
-				}
-				r.Children(func() {
-					icon := "fileText"
-					if f.Dir {
-						icon = "folder"
-					}
-					kit.Ic(c, icon, kit.S12)
-					kit.Mono(c, f.Name, t.Tx1).Grow(1).SingleLine()
-				})
-			}
-		})
+		a.cuCard(c, func() { a.cuSkillFileList(c, it) })
 	})
-	a.cuLbl(c, "SKILL.md 预览", func() {
-		desc := it.Desc
-		if i := strings.Index(desc, " · "); i >= 0 {
-			desc = desc[i+len(" · "):]
-		}
-		ui.Column(c).Padding(8, 10).Background(t.Fill1).Radius(t.RSm()).Gap(2).Children(func() {
-			kit.Mono(c, "---", t.Tx4)
-			ui.RichText(c, ui.Span{Text: "name", Color: t.Vio}, ui.Span{Text: ": " + it.Name}).Font("monospace").FontSize(11.5)
-			ui.RichText(c, ui.Span{Text: "description", Color: t.Vio}, ui.Span{Text: ": " + desc}).Font("monospace").FontSize(11.5)
-			kit.Mono(c, "---", t.Tx4)
-			kit.Mono(c, "# 何时使用", t.Tx1).Margin(6, 0, 0, 0)
-			kit.Mono(c, "当用户提到下面这些场景时,先读取本文件再动手。", t.Tx2)
+	a.cuLbl(c, "文件预览", func() {
+		ui.Column(c).Padding(0, 0, 4, 0).Background(t.Fill1).Radius(t.RSm()).Children(func() {
+			a.cuSkillPreview(c)
 		})
 	})
 	a.cuLbl(c, "会被这些说法触发", func() {
@@ -459,9 +435,9 @@ func (a *App) cuSkill(c *ui.Context, it *customize.Item) func() {
 		})
 	})
 	return func() {
-		kit.Btn(c, "复制路径", kit.BtnOpt{Variant: kit.BtnGhost, Icon: "copy"}).OnClick(func() { a.toast = "已复制路径:" + it.Path })
+		kit.Btn(c, "复制路径", kit.BtnOpt{Variant: kit.BtnGhost, Icon: "copy"}).OnClick(func() { a.copyOut(a.cuSkillFilePath(it), "路径"); a.toast = "已复制路径" })
 		ui.Spacer(c).Grow(1)
-		kit.Btn(c, "在编辑器打开", kit.BtnOpt{Variant: kit.BtnSoft, Icon: "code"}).OnClick(func() { a.cuOpenPath(it.Path) })
+		kit.Btn(c, "在编辑器打开", kit.BtnOpt{Variant: kit.BtnSoft, Icon: "code"}).OnClick(func() { a.cuOpenPath(a.cuSkillFilePath(it)) })
 		kit.Btn(c, "保存", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(func() { a.cuSaveSkillRename(st, it) })
 	}
 }

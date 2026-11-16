@@ -276,7 +276,7 @@ func (ds *DiskStore) loadSkills() {
 					return nil
 				}
 				rel, _ := filepath.Rel(filepath.Join(base, e.Name()), p)
-				files = append(files, File{Name: rel, Active: rel == "SKILL.md"})
+				files = append(files, File{Name: rel, Active: rel == "SKILL.md", Bytes: fi.Size()})
 				return nil
 			})
 			it := &Item{Name: e.Name(), Scope: sc, On: true, Path: ds.relDisplay(filepath.Join(base, e.Name())), Desc: desc, Files: files}
@@ -449,6 +449,11 @@ func (ds *DiskStore) loadHooks() {
 			}
 		}
 	}
+}
+
+// ReloadMCPConfig 只从磁盘配置重载 MCP 列表,不启动子进程。
+func (ds *DiskStore) ReloadMCPConfig() {
+	ds.loadMCP()
 }
 
 // RefreshMCPStatus 用 claude mcp list 的输出更新状态(不启动会话)。
