@@ -390,7 +390,7 @@ func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func
 		}
 	})
 	a.cuCard(c, func() {
-		a.cuToggleRow(c, "cm-ondemand-"+it.Name, "按需加载工具", "ENABLE_TOOL_SEARCH · 工具很多时只在需要时加载描述,节省上下文", it.OnDemand, func() { it.OnDemand = !it.OnDemand })
+		a.cuToggleRow(c, "cm-ondemand-"+it.Name, "按需加载工具(全部 MCP)", "ENABLE_TOOL_SEARCH · 工具很多时只在需要时加载描述,节省上下文;对所有 MCP 服务器生效,写入 Claude 设置,新会话起效;使用第三方服务商时会被强制关闭", it.OnDemand, func() { a.cuMCPOnDemand(!it.OnDemand) })
 	})
 	return func() {
 		ui.Spacer(c).Grow(1)
@@ -470,9 +470,16 @@ func (a *App) cuCommand(c *ui.Context, st *customize.Store, it *customize.Item) 
 	a.cuLbl(c, "允许的工具", func() {
 		ui.Row(c).Gap(6).Wrap().Children(func() {
 			for _, tl := range d.Allow {
-				kit.Chip(c, tl, kit.ChipOpt{On: true}).Key("cc-t-" + tl).OnClick(func() { d.ToggleAllow(tl) })
+				kit.Chip(c, tl, kit.ChipOpt{On: true, Tip: "点一下移除"}).Key("cc-t-" + tl).OnClick(func() { d.ToggleAllow(tl) })
 			}
-			kit.Chip(c, "+ 添加", kit.ChipOpt{Line: true}).OnClick(func() { a.toast = "工具选择器(同权限规则语法):尚未接入" })
+			if len(d.Allow) == 0 {
+				ui.Text(c, "未限定:沿用会话的权限设置").FontSize(theme.FsCap).TextColor(a.tk.Tx4)
+			}
+			pick := kit.Chip(c, "+ 添加", kit.ChipOpt{Line: true, On: a.popup == toolPickKey}).OnClick(func() {
+				a.cu.toolQ, a.cu.toolErr = "", ""
+				a.togglePop(toolPickKey)
+			})
+			a.cuToolPicker(c, pick, d, st)
 		})
 	})
 	a.cuLbl(c, "模型", func() { a.cuModelSeg(c, "cc-model", &d.Model, false) })

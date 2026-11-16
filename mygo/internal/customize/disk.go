@@ -247,6 +247,7 @@ func (ds *DiskStore) ApplyMCPConfig(fresh []*Item) {
 			cur.Scope, cur.On = n.Scope, n.On
 			cur.Transport, cur.Cmd = n.Transport, n.Cmd
 			cur.Env, cur.EnvVals = n.Env, n.EnvVals
+			cur.OnDemand = n.OnDemand
 			out = append(out, cur)
 			continue
 		}
@@ -283,6 +284,7 @@ func (ds *DiskStore) readMCP() []*Item {
 			}
 		}
 	}
+	onDemand, _ := ds.ToolSearchValue()
 	seen := map[string]bool{}
 	for _, ly := range layers {
 		var v map[string]any
@@ -309,7 +311,7 @@ func (ds *DiskStore) readMCP() []*Item {
 			seen[name] = true
 			ent, _ := cfg.(map[string]any)
 			tr, cmd := mcpCmdOf(ent)
-			it := &Item{Name: name, Scope: ly.scope, On: !disabled[name], Status: StNone, Transport: tr, Cmd: cmd,
+			it := &Item{Name: name, Scope: ly.scope, On: !disabled[name], Status: StNone, Transport: tr, Cmd: cmd, OnDemand: onDemand,
 				Desc: ly.scope.Label() + " · 未查询连接状态"} // 还没查过就是「未知」,不能先标成失败(红点)
 			if em, ok := ent["env"].(map[string]any); ok {
 				it.Env = envKeysOnly(em)
@@ -379,12 +381,7 @@ func loadCmdMD(path string, sc Scope, rel string) *Item {
 		Note: fmLine(fm, "description"), Hint: fmLine(fm, "argument-hint"),
 		Desc: sc.Label() + " · " + fmLine(fm, "description"),
 	}
-	for _, ln := range strings.Split(fmLine(fm, "allowed-tools"), ",") {
-		ln = strings.TrimSpace(ln)
-		if ln != "" {
-			it.Allow = append(it.Allow, ln)
-		}
-	}
+	it.Allow = append(it.Allow, SplitTools(fmLine(fm, "allowed-tools"))...) // 括号里的逗号不拆
 	return it
 }
 

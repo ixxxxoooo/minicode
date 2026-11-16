@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/claude"
+	"github.com/ixxxxoooo/minicode/internal/claudecfg"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/customize"
 )
@@ -512,4 +513,41 @@ func relLimitsAge(at int64) string {
 		return fmt.Sprintf("%d 分钟前", int(d.Minutes()+.5))
 	}
 	return fmt.Sprintf("%d 小时前", int(d.Hours()+.5))
+}
+
+// cuMCPOnDemand 切换「按需加载工具」。它对应 Claude 的 ENABLE_TOOL_SEARCH,是全局设置(不分服务器):
+// 开 = auto(工具很多时只在需要时加载描述),关 = false(启动就把全部工具描述放进上下文)。
+// 写进它当前所在的配置层(本地 > 项目 > 用户,都没有就写用户层),所以改了一定生效;新会话(新进程)起效。
+// 演示模式只改内存里的显示。
+func (a *App) cuMCPOnDemand(on bool) {
+	set := func() {
+		for _, it := range a.cuStore().List(customize.MCP, customize.All, "") {
+			it.OnDemand = on
+		}
+	}
+	ds := a.cuDisk()
+	if ds == nil || a.cuDemo() {
+		set()
+		return
+	}
+	_, layer := ds.ToolSearchValue()
+	lay := claudecfg.LayerUser
+	switch layer {
+	case 1:
+		lay = claudecfg.LayerProject
+	case 2:
+		lay = claudecfg.LayerLocal
+	}
+	val := "false"
+	if on {
+		val = "auto"
+	}
+	if err := claudecfg.SetEnv("ENABLE_TOOL_SEARCH", val, lay, a.proj); err != nil {
+		a.toast = "切换失败:" + err.Error()
+		log.Warn("写入 ENABLE_TOOL_SEARCH 失败", "err", err)
+		return
+	}
+	set()
+	log.Info("按需加载工具", "on", on, "层", layer)
+	a.toast = "已" + map[bool]string{true: "开启", false: "关闭"}[on] + "按需加载工具,新会话生效"
 }

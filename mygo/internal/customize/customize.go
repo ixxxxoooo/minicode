@@ -274,7 +274,7 @@ func (it *Item) ToggleAllow(tool string) {
 		}
 	}
 	it.Allow = append(it.Allow, tool)
-	sort.Slice(it.Allow, func(a, b int) bool { return toolIx(it.Allow[a]) < toolIx(it.Allow[b]) })
+	sort.SliceStable(it.Allow, func(a, b int) bool { return toolIx(it.Allow[a]) < toolIx(it.Allow[b]) })
 }
 
 func toolIx(t string) int {
@@ -283,7 +283,7 @@ func toolIx(t string) int {
 			return i
 		}
 	}
-	return len(AllTools)
+	return len(AllTools) // 带参数的规则 / MCP 工具:排在内置工具之后
 }
 
 // Preset 返回子 Agent 工具权限的预设:0 只读 / 1 可编辑 / 2 全部。

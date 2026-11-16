@@ -56,6 +56,9 @@ type custState struct {
 	skillPrev    string
 	skillPrevErr string
 	skillLoad    int
+	toolQ        string    // 命令工具选择器:搜索 / 规则输入
+	toolErr      string    // 规则写法错误(空 = 无)
+	toolErrAt    time.Time // 错误出现时刻(输入框抖动)
 }
 
 // pluginInstall 跟踪市场插件安装进度(0 进行中 / 1 收尾 / 2 成功 / 3 失败)。
