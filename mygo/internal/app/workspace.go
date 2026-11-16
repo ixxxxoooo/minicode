@@ -60,9 +60,17 @@ func (a *App) wsPane(c *ui.Context, gap float32, left bool) {
 	case active:
 		p.Width(a.wsRW()).Shrink(0).Margin(0, 0, 0, gap)
 	default:
-		p.Width(0).Shrink(0).Opacity(0)
+		p.Width(0).Shrink(0)
 	}
-	if !active {
+	// 透明度 260ms ease-io(设计稿 .pane);形态切换里「展开中」的那一槽直接显示,内容由 morphWrap 分轨淡入。
+	op := p.AnimateWith("op", map[bool]float32{true: 1, false: 0}[active], kit.DurSlow, kit.EaseIO)
+	if active && a.morphing() {
+		op = 1
+	}
+	p.Opacity(op)
+	// 收起期间继续画内容(被宽度动画一点点裁掉);另一槽正承载工作区时不能画第二份,否则同一份编辑器状态会出现两处。
+	keep := a.keepWhile("ws:"+key, active, kit.DurMorph) && !a.wsActive(!left)
+	if !active && !keep {
 		p.Children(func() {})
 		return
 	}
@@ -74,7 +82,9 @@ func (a *App) wsPane(c *ui.Context, gap float32, left bool) {
 		a.zoneMarkEditor(inner)
 		if !left {
 			inner.Width(a.wsRW())
-			a.resizeHandle(c, lyWs, "l", a.wsRW(), theme.WWs, 360, max(360, a.winW-a.sideW()-360), func(v float32) { a.ly.ws = v })
+			if active {
+				a.resizeHandle(c, lyWs, "l", a.wsRW(), theme.WWs, 360, max(360, a.winW-a.sideW()-360), func(v float32) { a.ly.ws = v })
+			}
 		}
 		inner.Children(func() { a.morphWrap(c, "ws", func() { a.workspace(c) }) })
 		a.flashOverlay(c)
@@ -119,9 +129,8 @@ func (a *App) workspace(c *ui.Context) {
 		key = "tab:" + cur.id
 	}
 	a.guard(c, "编辑区", key, guardCard, func() { a.workspaceBody(c, cur) })
-	if a.ide.bottomOpen {
-		a.guard(c, "底部面板", "bottom", guardCard, func() { a.bottomPanel(c) })
-	}
+	// 底部面板始终在树里:收起时高度 260ms ease-io 归零(内容保留到动画结束),展开时从 0 长出来
+	a.guard(c, "底部面板", "bottom", guardCard, func() { a.bottomPanel(c) })
 }
 
 // workspaceBody 是工作区里标签条以下、底部面板以上的内容。

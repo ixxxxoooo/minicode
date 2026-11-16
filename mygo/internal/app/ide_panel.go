@@ -15,15 +15,29 @@ import (
 func (a *App) bottomPanel(c *ui.Context) {
 	t := a.tk
 	h := a.panelHeight()
-	// 不透明底色:拖动分隔线时编辑器区域哪怕某一帧落后,也不会透到面板标签条上
-	box := ui.Column(c).Key("bpanel").Background(t.BG).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2).Transition(a.mt())
-	if a.ly.panelMax {
+	open := a.ide.bottomOpen
+	// 开合(设计稿 .bpanel):高度 260ms ease-io、透明度 120ms ease;收起时内容保留到高度归零,展开时从 0 长出来。
+	live := a.keepWhile("bpanel", open, kit.DurSlow)
+	box := ui.Column(c).Key("bpanel").Transition(a.panelTransition())
+	if live {
+		// 不透明底色:拖动分隔线时编辑器区域哪怕某一帧落后,也不会透到面板标签条上
+		box.Background(t.BG).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2)
+	}
+	switch {
+	case !open:
+		box.Height(0).Shrink(0)
+	case a.ly.panelMax:
 		box.Grow(1).MinHeight(0)
-	} else {
+	default:
 		box.Height(h).Shrink(0)
 	}
+	box.Opacity(box.AnimateWith("op", map[bool]float32{true: 1, false: 0}[open], kit.DurFast, kit.EaseCSS))
+	if !live {
+		box.Children(func() {})
+		return
+	}
 	a.zoneMarkPanel(box)
-	if b := box.Bounds(); b.H > 0 {
+	if b := box.Bounds(); b.H > 0 && open {
 		a.ide.panelTop = b.Y // 上一帧量到的面板上缘(测试与浮层定位用)
 	}
 	box.Children(func() {
@@ -31,6 +45,31 @@ func (a *App) bottomPanel(c *ui.Context) {
 			a.ide.panelW = bw.W
 		}
 		a.panelFlash(c, box)
+		// 内容固定在展开后的高度,外层高度变化只是把它「裁出来 / 裁进去」(终端不会在动画里反复改行数)
+		body := ui.Column(c).Key("bp-body")
+		if open && a.ly.panelMax {
+			body.Grow(1).MinHeight(0)
+		} else {
+			body.Height(h).Shrink(0)
+		}
+		body.Children(func() {
+			a.bottomPanelBody(c, h)
+		})
+	})
+}
+
+// panelTransition 是底部面板开合的高度过渡;拖动分隔线、拖窗口边缘期间关掉,免得跟不上指针。
+func (a *App) panelTransition() ui.ElementTransition {
+	if a.instantLayout() {
+		return noMotion
+	}
+	return ui.ElementTransition{Height: true, Duration: kit.DurSlow, Ease: kit.EaseIO}
+}
+
+// bottomPanelBody 是底部面板里的标签条与当前分段的内容。
+func (a *App) bottomPanelBody(c *ui.Context, h float32) {
+	t := a.tk
+	{
 		def := float32(172)
 		if a.ide.bottomTab == "problems" || a.ide.bottomTab == "refs" {
 			def = 236
@@ -130,7 +169,7 @@ func (a *App) bottomPanel(c *ui.Context) {
 		default:
 			a.terminal(c)
 		}
-	})
+	}
 }
 
 func (a *App) terminal(c *ui.Context) {

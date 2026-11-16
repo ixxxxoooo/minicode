@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
@@ -9,22 +10,30 @@ import (
 func (a *App) chatPane(c *ui.Context, gap float32) {
 	t := a.tk
 	p := a.pane(c).Key("chat").Transition(a.mt())
+	shown := true
 	switch {
 	case a.mode == ModeAgent || a.chatMax:
 		p.Grow(1).Basis(0)
 	case a.rightOn && !a.useDockRail():
 		// IDE 形态:对话栏停靠在右侧,固定 352 宽(设计稿 --w-dock)
 		p.Width(a.dockW()).Shrink(0).Margin(0, 0, 0, gap)
-	case a.useDockRail():
-		p.Width(0).Shrink(0).Opacity(0)
-		p.Children(func() {})
-		return
 	default:
-		p.Width(0).Shrink(0).Opacity(0)
+		// 收起(右栏关了 / 窄窗收成图标条):宽度归零(440ms 变形曲线),透明度 260ms ease-io 淡出
+		p.Width(0).Shrink(0)
+		shown = false
+	}
+	// 透明度 260ms ease-io(设计稿 .pane);形态切换那 440ms 里改走 chat-dock / chat-center:
+	// 整块对话栏自 ∓34% 处滑入,透明度 .4 → 1(chatSlide)。
+	p.Opacity(p.AnimateWith("op", map[bool]float32{true: 1, false: 0}[shown], kit.DurSlow, kit.EaseIO))
+	if shown {
+		a.chatSlide(p, a.chatW)
+	}
+	// 收起期间继续画内容,被宽度动画一点点裁掉(窄窗改成图标条时对话栏在浮层里画,不能同时画两份)
+	if !a.keepWhile("chat", shown, kit.DurMorph) || (!shown && a.useDockRail()) {
 		p.Children(func() {})
 		return
 	}
-	if w := p.Bounds().W; w > 0 {
+	if w := p.Bounds().W; w > 0 && shown {
 		a.chatW = w
 	}
 	hint := a.chatDrop(p)
