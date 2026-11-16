@@ -95,7 +95,11 @@ func (a *App) bottomPanel(c *ui.Context) {
 						kit.Chip(c, v.title, kit.ChipOpt{Icon: "lock", On: a.ide.termSel == v.id, Tip: "只读 · Claude 运行的命令"}).OnClick(func() { a.ide.termSel = v.id })
 					}
 					if !vert {
-						kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建终端"}).OnClick(func() {
+						tip := "新建终端"
+						if a.proj == "" {
+							tip = "演示模式没有真实终端"
+						}
+						kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: tip, Disabled: a.proj == ""}).OnClick(func() {
 							if a.proj != "" {
 								a.newTerm()
 							}
