@@ -190,3 +190,16 @@ func TestDiskMCPProjectScope(t *testing.T) {
 		t.Fatal("项目 mcpServers 缺失")
 	}
 }
+
+// ~/.claude.json 里该项目的条目没有 disabledMcpServers 时不能 panic(真实用户的常见情况,曾让界面构建崩溃)。
+func TestDiskMCPProjectEntryWithoutDisabledList(t *testing.T) {
+	home, proj := setupDiskHome(t)
+	cfg := map[string]any{"projects": map[string]any{proj: map[string]any{"allowedTools": []any{}}}}
+	b, _ := json.Marshal(cfg)
+	if err := os.WriteFile(filepath.Join(home, ".claude.json"), b, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := OpenDisk(proj); err != nil {
+		t.Fatal(err)
+	}
+}

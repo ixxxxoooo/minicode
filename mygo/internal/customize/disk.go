@@ -188,7 +188,9 @@ func (ds *DiskStore) loadMCP() {
 	if readJSON(ds.claudeJSON, &root) && ds.proj != "" {
 		if pr, ok := root["projects"].(map[string]any); ok {
 			if ent, ok := pr[ds.proj].(map[string]any); ok {
-				for _, n := range ent["disabledMcpServers"].([]any) {
+				// 项目条目里没有该键(或类型不对)很常见,不能直接断言,否则整个界面构建会 panic
+				list, _ := ent["disabledMcpServers"].([]any)
+				for _, n := range list {
 					if s, ok := n.(string); ok {
 						disabled[s] = true
 					}
