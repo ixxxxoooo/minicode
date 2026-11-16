@@ -18,6 +18,7 @@ func (a *App) filesView(c *ui.Context) {
 	}
 	t := a.tk
 	d := a.ide
+	a.autoReveal()
 	// 外层竖排:文件树自己滚动,「大纲 / 时间线」像 VS Code 的分区那样钉在底部。
 	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
 		files := kit.VScroll(c).Key("files").Grow(1).MinHeight(0)

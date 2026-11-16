@@ -334,6 +334,7 @@ var settingsTabs = []setTabDef{
 			rPreview("width"),
 		}},
 		{title: "文件树", rows: []setRow{
+			rTog("explorer.autoReveal", "自动定位当前文件", "切换编辑器标签时,在文件树里展开并选中对应文件", true),
 			rTog("appearance.fileIcons", "彩色文件图标", "按文件类型给图标上色;关闭后全部用灰色。作用于文件树、标签、搜索与源代码管理", true),
 		}},
 	}},

@@ -68,9 +68,9 @@ func (a *App) statusbar(c *ui.Context) {
 					indent = 4
 				}
 				if tab.st.Indent == editor.IndentTabs {
-					a.sbItem(c, "indent", func() { ui.Text(c, "Tab") })
+					a.sbItem(c, "indent", func() { ui.Text(c, "Tab") }).Tooltip("缩进方式(点击切换)").Menu(a.indentMenu)
 				} else {
-					a.sbItem(c, "indent", func() { ui.Text(c, "空格:"+itoa(indent)) })
+					a.sbItem(c, "indent", func() { ui.Text(c, "空格:"+itoa(indent)) }).Tooltip("缩进方式(点击切换)").Menu(a.indentMenu)
 				}
 				if n := a.prefs.Int(pEdFont, edFontDefault); a.prefs.Has(pEdFont) && n != edFontDefault {
 					// 字号被改过:状态栏常驻提示,点一下恢复默认(⌘0)
