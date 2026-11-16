@@ -179,7 +179,11 @@ func (a *App) exploreGroup(c *ui.Context, g []*core.ToolCall) {
 func (a *App) stepItem(c *ui.Context, it core.Item) {
 	switch v := it.(type) {
 	case *core.Thinking:
-		sp := step{id: v.ID, icon: "brain", verb: "思考", obj: thinkTitle(v.Text), fam: famThink, hasBody: strings.TrimSpace(v.Text) != "", open: a.prefs.Bool(pThinkOpen, false)}
+		title := thinkTitle(v.Text)
+		if !v.Streaming && strings.TrimSpace(v.Text) == "" {
+			title = "" // 已结束且没有正文:只写「思考」,不显示「思考中」
+		}
+		sp := step{id: v.ID, icon: "brain", verb: "思考", obj: title, fam: famThink, hasBody: strings.TrimSpace(v.Text) != "", open: a.prefs.Bool(pThinkOpen, false)}
 		sp.thinkText = v.Text
 		if v.Streaming {
 			sp.state, sp.thinkLive = "run", true

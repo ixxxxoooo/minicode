@@ -36,6 +36,7 @@ func TestFoldedTurnLongLinesStayInColumn(t *testing.T) {
 	a.Attach(&fakeBE{})
 	demo.Replay(a.st, steps)
 	a.folds["turnfold:u1"] = true // 展开「已处理」
+	a.folds["b1"] = true          // 标准档命令默认折叠,展开它才看得到命令卡
 	tt := ui.NewTester(a.View, 2048, 1100)
 	tt.Frame()
 	tt.Frame()
@@ -68,6 +69,7 @@ func TestTermCardCommandWraps(t *testing.T) {
 	a.SetProjects(demo.Projects(), "fixbug")
 	a.Attach(&fakeBE{})
 	demo.Replay(a.st, steps)
+	a.folds["b1"] = true // 标准档命令默认折叠,展开它才看得到命令卡
 	tt := ui.NewTester(a.View, 1280, 800)
 	tt.Frame()
 	tt.Frame()

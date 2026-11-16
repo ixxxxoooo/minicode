@@ -40,14 +40,8 @@ func TestFoldClickKeepsRowInPlace(t *testing.T) {
 		t.Fatal("准备工作:会话流应停在底部")
 	}
 	const name = "运行 cargo test --test integration"
+	// 标准档命令默认折叠,下面直接从「已收起」开始测
 	row := lastStepRow(t, tt, name)
-	tt.ClickAt(row.Bounds.X+row.Bounds.W/2, row.Bounds.Y+row.Bounds.H/2) // 演示场景默认是展开的:先收起,下面从「已收起」开始测
-	tt.Frame()
-	tt.Advance(time.Second)
-	tt.Frame()
-	a.flowList.ScrollToEnd()
-	tt.Frame()
-	row = lastStepRow(t, tt, name)
 	cx, cy := row.Bounds.X+row.Bounds.W/2, row.Bounds.Y+row.Bounds.H/2
 	y0 := row.Bounds.Y
 

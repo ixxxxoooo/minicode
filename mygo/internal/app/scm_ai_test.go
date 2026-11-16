@@ -87,7 +87,7 @@ func TestGraphTab(t *testing.T) {
 	a.scmCommitFiles(a.sc.log[1].Hash)
 	tt.Frame()
 	tt.Frame()
-	if !tt.HasText("tests/router_test.rs") {
+	if !tt.HasText("+9") { // 该提交的文件行(路径与「+9 −2」分开渲染,不再整串出现)
 		t.Fatalf("详情应列出该提交的文件:%v", tt.Texts())
 	}
 }
