@@ -69,9 +69,9 @@ func (a *App) planMdOptions() *markdown.Options {
 		th.Text = a.tk.Tx2
 		th.BlockSpacing = .3
 		th.CodeSize = 11 / theme.FsCap
-		o := *base
-		o.Theme = th
-		a.planMd, a.planMdKey = &o, a.mdThemeKey+"|plan|"+fmt.Sprint(a.FlowCapFont())
+		// Options 含 sync.Map,不能整体复制:新建并逐项带上基础选项的回调 / 图片加载。
+		a.planMd = &markdown.Options{Theme: th, OnLink: base.OnLink, LinkMenu: base.LinkMenu, LoadImage: base.LoadImage}
+		a.planMdKey = key
 	}
 	return a.planMd
 }
