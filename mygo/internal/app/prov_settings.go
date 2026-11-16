@@ -18,6 +18,9 @@ import (
 
 // providersBody 是「服务商」分组:固定的「Claude 官方登录」行 + 各第三方服务商 + 添加按钮 + 编辑区。
 func (a *App) providersBody(a2 *App, c *ui.Context) {
+	if !a.cuDemo() {
+		a.acctRefresh(false)
+	}
 	p := a.pvLoad()
 	a.provRow(c, nil, true)
 	for i := range p.store.Providers {
@@ -61,7 +64,9 @@ func (a *App) provRow(c *ui.Context, pr *claudecfg.Provider, first bool) {
 				}
 			})
 			ui.Text(c, sub).Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
-			if pr != nil {
+			if pr == nil {
+				ui.Text(c, a.provOfficialMetaLine()).FontSize(theme.FsCap).TextColor(t.Tx4).SingleLine()
+			} else {
 				meta := "未勾选模型"
 				if n := len(pr.Models); n > 0 {
 					meta = strconv.Itoa(n) + " 个模型"
@@ -88,6 +93,26 @@ func (a *App) provRow(c *ui.Context, pr *claudecfg.Provider, first bool) {
 		kit.Ib(c, "edit", kit.IbOpt{Small: true, Tip: "编辑"}).Key("prov-edit-" + pid).OnClick(func() { a.pvOpenEditor(pr, false) })
 		kit.Ib(c, "trash", kit.IbOpt{Small: true, Tip: "删除"}).Key("prov-del-" + pid).OnClick(func() { a.provDelete(pid) })
 	})
+}
+
+// provOfficialMetaLine 官方登录行第三行:套餐 / 账号摘要(不含令牌);与账号菜单同源缓存。
+func (a *App) provOfficialMetaLine() string {
+	if a.cuDemo() {
+		sub := demo.AcctMenuDemo().Subtitle
+		if sub != "" {
+			return sub
+		}
+		return "官方账号"
+	}
+	if a.acct.loading {
+		return "读取账号信息…"
+	}
+	if a.acct.profileReady {
+		if sub := strings.TrimSpace(a.acct.subtitle); sub != "" {
+			return sub
+		}
+	}
+	return "未找到 OAuth 账户"
 }
 
 func provStatusKind(s string) kit.TagKind {
@@ -472,10 +497,19 @@ func (a *App) provInventory(c *ui.Context) {
 			}
 			a.frameSoon()
 		case len(all) == 0:
-			ui.Column(c).Gap(6).AlignItems(ui.Center).Padding(14, 0).Children(func() {
+			emptyFetchTip := ""
+			if !hasKey {
+				emptyFetchTip = "先填写 API Key"
+			}
+			ui.Column(c).Gap(8).AlignItems(ui.Center).Padding(14, 0).Children(func() {
 				kit.Ic(c, "list", kit.S20).TextColor(t.Tx4)
 				ui.Text(c, "还没有模型").FontWeight(500)
-				ui.Text(c, "点右上角「获取模型列表」,或在下面手动添加模型 ID").FontSize(theme.FsCap).TextColor(t.Tx3)
+				ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+					kit.Btn(c, "获取模型列表", kit.BtnOpt{Small: true, Variant: kit.BtnPri, Icon: "refresh", Disabled: !hasKey, Tip: emptyFetchTip}).
+						Key("prov-fetch-empty").OnClick(func() { a.pvFetch() })
+					kit.Btn(c, "手动添加", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "plus"}).
+						Key("prov-manual-focus").OnClick(func() { p.focusManual = true })
+				})
 			})
 		default:
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {

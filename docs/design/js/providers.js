@@ -37,7 +37,7 @@
     mappingProv: 'deepseek',
     slots: { default: 'deepseek-chat', opus: 'deepseek-reasoner', sonnet: 'deepseek-chat', haiku: 'deepseek-chat', subagent: '' },
     list: [
-      { id: 'official', name: 'Claude 官方登录', url: '', fixed: 1, status: 'ok', hasKey: 1, models: [], selected: [], manual: [], fetchedAt: '', auth: 1, abbr: '' },
+      { id: 'official', name: 'Claude 官方登录', url: '', fixed: 1, status: 'ok', hasKey: 1, models: [], selected: [], manual: [], fetchedAt: '', auth: 1, abbr: '', accountMeta: 'Claude Max · 官方账号' },
       { id: 'deepseek', name: 'DeepSeek', url: 'https://api.deepseek.com/anthropic', status: 'ok', hasKey: 1, models: ['deepseek-chat', 'deepseek-reasoner', 'deepseek-v3'], selected: ['deepseek-chat', 'deepseek-reasoner'], manual: [], fetchedAt: '刚刚获取', auth: 0, modelsUrl: '' },
       { id: 'glm-empty', name: '智谱 GLM', url: 'https://open.bigmodel.cn/api/anthropic', status: 'warn', hasKey: 1, models: [], selected: [], manual: [], fetchedAt: '', auth: 0, modelsUrl: '' },
       { id: 'legacy', name: 'Legacy 网关', url: 'https://api.legacy.local/anthropic', status: 'warn', hasKey: 1, models: ['custom-model-a'], selected: ['custom-model-a'], manual: ['custom-model-a'], fetchedAt: '', auth: 0, modelsUrl: '' },
@@ -80,7 +80,8 @@
 
   const provMeta = (p) => {
     const n = p.selected.length;
-    const key = p.fixed ? '官方账号' : (p.hasKey ? '密钥已保存' : '未填写');
+    if (p.fixed) return p.accountMeta || '官方账号';
+    const key = p.hasKey ? '密钥已保存' : '未填写';
     return `${n ? n + ' 个模型 · ' : ''}${key}`;
   };
 
