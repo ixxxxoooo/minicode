@@ -450,7 +450,7 @@ func (a *App) workspaceDialog(c *ui.Context) {
 		title, okText = "编辑工作区", "保存"
 	}
 	a.dlgFrame(c, "ws", 500, title, func() {
-		ui.Text(c, "工作区 = 一组相关的文件夹。会话在「主文件夹」里运行,其余文件夹同时对 Claude 开放读写。").FontSize(theme.FsCap).TextColor(t.Tx3)
+		ui.Text(c, "工作区 = 一组平级的文件夹,没有主次之分。会话从哪个文件夹启动,其余文件夹就同时对 Claude 开放读写。").FontSize(theme.FsCap).TextColor(t.Tx3)
 		ui.Text(c, "名称").FontSize(theme.FsCap).TextColor(t.Tx3).Margin(4, 0, 0, 0)
 		ui.Row(c).Children(func() { a.dlgInput(c, "ws-name", &d.name, "全栈工作区", d.wsID == "", nil) })
 		ui.Text(c, "文件夹("+itoa(len(d.folders))+" / "+itoa(projects.MaxFolders)+",顺序 = 文件树顺序)").FontSize(theme.FsCap).TextColor(t.Tx3).Margin(4, 0, 0, 0)
@@ -464,27 +464,19 @@ func (a *App) workspaceDialog(c *ui.Context) {
 				ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 					ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 						ui.Text(c, f.Label()).SingleLine().Shrink(1)
-						if i == 0 {
-							kit.Tag(c, "主文件夹", kit.KAc)
-						}
 					})
 					ui.Text(c, tildePath(f.Path)).Font("monospace").FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine()
 				})
 				ui.Text(c, a.repoNote(f.Path)).FontSize(theme.FsCap).TextColor(t.Tx3).Shrink(0)
-				// 文件树顺序 = 这里的顺序;第一个是主文件夹,别的不能越过它,要换主文件夹用「设为主文件夹」。
-				if i >= 2 {
+				// 文件树顺序 = 这里的顺序;所有文件夹平级,谁都可以上移 / 下移。
+				if i >= 1 {
 					kit.Ib(c, "chevU", kit.IbOpt{Small: true, Tip: "上移"}).OnClick(func() {
 						d.folders[i-1], d.folders[i] = d.folders[i], d.folders[i-1]
 					})
 				}
-				if i >= 1 && i < len(d.folders)-1 {
+				if i < len(d.folders)-1 {
 					kit.Ib(c, "chevD", kit.IbOpt{Small: true, Tip: "下移"}).OnClick(func() {
 						d.folders[i+1], d.folders[i] = d.folders[i], d.folders[i+1]
-					})
-				}
-				if i > 0 {
-					kit.Ib(c, "arrow", kit.IbOpt{Small: true, Tip: "设为主文件夹"}).OnClick(func() {
-						d.folders[0], d.folders[i] = d.folders[i], d.folders[0]
 					})
 				}
 				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "移出工作区"}).OnClick(func() {
@@ -541,12 +533,12 @@ func (a *App) workspaceDialog(c *ui.Context) {
 			if kit.Tog(c, d.loadMD, "ws-md") {
 				d.loadMD = !d.loadMD
 			}
-			ui.Text(c, "让 Claude 同时读取附加文件夹里的 CLAUDE.md 与规则").FontSize(theme.FsCap).TextColor(t.Tx2).Grow(1)
+			ui.Text(c, "让 Claude 同时读取其它文件夹里的 CLAUDE.md 与规则").FontSize(theme.FsCap).TextColor(t.Tx2).Grow(1)
 		})
 		if len(d.folders) >= 2 {
 			ui.Row(c).Gap(6).Padding(6, 8).Radius(t.RSm()).Background(t.Fill1).FontSize(theme.FsCap).AlignItems(ui.Center).Children(func() {
 				kit.Ic(c, "shield", kit.S12).TextColor(t.Tx3)
-				ui.Text(c, "保存后 Claude 将获得 "+itoa(len(d.folders)-1)+" 个附加文件夹的读写权限(--add-dir)。可在 设置 → 权限与信任 里撤销。").TextColor(t.Tx2).Grow(1)
+				ui.Text(c, "保存后,会话在其中任一文件夹启动时,Claude 都能读写其余 "+itoa(len(d.folders)-1)+" 个文件夹(--add-dir)。可在 设置 → 权限与信任 里撤销。").TextColor(t.Tx2).Grow(1)
 			})
 		}
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Margin(6, 0, 0, 0).Children(func() {

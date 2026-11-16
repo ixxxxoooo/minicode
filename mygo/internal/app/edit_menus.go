@@ -221,7 +221,7 @@ func (a *App) treeMenu(m *ui.Menu, rel string, dir bool) {
 		a.beginNew(into, true)
 	}
 	m.Separator()
-	if top { // 多根顶层文件夹:先给「在源代码管理中查看 / 设为主文件夹」
+	if top { // 多根顶层文件夹:先给「在源代码管理中查看」
 		a.rootFolderItems(m, rel)
 	}
 	if !dir {

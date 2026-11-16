@@ -1,7 +1,7 @@
 // Package projects 保存用户手动添加的项目与工作区(不依赖界面)。
 //
 //	项目   = 一个文件夹(Claude 会话的工作目录)
-//	工作区 = 一组命名的文件夹:第一个是主文件夹(会话 cwd),其余是附加文件夹(--add-dir)
+//	工作区 = 一组平级的文件夹(没有「主文件夹」):会话从哪个文件夹启动,其余文件夹就以 --add-dir 授权
 //
 // 数据放在 ~/.minicode/workspaces.json,每次修改原子落盘;不往项目里写任何文件。
 package projects
@@ -39,7 +39,7 @@ func (f Folder) Label() string {
 	return filepath.Base(f.Path)
 }
 
-// Workspace 是一个工作区。Folders[0] 是主文件夹。
+// Workspace 是一个工作区。Folders 的顺序只影响文件树顺序与默认启动目录,没有谁是「主」。
 type Workspace struct {
 	ID      string   `json:"id"`
 	Name    string   `json:"name"`
@@ -66,14 +66,36 @@ func (w Workspace) ExtraDirLabels() []string {
 }
 
 // ReadOnlySystemNote 只读附加目录时追加到 Claude 系统提示的文案。
-func (w Workspace) ReadOnlySystemNote() string {
-	if !w.ExtraReadOnly || len(w.Extra()) == 0 {
+func (w Workspace) ReadOnlySystemNote(cwd string) string {
+	others := w.Others(cwd)
+	if !w.ExtraReadOnly || len(others) == 0 {
 		return ""
 	}
-	return "附加文件夹 " + strings.Join(w.ExtraDirLabels(), "、") + " 为只读,不要修改其中文件。"
+	c := Clean(cwd)
+	var names []string
+	for _, f := range w.Folders {
+		if f.Path != c {
+			names = append(names, f.Label())
+		}
+	}
+	return "附加文件夹 " + strings.Join(names, "、") + " 为只读,不要修改其中文件。"
 }
 
-// Primary 是主文件夹路径。
+// Others 是除 dir 以外的所有成员文件夹(给 --add-dir):工作区是平的,会话从哪个文件夹启动,
+// 其余文件夹就都授权给它。
+func (w Workspace) Others(dir string) []string {
+	c := Clean(dir)
+	var out []string
+	for _, f := range w.Folders {
+		if f.Path != c {
+			out = append(out, f.Path)
+		}
+	}
+	return out
+}
+
+// Primary 是列表里的第一个文件夹路径。界面上不再有「主文件夹」的概念(工作区是平的),
+// 它只在「没有别的线索」时充当新会话的启动目录。
 func (w Workspace) Primary() string {
 	if len(w.Folders) == 0 {
 		return ""
@@ -433,6 +455,16 @@ func (s *Store) ByPrimary(dir string) (Workspace, bool) {
 	c := Clean(dir)
 	for _, w := range s.Workspaces() {
 		if w.Primary() == c {
+			return w, true
+		}
+	}
+	return Workspace{}, false
+}
+
+// ByMember 找包含 dir 的第一个工作区。
+func (s *Store) ByMember(dir string) (Workspace, bool) {
+	for _, w := range s.Workspaces() {
+		if w.Has(dir) {
 			return w, true
 		}
 	}

@@ -43,7 +43,7 @@ var menuIconTable = map[string]string{
 	"复制链接": "copy", "复制哈希": "copy", "复制会话 ID": "copy", "复制为 Markdown": "copy",
 	"复制路径与行号": "copy", "复制所有标签路径": "copy",
 	"在访达中显示": "folder", "在访达中显示文件": "folder", "在访达中显示项目": "folder",
-	"在访达中打开当前目录": "folder", "在访达中显示主文件夹": "folder",
+	"在访达中打开当前目录": "folder",
 	// 关闭 / 危险
 	"关闭": "x", "关闭其他": "x", "关闭右侧": "x", "关闭已保存": "x", "关闭全部": "x", "关闭终端": "x",
 	"忽略此结果": "x", "恢复此结果": "x", "从工作区移出": "x",
@@ -58,7 +58,7 @@ var menuIconTable = map[string]string{
 	"与 HEAD 比较": "diff", "与工作区比较": "diff", "比较这两个提交": "diff",
 	"切换左右 / 统一": "swap", "忽略空白差异": "diff", "显示空白差异": "diff",
 	"开启行内 Git 追溯": "commit", "关闭行内 Git 追溯": "commit",
-	"切换为树形视图": "list", "切换为列表视图": "list", "设为活动仓库": "arrow", "设为主文件夹": "arrow",
+	"切换为树形视图": "list", "切换为列表视图": "list", "设为活动仓库": "arrow",
 	"终端设置": "gear", "导出为 .mccanvas": "download",
 }
 

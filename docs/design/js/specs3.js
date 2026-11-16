@@ -34,10 +34,10 @@
     <div class="t3 fs-cap" style="margin-top:6px">最近 · 发现的项目</div>
     ${[['api-gateway', '~/Code/api-gateway', 'branch', '是 Git 仓库 · main', 1], ['mobile-app', '~/Code/mobile-app', 'branch', '是 Git 仓库 · feat/login', 0], ['notes', '~/Documents/notes', 'folder', '不是 Git 仓库', 0]].map(([n, p, i, d, on]) => `<div class="row ${on ? 'on' : ''}" style="height:36px">${ic(i, 's12')}<div class="grow" style="min-width:0"><div class="ell">${n}</div><div class="t4 fs-micro mono ell">${p}</div></div><span class="t3 fs-cap">${d}</span></div>`).join('')}
     <div class="f g2" style="margin-top:8px"><span class="t3 fs-cap grow">已在列表里的项目会置灰并显示「已添加」</span>${btn('取消', 'ghost')}${btn('添加', 'pri')}</div></div>`;
-  const wrow = (n, p, primary, repo) => `<div class="row" style="height:34px">${chk('done')}${ic('folder', 's12')}<div class="grow" style="min-width:0"><div class="ell">${n} ${primary ? tag('主文件夹', 'ac') : ''}</div><div class="t4 fs-micro mono ell">${p}</div></div><span class="t3 fs-cap">${repo}</span>${ib('arrow', 'sm', '设为主文件夹')}${ib('x', 'sm', '移出')}</div>`;
+  const wrow = (n, p, primary, repo) => `<div class="row" style="height:34px">${chk('done')}${ic('folder', 's12')}<div class="grow" style="min-width:0"><div class="ell">${n}</div><div class="t4 fs-micro mono ell">${p}</div></div><span class="t3 fs-cap">${repo}</span>${ib('chevU', 'sm', '上移')}${ib('chevD', 'sm', '下移')}${ib('x', 'sm', '移出')}</div>`;
   const dlgAddWs = `<div class="pop a-pop-up" style="width:500px;padding:14px 16px;margin:14px auto;display:flex;flex-direction:column;gap:6px">
     <div class="f ai"><b class="fs-head">新建工作区</b><span class="grow"></span>${ib('x', 'sm')}</div>
-    <div class="t3 fs-cap">工作区 = 一组相关的文件夹。会话在「主文件夹」里运行,其余文件夹同时对 Claude 开放读写。</div>
+    <div class="t3 fs-cap">工作区 = 一组平级的文件夹,没有主次之分。会话从哪个文件夹启动,其余文件夹就同时对 Claude 开放读写。</div>
     ${field('名称', '全栈工作区')}
     <div class="t3 fs-cap">文件夹(2–12 个)</div>
     ${wrow('router-demo', '~/Code/router-demo', 1, 'main · 3 项改动')}${wrow('web-dashboard', '~/Code/web-dashboard', 0, 'feat/charts · 2 项改动')}${wrow('docs-site', '~/Code/docs-site', 0, 'main · 干净')}
@@ -53,19 +53,19 @@
     <div class="row" style="height:22px;padding-left:30px">${ic('chevR', 's12')}${ic('folder', 's12')}<span>src</span></div>
     <div class="row" style="height:24px;font-weight:600">${ic('chevR', 's12')}${ic('folder', 's12')}<span class="grow">docs-site</span></div>
     </div>`;
-  P['proj-ws'] = () => `<div class="ds" style="max-width:1240px">${head('项目与工作区 · 添加、组织、使用', '先分清三个词:<b>项目</b> = 一个文件夹(Claude 会话的工作目录);<b>工作区</b> = 一组命名的文件夹(一个主文件夹 + 若干附加文件夹),对标 VS Code 的多根工作区;<b>仓库</b> = 文件夹里的 Git 仓库(一个文件夹至多一个,也可以没有)。会话永远属于「主文件夹」,附加文件夹通过 Claude 的 <span class="mono">--add-dir</span> 授权,不是把它们拷进来。')}
-    ${sec('侧栏怎么呈现', '项目与工作区在同一列表里,标题行「+」是唯一入口(菜单:添加项目… / 新建工作区… / 打开最近)。工作区行用叠层图标与「N 个文件夹」,展开后<b>只列主文件夹的会话</b>,不再列出成员文件夹(里面有哪些文件夹、谁是主文件夹,在右键「编辑工作区…」里看与改,列表里不重复展示)。', grid(
+  P['proj-ws'] = () => `<div class="ds" style="max-width:1240px">${head('项目与工作区 · 添加、组织、使用', '先分清三个词:<b>项目</b> = 一个文件夹(Claude 会话的工作目录);<b>工作区</b> = 一组平级的命名文件夹(没有「主文件夹」),对标 VS Code / Cursor 的多根工作区;<b>仓库</b> = 文件夹里的 Git 仓库(一个文件夹至多一个,也可以没有)。会话在工作区的某个文件夹里启动(默认沿用当前所在的文件夹,没有则取列表里第一个),其余文件夹通过 Claude 的 <span class="mono">--add-dir</span> 授权,不是把它们拷进来。')}
+    ${sec('侧栏怎么呈现', '项目与工作区在同一列表里,标题行「+」是唯一入口(菜单:添加项目… / 新建工作区… / 打开最近)。工作区行用叠层图标与「N 个文件夹」,展开后列出<b>所有成员文件夹的会话</b>(合在一起按最近更新排序),不再列出成员文件夹本身(里面有哪些文件夹在右键「编辑工作区…」里看与改)。<b>点行 = 选中</b>:聊天栏与 IDE 一起切到这个工作区 / 项目(当前会话不属于它就切到它最近的会话,没有则新开);已选中再点 = 展开 / 收起,点行首箭头只展开 / 收起。头部(新对话、标题行与「+」)固定不动,只有列表滚动;三种布局都能在原地添加项目 / 工作区(方案 B 在项目条旁的「+」和下拉底部)。', grid(
       cell('侧栏(会话分栏)', '', box(side, 330, 300), '项目按最近活动排序;工作区置顶。工作区展开 = 会话列表,成员文件夹不占行;非仓库的文件夹在「编辑工作区」与文件树里标灰色「非仓库」,不隐藏。'),
       cell('文件树(多根)', '', box(tree, 330, 300), '一个工作区有 ≥ 2 个文件夹时,文件树每个文件夹一个加粗顶层节点(默认展开,右侧显示该仓库的改动数);标题写「<工作区名>(工作区)」,单项目时与现在一致。'),
       cell('搜索(多根)', '', box(`<div style="padding:10px 12px" class="fc g3"><div class="inp"><span class="v">normalize</span></div><div class="f g2">${chip('全部文件夹', 'folder', 'on')}${chip('仅 router-demo', 'folder', 'line')}</div>${gh('router-demo/src/router.rs', 3)}${gh('web-dashboard/src/api.ts', 1)}</div>`, 220, 300), '搜索默认覆盖所有文件夹,结果路径带文件夹名前缀;chip 可限定到某个文件夹。')))}
     ${sec('添加项目', '入口:侧栏「+」、⌘O(打开文件夹)、命令面板「添加项目」、文件菜单。系统文件夹选择器是主路径;输入框也能直接粘路径(带 ~ 展开与存在性校验)。', grid(
       cell('添加项目对话框', ['⌘', 'O'], box(dlgAddProject, 400), '「最近 · 发现」来自 ~/.claude/projects 里出现过的目录;选中后在下方显示是否仓库与当前分支。已添加的置灰。'),
       cell('校验与错误', '', box(`<div style="padding:16px" class="fc g3">${[['路径不存在', '~/Code/api-gatewy', '找不到这个文件夹。要不要看看 ~/Code/api-gateway?', 'err'], ['不是文件夹', '~/Code/readme.md', '这是一个文件。要打开它所在的文件夹吗?', 'warn'], ['已在列表里', '~/Code/router-demo', '这个项目已经添加,直接切换过去?', 'info']].map(([t, p, m, k]) => `<div class="notice ${k === 'info' ? '' : k}">${ic(k === 'err' ? 'errc' : k === 'warn' ? 'alert' : 'info', k === 'err' ? 'c-err' : k === 'warn' ? 'c-warn' : '')}<div class="grow"><b>${t}</b> <span class="mono t3">${p}</span><div class="t2">${m}</div></div></div>`).join('')}</div>`, 300), '每种失败都给「下一步」:纠正路径 / 打开所在文件夹 / 直接切换;不弹模态错误框。')))}
-    ${sec('新建 / 编辑工作区', '同一个对话框:新建与「编辑文件夹…」共用。第一个文件夹是主文件夹(会话 cwd、终端、CLAUDE.md 加载处),可用箭头设为主;顺序即文件树顺序;最多 12 个。', grid(
-      cell('新建工作区对话框', '', box(dlgAddWs, 470, 560), '名称默认取主文件夹名 + 「工作区」;「让 Claude 同时读取附加文件夹的 CLAUDE.md」对应环境变量 CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD,默认关。'),
+    ${sec('新建 / 编辑工作区', '同一个对话框:新建与「编辑文件夹…」共用。所有文件夹平级,没有「主文件夹」;每行有 ↑ ↓ 调整顺序(顺序即文件树顺序);最多 12 个。', grid(
+      cell('新建工作区对话框', '', box(dlgAddWs, 470, 560), '名称默认取第一个文件夹名 + 「工作区」;「让 Claude 同时读取其它文件夹的 CLAUDE.md」对应环境变量 CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD,默认关。'),
       cell('权限提示', '', box(`<div style="padding:16px" class="fc g3"><div class="notice">${ic('shield')}<div class="grow"><b>Claude 将获得 2 个附加文件夹的读写权限</b><div class="t2">web-dashboard、docs-site。可在 设置 → 权限与信任 → 附加目录 里随时撤销;第一次启动会话时再确认一次。</div><div class="f g2" style="margin-top:7px">${btn('我知道了', 'sm pri')}${btn('只读授权', 'sm')}</div></div></div></div>`, 160), '授权是显式的:创建 / 启动时各提示一次,之后在设置里集中管理。')))}
     ${sec('右键菜单', '', grid(
-      cell('工作区行', '', menu(230, [['plus', '新对话(主文件夹)', '⌘N'], ['-'], ['edit', '编辑工作区…'], ['folder', '添加文件夹…'], ['chevU', '上移'], ['chevD', '下移'], ['-'], ['folder', '在访达中显示主文件夹'], ['copy', '复制主文件夹路径'], ['-'], ['trash', '从列表移除工作区', '', 'danger']]), '在工作区上右键,主要动作就是「编辑工作区…」:名称、文件夹、主文件夹、顺序都在那一个对话框里(原来的「重命名…」「编辑文件夹…」合并进来)。移除只删列表项,确认框写明「不会删除文件」。'),
+      cell('工作区行', '', menu(230, [['plus', '在此工作区新对话', '⌘N'], ['-'], ['edit', '编辑工作区…'], ['folder', '添加文件夹…'], ['chevU', '上移'], ['chevD', '下移'], ['-'], ['folder', '在访达中显示 ›'], ['copy', '复制路径 ›'], ['-'], ['trash', '从列表移除工作区', '', 'danger']]), '在工作区上右键,主要动作就是「编辑工作区…」:名称、文件夹、顺序都在那一个对话框里;「在访达中显示 / 复制路径」多个文件夹时展开成子菜单(平级列出每个文件夹)(原来的「重命名…」「编辑文件夹…」合并进来)。移除只删列表项,确认框写明「不会删除文件」。'),
       cell('项目行', '', menu(230, [['plus', '在此项目新对话'], ['-'], ['edit', '编辑项目…'], ['layers', '加入工作区…', '▸'], ['-'], ['folder', '在访达中显示'], ['copy', '复制路径'], ['-'], ['trash', '从列表移除项目', '', 'danger']]), '在项目上右键,主要动作是「编辑项目…」(见下)。「从列表移除」只对手动添加的项目出现(Claude 会话里的项目随会话存在);项目被某个工作区引用时,移除前提示「它属于 1 个工作区」。'),
       cell('菜单外观', '', box(`<div class="t3 fs-cap" style="padding:10px 12px;line-height:1.8">右键菜单由窗口自己绘制(不是系统原生菜单),跟随当前主题:<br>· 圆角 / 1px 描边 / 阴影与其它弹层一致,悬停底色取 fill,危险项走错误色<br>· 每项带线性图标,分组线分隔「主要动作 → 导航 → 复制 / 访达 → 危险操作」<br>· 置灰的项用 tooltip 写明原因,不隐藏<br>· 输入框的编辑菜单(剪切 / 复制 / 粘贴…)同样是窗口内菜单</div>`, 260, 220), '全应用的右键菜单都走这一套外观,不再有原生菜单与自绘菜单混用。')))}
     ${sec('编辑项目', '项目行右键 → 编辑项目…。项目就是一个文件夹,所以能改的只有「侧栏里显示的名字」;位置、是否仓库、所属工作区只读展示。', grid(
@@ -84,16 +84,16 @@
         <div class="row" style="height:28px;box-shadow:inset 0 2px 0 var(--ac)">${ic('chevR', 's12')}${ic('layers', 's12')}<span class="grow b">文档与素材</span><span class="t4 fs-micro">2 个文件夹</span></div>
         <div class="row" style="height:28px;opacity:.5">${ic('chevR', 's12')}${ic('layers', 's12')}<span class="grow b">运维脚本</span><span class="t4 fs-micro">2 个文件夹</span></div>
         <div class="pop" style="position:relative;width:170px;padding:4px 10px;margin:-30px 0 0 120px;opacity:.92">${ic('layers', 's12')} 运维脚本</div></div>`, 170, 330), '拖起的行变淡、指针旁跟一份副本;经过的行顶部出现 2px 强调色插入线,松手 = 放到那一行之前。'),
-      cell('菜单与键盘', '', box(menu(190, [['chevU', '上移'], ['chevD', '下移']]) + `<div class="t3 fs-cap" style="padding:8px 4px;line-height:1.7">· 工作区行右键有「上移 / 下移」,处在边界时置灰<br>· 「编辑工作区」里每个文件夹行有 ↑ ↓ 与「设为主文件夹」;文件夹不能经「上移」越过主文件夹<br>· 工作区正在使用时,保存后文件树即时跟着变</div>`, 170, 330), '拖拽是快捷方式,菜单是等价的无障碍路径,两者走同一个存储函数。')))}
+      cell('菜单与键盘', '', box(menu(190, [['chevU', '上移'], ['chevD', '下移']]) + `<div class="t3 fs-cap" style="padding:8px 4px;line-height:1.7">· 工作区行右键有「上移 / 下移」,处在边界时置灰<br>· 「编辑工作区」里每个文件夹行都有 ↑ ↓,没有谁固定在最前<br>· 工作区正在使用时,保存后文件树即时跟着变</div>`, 170, 330), '拖拽是快捷方式,菜单是等价的无障碍路径,两者走同一个存储函数。')))}
     ${sec('Git 与工作区的关系', '工作区本身不是仓库。每个成员文件夹各自是(或不是)一个仓库,SCM、图谱、分支、同步全部按仓库独立工作 —— 详见「多仓库 Git」页。', '')}
     ${sec('实现状态', '', tbl([['能力', 220], ['说明', 440], ['状态']], [
       ['侧栏「+」入口与添加项目对话框', '路径输入 + 最近 / 发现 + 校验;真实模式浏览按钮走系统文件夹选择器;路径不存在时给出相近路径建议', st('ok')],
       ['工作区存储', '~/.minicode/workspaces.json 一个文件同时存手动添加的项目与工作区,原子落盘;损坏时改名留底不丢数据', st('ok')],
-      ['侧栏的工作区行与项目行', 'side_ws+proj_dialogs:展开只列主文件夹会话;编辑工作区对话框内上移/下移/设为主。未测试', st('ok')],
+      ['侧栏的工作区行与项目行', 'side_ws+side_ctx:展开列所有成员文件夹的会话;点行选中并联动聊天栏与 IDE(selectWorkspace / selectProject);编辑工作区对话框内所有文件夹平级可上移 / 下移;go test 覆盖,未用 computer use 实测', st('ok')],
       ['编辑项目对话框', 'proj_edit.go+workspaces.names/sideProjects。未测试', st('ok')],
       ['窗口内自绘右键菜单', 'app.go PopoverMenus;menu_item.go 统一 MenuIcon;视觉未对照截图。未测试', st('ok')],
       ['多根文件树 / 多根搜索', '虚拟顶层目录 = 文件夹名(workspace.Multi),路径加文件夹前缀,顶层行带「主 / 改动数 / 非仓库」;搜索按前缀路径工作,搜索条有「范围」chip 与文件夹右键「仅在此文件夹搜索」', st('ok')],
-      ['Claude 附加目录', '主文件夹启动会话时追加 --add-dir(附加文件夹),开关打开时设置 CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1', st('ok')],
+      ['Claude 附加目录', '在任一成员文件夹启动会话时,其余文件夹追加 --add-dir(Workspace.Others),开关打开时设置 CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1', st('ok')],
       ['演示数据', '演示模式内置「全栈工作区」(router-demo / web-dashboard / docs-site 各有自己的分支与改动)+ 一个手动添加的非仓库项目 design-assets', st('ok')],
       ['附加文件夹权限提示卡(我知道了 / 只读授权)', 'ws_perm.go+projects.ExtraReadOnly;「只读」仅为启动提示词约束、非系统级隔离。未测试', st('part')]]))}</div>`;
 
@@ -158,7 +158,7 @@
     ${sec('状态栏与标题栏', '', grid(
       cell('状态栏', '', box(`<div class="f ai g4" style="padding:12px 14px">${chip('router-demo · main', 'branch')}<span class="t3">↑1</span><span class="t3">⚠ 1</span><span class="grow"></span><span class="t3">全栈工作区 · 3 个文件夹</span></div><div class="t3" style="padding:0 14px;line-height:1.7">分支胶囊写「仓库名 · 分支」;点开分支选择器,顶部一行显示作用的仓库,可切换;窄窗口只留分支名。</div>`, 130, 560), '仓库名在多仓库时才出现;单仓库保持现在的「分支」。'),
       cell('分支选择器(带仓库)', '', box(`<div class="pop" style="width:380px;margin:12px auto"><div class="f ai g2" style="padding:6px 8px">${chip('router-demo', 'folder', 'on')}${chip('web-dashboard', 'folder', 'line')}${chip('docs-site', 'folder', 'line')}</div><div class="inp fill" style="margin:3px;height:28px"><span class="t4">切换或新建分支…</span></div>${mi('branch', 'main', '', 'on')}${mi('branch', 'feat/auth')}${mi('plus', '创建并切换到 “fix/case”')}</div>`, 200, 560), '顶部 chip 选仓库,下面是该仓库的分支;输入不存在的名字出现「创建并切换」。')))}
-    ${sec('Claude 与多仓库', '会话 cwd 在主文件夹所在仓库;附加文件夹里的修改同样进入「本轮审查」,但提交永远由人分别确认。Claude 自己运行 git 命令时,以它的 cwd 所在仓库为准(与终端一致)。', '')}</div>`;
+    ${sec('Claude 与多仓库', '会话 cwd 所在的文件夹对应的仓库为准;其它文件夹里的修改同样进入「本轮审查」,但提交永远由人分别确认。Claude 自己运行 git 命令时,以它的 cwd 所在仓库为准(与终端一致)。', '')}</div>`;
 
   /* ───────── 右键菜单与动作矩阵 ───────── */
   const M = (title, items) => `<div><div class="cap2"><b>${title}</b></div>${menu(236, items)}</div>`;
@@ -167,7 +167,7 @@
       ${M('会话行', [['play', '打开', '⏎'], ['edit', '重命名…'], ['pin', '置顶'], ['archive', '归档'], ['-'], ['copy', '复制会话 ID'], ['copy', '复制标题'], ['copy', '复制为 Markdown'], ['-'], ['trash', '删除会话…', '', 'danger']])}
       ${M('文件(文件树)', [['code', '打开', '⏎'], ['split', '在侧边打开', '⌘⏎'], ['-'], ['eye', '打开更改', '', ''], ['clock', '显示文件历史'], ['spark', '让 Claude 解释 / 修改…'], ['-'], ['edit', '重命名…', 'F2'], ['copy', '复制'], ['copy', '剪切'], ['copy', '粘贴'], ['trash', '移到废纸篓…', '⌘⌫', 'danger'], ['-'], ['folder', '在访达中显示'], ['copy', '复制路径'], ['copy', '复制相对路径']])}
       ${M('文件夹(文件树)', [['plus', '新建文件…'], ['folder', '新建文件夹…'], ['-'], ['search', '在文件夹中搜索…'], ['terminal', '在此处打开终端'], ['-'], ['edit', '重命名…'], ['trash', '删除…', '', 'danger'], ['-'], ['folder', '在访达中显示'], ['copy', '复制路径']])}
-      ${M('多根:顶层文件夹', [['branch', '在源代码管理中查看'], ['arrow', '设为主文件夹'], ['search', '仅在此文件夹搜索'], ['-'], ['folder', '在访达中显示'], ['copy', '复制路径'], ['-'], ['x', '从工作区移出', '', 'danger']])}
+      ${M('多根:顶层文件夹', [['branch', '在源代码管理中查看'], ['search', '仅在此文件夹搜索'], ['-'], ['folder', '在访达中显示'], ['copy', '复制路径'], ['-'], ['x', '从工作区移出', '', 'danger']])}
       ${M('搜索结果', [['code', '打开'], ['eye', '在侧边预览'], ['x', '忽略此结果'], ['-'], ['copy', '复制路径与行号'], ['copy', '复制匹配行']])}
       ${M('SCM 文件', [['diff', '打开更改'], ['code', '打开文件'], ['-'], ['plus', '暂存更改'], ['undo', '放弃更改…', '', 'danger'], ['-'], ['clock', '显示文件历史'], ['copy', '复制路径']])}
       ${M('SCM 分组 / 仓库', [['plus', '全部暂存'], ['minus', '全部取消暂存'], ['undo', '放弃全部更改…', '', 'danger'], ['-'], ['layers', '储藏所有更改'], ['refresh', '刷新']])}

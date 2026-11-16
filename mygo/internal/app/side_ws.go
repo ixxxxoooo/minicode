@@ -1,8 +1,6 @@
 package app
 
 import (
-	"path/filepath"
-
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -10,15 +8,18 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
-// 侧栏的「项目与工作区」区块:标题行「+」(添加项目… / 新建工作区…)、工作区行(成员文件夹 + 主文件夹的会话)、
+// 侧栏的「项目与工作区」区块:标题行「+」(添加项目… / 新建工作区…)、工作区行(所有成员文件夹的会话合在一起)、
 // 项目行,全部带右键菜单。设计稿:「项目与工作区」「右键菜单与动作矩阵」页。
 
 // projectsHeader 是区块标题行:文字 + 「+」入口弹层。
-func (a *App) projectsHeader(c *ui.Context) {
+// 它固定在会话列表上方,不随列表滚动;withAdd 为假时不画「+」(方案 C 的侧栏标题行已经有)。
+func (a *App) projectsHeader(c *ui.Context, withAdd bool) {
 	t := a.tk
 	ui.Row(c).Key("projhdr").Height(24).PaddingX(8).Margin(6, 0, 0, 0).AlignItems(ui.Center).Gap(4).Shrink(0).Children(func() {
 		ui.Text(c, "项目与工作区").Grow(1).FontSize(theme.FsMicro).FontWeight(600).TextColor(t.Tx3)
-		a.addMenuButton(c)
+		if withAdd {
+			a.addMenuButton(c)
+		}
 	})
 }
 
@@ -65,14 +66,23 @@ func (a *App) projectsList(c *ui.Context) {
 	}
 }
 
-// primaryProject 工作区主文件夹对应的侧栏项目(没有会话的文件夹也有一条空项目)。
-func (a *App) primaryProject(w projects.Workspace) core.ProjectInfo {
-	if p, ok := a.projectByPath(w.Primary()); ok {
-		return p
-	}
-	return core.ProjectInfo{ID: "path:" + w.Primary(), Name: filepath.Base(w.Primary()), Path: w.Primary()}
+// caretBtn 是行首的展开箭头:单独可点,只展开 / 收起,不改变当前选中的项目或工作区。
+func (a *App) caretBtn(c *ui.Context, key string, open bool, toggle func()) {
+	t := a.tk
+	b := ui.ButtonBase(c).Key(key).Size(16, 18).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).Radius(4).Margin(0, -2, 0, -2).Cursor(ui.CursorPointer)
+	b.OnClick(toggle)
+	b.Children(func() {
+		rot := float32(0)
+		if open {
+			rot = 90
+		}
+		car := kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
+		car.Rotate(car.AnimateWith("rot", rot, kit.DurBase, kit.EaseOut))
+	})
 }
 
+// wsRow 工作区行:点行 = 选中这个工作区(聊天栏与 IDE 一起切过来)并展开;已选中时再点 = 展开 / 收起;
+// 点箭头只展开 / 收起。展开后列出所有成员文件夹的会话(工作区是平的,没有主文件夹)。
 func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 	t := a.tk
 	open := a.projOpen[w.ID]
@@ -86,10 +96,11 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 	over = over && d.ID != w.ID
 	hov := r.Hovered()
 	r.OnClick(func() {
-		a.projOpen[w.ID] = !open
-		if !open || !on {
-			a.ActivateWorkspace(w.ID)
+		if !on {
+			a.selectWorkspace(w)
+			return
 		}
+		a.projOpen[w.ID] = !open
 	})
 	r.ContextMenu(func(m *ui.Menu) { a.wsMenu(m, w) })
 	kit.DragLift(r, r.Dragging())
@@ -97,19 +108,14 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 		if over {
 			dropLine(c, t)
 		}
-		rot := float32(0)
-		if open {
-			rot = 90
-		}
-		car := kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
-		car.Rotate(car.AnimateWith("rot", rot, kit.DurBase, kit.EaseOut))
+		a.caretBtn(c, "wscar-"+w.ID, open, func() { a.projOpen[w.ID] = !open })
 		ic := kit.Ic(c, "layers", kit.S12).TextColor(t.Tx3)
 		if on {
 			ic.TextColor(t.Ac)
 		}
 		ui.Text(c, w.Name).Grow(1).SingleLine()
 		if hov {
-			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "在主文件夹新建会话"}).Margin(0, -4, 0, 0).OnClick(func() { a.NewSessionIn(a.primaryProject(w)) })
+			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "在此工作区新建会话"}).Margin(0, -4, 0, 0).OnClick(func() { a.NewSessionIn(a.startProject(w)) })
 		} else {
 			ui.Text(c, itoa(len(w.Folders))+" 个文件夹").FontSize(theme.FsMicro).FontWeight(400).TextColor(t.Tx4)
 		}
@@ -117,8 +123,27 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 	if !open {
 		return
 	}
-	// 展开后只显示主文件夹的会话:里面有哪些文件夹在「编辑工作区」里看与改,列表里不重复展示。
-	a.sessionRows(c, a.primaryProject(w))
+	// 展开后列出所有成员文件夹的会话;点会话时先进入这个工作区(它可能还没被选中)。
+	a.sessCtxWs = w.ID
+	a.sessionRowsN(c, a.wsProject(w), 6)
+	a.sessCtxWs = ""
+}
+
+// folderItems 给「在访达中显示 / 复制路径」这类按文件夹动作的菜单项:只有一个文件夹直接是菜单项,多个就列成子菜单(平级,不分主次)。
+func folderItems(m *ui.Menu, icon, label string, w projects.Workspace, fn func(f projects.Folder)) {
+	if len(w.Folders) == 1 {
+		if mItem(m, icon, label).Chosen() {
+			fn(w.Folders[0])
+		}
+		return
+	}
+	m.Submenu(label, func(sm *ui.Menu) {
+		for _, f := range w.Folders {
+			if sm.Item(f.Label()).Chosen() {
+				fn(f)
+			}
+		}
+	}).Icon(kit.MenuIcon(icon))
 }
 
 // mItem 是带图标的菜单项(图标取设计稿的线性图标,窗口内自绘菜单才会显示)。
@@ -126,13 +151,13 @@ func mItem(m *ui.Menu, icon, label string) *ui.MenuItem {
 	return m.Item(label).Icon(kit.MenuIcon(icon))
 }
 
-// wsMenu 是工作区行的右键菜单:主要动作是「编辑工作区…」(名称 / 文件夹 / 主文件夹 / 顺序都在那一个对话框里)。
+// wsMenu 是工作区行的右键菜单:主要动作是「编辑工作区…」(名称 / 文件夹 / 顺序都在那一个对话框里)。
 func (a *App) wsMenu(m *ui.Menu, w projects.Workspace) {
-	if mItem(m, "plus", "新对话(主文件夹)").Chosen() {
-		a.NewSessionIn(a.primaryProject(w))
+	if mItem(m, "plus", "在此工作区新对话").Chosen() {
+		a.NewSessionIn(a.startProject(w))
 	}
 	m.Separator()
-	if mItem(m, "edit", "编辑工作区…").Tooltip("改名称、增删文件夹、设主文件夹、调整顺序").Chosen() {
+	if mItem(m, "edit", "编辑工作区…").Tooltip("改名称、增删文件夹、调整顺序").Chosen() {
 		a.openWsDialog(w.ID, "")
 	}
 	if mItem(m, "folder", "添加文件夹…").Chosen() {
@@ -140,12 +165,8 @@ func (a *App) wsMenu(m *ui.Menu, w projects.Workspace) {
 	}
 	a.wsMoveItems(m, w)
 	m.Separator()
-	if mItem(m, "folder", "在访达中显示主文件夹").Chosen() {
-		a.revealInFinder(w.Primary())
-	}
-	if mItem(m, "copy", "复制主文件夹路径").Chosen() {
-		a.copyOut(w.Primary(), "路径")
-	}
+	folderItems(m, "folder", "在访达中显示", w, func(f projects.Folder) { a.revealInFinder(f.Path) })
+	folderItems(m, "copy", "复制路径", w, func(f projects.Folder) { a.copyOut(f.Path, "路径") })
 	if mItem(m, "download", "导出为工作区文件…").Disabled(a.demoWs()).Tooltip(map[bool]string{true: "演示模式没有真实目录", false: "写到「下载」并在访达里显示;双击该文件可在别处导入"}[a.demoWs()]).Chosen() {
 		a.exportWorkspaceFile(w)
 	}
@@ -254,10 +275,9 @@ func (a *App) moveWorkspace(id, before string) {
 	log.Info("拖动工作区", "id", id, "before", before)
 }
 
-// moveFolder 把工作区里第 from 个文件夹放到第 before 个之前;第一个是主文件夹,不参与换位。
+// moveFolder 把工作区里第 from 个文件夹放到第 before 个之前(文件夹平级,谁都能换位)。
 func (a *App) moveFolder(wsID string, from, before int) {
-	if from < 1 || before < 1 {
-		a.toast = "第一个是主文件夹,用「设为主文件夹」更换"
+	if from < 0 || before < 0 {
 		return
 	}
 	a.wsMutate(wsID, func(w *projects.Workspace) { w.Folders, _ = projects.MoveBefore(w.Folders, from, before) })

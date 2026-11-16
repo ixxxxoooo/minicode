@@ -103,10 +103,13 @@ func sessionsSplit(p core.ProjectInfo) (live, archived []core.SessionInfo) {
 }
 
 // sessionRows 画一个项目下的会话(最多 4 条)与底部的「已归档 N」折叠行。
-func (a *App) sessionRows(c *ui.Context, p core.ProjectInfo) {
+func (a *App) sessionRows(c *ui.Context, p core.ProjectInfo) { a.sessionRowsN(c, p, 4) }
+
+// sessionRowsN 同 sessionRows,最多画 limit 条(工作区合并了多个文件夹的会话,多给几条)。
+func (a *App) sessionRowsN(c *ui.Context, p core.ProjectInfo, limit int) {
 	live, arch := sessionsSplit(p)
 	for i, s := range live {
-		if i >= 4 {
+		if i >= limit {
 			break
 		}
 		a.sessRow(c, s, true)

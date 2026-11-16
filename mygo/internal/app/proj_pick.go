@@ -1,77 +1,99 @@
 package app
 
 import (
-	"path/filepath"
-
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/projects"
 )
 
-// sideBProject 方案 B 当前浏览的项目(空 = 跟当前会话所在项目)。
+// sideBProject 方案 B 当前浏览的项目:当前会话所在的项目优先,其次是刚选中的(还没有会话),最后是当前项目目录。
 func (a *App) sideBProject() core.ProjectInfo {
+	if _, p, ok := a.sessionByID(a.curSess); ok && a.curSess != "" {
+		return p
+	}
 	if a.sideBF != "" {
-		for _, p := range a.projects {
+		for _, p := range a.sideProjects() {
 			if p.ID == a.sideBF {
 				return p
 			}
 		}
 	}
+	if a.proj != "" {
+		if p, ok := a.projectByPath(a.proj); ok {
+			return p
+		}
+	}
 	return a.curProject()
 }
 
-// projPickPopup 方案 B 的项目下拉(含工作区)。
+// sideBCtx 方案 B 项目条显示的当前上下文:进了工作区就是工作区(会话是所有成员文件夹合并的),否则是项目。
+func (a *App) sideBCtx() (name, icon string, p core.ProjectInfo) {
+	if a.ws != nil {
+		return a.ws.Name, "layers", a.wsProject(*a.ws)
+	}
+	p = a.sideBProject()
+	return p.Name, "folder", p
+}
+
+// 下拉里列表区的最大高度:项目 / 工作区很多时在这里滚动,不让下拉无限变长;底部的添加入口固定。
+const projPickMaxH = 300
+
+// projPickPopup 方案 B 的项目下拉:工作区 + 项目各一行(成员文件夹不再逐个列出),列表限高可滚,
+// 底部固定「添加项目… / 新建工作区…」。
 func (a *App) projPickPopup(c *ui.Context, anchor ui.Element) {
 	a.popOpen("projpick", func(open *bool) {
 		ui.PopoverBase(c, anchor, open, func(panel ui.Element) {
 			a.popPanel(panel, 280).AttachTo(anchor, ui.AnchorTopLeft, ui.AnchorBottomLeft).Margin(4, 0, 0, 0)
-			for _, w := range a.registry().Workspaces() {
-				kit.Cap(c, "工作区 · "+w.Name)
-				if a.mi(c, "ws-"+w.ID, "layers", w.Name, map[bool]string{true: "使用中", false: ""}[a.activeWsID() == w.ID], a.activeWsID() == w.ID).Clicked() {
-					a.popup = ""
-					a.ActivateWorkspace(w.ID)
-					a.sideBF = ""
-				}
-				for _, f := range w.Folders {
-					a.projPickRow(c, f.Path, filepath.Base(f.Path), "成员")
-				}
+			ws := a.registry().Workspaces()
+			ui.Scroll(c).Key("pp-scroll").MaxHeight(projPickMaxH).Children(func() {
+				ui.Column(c).Children(func() {
+					if len(ws) > 0 {
+						kit.Cap(c, "工作区")
+					}
+					for _, w := range ws {
+						on := a.activeWsID() == w.ID
+						if a.mi(c, "ws-"+w.ID, "layers", w.Name, itoa(len(w.Folders))+" 个文件夹", on).Clicked() {
+							a.popup = ""
+							a.selectWorkspace(w)
+						}
+					}
+					kit.Cap(c, "项目")
+					n := 0
+					for _, p := range a.sideProjects() {
+						if a.memberOfWorkspace(p.Path) {
+							continue
+						}
+						n++
+						a.projPickRow(c, p)
+					}
+					if n == 0 {
+						kit.Cap(c, "还没有单独的项目")
+					}
+				})
+			})
+			kit.Sep(c)
+			if a.mi(c, "pp-add-proj", "folder", "添加项目…", "⌘ O", false).Clicked() {
+				a.popup = ""
+				a.openAddProject()
 			}
-			kit.Cap(c, "项目")
-			for _, p := range a.sideProjects() {
-				if a.memberOfWorkspace(p.Path) {
-					continue
-				}
-				a.projPickRow(c, p.Path, p.Name, "")
+			if a.mi(c, "pp-add-ws", "layers", "新建工作区…", "", false).Clicked() {
+				a.popup = ""
+				a.openWsDialog("", "")
 			}
 		})
 	})
 }
 
-func (a *App) projPickRow(c *ui.Context, path, name, tag string) {
-	on := a.sideBProject().Path == path || a.proj == path
-	key := "pp-" + projects.Clean(path)
-	if a.mi(c, key, "folder", name, tag, on).Clicked() {
+func (a *App) projPickRow(c *ui.Context, p core.ProjectInfo) {
+	on := a.ctxIsProject(p)
+	key := "pp-" + projects.Clean(p.Path)
+	right := ""
+	if p.Count > 0 {
+		right = itoa(p.Count)
+	}
+	if a.mi(c, key, "folder", p.Name, right, on).Clicked() {
 		a.popup = ""
-		a.pickSideProject(path)
+		a.selectProject(p)
 	}
-}
-
-func (a *App) pickSideProject(path string) {
-	if p, ok := a.projectByPath(path); ok {
-		a.sideBF = p.ID
-	} else {
-		a.sideBF = "path:" + path
-	}
-	if a.proj != "" {
-		a.SetProject(path)
-	}
-	live, _ := sessionsSplit(a.sideBProject())
-	for _, s := range live {
-		if !s.Archived {
-			a.OpenSession(s.ID)
-			return
-		}
-	}
-	a.toast = "这个项目还没有可打开的会话"
 }

@@ -159,38 +159,45 @@ func (a *App) sessions(c *ui.Context) {
 		a.sessionsB(c)
 		return
 	}
-	ui.Scroll(c).Key("sess").Grow(1).Children(func() {
-		ui.Column(c).Children(func() {
-			if t.Scheme.ID != "c" {
-				r := kit.RowEl(c, false).Margin(0, 0, 4, 0).Gap(6)
-				r.OnClick(a.NewSession)
-				r.Children(func() {
-					kit.Ic(c, "plus", kit.S14).TextColor(t.Ac)
-					ui.Text(c, "新对话").Grow(1).FontWeight(500).TextColor(t.Tx1)
-					kit.Kbd(c, "⌘", "N")
-				})
-			}
-			a.projectsHeader(c)
-			a.projectsList(c)
+	// 「新对话」与「项目与工作区」标题行(含「+」)固定在上方,只有下面的列表滚动。
+	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
+		if t.Scheme.ID != "c" {
+			r := kit.RowEl(c, false).Margin(0, 0, 4, 0).Gap(6).Shrink(0)
+			r.OnClick(a.NewSession)
+			r.Children(func() {
+				kit.Ic(c, "plus", kit.S14).TextColor(t.Ac)
+				ui.Text(c, "新对话").Grow(1).FontWeight(500).TextColor(t.Tx1)
+				kit.Kbd(c, "⌘", "N")
+			})
+		}
+		a.projectsHeader(c, t.Scheme.ID != "c")
+		ui.Scroll(c).Key("sess").Grow(1).MinHeight(0).Children(func() {
+			ui.Column(c).Children(func() { a.projectsList(c) })
 		})
 	})
 }
 
+// projRow 项目行:点行 = 选中这个项目(聊天栏与 IDE 一起切过来)并展开;已选中时再点 = 展开 / 收起;点箭头只展开 / 收起。
 func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 	t := a.tk
 	open := a.projOpen[p.ID]
+	on := a.ctxIsProject(p)
 	r := kit.RowEl(c, false).Key("proj-" + p.ID).Gap(5).TextColor(t.Tx1).FontWeight(500)
 	hov := r.Hovered()
-	r.OnClick(func() { a.projOpen[p.ID] = !open })
+	r.OnClick(func() {
+		if !on {
+			a.selectProject(p)
+			return
+		}
+		a.projOpen[p.ID] = !open
+	})
 	r.ContextMenu(func(m *ui.Menu) { a.projMenu(m, p) })
 	r.Children(func() {
-		rot := float32(0)
-		if open {
-			rot = 90
+		a.caretBtn(c, "projcar-"+p.ID, open, func() { a.projOpen[p.ID] = !open })
+		ic := kit.Ic(c, "folder", kit.S12).TextColor(t.Tx3)
+		if on {
+			ic.TextColor(t.Ac)
 		}
-		car := kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
-		car.Rotate(car.AnimateWith("rot", rot, kit.DurBase, kit.EaseOut))
-		kit.Ic(c, "folder", kit.S12).TextColor(t.Tx3)
 		ui.Text(c, p.Name).Grow(1).SingleLine()
 		if hov {
 			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "在此项目新建会话"}).Margin(0, -4, 0, 0).OnClick(func() { a.NewSessionIn(p) })
@@ -217,7 +224,13 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 		r.Children(func() { a.renameInput(c, s.ID) })
 		return
 	}
-	r.OnClick(func() { a.OpenSession(s.ID) })
+	ws := a.sessCtxWs // 工作区下的会话:点它先进入该工作区(IDE 跟着换成多文件夹)
+	r.OnClick(func() {
+		if ws != "" && a.activeWsID() != ws {
+			a.ActivateWorkspace(ws)
+		}
+		a.OpenSession(s.ID)
+	})
 	r.ContextMenu(func(m *ui.Menu) { a.sessionMenu(m, s.ID, s.Title, false) })
 	r.Children(func() {
 		if on && t.Scheme.ID == "a" {
@@ -239,24 +252,24 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 	})
 }
 
-// sessionsB 方案 B:当前项目选择条 + 今天 / 昨天 / 更早。
+// sessionsB 方案 B:当前项目 / 工作区选择条(固定,带「新对话」与「+」添加入口)+ 今天 / 昨天 / 更早(只有这部分滚动)。
 func (a *App) sessionsB(c *ui.Context) {
-	t := a.tk
-	ui.Scroll(c).Key("sessb").Grow(1).Children(func() {
-		ui.Column(c).Children(func() {
-			ui.Row(c).Gap(4).Padding(0, 0, 6, 0).Children(func() {
-				chip := kit.Chip(c, a.sideBProject().Name, kit.ChipOpt{Icon: "folder", Line: true, Car: true, On: a.popup == "projpick"}).Height(26).Grow(1)
-				chip.OnClick(func() { a.togglePop("projpick") })
-				a.projPickPopup(c, chip)
-				kit.Ib(c, "edit", kit.IbOpt{Tip: "新对话 ⌘N"}).Size(26, 26).OnClick(a.NewSession)
-			})
-			cur := ""
-			proj := a.sideBProject()
-			for _, p := range a.projects {
-				if p.ID != proj.ID {
-					continue
+	name, icon, proj := a.sideBCtx()
+	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
+		ui.Row(c).Gap(4).Padding(0, 0, 6, 0).Shrink(0).AlignItems(ui.Center).Children(func() {
+			chip := kit.Chip(c, name, kit.ChipOpt{Icon: icon, Line: true, Car: true, On: a.popup == "projpick"}).Height(26).Grow(1).MinWidth(0)
+			chip.OnClick(func() { a.togglePop("projpick") })
+			a.projPickPopup(c, chip)
+			kit.Ib(c, "edit", kit.IbOpt{Tip: "新对话 ⌘N"}).Size(26, 26).OnClick(a.NewSession)
+			a.addMenuButton(c)
+		})
+		ui.Scroll(c).Key("sessb").Grow(1).MinHeight(0).Children(func() {
+			ui.Column(c).Children(func() {
+				cur := ""
+				live, arch := sessionsSplit(proj) // 置顶的排最前
+				if len(live) == 0 && len(arch) == 0 {
+					ui.Text(c, "还没有会话").FontSize(theme.FsCap).TextColor(a.tk.Tx4).Padding(8)
 				}
-				live, arch := sessionsSplit(p) // 置顶的排最前
 				for _, ss := range live {
 					g := ss.Group
 					if ss.Pinned {
@@ -269,9 +282,8 @@ func (a *App) sessionsB(c *ui.Context) {
 					ss.Label = ss.Clock
 					a.sessRow(c, ss, false)
 				}
-				a.archiveFold(c, p.ID, arch, 8, false) // 归档的收在底部,可展开、可取消归档
-			}
-			_ = t
+				a.archiveFold(c, proj.ID, arch, 8, false) // 归档的收在底部,可展开、可取消归档
+			})
 		})
 	})
 }

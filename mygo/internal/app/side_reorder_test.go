@@ -62,7 +62,7 @@ func TestWorkspaceDragReorder(t *testing.T) {
 	}
 }
 
-// 成员文件夹换序:第一个是主文件夹不参与,拖到主文件夹上给出说明。
+// 成员文件夹换序:文件夹平级,第一个也能换位。
 func TestMemberFolderReorder(t *testing.T) {
 	a, _ := newTestApp(t)
 	a.moveFolder("ws-fullstack", 2, 1) // docs-site 放到 web-dashboard 之前
@@ -73,11 +73,13 @@ func TestMemberFolderReorder(t *testing.T) {
 	if folderNames(a, "ws-fullstack") != "router-demo,web-dashboard,docs-site" {
 		t.Fatalf("放到最后:%s", folderNames(a, "ws-fullstack"))
 	}
-	a.toast = ""
-	a.moveFolder("ws-fullstack", 0, 2) // 拖主文件夹
-	a.moveFolder("ws-fullstack", 2, 0) // 放到主文件夹之前
-	if folderNames(a, "ws-fullstack") != "router-demo,web-dashboard,docs-site" || !strings.Contains(a.toast, "主文件夹") {
-		t.Fatalf("主文件夹应固定:%s %q", folderNames(a, "ws-fullstack"), a.toast)
+	a.moveFolder("ws-fullstack", 2, 0) // 放到最前面:没有「主文件夹」,谁都能排第一
+	if folderNames(a, "ws-fullstack") != "docs-site,router-demo,web-dashboard" {
+		t.Fatalf("平级换序:%s", folderNames(a, "ws-fullstack"))
+	}
+	a.moveFolder("ws-fullstack", 0, 3) // 还原
+	if folderNames(a, "ws-fullstack") != "router-demo,web-dashboard,docs-site" {
+		t.Fatalf("还原:%s", folderNames(a, "ws-fullstack"))
 	}
 	// 正在使用的工作区换序后文件树跟着变
 	a.ActivateWorkspace("ws-fullstack")

@@ -117,13 +117,20 @@ func (r *realSetup) open(id string) backend.Backend {
 	if ui != nil {
 		ui.FillClaudeConfig(&cfg)
 	}
-	// 工作区的主文件夹启动会话时:其余文件夹用 --add-dir 授权,可选让 Claude 读取它们的 CLAUDE.md
-	if w, ok := r.reg.ByPrimary(cfg.Cwd); ok {
-		cfg.AddDirs = w.Extra()
+	// 在工作区的某个文件夹里启动会话时(工作区是平的,哪个成员都行):其余文件夹用 --add-dir 授权,
+	// 可选让 Claude 读取它们的 CLAUDE.md。优先用当前正在使用的工作区。
+	w, ok := projects.Workspace{}, false
+	if ui != nil {
+		w, ok = ui.WorkspaceFor(cfg.Cwd)
+	} else {
+		w, ok = r.reg.ByPrimary(cfg.Cwd)
+	}
+	if ok {
+		cfg.AddDirs = w.Others(cfg.Cwd)
 		if w.LoadMD {
 			cfg.Env = append(cfg.Env, core.EnvVar{Key: projects.LoadMDEnv, Value: "1"})
 		}
-		if note := w.ReadOnlySystemNote(); note != "" {
+		if note := w.ReadOnlySystemNote(cfg.Cwd); note != "" {
 			cfg.AppendSystemPrompt = note
 		}
 	}

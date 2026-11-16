@@ -283,6 +283,7 @@ type App struct {
 	ctxLoading      bool
 	ctxCompacting   bool
 	sideBF          string // 方案 B 侧栏当前浏览的项目 id
+	sessCtxWs       string // 侧栏正在画哪个工作区的会话行(点会话时先进入该工作区)
 	sessFork        func(fromID string) (newID string, err error)
 	brand           brand // Dock / 托盘(brand.go)
 }
@@ -473,6 +474,9 @@ func (a *App) OpenSession(id string) {
 	start := time.Now()
 	log.Info("切换会话", "from", a.curSess, "to", id)
 	end := diag.SpanSlow("app", "打开会话", 300*time.Millisecond, "from", a.curSess, "to", id)
+	if id != "" && !strings.HasPrefix(id, "new:") {
+		a.sideBF = "" // 方案 B 的项目条跟着打开的会话走
+	}
 	a.maybeLeaveWorkspace(id)
 	a.recordSess(id)
 	a.parkOrClose()

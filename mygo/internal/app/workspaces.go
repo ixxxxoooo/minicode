@@ -229,7 +229,7 @@ func (a *App) ActivateWorkspace(id string) {
 		a.repos = append(a.repos, e)
 	}
 	if !a.demoWs() {
-		a.proj = w.Primary()
+		a.proj = a.wsStartDir(w)
 		a.lspReset()
 		a.closeTerm()
 	}
@@ -537,15 +537,12 @@ func (a *App) SetAddProjectPath(p string) {
 // SetActiveRepoIndex 截图 / 调试用:切换活动仓库。
 func (a *App) SetActiveRepoIndex(i int) { a.setActiveRepo(i) }
 
-// rootBadges 多根文件树里顶层文件夹行右侧的徽标:「主」、该仓库的改动数、非仓库。
+// rootBadges 多根文件树里顶层文件夹行右侧的徽标:该仓库的改动数、非仓库(文件夹平级,没有「主」)。
 func (a *App) rootBadges(c *ui.Context, name string) {
 	t := a.tk
 	for i, e := range a.repos {
 		if e.name != name {
 			continue
-		}
-		if i == 0 {
-			kit.Tag(c, "主", kit.KAc)
 		}
 		if e.repo == nil && e.checked {
 			kit.Tag(c, "非仓库")

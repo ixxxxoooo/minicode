@@ -47,7 +47,7 @@ func parentDir(p string) string {
 
 // beginNew 在文件夹 dir 里开始新建(isDir = 新建文件夹),并展开它。
 func (a *App) beginNew(dir string, isDir bool) {
-	if a.multiRoot() && dir == "" { // 多根:顶层不是真实目录,建在主文件夹里
+	if a.multiRoot() && dir == "" { // 多根:顶层不是真实目录,建在第一个文件夹里
 		dir = a.repos[0].name
 	}
 	if _, why := a.mutable(); why != "" {

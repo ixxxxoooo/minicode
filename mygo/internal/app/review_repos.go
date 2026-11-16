@@ -31,7 +31,7 @@ type reviewGroup struct {
 }
 
 // repoIdxOfFile 改动文件所属的文件夹序号(多根时);单项目返回 grpNoRepo。
-// 工具调用里的绝对路径按文件夹目录匹配;演示里的相对路径归主文件夹。
+// 工具调用里的绝对路径按文件夹目录匹配;演示里的相对路径归第一个文件夹。
 func (a *App) repoIdxOfFile(p string) int {
 	if !a.multiRoot() {
 		return grpNoRepo
@@ -48,7 +48,7 @@ func (a *App) repoIdxOfFile(p string) int {
 	if i, _, ok := a.repoIndexOf(p); ok {
 		return i
 	}
-	if !strings.HasPrefix(p, "/") { // 相对路径:会话 cwd = 主文件夹
+	if !strings.HasPrefix(p, "/") { // 相对路径:会话 cwd 默认是第一个文件夹
 		return 0
 	}
 	return grpOutside
@@ -343,7 +343,7 @@ func (a *App) reviewGroupHead(c *ui.Context, g reviewGroup) {
 	})
 }
 
-// demoRepoFiles 演示工作区:除了主文件夹里的改动,再让 web-dashboard(有仓库)与 design-assets(非仓库)
+// demoRepoFiles 演示工作区:除了第一个文件夹里的改动,再让 web-dashboard(有仓库)与 design-assets(非仓库)
 // 各有一轮改动,审查标签才有「多个仓库 + 未纳入 Git」可看。
 func (a *App) demoRepoFiles() []chFile {
 	if !a.demoWs() || !a.multiRoot() {

@@ -62,7 +62,7 @@ func (a *App) rootRepoIdx(name string) int {
 	return -1
 }
 
-// rootFolderItems 是多根顶层文件夹右键菜单的专属上半段:在源代码管理中查看 / 设为主文件夹。
+// rootFolderItems 是多根顶层文件夹右键菜单的专属上半段:在源代码管理中查看。
 func (a *App) rootFolderItems(m *ui.Menu, name string) {
 	i := a.rootRepoIdx(name)
 	if i < 0 {
@@ -78,11 +78,6 @@ func (a *App) rootFolderItems(m *ui.Menu, name string) {
 			a.toast = scmWhy
 		}
 	}
-	primary := i == 0
-	why := map[bool]string{true: "它已经是主文件夹"}[primary]
-	if menuItem(m, "设为主文件夹").Disabled(primary || a.ws == nil).Tooltip(why).Chosen() {
-		a.setPrimaryFolder(e.dir)
-	}
 }
 
 // rootFolderRemove 是多根顶层文件夹右键菜单最底部的危险项:从工作区移出(只改工作区列表,不删磁盘文件)。
@@ -95,8 +90,6 @@ func (a *App) rootFolderRemove(m *ui.Menu, name string) {
 	switch {
 	case len(a.ws.Folders) <= 2:
 		why = "工作区至少需要 2 个文件夹"
-	case i == 0:
-		why = "主文件夹不能直接移出,先把别的文件夹设为主文件夹"
 	}
 	e := a.repos[i]
 	if menuItem(m, "从工作区移出…").Danger().Disabled(why != "").Tooltip(why).Chosen() {
@@ -116,26 +109,6 @@ func (a *App) wsFolderIdx(w projects.Workspace, dir string) int {
 	return -1
 }
 
-// setPrimaryFolder 把工作区里 dir 对应的文件夹换成主文件夹(排到第一位);保存后文件树按新顺序重新进入。
-func (a *App) setPrimaryFolder(dir string) {
-	id := a.activeWsID()
-	if id == "" {
-		return
-	}
-	done := false
-	a.toast = ""
-	a.wsMutate(id, func(w *projects.Workspace) {
-		if k := a.wsFolderIdx(*w, dir); k > 0 {
-			w.Folders[0], w.Folders[k] = w.Folders[k], w.Folders[0]
-			done = true
-		}
-	})
-	if done && a.toast == "" { // 保存失败时 wsMutate 已经写了原因,别盖掉
-		uxLog.Info("设为主文件夹", "dir", dir)
-		a.toast = "已设为主文件夹(新会话从它所在目录开始)"
-	}
-}
-
 // removeFolderFromWs 把 dir 对应的文件夹从使用中的工作区移出。
 func (a *App) removeFolderFromWs(dir string) {
 	id := a.activeWsID()
@@ -145,7 +118,7 @@ func (a *App) removeFolderFromWs(dir string) {
 	done := false
 	a.toast = ""
 	a.wsMutate(id, func(w *projects.Workspace) {
-		if k := a.wsFolderIdx(*w, dir); k > 0 && len(w.Folders) > 2 {
+		if k := a.wsFolderIdx(*w, dir); k >= 0 && len(w.Folders) > 2 {
 			w.Folders = append(w.Folders[:k:k], w.Folders[k+1:]...)
 			done = true
 		}

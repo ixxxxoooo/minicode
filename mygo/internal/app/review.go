@@ -254,7 +254,7 @@ func (a *App) reapplyHunk(f chFile, i int) {
 func (a *App) wsRel(p string) string {
 	if a.multiRoot() {
 		r, ok := a.wsRelMulti(p)
-		if !ok && !strings.HasPrefix(p, "/") && len(a.repos) > 0 { // 相对路径:会话 cwd = 主文件夹
+		if !ok && !strings.HasPrefix(p, "/") && len(a.repos) > 0 { // 相对路径:会话 cwd 默认是第一个文件夹
 			return a.repos[0].name + "/" + strings.TrimPrefix(p, "./")
 		}
 		return r

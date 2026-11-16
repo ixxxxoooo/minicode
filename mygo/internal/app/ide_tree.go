@@ -180,7 +180,7 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 			a.fileIc(c, e.Name)
 		}
 		nm := ui.Text(c, e.Name).Grow(1).SingleLine()
-		if depth == 0 && e.Dir && a.multiRoot() { // 多根:顶层是各个文件夹,加粗并标注主文件夹 / 改动数 / 非仓库
+		if depth == 0 && e.Dir && a.multiRoot() { // 多根:顶层是各个文件夹,加粗并标注改动数 / 非仓库
 			nm.FontWeight(600)
 			a.rootBadges(c, e.Name)
 		} else if e.Dir && a.multiRoot() {
