@@ -130,8 +130,11 @@ func (a *App) outPanel(c *ui.Context) {
 	ui.Scroll(c).Key("out-scroll").TrackScroll(&o.st).Grow(1).MinHeight(0).Children(func() {
 		// 整列文字共用一个选区:鼠标拖选 / 双击选词 / 三击选行 / ⇧+方向键扩选,⌘C 复制(多行以换行连接)。
 		var sel ui.Element
-		sel = ui.Column(c).Padding(2, 12).Selectable()
+		sel = ui.Column(c).Padding(2, 12).ClipX().Selectable()
 		sel.Children(func() {
+			// 日志行用 NoWrap 而不是 SingleLine:SingleLine 带 MaxLines=1,每换一个宽度整段都要重排;
+			// 工作区从折叠展开的过渡里宽度从 ≈0 起逐帧变化,300 行长日志在窄宽度下每行 5~8 ms,
+			// 一帧就卡 400~570 ms(切到 IDE 时底部停在「输出」就会发生)。NoWrap 的排版与宽度无关,换宽度直接复用。
 			for i, ln := range lines {
 				col := t.Tx2
 				switch {
@@ -141,7 +144,7 @@ func (a *App) outPanel(c *ui.Context) {
 					col = t.Warn
 				}
 				ln := ln
-				ui.Text(c, ln).Key("o" + itoa(i)).Font("monospace").FontSize(11.5).LineHeight(1.5).TextColor(col).SingleLine().
+				ui.Text(c, ln).Key("o" + itoa(i)).Font("monospace").FontSize(11.5).LineHeight(1.5).TextColor(col).NoWrap().
 					ContextMenu(func(m *ui.Menu) {
 						// 行上的菜单盖过了选区容器自带的菜单,所以「复制所选」要自己补(没有选区时置灰并写明原因)。
 						picked := selectedString(sel.SelectedTexts())

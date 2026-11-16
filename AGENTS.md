@@ -208,6 +208,15 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 - **图标名必须存在**:`kit.Ic/Ib/Btn{Icon}` 用不存在的名字会画成 ✕。图标表由 `scripts/gen-icons.mjs` 从 `docs/design/js/icons.js` 生成(先加设计稿再生成),`TestIconNamesExist` 静态扫源码、`zz_icons_test.go` 在 app 包所有界面测试之后检查 `kit.UnknownIcons()`。
 - **设置行 `setRow` 带键必须写 `def`**:自定义行(`kind: kNone`)没写默认值,`rowChanged` 一律认为「改过」,默认值也亮红点。
 
+### 性能排查踩坑(形态切换 / 启动卡顿,已修)
+
+- **看门狗会记栈**:主线程停滞超过 400 ms,`diag.Watchdog` 每 100 ms 记一次「主线程停滞时的调用栈」(最多 3 次,内层 10 帧 + 外层 `app.` / `kit.` / `main.` 帧,取 1 号 goroutine;`runtime.Stack(all=true)` 第一块是看门狗自己,要按 `goroutine 1 [` 找)。若栈里只有框架帧(`text.layout ← main.main`),说明卡在框架的布局阶段,看不出节点——把框架拷到 `/tmp`、在 `ui/layoutcache.go` 的 `textLayout` 和 `internal/text` 的 `layout` 里按耗时写日志,用 `go build -modfile=… ` + `replace` 临时构建(不进仓库)。
+- **`ElementTransition{Size}` 会在每个中间尺寸重排内容**:工作区从折叠展开时起始宽度 ≈ 0~1 px。`SingleLine()` 带 `MaxLines=1`,`LayoutFrom` 因此不能复用旧排版,**每换一个宽度整段重排**(长文本在窄宽度下每行 5~8 ms);`NoWrap()` 的排版与宽度无关、换宽度直接复用。所以会被放进动画面板的长列表(输出面板最多 300 行日志)一律 `NoWrap` + 容器 `ClipX`,不要用 `SingleLine`。底部面板停在「输出」时,切到 IDE 曾每次卡 400~570 ms。
+- **自动最小宽度**:行内 flex 子项没有显式 `MinWidth` / `ClipX` 时,自动最小宽度 = 子树最小内容宽度(把文字按宽度 1 逐词折行排一遍);长文本放进 `Row`(尤其 `Wrap`)要给 `MinWidth(0)`。
+- **`customize.OpenDisk` 不再同步起子进程**:它只给兜底市场数据,真实列表由 `cuEnsureDisk` 放 `a.bg` 里 `RunMarketplaceList`,回主线程 `SetMarket`。凡在界面线程每帧可达的路径(输入框 MCP 芯片、斜杠命令)都不能 `exec`。
+- **`kit.SystemReduceMotion` 走 cgo 的 NSWorkspace**,不再每次 `defaults read` 起进程。
+- 验证方式:`MINI_WIN_W/H` 把窗口开到用户同样大小;`MINI_SESSION` 会让 `ApplySavedRuntime` 提前返回、**不恢复编辑器标签与底部面板标签**,复现 IDE 形态问题要去掉它。向开发版发键盘事件前必须校验前台就是它(否则按键会落到别的应用)。
+
 ### 已知缺口(真实模式)
 
 - **真实模式实测第五轮(同上环境,Computer Use,SCM 提交回路)**:**开会话会往用户仓库里写 `.claude/settings.json` 与 `.mini-backup`**(`SyncClaudeSettingsFromPrefs` 每次都重写 + 换备份),现在内容没变不写,项目里没有该文件且用户没改过相关偏好时不创建;图谱 HEAD 提交右键的「检出此提交 / 与 HEAD 比较」置灰(检出当前提交会无故让 HEAD 游离);Git 操作失败的 toast / 提交框 / 推送被拒引导条改用 `friendlyGitErr`(无远程 / 无上游 / 认证 / 网络 / 被拒 / 未设用户 / 锁文件翻成一句中文加下一步,认不出取首行并截断),完整原文仍进输出面板与日志;**AI 提交说明等一次性 `claude -p`(`RunPromptModelCtx`)此前会在 `~/.claude/projects` 留下「你是 Git 提交说明助手…」会话污染历史列表**,现加 `--no-session-persistence`(自动化流式运行故意保留会话,「查看会话」要用);**真实后端的编辑块 `DiffBlock.Line` 一直是 0**(审查页「第 1–4 行」、编辑器「Claude 改动」叠层都标在第 1 行),现 `BuildTool` 按文件内容定位(实时找 old、回放找 new,>1 MiB 放弃);审查页文件标题不再露绝对目录、改动已提交后说明写「已经提交到 Git」。**均有 go test,并已在开发版实机走过**(暂存 → AI 提交说明 → 提交 → 图谱右键 → 推送无远程 → 审查页行号 → 命令面板 / 主题预览与切换)。已知:Computer Use 的 AX 点击对弹出菜单项无效(菜单项没有 press 动作),菜单只能点头部等价按钮或用坐标点击;「审查本轮改动」入口在改动已提交后仍显示「待审查」(审查页内已如实说明);此前已生成的一次性会话不会自动清理。
