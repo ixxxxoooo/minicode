@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/diff"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -301,6 +302,36 @@ func planTitle(md string) string {
 	return "实施计划"
 }
 
+// planCardMaxLines 会话流计划小卡里最多展示的概要行数。
+const planCardMaxLines = 3
+
+// planCardSummary 取计划的概要:去掉开头的标题行(卡头已显示),只留前 planCardMaxLines 个非空行,
+// more 是被省略的行数。完整内容在工作区「计划」标签里看。
+func planCardSummary(md string) (head string, more int) {
+	lines := strings.Split(md, "\n")
+	for i, ln := range lines {
+		if strings.TrimSpace(ln) == "" {
+			continue
+		}
+		if strings.HasPrefix(strings.TrimSpace(ln), "#") {
+			lines = lines[i+1:]
+		}
+		break
+	}
+	var keep []string
+	for _, ln := range lines {
+		if strings.TrimSpace(ln) == "" {
+			continue
+		}
+		if len(keep) < planCardMaxLines {
+			keep = append(keep, ln)
+		} else {
+			more++
+		}
+	}
+	return strings.Join(keep, "\n"), more
+}
+
 func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 	t := a.tk
 	box := ui.Column(c).Key("plan-"+p.ID).Background(t.Raised).Radius(t.RMd()).Padding(8, 11).Gap(5)
@@ -327,7 +358,17 @@ func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 			ui.Spacer(c).Grow(1)
 			kit.Btn(c, "查看", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "ext", Tip: "在工作区打开计划"}).OnClick(func() { a.OpenWorkspaceTab(vPlan, p.ID) })
 		})
-		// 会话流里只留一张紧凑小卡(标题 + 状态 + 查看),计划全文在工作区「计划」标签里看,这里不展示内容。
+		// 会话流里只留一张紧凑小卡:标题 + 状态 + 查看 + 前几行概要,全文在工作区「计划」标签里看。
+		if head, more := planCardSummary(p.Markdown); strings.TrimSpace(head) != "" {
+			if p.Streaming {
+				markdown.Stream(c, head, a.mdOptions())
+			} else {
+				markdown.View(c, head, a.mdOptions())
+			}
+			if more > 0 && !p.Streaming {
+				ui.Text(c, "另有 "+itoa(more)+" 项 · 点「查看」看全文").FontSize(theme.FsCap).TextColor(t.Tx3)
+			}
+		}
 		if !p.Streaming && p.Approved == nil {
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Wrap().Children(func() {
 				resolve := func(ok bool, m core.PermissionMode) {
