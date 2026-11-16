@@ -129,6 +129,7 @@ type App struct {
 	winW, winH   float32     // 窗口内容区尺寸(夹栏宽用)
 	chatW        float32     // 对话栏上一帧的宽度(响应式三档按它判断)
 	wsW          float32     // 工作区上一帧的宽度
+	splitBox     ui.Rect     // 编辑器拆分区上一帧的矩形(拖分隔线按它换算比例)
 	fit          autoFit     // 窗口变窄时自动收起的状态(responsive.go)
 	diffPref     int         // 已应用的 Diff 默认视图偏好(0 左右 / 1 统一)
 	nav          string      // chat / files / search / scm

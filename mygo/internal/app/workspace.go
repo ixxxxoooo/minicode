@@ -130,10 +130,7 @@ func (a *App) workspaceBody(c *ui.Context, cur *ideTab) {
 	case cur == nil && a.ide.splitDir == 0:
 		a.wsEmpty(c)
 	case a.ide.splitDir != 0 && !cur.isVirt(): // 拆分后焦点组可能没有标签(cur 为 nil),两个组各自显示空态
-		if cur != nil {
-			a.crumbs(c, cur)
-		}
-		a.wsSplit(c, cur)
+		a.wsSplit(c, cur) // 面包屑在各组里自己画
 	case cur.isVirt():
 		a.virtView(c, cur)
 	case cur.viewer != "":
@@ -261,7 +258,7 @@ func (a *App) etabPane(c *ui.Context, tb *ideTab, pane int8) {
 	// 鼠标中键关闭标签(对标 VS Code / 浏览器)
 	a.onMiddleClick(el, tb.id, func() {
 		ideLog.Info("中键关闭标签", "tab", tb.id)
-		a.closeWsTab(tb.id)
+		a.closeTabOnPane(tb.id, pane)
 	})
 	hov := el.Hovered()
 	if on || hov {
@@ -337,7 +334,7 @@ func (a *App) etabPane(c *ui.Context, tb *ideTab, pane int8) {
 			x.Background(t.Fill2)
 		}
 		if x.Clicked() {
-			a.closeWsTab(tb.id)
+			a.closeTabOnPane(tb.id, pane)
 		}
 		x.Children(func() {
 			if on || hov {
