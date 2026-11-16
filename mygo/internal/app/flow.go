@@ -257,7 +257,11 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			}
 		})
 		var obj ui.Element
-		if sp.state == "run" {
+		if sp.state == "run" && a.thinkMarqueeVisible(sp, open) {
+			// 折叠的思考在流式输出:只留「思考」二字,右侧跑马灯占满整行(首句标题与预览重复,且会把预览挤到几个字宽)
+			kit.RunTextS(c, sp.verb, t.Tx3, func(e ui.Element) ui.Element { return e.TextColor(t.Tx3).Shrink(0).SingleLine() })
+			obj = ui.Box(c).Width(0).Shrink(0)
+		} else if sp.state == "run" {
 			kit.RunTextS(c, sp.verb, t.Tx3, func(e ui.Element) ui.Element { return e.TextColor(t.Tx3).Shrink(0).SingleLine() })
 			obj = kit.RunTextS(c, sp.obj, t.Tx1, func(e ui.Element) ui.Element { return e.FontWeight(500).TextColor(t.Tx1).SingleLine().Shrink(1) })
 		} else {

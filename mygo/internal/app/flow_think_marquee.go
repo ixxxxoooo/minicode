@@ -55,10 +55,10 @@ func (a *App) thinkMarqueeRow(c *ui.Context, sp step, tone ui.Color, open bool) 
 	if preview == "" {
 		return ui.Box(c).Width(0).Shrink(0)
 	}
-	box := ui.Box(c).Height(20).Grow(1).MinWidth(48).MaxWidth(220).Shrink(1).Clip()
+	box := ui.Box(c).Height(20).Grow(10).MinWidth(48).MaxWidth(480).Shrink(1).Clip()
 	id := sp.id
 	st := a.thinkMq[id]
-	boxW := float32(220)
+	boxW := float32(480)
 	if b := box.Bounds(); b.W > 8 {
 		boxW = b.W
 	}
