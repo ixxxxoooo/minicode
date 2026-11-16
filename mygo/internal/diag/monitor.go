@@ -283,6 +283,7 @@ func Watchdog(ping func(done func()), warn, dump time.Duration) {
 			sent := time.Now()
 			go ping(func() { close(ch) })
 			warned, dumped := false, false
+			snaps := 0
 			for {
 				select {
 				case <-ch:
@@ -298,6 +299,12 @@ func Watchdog(ping func(done func()), warn, dump time.Duration) {
 					write(LevelWarn, "hang", "主线程停滞", []any{"已停滞", stall.Round(time.Millisecond)})
 					NewCounter("hang.warn").Inc()
 				}
+				// 停滞期间每 100 ms 抓一次主 goroutine 的调用栈摘要(最多 3 次):
+				// 3 秒才落盘的完整栈抓不到 400~1000 ms 的短卡顿,而这类卡顿(切形态、开会话)正是最常见的。
+				if stall >= warn && snaps < 3 {
+					snaps++
+					write(LevelWarn, "hang", "主线程停滞时的调用栈", []any{"已停滞", stall.Round(time.Millisecond), "栈", mainStackSummary(28)})
+				}
 				if stall >= dump && !dumped {
 					dumped = true
 					dumpHang(stall)
@@ -306,6 +313,42 @@ func Watchdog(ping func(done func()), warn, dump time.Duration) {
 		next:
 		}
 	}()
+}
+
+// mainStackSummary 取主 goroutine(1 号,界面线程)当前调用栈的摘要:
+// 由内到外最多 limit 帧,每帧「函数@文件:行」,用 " <- " 连接;去掉参数与包路径前缀,方便放进一行日志。
+func mainStackSummary(limit int) string {
+	buf := make([]byte, 256<<10)
+	n := runtime.Stack(buf, true)
+	text := string(buf[:n])
+	// 1 号 goroutine 总是第一块,到第一个空行为止
+	if i := strings.Index(text, "\n\n"); i >= 0 {
+		text = text[:i]
+	}
+	lines := strings.Split(text, "\n")
+	var out []string
+	for i := 1; i+1 < len(lines) && len(out) < limit; i++ {
+		fn, loc := lines[i], lines[i+1]
+		if strings.HasPrefix(fn, "\t") || !strings.HasPrefix(loc, "\t") {
+			continue
+		}
+		if k := strings.LastIndex(fn, "("); k > 0 { // 去掉实参 (0x...)
+			fn = fn[:k]
+		}
+		if k := strings.LastIndex(fn, "/"); k >= 0 {
+			fn = fn[k+1:]
+		}
+		loc = strings.TrimSpace(loc)
+		if k := strings.LastIndex(loc, "/"); k >= 0 {
+			loc = loc[k+1:]
+		}
+		if k := strings.Index(loc, " +0x"); k > 0 {
+			loc = loc[:k]
+		}
+		out = append(out, fn+"@"+loc)
+		i++
+	}
+	return strings.Join(out, " <- ")
 }
 
 func dumpHang(stall time.Duration) {
