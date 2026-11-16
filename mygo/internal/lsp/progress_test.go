@@ -14,6 +14,17 @@ func TestParseProgressParams(t *testing.T) {
 	if got := FormatProgressLine(title, msg, pct); got != "indexing 42%" {
 		t.Fatalf("format: %q", got)
 	}
+	if got := FormatProgressLine("索引中", "", 42); got != "索引中 42%" {
+		t.Fatalf("中文标题+%d: %q", 42, got)
+	}
+	reportNoPct := json.RawMessage(`{"value":{"kind":"report","message":"loading packages"}}`)
+	_, msg2, pct2, _ := ParseProgressParams(reportNoPct)
+	if pct2 != -1 || msg2 != "loading packages" {
+		t.Fatalf("无 percentage 只留文字:(%q,%d)", msg2, pct2)
+	}
+	if got := FormatProgressLine("", msg2, pct2); got != "loading packages" {
+		t.Fatalf("无百分比时不应伪造:%q", got)
+	}
 	end := json.RawMessage(`{"value":{"kind":"end"}}`)
 	if _, _, _, done = ParseProgressParams(end); !done {
 		t.Fatal("end应标记 done")

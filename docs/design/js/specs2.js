@@ -81,7 +81,7 @@
       ['诊断(波浪线 / 问题面板 / 状态栏计数)', '', 'publishDiagnostics', st('ok')], ['悬停', '', 'textDocument/hover', st('ok')], ['转到定义 / 类型定义 / 实现', 'F12 / 右键', 'definition / typeDefinition / implementation', st('ok')],
       ['查找引用 → 底部「引用」面板', '⇧F12', 'references', st('ok')], ['补全', '⌃Space', 'completion', st('ok')], ['重命名(跨文件)', 'F2', 'rename + 工作区编辑', st('ok')], ['格式化', '⇧⌥F', 'formatting', st('ok')],
       ['大纲 / 转到符号', '⇧⌘O', 'documentSymbol(失败退回本地索引)', st('ok')], ['代码操作(快速修复)', '⌘.', 'codeAction', st('ok')], ['内联提示(inlayHint)', '', 'inlayHint', st('ok')], ['语义高亮', '', 'semanticTokens:MyGo 没有前景着色 API,明确不做(见 lsp_semantic.go)', st('todo')],
-      ['索引进度「42%」', '', '$/progress:状态栏能显示 s.work,但没有稳定的百分比来源', st('part')]]))}</div>`;
+      ['索引进度「42%」', '', '$/progress→lsp.FormatProgressLine→s.work;启动中状态栏显示百分比(lsp/progress_test.go、lsp_status_progress_test.go);未 Computer Use 实测', st('part')]]))}</div>`;
 
   /* ───────── 画布 / 浏览器 / 自定义:业界做法 ───────── */
   P['artifact-spec'] = () => `<div class="ds" style="max-width:1240px">${head('画布 · 浏览器 · 自定义:业界做法与取舍', '依据:Claude Artifacts、ChatGPT Canvas、Cursor Canvases(React 画布,作为持久产物与终端 / 浏览器 / 源代码管理并列)、AX Patterns「侧栏与产物」、AI Patterns「Artifact Panel」。共同点比差异多,下面只落共同点。')}

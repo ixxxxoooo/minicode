@@ -1,6 +1,8 @@
 package app
 
 import (
+	"strings"
+
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -175,7 +177,11 @@ func (a *App) lspStatus(c *ui.Context, tab *ideTab) {
 			}
 		case lspStarting:
 			kit.Spin(c, t.Tx3)
-			ui.Text(c, s.spec.Name+" 启动中…").TextColor(t.Tx3)
+			line := s.spec.Name + " 启动中…"
+			if w := strings.TrimSpace(s.work); w != "" {
+				line = s.spec.Name + " " + w
+			}
+			ui.Text(c, line).TextColor(t.Tx3).SingleLine().MaxWidth(200)
 		case lspMissing:
 			kit.Ic(c, "alert", kit.S12).TextColor(t.Warn)
 			ui.Text(c, "未安装 "+s.spec.Name).TextColor(t.Warn)
