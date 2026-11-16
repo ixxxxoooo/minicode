@@ -30,24 +30,30 @@ func DemoProviderStore() claudecfg.Store {
 	return claudecfg.Store{
 		Providers: []claudecfg.Provider{
 			{ID: "deepseek", Name: "DeepSeek", BaseURL: "https://api.deepseek.com/anthropic", ModelsURL: "https://api.deepseek.com/models",
-				Models: []string{"deepseek-chat", "deepseek-reasoner"}, Available: ds, FetchedAt: time.Now().Unix(), Status: claudecfg.FormatTestResult(true, 89)},
-			{ID: "glm", Name: "智谱 GLM", BaseURL: "https://open.bigmodel.cn/api/anthropic", Status: claudecfg.ProvUnverified},
-			{ID: "kimi", Name: "Kimi", BaseURL: "https://api.moonshot.cn/anthropic", Models: []string{"kimi-k2-turbo-preview"}, Available: kimi,
-				FetchedAt: time.Now().Add(-3 * time.Hour).Unix(), Status: claudecfg.FormatTestResult(true, 142)},
+				Models: []string{"deepseek-chat", "deepseek-reasoner"}, Available: append([]string(nil), ds...),
+				FetchedAt: time.Now().Unix(), Status: claudecfg.ProvOK},
+			{ID: "glm-empty", Name: "智谱 GLM", BaseURL: "https://open.bigmodel.cn/api/anthropic", Status: claudecfg.ProvUnverified},
 			{ID: "legacy", Name: "Legacy 网关", BaseURL: "https://api.legacy.local/anthropic", Models: []string{"custom-model-a"}, Manual: []string{"custom-model-a"},
 				Status: claudecfg.ProvUnverified},
-			{ID: "gateway", Name: "自建网关", BaseURL: "https://llm.example.com/v1", Status: claudecfg.ProvFail},
+			{ID: "gateway", Name: "自建网关", BaseURL: "https://llm.example.com/v1", Status: claudecfg.ProvTestNone},
+			// 以下为额外演示态:多项模型 / 连通成功 / 失败 / 测试中
+			{ID: "kimi", Name: "Kimi", BaseURL: "https://api.moonshot.cn/anthropic", Models: []string{"kimi-k2-turbo-preview"}, Available: kimi,
+				FetchedAt: time.Now().Add(-3 * time.Hour).Unix(), Status: claudecfg.FormatTestResult(true, 142)},
 			{ID: "corp", Name: "企业内网网关", BaseURL: "https://llm.corp.example.com", Auth: claudecfg.AuthXAPIKey, Models: []string{"corp-large"}, Manual: []string{"corp-large"},
 				Status: claudecfg.ProvTestIng},
+			{ID: "bad", Name: "失效示例", BaseURL: "https://llm.example.com/v1", Status: claudecfg.ProvFail},
 		},
-		Mapping: claudecfg.Mapping{Provider: "deepseek", Default: "deepseek-chat", Opus: "deepseek-reasoner", Sonnet: "deepseek-chat", Haiku: "deepseek-chat"},
+		Mapping: claudecfg.Mapping{
+			Enabled: true, Provider: "deepseek",
+			Default: "deepseek-chat", Opus: "deepseek-reasoner", Sonnet: "deepseek-chat", Haiku: "deepseek-chat",
+		},
 	}
 }
 
 // ProviderKeyMasks 只用于展示,不存真实密钥。
 func ProviderKeyMasks() map[string]string {
 	return map[string]string{
-		"deepseek": "sk-••••••••abcd", "glm": "••••", "kimi": "sk-••••", "legacy": "sk-••••", "corp": "sk-••••••", "gateway": "",
+		"deepseek": "sk-••••••••abcd", "glm-empty": "••••", "kimi": "sk-••••", "legacy": "sk-••••", "corp": "sk-••••••", "bad": "sk-••••", "gateway": "",
 	}
 }
 
