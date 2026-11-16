@@ -394,22 +394,31 @@ func (a *App) reposTick() {
 		if i == a.repoAct || e.repo == nil || e.loading || time.Since(e.last) < 8*time.Second {
 			continue
 		}
-		i, e, ws := i, e, a.ws
-		e.loading, e.last = true, time.Now()
-		a.bg("repo-light", func() func() {
-			cs, _ := e.repo.Status()
-			ah, bh := e.repo.AheadBehind()
-			br := e.repo.Current()
-			return func() {
-				e.loading = false
-				if a.ws != ws || i >= len(a.repos) || a.repos[i] != e {
-					return
-				}
-				e.changes, e.ahead, e.behind, e.branch, e.loaded = cs, ah, bh, br, true
-				a.syncTreeGit()
-			}
-		})
+		a.loadRepoEntryAsync(i, e)
 	}
+}
+
+// loadRepoEntryAsync 在后台读一个仓库条目的状态 / 领先落后 / 分支,算完回主线程写进缓存。
+// 界面构建里需要子仓库状态时只读缓存并调它,不能在界面线程同步起 git。
+func (a *App) loadRepoEntryAsync(i int, e *repoEntry) {
+	if e == nil || e.repo == nil || e.loading {
+		return
+	}
+	ws := a.ws
+	e.loading, e.last = true, time.Now()
+	a.bg("repo-light", func() func() {
+		cs, _ := e.repo.Status()
+		ah, bh := e.repo.AheadBehind()
+		br := e.repo.Current()
+		return func() {
+			e.loading = false
+			if a.ws != ws || i >= len(a.repos) || a.repos[i] != e {
+				return
+			}
+			e.changes, e.ahead, e.behind, e.branch, e.loaded = cs, ah, bh, br, true
+			a.syncTreeGit()
+		}
+	})
 }
 
 // initRepo 给非仓库文件夹 `git init`(演示:换成内存空仓库)。

@@ -20,8 +20,17 @@ func (a *App) scmNestedHints(c *ui.Context) {
 		if e.kind != "子模块" || e.repo == nil {
 			continue
 		}
-		ch, err := e.repo.Status()
-		if err != nil || len(ch) == 0 {
+		// 只读缓存:这里在构建界面里每帧都会走,绝不能同步起 git 子进程(此前每帧对每个子模块跑一次
+		// git status -uall,多仓库工作区里主线程被 fork / wait4 占满,IDE 形态卡顿、拖动卡)。
+		// 非活动仓库由 reposTick 在后台刷新;单根工程没有 reposTick,首次在后台读一次。
+		ch := e.changes
+		if i == a.repoAct {
+			ch = a.sc.changes
+		}
+		if !e.loaded && !e.loading && i != a.repoAct {
+			a.loadRepoEntryAsync(i, e)
+		}
+		if len(ch) == 0 {
 			continue
 		}
 		ui.Row(c).Key("scm-sub-"+itoa(i)).Padding(4, 8).Gap(6).AlignItems(ui.Center).Background(t.WarnSoft).Radius(t.RSm()).Margin(0, 2, 4, 2).Children(func() {
