@@ -154,6 +154,10 @@ func (a *App) cuReconnectReal(it *customize.Item) {
 
 func (a *App) cuMCPOn(it *customize.Item, on bool) {
 	it.On = on
+	if a.mcpOn == nil {
+		a.mcpOn = map[string]mcpOverride{}
+	}
+	a.mcpOn[it.Name] = mcpOverride{on: on, at: time.Now()}
 	if ds := a.cuDisk(); ds != nil {
 		if err := ds.SetMCPEnabled(it.Name, on); err != nil {
 			a.toast = "切换失败:" + err.Error()

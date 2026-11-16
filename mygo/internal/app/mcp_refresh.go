@@ -81,4 +81,16 @@ func (a *App) mcpAfterTurnEnd() {
 func (a *App) onMcpServers() {
 	a.mcpRefreshing = false
 	a.mcpRuntimeAt = a.now().Unix()
+	// 对账:后端报告的状态与刚点的开关一致就不再需要覆盖;不一致的留到超时(后端可能还没处理完)
+	for n, ov := range a.mcpOn {
+		if time.Since(ov.at) > mcpOverrideTTL {
+			delete(a.mcpOn, n)
+			continue
+		}
+		for _, sv := range a.st.Mcp {
+			if sv.Name == n && (sv.Conn == core.McpDisabled) == !ov.on {
+				delete(a.mcpOn, n)
+			}
+		}
+	}
 }

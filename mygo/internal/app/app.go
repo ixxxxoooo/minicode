@@ -89,13 +89,14 @@ type App struct {
 	sch            theme.Scheme
 	accent         string
 	tk             *theme.Tokens
-	rtOpen         bool            // 状态行是否展开阶段清单(回合结束丢弃)
-	stRunning      bool            // 上一帧回合是否在进行(用来捕捉「刚结束」)
-	stEnd          time.Time       // 回合结束的时刻;状态行据此淡出并收折
-	frameInPending bool            // frameIn 的合并标记
-	sessUnread     map[string]bool // 后台跑完、还没打开看过的会话(侧栏行首小圆点)
-	pvEnvPending   bool            // 回合进行中切换了服务商 / 模型,环境还没推给后端
-	rtPop          string          // 脚注瀑布弹卡对应的回合(用户消息 id)
+	rtOpen         bool                   // 状态行是否展开阶段清单(回合结束丢弃)
+	stRunning      bool                   // 上一帧回合是否在进行(用来捕捉「刚结束」)
+	stEnd          time.Time              // 回合结束的时刻;状态行据此淡出并收折
+	frameInPending bool                   // frameIn 的合并标记
+	sessUnread     map[string]bool        // 后台跑完、还没打开看过的会话(侧栏行首小圆点)
+	pvEnvPending   bool                   // 回合进行中切换了服务商 / 模型,环境还没推给后端
+	mcpOn          map[string]mcpOverride // 刚点过的 MCP 开关:先在界面上生效,等后端状态回来再对账(此前要点刷新才变)
+	rtPop          string                 // 脚注瀑布弹卡对应的回合(用户消息 id)
 
 	// 窗口形态与布局
 	mode         Mode

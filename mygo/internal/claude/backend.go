@@ -507,6 +507,7 @@ func (b *Backend) onCommand(c core.Command) {
 	case core.CmdSetEffort:
 		e := c.Effort
 		b.cfg.Effort = &e
+		log.Info("思考强度切换", "effort", e.CLI(), "进程已启动", b.p != nil)
 		if b.p != nil {
 			b.request(req{kind: rkOther, what: "切换思考强度"}, func(id string) obj { return SetEffort(id, e) })
 		}
@@ -883,6 +884,7 @@ func (b *Backend) onControlResponse(v obj) {
 		}
 	case rkSetMode:
 		if success {
+			log.Info("权限模式已切换", "mode", r.mode.CLI())
 			b.confirmedMode = r.mode
 			b.emit(core.EvModeChanged{Mode: r.mode})
 		} else { // 没切成功:提示原因,并把界面退回到仍然生效的那个模式

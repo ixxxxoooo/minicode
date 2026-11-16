@@ -12,6 +12,15 @@ import (
 
 const mcpDebounce = 3 * time.Second
 
+// mcpOverride 是刚点过的开关状态:点下去的同一帧就要变,不能等后端 mcp_status 回来(要 1~3 秒,
+// 运行时才有的连接器 / 插件服务器还得靠它才知道状态)。后端状态与之一致时清除,超时也清除。
+type mcpOverride struct {
+	on bool
+	at time.Time
+}
+
+const mcpOverrideTTL = 8 * time.Second
+
 // McpRow 是输入框 MCP 弹层与自定义页列表共用的视图行。
 type McpRow struct {
 	Name      string
@@ -108,6 +117,19 @@ func (a *App) mcpRowsUnified() []McpRow {
 		mv.Tokens += tl.Tokens
 		mv.ToolsList = append(mv.ToolsList, tl)
 		byName[tl.Server] = mv
+	}
+	for n, ov := range a.mcpOn { // 刚点过的开关:立刻按点击的结果显示
+		mv, ok := byName[n]
+		if !ok || time.Since(ov.at) > mcpOverrideTTL {
+			continue
+		}
+		mv.On = ov.on
+		if !ov.on {
+			mv.Conn, mv.Detail = core.McpDisabled, "已停用"
+		} else if mv.Conn == core.McpDisabled {
+			mv.Conn, mv.Detail = core.McpPending, "正在启用…"
+		}
+		byName[n] = mv
 	}
 	var names []string
 	for n := range byName {

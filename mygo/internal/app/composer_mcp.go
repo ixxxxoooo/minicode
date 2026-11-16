@@ -121,7 +121,10 @@ func (a *App) mcpRow(c *ui.Context, r McpRow) {
 		}
 		a.mcpDot(c, r.Conn)
 		ui.Column(c).Grow(1).MinWidth(0).Children(func() {
-			ui.Text(c, r.Name).FontWeight(500).SingleLine()
+			nm := ui.Text(c, r.Name).FontWeight(500).SingleLine()
+			if !r.On { // 已关闭的服务器整行变灰,一眼分得出
+				nm.TextColor(t.Tx3)
+			}
 			ui.Text(c, r.Detail).FontSize(theme.FsMicro).TextColor(t.Tx3).SingleLine()
 		})
 		if kit.Tog(c, r.On, key+"-tog") {
@@ -179,6 +182,10 @@ func mcpConnFromItem(st customize.Status) core.McpConn {
 // setMcpServerOn 弹层里的服务器开关:写配置(项目条目的 disabledMcpServers,下次启动仍生效)+ 立刻热切换运行中的会话。
 // 此前弹层只发了热切换命令,没有进程时什么也不做、也不改本地状态,开关就像点不动。
 func (a *App) setMcpServerOn(name string, on bool) {
+	if a.mcpOn == nil {
+		a.mcpOn = map[string]mcpOverride{}
+	}
+	a.mcpOn[name] = mcpOverride{on: on, at: time.Now()} // 点下去的同一帧开关就翻转
 	found := false
 	if st := a.cuStore(); st != nil {
 		for _, it := range st.List(customize.MCP, customize.All, "") {
@@ -191,6 +198,7 @@ func (a *App) setMcpServerOn(name string, on bool) {
 	}
 	if !found { // 账号连接器 / 插件带来的服务器不在配置里,只能热切换(需要会话进程)
 		if !a.mcpRuntimeReady() {
+			delete(a.mcpOn, name)
 			a.toast = "会话还没连接,暂时无法切换「" + name + "」"
 			return
 		}
