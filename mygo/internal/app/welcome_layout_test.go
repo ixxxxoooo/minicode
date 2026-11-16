@@ -6,7 +6,8 @@ import (
 	"github.com/egoist/mygo/ui"
 )
 
-// 欢迎页起手卡:宽档一排四张;中档 2×2 且列对齐(不再 3+1 折行);起手卡在「最近会话」之上。
+// 欢迎页起手卡(对齐设计稿 .starters):卡片固定 150 宽;宽档一排四张;中档 flex-wrap 居中,
+// 放不下就 3+1 折行(「审查改动」居中落在第二行);起手卡在「最近会话」之上。
 func TestWelcomeStarterLayout(t *testing.T) {
 	a, tt := newTestApp(t)
 	a.NewSession()
@@ -46,14 +47,20 @@ func TestWelcomeStarterLayout(t *testing.T) {
 		t.Errorf("宽档:最近会话(y=%v)应在起手卡(y=%v)下面", ry, ys[0])
 	}
 
+	// 中档:Agent 形态右侧工作区展开(设计稿截图的场景),对话栏约 488 宽
+	a.rightOn = true
 	xs, ys, ry = find(tierMid)
-	if ys[0] != ys[1] || ys[2] != ys[3] || ys[2] <= ys[0] {
-		t.Errorf("中档应是 2×2:%v", ys)
+	if ys[0] != ys[1] || ys[1] != ys[2] || ys[3] <= ys[0] {
+		t.Errorf("中档应是 3+1 折行:%v", ys)
 	}
-	if xs[0] != xs[2] || xs[1] != xs[3] {
-		t.Errorf("中档两行的列应对齐(等宽):%v", xs)
+	if !(xs[1] > xs[0] && xs[2] > xs[1]) {
+		t.Errorf("中档第一排三张应从左到右排开:%v", xs)
 	}
-	if ry != 0 && ry <= ys[2] {
-		t.Errorf("中档:最近会话(y=%v)应在起手卡末行(y=%v)下面", ry, ys[2])
+	// 第二排只有一张,居中:它的左边缘应与中间那张对齐(三张居中时中间张就是整排的中线)
+	if d := xs[3] - xs[1]; d < -1 || d > 1 {
+		t.Errorf("中档第二排单张应居中(与中间张左缘对齐):%v", xs)
+	}
+	if ry != 0 && ry <= ys[3] {
+		t.Errorf("中档:最近会话(y=%v)应在起手卡末行(y=%v)下面", ry, ys[3])
 	}
 }

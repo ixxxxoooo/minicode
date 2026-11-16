@@ -76,7 +76,7 @@ func (a *App) welcome(c *ui.Context) {
 	ui.Column(c).Grow(1).MinHeight(0).AlignItems(ui.Center).Justify(ui.Center).Padding(0, 0, 48, 0).Gap(16).Children(func() {
 		ui.Column(c).Gap(3).AlignItems(ui.Center).Children(func() {
 			a.brandLogo(c, 64, true)
-			ui.Text(c, "今天想在 "+a.projectName()+" 里做点什么?").FontSize(theme.FsHead).FontWeight(700)
+			ui.Text(c, "今天想在 "+a.projectName()+" 里做点什么?").FontSize(theme.FsHead).FontWeight(700).Margin(2, 0, 0, 0)
 			ui.Text(c, a.welcomeStatus()).TextColor(t.Tx3)
 		})
 		ui.Column(c).WidthPercent(100).MaxWidth(600).PaddingX(20).Children(func() {
@@ -89,30 +89,21 @@ func (a *App) welcome(c *ui.Context) {
 	})
 }
 
-// welcomeStarters 起手卡:宽档一排四张等宽,中档 2×2 等宽(原先固定 150 宽,放不下就 3+1 折行,
-// 「审查改动」孤零零掉到第二行),窄档单列只留图标与标题。
+// welcomeStarters 起手卡(设计稿 .starters):卡片固定 150 宽;宽档一排四张,中档 flex-wrap 居中
+// (放不下就 3+1 折行,「审查改动」居中落在第二行),窄档单列只留图标与标题。
 func (a *App) welcomeStarters(c *ui.Context) {
 	list := a.starterList()
-	per := 4
-	switch a.chatTier() {
-	case tierNarrow:
+	if a.chatTier() == tierNarrow {
 		ui.Column(c).Gap(6).WidthPercent(100).PaddingX(20).Children(func() {
 			for _, s := range list {
 				a.starterCard(c, s)
 			}
 		})
 		return
-	case tierMid:
-		per = 2
 	}
-	ui.Column(c).Gap(8).WidthPercent(100).MaxWidth(640).PaddingX(20).Children(func() {
-		for i := 0; i < len(list); i += per {
-			end := min(i+per, len(list))
-			ui.Row(c).Gap(8).Children(func() {
-				for _, s := range list[i:end] {
-					a.starterCard(c, s)
-				}
-			})
+	ui.Row(c).Gap(8).Wrap().Justify(ui.Center).WidthPercent(100).MaxWidth(640).Children(func() {
+		for _, s := range list {
+			a.starterCard(c, s)
 		}
 	})
 }
@@ -140,7 +131,6 @@ func (a *App) welcomeRecentBlock(c *ui.Context, t *theme.Tokens) {
 			row := kit.RowEl(c, false).Height(28).PaddingX(8).Gap(8).Key("wrec-" + key)
 			row.OnClick(func() { a.openWelcomeRecent(r.ID, r.Title) })
 			row.Children(func() {
-				kit.Ic(c, "chat", kit.S12).TextColor(t.Tx4)
 				ui.Text(c, r.Title).Grow(1).SingleLine()
 				ui.Text(c, r.When).FontSize(theme.FsMicro).TextColor(t.Tx4)
 			})
@@ -171,7 +161,7 @@ func (a *App) starterCard(c *ui.Context, s starter) {
 	if narrow {
 		b.WidthPercent(100).Height(32).PaddingX(10).Gap(8).AlignItems(ui.Center).Justify(ui.Start)
 	} else {
-		b.Grow(1).Basis(0).MinWidth(0).Padding(10, 12).Gap(3).AlignItems(ui.Start)
+		b.Width(150).Padding(9, 10).Gap(3).AlignItems(ui.Start)
 	}
 	sh := t.Shadow1()
 	if b.Hovered() {
@@ -191,7 +181,8 @@ func (a *App) starterCard(c *ui.Context, s starter) {
 			return
 		}
 		ui.Column(c).Gap(3).Grow(1).MinWidth(0).Children(func() {
-			kit.Ic(c, s.icon, 14).TextColor(t.AcTx)
+			// 设计稿里图标是行内元素,所在行高约 20px
+			ui.Row(c).Height(20).AlignItems(ui.Center).Children(func() { kit.Ic(c, s.icon, 14).TextColor(t.AcTx) })
 			ui.Text(c, s.title).FontWeight(700).SingleLine()
 			ui.Text(c, s.desc).FontSize(theme.FsCap).TextColor(t.Tx3).LineHeight(1.35)
 		})
