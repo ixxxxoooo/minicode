@@ -115,6 +115,20 @@ func (a *App) termMoreMenu(m *ui.Menu) {
 	if menuItem(m, "关闭终端").Disabled(len(a.ide.tps) < 2).Tooltip(map[bool]string{true: "至少保留一个终端"}[len(a.ide.tps) < 2]).Chosen() {
 		a.askCloseTermTab(a.ide.tpSel)
 	}
+	if menuItem(m, "关闭其他").Disabled(len(a.ide.tps) < 2).Chosen() {
+		a.closeOtherTermTabs(a.ide.tpSel)
+	}
+	cur := a.prefs.Int(pTermTabs, termTabAuto)
+	m.Separator()
+	if menuItem(m, "标签排列:横向").Trailing(map[bool]string{true: "✓"}[cur == 0]).Chosen() {
+		a.setTermTabsMode(termTabHorz)
+	}
+	if menuItem(m, "标签排列:竖向").Trailing(map[bool]string{true: "✓"}[cur == 1]).Chosen() {
+		a.setTermTabsMode(termTabVert)
+	}
+	if menuItem(m, "标签排列:自动").Trailing(map[bool]string{true: "✓"}[cur == 2]).Chosen() {
+		a.setTermTabsMode(termTabAuto)
+	}
 	m.Separator()
 	if menuItem(m, "终端设置…").Chosen() {
 		a.popup = "termset"

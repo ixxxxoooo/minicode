@@ -116,6 +116,10 @@ type ide struct {
 	tps        []*termPanel // 真实终端标签(真实模式),每个一个独立的 shell
 	tpSel      int          // 当前终端标签
 	lastActive string       // 自动保存(失焦):上一帧的活动标签
+	termTabSt  ui.ScrollState
+	termTabIx  int             // 标签条已滚入可见的终端下标
+	termTabW   map[int]float32 // 各终端标签上一帧宽度
+	panelW     float32         // 底部面板内容区宽度(上一帧)
 
 	sections map[string]bool // 资源管理器区块折叠(大纲 / 时间线)
 	rootShut bool            // 「文件夹」区块(文件树本体)是否已折叠

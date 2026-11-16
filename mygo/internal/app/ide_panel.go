@@ -27,6 +27,9 @@ func (a *App) bottomPanel(c *ui.Context) {
 		a.ide.panelTop = b.Y // 上一帧量到的面板上缘(测试与浮层定位用)
 	}
 	box.Children(func() {
+		if bw := box.Bounds(); bw.W > 0 {
+			a.ide.panelW = bw.W
+		}
 		a.panelFlash(c, box)
 		def := float32(172)
 		if a.ide.bottomTab == "problems" || a.ide.bottomTab == "refs" {
@@ -82,25 +85,22 @@ func (a *App) bottomPanel(c *ui.Context) {
 						kit.Btn(c, "取消", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() { a.cancelWorkspaceDiag() })
 					}
 				} else {
-					if a.proj != "" {
-						n := len(a.ide.tps)
-						if n == 0 {
-							n = 1
-						}
-						for i := 0; i < n; i++ {
-							a.termChip(c, i)
-						}
-					} else {
+					vert := a.ide.bottomTab == "term" && a.termTabsVertical(a.ide.panelW)
+					if a.proj != "" && !vert {
+						a.termTabBar(c)
+					} else if a.proj == "" {
 						kit.Chip(c, shellName(), kit.ChipOpt{Icon: "terminal", On: a.ide.termSel == ""}).OnClick(func() { a.ide.termSel = "" })
 					}
 					for _, v := range a.ide.cmds {
 						kit.Chip(c, v.title, kit.ChipOpt{Icon: "lock", On: a.ide.termSel == v.id, Tip: "只读 · Claude 运行的命令"}).OnClick(func() { a.ide.termSel = v.id })
 					}
-					kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建终端"}).OnClick(func() {
-						if a.proj != "" {
-							a.newTerm()
-						}
-					})
+					if !vert {
+						kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新建终端"}).OnClick(func() {
+							if a.proj != "" {
+								a.newTerm()
+							}
+						})
+					}
 					gear := kit.Ib(c, "gear", kit.IbOpt{Small: true, Tip: "终端设置", On: a.popup == "termset"})
 					gear.OnClick(func() { a.togglePop("termset") })
 					a.termSettings(c, gear)
@@ -140,7 +140,16 @@ func (a *App) terminal(c *ui.Context) {
 		a.ide.termSel = ""
 	}
 	if a.proj != "" {
-		a.realTerminal(c)
+		if a.termTabsVertical(a.ide.panelW) && a.ide.termSel == "" {
+			ui.Row(c).Grow(1).MinHeight(0).Children(func() {
+				ui.Column(c).Grow(1).MinWidth(0).MinHeight(0).Children(func() {
+					a.realTerminal(c)
+				})
+				a.termVerticalList(c)
+			})
+		} else {
+			a.realTerminal(c)
+		}
 		return
 	}
 	t := a.tk

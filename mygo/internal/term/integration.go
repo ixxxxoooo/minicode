@@ -100,6 +100,19 @@ func (t *Term) ClearCmdBlocks() {
 // CmdRunning 前台是否有命令在跑(依赖 shell 集成;未注入时恒为 false)。
 func (t *Term) CmdRunning() bool { return t.cmdRunning.Load() }
 
+// LastCmdDone 返回最近一条已结束命令的退出码;没有记录时 ok=false。
+func (t *Term) LastCmdDone() (exit int, failed bool, ok bool) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	for i := len(t.cmdBlocks) - 1; i >= 0; i-- {
+		b := t.cmdBlocks[i]
+		if b.Done {
+			return b.Exit, !b.ExitOK, true
+		}
+	}
+	return 0, false, false
+}
+
 // CommandBlocks 返回已知的命令块快照。
 func (t *Term) CommandBlocks() []CmdBlock {
 	t.mu.Lock()

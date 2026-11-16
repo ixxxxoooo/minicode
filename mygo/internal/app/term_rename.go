@@ -23,14 +23,7 @@ func (a *App) termDefaultName(i int) string {
 	return name
 }
 
-func (a *App) termDisplayName(i int) string {
-	if i >= 0 && i < len(a.ide.tps) {
-		if s := a.ide.tps[i].label; s != "" {
-			return s
-		}
-	}
-	return a.termDefaultName(i)
-}
+func (a *App) termDisplayName(i int) string { return a.termTabRawTitle(i) }
 
 // termRenaming 判断第 i 个终端标签是否正在行内重命名。
 func (a *App) termRenaming(i int) bool { return a.termRen.on && a.termRen.ix == i }
@@ -62,38 +55,57 @@ func (a *App) commitTermRename() {
 }
 
 func (a *App) termChip(c *ui.Context, i int) {
+	a.termChipSized(c, i, termTabMaxW)
+}
+
+func (a *App) termChipSized(c *ui.Context, i int, tabW float32) {
 	t := a.tk
-	name := a.termDisplayName(i)
+	raw := a.termTabRawTitle(i)
+	textW := max(tabW-termTabPadX-8, 16)
+	show := termTabTitle(raw, textW)
 	ren := a.termRenaming(i)
 	if ren {
-		ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() {
+		ui.Row(c).Gap(4).AlignItems(ui.Center).MaxWidth(tabW).Children(func() {
 			kit.Ic(c, "terminal", kit.S12).TextColor(t.Tx3)
-			in := ui.TextInputBase(c.Key("term-ren-"+itoa(i)), &a.termRen.buf).Width(120).FontSize(theme.FsCap).
+			in := ui.TextInputBase(c.Key("term-ren-"+itoa(i)), &a.termRen.buf).Grow(1).MinWidth(0).FontSize(theme.FsCap).
 				AutoFocus().OnSubmit(a.commitTermRename)
 			in.OnShortcut(0, ui.KeyEscape, func() { a.termRen = termRen{} })
 		})
 		return
 	}
 	on := a.ide.termSel == "" && a.ide.tpSel == i
-	ch := kit.Chip(c, name, kit.ChipOpt{Icon: "terminal", On: on})
-	if ch.Clicked() {
+	chip := ui.ButtonBase(c).Key("term-chip-" + itoa(i)).Height(theme.Px(22)).PaddingX(7).Radius(t.RSm()).Gap(4).
+		AlignItems(ui.Center).FontSize(theme.Px(11.5)).Cursor(ui.CursorPointer).Shrink(0).MaxWidth(tabW).Tooltip(raw)
+	col := t.Tx2
+	if on {
+		chip.Background(t.Fill2)
+		col = t.Tx1
+	} else if chip.Hovered() {
+		chip.Background(t.Fill1)
+		col = t.Tx1
+	}
+	chip.TextColor(col)
+	chip.Children(func() {
+		kit.Ic(c, "terminal", kit.S12)
+		ui.Text(c, show).SingleLine().MinWidth(0)
+	})
+	if chip.Clicked() {
 		a.ide.termSel, a.ide.tpSel = "", i
 		a.ide.tpc().focusIt = true
 	}
-	if ch.DoubleClicked() {
+	if chip.DoubleClicked() {
 		a.beginTermRename(i)
 	}
-	if len(a.ide.tps) > 1 { // 中键关闭终端标签(至少保留一个)
-		a.onMiddleClick(ch, "term-"+itoa(i), func() { a.askCloseTermTab(i) })
+	if len(a.ide.tps) > 1 {
+		a.onMiddleClick(chip, "term-"+itoa(i), func() { a.askCloseTermTab(i) })
 	}
-	ch.ContextMenu(func(m *ui.Menu) {
-		if menuItem(m, "重命名…").Chosen() {
-			a.beginTermRename(i)
+	chip.ContextMenu(func(m *ui.Menu) { a.termTabContextMenu(m, i) })
+	if w := chip.Bounds().W; w > 0 {
+		if a.ide.termTabW == nil {
+			a.ide.termTabW = map[int]float32{}
 		}
-		if menuItem(m, "关闭终端").Disabled(len(a.ide.tps) < 2).Tooltip(map[bool]string{true: "至少保留一个终端"}[len(a.ide.tps) < 2]).Chosen() {
-			a.askCloseTermTab(i)
-		}
-	})
+		a.ide.termTabW[i] = w
+	}
 	if on && len(a.ide.tps) > 1 {
 		kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭这个终端"}).OnClick(func() { a.askCloseTermTab(i) })
 	}

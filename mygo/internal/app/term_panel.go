@@ -33,20 +33,21 @@ var (
 
 // termPanel 是 IDE 底部终端的状态。
 type termPanel struct {
-	t       *term.Term
-	label   string // 用户重命名的标签名(空 = 默认 shell 名 + 序号)
-	err     string // 启动失败的原因
-	cellW   float32
-	st      ui.ScrollState
-	waits   int    // 等待量出大小的帧数(防止面板根本没有尺寸时空转)
-	pend    ui.Key // 按下了会打出字的键,还在等 InputText
-	pendSeq int    // pend 的代号(超时补发时认它,免得补发后来的键)
-	pendSh  bool
-	compose bool   // 输入法正在组字
-	preedit string // 组字中的文字(显示在光标处,提交时由 InputText 送入)
-	focusIt bool   // 下一帧把键盘焦点给终端(刚启动 / 刚重启)
-	initCmd string // shell 起来后自动输入的一条命令(安装语言服务器用)
-	cwd     string // 起始目录(空 = 项目根;文件树「在此处打开终端」用)
+	t         *term.Term
+	label     string // 用户重命名的标签名(空 = 走标题优先级)
+	demoTitle string // 演示 / 截图用 OSC 标题替身(非演示应为空)
+	err       string // 启动失败的原因
+	cellW     float32
+	st        ui.ScrollState
+	waits     int    // 等待量出大小的帧数(防止面板根本没有尺寸时空转)
+	pend      ui.Key // 按下了会打出字的键,还在等 InputText
+	pendSeq   int    // pend 的代号(超时补发时认它,免得补发后来的键)
+	pendSh    bool
+	compose   bool   // 输入法正在组字
+	preedit   string // 组字中的文字(显示在光标处,提交时由 InputText 送入)
+	focusIt   bool   // 下一帧把键盘焦点给终端(刚启动 / 刚重启)
+	initCmd   string // shell 起来后自动输入的一条命令(安装语言服务器用)
+	cwd       string // 起始目录(空 = 项目根;文件树「在此处打开终端」用)
 
 	scr       *term.Screen // 最近一帧的画面快照(选择 / 搜索 / 链接按它换算)
 	viewH     float32      // 可视高度(搜索命中滚到中间用)
