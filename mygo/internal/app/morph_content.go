@@ -8,7 +8,6 @@ import (
 )
 
 const (
-	morphNavDur      = 180 * time.Millisecond
 	morphFadeOut     = 120 * time.Millisecond
 	morphFadeInDelay = 90 * time.Millisecond
 	morphWsInDelay   = 60 * time.Millisecond // IDE→Agent 时工作区回到右侧
@@ -47,29 +46,11 @@ func (a *App) morphOpacity(track string) float32 {
 			}
 			return p
 		}
-	case "nav":
-		p := float32(el) / float32(morphNavDur)
-		if p > 1 {
-			return 1
-		}
-		return p * (2 - p)
-	case "chat":
-		if toIDE {
-			if el < morphFadeInDelay {
-				return 0
-			}
-			p := float32(el-morphFadeInDelay) / float32(morphNavDur)
-			if p > 1 {
-				return 1
-			}
-			return p
-		}
-		if toAgent {
-			if el < morphFadeOut {
-				return 1 - float32(el)/float32(morphFadeOut)
-			}
-			return 1
-		}
+	case "nav", "chat":
+		// 导航栏内容换成文件树 / 会话 = 左栏的 a-swap 入场(side.go + kit.SwapIn);
+		// 对话栏的滑入 + 淡入(chat-dock / chat-center)作用在整块对话栏上(chatPane + chatSlide),
+		// 内容这里不再另做一层淡入,免得叠两种过渡。
+		return 1
 	}
 	return 1
 }

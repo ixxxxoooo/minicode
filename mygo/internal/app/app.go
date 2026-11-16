@@ -110,6 +110,9 @@ type App struct {
 	morphUntil   time.Time                                // 形态切换期间锁定指针(设计稿 .morphing)
 	morphAt      time.Time                                // 形态切换起点(内容分轨淡入 / 淡出)
 	morphFrom    Mode                                     // 切换前的形态
+	navSwapKey   string                                   // 左栏内容上一帧的「形态 + 分段」(变了就播换内容入场)
+	navSwapAt    time.Time                                // 左栏内容换内容入场的起点
+	slotLife     map[string]*slotLife                     // 各收起 / 展开槽位的活跃状态(收起动画期间继续画内容)
 	wsFloat      bool                                     // Agent 窄窗:工作区浮层打开
 	dockFloat    bool                                     // IDE 窄窗:对话栏浮层打开
 	sideDrawer   bool                                     // <720:导航栏以抽屉展示

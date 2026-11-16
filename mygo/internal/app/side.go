@@ -66,28 +66,35 @@ func (a *App) side(c *ui.Context) {
 	if !a.sideOpen {
 		target = 0
 	}
-	ui.Column(c).Key("side").Width(target).Shrink(0).ClipX().
-		Opacity(map[bool]float32{true: 1, false: 0}[a.sideOpen]).
-		Transition(a.sideTransition()).Children(func() {
+	// 开合:宽度 260ms ease-io(sideTransition),透明度 120ms ease(设计稿 .side 的 transition)
+	col := ui.Column(c).Key("side").Width(target).Shrink(0).ClipX().Transition(a.sideTransition())
+	col.Opacity(col.AnimateWith("op", map[bool]float32{true: 1, false: 0}[a.sideOpen], kit.DurFast, kit.EaseCSS))
+	a.syncNavSwap()
+	col.Children(func() {
 		if a.sideOpen {
 			a.resizeHandle(c, lySide, "r", w, a.sideWidth(), 180, 420, func(v float32) { a.ly.side = v })
 		}
 		ui.Column(c).Width(w).Grow(1).MinHeight(0).Children(func() {
 			a.sideTop(c)
 			ui.Column(c).Grow(1).MinHeight(0).PaddingX(6).Clip().Children(func() {
-				a.morphWrap(c, "nav", func() {
-					switch a.NavID() {
-					case "chat":
-						a.sessions(c)
-					case "files":
-						a.filesView(c)
-					case "search":
-						a.searchView(c)
-					case "scm":
-						a.scmView(c)
-					default:
-						ui.Text(c, navTitle(a.NavID())).TextColor(t.Tx3).Margin(8)
-					}
+				// 换分段 / 换形态:内容自左 8px 滑入并淡入(a-swap);外层 Clip 把滑出左缘的部分裁掉
+				swap := ui.Column(c).Key("nav-swap").Grow(1).MinHeight(0)
+				kit.SwapIn(swap, a.navSwapAt, a.frameSoon)
+				swap.Children(func() {
+					a.morphWrap(c, "nav", func() {
+						switch a.NavID() {
+						case "chat":
+							a.sessions(c)
+						case "files":
+							a.filesView(c)
+						case "search":
+							a.searchView(c)
+						case "scm":
+							a.scmView(c)
+						default:
+							ui.Text(c, navTitle(a.NavID())).TextColor(t.Tx3).Margin(8)
+						}
+					})
 				})
 			})
 			if t.Scheme.ID != "c" {
