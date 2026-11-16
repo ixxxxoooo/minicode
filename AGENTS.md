@@ -212,6 +212,7 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 
 - **看门狗会记栈**:主线程停滞超过 400 ms,`diag.Watchdog` 每 100 ms 记一次「主线程停滞时的调用栈」(最多 3 次,内层 10 帧 + 外层 `app.` / `kit.` / `main.` 帧,取 1 号 goroutine;`runtime.Stack(all=true)` 第一块是看门狗自己,要按 `goroutine 1 [` 找)。若栈里只有框架帧(`text.layout ← main.main`),说明卡在框架的布局阶段,看不出节点——把框架拷到 `/tmp`、在 `ui/layoutcache.go` 的 `textLayout` 和 `internal/text` 的 `layout` 里按耗时写日志,用 `go build -modfile=… ` + `replace` 临时构建(不进仓库)。
 - **`ElementTransition{Size}` 会在每个中间尺寸重排内容**:工作区从折叠展开时起始宽度 ≈ 0~1 px。`SingleLine()` 带 `MaxLines=1`,`LayoutFrom` 因此不能复用旧排版,**每换一个宽度整段重排**(长文本在窄宽度下每行 5~8 ms);`NoWrap()` 的排版与宽度无关、换宽度直接复用。所以会被放进动画面板的长列表(输出面板最多 300 行日志)一律 `NoWrap` + 容器 `ClipX`,不要用 `SingleLine`。底部面板停在「输出」时,切到 IDE 曾每次卡 400~570 ms。
+- **形态切换卡顿与项目大小有关**:对话栏宽度做 440 ms 过渡,库会在每个中间宽度重排整棵子树;会话流没有虚拟化,大项目里会话长、文字多,每帧 CoreText 断行几十毫秒(CPU profile:一次 Agent→IDE 布局 390 ms,其中 `textLayout` 320 ms)。`flowCol` 在过渡期间(`flowSnapWidth`)把内容列宽度向下吸附到 80px 台阶,~28 个中间宽度缩成 ~5 个,终态宽度不变(同一宽度的排版有全局缓存);实测布局约 220 ms、文字排版约 120 ms。剩余主要是工作区(编辑器标签)按动画宽度排版。**排查方法**:临时在 `main` 包加个收到 SIGUSR1 就 `pprof.StartCPUProfile` 3 秒的文件(不提交),发信号后立刻切形态,`go tool pprof -top -cum` 看——Go 帧完整可见,比看门狗栈和 `sample` 都准。
 - **自动最小宽度**:行内 flex 子项没有显式 `MinWidth` / `ClipX` 时,自动最小宽度 = 子树最小内容宽度(把文字按宽度 1 逐词折行排一遍);长文本放进 `Row`(尤其 `Wrap`)要给 `MinWidth(0)`。
 - **`customize.OpenDisk` 不再同步起子进程**:它只给兜底市场数据,真实列表由 `cuEnsureDisk` 放 `a.bg` 里 `RunMarketplaceList`,回主线程 `SetMarket`。凡在界面线程每帧可达的路径(输入框 MCP 芯片、斜杠命令)都不能 `exec`。
 - **`kit.SystemReduceMotion` 走 cgo 的 NSWorkspace**,不再每次 `defaults read` 起进程。
