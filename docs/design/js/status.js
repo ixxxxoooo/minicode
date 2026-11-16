@@ -194,7 +194,7 @@
       R('「重新检查」按钮与「全部 / 仅错误」筛选', '刷新按钮触发工作区重检;演示模式同步筛选', 'ok', 'B5'),
       R('工作区级诊断', 'internal/lsp 声明 diagnostic 能力并实现 workspace/diagnostic / textDocument/diagnostic(previousResultId + 流式片段),按能力选 服务器 pull / 逐文件拉取 / didOpen 扫盘 三条路径并显示来源;问题面板分段「已打开 | 工作区」、进度 + 取消($/cancelRequest)、截断(lsp.workspaceDiagLimit 默认 2000)、空 / 错误态 + 重试;-ed wsdiag:scan|done|trunc|empty|err。阶段三实测:协议单测通过;本机 gopls 0.22 / pyright 都不声明 diagnosticProvider,rust-analyzer 在本机 initialize 即退出(rustup 代理),所以真实环境目前一律走 didOpen 扫盘兜底,pull 路径没有任何真实服务器验证。触发:lspWorkspaceScan 仅在「重新检查」或切工作区分段时调用,进项目不自动扫。跳过:先去掉 skipWorkspacePath 的常见产物目录,再在后台用 git check-ignore(vcs.IgnoreChecker,嵌套 .gitignore / 全局忽略 / 取反规则都认,已跟踪文件不算忽略;单测用真实 git)按仓库精筛,多根逐仓库;非 Git 项目 / 演示 / 读规则失败退回硬编码目录;偏好 lsp.workspaceDiagGitignore 打开则全包含;未测试', 'part', 'B5')],
     'ide-scm': [
-      R('分支行、拉取 / 推送 / 同步、储藏、提交框(⌘↩ + AI 说明)、暂存 / 更改 / 冲突分组、悬停操作、内嵌图谱、审查入口', '', 'ok'),
+      R('分支行、拉取 / 推送 / 同步、储藏、提交框(⌘↩ + AI 说明)、暂存 / 更改 / 冲突分组、悬停操作、内嵌图谱、审查入口', 'AI 说明 = wand 按钮,生成中转圈+描边呼吸+框内流光文案+可取消;未测试', 'ok'),
       R('提交分裂按钮里的「提交并同步」', '提交后 pull --ff-only + push', 'ok', 'B3'),
       R('列表 / 树切换', 'scm.viewMode 列表/树,目录折叠记忆', 'ok', 'B3'),
       R('多仓库总览行的悬停动作、逐仓转圈与失败重试、冲突徽标', '含右键菜单;全部同步跳过冲突仓库', 'ok', 'B1'),

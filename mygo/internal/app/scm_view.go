@@ -148,7 +148,17 @@ func (a *App) scmCommitBox(c *ui.Context, nStaged int) {
 		if box.FocusWithin() || s.genning {
 			box.BorderColor(t.Ac)
 		}
+		if s.genning {
+			kit.Pulse(box)
+		}
 		box.Children(func() {
+			if s.genning {
+				ui.Row(c).Height(44).Padding(6, 10).AlignItems(ui.Center).Gap(8).Children(func() {
+					sh := ui.Text(c, "正在生成提交说明…").FontSize(theme.FsBody).TextColor(t.Tx2).Grow(1)
+					kit.TextShimmer(sh)
+					kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "取消生成"}).OnClick(a.scmCancelGenMsg)
+				})
+			}
 			in := ui.TextArea(c.Key("scm-msg"), &s.msg).Lines(2, 6).Placeholder("消息(⌘↩ 提交)").PlaceholderColor(t.Tx4).
 				Background(ui.Transparent).BorderWidth(0).Padding(6, 8, 2, 8).FontSize(theme.FsBody).LineHeight(1.5).TextColor(t.Tx1).FocusRing(false)
 			in.OnTextKey(func(k ui.TextKey) bool {
@@ -158,17 +168,19 @@ func (a *App) scmCommitBox(c *ui.Context, nStaged int) {
 				}
 				return false
 			})
+			if s.genning {
+				in.Opacity(.35)
+			}
 			ui.Row(c).Height(22).PaddingX(4).AlignItems(ui.Center).Children(func() {
 				if s.amend {
 					kit.Tag(c, "修改上次提交", kit.KWarn)
 				}
 				ui.Spacer(c).Grow(1)
+				tip := "用 AI 根据更改起草提交说明"
 				if s.genning {
-					ui.Text(c, "正在生成提交说明…").FontSize(theme.FsCap).TextColor(t.Tx3).Margin(0, 6, 0, 0)
-					kit.Spin(c, t.Ac)
-				} else {
-					kit.Ib(c, "star", kit.IbOpt{Small: true, Tip: "用 AI 根据更改起草提交说明"}).OnClick(a.scmGenMsg)
+					tip = "正在生成…"
 				}
+				kit.Ib(c, "wand", kit.IbOpt{Small: true, Tip: tip, Loading: s.genning}).OnClick(a.scmGenMsg)
 			})
 		})
 		ui.Row(c).Gap(1).Children(func() {

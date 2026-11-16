@@ -97,6 +97,17 @@ func cleanCommitMsg(s string) string {
 }
 
 // scmGenMsg 起草提交说明:开了「AI 提交说明」且有生成器就用模型(后台、可看到进度),失败或没开退回本地启发式。
+// scmCancelGenMsg 取消正在进行的 AI 提交说明生成。
+func (a *App) scmCancelGenMsg() {
+	s := &a.sc
+	if !s.genning {
+		return
+	}
+	s.genGen++
+	s.genning = false
+	a.toast = "已取消生成提交说明"
+}
+
 func (a *App) scmGenMsg() {
 	s := &a.sc
 	if s.genning {
