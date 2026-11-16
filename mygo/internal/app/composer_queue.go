@@ -47,7 +47,7 @@ func (a *App) steerSend(text string) {
 	if show == "" {
 		show = "(图片)"
 	}
-	a.q.addSteer(body, show, len(a.st.Items), time.Now())
+	a.q.addSteer(body, show, len(a.st.Items), len(rels), time.Now())
 	log.Info("引导", "len", len(body), "待接收", len(a.q.steers))
 	a.submitPrompt(text, true)
 }

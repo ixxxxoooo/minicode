@@ -63,7 +63,9 @@
       ['引导接收判定', 'queue.syncSteers:新非用户条目+steerDwell / 回合结束 / steerMaxWait 兜底(无后端确认信号)。未测试', st('ok')],
       ['问答卡 · 多题切换', 'dock_ask 步骤条+上/下题+←→;dockBadge 审批序号。未测试', st('ok')],
       ['回答卡片', 'dock_ask.askEcho + askEchoMenu。未测试', st('ok')],
-      ['回到最新按钮', 'flow_scroll.toLatestBtn + flowTailMark。未测试', st('ok')]]))}
+      ['回到最新按钮', 'flow_scroll.toLatestBtn + flowTailMark;距底阈值 32px,贴 dock 上缘 10px。未测试', st('ok')],
+      ['交互卡入场与呼吸描边', 'kit.PopUpIn/DockGlow + dock_pending.dockCardAt;处理完 composer PopIn 120ms。未测试', st('ok')],
+      ['引导行附带图片', 'steerPend.imgN + queueImgBadge。未测试', st('ok')]]))}
   </div>`;
 
   /* ───────── 交互:切题、选项、回到最新 ───────── */

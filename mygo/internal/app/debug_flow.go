@@ -96,7 +96,7 @@ func (a *App) SeedSteers(texts ...string) {
 		if len(show) > 48 {
 			show = show[:45] + "…"
 		}
-		a.q.addSteer(t, show, from, now)
+		a.q.addSteer(t, show, from, 0, now)
 	}
 }
 

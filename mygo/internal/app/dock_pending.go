@@ -43,14 +43,23 @@ func (a *App) pendingDock() core.Item {
 
 // syncDockComposer 审批卡顶替输入框时保存草稿;全部处理完后淡入输入框并恢复草稿。
 func (a *App) syncDockComposer() {
-	pending := len(a.pendingQueue()) > 0
+	q := a.pendingQueue()
+	pending := len(q) > 0
 	if pending {
+		id := q[0].ItemID()
+		if id != a.dockCardKey {
+			a.dockCardKey = id
+			a.dockCardAt = time.Now()
+			a.frameSoon()
+		}
 		if !a.dockStash {
 			a.dockDraft = a.draft
 			a.dockStash = true
 		}
 		return
 	}
+	a.dockCardKey = ""
+	a.dockCardAt = time.Time{}
 	if a.dockStash {
 		a.draft = a.dockDraft
 		a.dockDraft = ""

@@ -258,7 +258,7 @@ func TestSteerSyncHeuristic(t *testing.T) {
 	items := []core.Item{
 		&core.User{ID: "u0", Text: "hello"},
 	}
-	q.addSteer("steer me", "steer me", 1, now.Add(-time.Second))
+	q.addSteer("steer me", "steer me", 1, 0, now.Add(-time.Second))
 	q.syncSteers(items, true, now) // 尚无回显,保留
 	if len(q.steers) != 1 {
 		t.Fatal("未回显时不应收掉引导")

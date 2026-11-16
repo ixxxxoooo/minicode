@@ -56,7 +56,7 @@ func TestSteerPending(t *testing.T) {
 	var q promptQueue
 	t0 := time.Now()
 	items := []core.Item{&core.User{ID: "u1", Text: "第一条"}, &core.Assistant{ID: "a1"}}
-	q.addSteer("改一下", "改一下", len(items), t0)
+	q.addSteer("改一下", "改一下", len(items), 0, t0)
 	// 后端回显了用户消息:绑定 id,仍在等待
 	items = append(items, &core.User{ID: "u2", Text: "改一下"})
 	q.syncSteers(items, true, t0.Add(10*time.Millisecond))
@@ -74,7 +74,7 @@ func TestSteerPending(t *testing.T) {
 		t.Fatal("接收后应放进会话流")
 	}
 	// 回合结束:立刻放出
-	q.addSteer("再改", "再改", len(items), t0)
+	q.addSteer("再改", "再改", len(items), 0, t0)
 	q.syncSteers(items, false, t0)
 	if len(q.steers) != 0 {
 		t.Fatal("回合结束应放出")
@@ -86,7 +86,7 @@ func TestSteerMaxWait(t *testing.T) {
 	var q promptQueue
 	t0 := time.Now()
 	items := []core.Item{&core.User{ID: "u1", Text: "首条"}, &core.Assistant{ID: "a1"}}
-	q.addSteer("卡住", "卡住", len(items), t0)
+	q.addSteer("卡住", "卡住", len(items), 0, t0)
 	items = append(items, &core.User{ID: "u2", Text: "卡住"})
 	q.syncSteers(items, true, t0.Add(steerDwell+time.Second))
 	if len(q.steers) != 1 {

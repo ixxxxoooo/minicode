@@ -277,6 +277,8 @@ type App struct {
 	sessLoad        sessLoadState       // 切换会话载入中(抑制欢迎页闪现)
 	dockDraft       string              // 审批卡顶替输入框时保存的草稿
 	dockStash       bool
+	dockCardKey     string    // 当前交互卡 id(切换权限 / 提问时重播入场)
+	dockCardAt      time.Time // 交互卡 a-pop-up 起点
 	composerInAt    time.Time // 输入框淡入动画起点
 	slashSel        int       // 斜杠补全选中行
 	slashProj       string    // 已缓存斜杠命令的项目路径

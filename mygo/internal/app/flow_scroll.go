@@ -55,7 +55,7 @@ func (a *App) flowScrollBtn(c *ui.Context) {
 		return
 	}
 	fresh := flowTailMark(a.st.Items) != a.flowAwayLen
-	a.toLatestBtn(c, "to-latest", fresh, a.dockH+8, func() {
+	a.toLatestBtn(c, "to-latest", fresh, a.dockH+10, func() {
 		a.flowNoFollow = false
 		a.flowAwayLen = flowTailMark(a.st.Items)
 		a.flowList.ScrollToEnd()

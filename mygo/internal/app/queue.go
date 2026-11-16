@@ -31,6 +31,7 @@ type promptQueue struct {
 type steerPend struct {
 	Text string    // 正文(与后端回显的 User.Text 对得上);图片消息可能为空
 	Show string    // 待发送区里显示的文字
+	imgN int       // 附带本地图片数(设计稿「N 张图」)
 	from int       // 发出时的会话条目数,只在它之后找回显
 	uid  string    // 后端回显的用户消息 id(找到前为空)
 	at   time.Time // 发出时刻(最短停留,避免一闪而过)
@@ -43,8 +44,8 @@ const steerDwell = 700 * time.Millisecond
 const steerMaxWait = 20 * time.Second
 
 // addSteer 登记一条刚发出的引导。
-func (q *promptQueue) addSteer(text, show string, from int, now time.Time) {
-	q.steers = append(q.steers, &steerPend{Text: text, Show: show, from: from, at: now})
+func (q *promptQueue) addSteer(text, show string, from, imgN int, now time.Time) {
+	q.steers = append(q.steers, &steerPend{Text: text, Show: show, imgN: imgN, from: from, at: now})
 }
 
 // held 这条会话流用户消息是否正是一条尚未被接收的引导(界面据此隐藏它)。

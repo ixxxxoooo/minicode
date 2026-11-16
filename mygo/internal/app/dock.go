@@ -35,12 +35,16 @@ func (a *App) dockCard(c *ui.Context) bool {
 	return false
 }
 
-// cardShell 是卡片外壳:raised 底、强调色细描边、阴影 2。
+// cardShell 是交互卡外壳(设计稿 .dockcard):raised 底、强调色描边、阴影 2,入场 a-pop-up + 描边呼吸 a-glow。
 func (a *App) cardShell(c *ui.Context, key string) ui.Element {
 	t := a.tk
 	b := ui.Column(c).Key(key).Background(t.Raised).Radius(t.RLg()).Border(1, t.AcLine).Padding(10, 12).Gap(8)
 	for _, s := range t.Shadow2() {
 		b.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+	}
+	if !a.dockCardAt.IsZero() {
+		b = kit.PopUpIn(b, a.dockCardAt, a.frameSoon)
+		b = kit.DockGlow(b, a.frameSoon)
 	}
 	return b
 }
@@ -322,7 +326,10 @@ func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 	box.Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "list", kit.S12).TextColor(t.Warn)
-			ui.Text(c, planTitle(p.Markdown)).FontWeight(500).SingleLine().Shrink(1)
+			title := ui.Text(c, planTitle(p.Markdown)).FontWeight(500).SingleLine().Shrink(1)
+			if p.Streaming {
+				title = kit.RunText(title)
+			}
 			switch {
 			case p.Streaming:
 				kit.Tag(c, "生成中…")
@@ -425,12 +432,11 @@ func (a *App) queueCard(c *ui.Context) {
 		}
 		for k, sp := range a.q.steers { // 引导靠前:已经发给 Claude
 			sp := sp
-			steerImg := sp.Show == "(图片)"
 			ui.Row(c).Key("steer" + itoa(k)).Height(theme.Px(26)).PaddingX(6).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Children(func() {
 				a.queueKind(c, true, 0)
 				ui.Text(c, sp.Show).SingleLine().Grow(1).MinWidth(0)
-				if steerImg {
-					a.queueImgBadge(c, 1)
+				if sp.imgN > 0 {
+					a.queueImgBadge(c, sp.imgN)
 				}
 				ui.Row(c).Gap(5).AlignItems(ui.Center).Shrink(0).Children(func() {
 					kit.Spin(c, t.Tx3)
