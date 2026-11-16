@@ -14,6 +14,7 @@ const thinkPreviewRunes = 200
 
 type thinkMqSt struct {
 	X, Show float32
+	TW      float32 // 上一帧量到的预览文本宽度
 }
 
 // thinkPreviewPlain 取思考正文尾部,换行压成「 · 」。
@@ -55,52 +56,70 @@ func (a *App) thinkMarqueeRow(c *ui.Context, sp step, tone ui.Color, open bool) 
 		return ui.Box(c).Width(0).Shrink(0)
 	}
 	box := ui.Box(c).Height(20).Grow(1).MinWidth(48).MaxWidth(220).Shrink(1).Clip()
-	if !kit.MotionOn() || kit.SystemReduceMotion() || (a.win != nil && !a.win.IsFocused()) {
-		box.Children(func() {
-			ui.Text(c, preview).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().NoWrap()
-		})
-		return box
-	}
 	id := sp.id
 	st := a.thinkMq[id]
-	target := a.thinkMqTarget(preview, 36)
-	if target > st.X {
-		st.X = target
+	boxW := float32(220)
+	if b := box.Bounds(); b.W > 8 {
+		boxW = b.W
 	}
-	// 缓动追赶,避免逐字跳
-	if diff := target - st.Show; diff > 0.5 {
-		st.Show += diff * .22
+	// 目标偏移:让文本尾部贴住右缘(留 4px)。文本宽度优先用上一帧量到的,首帧按字宽估算。
+	textW := st.TW
+	if textW <= 0 {
+		textW = thinkMqEstimateWidth(preview)
+	}
+	target := textW - boxW + 4
+	if target < 0 {
+		target = 0
+	}
+	// 窗口在后台 / 减弱动态:不做缓动与持续帧,直接停在尾部(与动画终态一致)
+	still := !kit.MotionOn() || kit.SystemReduceMotion() || (a.win != nil && !a.win.IsFocused())
+	if still {
+		st.Show = target
+	} else if diff := target - st.Show; diff > 0.5 || diff < -0.5 {
+		st.Show += diff * .22 // 缓动追赶,避免逐字跳
 		a.frameSoon()
 	} else {
 		st.Show = target
 	}
+	box.Children(func() {
+		tx := ui.Text(c, preview).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().NoWrap().Shrink(0)
+		if w := tx.Bounds().W; w > 0 {
+			st.TW = w
+		}
+		if target > 0 { // 文本没有溢出时不画左侧渐隐
+			bg := t.BG.Over(t.Fill1)
+			ui.Box(c).Width(28).Height(20).Absolute().HitTest(func(_, _ float32, _ ui.Rect) bool { return false }).
+				MaskLinearGradient(ui.LinearGradient{
+					Angle: 90,
+					Stops: []ui.GradientStop{
+						{Color: bg, At: 0},
+						{Color: ui.Transparent, At: 1},
+					},
+				})
+		}
+	})
 	a.thinkMq[id] = st
 	if st.Show > 0 {
 		box.Translate(-st.Show, 0)
 	}
-	box.Children(func() {
-		ui.Text(c, preview).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().NoWrap().Shrink(0)
-		bg := t.BG.Over(t.Fill1)
-		ui.Box(c).Width(28).Height(20).Absolute().HitTest(func(_, _ float32, _ ui.Rect) bool { return false }).
-			MaskLinearGradient(ui.LinearGradient{
-				Angle: 90,
-				Stops: []ui.GradientStop{
-					{Color: bg, At: 0},
-					{Color: ui.Transparent, At: 1},
-				},
-			})
-	})
-	_ = box.Loop("think-mq", 33*time.Millisecond, ui.Linear)
+	if !still {
+		_ = box.Loop("think-mq", 33*time.Millisecond, ui.Linear)
+	}
 	return box
 }
 
-// thinkMqTarget 按字宽估算尾部可见偏移(约 6px/字)。
-func (a *App) thinkMqTarget(preview string, maxChars int) float32 {
-	n := utf8.RuneCountInString(preview)
-	if n <= maxChars {
-		return 0
+// thinkMqEstimateWidth 估算一段文字单行宽度:中日韩全角约 1 em,其余约 0.55 em。
+func thinkMqEstimateWidth(s string) float32 {
+	var w float32
+	em := float32(theme.FsCap)
+	for _, r := range s {
+		if r >= 0x2E80 {
+			w += em
+		} else {
+			w += em * 0.55
+		}
 	}
-	return float32(n-maxChars) * 6
+	return w
 }
 
 func (a *App) noteThinkStreamEnd(id string) {

@@ -19,13 +19,14 @@ func TestThinkPreviewPlain(t *testing.T) {
 	}
 }
 
-func TestThinkMqTarget(t *testing.T) {
-	a := &App{}
-	if a.thinkMqTarget("short", 10) != 0 {
-		t.Fatal("short")
+// 估算宽度要区分全角与西文:同样 20 个字,中文必须明显宽于英文(此前按固定 6px/字,中文滚不到尾部)。
+func TestThinkMqEstimateWidth(t *testing.T) {
+	if thinkMqEstimateWidth("") != 0 {
+		t.Fatal("空串宽度应为 0")
 	}
-	off := a.thinkMqTarget("12345678901234567890", 10)
-	if off <= 0 {
-		t.Fatal("want scroll")
+	cn := thinkMqEstimateWidth("路由表用原始路径做键注册与匹配")
+	en := thinkMqEstimateWidth("route table key")
+	if cn <= en*1.4 {
+		t.Fatalf("中文应明显比西文宽: cn=%v en=%v", cn, en)
 	}
 }
