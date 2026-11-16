@@ -302,6 +302,8 @@ var settingsTabs = []setTabDef{
 			{key: kAccent, title: "强调色", desc: "按钮、选中态、焦点环、选区、链接等使用的主题色;每个主题单独记忆,并按明暗自动调整明度", kind: kNone, def: 0,
 				right: func(a *App, c *ui.Context) { accentSwatches(a, c) }},
 		}},
+		brandAppGroup(), // 设计稿顺序:强调色 → 应用图标 → 菜单栏图标 → 密度与形状
+		brandTrayGroup(),
 		{title: "密度与形状", rows: []setRow{
 			{key: kDensity, title: "界面密度", desc: "行高:紧凑 −2 / 标准 / 宽松 +2(在当前布局的基础上)", kind: kSeg, def: 1, opts: []string{"紧凑", "标准", "宽松"}},
 			{key: kRadius, title: "圆角", desc: "圆角大小:利落 ×0.55 / 适中 / 圆润 ×1.35", kind: kSeg, def: 1, opts: []string{"利落", "适中", "圆润"}},
@@ -315,8 +317,6 @@ var settingsTabs = []setTabDef{
 		{title: "文件树", rows: []setRow{
 			rTog("appearance.fileIcons", "彩色文件图标", "按文件类型给图标上色(Rust 橙、Go 蓝、Python 绿…);关闭后全部用灰色。作用于文件树、标签、搜索与源代码管理", true),
 		}},
-		brandAppGroup(),
-		brandTrayGroup(),
 		{title: "动效", rows: []setRow{
 			rTog("appearance.motion", "动效", "流光、滑入与布局变形;关闭后所有动画直接到位(也跟随系统「减弱动态效果」)", true),
 			rSeg("appearance.morph", "形态切换动画", "Agent ⇄ IDE 的布局变形,约 0.44 秒;「简化」只淡入淡出", 0, "流畅", "简化", "无"),

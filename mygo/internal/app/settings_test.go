@@ -1,6 +1,7 @@
 package app
 
 import (
+	"math"
 	"path/filepath"
 	"testing"
 
@@ -40,6 +41,14 @@ func TestSettingsThemeCardAppliesAndPersists(t *testing.T) {
 func TestSettingsDensityRadius(t *testing.T) {
 	a, tt, _ := settingsApp(t, "appearance")
 	base := a.tk.Scheme.RowH
+	// 「密度与形状」在应用图标 / 菜单栏图标两组之后(设计稿顺序),要先把设置正文滚下去
+	scrollSettingsTo := func(y float32) {
+		a.set.mainSt.Y = y
+		tt.Frame()
+		tt.Frame()
+	}
+	scrollSettingsTo(math.MaxFloat32)
+	scrollSettingsTo(a.set.mainSt.Y - 400) // 滚到底后上移一屏,让「密度与形状」落进可视区
 	if err := tt.Click("紧凑"); err != nil {
 		t.Fatal(err)
 	}
