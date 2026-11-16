@@ -2,11 +2,11 @@
    栅格:所有步骤行图标列 16px 贴左,文字起于 --flow-inset;展开内容与嵌套都缩进到这条线。
    @author ixxxxoooo */
 
-.flow { display: flex; flex-direction: column; gap: 8px; padding: 12px 0 18px; }
+.flow { display: flex; flex-direction: column; gap: 8px; padding: 12px 0 18px; }  /* 正文 14 / 行高 1.6 / 段距 8;步骤行 13 一行 24 高,工具区与正文之间靠 gap 呼吸 */
 
 /* 用户消息 */
-.msg-u { background: var(--bg-raised); box-shadow: var(--sh-1); border-radius: var(--r-md); padding: 7px 11px; font-size: var(--fs-read); line-height: 1.55; }
-.ref { display: inline-flex; align-items: center; gap: 4px; height: 19px; padding: 0 6px; margin: 0 1px; border-radius: var(--r-xs); background: var(--info-soft); color: var(--info); font-size: 11.5px; vertical-align: 1px; }
+.msg-u { background: var(--bg-raised); box-shadow: var(--sh-1); border-radius: var(--r-md); padding: 8px 12px; font-size: var(--fs-read); line-height: var(--lh-read); }
+.ref { display: inline-flex; align-items: center; gap: 4px; height: 19px; padding: 0 6px; margin: 0 1px; border-radius: var(--r-xs); background: var(--info-soft); color: var(--info); font-size: var(--fs-ctl); vertical-align: 1px; }
 
 /* 步骤行:图标 + 动词 + 对象 + 附注 ……右侧结果 */
 .acts-g { display: flex; flex-direction: column; gap: 1px; position: relative; }
@@ -14,16 +14,17 @@
 .step:hover { background: var(--fill-1); }
 .step .si { width: 16px; height: 16px; display: grid; place-items: center; flex: none; border-radius: 50%; color: color-mix(in srgb, var(--tone, var(--tx-3)) 78%, var(--tx-3)); }
 .step .sv { color: var(--tx-3); flex: none; }
-.step .so { color: var(--tx-1); font-weight: var(--fw-medium); }
-.step .sm { color: var(--tx-3); font: 11px var(--font-mono); }
+.step .so { color: var(--tx-2); font-weight: var(--fw-regular); }  /* 对象 = 次要灰,不加粗(对标 Cursor):动词 tx-3 → 对象 tx-2 → 附注 tx-3 → 结果 tx-4 */
+.step .sm { color: var(--tx-3); font: var(--fs-ctl) var(--font-mono); }
 .step .sr { margin-left: auto; padding-left: 8px; color: var(--tx-4); font-size: var(--fs-cap); display: flex; gap: 6px; align-items: center; flex: none; font-variant-numeric: tabular-nums; }
 .step .chev { color: var(--tx-4); opacity: 0; transition: transform var(--dur-base) var(--ease-out), opacity var(--dur-fast); }
 .step:hover .chev, .step.open .chev { opacity: 1; } .step.open .chev { transform: rotate(90deg); }
 .step.run .si { color: var(--tone, var(--ac)); }
+.step.run .so { color: var(--tx-1); }  /* 只有进行中的一行提亮到主色 */
 .step.err .si, .step.err .sr { color: var(--err); }
 .step.deny .so { text-decoration: line-through; color: var(--tx-3); }
 .fold-in > * { margin: 3px 0 7px var(--flow-inset); }
-.ticker { margin-left: var(--flow-inset); font-size: 11.5px; color: var(--tx-3); }
+.ticker { margin-left: var(--flow-inset); font-size: var(--fs-ctl); color: var(--tx-3); }
 .nest { margin-left: 7.5px; padding-left: 14px; box-shadow: inset 1px 0 var(--bd-2); display: flex; flex-direction: column; gap: 1px; }
 
 /* 工具族色相(只染图标) */
@@ -39,16 +40,16 @@
 /* 工具卡:凹槽底 + 24px 头 */
 .tcard { border-radius: var(--r-md); background: var(--bg-sunken); box-shadow: inset 0 0 0 1px var(--bd-1); overflow: hidden; }
 .tcard-h { height: 24px; padding: 0 4px 0 9px; display: flex; align-items: center; gap: 6px; color: var(--tx-3); font-size: var(--fs-cap); box-shadow: inset 0 -1px var(--bd-1); }
-.tcard pre, pre.code { margin: 0; padding: 6px 10px; font: 11.5px/1.6 var(--font-mono); color: var(--tx-1); white-space: pre; overflow: hidden; }
-.dl { display: flex; font: 11.5px/1.6 var(--font-mono); white-space: pre; }
+.tcard pre, pre.code { margin: 0; padding: 6px 10px; font: var(--fs-mono)/1.6 var(--font-mono); color: var(--tx-1); white-space: pre; overflow: hidden; }
+.dl { display: flex; font: var(--fs-mono)/1.6 var(--font-mono); white-space: pre; }
 .dl .no { width: 30px; text-align: right; padding-right: 8px; color: var(--tx-4); flex: none; user-select: none; }
 .dl .tx { flex: 1; min-width: 0; overflow: hidden; padding-left: 4px; }
 .dl.add { background: var(--diff-add); box-shadow: inset 2px 0 var(--ok); } .dl.del { background: var(--diff-del); box-shadow: inset 2px 0 var(--err); }
-.term { font: 11.5px/1.6 var(--font-mono); padding: 6px 10px; color: var(--tx-1); white-space: pre; overflow: hidden; }
+.term { font: var(--fs-mono)/1.6 var(--font-mono); padding: 6px 10px; color: var(--tx-1); white-space: pre; overflow: hidden; }
 .term .p { color: var(--ok); } .term .e { color: var(--err); } .term .d { color: var(--tx-3); } .term .w { color: var(--warn); }
 /* 命令卡语法高亮:命令名 fn / 子命令 k(粗)、标志 sf(青)、管道与重定向 so(灰粗)、变量 sv;输出:路径 pa、哈希 h、URL u */
-.sh b { font-weight: 600; } .sh .sf { color: var(--syn-mac); } .sh .so { color: var(--tx-3); font-weight: 600; } .sh .sv { color: var(--syn-num); }
-.term .pa { color: var(--info); } .term .h { color: var(--syn-num); } .term .u { color: var(--ac-tx); } .term .e { font-weight: 600; }
+.sh b { font-weight: var(--fw-medium); } .sh .sf { color: var(--syn-mac); } .sh .so { color: var(--tx-3); } .sh .sv { color: var(--syn-num); }
+.term .pa { color: var(--info); } .term .h { color: var(--syn-num); } .term .u { color: var(--ac-tx); } .term .e { font-weight: var(--fw-medium); }
 .k { color: var(--syn-kw); } .s { color: var(--syn-str); } .fn { color: var(--syn-fn); } .ty { color: var(--syn-type); } .nu { color: var(--syn-num); } .mc { color: var(--syn-mac); } .cm { color: var(--syn-com); font-style: italic; }
 .think-body { color: var(--tx-3); font-size: 12px; line-height: 1.6; padding-left: 10px; box-shadow: inset 2px 0 var(--bd-2); }
 /* 思考折叠 + 流式:右侧单行跑马灯预览(参考 Claude / ChatGPT / Cursor) */
@@ -73,6 +74,7 @@
 /* 子 Agent 调用卡(主流只摘要,过程进工作区标签) */
 .sub { border-radius: var(--r-md); background: var(--bg-raised); box-shadow: var(--sh-1); padding: 7px 10px; display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
 .sub-h { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sub-h b, .plan > .f > b { font-weight: var(--fw-medium); }  /* 卡片标题 500,不是 600 / 700 */
 .sub .stat { padding-left: 22px; color: var(--tx-3); font-size: var(--fs-cap); display: flex; gap: 8px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
 .sub-task { padding-left: 22px; display: flex; flex-direction: column; gap: 4px; }
 .sub-task-h { display: flex; align-items: center; gap: 6px; }
@@ -82,8 +84,8 @@
 
 /* 交互卡:权限 / 提问 / 计划 */
 .dockcard { background: var(--bg-raised); border-radius: var(--r-lg); box-shadow: 0 0 0 1px var(--ac-line), var(--sh-2); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
-.dockcard .hd { display: flex; align-items: center; gap: 7px; font-weight: var(--fw-bold); }
-.dockcard .cmd { font: 11.5px/1.5 var(--font-mono); background: var(--bg-sunken); border-radius: var(--r-sm); padding: 6px 9px; box-shadow: inset 0 0 0 1px var(--bd-1); }
+.dockcard .hd { display: flex; align-items: center; gap: 7px; font-weight: var(--fw-medium); }
+.dockcard .cmd { font: var(--fs-mono)/1.5 var(--font-mono); background: var(--bg-sunken); border-radius: var(--r-sm); padding: 6px 9px; box-shadow: inset 0 0 0 1px var(--bd-1); }
 .opt { display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 9px; border-radius: var(--r-sm); box-shadow: inset 0 0 0 1px var(--bd-2); transition: background var(--dur-fast), box-shadow var(--dur-fast); cursor: default; }
 .opt:hover { background: var(--fill-1); } .opt.on { box-shadow: inset 0 0 0 1.5px var(--ac); background: var(--ac-soft); }
 .plan { background: var(--bg-raised); border-radius: var(--r-md); box-shadow: var(--sh-1); padding: 8px 11px; display: flex; flex-direction: column; gap: 5px; }
@@ -97,10 +99,10 @@
 
 /* 助手正文 */
 .md { font-size: var(--fs-read); line-height: var(--lh-read); color: var(--tx-1); }
-.md p { margin: 0 0 6px; } .md h3 { font-size: var(--fs-title); margin: 8px 0 4px; font-weight: 650; letter-spacing: -.005em; }
+.md p { margin: 0 0 8px; } .md h3 { font-size: var(--fs-title); margin: 10px 0 4px; font-weight: var(--fw-strong); }
 .md ul { margin: 0 0 6px; padding-left: 18px; } .md li { margin: 1px 0; } .md li::marker { color: var(--tx-4); }
 /* 行内代码跟随主题强调色:字色 ac-tx、底色强调色 11%,左右各 5px 内边距;助手正文与用户消息共用 */
-.md code, .msg-u code { font: 11.5px var(--font-mono); color: var(--ac-tx); background: color-mix(in srgb, var(--ac) 11%, transparent); padding: 1px 5px; border-radius: var(--r-xs); }
+.md code, .msg-u code { font: var(--fs-mono) var(--font-mono); color: var(--ac-tx); background: color-mix(in srgb, var(--ac) 11%, transparent); padding: 1px 5px; border-radius: var(--r-xs); }
 .tfoot { display: flex; align-items: center; gap: 2px; color: var(--tx-4); font-size: var(--fs-cap); height: 22px; margin-left: -4px; font-variant-numeric: tabular-nums; }
 .tfoot .meta { margin-left: 6px; display: flex; gap: 6px; align-items: center; }
 
@@ -112,7 +114,7 @@
 .cmp-in { padding: 9px 12px 3px; color: var(--tx-3); font-size: var(--fs-read); min-height: 36px; line-height: 1.55; }
 .cmp-in.v { color: var(--tx-1); }
 .cmp-bar { display: flex; align-items: center; gap: 2px; padding: 3px 5px 5px; }
-.cfg { height: 22px; padding: 0 7px; border-radius: var(--r-sm); display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--tx-2); white-space: nowrap; min-width: 0; flex: 0 1 auto; overflow: hidden; transition: background var(--dur-fast); cursor: default; }
+.cfg { height: 22px; padding: 0 7px; border-radius: var(--r-sm); display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-ctl); color: var(--tx-2); white-space: nowrap; min-width: 0; flex: 0 1 auto; overflow: hidden; transition: background var(--dur-fast); cursor: default; }
 .cfg:hover, .cfg.on { background: var(--fill-2); color: var(--tx-1); } .cfg i { width: 1px; height: 10px; background: var(--bd-3); }
 .cfg-pop { position: absolute; left: 6px; bottom: calc(100% + 6px); width: 264px; z-index: 20; }
 .dockslot > .hide { display: none; }
@@ -151,7 +153,7 @@
 .round { display: flex; flex-direction: column; gap: 8px; } .round + .round { margin-top: 10px; } [data-scheme="c"] .round { gap: 6px; }
 .flow .msg-u { position: sticky; top: 0; z-index: 4; cursor: text; transition: box-shadow var(--dur-base) var(--ease-out), background var(--dur-base); }
 .flow .msg-u:hover { box-shadow: var(--sh-1), inset 0 0 0 1px var(--bd-3); }
-.flow .msg-u::before { content: "编辑"; position: absolute; right: 7px; top: 6px; padding: 0 6px; border-radius: var(--r-xs); background: var(--fill-1); color: var(--tx-3); font-size: 10.5px; line-height: 17px; opacity: 0; transition: opacity var(--dur-fast); pointer-events: none; }
+.flow .msg-u::before { content: "编辑"; position: absolute; right: 7px; top: 6px; padding: 0 6px; border-radius: var(--r-xs); background: var(--fill-1); color: var(--tx-3); font-size: var(--fs-micro); line-height: 17px; opacity: 0; transition: opacity var(--dur-fast); pointer-events: none; }
 .flow .msg-u:hover::before { opacity: 1; } .flow .msg-u.editing::before { display: none; }
 /* 吸顶的阴影:只在卡片正下方一小道(负扩散让它收在卡片两侧之内),不再用大偏移的 --sh-2、也不再叠下缘渐隐遮罩(那两层叠起来会在整行下面拖出一条长长的暗带) */
 .flow .msg-u.stuck { box-shadow: var(--sh-stuck), inset 0 0 0 1px var(--bd-1); }
@@ -186,11 +188,11 @@ body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 
 
 /* 待发送区(排队 / 引导共用,在输入框正上方) */
 .queue .qh { display: flex; align-items: center; gap: 8px; padding: 2px 6px 3px; color: var(--tx-3); font-size: var(--fs-cap); }
-.queue .qh b { color: var(--tx-2); font-weight: 600; }
+.queue .qh b { color: var(--tx-2); font-weight: var(--fw-medium); }
 .queue .row { display: flex; align-items: center; gap: 8px; min-height: 26px; padding: 0 6px; border-radius: var(--r-sm); transition: background var(--dur-fast); }
 .queue .row:hover { background: var(--fill-1); }
 .queue .row .acts { display: none; gap: 1px; flex: none; } .queue .row:hover .acts { display: flex; }
-.queue .qk { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 17px; padding: 0 6px; border-radius: 9px; font-size: 11px; background: var(--fill-2); color: var(--tx-2); }
+.queue .qk { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 17px; padding: 0 6px; border-radius: 9px; font-size: var(--fs-ctl); background: var(--fill-2); color: var(--tx-2); }
 .queue .row.steer .qk { background: var(--ac-soft); color: var(--ac-tx); }
 .queue .row.steer .qs { color: var(--tx-3); font-size: var(--fs-cap); flex: none; display: inline-flex; align-items: center; gap: 5px; }
 .queue .row.sent { opacity: 0; transform: translateY(-4px); transition: opacity var(--dur-base), transform var(--dur-base); }
@@ -198,7 +200,7 @@ body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 
 
 /* 提问卡:多题步骤条 + 上一题 / 下一题 */
 .qa-steps { display: flex; gap: 4px; flex-wrap: wrap; }
-.qa-step { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 11.5px; color: var(--tx-2); box-shadow: inset 0 0 0 1px var(--bd-2); cursor: default; max-width: 160px; transition: background var(--dur-fast), box-shadow var(--dur-fast); }
+.qa-step { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 11px; font-size: var(--fs-ctl); color: var(--tx-2); box-shadow: inset 0 0 0 1px var(--bd-2); cursor: default; max-width: 160px; transition: background var(--dur-fast), box-shadow var(--dur-fast); }
 .qa-step .n { font-variant-numeric: tabular-nums; color: var(--tx-3); } .qa-step span.ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .qa-step:hover { background: var(--fill-1); } .qa-step.cur { background: var(--ac-soft); box-shadow: inset 0 0 0 1.5px var(--ac); color: var(--tx-1); }
 .qa-step.done .n { color: var(--ok); }
@@ -208,7 +210,7 @@ body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 
 
 /* 已回答的提问:会话流里的卡片 */
 .qa-done { background: var(--bg-raised); border-radius: var(--r-md); box-shadow: var(--sh-1); padding: 8px 11px; display: flex; flex-direction: column; gap: 7px; }
-.qa-done .hd { display: flex; align-items: center; gap: 7px; font-weight: var(--fw-bold); }
+.qa-done .hd { display: flex; align-items: center; gap: 7px; font-weight: var(--fw-medium); }
 .qa-done .qr { display: flex; flex-direction: column; gap: 3px; }
 .qa-done .qq { color: var(--tx-2); } .qa-done .qq .n { color: var(--tx-4); font-variant-numeric: tabular-nums; margin-right: 5px; }
 .qa-done .qa-a { display: flex; flex-wrap: wrap; gap: 4px; padding-left: 16px; }
@@ -225,7 +227,7 @@ body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 
 .rt-wait { display: flex; align-items: center; gap: 8px; min-height: 26px; padding: 0 8px; margin: 0 -8px; border-radius: var(--r-sm); color: var(--tx-3); font-variant-numeric: tabular-nums; animation: rise var(--dur-base) var(--ease-out); }
 .rt-wait .si { width: 16px; height: 16px; display: grid; place-items: center; flex: none; }
 .rt-wait .el { color: var(--tx-4); margin-left: 2px; }
-.rt-wait .chip { display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 6px; border-radius: 9px; background: var(--fill-1); color: var(--tx-3); font-size: 11px; }
+.rt-wait .chip { display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 6px; border-radius: 9px; background: var(--fill-1); color: var(--tx-3); font-size: var(--fs-ctl); }
 .rt-wait .chip.ok { color: var(--ok); background: var(--ok-soft); }
 .rt-wait .chip.warn { color: var(--warn); background: var(--warn-soft); }
 .rt-wait.slow { color: var(--warn); }
@@ -248,7 +250,7 @@ body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 
 .rt-pop .row .trk { position: relative; height: 6px; border-radius: 3px; background: var(--fill-1); }
 .rt-pop .row .trk i { position: absolute; top: 0; height: 100%; border-radius: 3px; min-width: 2px; }
 .rt-pop .row.slow .ms { color: var(--warn); font-weight: 600; }
-.rt-pop .rtsub { margin: -1px 0 3px 82px; color: var(--tx-4); font-size: 11px; }
+.rt-pop .rtsub { margin: -1px 0 3px 82px; color: var(--tx-4); font-size: var(--fs-ctl); }
 .rt-pop .sep { height: 1px; background: var(--bd-1); margin: 9px -14px; }
 .rt-pop .kv { display: flex; gap: 6px; align-items: baseline; min-height: 20px; } .rt-pop .kv span:first-child { color: var(--tx-3); width: 74px; flex: none; }
 .rt-pop .tip { margin-top: 8px; padding: 6px 8px; border-radius: var(--r-md); background: var(--warn-soft); line-height: 1.6; }

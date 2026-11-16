@@ -40,6 +40,8 @@
     return `<div class="set-grp">${title ? `<div class="gt">${title}</div>` : ''}<div class="card">${rows.join('')}</div></div>`;
   };
   const stp = (v, u = '', o = {}) => `<span class="stp" data-min="${o.min ?? 0}" data-max="${o.max ?? 999}" data-step="${o.step || 1}"><button data-act="step" data-d="-1" aria-label="减少">−</button><b class="num">${v}</b>${u ? `<span class="t3">${u}</span>` : ''}<button data-act="step" data-d="1" aria-label="增加">+</button></span>`;
+  /** 设置行下面的预览块(见 settings-pv.js);脚本未加载时为空 */
+  const PVX = (k) => (typeof W !== 'undefined' && W.pv && W.pv[k] ? W.pv[k]() : '');
   const note = (t) => `<div class="t3 fs-cap" style="padding:0 4px;line-height:1.5">${t}</div>`;
   /** 会实时改变界面的分段(密度、圆角……):data-key 交给 behave.js 的 live 处理 */
   const segL = (items, on, key) => seg(items, on, '', 'live').replace('<div class="seg ', `<div data-key="${key}" class="seg `);
@@ -109,13 +111,15 @@
 
     typography: { t: '字体与尺寸', d: '界面缩放、会话正文字号与内容宽度。', body: (st) => `
       ${G('界面与正文',
+        PVX('typo'),
         R('字号预设', '同时调整界面大小与会话正文字号;滑块偏离后自动显示「自定义」(appearance.fontPreset)', seg(['紧凑', '标准', '舒适', '大字', '自定义'], 1)),
-        R('界面大小', '侧栏、列表、菜单、按钮、文件树等整体缩放(appearance.uiScale)', stp(110, '%', { min: 90, max: 150, step: 5 })),
+        R('界面大小', '侧栏、列表、菜单、按钮、文件树等整体缩放(appearance.uiScale)', stp(100, '%', { min: 90, max: 150, step: 5 })),
         R('会话正文字号', '会话流与 Markdown 预览正文(appearance.fontScale)', stp(100, '%', { min: 85, max: 150, step: 5 })),
-        R('正文行距', '会话流、用户消息与输入框的行距;不影响编辑器与终端(appearance.lineHeight)', seg(['紧凑', '标准', '宽松'], 1)))}
+        R('正文行距', '会话流、用户消息与输入框的行距(1.45 / 1.6 / 1.75);不影响编辑器与终端(appearance.lineHeight)', seg(['紧凑', '标准', '宽松'], 1)))}
       ${G('内容宽度',
         R('会话内容宽度', '时间线、排队卡、任务坞与输入框同宽;窄屏自动收窄,占满上限 1400(appearance.flowWidth)', seg(['窄', '紧凑', '标准', '宽', '特宽', '占满'], 2)),
-        R('设置页内容宽度', '设置主栏内容列;窗口较窄时自动铺满(appearance.setWidth)', seg(['窄', '标准', '宽', '特宽', '占满'], 1)))}
+        R('设置页内容宽度', '设置主栏内容列;窗口较窄时自动铺满(appearance.setWidth)', seg(['窄', '标准', '宽', '特宽', '占满'], 1)),
+        PVX('width'))}
       ${G('文件树', R('彩色文件图标', '按文件类型上色;关闭后全部用灰色线条图标', tog(1, 'data-live="fileIcons"')))}
       ${note('排版规范(字号阶梯、预设、档位)见「规范 → 排版与宽度」页。')}` },
 
@@ -124,8 +128,11 @@
         R('动效', '流光、滑入与布局变形;关闭后所有时长令牌归零(也跟随系统「减弱动态效果」)', tog(1, 'data-live="motion"')),
         R('形态切换动画', 'Agent ⇄ IDE 的布局变形,约 0.44 秒;「简化」只淡入淡出', seg(['流畅', '简化', '无'], 0)),
         R('流光样式', '「正在进行」的文字扫光', seg(['流光', '呼吸', '无'], 0)),
-        R('等待字符动画', '状态行与回合进行中的字符(appearance.spinner,未测试)', seg(['经典', '趣味', 'Claude', '诗意', '极客', '极简'], 2)),
+        PVX('shimmer'),
+        R('等待字符动画', '状态行与回合进行中的字符(appearance.spinner)', seg(['经典', '趣味', 'Claude', '诗意', '极客', '极简'], 2)),
+        PVX('spinner'),
         R('等待指示样式', '步骤行 / 子代理 / 任务坞 / 状态栏的进行中图标;按钮内 loading 仍用小圆环', seg(['沙漏', '圆环', '点阵', '脉冲'], 0)),
+        PVX('wait'),
         R('滚动条', '自动隐藏 / 跟随系统 / 始终显示', seg(['跟随系统', '自动隐藏', '始终显示'], 1)))}` },
 
     brand: { t: '应用与菜单栏图标', d: 'Dock 应用图标与菜单栏托盘。', body: () => brandGroups() },
@@ -145,7 +152,7 @@
       ${typeof PV !== 'undefined' ? PV.providersSection() + PV.mappingBlock() : ''}` },
 
     chat: { t: '对话与提示词', d: '会话流的显示与回合行为,以及追加到系统提示词的内容。', body: () => `
-      ${G('会话样式', R('会话样式', '对话:你的消息靠右成气泡,回复靠左;通栏:你的消息是与正文同宽、四角圆角的整行卡片,上下排列。「跟随布局」按界面布局方案', segL(['跟随布局', '对话', '通栏'], 0, 'flowStyle')), R('工具调用详细程度', '精简只显示动词与对象;详细默认展开输出', seg(['精简', '标准', '详细'], 1)))}
+      ${G('会话样式', R('会话样式', '对话:你的消息靠右成气泡,回复靠左;通栏:你的消息是与正文同宽、四角圆角的整行卡片,上下排列。「跟随布局」按界面布局方案', segL(['跟随布局', '对话', '通栏'], 0, 'flowStyle')), R('工具调用详细程度', '精简:相邻调用合并成一行摘要;标准:只合并连续的读取 / 搜索;详细:差异与命令输出直接显示在行下', seg(['精简', '标准', '详细'], 1)), PVX('tools'))}
       ${G('显示', R('思考内容默认展开', '关闭时只显示「思考 · 4 秒」一行', tog(0)), R('回合结束后折叠过程', '把本回合的工具步骤折成「已处理 1 分 13 秒」', tog(1)), R('用户消息吸顶', '长会话里滚动时,当前这一轮的提问固定在会话顶部;下一轮顶上来时它被顶走,始终最多一张。点击提问卡可就地编辑', tog(1, 'data-live="stickyUser"')), R('显示回合用量', '回复下方的模型 · 用时 · token · 费用', tog(1)), R('工具组默认折叠', '连续的读取 / 搜索收进一行;失败时自动展开', tog(1)))}
       ${G('新会话', R('默认权限模式', '新会话的起始模式;在输入框里切换后会自动记住,下次新会话沿用(「跳过权限确认」不记)', seg(['逐项确认', '自动接受编辑', '计划'], 0)), R('回合结束提示音', 'chat.ding 回合正常结束时 afplay Tink(未测试)', tog(0)))}
       ${G('排队与引导', R('排队消息带图片与文件引用', 'chat.queueAtt 关时排队只发纯文本(未测试)', tog(1)), R('被中断后暂停队列', 'chat.queuePause 关时出错后继续 drain(未测试)', tog(1)))}

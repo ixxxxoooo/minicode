@@ -10,7 +10,7 @@
 .etab .mod { width: 6px; height: 6px; border-radius: 50%; background: var(--tx-3); }
 .etab.pv .nm { font-style: italic; }
 .etab-tools { margin-left: auto; display: flex; align-items: center; gap: 1px; padding: 0 6px; }
-.crumbs { height: 24px; display: flex; align-items: center; gap: 3px; padding: 0 14px; color: var(--tx-3); font-size: 11.5px; flex: none; }
+.crumbs { height: 24px; display: flex; align-items: center; gap: 3px; padding: 0 14px; color: var(--tx-3); font-size: var(--fs-ctl); flex: none; }
 .crumbs b { color: var(--tx-1); font-weight: var(--fw-medium); }
 
 /* 代码区 */
@@ -27,11 +27,11 @@
 .code .src .mc-sel { background: var(--ac-soft); box-shadow: inset 1.5px 0 var(--ac); }
 .code .src .cursor.mc { box-shadow: 1.5px 0 0 var(--ac); width: 0; display: inline-block; }
 /* 转到行浮条(贴在代码区顶栏下) */
-.goto-strip { display: flex; align-items: center; gap: 8px; padding: 4px 12px; font-size: 11.5px; flex: none; background: var(--bg-raised); box-shadow: inset 0 -1px var(--bd-1), var(--sh-1); }
+.goto-strip { display: flex; align-items: center; gap: 8px; padding: 4px 12px; font-size: var(--fs-ctl); flex: none; background: var(--bg-raised); box-shadow: inset 0 -1px var(--bd-1), var(--sh-1); }
 .goto-strip .inp { height: 24px; min-width: 72px; flex: none; }
 .goto-strip .hint { color: var(--tx-3); font-size: var(--fs-cap); white-space: nowrap; }
 /* 磁盘外部修改提示条 */
-.ext-strip { display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: 11.5px; flex: none; background: var(--warn-soft); box-shadow: inset 0 -1px color-mix(in srgb, var(--warn) 35%, var(--bd-1)); }
+.ext-strip { display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: var(--fs-ctl); flex: none; background: var(--warn-soft); box-shadow: inset 0 -1px color-mix(in srgb, var(--warn) 35%, var(--bd-1)); }
 .ext-strip.del { background: var(--err-soft); box-shadow: inset 0 -1px color-mix(in srgb, var(--err) 35%, var(--bd-1)); }
 .etab.gone { opacity: .52; }
 .etab.gone .nm { text-decoration: line-through; color: var(--tx-4); }

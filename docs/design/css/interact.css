@@ -55,12 +55,12 @@ body.no-motion .shimmer { color: var(--tx-2) !important; -webkit-text-fill-color
 .inp:hover { box-shadow: inset 0 0 0 1px var(--bd-3); } .inp.fill:hover { background: var(--fill-2); box-shadow: none; }
 .inp:focus-within { box-shadow: var(--ring), inset 0 0 0 1px var(--ac-line); } .inp.fill:focus-within { background: var(--bg-raised); }
 .inp.err { box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 16%, transparent), inset 0 0 0 1px var(--err); }
-input.fld { font: inherit; outline: none; border: 0; transition: box-shadow var(--dur-fast); } input.fld.mono { font: 11.5px var(--font-mono); }
+input.fld { font: inherit; outline: none; border: 0; transition: box-shadow var(--dur-fast); } input.fld.mono { font: var(--fs-mono) var(--font-mono); }
 input.fld:hover { box-shadow: inset 0 0 0 1px var(--bd-3); } input.fld:focus { box-shadow: var(--ring), inset 0 0 0 1px var(--ac-line); }
 input.fld.err { box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 16%, transparent), inset 0 0 0 1px var(--err); }
 input.fld::placeholder { color: var(--tx-4); }
 textarea.ta { width: 100%; resize: none; border: 0; outline: none; font: inherit; display: block; transition: box-shadow var(--dur-fast); }
-textarea.ta.mono { font: 11.5px/1.6 var(--font-mono); }
+textarea.ta.mono { font: var(--fs-mono)/1.6 var(--font-mono); }
 textarea.ta:hover { box-shadow: inset 0 0 0 1px var(--bd-3); } textarea.ta:focus { box-shadow: var(--ring), inset 0 0 0 1px var(--ac-line); }
 .err-msg { color: var(--err); font-size: var(--fs-cap); display: flex; align-items: center; gap: 4px; }
 /* 行内小工具:悬停才出现 */
