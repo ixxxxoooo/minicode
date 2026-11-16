@@ -125,7 +125,11 @@ func (a *App) cuMCPSaveEdit(st *customize.Store, it *customize.Item) {
 			log.Warn("MCP 保存失败", "name", it.Name, "err", err)
 			return
 		}
-		ds.RefreshMCPStatus()
+		// 刷新状态要跑 claude mcp list 子进程(实测 130 ms ~ 1 s,上限 45 s),不能卡在界面线程里
+		a.bg("刷新MCP状态", func() func() {
+			ds.RefreshMCPStatus()
+			return func() {}
+		})
 	}
 	it.EnvVals = env
 	*it = d
