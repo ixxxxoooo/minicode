@@ -74,7 +74,8 @@ const (
 )
 
 // 界面字号与控件高度会随「界面大小」(设置 → 外观)缩放,所以是变量,由 SetUIScale 统一重算。
-// 基准值是 100% 时的设计稿尺寸;默认界面大小是 110%(见 DefaultUIScale),比设计稿的 12px 正文更好读。
+// 基准值是 100% 时的设计稿尺寸(设计稿 v4 字号阶梯,tokens.css):默认界面大小就是 100%(见 DefaultUIScale)。
+// 旧默认 110% 会让界面 14.3 / 阅读 16.5 / 代码 14.3,比同类工具大一级,v4 起改回 100%。
 var (
 	HCtl    float32 = 24
 	HCtlSm  float32 = 20
@@ -83,24 +84,26 @@ var (
 	HStatus float32 = 22
 	WSide   float32 = 228
 
-	FsMicro   float32 = 10
+	// 字号阶梯(设计稿 --fs-*):micro 徽标 / 键帽 · ctl 控件内文字 · cap 说明与附注 · body 界面与工具行 · read 会话正文 · title 卡片标题 · head 页面标题 · display 欢迎页。
+	FsMicro   float32 = 10.5
+	FsCtl     float32 = 11.5
 	FsCap     float32 = 12
 	FsBody    float32 = 13
-	FsRead    float32 = 15
-	FsTitle   float32 = 15
-	FsHead    float32 = 19.5
-	FsDisplay float32 = 26
-	FsMono    float32 = 13 // 会话流等宽,≈ FsRead×0.88
+	FsRead    float32 = 14
+	FsTitle   float32 = 14
+	FsHead    float32 = 17
+	FsDisplay float32 = 22
+	FsMono    float32 = 12 // 代码一律 12(≈ read × 0.86),与说明字同号
 )
 
 // 说明文字(cap)在界面缩到最小时也不低于此值(设计稿 typo-width)。
-const minCapPx float32 = 11.5
+const minCapPx float32 = 11.5 // 说明字缩到最小时的下限(同 FsCtl 的基准)
 
 // 界面大小的范围与默认值(百分数)。
 const (
 	MinUIScale     = 90
 	MaxUIScale     = 150
-	DefaultUIScale = 110
+	DefaultUIScale = 100
 )
 
 var uiScale float32 = 1
@@ -121,10 +124,10 @@ func SetUIScale(pct int) {
 	HCtl, HCtlSm, HBar = Px(24), Px(20), Px(36)
 	HTab, HStatus = Px(30), Px(22)
 	WSide = float32(int(228*(1+(uiScale-1)*.8) + .5)) // 侧栏随字号略加宽,但不按全比例,免得挤占对话区
-	FsMicro, FsBody, FsRead = Px(10), Px(13), Px(15)
+	FsMicro, FsCtl, FsBody, FsRead = Px(10.5), Px(11.5), Px(13), Px(14)
 	FsCap = max(Px(12), minCapPx)
-	FsTitle, FsHead, FsDisplay = Px(15), Px(19.5), Px(26)
-	FsMono = Px(13)
+	FsTitle, FsHead, FsDisplay = Px(14), Px(17), Px(22)
+	FsMono = Px(12)
 }
 
 func init() { SetUIScale(DefaultUIScale) }
@@ -138,7 +141,7 @@ const (
 	LhCap   = 1.45 // 说明文字常用
 	LhChat  = 1.55
 	LhMono  = 1.6
-	LhRead  = 1.65
+	LhRead  = 1.6
 )
 
 // 间距刻度 --sp-1 … --sp-8。
@@ -335,7 +338,7 @@ func (t *Tokens) UITheme() *ui.Theme {
 	th.Focus = t.Ac
 	th.Radius = t.RSm()
 	th.Spacing = 4
-	th.FontSize = FsRead
+	th.FontSize = FsBody // 没写字号的文字 = 界面正文 13(会话正文显式用 FsRead)
 	th.Scrollbar = t.Bd3
 	th.ScrollbarWidth = 6
 	th.Inverse, th.InverseText = t.Tx1, t.BG

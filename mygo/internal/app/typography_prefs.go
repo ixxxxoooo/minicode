@@ -11,13 +11,13 @@ const (
 )
 
 var fontPresetPairs = []struct{ ui, font int }{
-	{100, 95},
+	{90, 95},                    // 紧凑
 	{theme.DefaultUIScale, 100}, // 标准 = 两个滑块的默认值,全新安装即在此档
-	{120, 110},
-	{135, 125},
+	{110, 105},                  // 舒适
+	{125, 115},                  // 大字
 }
 
-var flowLineHeights = []float32{1.5, 1.65, 1.8}
+var flowLineHeights = []float32{1.45, 1.6, 1.75} // 紧凑 / 标准(默认)/ 宽松
 
 // FlowReadLH 是会话流正文行距(appearance.lineHeight)。
 func (a *App) FlowReadLH() float32 {

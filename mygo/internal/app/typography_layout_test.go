@@ -63,14 +63,14 @@ func TestSettingsContentWidth(t *testing.T) {
 func TestFontPresetApply(t *testing.T) {
 	a, _ := sessionApp(t, "flow-gaps-b4")
 	a.applyFontPresetChoice(0)
-	if a.prefs.Int(pUIScale, theme.DefaultUIScale) != 100 || a.prefs.Int(pFontScale, 100) != 95 {
-		t.Fatalf("紧凑预设应 100/95")
+	if a.prefs.Int(pUIScale, theme.DefaultUIScale) != 90 || a.prefs.Int(pFontScale, 100) != 95 {
+		t.Fatalf("紧凑预设应 90/95")
 	}
 	a.applyFontPresetChoice(2)
-	if a.prefs.Int(pUIScale, theme.DefaultUIScale) != 120 || a.prefs.Int(pFontScale, 100) != 110 {
-		t.Fatalf("舒适预设应 120/110")
+	if a.prefs.Int(pUIScale, theme.DefaultUIScale) != 110 || a.prefs.Int(pFontScale, 100) != 105 {
+		t.Fatalf("舒适预设应 110/105")
 	}
-	if theme.UIScale() < 1.19 {
+	if theme.UIScale() < 1.09 {
 		t.Fatalf("uiScale 应随预设更新,得 %v", theme.UIScale())
 	}
 }
@@ -78,7 +78,7 @@ func TestFontPresetApply(t *testing.T) {
 // 预设行点「还原」要把界面大小与正文字号一起还原(此前只还原了预设键本身,界面仍停在放大状态)。
 func TestFontPresetResetRestoresScales(t *testing.T) {
 	a, _ := sessionApp(t, "flow-gaps-b4")
-	a.applyFontPresetChoice(2) // 舒适 120/110
+	a.applyFontPresetChoice(2) // 舒适 110/105
 	row := setRow{key: pFontPreset, def: 1}
 	a.resetPref(row)
 	if got := a.prefs.Int(pUIScale, theme.DefaultUIScale); got != theme.DefaultUIScale {
