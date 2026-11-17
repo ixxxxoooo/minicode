@@ -133,7 +133,7 @@ func (a *App) beltGhostState() (*editor.State, float32) {
 
 // beltStep 算本帧的摆位。不在平移中(没有真实窗口且没冻结 / 动效关 / 没记到旧几何 / 已走完)返回 on = false。
 func (a *App) beltStep() beltFrame {
-	if (a.win == nil && morphFreezeP == 0) || (a.screen != ScreenWork && a.screen != ScreenWelcome) || !a.belt0Ok || a.stageW <= 0 || a.morphAt.IsZero() {
+	if (a.win == nil && !a.driveFrames && morphFreezeP == 0) || (a.screen != ScreenWork && a.screen != ScreenWelcome) || !a.belt0Ok || a.stageW <= 0 || a.morphAt.IsZero() {
 		return beltFrame{}
 	}
 	e, done := a.morphProgress()
@@ -152,6 +152,19 @@ func (a *App) beltStep() beltFrame {
 	f.chat = beltRect{x: lerp(g0.chat.x, g1.chat.x), w: lerp(g0.chat.w, g1.chat.w)}
 	f.ws = beltRect{x: g1.ws.x - dx*(1-e), w: g1.ws.w} // 新工作区:自与对话栏相邻的那一侧移进来
 	f.ghost = beltRect{x: g0.ws.x + dx*e, w: g0.ws.w}  // 旧工作区:被对话栏挤出舞台
+	// 对话栏的宽度在切换里也在变(Agent 居中占满 ↔ IDE 窄栏),三块并不是刚性平移同一段距离:
+	// 若新旧工作区都照「平移 dx」摆,对话栏变窄 / 变宽的那一段就会在它与旧工作区(或新工作区)之间留一条空白
+	// (实测最大 140 px,整个切换里都在)。改成「首尾相接的一串」:新 / 旧工作区各自紧贴对话栏的外缘(隔一个面板间距),
+	// 对话栏自己的位置与宽度仍按进度插值。两端落点与上面的刚性公式一致(在起点与终点都严格重合),只是中间不再有缝。
+	if g0.chatOn && g1.chatOn && g0.chat.w > .5 && g1.chat.w > .5 {
+		right := f.chat.x + f.chat.w + gap // 对话栏右缘 + 间距:右侧那块面板的左缘
+		left := func(w float32) float32 { return f.chat.x - gap - w }
+		if a.mode == ModeIDE { // Agent → IDE:新工作区在对话栏左边,旧工作区在右边
+			f.ws.x, f.ghost.x = left(f.ws.w), right
+		} else { // IDE → Agent:旧工作区在左边,新工作区在右边
+			f.ghost.x, f.ws.x = left(f.ghost.w), right
+		}
+	}
 	return f
 }
 
@@ -164,6 +177,7 @@ func (a *App) wsGhost(c *ui.Context, r beltRect) {
 	t := a.tk
 	g := a.belt0
 	p := a.pane(c).Key("ws-ghost").ClipX().Absolute().Left(r.x).Top(0).Bottom(0).Width(r.w).Shrink(0).Transition(noMotion).PassThrough()
+	a.probe(pzGhost, p)
 	p.Children(func() {
 		ui.Row(c).Key("ws-ghost-tabs").Height(theme.HTab).Shrink(0).AlignItems(ui.Center).Padding(0, 6, 0, 6).Gap(2).
 			Background(t.Chrome).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {

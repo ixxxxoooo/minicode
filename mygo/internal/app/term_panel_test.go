@@ -31,6 +31,7 @@ func TestRealTerminalPanel(t *testing.T) {
 	}
 	pump(func() bool { return a.ide.tpc().t != nil }, "终端启动")
 	pump(func() bool { return containsText(tt.Texts(), "$") }, "出现提示符")
+	settleTermLayout(tt)
 
 	tt.Type("printf 'ab%s' cd")
 	tt.Key(0, ui.KeyEnter)
@@ -54,6 +55,14 @@ func TestRealTerminalPanel(t *testing.T) {
 	}, "退出提示")
 	tt.Key(0, ui.KeyEnter)
 	pump(func() bool { return a.ide.tpc().t != nil && !exitedNow(a) }, "回车后重新启动")
+}
+
+// settleTermLayout 等形态切换 / 开合的布局动画放完再往终端里打字:
+// 面板尺寸变化会给 shell 发 SIGWINCH,shell 收到后重画提示符,会把刚输出、还没换行的内容擦掉。
+func settleTermLayout(tt *ui.Tester) {
+	tt.Advance(time.Second)
+	time.Sleep(300 * time.Millisecond)
+	tt.Frame()
 }
 
 func exitedNow(a *App) bool { ex, _ := a.ide.tpc().t.Exited(); return ex }
@@ -170,13 +179,39 @@ func TestTerminalSelectAndCopy(t *testing.T) {
 				return
 			}
 		}
+		if tp := a.ide.tpc(); tp != nil && tp.scr != nil {
+			for i, ln := range tp.scr.Lines {
+				var sb strings.Builder
+				for _, r := range ln {
+					sb.WriteString(r.Text)
+				}
+				t.Logf("屏幕 %d: %q", i, sb.String())
+			}
+		}
 		t.Fatalf("等不到:%s;当前文字 %v", what, tt.Texts())
 	}
 	pump(func() bool { return a.ide.tpc().t != nil }, "终端启动")
 	pump(func() bool { return containsText(tt.Texts(), "$") }, "提示符")
+	settleTermLayout(tt)
 	tt.Type("printf 'copy-%s-me' target")
 	tt.Key(0, ui.KeyEnter)
-	pump(func() bool { return tt.HasText("copy-target-me") }, "输出 copy-target-me")
+	// 看屏幕快照而不是界面文字:输出与下一个提示符常在同一刷新里到达(同一行),界面文字里没有单独的 copy-target-me
+	pump(func() bool {
+		tp := a.ide.tpc()
+		if tp == nil || tp.scr == nil {
+			return false
+		}
+		for _, ln := range tp.scr.Lines {
+			var sb strings.Builder
+			for _, r := range ln {
+				sb.WriteString(r.Text)
+			}
+			if strings.HasPrefix(sb.String(), "copy-target-me") {
+				return true
+			}
+		}
+		return false
+	}, "输出 copy-target-me")
 
 	// 在画面快照里找到输出行,直接设选区(鼠标拖选的换算另有单测)
 	tp := a.ide.tpc()

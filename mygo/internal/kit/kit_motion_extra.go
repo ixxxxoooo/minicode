@@ -38,12 +38,12 @@ func growScale(fraction float32, delay, total time.Duration) float32 {
 // skel/real 建议绝对叠放;at 为开始时刻,total 为这一次的时长;播完停在内容、不再要求出帧。
 // (此前用「% total」让它无限循环:用量页骨架与内容每 3 秒来回闪,还让界面常驻 60 帧重绘。)
 func Crossfade(skel, real ui.Element, at time.Time, total time.Duration, frame func()) {
-	if !MotionOn() || at.IsZero() || time.Since(at) >= total {
+	if !MotionOn() || at.IsZero() || Since(at) >= total {
 		skel.Opacity(0)
 		real.Opacity(1)
 		return
 	}
-	p := float32(time.Since(at)) / float32(total)
+	p := float32(Since(at)) / float32(total)
 	if frame != nil {
 		frame()
 	}

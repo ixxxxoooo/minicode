@@ -63,7 +63,7 @@ const (
 func (a *App) openPalette() {
 	a.pq = palState{lastSel: -1}
 	a.paletteOn = true
-	a.pq.palAt = time.Now()
+	a.pq.palAt = kit.Now()
 	log.Debug("打开命令面板")
 }
 
@@ -449,7 +449,7 @@ func (a *App) paletteView(c *ui.Context) {
 		a.closePalette()
 		return
 	}
-	if a.dlgClosing == "palette" && time.Since(a.dlgCloseAt) >= kit.DurFast {
+	if a.dlgClosing == "palette" && kit.Since(a.dlgCloseAt) >= kit.DurFast {
 		a.dlgClosing, a.dlgSeen = "", ""
 		a.pq = palState{}
 		return
@@ -459,7 +459,7 @@ func (a *App) paletteView(c *ui.Context) {
 	}
 	t := a.tk
 	if a.paletteOn && a.pq.palAt.IsZero() {
-		a.pq.palAt = time.Now()
+		a.pq.palAt = kit.Now()
 	}
 	// 上下 / 回车只在面板开着时处理;输入框不吃 Up / Down
 	items := a.palItems()

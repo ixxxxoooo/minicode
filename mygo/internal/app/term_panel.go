@@ -38,6 +38,9 @@ type termPanel struct {
 	demoTitle string // 演示 / 截图用 OSC 标题替身(非演示应为空)
 	err       string // 启动失败的原因
 	cellW     float32
+	wantC     int // 面板量出的目标列 / 行(还没改到 pty 上,等尺寸稳定,见 realTerminal)
+	wantR     int
+	wantAt    time.Time // 目标列 / 行最近一次变化的时刻
 	st        ui.ScrollState
 	waits     int    // 等待量出大小的帧数(防止面板根本没有尺寸时空转)
 	pend      ui.Key // 按下了会打出字的键,还在等 InputText
@@ -88,7 +91,7 @@ func (a *App) newTerm() {
 	a.ide.tpSel = len(a.ide.tps) - 1
 	a.ide.termSel = ""
 	a.ide.bottomOpen, a.ide.bottomTab = true, "term"
-	a.panelFlashAt = time.Now()
+	a.panelFlashAt = kit.Now()
 	log.Info("新建终端标签", "index", a.ide.tpSel)
 	a.redraw()
 }
@@ -169,7 +172,20 @@ func (a *App) realTerminal(c *ui.Context) {
 		}
 	}
 	if tp.t != nil && cols >= 4 && rows >= 1 {
-		tp.t.Resize(cols, rows)
+		if tc, tr := tp.t.Size(); tc != cols || tr != rows {
+			// 面板尺寸还在逐帧变化(开合动画 / 拖窗口边缘)时先不动 pty:每帧改一次大小会让内核重排整屏、
+			// shell 重画提示符,动画里就是一串卡顿。画面只是被面板裁切 / 留白一小会儿,尺寸稳定 90 ms 后一次到位。
+			// 无窗口(测试 / 截图)没有动画,直接生效。
+			if tp.wantC != cols || tp.wantR != rows {
+				tp.wantC, tp.wantR, tp.wantAt = cols, rows, kit.Now()
+			}
+			if a.win == nil || kit.Since(tp.wantAt) >= 90*time.Millisecond {
+				tp.t.Resize(cols, rows)
+				log.Debug("终端改大小", "cols", cols, "rows", rows)
+			} else {
+				a.frameSoon()
+			}
+		}
 	}
 	if tp.focusIt {
 		body.Focus()

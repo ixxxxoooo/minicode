@@ -56,25 +56,29 @@ func (a *App) sideWidth() float32 {
 
 // side 是导航栏:顶部分段 + 内容 + 底部页面入口。宽度变化带 260 ms 过渡,内容宽度固定所以只是被裁切。
 func (a *App) side(c *ui.Context) {
-	if a.useSideDrawer() {
-		// 导航内容在 overlayLayer 抽屉里画
-		return
-	}
 	t := a.tk
 	w := a.sideW()
-	target := w
-	if !a.sideOpen {
-		target = 0
-	}
+	// 窄窗改抽屉:并排列不能「一帧消失」(内容区会一下子变宽几百像素),而是和手动收起一样 260 ms 收到 0;
+	// 抽屉里的导航内容在 overlayLayer 画,并排列只在还没收完时保留内容(抽屉已展开时不重复画)
+	inline := a.sideOpen && !a.useSideDrawer()
+	drawer := a.useSideDrawer()
 	// 开合:宽度 260ms ease-io(sideTransition),透明度 120ms ease(设计稿 .side 的 transition)
-	// 宽度是显式的逐帧布局宽度(paneW,260ms ease-io):舞台与对话栏每一帧跟着它走;不用元素过渡(见 paneW 的说明)
+	// 宽度是显式的逐帧布局宽度 = 开合因子(paneOpen,260ms ease-io)× 满开宽度:舞台与对话栏每一帧跟着它走;
+	// 不用元素过渡(见 paneOpen 的说明)。本帧宽度记进 sideCur,右栏据此实时预判自己的宽度。
 	col := ui.Column(c).Key("side").Shrink(0).ClipX().Transition(noMotion)
-	col.Width(a.paneW(col, target, true))
-	col.Opacity(col.AnimateWith("op", map[bool]float32{true: 1, false: 0}[a.sideOpen], kit.DurFast, kit.EaseCSS))
+	cur := a.paneOpen(col, "w", inline, true) * w
+	col.Width(cur)
+	a.sideCur, a.sideCurOk = cur, true
+	a.probe(pzSide, col)
+	col.Opacity(col.AnimateWith("op", map[bool]float32{true: 1, false: 0}[inline], kit.DurFast, kit.EaseCSS))
 	a.syncNavSwap()
 	a.syncNavDrop()
+	if drawer && (a.sideOpen || cur < 0.5) {
+		col.Children(func() {})
+		return
+	}
 	col.Children(func() {
-		if a.sideOpen {
+		if inline {
 			a.resizeHandle(c, lySide, "r", w, a.sideWidth(), 180, 420, func(v float32) { a.ly.side = v })
 		}
 		ui.Column(c).Width(w).Grow(1).MinHeight(0).Children(func() {

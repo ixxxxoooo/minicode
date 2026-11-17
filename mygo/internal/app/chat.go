@@ -11,9 +11,9 @@ import (
 // chatPane 是对话栏:标题行 + 会话流 + 任务坞 + 输入框。
 func (a *App) chatPane(c *ui.Context, gap float32) {
 	t := a.tk
-	// 宽度 / 间距用显式的逐帧动画值(paneW / paneGap),不用元素过渡
+	// 宽度 / 间距 = 开合因子(stageFactors)× 满开值,不用元素过渡(见 paneOpen 的说明)
 	p := a.pane(c).Key("chat").Transition(noMotion)
-	shown := true
+	shown := true  // 目标状态:对话栏此刻是否应该在场(决定透明度与收起后内容保留多久)
 	slide := false // IDE 对话栏开合动画途中:内容保持定宽、随栏滑动,不逐帧重排
 	switch {
 	case a.belt.on:
@@ -21,28 +21,25 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		r := a.belt.chat
 		p.Absolute().Left(r.x).Top(0).Bottom(0).Width(max(0, r.w)).Shrink(0).Transition(noMotion)
 		shown = r.w > .5
-		// 只为把外边距的动画状态推到终值,平移结束后不会再补一次滑动
-		_ = a.paneGap(p, a.mode == ModeIDE && !a.chatMax && a.belt.chatOn, gap)
-	case a.mode == ModeAgent || a.chatMax:
-		// 占满型不带自己的动画:宽度完全跟着相邻栏(左栏 / 右栏)每一帧的宽度走(设计稿里它是 flex: 1,没有 width 过渡)
+	case a.mode == ModeAgent:
+		// Agent:占满型不带自己的动画,宽度完全跟着相邻栏(左栏 / 右栏)每一帧的宽度走(设计稿里它是 flex: 1)
 		p.Grow(1).Basis(0)
-		_ = a.paneGap(p, false, gap)
-	case a.rightOn && !a.useDockRail():
-		// IDE 形态:对话栏停靠在右侧(设计稿 .chat { flex: 1 1 0 })。
-		// 开合动画途中它占满工作区(wsPane 里显式动画)让出来的那一段,展开时随工作区收窄逐帧变宽;
-		// 走完 / 拖拽 / 缩放窗口时 wsPane 占满,这里定宽 --w-dock。两种分配在交接那一帧结果相同。
-		p.Margin(0, 0, 0, a.paneGap(p, true, gap))
-		if a.ideRest {
-			p.Width(a.dockW()).Shrink(0)
-		} else {
-			p.Grow(1).Basis(0).ClipX()
-			slide = true
-		}
 	default:
-		// 收起(右栏关了 / 窄窗收成图标条):设计稿 .chat { flex: 0 0 0; width: 0 } 宽度瞬间归零(不过渡),
-		// 只有工作区在 440ms 里向右扩展填满;透明度 260ms ease-io、间距 440ms 照常渐变
-		p.Width(0).Shrink(0).Margin(0, 0, 0, a.paneGap(p, false, gap))
-		shown = false
+		// IDE:对话栏停靠在右侧,宽度 = 满开宽度 × 停靠因子,向「占满舞台」插值最大化因子。
+		// 收起不再瞬间归零:宽度 / 间距 / 透明度一起走完 440 ms(设计稿原本是 width:0 瞬间消失,设计稿已同步改成过渡),
+		// 工作区永远拿剩余,所以左边缘被推走的每一帧都有内容盖着,不会露出空白。
+		shown = a.chatMax || (a.rightOn && !a.useDockRail())
+		fd, fm := a.fDock, a.fMax
+		if fm >= .999 {
+			p.Grow(1).Basis(0) // 最大化稳态:占满(工作区宽度为 0)
+		} else {
+			w := a.dockW() * fd * (1 - fm)
+			if fm > 0 { // 最大化动画途中:向整个舞台宽度插值(舞台宽度取上一帧量到的)
+				w += a.stageW * fm
+			}
+			p.Width(w).Shrink(0).Margin(0, 0, 0, gap*fd*(1-fm))
+			slide = fm <= 0 && fd < .999
+		}
 	}
 	// 透明度 260ms ease-io(设计稿 .pane);形态切换那 440ms 里改走 chat-dock / chat-center:
 	// 整块对话栏自 ∓34% 处滑入,透明度 .4 → 1(chatSlide)。
@@ -54,8 +51,9 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 	if shown && !a.belt.on {
 		a.chatSlide(p, a.chatW)
 	}
+	a.probe(pzChat, p)
 	// 收起期间继续画内容,被宽度动画一点点裁掉(窄窗改成图标条时对话栏在浮层里画,不能同时画两份)
-	if !a.keepWhile("chat", shown, kit.DurMorph) || (!shown && a.useDockRail()) {
+	if !a.keepWhile("chat", shown, kit.DurMorph) || (!shown && a.useDockRail() && a.dockFloat) {
 		p.Children(func() {})
 		return
 	}

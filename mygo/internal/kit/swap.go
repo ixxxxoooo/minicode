@@ -16,7 +16,7 @@ func SwapProgress(at time.Time, frame func()) float32 {
 	if !MotionOn() || at.IsZero() || DurBase <= 0 {
 		return 1
 	}
-	p := float32(time.Since(at)) / float32(DurBase)
+	p := float32(Since(at)) / float32(DurBase)
 	if p >= 1 {
 		return 1
 	}

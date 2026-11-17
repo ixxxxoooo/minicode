@@ -114,7 +114,11 @@ type App struct {
 	belt0Ok      bool                                     // belt0 有效
 	belt         beltFrame                                // 本帧传送带摆位(只在 stage 构建期间有值)
 	stageW       float32                                  // 舞台宽度(上一帧量到的)
-	ideRest      bool                                     // IDE 形态右栏开合动画已走完(工作区占满、对话栏定宽);动画中反过来(工作区定宽、对话栏占满)
+	fWs          float32                                  // Agent 右侧工作区开合因子 0..1(逐帧动画值,stage 每帧先算好)
+	fDock        float32                                  // IDE 对话栏停靠开合因子 0..1
+	fMax         float32                                  // IDE 对话栏最大化因子 0..1
+	sideCur      float32                                  // 导航栏本帧的布局宽度(含开合动画;<0 = 还没量过),右栏宽度按它实时预判
+	sideCurOk    bool                                     // sideCur 有效
 	navSwapKey   string                                   // 左栏内容上一帧的「形态 + 分段」(变了就播换内容入场)
 	navSwapAt    time.Time                                // 左栏内容换内容入场的起点
 	navDropKey   string                                   // 左栏上一帧的「分段 + 形态 + 当前项目」(变了就播逐行落下,见 side_drop.go)
@@ -227,7 +231,9 @@ type App struct {
 	faults          map[string]*viewFault // 界面构建出错被隔离的区块(safe_view.go)
 	guardAlways     bool                  // 测试里也拦截界面 panic(默认测试不吞,免得藏缺陷)
 	blinkPending    bool                  // 终端光标闪烁:已排好下一次切换的重绘
-	framePending    bool                  // frameSoon 已排队
+	pr              animProbe             // 布局动画探针(anim_probe.go)
+	svc             ui.Services           // 本窗口的持久服务(每帧刷新),frameSoon 用它请求下一帧
+	driveFrames     bool                  // 无窗口时也让 frameSoon 出帧(cmd/shot 逐帧追踪与动画测试)
 	extHold         bool                  // 窗口还没出来:系统要求打开的文件先排队
 	extQueue        []string              // 排队中的文件(窗口出来后依次处理)
 	foldAt          map[string]time.Time  // 步骤行展开的时刻(入场动画)
@@ -700,7 +706,7 @@ func (a *App) SetMode(m Mode) {
 	log.Info("切换形态", "from", from, "to", m)
 	a.beltCapture() // 必须在模式与开合还没换之前:记下旧几何,作为传送带平移的起点
 	a.rememberLayout()
-	a.morphFrom, a.morphAt = from, time.Now()
+	a.morphFrom, a.morphAt = from, kit.Now()
 	a.mode = m
 	a.restoreLayoutFor(m)
 	a.beginMorph()
@@ -729,6 +735,8 @@ func (a *App) View(c *ui.Context) {
 	// 圆角 / 描边 / 阴影 / 悬停色与应用内其它弹层一致。
 	c.SetMenuPresentation(ui.PopoverMenus)
 	a.winW, a.winH = c.Size()
+	a.svc = c.Services()
+	a.sideCurOk = false // 每帧由 side() 重新写入;没画导航栏的页面不沿用上一帧的宽度
 	a.trackLayout()
 	a.warmTick() // 到点预热 / 回前台补预热 / 空闲释放(每帧只比几个时间,很便宜)
 	a.fitPanels()
@@ -752,6 +760,7 @@ func (a *App) View(c *ui.Context) {
 		a.frameSoon()
 	}
 	a.root(c)
+	a.probeEnd(c.Now())
 }
 
 func evName(ev core.Event) string {

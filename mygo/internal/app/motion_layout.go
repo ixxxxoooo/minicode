@@ -40,12 +40,12 @@ func (a *App) keepWhile(key string, active bool, d time.Duration) bool {
 		return true
 	}
 	if s.seen && s.active { // 这一帧刚收起
-		s.at = time.Now()
+		s.at = kit.Now()
 	}
 	if s.at.IsZero() || d <= 0 {
 		return false
 	}
-	if time.Since(s.at) < d {
+	if kit.Since(s.at) < d {
 		a.frameSoon()
 		return true
 	}
@@ -56,7 +56,7 @@ func (a *App) keepWhile(key string, active bool, d time.Duration) bool {
 func (a *App) syncNavSwap() {
 	key := a.NavID() + "|" + strconv.Itoa(int(a.mode))
 	if a.navSwapKey != "" && a.navSwapKey != key {
-		a.navSwapAt = time.Now()
+		a.navSwapAt = kit.Now()
 	}
 	a.navSwapKey = key
 }
@@ -82,13 +82,21 @@ func (a *App) paneSnap() bool {
 	return a.instantLayout()
 }
 
-// paneW 是侧栏 / 工作区 / 对话栏停靠的「布局宽度」逐帧动画值(设计稿 .side / .pane 的 width 过渡:
+// paneOpen 是一块面板的「开合因子」0..1 的逐帧动画值(设计稿 .side / .pane 的 width 过渡:
 // 左栏 260ms ease-io,右栏 440ms 变形曲线)。
-// 宽度直接作为布局宽度:占满型的栏(对话栏 / IDE 工作区)自然跟着相邻栏每一帧的宽度走,
-// 和 CSS 的 flex 布局语义一致;不用 MyGo 的 Transition——它的位置按父级局部坐标插值,
-// 左栏一收舞台原点瞬间跳走、右栏的位置再慢慢追,合成出来先在左边、再向右滑,看着就不对。
-// 参数 slow:true = 260ms ease-io(左栏),false = 440ms 变形曲线(右栏 / 对话栏停靠)。
-func (a *App) paneW(p ui.Element, target float32, slow bool) float32 {
+//
+// 为什么动画「因子」而不是动画「宽度」:面板的实际宽度 = 因子 × 满开宽度,而满开宽度(wsRW / dockW / sideW)
+// 会随窗口大小、相邻栏当前宽度连续变化。若直接动画像素宽度,目标每帧都在变,动画值永远追在后面
+// (表现为:收起导航栏时对话栏先被撑宽、过一会儿才缩回;缩放窗口时右栏落后一帧抖动)。
+// 因子只表达「开 / 合」这件结构性的事,满开宽度每帧按最新的窗口宽度与导航栏动画宽度重算,两者相乘互不干扰,
+// 开合与缩放可以同时发生。不用 MyGo 的 Transition:它的位置按父级局部坐标插值,舞台原点一跳,面板就先在左边再滑向右边。
+// 参数 slow:true = 260ms ease-io(左栏),false = 440ms 变形曲线(右栏 / 对话栏停靠 / 最大化)。
+// 拖分隔线 / 连续缩放窗口 / 形态切换传送带:直接取终值(见 paneSnap)。
+func (a *App) paneOpen(p ui.Element, key string, on bool, slow bool) float32 {
+	target := float32(0)
+	if on {
+		target = 1
+	}
 	dur, ease := kit.DurMorph, kit.EaseMorph
 	if slow {
 		dur, ease = kit.DurSlow, kit.EaseIO
@@ -97,30 +105,24 @@ func (a *App) paneW(p ui.Element, target float32, slow bool) float32 {
 	if dur <= 0 || snap {
 		dur = time.Millisecond
 	}
-	v := p.AnimateWith("w", target, dur, ease)
-	if snap { // 拖分隔线 / 缩放窗口:直接取目标值(动画值会落后一帧,拖拽把手又按目标值算位置,两边对不上就抖)
-		return target
-	}
-	return v
-}
-
-// paneGap 是面板左侧外边距(面板间距)的动画值:开合时随宽度同曲线渐变(设计稿 .pane 的 margin 过渡),
-// 否则收起 / 展开的第一帧会有一个间距宽度的跳动。
-func (a *App) paneGap(p ui.Element, on bool, gap float32) float32 {
-	target := float32(0)
-	if on {
-		target = gap
-	}
-	snap := a.paneSnap()
-	dur := kit.DurMorph
-	if dur <= 0 || snap {
-		dur = time.Millisecond
-	}
-	v := p.AnimateWith("gap", target, dur, kit.EaseMorph)
+	v := p.AnimateWith(key, target, dur, ease)
 	if snap {
 		return target
 	}
-	return v
+	return clampF(v, 0, 1)
+}
+
+// stageFactors 每帧在画舞台之前算好工作区 / 对话栏的开合因子(两块面板互相依赖,必须先于各自构建)。
+// row 是舞台那一行(因子的动画状态挂在它上面,身份稳定)。
+//
+//	Agent  fWs   右侧工作区:右栏开着且不是浮层
+//	IDE    fDock 对话栏停靠:右栏开着且不是图标条,或被最大化
+//	IDE    fMax  对话栏最大化:占满舞台,工作区让位
+func (a *App) stageFactors(row ui.Element) {
+	agent := a.mode == ModeAgent
+	a.fWs = a.paneOpen(row, "f-ws", agent && a.wsOccupies(), false)
+	a.fDock = a.paneOpen(row, "f-dock", !agent && (a.chatMax || (a.rightOn && !a.useDockRail())), false)
+	a.fMax = a.paneOpen(row, "f-max", !agent && a.chatMax, false)
 }
 
 // morphProgress 形态切换自身的进度 0..1(EaseMorph);没有切换或已结束返回 1,done = true。
@@ -128,7 +130,7 @@ func (a *App) morphProgress() (p float32, done bool) {
 	if !kit.MotionOn() || morph.Duration <= 0 || a.morphAt.IsZero() {
 		return 1, true
 	}
-	el := time.Since(a.morphAt)
+	el := kit.Since(a.morphAt)
 	if el >= morph.Duration {
 		return 1, true
 	}

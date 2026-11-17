@@ -58,9 +58,18 @@ func (a *App) sideW() float32 {
 // 缩到自己的最小宽度仍放不下,才整体收起(浮层 / 图标条),最后只剩中间一栏。
 const centerMin = 440
 
-// sideOcc 是导航栏此刻在行内占的宽度(抽屉或收起时为 0)。
+// sideOcc 是导航栏此刻在行内占的宽度(抽屉时为 0)。
+// 开合动画途中取「本帧实际的布局宽度」而不是终点:右栏的宽度由它推算(wsRW / dockW),
+// 用终点的话,一点开 / 收起导航栏右栏就按终态瞬间变宽或变窄(跳变);
+// 用动画值,右栏宽度随导航栏逐帧连续变化,开合结束时两边刚好一致。
 func (a *App) sideOcc() float32 {
-	if a.useSideDrawer() || !a.sideOpen {
+	if a.sideCurOk {
+		return a.sideCur
+	}
+	if a.useSideDrawer() {
+		return 0
+	}
+	if !a.sideOpen {
 		return 0
 	}
 	return a.sideW()
@@ -121,25 +130,25 @@ func (a *App) mt() ui.ElementTransition {
 
 // instantLayout 此刻面板尺寸应直接跟随(不做过渡)。
 func (a *App) instantLayout() bool {
-	if a.ly.resizing != "" || time.Since(a.ly.lastDrag) < 200*time.Millisecond {
+	if a.ly.resizing != "" || kit.Since(a.ly.lastDrag) < 200*time.Millisecond {
 		return true
 	}
 	// 窗口宽度正在连续变化,且没有哪一栏刚被收起 / 展开:连续缩放 = 立即跟随
-	return time.Since(a.ly.winResizeAt) < 250*time.Millisecond && time.Since(a.ly.structAt) > 500*time.Millisecond
+	return kit.Since(a.ly.winResizeAt) < 250*time.Millisecond && kit.Since(a.ly.structAt) > 500*time.Millisecond
 }
 
 // trackLayout 每帧调用:记录窗口宽度是否在变,以及栏的开合结构是否变了(变了才值得做收起 / 展开动画)。
 func (a *App) trackLayout() {
 	if a.winW != a.ly.lastW {
 		if a.ly.lastW != 0 {
-			a.ly.winResizeAt = time.Now()
+			a.ly.winResizeAt = kit.Now()
 		}
 		a.ly.lastW = a.winW
 	}
 	sig := layoutSig{a.mode, a.sideOpen, a.useSideDrawer(), a.useWsOverlay(), a.useDockRail(), a.rightOn, a.chatMax, a.ly.panelMax}
 	if sig != a.ly.sig {
 		if a.ly.sig != (layoutSig{}) {
-			a.ly.structAt = time.Now()
+			a.ly.structAt = kit.Now()
 		}
 		a.ly.sig = sig
 	}
@@ -184,7 +193,7 @@ func (a *App) resizeHandle(c *ui.Context, key, edge string, cur, def, lo, hi flo
 		if d != 0 {
 			set(clampF(cur+d, lo, hi))
 		}
-		a.ly.resizing, a.ly.lastDrag = key, time.Now()
+		a.ly.resizing, a.ly.lastDrag = key, kit.Now()
 	} else if a.ly.resizing == key { // 松手:写偏好
 		a.ly.resizing = ""
 		a.saveLayout(key)

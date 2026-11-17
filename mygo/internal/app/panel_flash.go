@@ -9,7 +9,7 @@ import (
 
 // panelFlash 底部面板展开 / 新建终端时边框闪一下。
 func (a *App) panelFlash(c *ui.Context, box ui.Element) {
-	el := time.Since(a.panelFlashAt)
+	el := kit.Since(a.panelFlashAt)
 	on := !a.panelFlashAt.IsZero() && el < 280*time.Millisecond
 	live := !a.panelFlashAt.IsZero() && el < 900*time.Millisecond
 	if live {

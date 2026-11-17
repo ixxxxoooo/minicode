@@ -20,10 +20,10 @@ func (a *App) bottomPanel(c *ui.Context) {
 	// 开合(设计稿 .bpanel):高度 260ms ease-io、透明度 120ms ease;收起时内容保留到高度归零,展开时从 0 长出来。
 	live := a.keepWhile("bpanel", open, kit.DurSlow)
 	// 高度自己用 AnimateWith 推进(不用 Transition{Height}:只过渡高度的元素第一帧宽度会量成 0,终端也就起不来)。
-	// 宽度仍跟随工作区的变形过渡(与改前一致);只有高度由下面的 AnimateWith 推进,位置不做过渡(否则上缘会滞后)。
-	wt := a.mt()
-	wt.Size, wt.Position, wt.Width = false, false, true
-	box := ui.Column(c).Key("bpanel").Transition(wt)
+	// 宽度不做任何过渡:父级工作区的宽度已经是逐帧动画值,面板宽度必须与它同帧一致;
+	// 曾经给宽度挂 440 ms 的元素过渡,工作区一变宽,底部面板的宽度要再追约 0.5 秒才跟上(日志里面板宽度落后工作区几百 px),
+	// 表现为「终端比编辑器窄一截、旁边露出空白」。位置也不过渡(否则上缘会滞后)。
+	box := ui.Column(c).Key("bpanel").Transition(noMotion)
 	if live {
 		// 不透明底色:拖动分隔线时编辑器区域哪怕某一帧落后,也不会透到面板标签条上
 		box.Background(t.BG).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2)
@@ -35,6 +35,7 @@ func (a *App) bottomPanel(c *ui.Context) {
 	if a.instantLayout() {
 		dur = time.Millisecond // 拖动分隔线 / 拖窗口边缘:高度直接跟手
 	}
+	a.probe(pzPanel, box)
 	hv := box.AnimateWith("h", target, dur, kit.EaseIO)
 	if a.instantLayout() {
 		hv = target // 拖动分隔线:直接取目标高度,不用落后一帧的动画值

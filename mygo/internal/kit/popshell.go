@@ -12,7 +12,7 @@ func PopUpIn(panel ui.Element, openedAt time.Time, frame func()) ui.Element {
 	if !MotionOn() || openedAt.IsZero() {
 		return panel
 	}
-	p := float32(time.Since(openedAt)) / float32(DurBase)
+	p := float32(Since(openedAt)) / float32(DurBase)
 	if p >= 1 {
 		return panel
 	}
@@ -29,7 +29,7 @@ func PopIn(panel ui.Element, openedAt time.Time) ui.Element {
 	if !MotionOn() || openedAt.IsZero() {
 		return panel
 	}
-	p := float32(time.Since(openedAt)) / float32(DurFast)
+	p := float32(Since(openedAt)) / float32(DurFast)
 	if p >= 1 {
 		return panel
 	}
@@ -42,7 +42,7 @@ func PopOut(panel ui.Element, closedAt time.Time) ui.Element {
 	if !MotionOn() || closedAt.IsZero() {
 		return panel
 	}
-	p := float32(time.Since(closedAt)) / float32(DurFast)
+	p := float32(Since(closedAt)) / float32(DurFast)
 	if p >= 1 {
 		return panel.Opacity(0)
 	}
@@ -55,7 +55,7 @@ func DialogIn(backdrop, panel ui.Element, openedAt time.Time, frame func()) {
 	if !MotionOn() || openedAt.IsZero() {
 		return
 	}
-	p := float32(time.Since(openedAt)) / float32(DurBase)
+	p := float32(Since(openedAt)) / float32(DurBase)
 	if p >= 1 {
 		return
 	}
@@ -72,7 +72,7 @@ func DialogOut(backdrop, panel ui.Element, closedAt time.Time, frame func()) {
 	if !MotionOn() || closedAt.IsZero() {
 		return
 	}
-	p := float32(time.Since(closedAt)) / float32(DurFast)
+	p := float32(Since(closedAt)) / float32(DurFast)
 	if p >= 1 {
 		return
 	}
@@ -90,7 +90,7 @@ func StaggerRise(el ui.Element, index int, baseAt time.Time, frame func()) {
 		return
 	}
 	delay := time.Duration(index) * 30 * time.Millisecond
-	p := float32(time.Since(baseAt)-delay) / float32(DurBase)
+	p := float32(Since(baseAt)-delay) / float32(DurBase)
 	if p <= 0 {
 		el.Opacity(0).Translate(0, 6)
 		if frame != nil {
@@ -118,7 +118,7 @@ func CollapseHideFor(el ui.Element, started time.Time, fullH float32, dur time.D
 	if !MotionOn() || started.IsZero() {
 		return
 	}
-	p := float32(time.Since(started)) / float32(dur)
+	p := float32(Since(started)) / float32(dur)
 	if p >= 1 {
 		el.Opacity(0).Height(0).Clip()
 		return

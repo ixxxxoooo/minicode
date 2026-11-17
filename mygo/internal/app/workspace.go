@@ -24,15 +24,17 @@ func (a *App) stage(c *ui.Context) {
 	// 形态切换的传送带平移:面板仍是同一个 Row 里带 Key 的同一批元素(身份不变,输入框焦点 / 编辑器状态不丢),
 	// 只是平移期间它们改成绝对定位 + 逐帧摆位(见 morph_belt.go),Row 裁切溢出。
 	f := a.beltStep()
-	row := ui.Row(c).Grow(1).MinWidth(0).AlignItems(ui.Stretch)
+	row := ui.Row(c).Key("stage").Grow(1).MinWidth(0).AlignItems(ui.Stretch)
 	if f.on {
 		row.Clip()
 	}
+	a.stageFactors(row) // 开合因子先于两块面板算好(它们互相依赖)
 	// 平移中也要每帧更新:舞台是 Grow(1) 的 Row,宽度与绝对定位的子面板无关;
 	// 左栏 / 右栏在切换里开合时舞台宽度会跟着 440ms 过渡,终点几何每帧按最新宽度重算,才不会在最后一帧跳宽。
 	if w := row.Bounds().W; w > 0 {
 		a.stageW = w
 	}
+	a.probe(pzStage, row)
 	row.Children(func() {
 		a.belt = f
 		defer func() { a.belt = beltFrame{} }()
@@ -84,7 +86,7 @@ func noPos(t ui.ElementTransition) ui.ElementTransition {
 func (a *App) wsPane(c *ui.Context, gap float32) {
 	active := a.wsOccupies()
 	ide := a.mode == ModeIDE
-	// 宽度 / 间距用显式的逐帧动画值(paneW / paneGap),不用元素过渡(见 paneW 的说明)
+	// 宽度 / 间距 = 开合因子(stageFactors)× 满开值,不用元素过渡(见 paneOpen 的说明)
 	p := a.pane(c).Key("ws").ClipX().Transition(noMotion)
 	switch {
 	case a.belt.on:
@@ -92,38 +94,19 @@ func (a *App) wsPane(c *ui.Context, gap float32) {
 		r := a.belt.ws
 		p.Absolute().Left(r.x).Top(0).Bottom(0).Width(max(0, r.w)).Shrink(0).Transition(noMotion)
 		active = a.belt.wsOn
-		// 只为把宽度 / 外边距的动画状态推到终值,平移结束后不会再补一次滑动
-		right := !ide && a.belt.wsOn
-		_ = a.paneGap(p, right, gap)
-		w := float32(0)
-		if right {
-			w = a.wsRW()
-		} else if ide {
-			w = a.belt.ws.w
-		}
-		_ = a.paneW(p, w, false)
-	case active && ide:
-		// IDE:设计稿 .ws { width: calc(100% - --w-dock - gap) },右栏关了是 100%,这个宽度走 440ms 变形曲线。
-		// 对话栏收起时宽度瞬间归零,只有这里在逐帧向右扩展;展开时这里收窄、对话栏(flex)随之变宽。
-		// 稳态(动画走完)改回占满,窗口缩放时不会落后一帧。
-		target := a.stageW
-		if a.chatDockOn() {
-			target = max(0, a.stageW-a.dockW()-gap)
-		}
-		_ = a.paneGap(p, false, gap)
-		v := a.paneW(p, target, false)
-		// 稳态 / 拖拽 / 缩放窗口:工作区占满、对话栏定宽(chatPane 读 ideRest),都是精确值,没有落后一帧;
-		// 开合动画途中反过来:工作区定宽(逐帧动画值)、对话栏占满剩余。两种分配在动画走完的那一帧结果相同(352),不会跳。
-		a.ideRest = a.stageW <= 0 || absF(v-target) < .5
-		if a.ideRest {
-			p.Grow(1).Basis(0)
+	case ide:
+		// IDE:工作区永远是「占满剩余」(设计稿 .ws { width: calc(100% - --w-dock - gap) } 的等价写法):
+		// 对话栏的宽度才是动画值(stageFactors 的 fDock / fMax),工作区每一帧拿到的就是舞台减去对话栏后的剩余,
+		// 两块面板加起来恒等于舞台宽度——开合、最大化、缩放窗口、收放导航栏任意叠加都不会出现空白或重叠。
+		// 对话栏最大化走完后工作区归零(内容再保留 440ms 随宽度被裁掉,见 keepWhile)。
+		if a.fMax >= .999 {
+			p.Width(0).Shrink(0)
 		} else {
-			p.Width(v).Shrink(0)
+			p.Grow(1).Basis(0)
 		}
-	case active:
-		p.Width(a.paneW(p, a.wsRW(), false)).Shrink(0).Margin(0, 0, 0, a.paneGap(p, true, gap))
 	default:
-		p.Width(a.paneW(p, 0, false)).Shrink(0).Margin(0, 0, 0, a.paneGap(p, false, gap))
+		// Agent:右侧工作区 = 开合因子 × 满开宽度,左缘外边距同因子渐变(设计稿 .pane 的 width / margin 过渡)
+		p.Width(a.fWs*a.wsRW()).Shrink(0).Margin(0, 0, 0, a.fWs*gap)
 	}
 	// 透明度 260ms ease-io(设计稿 .pane);宽度走 440ms 变形曲线(上面的 Transition)。平移中直接到位。
 	opDur := kit.DurSlow
@@ -131,6 +114,7 @@ func (a *App) wsPane(c *ui.Context, gap float32) {
 		opDur = time.Millisecond
 	}
 	p.Opacity(p.AnimateWith("op", map[bool]float32{true: 1, false: 0}[active], opDur, kit.EaseIO))
+	a.probe(pzWs, p)
 	// 收起期间继续画内容,被宽度动画一点点裁掉(设计稿里内容一直在 DOM 里)
 	if !a.keepWhile("ws", active, kit.DurMorph) {
 		p.Children(func() {})
@@ -155,7 +139,7 @@ func (a *App) wsPane(c *ui.Context, gap float32) {
 
 // flashOverlay 是「开标签唤起工作区」时边框闪一下的描边层(约 0.9 秒:快速亮起、缓慢淡出)。
 func (a *App) flashOverlay(c *ui.Context) {
-	el := time.Since(a.flashAt)
+	el := kit.Since(a.flashAt)
 	on := !a.flashAt.IsZero() && el < 280*time.Millisecond
 	live := !a.flashAt.IsZero() && el < 1100*time.Millisecond
 	if live {

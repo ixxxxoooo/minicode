@@ -445,13 +445,13 @@ func (a *App) redrawSoon() {
 	})
 }
 
-// frameSoon 请求下一帧(入场动画推进用,约 16 ms 后重绘一次)。
+// frameSoon 请求下一帧(入场 / 开合动画推进用)。
+// 直接向窗口要「下一次显示器刷新」的一帧(CVDisplayLink 驱动,60 / 120 Hz 跟随屏幕),
+// 不再用 16 ms 定时器:定时器 + 构建耗时会让帧间隔落在 20~30 ms、与屏幕刷新不同步,看起来一顿一顿。
+// 无窗口(测试 / 截图)默认不出帧,免得 Tester 的 settle 空转;逐帧追踪时 driveFrames 打开。
 func (a *App) frameSoon() {
-	if a.win == nil || a.framePending {
+	if a.win == nil && !a.driveFrames {
 		return
 	}
-	a.framePending = true
-	time.AfterFunc(16*time.Millisecond, func() {
-		a.win.Update(func() { a.framePending = false })
-	})
+	a.svc.Invalidate()
 }

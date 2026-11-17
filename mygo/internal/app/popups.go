@@ -3,7 +3,6 @@ package app
 import (
 	"math"
 	"strings"
-	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
@@ -14,19 +13,19 @@ import (
 // popOpen 把「当前打开的弹层名」与 ui.Popover 的 *bool 对接:
 // 返回 open 指针给 Popover,Popover 因点外部 / Esc 关闭时回写成空;关闭时先播 kit.PopOut。
 func (a *App) popOpen(key string, fn func(open *bool)) {
-	if a.popClosing == key && time.Since(a.popCloseAt) >= kit.DurFast {
+	if a.popClosing == key && kit.Since(a.popCloseAt) >= kit.DurFast {
 		a.popClosing, a.popSeen = "", ""
 	}
 	hold := a.popup == key
-	if a.popClosing == key && time.Since(a.popCloseAt) < kit.DurFast {
+	if a.popClosing == key && kit.Since(a.popCloseAt) < kit.DurFast {
 		hold = true
 	}
 	if a.popup == key && a.popSeen != key {
-		a.popSeen, a.popAt = key, time.Now()
+		a.popSeen, a.popAt = key, kit.Now()
 	}
 	fn(&hold)
 	if !hold && a.popup == key {
-		a.popClosing, a.popCloseAt, a.popup = key, time.Now(), ""
+		a.popClosing, a.popCloseAt, a.popup = key, kit.Now(), ""
 		a.frameSoon()
 	}
 }
@@ -52,11 +51,11 @@ func (a *App) popPanel(panel ui.Element, w float32) ui.Element {
 
 // popIn 是弹层的入场 / 退场动画。
 func (a *App) popIn(panel ui.Element) ui.Element {
-	if a.popClosing != "" && time.Since(a.popCloseAt) < kit.DurFast {
+	if a.popClosing != "" && kit.Since(a.popCloseAt) < kit.DurFast {
 		a.frameSoon()
 		return kit.PopOut(panel, a.popCloseAt)
 	}
-	if time.Since(a.popAt) < kit.DurFast {
+	if kit.Since(a.popAt) < kit.DurFast {
 		a.frameSoon()
 	}
 	return kit.PopIn(panel, a.popAt)
@@ -352,36 +351,36 @@ func (a *App) openSettings(tab string) {
 
 // dialogOpen 把居中对话框的 open 与 DialogOut 退场挂钩:关时先播动画再卸。
 func (a *App) dialogOpen(key string, wantOpen bool, fn func(open *bool)) {
-	if a.dlgClosing == key && time.Since(a.dlgCloseAt) >= kit.DurFast {
+	if a.dlgClosing == key && kit.Since(a.dlgCloseAt) >= kit.DurFast {
 		a.dlgClosing, a.dlgSeen = "", ""
 	}
 	hold := wantOpen
-	if a.dlgClosing == key && time.Since(a.dlgCloseAt) < kit.DurFast {
+	if a.dlgClosing == key && kit.Since(a.dlgCloseAt) < kit.DurFast {
 		hold = true
 		a.frameSoon()
 	} else if !wantOpen && a.dlgSeen == key && a.dlgClosing == "" {
-		a.dlgClosing, a.dlgCloseAt = key, time.Now()
+		a.dlgClosing, a.dlgCloseAt = key, kit.Now()
 		hold = true
 		a.frameSoon()
 	}
 	if hold && a.dlgSeen != key {
-		a.dlgSeen, a.dlgAt = key, time.Now()
+		a.dlgSeen, a.dlgAt = key, kit.Now()
 	}
 	fn(&hold)
 	if !hold && wantOpen && a.dlgClosing == "" {
-		a.dlgClosing, a.dlgCloseAt = key, time.Now()
+		a.dlgClosing, a.dlgCloseAt = key, kit.Now()
 		a.frameSoon()
 	}
 }
 
 // dialogIn 是居中浮层(命令面板、快速选择)的入场 / 退场动画。
 func (a *App) dialogIn(key string, backdrop, panel ui.Element) {
-	if a.dlgClosing == key && time.Since(a.dlgCloseAt) < kit.DurFast {
+	if a.dlgClosing == key && kit.Since(a.dlgCloseAt) < kit.DurFast {
 		kit.DialogOut(backdrop, panel, a.dlgCloseAt, a.frameSoon)
 		return
 	}
 	if a.dlgSeen != key {
-		a.dlgSeen, a.dlgAt = key, time.Now()
+		a.dlgSeen, a.dlgAt = key, kit.Now()
 	}
 	kit.DialogIn(backdrop, panel, a.dlgAt, a.frameSoon)
 }

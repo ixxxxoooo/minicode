@@ -65,7 +65,7 @@ func DrawerSlide(panel ui.Element, openedAt time.Time, fromRight bool, frame fun
 	if !MotionOn() || openedAt.IsZero() {
 		return
 	}
-	p := float32(time.Since(openedAt)) / float32(DurSlow)
+	p := float32(Since(openedAt)) / float32(DurSlow)
 	if p >= 1 {
 		return
 	}
@@ -86,7 +86,7 @@ func ToastSlide(card ui.Element, at time.Time, frame func()) ui.Element {
 	if !MotionOn() || at.IsZero() {
 		return card
 	}
-	age := time.Since(at)
+	age := Since(at)
 	if age > 6*time.Second {
 		return card.Opacity(0).Translate(40, 0)
 	}
@@ -128,7 +128,7 @@ func OkPop(icon ui.Element, at time.Time, frame func()) {
 	if !MotionOn() || at.IsZero() {
 		return
 	}
-	p := float32(time.Since(at)) / float32(DurBase)
+	p := float32(Since(at)) / float32(DurBase)
 	if p >= 1 {
 		return
 	}
@@ -155,7 +155,7 @@ func FoldHeight(el ui.Element, open bool, fullH float32, toggledAt time.Time, fr
 		}
 		return
 	}
-	p := float32(time.Since(toggledAt)) / float32(DurSlow)
+	p := float32(Since(toggledAt)) / float32(DurSlow)
 	if p >= 1 {
 		if open {
 			return

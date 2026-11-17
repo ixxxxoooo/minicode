@@ -3,10 +3,10 @@ package app
 import (
 	"path"
 	"strings"
-	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/demo"
+	"github.com/ixxxxoooo/minicode/internal/kit"
 )
 
 // 虚拟标签的种类。它们是工作区(编辑器标签组)里的标签,但不对应磁盘文件:
@@ -84,7 +84,7 @@ func (a *App) revealWorkspace() {
 		a.chatMax = false
 	}
 	a.screen = ScreenWork
-	a.flashAt = time.Now()
+	a.flashAt = kit.Now()
 }
 
 // toggleRight 切换右侧栏(Agent = 工作区,IDE = 对话栏)。
