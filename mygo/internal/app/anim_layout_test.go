@@ -196,7 +196,6 @@ func TestAnimModeSwitchSideDiffers(t *testing.T) {
 	tt.Advance(time.Second)
 	a.sideOpen, a.ide.bottomOpen = true, true // IDE 左栏开、底部面板开(用户截图的状态)
 	tt.Advance(time.Second)
-	t.Logf("准备:mode=%v side=%v win=%v mem=%+v", a.mode, a.sideOpen, a.winW, a.memBy)
 	animCheck(t, "IDE→Agent(左栏开→收)", animRun(t, a, tt, "IDE→Agent(左栏开→收)", func() { a.SetMode(ModeAgent) }, 800*time.Millisecond))
 	animCheck(t, "Agent→IDE(左栏收→开)", animRun(t, a, tt, "Agent→IDE(左栏收→开)", func() { a.SetMode(ModeIDE) }, 800*time.Millisecond))
 }

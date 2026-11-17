@@ -79,7 +79,8 @@ func (a *App) projPickPopup(c *ui.Context, anchor ui.Element) {
 
 func (a *App) projPickRow(c *ui.Context, p core.ProjectInfo) {
 	on := a.ctxIsProject(p)
-	key := "pp-" + projects.Clean(p.Path)
+	// 同一路径可能对应多个会话目录(如 MiniCode 的几个工作树),键里带上项目 ID,避免多行共用一个控件状态
+	key := "pp-" + projects.Clean(p.Path) + "|" + p.ID
 	right := ""
 	if p.Count > 0 {
 		right = itoa(p.Count)

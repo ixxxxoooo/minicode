@@ -294,6 +294,8 @@ Rust + gpui-kit 0.8 的 Claude Code 工作台。只支持 Claude Code,直连本�
 - **动画的是「开合因子」(0..1),不是像素宽度**:`paneOpen`(motion_layout.go)每帧返回因子,宽度 = 因子 × 本帧重算的满开宽度(`wsRW` / `dockW` / `sideW`,`sideOcc` 取导航栏**本帧**的动画宽)。动像素宽度的话,目标(窗口宽、另一块面板)在动,动画值会滞后,出现「先涨后缩」「露出空白」。
 - IDE 舞台 = `[工作区 Grow(1)][对话栏 Width = dockW×fDock×(1−fMax) + 舞台宽×fMax]`,两者加间距恒等于舞台,任何一帧都不会有空白;Agent⇄IDE 的传送带(morph_belt.go)是围绕对话栏的一条连续链。
 - 窄窗断点(<900 / <1040)导航栏改抽屉:并排列照样 260 ms 收到 0(`side()` 不再提前 return),抽屉里的内容在 overlayLayer 画。舞台那一行有固定 `Key("stage")`,导航栏有无不会改变它的身份(否则整个舞台状态重置)。
+- **形态切换时导航栏不能「直接到位」**:`paneSnap()` 在形态切换(传送带)期间返回 true,但导航栏在传送带之外,若也直接到位,会一帧从 228 跳到 0,而传送带的几何仍按旧舞台宽算 → 右侧空白。导航栏用 `paneOpenFree`(只有拖分隔条 / 连续缩窗才直接到位)。
+- 底部面板收起:高度 `AnimateWith("h")`,透明度跟随「当前高度 / 满高」(前一半高度内淡出),不再单独计时,避免内容比外框先消失(设计稿 `.bpanel` 同步改为 height + opacity 同曲线过渡)。
 - 拖分隔条 / 拖窗口边缘走 `instantLayout()`(逐帧跟手,不做动画);终端 pty 尺寸在面板尺寸稳定 90 ms 后才改(`realTerminal`),动画里不逐帧重排。
 - **探针**(anim_probe.go):每帧读各区矩形,检查 空白 / 跳变(二阶差分)/ 底部面板右缘与工作区对齐 / 掉帧(>34 ms)。动画结束写一行汇总到 `[anim]`;`MINI_ANIMLOG=1` 逐帧写日志。
 - **测试**:`anim_layout_test.go` 用 `kit.SetClock(tt.Now)` 把动效时钟接到 Tester 的虚拟时间,逐帧(16 ms)推进并断言探针 0 异常;`ANIM_DUMP=1|2 go test ./internal/app -run TestAnim -v` 打印汇总 / 逐帧表。动效里读时间一律用 `kit.Now()` / `kit.Since()`(不要直接 `time.Now()` / `time.Since()`)。
