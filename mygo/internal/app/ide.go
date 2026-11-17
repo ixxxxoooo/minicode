@@ -27,14 +27,15 @@ type ideTab struct {
 	buf     *editor.Buffer
 	st      *editor.State
 	dv      *editor.DiffState
-	saved   string  // 最近一次落盘的内容(已把 \r\n 归一成 \n,与缓冲区同口径;判断是否有未保存修改)
-	eol     string  // 保存时使用的行尾(空 = LF;状态栏可切换,ide_eol.go)
-	eolDisk string  // 磁盘上现在的行尾
-	err     string  // 读取失败 / 太大时的提示
-	reveal  *[3]int // 待选中的范围:行、起止列(下一次渲染时应用)
-	headKey string  // 上次用于 DiffBase 的 HEAD 文本摘要(ide_gutter.go)
-	virt    string  // 虚拟标签的种类(review / plan / sub / task / conflict),空 = 文件或对比
-	ref     string  // 虚拟标签引用的对象 id(子 Agent / 任务 id、冲突文件路径)
+	imgd    *imgDiffState // 图片 / 二进制文件的差异:不逐行对比,改成并排预览(ide_imgdiff.go)
+	saved   string        // 最近一次落盘的内容(已把 \r\n 归一成 \n,与缓冲区同口径;判断是否有未保存修改)
+	eol     string        // 保存时使用的行尾(空 = LF;状态栏可切换,ide_eol.go)
+	eolDisk string        // 磁盘上现在的行尾
+	err     string        // 读取失败 / 太大时的提示
+	reveal  *[3]int       // 待选中的范围:行、起止列(下一次渲染时应用)
+	headKey string        // 上次用于 DiffBase 的 HEAD 文本摘要(ide_gutter.go)
+	virt    string        // 虚拟标签的种类(review / plan / sub / task / conflict),空 = 文件或对比
+	ref     string        // 虚拟标签引用的对象 id(子 Agent / 任务 id、冲突文件路径)
 
 	lay     int8      // 差异视图:0 跟随偏好 scm.diff,1 左右,2 统一(用户在标签上点过的选择,窄档只是临时强制统一、不改它)
 	dk      string    // 差异来源:head / work / staged(空 = 提交里的差异)
@@ -369,10 +370,14 @@ func (d *ide) openRevDiff(short, p, old, nw string, pin bool) {
 
 func (d *ide) addDiffTab(id, p, label, oldSrc, newSrc string, pin bool) {
 	lang := editor.LanguageFor(path.Base(p))
+	md := diffMediaState(p, oldSrc, newSrc)
+	if md != nil && !md.textOK { // 图片 / 二进制:缓冲区留空,免得把字节当文本逐行算差异
+		oldSrc, newSrc = "", ""
+	}
 	old, nw := editor.NewBuffer(oldSrc), editor.NewBuffer(newSrc)
 	old.SetLanguage(lang)
 	nw.SetLanguage(lang)
-	t := &ideTab{id: id, path: p, diff: true, label: label, preview: !pin,
+	t := &ideTab{id: id, path: p, diff: true, label: label, preview: !pin, imgd: md,
 		dv: &editor.DiffState{Old: old, New: nw, ContextLines: 4}}
 	d.addTab(t)
 }

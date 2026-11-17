@@ -127,6 +127,12 @@ func (a *App) refreshDiffTabs() {
 			continue
 		}
 		old, nw, _ := a.diffSources(kind, t.path)
+		if t.imgd != nil {
+			a.refreshImgDiff(t, old, nw)
+			if !t.imgd.textOK {
+				continue
+			}
+		}
 		changed := false
 		if t.dv.Old.String() != old {
 			t.dv.Old.Reset(old)
@@ -256,6 +262,10 @@ func (a *App) diffLayout(tb *ideTab, narrow bool) editor.DiffLayout {
 
 // diffTab 是差异标签的内容:顶栏(文件 / 来源 / 增删 / 上下一处 / 视图切换)+ 差异正文。
 func (a *App) diffTab(c *ui.Context, tb *ideTab) {
+	if tb.imgd != nil { // 图片 / 二进制:并排预览,不走逐行文本对比
+		a.imgDiffTab(c, tb)
+		return
+	}
 	t := a.tk
 	dv := tb.dv
 	a.scmTick() // 差异标签可见时也要定时重读仓库状态,暂存 / 外部修改后标签才会刷新(refreshDiffTabs)

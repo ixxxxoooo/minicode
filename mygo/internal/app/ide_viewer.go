@@ -34,9 +34,10 @@ const (
 
 // viewerKind 按扩展名决定用哪种查看器,空 = 当文本打开。
 func viewerKind(p string) string {
-	switch strings.ToLower(path.Ext(p)) {
-	case ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tif", ".tiff", ".svg":
+	if isImageExt(path.Ext(p)) {
 		return "image"
+	}
+	switch strings.ToLower(path.Ext(p)) {
 	case ".csv", ".tsv", ".xlsx":
 		return "table"
 	}
@@ -139,7 +140,7 @@ func loadViewer(fs workspace.FS, p, kind string) viewerResult {
 			res.err = "无法打开:" + err.Error()
 			return res
 		}
-		img, err := ui.DecodeImage(data)
+		img, err := decodeAnyImage(data, ext)
 		if err != nil || img == nil {
 			res.err = "图片无法解码(文件损坏或格式不受支持)"
 			return res
