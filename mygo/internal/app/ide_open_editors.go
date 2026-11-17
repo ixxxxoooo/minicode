@@ -37,26 +37,30 @@ func (a *App) openedEditorsSection(c *ui.Context) {
 		d.sections = map[string]bool{}
 	}
 	open := d.sections["打开的编辑器"]
-	head := ui.ButtonBase(c).Key("sec-open-editors").Height(theme.Px(26)).PaddingX(8).Justify(ui.Start).Gap(5).AlignItems(ui.Center).
-		TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(500).Cursor(ui.CursorDefault)
-	if head.Clicked() {
-		d.sections["打开的编辑器"] = !open
-	}
-	head.Children(func() {
-		icon := "chevR"
-		if open {
-			icon = "chevD"
+	// 区块自成一个父容器:标题吸顶(Sticky)只在这个区块还在视野里时有效,区块滚出去标题跟着走,下一个区块的标题接上
+	ui.Column(c).Key("sec-open-editors-box").Children(func() {
+		head := ui.ButtonBase(c).Key("sec-open-editors").Height(theme.Px(26)).PaddingX(8).Justify(ui.Start).Gap(5).AlignItems(ui.Center).
+			TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(500).Cursor(ui.CursorDefault).
+			Background(t.Chrome).Sticky().Top(0) // 底色必须不透明,否则滚动时下面的行从标题里透出来
+		if head.Clicked() {
+			d.sections["打开的编辑器"] = !open
 		}
-		kit.Ic(c, icon, kit.S12)
-		ui.Text(c, "打开的编辑器").Grow(1).SingleLine()
-		ui.Text(c, itoa(len(tabs))).FontSize(theme.FsCap).TextColor(t.Tx4).Shrink(0)
+		head.Children(func() {
+			icon := "chevR"
+			if open {
+				icon = "chevD"
+			}
+			kit.Ic(c, icon, kit.S12)
+			ui.Text(c, "打开的编辑器").Grow(1).SingleLine()
+			ui.Text(c, itoa(len(tabs))).FontSize(theme.FsCap).TextColor(t.Tx4).Shrink(0)
+		})
+		if !open {
+			return
+		}
+		for _, tb := range tabs {
+			a.openedEditorRow(c, tb)
+		}
 	})
-	if !open {
-		return
-	}
-	for _, tb := range tabs {
-		a.openedEditorRow(c, tb)
-	}
 }
 
 func (a *App) openedEditorRow(c *ui.Context, tb *ideTab) {

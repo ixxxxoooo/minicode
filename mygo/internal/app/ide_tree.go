@@ -38,99 +38,103 @@ func (a *App) filesView(c *ui.Context) {
 		files.Children(func() {
 			ui.Column(c).Children(func() {
 				a.openedEditorsSection(c)
-				hdr := ui.Row(c).Key("tree-hdr").Height(theme.Px(26)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(600)
-				hdrHot := hdr.Hovered() || a.popup != ""
-				hdr.Children(func() {
-					title := strings.ToUpper(d.fs.Name())
-					if a.multiRoot() {
-						title = strings.ToUpper(a.ws.Name) + "(工作区)"
-					}
-					// 标题 + 箭头整块可点,点一下折叠 / 展开整棵文件树(与「大纲 / 时间线」区块一致)
-					head := ui.ButtonBase(c).Key("tree-root-head").Grow(1).Height(theme.Px(26)).Justify(ui.Start).Gap(5).AlignItems(ui.Center).
-						TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(500).Cursor(ui.CursorDefault)
-					if hdrHot {
-						// 工具按钮叠在行尾且没有底色(导航栏底色随主题 / 方案不同,垫一块纯色会露出色差):
-						// 显示时给标题让出同样宽的位置,让标题自己截断,而不是被按钮压住
-						head.PaddingEnd(6*theme.Px(20) + 5 + 10 + 4)
-					}
-					if head.Clicked() {
-						d.rootShut = !d.rootShut
-						diag.L("ide").Info("折叠文件树根", "折叠", d.rootShut)
-					}
-					head.Children(func() {
-						icon := "chevD"
-						if d.rootShut {
-							icon = "chevR"
-						}
-						kit.Ic(c, icon, kit.S12)
-						ui.Text(c, title).Grow(1).SingleLine()
-					})
-					// 图标各有各的含义:添加文件夹 / 新建文件夹 = 带加号的文件夹,新建文件 = 带加号的文件,
-					// 全部收起 = 两枚相对的箭头夹一条线;多根时「新建文件夹」只留在 ··· 菜单(顶层要先选文件夹)
-					_, ro := a.mutable()
-					// 工具按钮默认隐藏,鼠标移到标题行上才淡入(叠在行尾,标题文字平时完整显示);按钮始终存在,
-					// 所以从 ··· 打开菜单后鼠标移走也不会丢掉菜单的锚点
-					tools := ui.Row(c).Key("tree-tools").Absolute().Right(0).Top(0).Bottom(0).PaddingStart(10).PaddingEnd(4).Gap(1).AlignItems(ui.Center).
-						Transition(kit.Fade)
-					if hdrHot {
-						tools.Opacity(1)
-					} else {
-						tools.Opacity(0)
-					}
-					tools.Children(func() {
+				// 文件树区块自成父容器,根标题(含全部收起等工具)滚到顶部时吸顶,长列表里也能随时收起 / 刷新
+				ui.Column(c).Key("tree-sec").Children(func() {
+					hdr := ui.Row(c).Key("tree-hdr").Height(theme.Px(26)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(600).
+						Background(t.Chrome).Sticky().Top(0)
+					hdrHot := hdr.Hovered() || a.popup != ""
+					hdr.Children(func() {
+						title := strings.ToUpper(d.fs.Name())
 						if a.multiRoot() {
-							kit.Ib(c, "folderPlus", kit.IbOpt{Small: true, Tip: "添加文件夹到工作区"}).OnClick(func() {
-								a.pickFolders(true, func(ps []string) { a.wsAddFolders(a.ws.ID, ps) })
-							})
+							title = strings.ToUpper(a.ws.Name) + "(工作区)"
 						}
-						newFile := kit.Ib(c, "filePlus", kit.IbOpt{Small: true, Tip: map[bool]string{true: "新建文件", false: ro}[ro == ""]})
-						if ro == "" {
-							newFile.OnClick(func() { a.beginNew(a.newTargetDir(), false) })
-						} else {
-							newFile.Opacity(0.4).Cursor(ui.CursorDefault)
+						// 标题 + 箭头整块可点,点一下折叠 / 展开整棵文件树(与「大纲 / 时间线」区块一致)
+						head := ui.ButtonBase(c).Key("tree-root-head").Grow(1).Height(theme.Px(26)).Justify(ui.Start).Gap(5).AlignItems(ui.Center).
+							TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(500).Cursor(ui.CursorDefault)
+						if hdrHot {
+							// 工具按钮叠在行尾且没有底色(导航栏底色随主题 / 方案不同,垫一块纯色会露出色差):
+							// 显示时给标题让出同样宽的位置,让标题自己截断,而不是被按钮压住
+							head.PaddingEnd(6*theme.Px(20) + 5 + 10 + 4)
 						}
-						if !a.multiRoot() {
-							newDir := kit.Ib(c, "folderPlus", kit.IbOpt{Small: true, Tip: map[bool]string{true: "新建文件夹", false: ro}[ro == ""]})
-							if ro == "" {
-								newDir.OnClick(func() { a.beginNew(a.newTargetDir(), true) })
-							} else {
-								newDir.Opacity(0.4).Cursor(ui.CursorDefault)
+						if head.Clicked() {
+							d.rootShut = !d.rootShut
+							diag.L("ide").Info("折叠文件树根", "折叠", d.rootShut)
+						}
+						head.Children(func() {
+							icon := "chevD"
+							if d.rootShut {
+								icon = "chevR"
 							}
-						}
-						flt := kit.Ib(c, "filter", kit.IbOpt{Small: true, Tip: map[bool]string{true: "关闭过滤", false: "过滤文件(⌘F)"}[d.fltOpen]})
-						flt.OnClick(a.toggleTreeFilter)
-						shut := kit.Ib(c, "collapseAll", kit.IbOpt{Small: true, Tip: map[bool]string{true: "全部收起", false: "没有展开的文件夹"}[a.treeOpenCount() > 0]})
-						if a.treeOpenCount() > 0 {
-							shut.OnClick(a.collapseTree)
+							kit.Ic(c, icon, kit.S12)
+							ui.Text(c, title).Grow(1).SingleLine()
+						})
+						// 图标各有各的含义:添加文件夹 / 新建文件夹 = 带加号的文件夹,新建文件 = 带加号的文件,
+						// 全部收起 = 两枚相对的箭头夹一条线;多根时「新建文件夹」只留在 ··· 菜单(顶层要先选文件夹)
+						_, ro := a.mutable()
+						// 工具按钮默认隐藏,鼠标移到标题行上才淡入(叠在行尾,标题文字平时完整显示);按钮始终存在,
+						// 所以从 ··· 打开菜单后鼠标移走也不会丢掉菜单的锚点
+						tools := ui.Row(c).Key("tree-tools").Absolute().Right(0).Top(0).Bottom(0).PaddingStart(10).PaddingEnd(4).Gap(1).AlignItems(ui.Center).
+							Transition(kit.Fade)
+						if hdrHot {
+							tools.Opacity(1)
 						} else {
-							shut.Opacity(0.4).Cursor(ui.CursorDefault)
+							tools.Opacity(0)
 						}
-						kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache, d.filesCache = nil, nil })
-						kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.treeHeadMenu)
-					})
-				})
-				a.treeFilterBar(c)
-				if !d.rootShut {
-					if d.fltActive() {
-						a.treeFiltered(c, "", 0)
-					} else {
-						lines := a.treeLineCache()
-						d.treeHit = -1
-						if d.revealTo != "" {
-							for i, ln := range lines {
-								if treeLinePath(ln) == d.revealTo {
-									d.treeHit = i
-									break
+						tools.Children(func() {
+							if a.multiRoot() {
+								kit.Ib(c, "folderPlus", kit.IbOpt{Small: true, Tip: "添加文件夹到工作区"}).OnClick(func() {
+									a.pickFolders(true, func(ps []string) { a.wsAddFolders(a.ws.ID, ps) })
+								})
+							}
+							newFile := kit.Ib(c, "filePlus", kit.IbOpt{Small: true, Tip: map[bool]string{true: "新建文件", false: ro}[ro == ""]})
+							if ro == "" {
+								newFile.OnClick(func() { a.beginNew(a.newTargetDir(), false) })
+							} else {
+								newFile.Opacity(0.4).Cursor(ui.CursorDefault)
+							}
+							if !a.multiRoot() {
+								newDir := kit.Ib(c, "folderPlus", kit.IbOpt{Small: true, Tip: map[bool]string{true: "新建文件夹", false: ro}[ro == ""]})
+								if ro == "" {
+									newDir.OnClick(func() { a.beginNew(a.newTargetDir(), true) })
+								} else {
+									newDir.Opacity(0.4).Cursor(ui.CursorDefault)
 								}
 							}
-						}
-						ui.List(c, &d.treeList, len(lines), func(i int) {
-							if i < len(lines) {
-								a.treeLineAt(c, lines[i], i)
+							flt := kit.Ib(c, "filter", kit.IbOpt{Small: true, Tip: map[bool]string{true: "关闭过滤", false: "过滤文件(⌘F)"}[d.fltOpen]})
+							flt.OnClick(a.toggleTreeFilter)
+							shut := kit.Ib(c, "collapseAll", kit.IbOpt{Small: true, Tip: map[bool]string{true: "全部收起", false: "没有展开的文件夹"}[a.treeOpenCount() > 0]})
+							if a.treeOpenCount() > 0 {
+								shut.OnClick(a.collapseTree)
+							} else {
+								shut.Opacity(0.4).Cursor(ui.CursorDefault)
 							}
-						}).Grow(1).MinHeight(0)
+							kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache, d.filesCache = nil, nil })
+							kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.treeHeadMenu)
+						})
+					})
+					a.treeFilterBar(c)
+					if !d.rootShut {
+						if d.fltActive() {
+							a.treeFiltered(c, "", 0)
+						} else {
+							lines := a.treeLineCache()
+							d.treeHit = -1
+							if d.revealTo != "" {
+								for i, ln := range lines {
+									if treeLinePath(ln) == d.revealTo {
+										d.treeHit = i
+										break
+									}
+								}
+							}
+							ui.List(c, &d.treeList, len(lines), func(i int) {
+								if i < len(lines) {
+									a.treeLineAt(c, lines[i], i)
+								}
+							}).Grow(1).MinHeight(0)
+						}
 					}
-				}
+				}) // tree-sec
 			})
 		})
 		outerH := outer.Bounds().H
