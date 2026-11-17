@@ -75,8 +75,7 @@ func (a *App) codeLens(c *ui.Context, tb *ideTab) {
 			}
 			ask := ui.Text(c, "问 Claude").Cursor(ui.CursorPointer).TextColor(t.Ac)
 			if ask.Clicked() {
-				a.addRefs(refText(tb.path, false))
-				a.draft = strings.TrimSpace(a.draft + "\n解释一下 " + s.Name)
+				a.draft = strings.TrimSpace(appendRefs(a.draftNow(), refText(tb.path, false)) + "\n解释一下 " + s.Name)
 				a.ux.focusDraft = true
 			}
 		})

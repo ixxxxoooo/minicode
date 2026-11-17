@@ -3,56 +3,72 @@ package app
 import (
 	"regexp"
 	"strings"
+
+	"github.com/egoist/mygo/ui"
 )
 
-var draftAtRE = regexp.MustCompile(`@([^\s@]+)`)
+// 文件 / 文件夹引用(拖入、添加、文件树「引用到对话」、长文本粘贴折叠)都写进输入框正文,
+// 和打的字在一起,插在光标处,并用强调色 + 中等字重显示(与 @ 提及同款);只有图片是输入框上方的缩略图附件。
+//
+// @author ixxxxoooo
 
-// 拖入 / 选择的文件引用(设计稿 drag-more 的 .ref 胶囊):不写进输入框正文,以胶囊显示在输入框顶部,
-// 发送时按「@路径」放在消息最前面。这样输入框里不会同时出现一段 @路径 文字和一枚重复的胶囊。
+// draftRefRE 匹配正文里的「@路径」:前面是开头或空白,后面到下一个空白为止。
+var draftRefRE = regexp.MustCompile(`(^|\s)(@[^\s@]+)`)
 
-// addRefs 记下一批引用(「@路径」形式);已有的不重复,返回新增了几个。
-func (a *App) addRefs(refs ...string) int {
-	n := 0
+// insertRefs 把一批「@路径」排队插进输入框光标处(下一帧构建输入框时落地);正文里已有的不重复。
+// 参数:refs 形如 "@src/a.go" / "@docs/"。返回:实际新增了几个。
+func (a *App) insertRefs(refs ...string) int {
+	have := a.draftNow()
+	var add []string
 	for _, r := range refs {
-		if r == "" || a.hasRef(r) {
+		if r == "" || strings.Contains(" "+strings.ReplaceAll(have, "\n", " ")+" ", " "+r+" ") {
 			continue
 		}
-		a.refs = append(a.refs, r)
-		n++
-	}
-	return n
-}
-
-// hasRef 引用是否已经在胶囊里,或已经写在正文里。
-func (a *App) hasRef(r string) bool {
-	for _, x := range a.refs {
-		if x == r {
-			return true
+		dup := false
+		for _, x := range add {
+			dup = dup || x == r
+		}
+		if !dup {
+			add = append(add, r)
 		}
 	}
-	return strings.Contains(" "+strings.ReplaceAll(a.draft, "\n", " ")+" ", " "+r+" ")
+	if len(add) == 0 {
+		return 0
+	}
+	a.ux.pendingInsert += strings.Join(add, " ") + " "
+	a.ux.focusDraft = true
+	return len(add)
 }
 
-// removeRef 移除一枚引用胶囊。
-func (a *App) removeRef(r string) {
-	out := a.refs[:0]
-	for _, x := range a.refs {
-		if x != r {
-			out = append(out, x)
+// takePendingInsert 取出排队的插入文字,并按光标前后补空格:前面不是空白就补一个空格隔开。
+// 参数:body 输入框当前正文;start 光标 / 选区起点(rune 偏移)。返回:要插入的文字,没有排队时为空。
+func (a *App) takePendingInsert(body string, start int) string {
+	ins := a.ux.pendingInsert
+	a.ux.pendingInsert = ""
+	if ins == "" {
+		return ""
+	}
+	rs := []rune(body)
+	if start > 0 && start <= len(rs) {
+		if p := rs[start-1]; p != ' ' && p != '\n' && p != '\t' {
+			ins = " " + ins
 		}
 	}
-	a.refs = out
+	return ins
 }
 
-// foldRefs 发送时把引用胶囊并进正文(放在最前,空格隔开)并清空胶囊;没有胶囊原样返回。
-func (a *App) foldRefs(text string) string {
-	if len(a.refs) == 0 {
-		return text
+// refTextRanges 给正文里的「@路径」上样式:强调色 + 中等字重(范围按 rune 偏移,TextRanges 的要求)。
+func refTextRanges(body string, color ui.Color) []ui.TextRange {
+	var out []ui.TextRange
+	for _, m := range draftRefRE.FindAllStringSubmatchIndex(body, -1) {
+		s, e := m[4], m[5] // 第 2 个分组 = @路径 本身
+		out = append(out, ui.TextRange{
+			Start: len([]rune(body[:s])), End: len([]rune(body[:e])),
+			Color: color, Weight: 500,
+		})
 	}
-	head := strings.Join(a.refs, " ")
-	a.refs = nil
-	if strings.TrimSpace(text) == "" {
-		return head
-	}
-	return head + " " + text
+	return out
 }
+
+// refRangeColor 引用文字的颜色。
+func (a *App) refRangeColor() ui.Color { return a.tk.Info }

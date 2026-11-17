@@ -20,6 +20,7 @@ var uxLog = diag.L("edit")
 // uxState 汇总这一批编辑体验用到的界面状态。
 type uxState struct {
 	focusDraft    bool            // 下一帧把键盘焦点给输入框(拖入引用之后接着写)
+	pendingInsert string          // 排队等下一帧插进输入框光标处的文字(拖入 / 添加的「@路径」;回调里直接改输入框的值会被覆盖,见 composer_refs.go)
 	mdNoteOff     map[string]bool // 已点掉「写法会被规范化」提示条的文件
 	demoHint      string          // 截图 / 调试:强制显示「可放」态的提示文字(ide_debug 的 -ed drag)
 	rt            *richtext.Theme // 所见即所得的外观(换主题时清掉)
@@ -67,10 +68,10 @@ func appendRefs(draft string, refs ...string) string {
 	return draft + " " + tail
 }
 
-// dropRefs 是落到对话栏的结果:文件 / 文件夹成为输入框上方的附件卡(与图片缩略图同一行、同一套样式),
-// 不写进输入框正文;发送时按「@路径」并到消息最前面(foldRefs)。并把焦点交给输入框接着写。
+// dropRefs 是落到对话栏的结果:文件 / 文件夹的「@路径」插进输入框正文光标处(与打的字在一起,带样式),
+// 并把焦点交给输入框接着写。只有图片不一样(走输入框顶部的缩略图附件),不经过这里。
 func (a *App) dropRefs(refs ...string) {
-	n := a.addRefs(refs...)
+	n := a.insertRefs(refs...)
 	if n == 0 {
 		a.toast = "已经引用过了"
 		return

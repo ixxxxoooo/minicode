@@ -134,7 +134,7 @@ func (a *App) pickAttachRefs() {
 			for _, p := range paths {
 				refs = append(refs, refText(a.relRefForAttach(p), false))
 			}
-			n := a.addRefs(refs...) // 与拖入文件一样:输入框上方的附件卡,不写进输入框正文
+			n := a.insertRefs(refs...) // 与拖入文件一样:插进输入框正文光标处
 			a.ux.focusDraft = true
 			attachLog.Info("添加文件引用", "n", n)
 		}

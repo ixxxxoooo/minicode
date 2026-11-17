@@ -351,7 +351,7 @@ func (a *App) EditorDemo(spec string) {
 			continue
 		case "ref": // ref:路径:在输入框顶部加一枚引用胶囊(文件夹以 / 结尾),可连写多个用 ; 隔开
 			for _, p := range strings.Split(arg, ";") {
-				a.addRefs("@" + p)
+				a.draft = appendRefs(a.draft, "@"+p)
 			}
 			continue
 		case "drag": // drag:@路径:对话栏显示「松手插入」可放态

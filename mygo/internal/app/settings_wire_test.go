@@ -103,11 +103,8 @@ func TestHandleComposerPaste(t *testing.T) {
 	if !a.HandleComposerPaste(long) {
 		t.Fatal("应折叠长粘贴")
 	}
-	if len(a.refs) != 1 || !strings.HasPrefix(a.refs[0], "@") {
-		t.Fatalf("折叠后应成为一张附件卡(@ 引用):%v", a.refs)
-	}
-	if a.draft != "" {
-		t.Fatalf("折叠的长文本不应写进输入框正文:%q", a.draft)
+	if !strings.HasPrefix(a.ux.pendingInsert, "@") || !strings.HasSuffix(a.ux.pendingInsert, ".txt ") {
+		t.Fatalf("折叠后应排队插入一条 @ 引用到正文:%q", a.ux.pendingInsert)
 	}
 }
 

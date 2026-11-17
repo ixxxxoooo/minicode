@@ -290,22 +290,23 @@ func TestDragFileToChat(t *testing.T) {
 		chatX, chatY = r.X+r.W/2, r.Y+r.H/2
 	}
 	// 访达拖入
-	a.draft, a.refs = "", nil
+	a.draft = ""
 	if !tt.DropFiles(chatX, chatY, "/x/y.txt") {
 		t.Fatal("对话栏应接住拖入的文件")
 	}
-	if a.draft != "" || len(a.refs) != 1 || a.refs[0] != "@/x/y.txt" {
-		t.Fatalf("应以附件卡显示在输入框上方,不写进正文:%q %v", a.draft, a.refs)
-	}
 	tt.Frame()
+	if a.draftBody != "@/x/y.txt " || len(a.draftImgs) != 0 {
+		t.Fatalf("应把 @路径 插进输入框正文(不是上方的附件):body=%q imgs=%v", a.draftBody, a.draftImgs)
+	}
 	if a.ux.focusDraft {
 		t.Fatal("焦点交给输入框后标志应清掉")
 	}
 	// 落在编辑区:不引用
-	a.draft, a.refs = "", nil
+	a.draft = ""
 	tt.DropFiles(500, 300, "/x/z.txt")
-	if a.draft != "" || len(a.refs) != 0 {
-		t.Fatalf("落在对话栏以外不应引用:%q %v", a.draft, a.refs)
+	tt.Frame()
+	if a.draft != "" || a.ux.pendingInsert != "" {
+		t.Fatalf("落在对话栏以外不应引用:%q %q", a.draft, a.ux.pendingInsert)
 	}
 	// 文件树 → 对话栏(无头测试里用右键「引用到对话」,与拖放共用 dropRefs)
 	if err := tt.RightClick("router.rs"); err != nil {
@@ -315,33 +316,34 @@ func TestDragFileToChat(t *testing.T) {
 		t.Fatal(err)
 	}
 	tt.Frame()
-	if a.draft != "" || len(a.refs) != 1 || !strings.Contains(a.refs[0], "router.rs") {
-		t.Fatalf("文件树引用到对话栏应成为附件卡,不写进正文,得 %q %v", a.draft, a.refs)
+	tt.Frame()
+	if !strings.Contains(a.draftBody, "@") || !strings.Contains(a.draftBody, "router.rs") {
+		t.Fatalf("文件树引用到对话栏应把 @路径 写进正文,得 %q", a.draftBody)
 	}
 }
 
-// 引用胶囊:去重、可移除、发送时并进正文最前并清空;正文里已写过的也算重复。
-func TestRefChipsFold(t *testing.T) {
+// 文件引用写进正文:一批里去重、正文里已有的不重复、插在光标处并按前文补空格、@路径 带样式范围。
+func TestInsertRefs(t *testing.T) {
 	a := &App{}
-	if n := a.addRefs("@a.go", "@b/", "@a.go"); n != 2 || len(a.refs) != 2 {
-		t.Fatalf("应去重:n=%d refs=%v", n, a.refs)
+	if n := a.insertRefs("@a.go", "@b/", "@a.go"); n != 2 || a.ux.pendingInsert != "@a.go @b/ " {
+		t.Fatalf("应去重:n=%d ins=%q", n, a.ux.pendingInsert)
 	}
-	a.draft = "看 @c.go 吧"
-	if a.addRefs("@c.go") != 0 {
-		t.Fatal("正文里已有的引用不应再加胶囊")
+	if got := a.takePendingInsert("看 ", 2); got != "@a.go @b/ " {
+		t.Fatalf("前面已是空格,不应再补:%q", got)
 	}
-	a.removeRef("@b/")
-	if len(a.refs) != 1 || a.refs[0] != "@a.go" {
-		t.Fatalf("移除不对:%v", a.refs)
+	if a.ux.pendingInsert != "" {
+		t.Fatal("取走后应清空")
 	}
-	if got := a.foldRefs("解释一下"); got != "@a.go 解释一下" || a.refs != nil {
-		t.Fatalf("发送应把胶囊并进正文最前并清空:%q %v", got, a.refs)
+	a.draftBody = "看 @c.go 吧"
+	if a.insertRefs("@c.go") != 0 {
+		t.Fatal("正文里已有的引用不应重复插入")
 	}
-	a.addRefs("@x.go")
-	if got := a.foldRefs("  "); got != "@x.go" {
-		t.Fatalf("正文为空时只发引用:%q", got)
+	a.insertRefs("@x.go")
+	if got := a.takePendingInsert("解释", 2); got != " @x.go " {
+		t.Fatalf("前面不是空白应补一个空格:%q", got)
 	}
-	if got := a.foldRefs("原样"); got != "原样" {
-		t.Fatalf("没有胶囊应原样返回:%q", got)
+	rs := refTextRanges("看 @a.go 和 @b/ 吧 x@y.com", ui.Color{})
+	if len(rs) != 2 || rs[0].Start != 2 || rs[0].End != 7 || rs[1].Start != 10 || rs[1].End != 13 {
+		t.Fatalf("样式范围不对(邮箱不算):%+v", rs)
 	}
 }

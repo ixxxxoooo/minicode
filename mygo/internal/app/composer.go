@@ -53,6 +53,13 @@ func (a *App) composer(c *ui.Context) {
 			}
 			return a.HandleComposerPaste(text)
 		})
+		in.TextRanges(refTextRanges(a.draftBody, a.refRangeColor())...) // 正文里的 @路径 带样式
+		if a.ux.pendingInsert != "" {                                   // 拖入 / 添加的文件引用:插在光标处(一步撤销)
+			start, end := in.TextSelection()
+			if ins := a.takePendingInsert(a.draftBody, start); ins != "" {
+				in.ReplaceText(start, end, ins)
+			}
+		}
 		in.OnTextKey(func(k ui.TextKey) bool {
 			if a.slashTextKey(k) {
 				return true
@@ -84,7 +91,6 @@ func (a *App) composer(c *ui.Context) {
 
 // submitKey 回车发送:回合进行中 Enter 排队、⌘Enter 立即引导;空闲时都是直接发送。
 func (a *App) submitKey(text string, steer bool) {
-	text = a.foldRefs(text) // 引用胶囊并进正文(没有胶囊则原样)
 	if trim(text) == "" && len(parseDraftAttaches(text)) == 0 {
 		return
 	}
