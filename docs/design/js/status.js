@@ -189,6 +189,8 @@
       R('任何工具调用都能展开看入参与结果', 'flow_tool_detail.go toolDetail:MCP / 浏览器 / 读取 / 搜索 / 抓取等没有差异或终端输出的工具,展开 = 入参(键: 值,多行缩进)+ 结果(文本卡限高折叠、图片说明、无内容按状态写原因)+ 完整工具名 / 状态 / 耗时;go test 覆盖', 'ok', 'B4'),
       R('多根顶层文件夹右键:在源代码管理中查看 / 从工作区移出…', 'menu_extra.go;移出走 wsMutate(保存后重新进入工作区),只剩 2 个文件夹时「移出」置灰写明原因(文件夹平级,没有「设为主文件夹」);未测试', 'ok', 'B2'),
       R('Markdown 标签 ··· 附加项(切换预览 / 源码、只读预览、格式化文档)', 'menu_extra.go mdMenuItems:切换预览/源码、只读预览可手动勾选切换(tb.md.readOnly,含 HTML / 脚注时自动只读并置灰说明原因,源码视图下置灰)、格式化文档;有 go test,未用 Computer Use 实测', 'ok'),
+      R('会话 / 只读预览:围栏代码块按语言着色', 'md_code_hl.go 用编辑器同一套词法器(editor.LanguageNamed,含 js/ts/sh/yml 等别名)逐块带状态着色,颜色取主题 syn-* 令牌;无语言 / 不认识的语言取正文色;超 12 行折叠沿用 foldBody;设计稿 flow.css .md pre;未测试', 'part'),
+      R('编辑器 Markdown 预览:表格单元格渲染行内 Markdown', 'edit_md_cell.go:未聚焦的格用 markdown.View 渲染(行内代码胶囊 / 粗体 / 链接,折行、行高随内容),点击或 Tab / ⏎ 进入的格才是输入框显示源码,失焦渲染回去;设计稿 ide-md「表格:就地编辑」;未测试', 'part'),
       R('助手 Markdown 兼容性', 'internal/mdcompat(Prepare+表驱动/fuzz);flow2.padCode;md_render.go mdHTMLBlock;解析器仍 mygo parser.Default;有 go test internal/mdcompat;未用 Computer Use 实测', 'part'),
       R('输入框 MCP chip 与弹层', 'mcp_model 统一视图+刷新/未启动提示/启动并查询;composer_mcp+palette;与自定义 MCP 列表同源;未测试', 'part'),
       R('会话流 · 后台任务完成通知行(TaskNote)', 'flow_user.go flowTail→taskNoteLine(flow_note.go);core.TaskNote 归约;flow_test TestFlowGapsTaskNoteAndFold;未测试', 'ok'),

@@ -38,6 +38,7 @@ func (a *App) mdRunPend(tb *ideTab, md *mdState) {
 	}
 	todo := md.pend
 	md.pend = nil
+	md.tblEdit, md.tblHad = "", false // 结构变了,旧的编辑键可能指到别的格子;操作要聚焦的格子由它自己再设
 	touched := map[*mdSeg]bool{}
 	for _, p := range todo {
 		p.fn()
@@ -162,11 +163,12 @@ func (a *App) mdTableView(c *ui.Context, tb *ideTab, md *mdState, idx int, s *md
 		}
 		return nil
 	}
+	weights := mdColWeights(tbl)
 	ui.Column(c).Key(base+"box").Margin(8, 0, 10, 0).Shrink(0).Gap(6).Children(func() {
 		ui.Column(c).Key(base+"grid").Radius(t.RSm()).Border(1, t.Bd2).Clip().Children(func() {
 			for r := -1; r < len(tbl.rows); r++ {
 				rr := r
-				row := ui.Row(c).Height(mdCellH).Shrink(0).AlignItems(ui.Center)
+				row := ui.Row(c).MinHeight(mdCellH).Shrink(0).AlignItems(ui.Stretch)
 				if rr < 0 {
 					row.Background(t.Fill1)
 				} else {
@@ -179,7 +181,13 @@ func (a *App) mdTableView(c *ui.Context, tb *ideTab, md *mdState, idx int, s *md
 						if p == nil {
 							continue
 						}
-						in := ui.TextInputBase(c.Key(keyOf(rr, cc)), p).Grow(1).Basis(0).MinWidth(0).Height(mdCellH).PaddingX(8).FontSize(theme.Px(13)).FocusRing(false)
+						key := keyOf(rr, cc)
+						if md.tblEdit != key { // 渲染态:行内代码胶囊 / 粗体 / 链接,点一下进入编辑(edit_md_cell.go)
+							a.mdCellView(c, key, *p, rr < 0, tbl.align[cc], cc == n-1, weights[cc], func() { md.mdGoCell(key); a.frameSoon() })
+							continue
+						}
+						a.mdCellTab(c, md, tbl, rr, cc, keyOf)
+						in := ui.TextInputBase(c.Key(key), p).Grow(weights[cc]).Basis(0).MinWidth(0).Height(mdCellH).PaddingX(8).FontSize(theme.Px(13)).FocusRing(false)
 						if rr < 0 {
 							in.FontWeight(650)
 						}
@@ -194,6 +202,10 @@ func (a *App) mdTableView(c *ui.Context, tb *ideTab, md *mdState, idx int, s *md
 						}
 						if in.Focused() {
 							in.Background(t.Ac.Alpha(.1))
+							md.tblHad = true
+						} else if md.tblHad { // 拿到过焦点又失焦:退回渲染态
+							md.tblEdit, md.tblHad = "", false
+							a.frameSoon()
 						}
 						if md.tblFocus == keyOf(rr, cc) {
 							md.tblFocus = ""
@@ -205,12 +217,12 @@ func (a *App) mdTableView(c *ui.Context, tb *ideTab, md *mdState, idx int, s *md
 						}
 						if in.Submitted() { // ⏎:跳到下一行同列;已是最后一行就新增一行
 							if rr+1 < len(tbl.rows) {
-								md.tblFocus = keyOf(rr+1, cc)
+								md.mdGoCell(keyOf(rr+1, cc))
 								a.frameSoon()
 							} else {
 								a.mdQueue(md, s, "回车新增行", func() {
 									tbl.insertRow(len(tbl.rows))
-									md.tblFocus = keyOf(len(tbl.rows)-1, cc)
+									md.mdGoCell(keyOf(len(tbl.rows)-1, cc))
 								})
 							}
 						}

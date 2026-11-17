@@ -191,11 +191,15 @@ type App struct {
 	thinkMq        map[string]thinkMqSt
 	thinkMqHide    map[string]time.Time
 	thinkWasLive   map[string]bool
-	outFold        map[string]bool            // 长输出 / 用户消息展开
-	hlKey          string                     // 命令 / 输出高亮缓存对应的「主题|强调色|字号」
-	hlCache        map[string][]ui.Span       // 命令 / 输出行高亮结果(flow_hl.go)
-	refHlKey       string                     // 引用面板语法色缓存键(主题)
-	refHlCache     map[string][]ui.Span       // path+行内容 → 着色 span(ide_refs_hl.go)
+	outFold        map[string]bool        // 长输出 / 用户消息展开
+	hlKey          string                 // 命令 / 输出高亮缓存对应的「主题|强调色|字号」
+	hlCache        map[string][]ui.Span   // 命令 / 输出行高亮结果(flow_hl.go)
+	refHlKey       string                 // 引用面板语法色缓存键(主题)
+	refHlCache     map[string][]ui.Span   // path+行内容 → 着色 span(ide_refs_hl.go)
+	mdCodeKey      string                 // Markdown 围栏代码块着色缓存键(主题|强调色|字号)
+	mdCodeHl       map[string][][]ui.Span // 语言+代码 → 逐行着色 span(md_code_hl.go)
+	mdCell         *markdown.Options      // 预览表格单元格用的 Markdown 选项(edit_md_cell.go)
+	mdCellKey      string
 	foldSt         map[string]*ui.ScrollState // 命令卡 / 代码块输出的内部滚动位置(按 foldKey,必须跨帧保留)
 	tick           map[string]*tickState      // 「最新一步」行的翻滚动画状态(按行键,flow_group.go)
 	runWas         map[string]bool            // 精简摘要行上一帧是否在运行(结束时 120 ms 淡入换句)

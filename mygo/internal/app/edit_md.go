@@ -46,6 +46,8 @@ type mdState struct {
 	segs     []*mdSeg // 含顶层表格时:按「正文 / 表格」切成的段(此时 doc 为 nil),见 edit_md_table.go
 	pend     []mdPend // 表格上排队等执行的结构修改
 	tblFocus string   // 下一次构建里要聚焦的表格单元格键
+	tblEdit  string   // 正处于编辑态(显示输入框)的表格单元格键;其余单元格是渲染态(edit_md_cell.go)
+	tblHad   bool     // 编辑态的输入框已经拿到过焦点(之后失焦才退回渲染态)
 	readOnly bool     // 用户手动开启的只读预览(与 mdUnsafe 自动只读共用渲染路径)
 }
 

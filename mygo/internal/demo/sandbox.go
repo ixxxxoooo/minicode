@@ -102,7 +102,13 @@ edition = "2021"
 axum = "0.8"
 `,
 		"CLAUDE.md": "# router-demo\n\n- 用 `cargo test` 跑测试\n- 路径匹配统一走 `normalize`\n",
-		"README.md": "# router-demo\n\n一个很小的路由库,用来演示 MiniCode。\n",
+		"README.md": "# router-demo\n\n一个很小的路由库,用来演示 MiniCode。正文里的 `normalize()` 是行内代码。\n\n" +
+			"## 接口速查\n\n" +
+			"| 方法 | 路径 | 说明 |\n| :--- | :---: | --- |\n" +
+			"| `GET` | `/users` | 列出 **全部** 用户,见 [文档](https://example.com) |\n" +
+			"| `POST` | `/users/:id` | 新建;`a \\| b` 里的竖线要转义 |\n" +
+			"| `DELETE` | - | 一段比较长的说明文字,用来看单元格里会不会折行、整行会不会随内容变高,同时带 `inline_code` 与 *斜体* |\n\n" +
+			"## 示例\n\n```go\nfunc main() {\n\t// 注释\n\tfmt.Println(\"hi\", 42)\n}\n```\n",
 	}
 	for k, v := range B5EditorExtras() {
 		files[k] = v
