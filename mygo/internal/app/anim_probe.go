@@ -65,20 +65,21 @@ type AnimSummary struct {
 }
 
 type animProbe struct {
-	on      bool // 逐帧写 Info(MINI_ANIMLOG=1)
-	cur     [pzN]ui.Rect
-	seen    [pzN]bool
-	prev    *AnimFrame
-	prevD   [pzN]float32 // 上一帧各区宽度的变化量
-	prevX   [pzN]float32
-	frames  []AnimFrame
-	start   time.Time
-	last    time.Time // 上一帧时间
-	moved   time.Time // 最近一次有变化
-	busy    bool      // 正在一次布局动画里
-	sums    []AnimSummary
-	keep    bool // 保留逐帧数据(测试 / shot 读取);真实运行只留汇总,省内存
-	suspend int  // >0 时不记录(测试里关掉)
+	on       bool // 逐帧写 Info(MINI_ANIMLOG=1)
+	cur      [pzN]ui.Rect
+	seen     [pzN]bool
+	prev     *AnimFrame
+	prevD    [pzN]float32 // 上一帧各区宽度的变化量
+	prevX    [pzN]float32
+	frames   []AnimFrame
+	start    time.Time
+	last     time.Time // 上一帧时间
+	moved    time.Time // 最近一次有变化
+	slowLeft int       // 慢帧之后还有几帧属于「追帧」(位移被慢帧放大,不按跳变算)
+	busy     bool      // 正在一次布局动画里
+	sums     []AnimSummary
+	keep     bool // 保留逐帧数据(测试 / shot 读取);真实运行只留汇总,省内存
+	suspend  int  // >0 时不记录(测试里关掉)
 }
 
 var probeOnEnv = os.Getenv("MINI_ANIMLOG") == "1"
@@ -134,6 +135,7 @@ func (a *App) probeEnd(now time.Time) {
 		if !p.busy && idle {
 			p.busy, p.start, p.frames, p.last = true, now, p.frames[:0], time.Time{}
 			p.prevD = [pzN]float32{}
+			p.slowLeft = 0
 			p.prevX = [pzN]float32{}
 		}
 		p.moved = now
@@ -264,11 +266,28 @@ func (a *App) probeCheck(f *AnimFrame) {
 			} else {
 				d = f.R[z].W - p.prev.R[z].W
 			}
-			if absF(d-p.prevD[z]) > 40*norm && p.prev != nil && len(p.frames) >= 2 {
+			dd := absF(d - p.prevD[z])
+			// 阈值:绝对值 40*norm,且不低于本帧位移的 60%。动画是按时间走的缓动曲线,行程长(几百 px)时
+			// 曲线中段的逐帧加速度本来就大(例如面板 405px 在 400ms 内收起,峰值 84px/帧、加速度 50px),
+			// 那不是跳变;真正的瞬移(一帧走完全程、前后帧位移接近 0)仍然会超过这条线。
+			thr := max(40*norm, 0.6*max(absF(d), absF(p.prevD[z])))
+			// 追帧:上一帧(或上上帧)是慢帧时,时钟走了一大截,这一帧的位移被放大,
+			// 速度曲线是被慢帧「拉出来」的,根因是慢帧(已单独记「掉帧」),不是动画本身跳变。
+			catchUp := p.slowLeft > 0
+			// 画在舞台右缘之外的区域(形态切换时被挤出窗口的工作区及其里的底部面板)看不见,不检查。
+			hidden := f.Has[pzStage] && f.Has[pzWs] && (z == pzPanel || z == pzWs) &&
+				f.R[pzWs].X >= f.R[pzStage].X+f.R[pzStage].W-1 && p.prev.R[pzWs].X >= f.R[pzStage].X+f.R[pzStage].W-1
+			if dd > thr && len(p.frames) >= 2 && !catchUp && !hidden {
 				fl = append(fl, fmt.Sprintf("%s跳变%.1fpx", probeNames[z], d-p.prevD[z]))
 			}
 			p.prevD[z] = d
 		}
+	}
+	if p.slowLeft > 0 {
+		p.slowLeft--
+	}
+	if f.Dt > 34*time.Millisecond {
+		p.slowLeft = 2
 	}
 	// 3) 掉帧
 	if f.Dt > 34*time.Millisecond {

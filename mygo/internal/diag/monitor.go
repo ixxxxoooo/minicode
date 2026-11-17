@@ -235,7 +235,20 @@ func StartSampler() {
 			}
 			if s.HeapAlloc > old.HeapAlloc+128<<20 && time.Since(lastWarnH) > time.Minute {
 				lastWarnH = time.Now()
-				write(LevelWarn, "monitor", "堆内存半分钟内增长超过 128 MB", []any{"现在", fmtBytes(s.HeapAlloc), "之前", fmtBytes(old.HeapAlloc)})
+				// HeapAlloc 含「已不可达、还没被 GC 收走」的垃圾:切换长会话时的瞬时峰值多半如此。
+				// 先记 Info,过 15 秒再看:回落了就是瞬时峰值(Info),仍高居不下才是疑似泄漏(Warn)。
+				write(LevelInfo, "monitor", "堆内存半分钟内增长超过 128 MB,观察是否回落", []any{"现在", fmtBytes(s.HeapAlloc), "之前", fmtBytes(old.HeapAlloc), "GC次数", s.NumGC})
+				before, peak := old.HeapAlloc, s.HeapAlloc
+				go func() {
+					defer Recover("diag.heapwatch")
+					time.Sleep(15 * time.Second)
+					now := takeSample()
+					if now.HeapAlloc > before+96<<20 {
+						write(LevelWarn, "monitor", "堆内存涨上去后 15 秒仍未回落,疑似泄漏", []any{"峰值", fmtBytes(peak), "现在", fmtBytes(now.HeapAlloc), "之前", fmtBytes(before), "GC次数", now.NumGC})
+						return
+					}
+					write(LevelInfo, "monitor", "堆内存已回落(瞬时峰值,非泄漏)", []any{"峰值", fmtBytes(peak), "现在", fmtBytes(now.HeapAlloc), "之前", fmtBytes(before), "GC次数", now.NumGC})
+				}()
 			}
 		}
 	}()
