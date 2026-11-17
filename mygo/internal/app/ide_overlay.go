@@ -122,6 +122,7 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 			}
 		})
 		a.linkHover(c, tb, edEl)
+		a.scopeOverlay(c, tb, edEl)
 		a.linkUnderline(c, tb, float32(edEl.Bounds().Y-col.Bounds().Y))
 		a.stickyScroll(c, tb)
 		a.codeLens(c, tb)
@@ -159,6 +160,9 @@ func (a *App) decorate(tb *ideTab) {
 	}
 	st.TextBackgrounds = tbs
 	var lbs []editor.LineBackground
+	if bg := a.scopeLineBackgrounds(tb); len(bg) > 0 {
+		lbs = append(lbs, bg...)
+	}
 	for _, g := range a.claudeLines(tb) {
 		lbs = append(lbs, editor.LineBackground{First: g[0], Last: g[1], Color: t.Ac.Alpha(.10)})
 	}
@@ -221,7 +225,7 @@ func (a *App) stickyScroll(c *ui.Context, tb *ideTab) {
 	rail := a.mmWidth() + mmRulW + edTrackW + 6
 	ui.Column(c).Key("sticky").Absolute().Left(0).Right(rail).Top(0).Background(t.Raised).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd2).Children(func() {
 		for _, s := range rows {
-			r := ui.ButtonBase(c).Key("st-" + itoa(s.Line)).Height(theme.Px(22)).PaddingStart(edGutter).PaddingEnd(8).Justify(ui.Start).AlignItems(ui.Center).Gap(6).
+			r := ui.ButtonBase(c).Key("st-" + itoa(s.Line)).Height(theme.Px(22)).PaddingStart(edGutter).PaddingEnd(8).Justify(ui.Start).AlignItems(ui.Center).Gap(4).
 				Cursor(ui.CursorPointer).TextColor(t.Tx2)
 			if r.Hovered() {
 				r.Background(t.Fill1)
@@ -230,6 +234,9 @@ func (a *App) stickyScroll(c *ui.Context, tb *ideTab) {
 				a.jumpTo(tb.path, s.Line, s.Col, s.Col)
 			}
 			r.Children(func() {
+				if a.scopeOn() {
+					a.scopeStickyBar(c, s)
+				}
 				ui.Text(c, s.Detail).Font("monospace").FontSize(theme.Px(12)).SingleLine()
 			})
 		}

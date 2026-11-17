@@ -106,18 +106,22 @@ func (a *App) crumbSymSegment(c *ui.Context, tb *ideTab, syms []symbol, symIx in
 	}
 	sy := syms[symIx]
 	t := a.tk
+	active := a.scopeOn() && symIx == len(enclosing(syms, tb.st.CursorPos().Line))-1
 	b := ui.ButtonBase(c).Key("crumb-sym-" + tb.path + "-" + itoa(symIx)).Height(18).PaddingX(3).Gap(3).
 		Radius(t.RXs()).AlignItems(ui.Center).Cursor(ui.CursorPointer).Menu(func(m *ui.Menu) {
 		a.crumbSymMenu(m, tb, syms, symIx)
 	})
+	if active {
+		b.Tooltip(scopeTip(sy))
+	}
 	if b.Hovered() {
 		b.Background(t.Fill1)
 	}
 	b.Children(func() {
 		kit.Ic(c, "cube", kit.S12).TextColor(t.AcTx)
 		lbl := ui.Text(c, sy.Name)
-		if symIx == len(enclosing(syms, tb.st.CursorPos().Line))-1 {
-			lbl.TextColor(t.Tx1).FontWeight(500)
+		if active {
+			lbl.TextColor(t.Ac).FontWeight(500)
 		}
 	})
 }

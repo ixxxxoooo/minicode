@@ -67,6 +67,13 @@ type ideTab struct {
 	extOrphan  bool // 文件在磁盘上已不存在
 	extDeleted bool // 用户确认已删除
 	diskRO     bool // 工作区外只读(语言服务器跳转开的标准库 / 依赖,不可保存)
+
+	scopeHoverLn      int    // 代码区悬停行(0 起),-1 = 无
+	scopeDbgHover     bool   // -ed scope:hover 演示态
+	scopeCacheVer     uint64 // 范围查询缓存(按缓冲区版本 + 光标行)
+	scopeCacheLn      int
+	scopeHoverLnCache int
+	scopeCache        scopeSnap
 }
 
 func (t *ideTab) dirty() bool {

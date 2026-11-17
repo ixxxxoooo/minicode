@@ -10,7 +10,7 @@ import (
 )
 
 // EditorDemo 按「动作:参数」驱动编辑器进入某个状态(cmd/shot 截图用,多个动作用逗号隔开):
-// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs[:demo|empty|fold|loading|err|sel:N|normalize]、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签;review:empty 空态)、expand:路径、newfile|newdir:文件夹:名字、renamef:路径:名字、foerr、discardask:路径、cmpfiles:提交、resetask:序号、delask:路径、rename:会话id、archived:项目id、scm、syncall、repobusy:N、search:查询、scope:文件夹、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、mdkeep(块写回演示样例)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容、goto:行、gotoline:行[:列]、multicursor、blockcomment、extmod[:auto|clean|dirty|deleted]、crumb[:file|sym|路径]、termrename、termtabs[:N](多终端长标题演示)、treefilter[:关键字](文件树过滤条);
+// cursor:行:列(1 起)、select:行:列-行:列、find:查询、scroll:行、peek、rename、acts、inline、refs[:demo|empty|fold|loading|err|sel:N|normalize]、def、hover:行:列、open:路径、conflict(合并冲突标签)、review(审查标签;review:empty 空态)、expand:路径、newfile|newdir:文件夹:名字、renamef:路径:名字、foerr、discardask:路径、cmpfiles:提交、resetask:序号、delask:路径、rename:会话id、archived:项目id、scm、syncall、repobusy:N、search:查询、scope:<行>|scope:hover(所在范围高亮)|scope:文件夹(搜索范围)、pop:弹层键、wizard[:1|done](逐个提交向导,配合 -ws)、md:src|wysiwyg(Markdown 视图)、mdkeep(块写回演示样例)、wrap、format、drag:@路径(对话栏可放态)、mdedit:内容、goto:行、gotoline:行[:列]、multicursor、blockcomment、extmod[:auto|clean|dirty|deleted]、crumb[:file|sym|路径]、termrename、termtabs[:N](多终端长标题演示)、treefilter[:关键字](文件树过滤条);
 // queue(排两条)、steer[:正文](登记引导)、ask[:题号](切问答卡题号,1 起)、latest[:fresh](滚离底部, fresh=有新内容圆点)、thinking(演示思考折叠跑马灯)、sub[:卡片id](子 Agent 标签)、wsdiag:scan|done|trunc|empty|err(工作区诊断各态)。
 func (a *App) EditorDemo(spec string) {
 	for _, act := range strings.Split(spec, ",") {
@@ -67,7 +67,15 @@ func (a *App) EditorDemo(spec string) {
 			a.SetSearch(arg, "", false)
 			a.runSearch(true)
 			continue
-		case "scope": // scope:文件夹名:多根搜索限定范围
+		case "scope": // scope:<行号>|hover:编辑器所在范围;否则多根搜索限定文件夹
+			if arg == "hover" {
+				a.dbgScopeHover()
+				continue
+			}
+			if n, ok := parseScopeLineArg(arg); ok {
+				a.dbgScopeLine(n)
+				continue
+			}
 			a.setSearchScope(arg)
 			a.runSearch(true)
 			continue

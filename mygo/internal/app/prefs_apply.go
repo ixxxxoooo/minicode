@@ -34,6 +34,8 @@ const (
 	pBracketGuide  = "editor.bracketGuide"
 	pBracketColor  = "editor.bracketColor"
 	pBracketMatch  = "editor.bracketMatch"
+	pEdScope       = "editor.scopeHighlight"
+	pEdScopeStyle  = "editor.scopeStyle"
 	pEdNumbers     = "editor.lineNumbers"
 	pEdFolding     = "editor.folding"
 	pEdWrap        = "editor.wrap"

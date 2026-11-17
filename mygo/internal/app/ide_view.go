@@ -73,6 +73,7 @@ func (a *App) editorTheme() *editor.Theme {
 	th.InactiveSelection = t.Ac.Alpha(.12)
 	th.IndentGuide = t.Bd1
 	th.ActiveIndentGuide = t.Bd3
+	a.scopeIndentGuideTheme(th)
 	th.Error, th.Warning, th.Info = t.Err, t.Warn, t.Info
 	th.Added, th.Deleted, th.Modified = t.Ok, t.Err, t.Info
 	set := func(k editor.TokenKind, col ui.Color, italic bool) {

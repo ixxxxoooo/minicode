@@ -447,6 +447,8 @@ var settingsTabs = []setTabDef{
 			rTog("editor.bracketGuide", "括号配对竖线", "", true),
 			rTog("editor.syntax", "语法高亮", "", true),
 			rTog("editor.codelens", "CodeLens", "在函数 / 类型上方显示「N 个引用 · 问 Claude」,默认关闭", false),
+			rTog("editor.scopeHighlight", "高亮当前所在范围", "行号槽竖条 + 活动缩进线;范围外不变暗", true),
+			rSeg("editor.scopeStyle", "范围样式", "默认仅竖条,减轻与搜索 / 同词 / Claude 紫底的叠层", 0, "仅竖条", "竖条 + 淡底色"),
 		}},
 		{title: "Markdown 与格式化", rows: []setRow{
 			rSeg("editor.mdView", "Markdown 默认视图", "打开 .md / .mdc 时先显示哪一种;标签上随时可切换", 0, "预览", "源码"),

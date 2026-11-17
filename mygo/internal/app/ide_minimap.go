@@ -236,6 +236,21 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 		if hoverLine >= 0 && hoverLine < n {
 			p.Fill(ui.Rect{X: r.X, Y: y0 + float32(hoverLine)*mmRowH - .5, W: mmW, H: mmRowH + 1}, t.Info.Alpha(.25), 0)
 		}
+		if a.scopeOn() {
+			snap := a.scopeSnapshot(tb)
+			if snap.inner >= 0 && snap.inner < len(snap.syms) {
+				s := snap.syms[snap.inner]
+				end := s.End
+				if end >= n {
+					end = n - 1
+				}
+				if s.Line <= end && s.Line < n {
+					yy := y0 + float32(s.Line)*mmRowH
+					hh := float32(end-s.Line+1) * mmRowH
+					p.Fill(ui.Rect{X: r.X, Y: yy, W: 2, H: hh}, t.Ac.Alpha(.7), 0)
+				}
+			}
+		}
 		// 行底色:Claude 改过的行(紫)、搜索命中(黄)、同词(蓝)
 		band := func(lines []int, col ui.Color) {
 			for _, l := range lines {

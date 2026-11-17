@@ -7,6 +7,9 @@ import (
 	"github.com/egoist/mygo/ui/editor"
 )
 
+// scopeGutterPad 为范围竖条在行号槽左缘预留宽度(Git 竖条仍在槽右缘)。
+const scopeGutterPad = 3.0
+
 // syncDiffBase 保证编辑器行号槽的 Git 竖条跟上 HEAD(库用 DiffBase 与缓冲区对比绘制)。
 func (a *App) syncDiffBase(tb *ideTab) {
 	if tb == nil || tb.st == nil || tb.buf == nil || tb.diff {
