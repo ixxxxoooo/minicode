@@ -66,7 +66,7 @@ func (a *App) side(c *ui.Context) {
 	// 宽度是显式的逐帧布局宽度 = 开合因子(paneOpen,260ms ease-io)× 满开宽度:舞台与对话栏每一帧跟着它走;
 	// 不用元素过渡(见 paneOpen 的说明)。本帧宽度记进 sideCur,右栏据此实时预判自己的宽度。
 	col := ui.Column(c).Key("side").Shrink(0).ClipX().Transition(noMotion)
-	cur := a.paneOpen(col, "w", inline, true) * w
+	cur := a.paneOpenFree(col, "w", inline, true) * w
 	col.Width(cur)
 	a.sideCur, a.sideCurOk = cur, true
 	a.probe(pzSide, col)

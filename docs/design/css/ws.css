@@ -25,7 +25,8 @@
 .win[data-mode="ide"] .only-ide, .win[data-mode="agent"] .only-agent { display: inline-flex; }
 
 /* 底部面板:开合是工作区自己的状态(两种形态各自记忆),收起时高度归零 */
-.bpanel { transition: height var(--dur-slow) var(--ease-io), opacity var(--dur-fast); overflow: hidden; }
+/* 透明度与高度同时长同曲线(原先 opacity 只有 --dur-fast,内容 120ms 就淡没,只剩一条空底色再收,看起来像「突然消失」) */
+.bpanel { transition: height var(--dur-slow) var(--ease-io), opacity var(--dur-slow) var(--ease-io); overflow: hidden; }
 .win[data-panel="off"] .bpanel { height: 0; opacity: 0; box-shadow: none; }
 .bpanel.tall { height: 220px; }
 .bpanel .tabs .tab .x { opacity: 0; margin-left: 2px; } .bpanel .tabs .tab:hover .x { opacity: 1; }

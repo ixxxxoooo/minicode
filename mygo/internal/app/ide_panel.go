@@ -46,7 +46,11 @@ func (a *App) bottomPanel(c *ui.Context) {
 	default:
 		box.Height(hv).Shrink(0)
 	}
-	box.Opacity(box.AnimateWith("op", map[bool]float32{true: 1, false: 0}[open], kit.DurFast, kit.EaseCSS))
+	// 透明度跟着高度走(只在最后一半高度里淡出 / 淡入),而不是独立的 120 ms:
+	// 独立淡出时内容在 120 ms 里就没了,剩下一条空底色再收 140 ms,看起来就是「终端突然消失」
+	if h > 1 {
+		box.Opacity(clampF(hv/(h*.5), 0, 1))
+	}
 	if !live {
 		box.Children(func() {})
 		return

@@ -93,6 +93,17 @@ func (a *App) paneSnap() bool {
 // 参数 slow:true = 260ms ease-io(左栏),false = 440ms 变形曲线(右栏 / 对话栏停靠 / 最大化)。
 // 拖分隔线 / 连续缩放窗口 / 形态切换传送带:直接取终值(见 paneSnap)。
 func (a *App) paneOpen(p ui.Element, key string, on bool, slow bool) float32 {
+	return a.paneOpenSnap(p, key, on, slow, a.paneSnap())
+}
+
+// paneOpenFree 同 paneOpen,但形态切换进行中也照常做开合动画(只有拖分隔线 / 连续缩放窗口时才直接到位)。
+// 给传送带之外的面板用(导航栏):两个形态各自记着导航栏的开合,IDE(左栏开)切到 Agent(左栏收)时,
+// 若导航栏在切换那一帧直接到位,整个舞台会在一帧里向左 / 向右跳 228 px,传送带的几何跟着错位,右边露出空白。
+func (a *App) paneOpenFree(p ui.Element, key string, on bool, slow bool) float32 {
+	return a.paneOpenSnap(p, key, on, slow, a.instantLayout())
+}
+
+func (a *App) paneOpenSnap(p ui.Element, key string, on bool, slow bool, snap bool) float32 {
 	target := float32(0)
 	if on {
 		target = 1
@@ -101,7 +112,6 @@ func (a *App) paneOpen(p ui.Element, key string, on bool, slow bool) float32 {
 	if slow {
 		dur, ease = kit.DurSlow, kit.EaseIO
 	}
-	snap := a.paneSnap()
 	if dur <= 0 || snap {
 		dur = time.Millisecond
 	}

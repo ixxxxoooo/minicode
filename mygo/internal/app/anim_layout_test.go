@@ -154,6 +154,53 @@ func TestAnimLayoutScenarios(t *testing.T) {
 	run(sc{"IDE→Agent", func() { a.SetMode(ModeAgent) }, 700 * time.Millisecond})
 }
 
+// 底部终端收起 / 展开:内容(标签条)要保留到高度走完,不能一收起就消失;
+// 透明度只在最后一半高度里变化,收起途中面板高度过半时仍然完全不透明。
+func TestAnimBottomPanelCollapseKeepsContent(t *testing.T) {
+	a, tt := quickApp(t)
+	a.SetMode(ModeIDE)
+	a.ide.bottomOpen, a.ide.bottomTab = true, "term"
+	t.Cleanup(a.CloseTerminals)
+	kit.SetClock(tt.Now)
+	t.Cleanup(func() { kit.SetClock(nil) })
+	tt.Advance(1500 * time.Millisecond)
+	openN := len(tt.Texts())
+	a.ide.bottomOpen = false
+	tt.Frame()
+	seen := 0
+	for el := time.Duration(0); el < 240*time.Millisecond; el += 16 * time.Millisecond {
+		tt.Advance(16 * time.Millisecond)
+		if len(tt.Texts()) >= openN { // 面板内容的文字还在(界面文字数没少)
+			seen++
+		}
+	}
+	// 高度动画 260 ms:前 240 ms 内标签条应一直在(曾经 120 ms 就淡没了,只剩一条空底色)
+	if seen < 14 {
+		t.Fatalf("收起动画 240 ms 里只有 %d/15 帧还看得到面板内容,面板像是突然消失", seen)
+	}
+	tt.Advance(600 * time.Millisecond)
+	if len(tt.Texts()) >= openN {
+		t.Fatal("收起完成后面板内容应已移除(界面文字应变少)")
+	}
+}
+
+// 两个形态各自记住导航栏的开合:IDE(左栏开)切到 Agent(左栏收起)、再切回去,
+// 形态切换的传送带和导航栏收起 / 展开同时进行,舞台里任何一帧都不能露出空白。
+func TestAnimModeSwitchSideDiffers(t *testing.T) {
+	a, tt := quickApp(t)
+	a.SetMode(ModeAgent)
+	tt.Frame()
+	a.sideOpen = false // Agent 记住「左栏收起」
+	tt.Advance(time.Second)
+	a.SetMode(ModeIDE)
+	tt.Advance(time.Second)
+	a.sideOpen, a.ide.bottomOpen = true, true // IDE 左栏开、底部面板开(用户截图的状态)
+	tt.Advance(time.Second)
+	t.Logf("准备:mode=%v side=%v win=%v mem=%+v", a.mode, a.sideOpen, a.winW, a.memBy)
+	animCheck(t, "IDE→Agent(左栏开→收)", animRun(t, a, tt, "IDE→Agent(左栏开→收)", func() { a.SetMode(ModeAgent) }, 800*time.Millisecond))
+	animCheck(t, "Agent→IDE(左栏收→开)", animRun(t, a, tt, "Agent→IDE(左栏收→开)", func() { a.SetMode(ModeIDE) }, 800*time.Millisecond))
+}
+
 // 拖窗口边缘(逐帧改窗口宽):跨过 1040 / 900 / 720 断点时导航栏、工作区、对话栏都是连续变化,
 // 舞台右缘始终贴着窗口右缘,没有空白、没有一帧跳几百像素。
 func TestAnimResize(t *testing.T) {
