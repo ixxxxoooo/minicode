@@ -66,7 +66,11 @@ func (a *App) pillAttachment(c *ui.Context, kind, path string) *richtext.Attachm
 	iconSz := fs
 	padL, gap, padR := float32(6), float32(4), float32(7)
 	w := padL + iconSz + gap + span(label) + padR
-	h := a.FlowFontSize() * 1.35
+	// 附件框的底边落在文字基线上,胶囊要和文字「视觉中心」对齐,就得在基线下面再伸出一截(字的下沿):
+	// 附件框只占基线以上的部分,绘制时把胶囊画得比框高 down,向下伸出去。
+	pillH := a.FlowFontSize() * 1.4
+	down := a.FlowFontSize() * 0.3
+	h := pillH - down
 	svg := kit.IconSVG(icon)
 	return &richtext.Attachment{
 		Width: w + 2*pillMargin, Height: h,
@@ -74,7 +78,7 @@ func (a *App) pillAttachment(c *ui.Context, kind, path string) *richtext.Attachm
 		Data: pillData{Kind: kind, Path: path},
 		Draw: func(p *ui.Painter, r ui.Rect) {
 			t := a.tk
-			box := ui.Rect{X: r.X + pillMargin, Y: r.Y, W: r.W - 2*pillMargin, H: r.H}
+			box := ui.Rect{X: r.X + pillMargin, Y: r.Y, W: r.W - 2*pillMargin, H: pillH}
 			p.Fill(box, t.Fill2, 5)
 			p.Stroke(box, t.Bd2, 5, 1)
 			tint := t.Tx3
