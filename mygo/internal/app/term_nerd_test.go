@@ -43,14 +43,14 @@ func TestNerdWarning(t *testing.T) {
 	if w := a.nerdWarning(tp); w != "" {
 		t.Fatalf("选了已装的 Nerd Font 不该提示,得到 %q", w)
 	}
-	if got := a.termFontFamily(); got != "JetBrainsMono Nerd Font" {
-		t.Fatalf("已装的 Nerd Font 不该被回退成系统等宽,得到 %q", got)
+	if got := a.termFontFamily(); !strings.Contains(got, "JetBrainsMono Nerd Font") {
+		t.Fatalf("已装的 Nerd Font 应在字体链里,得到 %q", got)
 	}
 
 	// 选了但没装:回退系统等宽(开关默认开),并提示
 	setFakeFonts(t, "Menlo.ttc")
-	if got := a.termFontFamily(); got != "monospace" {
-		t.Fatalf("没装的 Nerd Font 应回退系统等宽,得到 %q", got)
+	if got := a.termFontFamily(); !strings.Contains(got, "monospace") || strings.Contains(got, "JetBrainsMono Nerd Font") {
+		t.Fatalf("没装的 Nerd Font 应换成系统等宽链,得到 %q", got)
 	}
 	if w := a.nerdWarning(tp); w == "" {
 		t.Fatal("选了没装的 Nerd Font,图标缺字,应提示")

@@ -480,22 +480,39 @@ var settingsTabs = []setTabDef{
 	{id: "terminal", title: "终端", icon: "terminal", desc: "内置终端的外观与 Shell。", groups: []setGroup{
 		{title: "外观", rows: []setRow{
 			rStp("term.fontSize", "字号", "终端文字大小,行高自动按比例换算", 12, 9, 24, 1, "px"),
-			rFld("term.font", "字体", "终端使用的等宽字体;留空 = 系统等宽字体", "", 150, true, "SF Mono"),
+			rSeg(pTermFontWeight, "字重", "普通文本的默认粗细;ANSI 粗体仍为 700", 0, "常规", "粗体"),
 			rSeg("term.lineHeight", "行高", "", 1, "紧凑", "标准", "宽松"),
+			rStp(pTermLetterSpacing, "字间距", "暂未接列宽调节(仅占位偏好);盒绘字符仍按等宽格对齐", 0, 0, 0, 1, "px"),
 			rSeg("term.cursor", "光标形状", "", 0, "块", "竖线", "下划线"),
 			rTog("term.blink", "光标闪烁", "", true),
+			rSeg(pTermCursorDim, "非聚焦光标", "终端失焦时的光标透明度", 1, "柔和", "标准", "醒目"),
 			rTog("term.copyOnSelect", "选择即复制", "在终端里选中文字(拖选、双击选词、三击选行)松手后自动复制到剪贴板", false),
 			rFld("term.scrollback", "回看行数", "滚轮可回看的历史输出行数;对之后新开的终端生效", "10000", 90, false, ""),
-			rTog("term.nerdFallback", "无 Nerd Font 时回退系统等宽", "图标显示成方框时可开启", true),
-			rSeg("term.tabs", "标签排列", "终端 ≥2 时横排在面板头或竖排在右侧;面板宽 <560 或窄档强制横向", 2, "横向", "竖向", "自动"),
+			rStp(pTermWheel, "滚轮灵敏度", "回看历史时每次滚动的行数(鼠标跟踪模式仍转发给 shell)", 3, 1, 5, 1, "行"),
+			rTog(pTermLigatures, "字体连字", "calt / liga;仅对支持连字的字体生效", false),
+			rTog("term.nerdFallback", "无 Nerd Font 时回退", "所选 Nerd 字体未安装时改用系统等宽并保留 CJK / Emoji 回退链", true),
+			rSeg("term.tabs", "标签排列", "选「竖向」时单终端也竖排;「自动」≥2 个终端且面板 ≥640 才竖排;<560 或窄档强制横向", 2, "横向", "竖向", "自动"),
+		}},
+		{title: "字体", rows: []setRow{
+			{key: pTermFontManual, title: "字体选择器", desc: "常见等宽、系统字体与逗号分隔回退链", kind: kNone},
+		}, body: func(a *App, c *ui.Context) { a.termFontPickerBody(c) }},
+		{title: "交互", rows: []setRow{
+			rSeg(pTermRightClick, "右键行为", "", 0, "上下文菜单", "直接粘贴"),
+			rSeg(pTermLinkMod, "打开链接", "按住修饰键点击终端里的链接", 0, "⌘ 点击", "⌃ 点击"),
+			rTog(pTermOptionMeta, "Option 作 Meta", "把 ⌥ 发给 shell 的 Meta 键(Emacs / readline)", false),
+			rSeg(pTermBell, "响铃 (BEL)", "0x07 视觉闪屏;系统蜂鸣未接", 1, "关", "视觉", "视觉+记录"),
+			rTog(pTermPasteMulti, "粘贴多行前确认", "", true),
+			rSeg(pTermCloseConfirm, "关闭终端前确认", "", 0, "有前台命令", "始终", "从不"),
 		}},
 		{title: "Shell", rows: []setRow{
 			rFld("term.shell", "Shell 程序", "留空使用环境变量 $SHELL;失焦或回车应用", "", 160, true, "跟随 $SHELL"),
-			rTog("term.login", "登录 shell", "", true),
+			rFld(pTermShellArgs, "Shell 参数", "追加到 shell 后的参数(简单空格拆分;复杂启动请写脚本)", "", 200, true, "如 -i"),
+			rTog("term.login", "登录 shell", "为 shell 加 -l", true),
 			rTog("term.cwd", "在项目目录启动", "", true),
 			rTog("term.shellIntegration", "Shell 集成 (OSC 133)", "命令成败装饰与点击复制输出;关闭后不再自动 source 集成脚本", true),
+			rFld(pTermEnv, "环境变量", "每行 KEY=VALUE,启动终端时注入(不含密钥)", "", 220, true, "FOO=bar"),
 		}},
-	}},
+	}, note: "ANSI 调色板跟随全局主题;自定义 16 色与最小对比度尚未接(见设计稿已知缺口)。"},
 
 	{id: "scm", title: "源代码管理", icon: "branch", desc: "改动面板、差异与 Worktree。", groups: []setGroup{
 		{title: "改动面板", rows: []setRow{

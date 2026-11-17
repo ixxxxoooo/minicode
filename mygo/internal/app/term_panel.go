@@ -65,6 +65,7 @@ type termPanel struct {
 	over      []ui.Rect // 画在正文上的控件(提示条、搜索条、回到底部)的区域,相对正文左上角;正文的选择 / 鼠标处理要放过它们
 	bodyR     ui.Rect   // 正文上一帧的窗口坐标区域
 	nerdKey   string    // 上次判断时的「画面版本|字体|扫描完成」,没变就不重判
+	bellUntil time.Time // 视觉响铃闪屏截止
 }
 
 // redraw 让窗口重画一帧(终端输出到达时由内核的通知调用,任意 goroutine)。
@@ -150,7 +151,9 @@ func (a *App) realTerminal(c *ui.Context) {
 
 	if tp.t == nil && tp.err == "" && cols >= 4 && rows >= 1 {
 		sb := a.termScrollback()
-		tm, err := term.Start(a.TermStartOpts(cols, rows, sb, cmp.Or(tp.cwd, a.proj)))
+		opts := a.TermStartOpts(cols, rows, sb, cmp.Or(tp.cwd, a.proj))
+		opts.OnBell = func() { a.termBell(tp) }
+		tm, err := term.Start(opts)
 		if err != nil {
 			tp.err = err.Error()
 			log.Error("启动终端失败", "err", err)
@@ -207,16 +210,25 @@ func (a *App) realTerminal(c *ui.Context) {
 	}
 	body.HandleInput(func(ev ui.InputEvent) bool { return a.termInput(c, ev) })
 	a.termHasFocus = focused
-	if tp.link != nil && tp.hoverMods&ui.Super != 0 {
+	linkMod := ui.Super
+	if !a.termLinkUsesSuper() {
+		linkMod = ui.Ctrl
+	}
+	if tp.link != nil && tp.hoverMods&linkMod != 0 {
 		body.Cursor(ui.CursorPointer)
 	} else {
 		body.Cursor(ui.CursorText)
 	}
-	a.termMenu(c, body, tp)
+	if !a.termRightClickPastes() {
+		a.termMenu(c, body, tp)
+	}
 	tp.bodyR = b
 	body.Children(func() {
 		tp.over = tp.over[:0]
 		a.termNerdCheck(c, tp)
+		if !tp.bellUntil.IsZero() && kit.Since(tp.bellUntil) < 150*time.Millisecond {
+			ui.Box(c).Absolute().Fill().Background(t.Ac.Alpha(.14))
+		}
 		switch {
 		case tp.err != "":
 			ui.Column(c).Grow(1).Padding(padY, padX).Children(func() {
@@ -304,6 +316,13 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 				return true
 			}
 		}
+		if d := a.termScrollDelta(ev.DY); d != 0 && tp.st.MaxY > 0 {
+			if tp.st.Y >= tp.st.MaxY-1 {
+				tp.st.Y = max(tp.st.MaxY-termLineH*3, 0)
+			}
+			tp.st.Y = min(max(tp.st.Y+d, 0), tp.st.MaxY)
+			return true
+		}
 		return false
 	case ui.InputPointerDown:
 		if tp.t.MouseTracking() && ev.Mods&ui.Alt == 0 {
@@ -311,6 +330,11 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 				tp.focusIt = true
 				return true
 			}
+		}
+		if ev.Button == 1 && a.termRightClickPastes() {
+			a.termPasteReq = true
+			tp.focusIt = true
+			return true
 		}
 		if ev.Button != 0 {
 			return false // 右键交给上下文菜单
@@ -325,7 +349,7 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 				return true
 			}
 		}
-		if ev.Mods&ui.Super != 0 {
+		if a.termLinkModHeld(ev.Mods) {
 			if l := a.linkAt(tp, p); l != nil {
 				a.openLink(l)
 				return true
@@ -350,7 +374,7 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 		p := a.termCell(tp, ev.X, ev.Y)
 		tp.hover, tp.hoverOn, tp.hoverMods = p, true, ev.Mods
 		tp.link = nil
-		if ev.Mods&ui.Super != 0 {
+		if a.termLinkModHeld(ev.Mods) {
 			tp.link = a.linkAt(tp, p)
 		}
 		if tp.sel.drag && ev.Button == 0 {
@@ -404,7 +428,7 @@ func (a *App) termInput(c *ui.Context, ev ui.InputEvent) bool {
 		}
 		if ev.Text == "paste" {
 			if s := c.Services().ReadClipboard(); s != "" { // 输入回调里不在构建期,c.ReadClipboard 会静默返回空,必须走 Services
-				tp.t.Paste(s)
+				a.termPaste(tp, s)
 			}
 			return true
 		}
@@ -526,7 +550,11 @@ func termMods(m ui.Modifiers) uv.KeyMod {
 		o |= uv.ModCtrl
 	}
 	if m&ui.Alt != 0 {
-		o |= uv.ModAlt
+		if termOptionAsMeta {
+			o |= uv.ModMeta
+		} else {
+			o |= uv.ModAlt
+		}
 	}
 	return o
 }
@@ -681,7 +709,7 @@ func (a *App) termRow(c *ui.Context, ln term.Line, cx int, focused bool, cellW f
 		} else if cx >= 0 {
 			bg := t.Tx1
 			if !focused {
-				bg = ui.RGBA(t.Tx1.R, t.Tx1.G, t.Tx1.B, 0.35)
+				bg = ui.RGBA(t.Tx1.R, t.Tx1.G, t.Tx1.B, a.termCursorIdleOpacity())
 			} else {
 				bg = ui.RGBA(t.Tx1.R, t.Tx1.G, t.Tx1.B, 0.55)
 			}
@@ -724,9 +752,11 @@ func runSpan(t *theme.Tokens, r term.Run, text string) ui.Span {
 		fg.A = uint8(float32(fg.A) * 0.6)
 	}
 	sp := ui.Span{Text: text, Font: termFamily, Size: termFont, Color: fg,
-		Italic: r.Italic, Underline: r.Underline, Strikethrough: r.Strike}
+		Italic: r.Italic, Underline: r.Underline, Strikethrough: r.Strike, Features: termFontFeats}
 	if r.Bold {
 		sp.Weight = 700
+	} else if termBaseWeight > 0 {
+		sp.Weight = termBaseWeight
 	}
 	return sp
 }

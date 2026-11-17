@@ -98,6 +98,7 @@ func (a *App) applyBehavior() {
 	a.applyCheapPrefs()
 	a.applySettingsRuntime()
 	// 终端字号:改了之后各终端标签重新量字宽
+	a.applyTermRuntimePrefs()
 	fam := a.termFontFamily()
 	lh := []float32{1.4, 1.6, 1.8}[min(max(a.prefs.Int("term.lineHeight", 1), 0), 2)]
 	f := float32(a.prefs.Int(pTermFont, 12)) - .5

@@ -41,7 +41,9 @@ type Options struct {
 	Scrollback  int         // 历史行数;0 = ScrollbackLines
 	LoginShell  bool        // 以登录 shell 启动(-l),默认 true
 	Integration bool        // 启用 shell 集成(OSC 133);zsh 经启动文件静默注入,见 Term.Integrated
+	ShellArgs   []string    // 追加给 shell 的参数(在 -l 等之后)
 	Notify      func()      // 画面变化 / 进程退出时调用(任意 goroutine,已合并节流)
+	OnBell      func()      // BEL 字符回调(任意 goroutine)
 	FG, BG      color.Color // 终端默认前景 / 背景色(= 当前主题):程序用 OSC 10 / 11 查询时据此回答,OpenCode 等靠它判断深浅色;nil = 不设
 	Dark        bool        // 当前主题是否深色(写进 COLORFGBG)
 }
@@ -96,6 +98,9 @@ func Start(o Options) (*Term, error) {
 	if o.LoginShell {
 		args = append(args, "-l")
 	}
+	if len(o.ShellArgs) > 0 {
+		args = append(args, o.ShellArgs...)
+	}
 	cmd := exec.Command(shell, args...)
 	if o.Cwd != "" {
 		cmd.Dir = o.Cwd
@@ -121,11 +126,19 @@ func Start(o Options) (*Term, error) {
 	t := &Term{em: vt.NewSafeEmulator(o.Cols, o.Rows), ptmx: ptmx, cmd: cmd, notify: o.Notify, cols: o.Cols, rows: o.Rows, integrated: integrated}
 	t.em.SetScrollbackSize(scroll)
 	t.SetColors(o.FG, o.BG)
-	cb := vt.Callbacks{Title: func(s string) {
-		t.mu.Lock()
-		t.title = s
-		t.mu.Unlock()
-	}}
+	onBell := o.OnBell
+	cb := vt.Callbacks{
+		Title: func(s string) {
+			t.mu.Lock()
+			t.title = s
+			t.mu.Unlock()
+		},
+		Bell: func() {
+			if onBell != nil {
+				onBell()
+			}
+		},
+	}
 	cb.EnableMode = func(m ansi.Mode) { t.onMouseMode(m, true) }
 	cb.DisableMode = func(m ansi.Mode) { t.onMouseMode(m, false) }
 	t.em.SetCallbacks(cb)

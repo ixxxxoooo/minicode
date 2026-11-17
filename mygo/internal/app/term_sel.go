@@ -709,18 +709,13 @@ func (a *App) termSettings(c *ui.Context, anchor ui.Element) {
 					a.prefs.Set(pTermCopyOnSelect, !a.prefs.Bool(pTermCopyOnSelect, false))
 				}
 			})
-			ui.Text(c, "字体").TextColor(t.Tx3).FontSize(theme.FsCap).Margin(6, 0, 2, 4)
-			cur := a.prefs.Str("term.font", "")
-			for _, f := range []string{"", "SF Mono", "Menlo", "Monaco", "JetBrains Mono", "Fira Code", "Hack"} {
-				label := f
-				if f == "" {
-					label = "系统等宽"
-				}
-				if a.mi(c, "tf-"+f, "", label, "", cur == f).Clicked() {
-					a.prefs.Set("term.font", f)
+			row("连字", func() {
+				if kit.Tog(c, a.prefs.Bool(pTermLigatures, false), "tlig") {
+					a.prefs.Set(pTermLigatures, !a.prefs.Bool(pTermLigatures, false))
 					a.applyBehavior()
 				}
-			}
+			})
+			a.termFontPickerBrief(c)
 			ui.Divider(c).Margin(4, 0)
 			if looksNerdFont(a.prefs.Str("term.font", "")) {
 				ui.Text(c, "当前字体含 Nerd 图标;若无对应字体可开设置 → 终端「无 Nerd Font 时回退系统等宽」。").TextColor(t.Warn).FontSize(theme.FsCap).Padding(2, 4)

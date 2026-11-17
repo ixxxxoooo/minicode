@@ -98,7 +98,10 @@ type settingsState struct {
 	// 输入校验抖动
 	fieldShake map[string]time.Time
 	enterAt    time.Time // 分类切换时分组 stagger 起点
-	navDrop    bool      // 窄窗分类下拉展开
+	// 终端字体选择器
+	termFontTab int
+	termFontQ   string
+	navDrop     bool // 窄窗分类下拉展开
 	// 权限 / 环境变量表单
 	ruleDraft string
 	ruleKind  int

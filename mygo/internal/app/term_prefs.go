@@ -21,20 +21,9 @@ func (a *App) termScrollback() int {
 	return n
 }
 
-// termFontFamily 返回终端字体。
-// 「无 Nerd Font 时回退系统等宽」只在确认没装这个 Nerd 字体时才换(以前不管装没装一律换,
-// 装了 Nerd Font 的用户永远用不上);字体目录没扫完时先按用户选的来。
+// termFontFamily 返回终端渲染用的字体链(MyGo 逗号分隔回退)。
 func (a *App) termFontFamily() string {
-	fam := a.prefs.Str("term.font", "")
-	if fam == "" {
-		return "monospace"
-	}
-	if a.prefs.Bool("term.nerdFallback", true) && looksNerdFont(fam) {
-		if ok, known := fontInstalled(fam); known && !ok {
-			return "monospace"
-		}
-	}
-	return fam
+	return buildTermFontChain(a.prefs.Str("term.font", ""), a.prefs.Bool("term.nerdFallback", true))
 }
 
 func looksNerdFont(name string) bool {

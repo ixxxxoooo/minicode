@@ -262,6 +262,10 @@ func (a *App) TermStartOpts(cols, rows, sb int, cwd string) term.Options {
 	if sh := a.prefs.Str("term.shell", ""); sh != "" {
 		o.Shell = sh
 	}
+	o.ShellArgs = parseShellArgs(a.prefs.Str(pTermShellArgs, ""))
+	if extra := parseTermEnv(a.prefs.Str(pTermEnv, "")); len(extra) > 0 {
+		o.Env = append(o.Env, extra...)
+	}
 	if raw := a.prefs.Str("term.scrollback", ""); raw != "" {
 		if v, err := strconv.Atoi(raw); err == nil && v > 0 {
 			o.Scrollback = v
