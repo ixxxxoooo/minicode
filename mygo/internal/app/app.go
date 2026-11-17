@@ -114,6 +114,7 @@ type App struct {
 	belt0Ok      bool                                     // belt0 有效
 	belt         beltFrame                                // 本帧传送带摆位(只在 stage 构建期间有值)
 	stageW       float32                                  // 舞台宽度(上一帧量到的)
+	ideRest      bool                                     // IDE 形态右栏开合动画已走完(工作区占满、对话栏定宽);动画中反过来(工作区定宽、对话栏占满)
 	navSwapKey   string                                   // 左栏内容上一帧的「形态 + 分段」(变了就播换内容入场)
 	navSwapAt    time.Time                                // 左栏内容换内容入场的起点
 	navDropKey   string                                   // 左栏上一帧的「分段 + 形态 + 当前项目」(变了就播逐行落下,见 side_drop.go)

@@ -34,6 +34,7 @@ func main() {
 	popup := flag.String("popup", "", "打开某个弹层:cfg / sbcfg / ctx / upd / acct")
 	clicks := flag.String("click", "", "截图前依次点击,形如 IDE;100,200(文字或 DIP 坐标);每次点击后推进 -step 毫秒")
 	step := flag.Int("step", 600, "每次点击后推进的毫秒数")
+	drag := flag.String("drag", "", "拖拽追踪:x0,y0,x1,y1,帧数。按住 (x0,y0) 拖到 (x1,y1),每帧(16ms)打印 -trace 里文字的位置,之后不再截图")
 	trace := flag.String("trace", "", "点击后按 16ms 逐帧推进,打印这些文字(逗号分隔)的位置,用来读动画曲线;之后不再截图")
 	noMotion := flag.Bool("nomotion", false, "关闭动效直接取终态(截图里没有窗口,frameSoon 是空操作,按真实时钟推进的入场动画如用量柱状图会停在第一帧)")
 	palette := flag.String("palette", "", "打开命令面板并预填查询(用 _ 表示空查询)")
@@ -214,8 +215,12 @@ func main() {
 			os.Exit(2)
 		}
 		if *trace != "" && ci == len(clickList)-1 {
+			frameAt := time.Now()
 			for ms := 0; ms <= *step; ms += 16 {
 				fmt.Printf("%4d", ms)
+				if ms > 0 {
+					fmt.Printf(" [%4.1fms]", float64(time.Since(frameAt).Microseconds())/1000)
+				}
 				for _, s := range strings.Split(*trace, ",") {
 					if r, ok := tt.Find(s); ok {
 						fmt.Printf("  %s x%.1f y%.1f w%.1f", s, r.X, r.Y, r.W)
@@ -224,11 +229,38 @@ func main() {
 					}
 				}
 				fmt.Println()
+				frameAt = time.Now()
 				tt.Advance(16 * time.Millisecond)
 			}
 			os.Exit(0)
 		}
 		tt.Advance(time.Duration(*step) * time.Millisecond)
+	}
+	if *drag != "" {
+		var x0, y0, x1, y1 float32
+		var n int
+		if _, err := fmt.Sscanf(*drag, "%f,%f,%f,%f,%d", &x0, &y0, &x1, &y1, &n); err != nil || n < 1 {
+			fmt.Fprintln(os.Stderr, "-drag 格式:x0,y0,x1,y1,帧数")
+			os.Exit(2)
+		}
+		tt.Press(x0, y0)
+		tt.Advance(16 * time.Millisecond)
+		for i := 0; i <= n; i++ {
+			f := float32(i) / float32(n)
+			tt.Move(x0+(x1-x0)*f, y0+(y1-y0)*f)
+			tt.Advance(16 * time.Millisecond)
+			fmt.Printf("%3d 指针x%.1f", i, x0+(x1-x0)*f)
+			for _, s := range strings.Split(*trace, ",") {
+				if r, ok := tt.Find(s); ok {
+					fmt.Printf("  %s x%.1f y%.1f w%.1f", s, r.X, r.Y, r.W)
+				} else {
+					fmt.Printf("  %s -", s)
+				}
+			}
+			fmt.Println()
+		}
+		tt.Release(x1, y1)
+		os.Exit(0)
 	}
 	img := tt.Image()
 	f, err := os.Create(*out)

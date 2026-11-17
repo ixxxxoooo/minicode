@@ -36,6 +36,9 @@ func (a *App) bottomPanel(c *ui.Context) {
 		dur = time.Millisecond // 拖动分隔线 / 拖窗口边缘:高度直接跟手
 	}
 	hv := box.AnimateWith("h", target, dur, kit.EaseIO)
+	if a.instantLayout() {
+		hv = target // 拖动分隔线:直接取目标高度,不用落后一帧的动画值
+	}
 	switch {
 	case open && a.ly.panelMax:
 		box.Grow(1).MinHeight(0)

@@ -93,10 +93,15 @@ func (a *App) paneW(p ui.Element, target float32, slow bool) float32 {
 	if slow {
 		dur, ease = kit.DurSlow, kit.EaseIO
 	}
-	if dur <= 0 || a.paneSnap() {
+	snap := a.paneSnap()
+	if dur <= 0 || snap {
 		dur = time.Millisecond
 	}
-	return p.AnimateWith("w", target, dur, ease)
+	v := p.AnimateWith("w", target, dur, ease)
+	if snap { // 拖分隔线 / 缩放窗口:直接取目标值(动画值会落后一帧,拖拽把手又按目标值算位置,两边对不上就抖)
+		return target
+	}
+	return v
 }
 
 // paneGap 是面板左侧外边距(面板间距)的动画值:开合时随宽度同曲线渐变(设计稿 .pane 的 margin 过渡),
@@ -106,11 +111,16 @@ func (a *App) paneGap(p ui.Element, on bool, gap float32) float32 {
 	if on {
 		target = gap
 	}
+	snap := a.paneSnap()
 	dur := kit.DurMorph
-	if dur <= 0 || a.paneSnap() {
+	if dur <= 0 || snap {
 		dur = time.Millisecond
 	}
-	return p.AnimateWith("gap", target, dur, kit.EaseMorph)
+	v := p.AnimateWith("gap", target, dur, kit.EaseMorph)
+	if snap {
+		return target
+	}
+	return v
 }
 
 // morphProgress 形态切换自身的进度 0..1(EaseMorph);没有切换或已结束返回 1,done = true。

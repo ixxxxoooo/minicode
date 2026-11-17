@@ -14,6 +14,7 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 	// 宽度 / 间距用显式的逐帧动画值(paneW / paneGap),不用元素过渡
 	p := a.pane(c).Key("chat").Transition(noMotion)
 	shown := true
+	slide := false // IDE 对话栏开合动画途中:内容保持定宽、随栏滑动,不逐帧重排
 	switch {
 	case a.belt.on:
 		// 形态切换的传送带平移:绝对定位 + 逐帧摆位(morph_belt.go),不走弹性布局与宽度过渡
@@ -27,9 +28,16 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		p.Grow(1).Basis(0)
 		_ = a.paneGap(p, false, gap)
 	case a.rightOn && !a.useDockRail():
-		// IDE 形态:对话栏停靠在右侧(设计稿 .chat { flex: 1 1 0 }):占满工作区让出来的那一段。
-		// 宽度 = 舞台 − 工作区(wsPane 里显式动画) − 间距,所以展开时它随工作区收窄而逐帧变宽,稳态正好是 --w-dock
-		p.Grow(1).Basis(0).Margin(0, 0, 0, a.paneGap(p, true, gap))
+		// IDE 形态:对话栏停靠在右侧(设计稿 .chat { flex: 1 1 0 })。
+		// 开合动画途中它占满工作区(wsPane 里显式动画)让出来的那一段,展开时随工作区收窄逐帧变宽;
+		// 走完 / 拖拽 / 缩放窗口时 wsPane 占满,这里定宽 --w-dock。两种分配在交接那一帧结果相同。
+		p.Margin(0, 0, 0, a.paneGap(p, true, gap))
+		if a.ideRest {
+			p.Width(a.dockW()).Shrink(0)
+		} else {
+			p.Grow(1).Basis(0).ClipX()
+			slide = true
+		}
 	default:
 		// 收起(右栏关了 / 窄窗收成图标条):设计稿 .chat { flex: 0 0 0; width: 0 } 宽度瞬间归零(不过渡),
 		// 只有工作区在 440ms 里向右扩展填满;透明度 260ms ease-io、间距 440ms 照常渐变
@@ -55,7 +63,7 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		a.chatW = w
 	}
 	hint := a.chatDrop(p)
-	p.Children(func() {
+	build := func() {
 		drop := ui.Box(c).Absolute().Left(0).Right(0).Top(0).Bottom(0).PassThrough()
 		if h := a.chatDrop(drop); h != "" {
 			hint = h
@@ -101,5 +109,14 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		})
 		a.chatDockColumn(c)
 		_ = t
+	}
+	p.Children(func() {
+		if slide {
+			// 内容固定在停靠宽度、靠左,栏的左缘一路移动,整块就像贴着右缘滑进 / 滑出;
+			// 不逐帧按变化的宽度重排会话(长会话重排很重,是掉帧、宽度「先小后突然变大」的来源)
+			ui.Column(c).Key("chat-fix").Width(a.dockW()).Grow(1).MinHeight(0).Shrink(0).Children(build)
+			return
+		}
+		build()
 	})
 }

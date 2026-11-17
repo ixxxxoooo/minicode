@@ -111,7 +111,11 @@ func (a *App) wsPane(c *ui.Context, gap float32) {
 			target = max(0, a.stageW-a.dockW()-gap)
 		}
 		_ = a.paneGap(p, false, gap)
-		if v := a.paneW(p, target, false); a.stageW <= 0 || absF(v-target) < .5 {
+		v := a.paneW(p, target, false)
+		// 稳态 / 拖拽 / 缩放窗口:工作区占满、对话栏定宽(chatPane 读 ideRest),都是精确值,没有落后一帧;
+		// 开合动画途中反过来:工作区定宽(逐帧动画值)、对话栏占满剩余。两种分配在动画走完的那一帧结果相同(352),不会跳。
+		a.ideRest = a.stageW <= 0 || absF(v-target) < .5
+		if a.ideRest {
 			p.Grow(1).Basis(0)
 		} else {
 			p.Width(v).Shrink(0)
