@@ -215,28 +215,3 @@ func (a *App) termFontAllList(c *ui.Context, curFam, q string, hover *string) {
 		ui.Text(c, "没有匹配的等宽字体").FontSize(theme.FsCap).TextColor(t.Tx3).Padding(8, 4)
 	}
 }
-
-// termFontPickerBrief 终端弹层里的精简字体行。
-func (a *App) termFontPickerBrief(c *ui.Context) {
-	a.startFontScan()
-	cur := a.prefs.Str(pTermFontManual, "")
-	ui.Text(c, "字体").FontSize(theme.FsCap).TextColor(a.tk.Tx3).Margin(6, 0, 2, 4)
-	for _, fam := range commonMonoFonts {
-		if fam == "" || fam == "Courier New" {
-			continue
-		}
-		label := fam
-		_, known, ok := fontInstalledLabel(fam)
-		if known && !ok {
-			a.mi(c, "tf-"+fam, "", label+"(未安装)", "", false)
-			continue
-		}
-		if a.mi(c, "tf-"+fam, "", label, "", cur == fam).Clicked() {
-			a.termFontPick(fam)
-		}
-	}
-	if a.mi(c, "tf-more", "gear", "打开字体选择器…", "", false).Clicked() {
-		a.popup = ""
-		a.openSettings("terminal")
-	}
-}

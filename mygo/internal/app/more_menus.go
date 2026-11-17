@@ -131,7 +131,7 @@ func (a *App) termMoreMenu(m *ui.Menu) {
 	}
 	m.Separator()
 	if menuItem(m, "终端设置…").Chosen() {
-		a.popup = "termset"
+		a.openSettings("terminal")
 	}
 }
 

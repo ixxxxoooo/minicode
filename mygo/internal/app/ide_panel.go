@@ -151,9 +151,6 @@ func (a *App) bottomPanelBody(c *ui.Context, h float32) {
 							a.newTerm()
 						}
 					})
-					gear := kit.Ib(c, "gear", kit.IbOpt{Small: true, Tip: "终端设置", On: a.popup == "termset"})
-					gear.OnClick(func() { a.togglePop("termset") })
-					a.termSettings(c, gear)
 					kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.termMoreMenu)
 				}
 				mi, mt := "max", "最大化面板 ⌘⇧J"

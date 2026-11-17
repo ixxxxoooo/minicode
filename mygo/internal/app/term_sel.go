@@ -632,7 +632,7 @@ func (a *App) termMenu(c *ui.Context, body ui.Element, tp *termPanel) {
 			a.revealInFinder(dir)
 		}
 		if menuItem(m, "终端设置…").Chosen() {
-			a.popup = "termset"
+			a.openSettings("terminal")
 		}
 	})
 }
@@ -670,61 +670,4 @@ func (a *App) setTermFont(n int) {
 	n = min(max(n, 9), 24)
 	a.prefs.Set(pTermFont, n)
 	a.applyBehavior()
-}
-
-// termSettings 是终端面板里「设置」按钮的弹层:字号、行高、光标、字体;颜色跟随全局主题,这里不单独设。
-func (a *App) termSettings(c *ui.Context, anchor ui.Element) {
-	t := a.tk
-	a.popOpen("termset", func(open *bool) {
-		ui.PopoverBase(c, anchor, open, func(panel ui.Element) {
-			a.popPanel(panel, 268).AttachTo(anchor, ui.AnchorBottomRight, ui.AnchorTopRight).Margin(0, 0, 6, 0).Padding(8)
-			row := func(label string, right func()) {
-				ui.Row(c).Height(theme.Px(28)).AlignItems(ui.Center).Gap(8).Children(func() {
-					ui.Text(c, label).TextColor(t.Tx2).Grow(1)
-					right()
-				})
-			}
-			row("字号", func() {
-				if kit.Ib(c, "minus", kit.IbOpt{Small: true, Tip: "减小 ⌘−"}).Clicked() {
-					a.setTermFont(a.prefs.Int(pTermFont, 12) - 1)
-				}
-				ui.Text(c, itoa(a.prefs.Int(pTermFont, 12))+" px").FontFeatures("tnum").MinWidth(40).TextColor(t.Tx1).AlignSelf(ui.Center)
-				if kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "增大 ⌘+"}).Clicked() {
-					a.setTermFont(a.prefs.Int(pTermFont, 12) + 1)
-				}
-			})
-			row("行高", func() {
-				if i := kit.Seg(c, []kit.SegItem{{Text: "紧凑"}, {Text: "标准"}, {Text: "宽松"}}, a.prefs.Int("term.lineHeight", 1), kit.SegOpt{Key: "tlh"}); i >= 0 {
-					a.prefs.Set("term.lineHeight", i)
-					a.applyBehavior()
-				}
-			})
-			row("光标", func() {
-				if i := kit.Seg(c, []kit.SegItem{{Text: "块"}, {Text: "竖线"}, {Text: "下划线"}}, a.prefs.Int("term.cursor", 0), kit.SegOpt{Key: "tcur"}); i >= 0 {
-					a.prefs.Set("term.cursor", i)
-				}
-			})
-			row("选择即复制", func() {
-				if kit.Tog(c, a.prefs.Bool(pTermCopyOnSelect, false), "tcos") {
-					a.prefs.Set(pTermCopyOnSelect, !a.prefs.Bool(pTermCopyOnSelect, false))
-				}
-			})
-			row("连字", func() {
-				if kit.Tog(c, a.prefs.Bool(pTermLigatures, false), "tlig") {
-					a.prefs.Set(pTermLigatures, !a.prefs.Bool(pTermLigatures, false))
-					a.applyBehavior()
-				}
-			})
-			a.termFontPickerBrief(c)
-			ui.Divider(c).Margin(4, 0)
-			if looksNerdFont(a.prefs.Str("term.font", "")) {
-				ui.Text(c, "当前字体含 Nerd 图标;若无对应字体可开设置 → 终端「无 Nerd Font 时回退系统等宽」。").TextColor(t.Warn).FontSize(theme.FsCap).Padding(2, 4)
-			}
-			ui.Text(c, "颜色跟随全局主题(设置 → 外观),终端不单独换色。").TextColor(t.Tx3).FontSize(theme.FsCap).Padding(2, 4)
-			if a.mi(c, "tmore", "gear", "更多终端设置…", "", false).Clicked() {
-				a.popup = ""
-				a.openSettings("terminal")
-			}
-		})
-	})
 }
