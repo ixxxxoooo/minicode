@@ -48,12 +48,20 @@ func (s Stat) Mean() time.Duration {
 	return s.Total / time.Duration(s.Count)
 }
 
+// P50 由直方图估算的 50 分位耗时。
+func (s Stat) P50() time.Duration { return s.pQuantile(0.50) }
+
 // P95 由直方图估算的 95 分位耗时(取桶上界,偏保守)。
-func (s Stat) P95() time.Duration {
+func (s Stat) P95() time.Duration { return s.pQuantile(0.95) }
+
+// P99 由直方图估算的 99 分位耗时。
+func (s Stat) P99() time.Duration { return s.pQuantile(0.99) }
+
+func (s Stat) pQuantile(q float64) time.Duration {
 	if s.Count == 0 {
 		return 0
 	}
-	want := int64(math.Ceil(float64(s.Count) * 0.95))
+	want := int64(math.Ceil(float64(s.Count) * q))
 	var acc int64
 	for i, n := range s.hist {
 		acc += n

@@ -41,7 +41,8 @@ func Init(o Options) {
 		_ = os.Setenv("MYGO_FRAME_STATS", "8")
 	}
 	started := time.Now()
-	write(LevelInfo, "diag", "启动", []any{"版本", o.Version, "模式", o.Mode, "pid", os.Getpid(), "go", runtime.Version(), "日志级别", lv.String(), "数据目录", Home()})
+	WriteStartupEnv(o.Version, o.Mode)
+	write(LevelInfo, "diag", "启动", []any{"版本", o.Version, "模式", o.Mode, "run", RunID(), "pid", os.Getpid(), "go", runtime.Version(), "日志级别", lv.String(), "数据目录", Home()})
 	if n := ScanStale(); n > 0 {
 		write(LevelWarn, "diag", "补记了异常退出记录", []any{"条数", n, "目录", CrashDir()})
 	}
@@ -51,6 +52,7 @@ func Init(o Options) {
 	}
 	go heartbeatLoop(started)
 	StartSampler()
+	StartTrendSampler()
 }
 
 // heartbeatLoop 每 5 秒刷新运行标记的心跳时间。
@@ -101,6 +103,7 @@ func ParseFrameLine(line string) bool {
 		return time.Duration(f * float64(time.Millisecond))
 	}
 	total := ms(m[2])
+	RecordFrame(total)
 	record("ui.frame", total, FrameSlow)
 	record("ui.frame.build", ms(m[3]), FrameSlow)
 	record("ui.frame.layout", ms(m[5]), FrameSlow)
@@ -288,7 +291,9 @@ func Watchdog(ping func(done func()), warn, dump time.Duration) {
 				select {
 				case <-ch:
 					if warned {
-						write(LevelWarn, "hang", "主线程恢复响应", []any{"停滞", time.Since(sent).Round(time.Millisecond)})
+						d := time.Since(sent)
+						write(LevelWarn, "hang", "主线程恢复响应", []any{"停滞", d.Round(time.Millisecond)})
+						RecordHang("recovered", d, "", "")
 					}
 					goto next
 				case <-time.After(100 * time.Millisecond):
@@ -296,7 +301,9 @@ func Watchdog(ping func(done func()), warn, dump time.Duration) {
 				stall := time.Since(sent)
 				if stall >= warn && !warned {
 					warned = true
+					stk := mainStackAppFrames(10)
 					write(LevelWarn, "hang", "主线程停滞", []any{"已停滞", stall.Round(time.Millisecond)})
+					RecordHang("stall", stall, stk, "")
 					NewCounter("hang.warn").Inc()
 				}
 				// 停滞期间每 100 ms 抓一次主 goroutine 的调用栈摘要(最多 3 次):
@@ -380,5 +387,6 @@ func dumpHang(stall time.Duration) {
 	path := filepath.Join(dir, name)
 	_ = os.WriteFile(path, buf[:n], 0o644)
 	write(LevelError, "hang", "主线程长时间停滞,已保存全部 goroutine 栈", []any{"停滞", stall.Round(time.Millisecond), "文件", path})
+	RecordHang("dump", stall, mainStackAppFrames(20), path)
 	WriteCrash(CrashRecord{Kind: "hang", Message: fmt.Sprintf("主线程停滞 %s", stall.Round(time.Millisecond)), Extra: "goroutine 栈见 " + path})
 }
