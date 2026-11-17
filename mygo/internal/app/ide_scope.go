@@ -85,7 +85,7 @@ func (a *App) scopeLineBackgrounds(tb *ideTab) []editor.LineBackground {
 
 // scopeOverlay 画行号槽竖条、悬停热区与点击选中整块。
 func (a *App) scopeOverlay(c *ui.Context, tb *ideTab, edEl ui.Element) {
-	if !a.scopeOn() || tb == nil || tb.st == nil || tb.buf == nil || tb.diff || tb.virt != "" || tb.st.SoftWrap {
+	if !a.scopeOn() || tb == nil || tb.st == nil || tb.buf == nil || tb.diff || tb.virt != "" {
 		return
 	}
 	snap := a.scopeSnapshot(tb)
@@ -104,7 +104,8 @@ func (a *App) scopeOverlay(c *ui.Context, tb *ideTab, edEl ui.Element) {
 			ln := tb.st.CursorPos().Line
 			for i := first; i <= last; i++ {
 				y0 := float32(tb.st.LineTop(i) - tb.st.ScrollY())
-				y1 := y0 + edLineH*edScale
+				// 自动换行 / 折叠时一行可能占多个视觉行:用下一行的顶边作为本行底边
+				y1 := float32(tb.st.LineTop(i+1) - tb.st.ScrollY())
 				if py >= y0 && py < y1 {
 					ln = i
 					break
@@ -127,7 +128,8 @@ func (a *App) scopeOverlay(c *ui.Context, tb *ideTab, edEl ui.Element) {
 			return
 		}
 		y0 := float32(tb.st.LineTop(s.Line)-tb.st.ScrollY()) + edLineH*edScale*0.05
-		y1 := float32(tb.st.LineTop(s.End)-tb.st.ScrollY()) + edLineH*edScale*0.95
+		// 末行的底边取下一行顶边(自动换行时末行可能占多个视觉行)
+		y1 := float32(tb.st.LineTop(s.End+1)-tb.st.ScrollY()) - edLineH*edScale*0.05
 		col := t.Ac.Alpha(.28)
 		if strong {
 			col = t.Ac
