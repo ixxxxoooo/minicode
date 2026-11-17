@@ -184,14 +184,10 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 	t := a.tk
 	st := tb.st
 	mmW := a.mmWidth()
-	n := tb.buf.LineCount()
-	if n > 2000 {
-		n = 2000
-	}
+	n := tb.buf.LineCount() // 不再截到 2000 行:只画框里看得见的那一段(见下面的绘制范围),几何见 ide_minimap_geom.go
 	info := a.overlayInfo(tb)
-	total := float32(st.LineTop(tb.buf.LineCount()))
+	total := float32(st.LineTop(n))
 	view := float32(st.ViewportHeight())
-	scroll := float32(st.ScrollY())
 	// 滚动中:滑块与行范围显示,停止后 3 秒隐藏(偏好「滑块 → 常驻」则一直显示滑块)
 	now := a.now()
 	if y := st.ScrollY(); !tb.mmInit {
@@ -205,10 +201,11 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 	}
 	box := ui.Box(c).Key("mm-"+tb.id).Width(mmW+mmRulW).FillHeight().Shrink(0).BorderWidth(0, 0, 0, 1).BorderColor(t.Bd1).Clip() // 必须裁剪:色块按整篇行数画,长文件会溢出盖住底部面板
 	// 悬停行只做地图上的浅色高亮,不再弹源码摘要(没人看)
+	pg := mmGeometry(st, n, box.Bounds().H) // 交互用上一帧量到的框高;绘制时用本帧的
 	hoverLine := -1
 	if box.Hovered() {
 		if _, y, ok := box.PointerPosition(); ok {
-			hoverLine = int((y - 4) / mmRowH)
+			hoverLine = int((y - mmPad + pg.off) / mmRowH)
 		}
 	}
 	cursorLine := st.CursorPos().Line
@@ -217,26 +214,37 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 	if box.Pressed() || box.Dragging() {
 		if x, y, ok := box.PointerPosition(); ok && total > 0 {
 			h := box.Bounds().H
-			if x >= mmW && h > 0 { // 概览标尺:整篇缩放
+			switch {
+			case x >= mmW && h > 0: // 概览标尺:整篇缩放
 				st.SetScrollY(float64(y/h*total - view/2))
-			} else {
-				line := int((y - 4) / mmRowH)
-				if q, _ := tb.findQuery(); q != "" && line >= 0 && line < n {
-					unfoldLineForNav(tb, line)
-				} else {
-					content := mmRowH * float32(n)
-					st.SetScrollY(float64(y/content*total - view/2))
+			case h > 0:
+				yc := y - mmPad // 地图内容坐标(框内)
+				if !tb.mmDrag { // 刚按下:抓在滑块上就保持抓住的那一点,点在空白处把滑块中心移到指针
+					tb.mmDrag = true
+					tb.mmGrab = pg.h / 2
+					if yc >= pg.top && yc <= pg.top+pg.h {
+						tb.mmGrab = yc - pg.top
+					}
+					if line := int((yc + pg.off) / mmRowH); line >= 0 && line < n {
+						if q, _ := tb.findQuery(); q != "" {
+							unfoldLineForNav(tb, line) // 有查找词时点地图要先展开该行
+						}
+					}
 				}
+				st.SetScrollY(float64(pg.scrollFor(yc-tb.mmGrab, total, view)))
 			}
 		}
+	} else {
+		tb.mmDrag = false
 	}
 	box.Draw(func(p *ui.Painter, r ui.Rect) {
-		y0 := r.Y + 4
+		g := mmGeometry(st, n, r.H)
+		y0 := r.Y + mmPad - g.off // 内容比框高时,地图内容随滚动比例上移
+		first := max(int(g.off/mmRowH)-1, 0)
+		last := min(int((g.off+g.visH)/mmRowH)+2, n) // 只画框里看得见的行
 		showThumb := a.prefs.Int(pMmSlider, 0) == 1 || box.Hovered() || box.Dragging() || scrolling
 		if showThumb && total > 0 && view > 0 {
-			vy := y0 + scroll/total*mmRowH*float32(n)
-			vh := view / total * mmRowH * float32(n)
-			p.Fill(ui.Rect{X: r.X, Y: vy, W: mmW, H: float32(math.Max(float64(vh), 8))}, t.Fill2, 0)
+			p.Fill(ui.Rect{X: r.X, Y: r.Y + mmPad + g.top, W: mmW, H: g.h}, t.Fill2, 0)
 		}
 		if hoverLine >= 0 && hoverLine < n {
 			p.Fill(ui.Rect{X: r.X, Y: y0 + float32(hoverLine)*mmRowH - .5, W: mmW, H: mmRowH + 1}, t.Info.Alpha(.25), 0)
@@ -271,11 +279,8 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 				p.Fill(ui.Rect{X: r.X, Y: y0 + float32(l)*mmRowH - .5, W: mmW, H: mmRowH}, t.Ac.Alpha(.20), 0)
 			}
 		}
-		// 语法色块(超出地图框高度的行不画,避免长文件每帧白画几千行)
-		for i := 0; i < n; i++ {
-			if y0+float32(i)*mmRowH > r.Y+r.H {
-				break
-			}
+		// 语法色块(只画框里看得见的行,避免长文件每帧白画几千行)
+		for i := first; i < last; i++ {
 			ln := strings.TrimRight(tb.buf.Line(i), " \t\r")
 			if ln == "" {
 				continue

@@ -51,6 +51,8 @@ type ideTab struct {
 	mmY     float64   // 上次看到的滚动位置(变了 = 正在滚动)
 	mmAt    time.Time // 最近一次滚动的时刻:其后 3 秒内迷你地图显示视口滑块与行范围
 	mmInit  bool      // mmY 已初始化(打开标签时恢复的滚动位置不算「滚动」)
+	mmDrag  bool      // 正在按住迷你地图拖动(抓取偏移已记下)
+	mmGrab  float32   // 按下时指针距滑块顶的距离;点在空白处时为滑块高的一半(把滑块中心移到指针)
 
 	asVer      uint64    // 自动保存:上次看到的缓冲区版本
 	asAt       time.Time // 自动保存:版本变化的时间
