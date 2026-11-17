@@ -3,6 +3,7 @@ package app
 import (
 	"math"
 	"path"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -323,15 +324,26 @@ func (a *App) scmGraph(c *ui.Context) {
 		return
 	}
 	if len(s.log) == 0 {
+		s.graphShown = false
 		if s.loaded {
 			ui.Text(c, "还没有提交").FontSize(theme.FsCap).TextColor(t.Tx4).Padding(6, 8)
 		}
 		return
 	}
+	// 提交记录常常比「切到 Git」晚几百毫秒才读完:这时导航栏的逐行落下早已播完,
+	// 数据一到整片图谱就会一下子蹦出来。数据晚到(距导航落下起点 > 400 ms)时,图谱自己从头逐行落一遍。
+	if !s.graphShown {
+		s.graphShown, s.graphAt = true, kit.Now()
+	}
+	saveAt, saveIdx := a.navDropAt, a.navDropIdx
+	if s.graphAt.Sub(a.navDropAt) > 400*time.Millisecond && kit.Since(s.graphAt) < 2*time.Second {
+		a.navDropAt, a.navDropIdx = s.graphAt, 1
+	}
 	gw := float32(s.lanes*graphLaneW + 6)
 	for i, cm := range s.log {
 		a.scmCommitRow(c, i, cm, s.rows[i], gw)
 	}
+	a.navDropAt, a.navDropIdx = saveAt, max(saveIdx, a.navDropIdx)
 }
 
 func laneColor(t *theme.Tokens, lane int) ui.Color {
@@ -515,7 +527,7 @@ func (a *App) scmStashes(c *ui.Context) {
 	}
 	for i, st := range s.stashes {
 		i, st := i, st
-		r := ui.Row(c).Key("stash-" + itoa(i)).Height(theme.Px(36)).PaddingX(6).Gap(6).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
+		r := a.navDrop(ui.Row(c).Key("stash-" + itoa(i))).Height(theme.Px(36)).PaddingX(6).Gap(6).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
 		if r.Hovered() {
 			r.Background(t.Fill1)
 		}

@@ -12,9 +12,12 @@
 .win .ws { order: 2; width: 0; opacity: 0; margin-left: 0; container: ws / inline-size; }
 .win[data-mode="agent"][data-right="on"] .ws { width: var(--w-ws); opacity: 1; margin-left: var(--gap-pane); }
 .win[data-mode="ide"] .ws { order: 1; opacity: 1; margin: 0; width: calc(100% - var(--w-dock) - var(--gap-pane)); }
-.win[data-mode="ide"] .chat { order: 2; margin-left: var(--gap-pane); }
+/* IDE 对话栏停靠 / 收起:宽度、间距、透明度一起过渡(.pane 的 transition,--dur-morph),不再瞬间消失。
+   对话栏用 flex: 0 0 auto + width 驱动(flex-basis 不参与过渡,写 0 0 0 会一帧收完);工作区的 width 同步过渡,
+   两者 + 间距每一帧之和恒等于舞台宽度,所以收起 / 展开的每一帧都没有空白区。 */
+.win[data-mode="ide"] .chat { order: 2; flex: 0 0 auto; width: var(--w-dock); margin-left: var(--gap-pane); }
 .win[data-mode="ide"][data-right="off"] .ws { width: 100%; }
-.win[data-mode="ide"][data-right="off"] .chat { flex: 0 0 0; width: 0; opacity: 0; margin-left: 0; }
+.win[data-mode="ide"][data-right="off"] .chat { width: 0; opacity: 0; margin-left: 0; }
 .ws-in { width: 100%; height: 100%; display: flex; flex-direction: column; min-width: 0; }
 .ws-body { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
 .ws-empty { flex: 1; display: grid; place-items: center; color: var(--tx-3); text-align: center; gap: 6px; }

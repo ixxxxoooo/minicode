@@ -32,12 +32,16 @@
 .stagger > * { animation: rise var(--dur-base) var(--ease-out) both; }
 .stagger > :nth-child(2) { animation-delay: 30ms; } .stagger > :nth-child(3) { animation-delay: 60ms; } .stagger > :nth-child(4) { animation-delay: 90ms; }
 .stagger > :nth-child(5) { animation-delay: 120ms; } .stagger > :nth-child(6) { animation-delay: 150ms; } .stagger > :nth-child(n+7) { animation-delay: 180ms; }
-/* 导航栏换内容(换分段 / 换形态 / 换项目):列表行自上而下逐行落下,间隔 30ms,第 13 行起不再推迟;行以外的部分只淡入 */
+/* 导航栏换内容(换分段 / 换形态 / 换项目):列表行自上而下逐行落下,间隔 30ms;第 13 行起改为每行 8ms 继续往下排、总延迟封顶 800ms(长列表里「储藏」「图谱」不能和上面同时蹦出,
+   要按从上到下的顺序出现,实现见 side_drop.go navDropDelay);行以外的部分只淡入 */
 .cascade > * { animation: drop var(--dur-slow) var(--ease-out) both; }
 .cascade > :nth-child(2) { animation-delay: 30ms; } .cascade > :nth-child(3) { animation-delay: 60ms; } .cascade > :nth-child(4) { animation-delay: 90ms; }
 .cascade > :nth-child(5) { animation-delay: 120ms; } .cascade > :nth-child(6) { animation-delay: 150ms; } .cascade > :nth-child(7) { animation-delay: 180ms; }
 .cascade > :nth-child(8) { animation-delay: 210ms; } .cascade > :nth-child(9) { animation-delay: 240ms; } .cascade > :nth-child(10) { animation-delay: 270ms; }
-.cascade > :nth-child(11) { animation-delay: 300ms; } .cascade > :nth-child(12) { animation-delay: 330ms; } .cascade > :nth-child(n+13) { animation-delay: 360ms; }
+.cascade > :nth-child(11) { animation-delay: 300ms; } .cascade > :nth-child(12) { animation-delay: 330ms; } .cascade > :nth-child(13) { animation-delay: 368ms; }
+.cascade > :nth-child(14) { animation-delay: 376ms; } .cascade > :nth-child(15) { animation-delay: 384ms; } .cascade > :nth-child(16) { animation-delay: 392ms; }
+.cascade > :nth-child(17) { animation-delay: 400ms; } .cascade > :nth-child(18) { animation-delay: 408ms; } .cascade > :nth-child(19) { animation-delay: 416ms; }
+.cascade > :nth-child(20) { animation-delay: 424ms; } .cascade > :nth-child(n+21) { animation-delay: 440ms; }
 
 /* 循环类 */
 /* 流光:约 100° 斜向高光带,1.6s 匀速扫过 + 0.5s 停顿;全局相位靠同一 keyframes */

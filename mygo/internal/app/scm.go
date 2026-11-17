@@ -36,10 +36,12 @@ type scmState struct {
 	stashes       []vcs.Stash
 	genning       bool // 正在让模型生成提交说明
 	genGen        int
-	createAt      string // 非空:分支选择器里「创建并切换」从这个提交起
-	pushGuide     string // 推送被拒时的引导文案(空 = 不显示)
-	rebase        bool   // 变基冲突中(可中止)
-	merging       bool   // 合并冲突中(可中止,git merge --abort)
+	createAt      string    // 非空:分支选择器里「创建并切换」从这个提交起
+	pushGuide     string    // 推送被拒时的引导文案(空 = 不显示)
+	rebase        bool      // 变基冲突中(可中止)
+	merging       bool      // 合并冲突中(可中止,git merge --abort)
+	graphShown    bool      // 图谱的提交行已经出现过(数据晚于导航切换才到时,图谱自己再落一遍,不整块蹦出)
+	graphAt       time.Time // 图谱数据首次出现的时刻
 	stashOpen     map[int]bool
 	stashFiles    map[int][]vcs.Change
 	stashBusy     map[int]bool // 正在读取储藏文件列表

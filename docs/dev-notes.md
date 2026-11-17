@@ -67,7 +67,7 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 ```
 
 - 运行模式优先级:`--demo` / `--real` / `MINI_DEMO=1|0` > 开发版记住的上次选择(`~/.minicode/dev-mode`)> 真实。开发版左下角徽章:演示模式显示「演示模式」,真实模式显示「开发版」。
-- 调试环境变量:`MINI_SHORTCUT_DEMO=1`(演示模式预置「快捷键冲突」假数据;默认不写,因为演示与真实共用 `~/.minicode/settings.json`,会污染真实偏好)、`MINI_TRAY=waiting|error|unread|update|paused|running|demo|idle`(固定菜单栏图标状态,用 `open -n "target/dev/MiniCode Dev.app" --env MINI_TRAY=… --env MINI_DEV=1` 启动后 `screencapture` 看菜单栏;裁剪区域在屏幕右半部分顶部 70px)、`MINI_MODE=ide`(启动进 IDE)、`MINI_PROJECT=<目录>`(真实模式的初始项目)、`MINI_THEME` / `MINI_SCHEME`、`MINI_SCREEN`、`MINI_WIN_W/H`、`MINI_DEMO_SLOW`、`MINI_MOTION_SCALE=8`(把所有动效时长放慢 8 倍,方便逐帧截图核对形态切换 / 开合 / a-swap;1–50,默认 1)、`MINI_CLAUDE_PATH`;真实 claude 集成测试用 `MINI_REAL_CLAUDE=1 go test ./internal/claude -run Real`。
+- 调试环境变量:`MINI_SHORTCUT_DEMO=1`(演示模式预置「快捷键冲突」假数据;默认不写,因为演示与真实共用 `~/.minicode/settings.json`,会污染真实偏好)、`MINI_TRAY=waiting|error|unread|update|paused|running|demo|idle`(固定菜单栏图标状态,用 `open -n "target/dev/MiniCode Dev.app" --env MINI_TRAY=… --env MINI_DEV=1` 启动后 `screencapture` 看菜单栏;裁剪区域在屏幕右半部分顶部 70px)、`MINI_MODE=ide`(启动进 IDE)、`MINI_PROJECT=<目录>`(真实模式的初始项目)、`MINI_THEME` / `MINI_SCHEME`、`MINI_SCREEN`、`MINI_WIN_W/H`、`MINI_DEMO_SLOW`、`MINI_MOTION_SCALE=8`(把所有动效时长放慢 8 倍,方便逐帧截图核对形态切换 / 开合 / a-swap;1–50,默认 1)、`MINI_ANIMLOG=1`(每帧把导航栏 / 舞台 / 对话栏 / 工作区 / 底部面板的 X+宽 写进 `~/.minicode/logs/minicode.log` 的 `[anim]` 模块;不设时只在动画结束写一行汇总,异常帧写 Warn)、`MINI_CLAUDE_PATH`;真实 claude 集成测试用 `MINI_REAL_CLAUDE=1 go test ./internal/claude -run Real`。
 - **真实场景测试用 DeepSeek**:`scripts/with-deepseek.sh <命令…>` 运行时从 `~/.minicode/provider-keys.json`(0600,仓库之外)读取 DeepSeek 密钥,注入 `ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic` 等环境变量后执行命令(默认模型 `deepseek-chat`,`DEEPSEEK_MODEL=deepseek-flash|deepseek-v4-pro` 带思考)。例:`scripts/with-deepseek.sh scripts/dev.sh --real`、`cd mygo && MINI_REAL_CLAUDE=1 ../scripts/with-deepseek.sh go test ./internal/claude -run Real`。**密钥只存在那份本机文件里,不进仓库 / 日志 / 文档 / 提交;脚本与文档里不出现密钥值。**
 - 提交:中文 Conventional Commits,一个功能一个提交,**改完立刻提交并 `git push origin HEAD`**(本分支推到 `feat/mygo`),不等 `go vet` / `go test`;测试出问题再修、再提交 `fix:`。不提交 `target` / `dist`;不读取、不输出密钥,环境变量只展示名称。
 - 日志一律用 `diag.L("包名")`,不用 `fmt.Println` / `log`;新增耗时操作用 `diag.SpanSlow` 包起来。
@@ -288,6 +288,16 @@ scripts/dev.sh [--demo|--real]   # 编译成功后杀旧实例并在 target/dev/
 - 动效:文字流光(用呼吸代替)、折叠展开的高度插值(只做淡入下落,避免挤动下方内容)、流底部渐隐遮罩未做。
 
 Rust + gpui-kit 0.8 的 Claude Code 工作台。只支持 Claude Code,直连本机 `claude` 的 stream-json 控制协议(不走 ACP、不依赖 Node)。
+
+### 布局动画模型(左栏 / 右栏 / 底部面板 / 形态切换 / 窗口缩放)
+
+- **动画的是「开合因子」(0..1),不是像素宽度**:`paneOpen`(motion_layout.go)每帧返回因子,宽度 = 因子 × 本帧重算的满开宽度(`wsRW` / `dockW` / `sideW`,`sideOcc` 取导航栏**本帧**的动画宽)。动像素宽度的话,目标(窗口宽、另一块面板)在动,动画值会滞后,出现「先涨后缩」「露出空白」。
+- IDE 舞台 = `[工作区 Grow(1)][对话栏 Width = dockW×fDock×(1−fMax) + 舞台宽×fMax]`,两者加间距恒等于舞台,任何一帧都不会有空白;Agent⇄IDE 的传送带(morph_belt.go)是围绕对话栏的一条连续链。
+- 窄窗断点(<900 / <1040)导航栏改抽屉:并排列照样 260 ms 收到 0(`side()` 不再提前 return),抽屉里的内容在 overlayLayer 画。舞台那一行有固定 `Key("stage")`,导航栏有无不会改变它的身份(否则整个舞台状态重置)。
+- 拖分隔条 / 拖窗口边缘走 `instantLayout()`(逐帧跟手,不做动画);终端 pty 尺寸在面板尺寸稳定 90 ms 后才改(`realTerminal`),动画里不逐帧重排。
+- **探针**(anim_probe.go):每帧读各区矩形,检查 空白 / 跳变(二阶差分)/ 底部面板右缘与工作区对齐 / 掉帧(>34 ms)。动画结束写一行汇总到 `[anim]`;`MINI_ANIMLOG=1` 逐帧写日志。
+- **测试**:`anim_layout_test.go` 用 `kit.SetClock(tt.Now)` 把动效时钟接到 Tester 的虚拟时间,逐帧(16 ms)推进并断言探针 0 异常;`ANIM_DUMP=1|2 go test ./internal/app -run TestAnim -v` 打印汇总 / 逐帧表。动效里读时间一律用 `kit.Now()` / `kit.Since()`(不要直接 `time.Now()` / `time.Since()`)。
+- 向窗口要帧用 `frameSoon()`(= `Services.Invalidate`,CVDisplayLink 驱动,跟随屏幕刷新率),不要再用 16 ms 定时器。
 
 ## 目录结构
 

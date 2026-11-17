@@ -311,7 +311,9 @@
       R('时长 5 档 + 5 条曲线、形态切换 440 ms、流畅 / 简化 / 无', '', 'ok'),
       R('弹层退场(pop-out)', 'PopOut+popClosing;dialogOpen+DialogOut 居中框', 'ok', 'B8'),
       R('文字流光 / 流底部渐隐遮罩', 'kit.RunText+chat_fade.go;appearance.shimmer;未测试', 'ok'),
-      R('导航栏换内容逐行落下(.cascade:换分段 / 换形态 / 方案 B 换项目)', 'side_drop.go navDrop:会话 / 项目 / 工作区 / 文件树 / 搜索结果 / 源代码管理各行已接;设置 → 动效与反馈 →「列表落下速度」(慢 / 标准 / 快 / 无)已接;抽屉形态(窄窗)未接;未测试', 'part'),
+      R('导航栏换内容逐行落下(.cascade:换分段 / 换形态 / 方案 B 换项目)', 'side_drop.go navDrop:会话 / 项目 / 工作区 / 文件树 / 搜索结果 / 源代码管理(含储藏行)各行已接;第 13 行起每行 8 ms 继续往下排、封顶 800 ms(储藏 / 图谱不再提前或整块蹦出,navDropDelay 有单测);提交记录晚于切换才读完时图谱自己再落一遍;设置 → 动效与反馈 →「列表落下速度」已接;抽屉形态(窄窗)未接;未测试', 'part'),
+      R('三块边栏开合连续:左栏 / 右栏 / 底部面板(含 IDE 对话栏收起,原型原为瞬间消失,已改为过渡)', 'paneOpen 开合因子(0..1)× 每帧重算的满开宽度,工作区 / 对话栏之和恒等于舞台,无空白;IDE 右栏收起、左栏收起在 Tester 逐帧探针(anim_probe.go)下 0 异常;窄窗(<900 / <1040)导航栏改抽屉时也走 260 ms 收起,不再一帧消失;未用 Computer Use 实测', 'part'),
+      R('窗口拖拽缩放实时渲染(跨 1040 / 900 / 720 断点)', 'Tester 逐帧缩窗 1280↔700 无空白 / 无跳变(TestAnimResize);终端 pty 尺寸稳定 90 ms 后才改,避免动画里逐帧重排;未用 Computer Use 实测', 'part'),
       R('列表入场 stagger、折叠的高度插值', 'StaggerRise/CollapseHide 已接;FoldHeight 仅自动化 Cron 段;通用列表仍缺高度插值;未测试', 'part', 'B8'),
       R('states 增补的 11 种动效(抖动 / 折叠 / 抽屉 / 骨架 / 浮起 …)', 'ShakeInput~Crossfade 等均有调用点;未测试', 'ok'),
       R('已定义但没有调用点的动效', 'GrowY/Crossfade/OkPop/IndetMeter/FoldHeight 均已接线;登记行无新增缺口;未测试', 'ok')]

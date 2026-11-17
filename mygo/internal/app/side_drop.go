@@ -11,9 +11,11 @@ import (
 )
 
 const (
-	navDropStep   = 30 * time.Millisecond // 相邻两行的间隔
-	navDropMaxIdx = 12                    // 第 12 行之后不再继续推迟(长列表不至于等太久)
-	navDropShift  = 10                    // 起点在落点上方多少 px
+	navDropStep   = 30 * time.Millisecond  // 相邻两行的间隔
+	navDropMaxIdx = 12                     // 前 12 行用标准间隔
+	navDropTail   = 8 * time.Millisecond   // 第 12 行之后的间隔(长列表仍然逐行往下,但不至于等太久)
+	navDropCap    = 800 * time.Millisecond // 总延迟封顶
+	navDropShift  = 10                     // 起点在落点上方多少 px
 )
 
 // navDropRates 是设置「列表落下速度」(appearance.navDrop:慢 / 标准 / 快 / 无)对应的时长倍数。
@@ -35,9 +37,20 @@ func (a *App) syncNavDrop() {
 		key += "|" + p.ID
 	}
 	if a.navDropKey != "" && a.navDropKey != key {
-		a.navDropAt = time.Now()
+		a.navDropAt = kit.Now()
 	}
 	a.navDropKey = key
+}
+
+// navDropDelay 第 i 行(0 起)的出场延迟。前 navDropMaxIdx 行按标准间隔(设计稿 .cascade);
+// 再往后用更小的间隔继续往下排,总延迟封顶 navDropCap。
+// 曾经第 12 行之后全部同一时刻出场:改动列表一长,后面的「储藏」「图谱」整块一起蹦出来,
+// 看上去比上面的内容早了一大截(用户反馈:储藏区提前出现、图谱一整片突然出现)。
+func navDropDelay(i int) time.Duration {
+	if i <= navDropMaxIdx {
+		return time.Duration(i) * navDropStep
+	}
+	return min(navDropMaxIdx*navDropStep+time.Duration(i-navDropMaxIdx)*navDropTail, navDropCap)
 }
 
 // navDrop 给导航栏里的一行套上落下入场,并占用一个行序号(调用顺序 = 自上而下的顺序)。
@@ -50,9 +63,8 @@ func (a *App) navDrop(el ui.Element) ui.Element {
 	if !kit.MotionOn() || a.navDropAt.IsZero() || dur <= 0 {
 		return el
 	}
-	i = min(i, navDropMaxIdx)
-	delay := time.Duration(float64(kit.Scale(time.Duration(i)*navDropStep)) * rate)
-	p := float32(time.Since(a.navDropAt)-delay) / float32(dur)
+	delay := time.Duration(float64(kit.Scale(navDropDelay(i))) * rate)
+	p := float32(kit.Since(a.navDropAt)-delay) / float32(dur)
 	if p >= 1 {
 		return el
 	}
