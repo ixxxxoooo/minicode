@@ -62,7 +62,8 @@ func TestTreeFilterRendersAndEmpty(t *testing.T) {
 	d.flt = "users"
 	tt.Frame()
 	tt.Frame()
-	if !tt.HasText("users.rs") || tt.HasText("README.md") || tt.HasText("router.rs") {
+	// 命中的文字会被拆成「命中段(高亮)+ 其余」几段文本,所以按片段断言
+	if !tt.HasText("users") || !tt.HasText(".rs") || tt.HasText("README.md") || tt.HasText("router.rs") {
 		t.Fatalf("过滤后只应留下命中项: %v", tt.Texts())
 	}
 	if !tt.HasText("1 项") {

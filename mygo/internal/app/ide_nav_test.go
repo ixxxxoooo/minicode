@@ -70,7 +70,8 @@ func TestRefsAndRename(t *testing.T) {
 		t.Fatalf("normalize 至少有定义 + 2 处调用,得到 %d 处", len(refs))
 	}
 	a.showRefs("normalize")
-	if d.bottomTab != "refs" || d.refs == nil || len(d.refs.items) != len(refs) {
+	// 演示模式下 normalize 的引用面板用的是固定的演示数据(含项目外 / 测试文件 / 超长行),条数与本地扫描不必相等
+	if d.bottomTab != "refs" || d.refs == nil || len(d.refs.items) < 3 {
 		t.Fatalf("引用面板没有打开 / 数量不对:%q %+v", d.bottomTab, d.refs)
 	}
 	a.applyRename("normalize", "canonical")

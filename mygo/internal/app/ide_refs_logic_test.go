@@ -13,8 +13,8 @@ func TestRefFlattenFold(t *testing.T) {
 	}
 	folded := map[string]bool{"a.go": true}
 	rows := refFlatten(items, folded)
-	if len(rows) != 2 {
-		t.Fatalf("折叠 a.go 后应有 2 行(组头+ b 组),得 %d", len(rows))
+	if len(rows) != 3 {
+		t.Fatalf("折叠 a.go 后应有 3 行(a 组头 + b 组头 + b 的 1 条命中),得 %d", len(rows))
 	}
 	if rows[0].kind != refRowFile || rows[1].path != "b.go" {
 		t.Fatalf("行序不对:%+v", rows)

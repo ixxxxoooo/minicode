@@ -3,8 +3,7 @@ package app
 import "testing"
 
 func TestCompactFolderTail(t *testing.T) {
-	a := New(Options{Mode: ModeIDE, Demo: true})
-	a.SetMode(ModeIDE)
+	a, _ := demoIDE(t)
 	tail, label, ok := a.ide.compactFolderTail("compact/only")
 	if !ok || tail != "compact/only/a/b" || label != "only/a/b" {
 		t.Fatalf("链尾=%q 标签=%q ok=%v", tail, label, ok)

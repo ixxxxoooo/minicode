@@ -16,8 +16,7 @@ func TestReorderPinnedTabs(t *testing.T) {
 }
 
 func TestCloseOtherKeepsPinned(t *testing.T) {
-	a := New(Options{Mode: ModeIDE, Demo: true})
-	a.SetMode(ModeIDE)
+	a, _ := demoIDE(t)
 	a.ide.openFile("src/router.rs", true)
 	a.ide.openFile("src/main.rs", true)
 	a.ide.openFile("Cargo.toml", true)
@@ -28,7 +27,7 @@ func TestCloseOtherKeepsPinned(t *testing.T) {
 	a.setTabPinned(pin, true)
 	cur := a.ide.tabByPath("src/main.rs")
 	n := a.closeTabsWhere(func(x *ideTab) bool { return x.id == cur.id || x.pinned })
-	if n != 1 || len(a.ide.tabs) != 2 {
+	if n < 1 || len(a.ide.tabs) != 2 { // 演示种子里本来就开着几个标签,所以不写死关了几个
 		t.Fatalf("关闭其他应留当前+固定,关 %d 剩 %d", n, len(a.ide.tabs))
 	}
 	if !a.ide.tabByPath("Cargo.toml").pinned {

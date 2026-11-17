@@ -7,7 +7,7 @@ import (
 )
 
 func TestUniqueTreeDest(t *testing.T) {
-	fs := workspace.NewMem("t", map[string]string{"a/x.txt": "1"}, nil)
+	fs := workspace.NewMem("t", map[string]string{"a/x.txt": "1"})
 	dest := uniqueTreeDest("a", "x.txt", fs)
 	if dest != "a/x 副本.txt" {
 		t.Fatalf("首次副本 %q", dest)
