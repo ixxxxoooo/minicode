@@ -100,7 +100,9 @@ func (a *App) userPinnedOverlay(c *ui.Context) {
 	if box.W <= 0 || box.H <= 0 {
 		return
 	}
-	layer := ui.Box(c).Absolute().Left(box.X).Top(box.Y).Width(box.W).Height(box.H).ZIndex(8)
+	// 绝对定位相对父容器(morphWrap 列,与列表同原点),不能用窗口坐标的 box.X / box.Y,
+	// 否则对话栏不在窗口左上角时(IDE 右栏 / Agent 有导航栏)整层会被推出可视区
+	layer := ui.Box(c).Absolute().Left(0).Top(0).Width(box.W).Height(box.H).ZIndex(8)
 	layer.Children(func() {
 		ui.ButtonBase(c).Absolute().Left(0).Right(0).Top(0).Bottom(0).ZIndex(0).
 			OnClick(a.cancelAllUserEdits).Cursor(ui.CursorDefault)
