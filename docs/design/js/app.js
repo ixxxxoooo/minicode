@@ -95,6 +95,8 @@
     const k = stage.getBoundingClientRect().width / stage.offsetWidth || 1;
     const rel = (el, s) => { const r = el.getBoundingClientRect(); return { x: (r.left - s.left) / k, y: (r.top - s.top) / k, w: r.width / k, h: r.height / k, op: +getComputedStyle(el).opacity }; };
     const s0 = stage.getBoundingClientRect(), c0 = rel(chat, s0), w0 = rel(ws, s0);
+    // 左栏若在这次切换里开合(两个形态各自记着左栏开 / 关),舞台宽度会变:记下它切换前的宽度与透明度,终态按它「已经走完」来量
+    const side = $('.side', win), sd0 = side ? { w: side.getBoundingClientRect().width / k, op: +getComputedStyle(side).opacity } : null;
     let ghost = null;
     if (w0.w > 2 && w0.op > .05) {
       ghost = ws.cloneNode(true); ghost.removeAttribute('id'); ghost.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
@@ -103,7 +105,11 @@
       stage.appendChild(ghost);
     }
     return () => {
+      // 临时关掉左栏自己的过渡,量到的才是「左栏开合完成后」的终态(舞台宽度、对话栏与工作区的位置都按它算);量完立刻还原
+      win.classList.add('belt-measure');
       const s1 = stage.getBoundingClientRect(), c1 = rel(chat, s1), w1 = rel(ws, s1);
+      const sd1 = side ? { w: side.getBoundingClientRect().width / k, op: +getComputedStyle(side).opacity } : null;
+      win.classList.remove('belt-measure');
       const dx = c1.x - c0.x; // 带子的位移:向左为负(IDE → Agent),向右为正(Agent → IDE)
       const opt = { duration: dur, easing: getComputedStyle(win).getPropertyValue('--ease-morph').trim() || 'ease' };
       const anims = [];
@@ -113,6 +119,8 @@
       // 新工作区:从带子上与对话栏相邻的那一侧移进来(IDE → Agent 自右缘,Agent → IDE 自左缘)
       // 宽度钉死成终态:不钉的话会话变宽时 flex 会把它挤窄,内容在动画里反复重排,会话的起点也跟着偏
       if (w1.w > 2) { Object.assign(ws.style, { flex: 'none', width: w1.w + 'px' }); anims.push(ws.animate([{ transform: `translateX(${-dx}px)` }, { transform: 'translateX(0)' }], opt)); }
+      // 左栏开合:宽度与透明度和传送带同时长同曲线,舞台宽度随它逐帧变,终点就是上面量到的终态,最后一帧不会跳
+      if (side && (Math.abs(sd1.w - sd0.w) > 1 || Math.abs(sd1.op - sd0.op) > .05)) anims.push(side.animate([{ width: sd0.w + 'px', opacity: sd0.op }, { width: sd1.w + 'px', opacity: sd1.op }], opt));
       // 旧工作区(幽灵):被对话栏挤出舞台
       if (ghost) anims.push(ghost.animate([{ transform: 'none' }, { transform: `translateX(${dx}px)` }], opt));
       const end = () => { anims.forEach(a => a.cancel()); if (ghost) ghost.remove(); chat.style.flex = ''; chat.style.width = ''; ws.style.flex = ''; ws.style.width = ''; win.classList.remove('belt'); win._beltEnd = null; };

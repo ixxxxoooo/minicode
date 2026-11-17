@@ -28,7 +28,9 @@ func (a *App) stage(c *ui.Context) {
 	if f.on {
 		row.Clip()
 	}
-	if w := row.Bounds().W; w > 0 && !f.on {
+	// 平移中也要每帧更新:舞台是 Grow(1) 的 Row,宽度与绝对定位的子面板无关;
+	// 左栏 / 右栏在切换里开合时舞台宽度会跟着 440ms 过渡,终点几何每帧按最新宽度重算,才不会在最后一帧跳宽。
+	if w := row.Bounds().W; w > 0 {
 		a.stageW = w
 	}
 	row.Children(func() {

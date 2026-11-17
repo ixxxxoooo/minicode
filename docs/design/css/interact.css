@@ -111,6 +111,7 @@ textarea.ta:hover { box-shadow: inset 0 0 0 1px var(--bd-3); } textarea.ta:focus
    舞台裁切溢出,被挤出的旧工作区是一份克隆的「幽灵」(.belt-ghost),动画结束即移除。 */
 .win.belt .stage { position: relative; overflow: hidden; }
 .win.belt .pane { transition: none; }
+.win.belt-measure .side { transition: none; } /* 只在 beltPrepare 量终态的那一瞬间存在 */
 .win.morphing { pointer-events: none; }
 .win.morphing .flow-wrap { overflow: hidden; }
 .pane.page, .set { animation: fade var(--dur-base) var(--ease-out) both; }
