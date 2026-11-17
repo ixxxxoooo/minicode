@@ -6,6 +6,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/mdcompat"
 )
 
 // assistant 是助手正文:已结束用 markdown.View,流式中用 markdown.Stream(逐词淡入)。
@@ -40,6 +41,7 @@ func (a *App) assistantChunk(c *ui.Context, m *core.Assistant, text string, last
 // padCode 给行内代码两侧各补一个窄空格,让底色比文字宽出一点(设计稿的行内代码有 1×5 px 内边距,
 // Markdown 组件没有这个选项)。围栏代码块里的反引号不处理;窄空格不会被 CommonMark 当作可裁掉的空白。
 func padCode(src string) string {
+	src = mdcompat.Prepare(src)
 	const thin = "\u2009"
 	var b strings.Builder
 	fenced := false

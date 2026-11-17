@@ -46,7 +46,7 @@ func (a *App) mdOptions() *markdown.Options {
 	key := a.pal.ID + "|" + itoa(a.prefs.Int(pFontScale, 100)) + "|" + fmt.Sprint(a.tk.Ac)
 	if a.md == nil || a.mdThemeKey != key {
 		a.mdThemeKey = key
-		opts := &markdown.Options{Theme: th, OnLink: a.openMdLink, LinkMenu: a.linkMenu}
+		opts := &markdown.Options{Theme: th, OnLink: a.openMdLink, LinkMenu: a.linkMenu, HTML: a.mdHTMLBlock}
 		if a.proj != "" {
 			opts.LoadImage = markdown.FileImages(a.proj)
 		} else if a.ide.fs != nil {
