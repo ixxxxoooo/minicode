@@ -97,11 +97,10 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 			a.flowAwayLen = flowTailMark(displayItems) // 记下离开时的末尾,之后有变化就点亮「有新内容」
 		}
 		a.withFlowDisplay(func() {
-			a.morphWrap(c, "chat", func() { a.flowListView(c) })
-			if a.editingUser() {
-				ui.ButtonBase(c).Absolute().Left(0).Right(0).Top(0).Bottom(120).ZIndex(1).Cursor(ui.CursorDefault).
-					OnClick(a.cancelUserEdit)
-			}
+			a.morphWrap(c, "chat", func() {
+				a.flowListView(c)
+				a.userPinnedOverlay(c)
+			})
 			a.flowFadeMask(c)
 			a.flowScrollBtn(c)
 		})

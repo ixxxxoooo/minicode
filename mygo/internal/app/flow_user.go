@@ -19,10 +19,6 @@ const (
 	userFoldExp = 24
 )
 
-type userEdit struct {
-	id, draft string
-}
-
 // userLinesCap 是 estimatedUserLines 的上限:折叠 / 展开只关心「是否超过 6 / 24 行」,
 // 数到这里就停,避免几万字的粘贴日志每帧从头数到尾。
 const userLinesCap = 100
@@ -98,12 +94,6 @@ func (a *App) userExpanded(id string) bool {
 	return a.outFold != nil && a.outFold["user:"+id]
 }
 
-func (a *App) beginUserEdit(u *core.User) {
-	a.userEd = userEdit{id: u.ID, draft: userDisplayText(u.Text)}
-}
-
-func (a *App) cancelUserEdit() { a.userEd = userEdit{} }
-
 func (a *App) userMsg(c *ui.Context, u *core.User, rowIdx int) {
 	t := a.tk
 	style := a.prefs.Int(pFlowStyle, 0)
@@ -111,11 +101,6 @@ func (a *App) userMsg(c *ui.Context, u *core.User, rowIdx int) {
 	lines := estimatedUserLines(userDisplayText(u.Text), 44)
 	clamp := lines > userFoldMax
 	exp := a.userExpanded(u.ID)
-	editing := a.userEd.id == u.ID
-	if editing {
-		a.userEditCard(c, u)
-		return
-	}
 	card := ui.ButtonBase(c).Key("user-"+u.ID).Background(t.Raised).Radius(t.RMd()).Padding(8, 12).AlignItems(ui.Stretch).Column()
 	// 正被吸顶(设计稿 .msg-u.stuck):用户消息是列表的分节标题,库把它钉在列表顶部。
 	// 判断(上一帧的数据):标题行已滚出视口(首个可见行在它之后),或它贴着列表顶边且内容确实滚过。
@@ -189,7 +174,12 @@ func (a *App) userMsg(c *ui.Context, u *core.User, rowIdx int) {
 			})
 		}
 	})
-	a.userFloat(c, u, card) // 吸顶时点击:向下悬浮展开完整正文
+	if b := card.Bounds(); b.W > 0 && rowIdx >= 0 {
+		if a.userAnchor == nil {
+			a.userAnchor = map[string]userMsgAnchor{}
+		}
+		a.userAnchor[u.ID] = userMsgAnchor{rect: b, row: rowIdx}
+	}
 }
 
 // userImgMark 是 Claude 在用户文字里为图片插入的占位标记(如「[Image #16]」),

@@ -78,11 +78,12 @@ func buildFlowGapsB4() []Step {
 
 	// 6) 用户消息图片 + 回退入口(第二条回合)
 	img := flowGapAsset("tray-error.png")
+	img2 := flowGapAsset("tray-idle.png")
 	uid2 := s.ID("u2")
 	s.Add(0, core.EvUserUUID{ID: uid2, UUID: "flow-gap-rewind-uuid"})
 	s.Add(0, core.EvAppend{Item: &core.User{
-		ID: uid2, Text: "这张图标里红色用于示意报错附件;可悬停试「回退文件 / 重试 / 复制」。",
-		Images: []string{img},
+		ID: uid2, Text: "附带两张截图与一个找不到的文件;点缩略图应打开灯箱,点卡片应悬浮编辑。",
+		Images: []string{img, img2, "/demo/assets/missing-screenshot.png"},
 	}})
 	s.Add(ms(200), core.EvTurnStarted{})
 	s.Say("点击缩略图可在会话流内展开预览;有 uuid 时可点「回退文件」走确认卡。")

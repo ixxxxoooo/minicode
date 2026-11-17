@@ -175,9 +175,14 @@ func (a *App) composerAttachRow(c *ui.Context) {
 	ui.Row(c).Padding(6, 12, 0, 12).Gap(6).Wrap().Children(func() {
 		for _, at := range atts {
 			at := at
-			chip := ui.Row(c).Height(theme.Px(24)).PaddingX(4).Gap(4).Radius(t.RSm()).AlignItems(ui.Center).Border(1, t.Bd2).Background(t.Fill1).Cursor(ui.CursorDefault)
+			abs := a.absAttach(at.Path)
+			chip := ui.ButtonBase(c).Key("cmp-att-"+at.Path).Height(theme.Px(24)).PaddingX(4).Gap(4).Radius(t.RSm()).
+				AlignItems(ui.Center).Border(1, t.Bd2).Background(t.Fill1).Cursor(ui.CursorPointer).Tooltip("点击预览")
+			if chip.Hovered() {
+				chip.Background(t.Fill2)
+			}
 			chip.Children(func() {
-				if abs := a.absAttach(at.Path); abs != "" {
+				if abs != "" {
 					if _, err := os.Stat(abs); err == nil {
 						if src := a.localImage(abs); src != nil {
 							ui.Image(c, src).Size(18, 18).Radius(t.RXs()).Fit(ui.Cover).Shrink(0)
@@ -193,7 +198,9 @@ func (a *App) composerAttachRow(c *ui.Context) {
 				ui.Text(c, baseName(at.Path)).FontSize(theme.FsCap).TextColor(t.Tx2).SingleLine().MaxWidth(120)
 				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "移除"}).OnClick(func() { a.removeDraftAttachPath(at.Path) })
 			})
-			_ = chip
+			if abs != "" {
+				chip.OnClick(func() { a.openImageLightboxPath(abs) })
+			}
 		}
 	})
 }

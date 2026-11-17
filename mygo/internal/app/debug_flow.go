@@ -1,6 +1,8 @@
 package app
 
 import (
+	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -53,6 +55,9 @@ func (a *App) flowDebug(name, arg string) bool {
 			a.thinkMq = map[string]thinkMqSt{}
 		}
 		flowDbgLog.Info("调试思考跑马灯", "折叠", !a.prefs.Bool(pThinkOpen, false))
+		return true
+	case "lightbox": // lightbox 或 lightbox:/绝对路径
+		a.SeedLightboxDemo(arg)
 		return true
 	case "latest":
 		fresh := arg == "fresh"
@@ -162,6 +167,21 @@ func (a *App) ApplyFlowScrollAway() {
 func (a *App) AppendFlowTailForFresh() {
 	id := "dbg-tail"
 	a.st.Apply(core.EvAppend{Item: &core.Assistant{ID: id, Text: "（调试）回合又有新输出…"}})
+}
+
+// SeedLightboxDemo 调试 / 截图:打开图片灯箱(arg 可为绝对路径,空则用演示资源)。
+func (a *App) SeedLightboxDemo(arg string) {
+	if strings.TrimSpace(arg) != "" {
+		a.openImageLightboxPath(arg)
+		return
+	}
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		return
+	}
+	p := filepath.Join(filepath.Dir(file), "..", "..", "..", "assets", "icon", "tray-error.png")
+	a.openImageLightboxPath(p)
+	flowDbgLog.Info("调试灯箱", "path", p)
 }
 
 // SetDetailLevel 调试用(cmd/shot -detail N):直接指定工具调用详细程度 0 精简 / 1 标准 / 2 详细,便于逐档截图对照设计稿。

@@ -301,8 +301,8 @@ func TestUserEditNeedsUUID(t *testing.T) {
 	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true})
 	a.Attach(&stubBE{name: "claude"})
 	a.st.Apply(core.EvAppend{Item: &core.User{ID: "u1", Text: "hello"}})
-	a.userEd = userEdit{id: "u1", draft: "改掉"}
-	a.submitUserEdit()
+	a.userPinned = []pinnedUserEdit{{id: "u1", draft: "改掉"}}
+	a.submitPinnedUserEdit("u1")
 	if a.toast == "" {
 		t.Fatal("真实后端无 uuid 时应提示无法从该处重发")
 	}

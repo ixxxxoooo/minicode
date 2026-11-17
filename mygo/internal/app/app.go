@@ -201,7 +201,9 @@ type App struct {
 	fadeAt       map[string]time.Time       // 精简摘要行结束换句的淡入起点
 	termLive     map[string]string          // 运行中命令 output_file 尾读缓存
 	planOpened   map[string]bool            // 已因流式自动打开过的计划
-	userEd       userEdit                   // 正在就地编辑的用户消息
+	userPinned   []pinnedUserEdit           // 悬浮编辑中的用户消息(可多条)
+	userAnchor   map[string]userMsgAnchor   // 用户消息卡上一帧位置(悬浮编辑定位)
+	lb           *lightboxState             // 图片灯箱
 	flowNoFollow bool                       // 会话流:用户上滑后停止贴底
 	flowAwayLen  int                        // 离开底部时的末尾标记(flowTailMark),变了 = 回到最新按钮出现「有新内容」圆点
 	projRealOf   string                     // projReal 对应的项目根
@@ -583,7 +585,7 @@ func (a *App) OpenSession(id string) {
 		a.thinkMq, a.thinkMqHide, a.thinkWasLive = map[string]thinkMqSt{}, map[string]time.Time{}, map[string]bool{}
 		a.outFold = map[string]bool{}
 		a.termLive = map[string]string{}
-		a.userEd = userEdit{}
+		a.userPinned, a.userAnchor, a.lb = nil, nil, nil
 		a.flowNoFollow = false
 		a.draft, a.dockDraft = "", ""
 		a.dockStash = false
@@ -613,7 +615,7 @@ func (a *App) OpenSession(id string) {
 	a.runWas, a.fadeAt = map[string]bool{}, map[string]time.Time{}
 	a.termLive = map[string]string{}
 	a.planOpened = map[string]bool{}
-	a.userEd = userEdit{}
+	a.userPinned, a.userAnchor, a.lb = nil, nil, nil
 	a.flowNoFollow = false
 	a.draft, a.dockDraft = "", ""
 	a.dockStash = false
