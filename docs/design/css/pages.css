@@ -124,7 +124,7 @@ mark.hit { background: var(--warn-soft); color: inherit; border-radius: 2px; box
 [data-scheme="c"] .cu-row.on { background: var(--ac-soft); }
 
 /* ───────── 设置页预览(js/settings-pv.js):凹槽底小面板,用真实组件与令牌,右上角「预览」标 ───────── */
-.set-pv { position: relative; margin: 8px 12px 10px; padding: 12px 14px; border-radius: var(--r-md); background: var(--bg); box-shadow: inset 0 0 0 1px var(--bd-1); overflow: hidden; }
+.set-pv { position: relative; margin: 8px 12px 10px; padding: 22px 14px 12px; border-radius: var(--r-md); background: var(--bg); box-shadow: inset 0 0 0 1px var(--bd-1); overflow: hidden; }
 .set-pv .pv-tag { position: absolute; top: 6px; right: 9px; font-size: var(--fs-micro); color: var(--tx-4); letter-spacing: .04em; pointer-events: none; }
 .set-pv .pv-note { margin-top: 8px; font-size: var(--fs-cap); line-height: 1.45; }
 .set-pv .pv-body { padding: 2px 0; }
@@ -137,7 +137,7 @@ mark.hit { background: var(--warn-soft); color: inherit; border-radius: 2px; box
 .pv-glyph { width: 14px; text-align: center; color: var(--ac); font-size: 14px; }
 .pv-win { flex: 1; min-width: 0; }
 .pv-win-h { display: flex; align-items: center; margin-bottom: 4px; font-size: var(--fs-cap); }
-.pv-win-b { height: 64px; border-radius: var(--r-sm); background: var(--bg-sunken); box-shadow: inset 0 0 0 1px var(--bd-2); display: flex; justify-content: center; padding: 6px 0; overflow: hidden; }
+.pv-win-b { height: 72px; border-radius: var(--r-sm); background: var(--bg-sunken); box-shadow: inset 0 0 0 1px var(--bd-2); display: flex; justify-content: center; padding: 6px 0; overflow: hidden; }
 .pv-col { display: flex; flex-direction: column; gap: 4px; max-width: 100%; transition: width var(--dur-slow) var(--ease-io); }
 .pv-col i { display: block; height: 7px; border-radius: 3px; background: var(--fill-3); } .pv-col i.s { width: 62%; } .pv-col i.h { height: 9px; width: 40%; background: var(--tx-4); }
 .pv-col b { display: block; margin-top: auto; height: 12px; border-radius: 6px; background: var(--bg-raised); box-shadow: inset 0 0 0 1px var(--bd-3); }

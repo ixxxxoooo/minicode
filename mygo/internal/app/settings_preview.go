@@ -36,7 +36,7 @@ func (a *App) settingsPreview(c *ui.Context, id string) {
 // setPvShell 是预览凹槽:右上角「预览」标,底色与内容区 BG 一致。
 func (a *App) setPvShell(c *ui.Context, key string, body func()) {
 	t := a.tk
-	box := ui.Column(c).Key("set-pv-"+key).Margin(8, 12, 10, 12).Padding(12, 14).Background(t.BG).Radius(t.RMd()).Border(1, t.Bd1).Clip()
+	box := ui.Column(c).Key("set-pv-"+key).Margin(8, 12, 10, 12).Padding(22, 14, 12, 14).Background(t.BG).Radius(t.RMd()).Border(1, t.Bd1).Clip()
 	box.Children(func() {
 		ui.Text(c, "预览").Absolute().Top(6).Right(9).FontSize(theme.FsMicro).TextColor(t.Tx4).LetterSpacing(.04)
 		body()
@@ -125,7 +125,8 @@ func (a *App) pvWidthWin(c *ui.Context, label string, pct float32, val string, f
 			ui.Spacer(c).Grow(1)
 			ui.Text(c, val).TextColor(t.Tx2).FontFeatures("tnum")
 		})
-		ui.Box(c).Height(64).Radius(t.RSm()).Background(t.Sunken).Border(1, t.Bd2).Justify(ui.Center).Padding(6, 0).Clip().Children(func() {
+		// 窗口示意:横向居中、纵向撑满的一行(Box 是纵向容器,Justify 居中会变成上下居中,列会贴左)
+		ui.Row(c).Height(72).Radius(t.RSm()).Background(t.Sunken).Border(1, t.Bd2).Justify(ui.Center).AlignItems(ui.Stretch).Padding(6, 0).Clip().Children(func() {
 			col := ui.Column(c).WidthPercent(pct).MaxWidthPercent(100).Gap(4).Children(func() {
 				if flow {
 					ui.Box(c).Height(7).Radius(3).Background(t.Fill3)
