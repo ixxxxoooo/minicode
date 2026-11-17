@@ -100,13 +100,13 @@ func (a *App) submit(text string) { a.submitPrompt(text, false) }
 
 func (a *App) composerBar(c *ui.Context) {
 	t := a.tk
-	wide := a.chatTier() != tierNarrow // 窄档:省略「思考」、百分比与 MCP 字样
+	wide := a.chatTier() != tierNarrow // 窄档:省略「思考」与百分比
 	ui.Row(c).Padding(3, 5, 5, 5).Gap(2).AlignItems(ui.Center).Children(func() {
 		plus := kit.Ib(c, "plus", kit.IbOpt{Tip: "添加附件", On: a.popup == "cmp-attach"})
 		plus.OnClick(func() { a.togglePop("cmp-attach") })
 		a.plusAttachMenu(c, plus)
 		a.cfgChip(c, wide)
-		mcpAnchor := a.mcpChip(c, wide)
+		mcpAnchor := a.mcpChip(c)
 		a.mcpPopup(c, mcpAnchor)
 		ui.Spacer(c).Grow(1)
 		// 上下文环(点击展开与状态栏同内容的弹层)

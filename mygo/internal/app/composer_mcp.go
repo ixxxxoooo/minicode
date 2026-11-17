@@ -11,13 +11,10 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
-func (a *App) mcpChip(c *ui.Context, wide bool) ui.Element {
-	n := a.mcpEnabledCount()
-	lbl := itoa(n)
-	if wide {
-		lbl = "MCP " + lbl
-	}
-	ch := kit.Chip(c, lbl, kit.ChipOpt{Icon: "plug", Tip: "MCP 服务器", On: a.popup == "mcp", Line: true})
+// mcpChip 输入框里的 MCP 胶囊:只画插头图标与已启用个数,不写「MCP」字样(悬停提示里有全名)。
+// 参数:c 为界面上下文。返回值:胶囊元素,作为 MCP 弹层的锚点。
+func (a *App) mcpChip(c *ui.Context) ui.Element {
+	ch := kit.Chip(c, itoa(a.mcpEnabledCount()), kit.ChipOpt{Icon: "plug", Tip: "MCP 服务器", On: a.popup == "mcp", Line: true})
 	ch.OnClick(func() {
 		open := a.popup != "mcp"
 		a.togglePop("mcp")

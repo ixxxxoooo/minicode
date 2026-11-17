@@ -242,7 +242,6 @@
   .tcard-h .mono { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* 输入框:权限 / 模型 / 强度并成一个运行配置胶囊;MCP 只留图标与个数;上下文只留环 */
   .cmp-bar .chip.mcp-chip { padding: 0 4px; }
-  .cmp-bar .chip.mcp-chip .lbl { display: none; }
   .cfg { max-width: 150px; }
   /* 任务坞:几个类别并成一个「任务 N」胶囊 */
   .tdock .chip.split { display: none; }
