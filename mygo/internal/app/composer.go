@@ -46,9 +46,18 @@ func (a *App) composer(c *ui.Context) {
 			in.Focus()
 			a.ux.focusDraft = false
 		}
+		svc := c.Services() // 回调里不能用 *ui.Context,读剪贴板走 Services
 		in.OnPaste(func(text string) bool {
+			if text == "" && a.composerPasteImage(svc) { // 剪贴板里是图片(没有文本)
+				return true
+			}
 			return a.HandleComposerPaste(text)
 		})
+		if a.ux.pasteInsert != "" { // 上一次粘贴的图片:在光标处插入(一步撤销)
+			start, end := in.TextSelection()
+			in.ReplaceText(start, end, a.ux.pasteInsert)
+			a.ux.pasteInsert = ""
+		}
 		in.OnTextKey(func(k ui.TextKey) bool {
 			if a.slashTextKey(k) {
 				return true
