@@ -649,7 +649,11 @@ func (a *App) QueuePrompts(texts ...string) {
 func (a *App) NewSession() { a.OpenSession("") }
 
 // SetWindow 记下窗口(用于 Update 与窗口控制)。
-func (a *App) SetWindow(w *mygo.Window) { a.win = w }
+func (a *App) SetWindow(w *mygo.Window) {
+	a.win = w
+	// 红色关闭按钮只隐藏窗口:钩子必须窗口一建好就装上,不能等到某次偏好变更才顺带装(此前关闭按钮直接退出程序)
+	a.ensureWindowCloseHook()
+}
 
 // SetRunDemo 标记为演示模式(恢复布局时不切真实项目目录)。
 func (a *App) SetRunDemo(v bool) { a.runDemo = v }

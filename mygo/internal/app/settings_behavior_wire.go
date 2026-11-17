@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/egoist/mygo"
@@ -16,7 +17,12 @@ import (
 var (
 	winCloseHooked bool
 	autoCmpAt      time.Time
+	appQuitting    atomic.Bool // 应用正在退出(⌘Q / Dock 退出 / 菜单退出):此时关闭窗口不能再被拦成「隐藏」
 )
+
+// SetQuitting 由 main 在退出开始 / 被取消时调用。
+// 用途:mygo 退出时会逐个「关闭」窗口并触发 OnClose;若这时仍拦成隐藏,⌘Q 会被取消、程序退不掉。
+func SetQuitting(v bool) { appQuitting.Store(v) }
 
 var behWireLog = diag.L("settings.wire")
 
@@ -32,7 +38,7 @@ func (a *App) ensureWindowCloseHook() {
 	}
 	winCloseHooked = true
 	a.win.OnClose(func(e *mygo.CloseEvent) {
-		if a.prefs.Int(pWinClose, 0) == 0 {
+		if !appQuitting.Load() && a.prefs.Int(pWinClose, 0) == 0 {
 			e.PreventDefault()
 			a.win.Hide()
 			behWireLog.Info("关闭窗口", "action", "hide")
