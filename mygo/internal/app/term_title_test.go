@@ -97,6 +97,24 @@ func TestTermTabsVerticalAuto(t *testing.T) {
 	}
 }
 
+// 明确选了「竖向」时,只有一个终端也要竖排(否则选了没有变化,像没生效);窄面板仍强制横向。
+func TestTermTabsVerticalExplicitSingle(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a"})
+	a.proj = "/tmp"
+	a.ide.tps = []*termPanel{{}}
+	a.prefs.Set(pTermTabs, termTabVert)
+	if !a.termTabsVertical(700) {
+		t.Fatal("明确选竖向时单终端也应竖排")
+	}
+	if a.termTabsVertical(500) {
+		t.Fatal("窄面板仍应强制横向")
+	}
+	a.prefs.Set(pTermTabs, termTabAuto)
+	if a.termTabsVertical(900) {
+		t.Fatal("自动模式下单终端不竖排")
+	}
+}
+
 func TestCloseOtherTermTabs(t *testing.T) {
 	a := New(Options{Palette: "paper", Scheme: "a"})
 	a.proj = "/tmp"

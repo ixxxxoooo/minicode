@@ -193,7 +193,7 @@ func termTabWidths(texts []string, avail float32) []float32 {
 
 // termTabsVertical 是否用竖向终端列表。
 func (a *App) termTabsVertical(panelW float32) bool {
-	if len(a.ide.tps) < 2 || a.ide.termSel != "" {
+	if len(a.ide.tps) < 1 || a.ide.termSel != "" {
 		return false
 	}
 	if panelW > 0 && panelW < termForceHorizW {
@@ -206,9 +206,11 @@ func (a *App) termTabsVertical(panelW float32) bool {
 	case termTabHorz:
 		return false
 	case termTabVert:
+		// 用户明确选了「竖向」:只有一个终端时也立刻竖排,否则选了没有任何变化,像是没生效
 		return true
 	default:
-		return panelW >= termAutoMinW
+		// 自动:至少 2 个终端、面板够宽才竖排
+		return len(a.ide.tps) >= 2 && panelW >= termAutoMinW
 	}
 }
 
