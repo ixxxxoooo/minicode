@@ -124,25 +124,25 @@ type settingsState struct {
 	trustLoading bool
 	trustRowErr  map[string]string // 路径 → 写失败文案
 	// 语言服务器检测
-	lspRows     []lspSettingRow
-	lspScanning bool
-	lspScanned  bool
-	rulesErr    string
-	wt          []worktreeRow // worktree 列表缓存(后台刷新,渲染里不跑 git)
-	wtAt        time.Time
-	wtBusy      bool
-	wtNew       string // 新建 worktree 的分支名草稿
-	wtErr       string
-	wtBuilding  bool
-	cr          []crashBrief // 崩溃记录缓存(后台刷新)
-	crAt        time.Time
-	crBusy      bool
-	perfHover   int
+	lspRows      []lspSettingRow
+	lspScanning  bool
+	lspScanned   bool
+	rulesErr     string
+	wt           []worktreeRow // worktree 列表缓存(后台刷新,渲染里不跑 git)
+	wtAt         time.Time
+	wtBusy       bool
+	wtNew        string // 新建 worktree 的分支名草稿
+	wtErr        string
+	wtBuilding   bool
+	cr           []crashBrief // 崩溃记录缓存(后台刷新)
+	crAt         time.Time
+	crBusy       bool
+	perfHover    int
 	perfSlowOpen map[string]bool
-	sum         []string // Claude 配置摘要缓存
-	sumAt       time.Time
-	sumBusy     bool
-	envErr      string
+	sum          []string // Claude 配置摘要缓存
+	sumAt        time.Time
+	sumBusy      bool
+	envErr       string
 }
 
 func (a *App) setTabByID(id string) *setTabDef {

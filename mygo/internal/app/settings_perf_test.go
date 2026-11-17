@@ -35,4 +35,3 @@ func TestLogLevelPersistsViaPrefs(t *testing.T) {
 		t.Fatalf("应为 DEBUG,得到 %v", diag.CurrentLevel())
 	}
 }
-

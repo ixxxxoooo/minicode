@@ -194,10 +194,12 @@ func TestCtxStateSixKinds(t *testing.T) {
 	check("none", func() {
 		// 第三方服务商(非演示)拿不到订阅限额 → none;演示模式一律视为可展示
 		a.SetRegistry(projects.Open(filepath.Join(t.TempDir(), "ws.json")))
-		a.pvLoad().store = claudecfg.Store{
+		pv := a.pvLoad()
+		pv.store = claudecfg.Store{
 			Providers: []claudecfg.Provider{{ID: "ds", Name: "DS", BaseURL: "https://x", Models: []string{"m1"}}},
 			Mapping:   claudecfg.Mapping{Enabled: true, Provider: "ds", Default: "m1"},
 		}
+		pv.keys = map[string]string{"ds": "k"} // 映射要有密钥才算真正启用
 		a.ctxLoading = false
 		a.st.Usage = core.Usage{LimitsState: core.LimitsUnavailable}
 	})

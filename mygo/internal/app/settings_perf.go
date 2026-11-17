@@ -372,4 +372,3 @@ func (a *App) copyLogTail(n int) {
 
 // perfTabNote 在设置分类底部展示。
 const perfTabNote = "性能数据仅在本机采集中,不会上报。演示模式部分曲线为模拟数据并标有「演示数据」。"
-

@@ -107,3 +107,14 @@ func TestHandleComposerPaste(t *testing.T) {
 		t.Fatalf("草稿应含 @ 引用:%q", a.draft)
 	}
 }
+
+func TestApplyDiagPrefsLogLevel(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "p.json")
+	p := prefs.Open(path)
+	p.Set(pPrivacyLvl, 0)
+	a := New(Options{Prefs: p})
+	a.ApplyDiagPrefs()
+	if diag.CurrentLevel() != diag.LevelError {
+		t.Fatalf("want error, got %v", diag.CurrentLevel())
+	}
+}

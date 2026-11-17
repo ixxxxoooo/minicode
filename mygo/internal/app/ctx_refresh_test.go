@@ -78,10 +78,12 @@ func TestCtxOpenSkipsLimitsForThirdParty(t *testing.T) {
 	fb := &claudeFakeBE{}
 	a.Attach(fb)
 	a.sessProcLive = true
-	a.pvLoad().store = claudecfg.Store{
+	pv := a.pvLoad()
+	pv.store = claudecfg.Store{
 		Providers: []claudecfg.Provider{{ID: "ds", Name: "DS", BaseURL: "https://x", Models: []string{"m1"}}},
 		Mapping:   claudecfg.Mapping{Enabled: true, Provider: "ds", Default: "m1"},
 	}
+	pv.keys = map[string]string{"ds": "k"} // 映射要有密钥才算真正启用
 	fb.cmds = nil
 	a.ctxRefreshAt = time.Time{}
 	a.ctxEnsureLoaded()

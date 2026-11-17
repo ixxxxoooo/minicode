@@ -115,18 +115,23 @@ func TestSettingsAllTabsRender(t *testing.T) {
 			t.Fatalf("分类 %s 异常", tab.id)
 		}
 	}
-	if len(settingsTabs) != 19 {
-		t.Fatalf("应有 19 个分类,实际 %d", len(settingsTabs))
+	if len(settingsTabs) != 20 {
+		t.Fatalf("应有 20 个分类(含「性能与诊断」),实际 %d", len(settingsTabs))
 	}
 }
 
 // 分组既有行又有自定义块时两者都要画出来(原先有块就丢掉了行)。
 func TestSettingsGroupRowsAndBodyBothRender(t *testing.T) {
-	_, tt, _ := settingsApp(t, "privacy")
-	for _, want := range []string{"日志级别", "诊断包", "崩溃与卡顿"} {
+	// 性能相关项已迁到「性能与诊断」;隐私页只留上报与崩溃记录
+	_, tt, _ := settingsApp(t, "perf")
+	for _, want := range []string{"日志级别", "诊断包"} {
 		if !tt.HasText(want) {
-			t.Fatalf("隐私页缺少 %q", want)
+			t.Fatalf("性能与诊断页缺少 %q", want)
 		}
+	}
+	_, tt2, _ := settingsApp(t, "privacy")
+	if !tt2.HasText("崩溃") {
+		t.Fatal("隐私页缺少崩溃记录")
 	}
 }
 
