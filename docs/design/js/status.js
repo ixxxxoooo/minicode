@@ -95,7 +95,8 @@
       R('预览斜体、双击固定、虚拟标签全窗口单份;导航历史 ← →', '', 'ok'),
       R('整页功能的出口:再点已选中的整页图标 / 点导航分段 = 回到工作台', 'side.go togglePage / leavePage(侧栏图标、IDE 图标条、导航分段共用);此前整页打开后这两处点了没反应,只能靠别的入口;page_exit_test.go;已在开发版实测', 'ok'),
       R('导航「源代码管理」的改动标识', '工作区有未提交改动时,导航分段里源代码管理图标右上角亮 7px 强调色圆点(有合并冲突 → 错误色),悬停提示「源代码管理 · N 项改动」;图标轨(方案 C)用数字徽标;N = 有改动的文件数(暂存与工作区同一文件算一个,多仓库累加);无改动不显示;scm_badge.go,任一分段下都定时重读;未测试', 'part'),
-      R('用量与成本整页的显式出口:页头右上「×」关闭按钮 + Esc,回到进入前的工作台', '用量页没有侧栏图标入口(只能从账号菜单 / 命令面板 / 状态栏圆环进),togglePage 管不到,此前无任何出口;usage_page.go 的 pageCloseBtn;未测试', 'part')],
+      R('用量与成本整页的显式出口:页头右上「×」关闭按钮 + Esc,回到进入前的工作台', '用量页没有侧栏图标入口(只能从账号菜单 / 命令面板 / 状态栏圆环进),togglePage 管不到,此前无任何出口;usage_page.go 的 pageCloseBtn;未测试', 'part'),
+      R('用量页图表悬停 tooltip(柱 / 模型条 / 项目行 / 限额 / 汇总卡)', 'usage_page.go+usage_tip.go;柱上显示与均值对比;ui.Tester 悬停断言;未 computer use 实测', 'part')],
     resp: [
       R('对话栏按自身宽度三档(≥640 / 420–639 / <420)', '内边距 20 / 14 / 10;窄档:头部下拉 + 新会话 / 历史 / 占满、步骤行无附注、代码与输出折行、脚注只留模型 + 用时、改动卡不列文件、配置胶囊 ≤150、权限 / 计划卡次要按钮进「更多」、提问卡无键位提示(resp_tier_test.go)。已用 computer use 在开发版(真实模式)看过 IDE 停靠窄档与 Agent 宽档;中档(Agent + 工作区)与交互卡「更多」未实机走', 'ok'),
       R('工作区按自身宽度三档(≥600 / 520–599 / <520:迷你地图、统一 diff、面包屑)', '中档起隐藏迷你地图与面包屑右侧语言 / 编码;窄档:面包屑隐藏、标签 ≤130 且非当前 70px、差异栏收起灰字与「打开文件」、审查头只留「提交」(全部接受 / 撤销进更多)、底部面板只留终端 / 问题(当前所在分段保留)。单测覆盖面板标签;窄档视觉 cmd/shot 可对 (-w 扩对话栏 / IDE 主工作区)', 'part'),
@@ -190,7 +191,7 @@
       R('IDE 通知中心(标题栏铃铛 / 历史 / 右下角叠放)', 'notice_ui.go 标题栏铃铛(状态栏不放铃铛)/面板/noticeToasts(shell.go);.app 内 mac_notify OpenSessionFromNotify;测试/裸二进制无 UN 点击回会话;未测试', 'part'),
       R('待办坞:待办固定在输入框上方,可展开看进度', 'todo_dock.go todoDock(chatDockColumn 里任务坞之下);演示场景的待办可直接到达;未测试', 'ok'),
       R('任务坞停滞 / 已结束 / 监听 / 工作流胶囊', 'chat.go taskDock(task_dock.go)六类胶囊+停滞/停止;flow_test TestTaskDockCapsules;未测试', 'ok'),
-      R('上下文弹层(输入框圆环 / 状态栏;分类明细 / 阈值刻度 / 账户限额 / 刷新 / 压缩;常态 / 接近阈值 / 压缩中 / 加载 / 无限额 / 失败)', 'ctx_panel:官方点开自动 get_usage(30s 缓存);第三方占位+手动获取;subscription_limits.go;go test ctx_refresh;未 computer use 实测', 'part'),
+      R('上下文弹层(输入框圆环 / 状态栏;分类明细 / 阈值刻度 / 账户限额 / 刷新 / 压缩;常态 / 接近阈值 / 压缩中 / 加载 / 无限额 / 失败)', 'ctx_panel:官方判定 subscription_limits.go(映射真启用 / Bedrock·Vertex 开关 / settings env Base URL;AWS_PROFILE 等残留不算);官方点开自动 get_usage(30s 缓存);go test SubscriptionLimitsEligible;未 computer use 实测', 'part'),
       R('Claude 连接预热与空闲释放(状态栏「连接中 / 已连接 / 未连接 / 连接失败」)', 'core.EvConn/ConnState;claude/backend.go warmup(失败 60 秒退避)/release(回合 / 请求 / 后台任务时拒绝)/空闲回收后重连不提示「已重新启动」;app/warm.go 策略:Attach 去抖 0.35 秒预热、窗口在前台才预热、输入与回前台补预热、空闲 chat.idle 分钟释放(窗口在后台 ⅓);设置 通用 → 连接 chat.warm / chat.idle;单测 + 真实 claude 剖析(real_profile_test);未测试', 'part'),
       R('更新进度胶囊四态', 'update_progress.go+update_engine.go;statusbar 胶囊只在检查中 / 有新版本 / 下载 / 校验 / 解包 / 待重启 / 失败时出现,「已是最新」不占状态栏(只在设置 → 关于里显示);开发版 dev.sh 重启;未测试', 'ok'),
       R('确认框(模式切换 / 未保存 / 删除)', '通用确认框已用于会话删除 / 移除项目 / 切换模式', 'ok', 'B2'),
@@ -209,7 +210,10 @@
       R('面包屑下拉文件图标', 'ide_crumb.go 复用 fileIcon / treeFolderIcon;实机未测', 'part', 'B5'),
       R('储藏展开文件行选中态', 'scm_stash_expand.go 对齐 scmFile SelStyle;实机未测', 'part', 'B5'),
       R('左栏打开的编辑器分区', 'ide_open_editors.go:文件树上方的折叠列表,与标签条同步,-ed openeditors;未测试', 'ok', 'B5'),
-      R('左栏大纲 / 时间线可拖高度', 'ide_tree.go + layout.sideOutline/sideTimeline:分隔线双击恢复默认、折叠不占高、窄窗限高;go test ide_timeline_test(本阶段未跑);未测试', 'ok', 'B5'),
+      R('左栏大纲 / 时间线可拖高度', 'ide_tree.go:sash 在标题行上缘(VS Code 式)+ layout.sideOutline/sideTimeline;ide_side_sash_test;未 computer use', 'part', 'B5'),
+      R('资源管理器虚拟树与视口落下', 'ide_tree_flat.go ui.List + treeNavDrop(navDropViewport);过滤模式仍递归;未 computer use', 'part', 'B5'),
+      R('面包屑下拉文件图标与树一致', 'file_menu_icon.go mItemFile;fileIconID 单测;未 computer use', 'part', 'B5'),
+      R('会话流切换入场', 'triggerFlowRise 已关闭;仍 restoreFlowScroll;flow_rise_test TestFlowRiseDisabled', 'ok', 'B5'),
       R('时间线预览对比与跟随', 'ide_timeline.go + ide_git.go:diff:tl: 预览标签复用、差异标签仍显示该文件历史并高亮提交;右键 / ↑↓ / 刷新 / 加载更多;本地历史过滤仅 UI;未测试', 'ok', 'B5'),
       R('左栏紧凑文件夹', 'ide_tree_compact.go:单子文件夹链合并显示,演示 compact/only/a/b;未测试', 'ok', 'B5'),
       R('左栏文件复制剪切粘贴', 'tree_menus.go 右键 + app.go ⌘C/X/V;粘贴重名 uniqueTreeDest「副本」;未测试', 'ok', 'B5'),
@@ -332,7 +336,8 @@
       R('窗口拖拽缩放实时渲染(跨 1040 / 900 / 720 断点)', 'Tester 逐帧缩窗 1280↔700 无空白 / 无跳变(TestAnimResize);终端 pty 尺寸稳定 90 ms 后才改,避免动画里逐帧重排;真实开发版用 osascript 逐帧改窗口宽(1537↔640,Agent 与 IDE 各一轮)实测:平均 80+ fps、0 空白,偶有 35~50 ms 的单帧卡顿(约 1%),形态曲线陡峭段单帧位移 50~70 px(设计曲线本身如此);大会话(68 MB / 644 条)+ 大文件(7 MB / 21.5 万行 C 源码)同时打开:Agent⇄IDE 切换仍 60 fps、0 掉帧;窗口连续缩放 86~90 fps、0 空白、约 0.5% 单帧 30~47 ms 卡顿,界面构建无超过 33 ms 的慢帧、GC 停顿 <3 ms,卡顿不在应用代码里(疑为系统逐帧改窗口尺寸的开销),卡顿后下一帧会补位移;用脚本发的合成鼠标拖动没能触发分隔条拖拽,未实测拖分隔条', 'part'),
       R('列表入场 stagger、折叠的高度插值', 'StaggerRise/CollapseHide 已接;FoldHeight 仅自动化 Cron 段;会话流切换入场见 flow_rise.go;通用列表仍缺高度插值;未测试', 'part', 'B8'),
       R('states 增补的 11 种动效(抖动 / 折叠 / 抽屉 / 骨架 / 浮起 …)', 'ShakeInput~Crossfade 等均有调用点;未测试', 'ok'),
-      R('已定义但没有调用点的动效', 'GrowY/Crossfade/OkPop/IndetMeter/FoldHeight 均已接线;登记行无新增缺口;未测试', 'ok')]
+      R('已定义但没有调用点的动效', 'GrowY/Crossfade/OkPop/IndetMeter/FoldHeight 均已接线;登记行无新增缺口;未测试', 'ok'),
+      R('动效总览(设计稿 motions-overview + 应用弹层)', 'motion_catalog.go;命令面板「演示:动效总览…」;设置 → 动效;MINI_ED=motion;go test MotionCatalog;未 computer use 实测', 'part')]
   };
 
   /** 在页面底部追加状态表(自己已有状态表的页面不会出现在 STATUS 里) */

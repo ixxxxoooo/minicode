@@ -57,11 +57,12 @@ func (a *App) crumbPartMenu(m *ui.Menu, tb *ideTab, partIx int) {
 	sortCrumbEntries(es)
 	for _, e := range es {
 		p := e.Path
-		ic := fileIcon(e.Name)
+		var it *ui.MenuItem
 		if e.Dir {
-			ic = treeFolderIcon(e.Name)
+			it = mItem(m, treeFolderIcon(e.Name), e.Name)
+		} else {
+			it = a.mItemFile(m, e.Name)
 		}
-		it := mItem(m, ic, e.Name)
 		if e.Name == cur {
 			it.Disabled(true)
 		}
