@@ -74,6 +74,14 @@ func (a *App) OpenWorkspaceTab(kind, ref string) {
 	a.revealWorkspace()
 }
 
+// OpenWorkspaceByName 供启动参数(MINI_OPEN)使用:按名字打开工作区标签,目前支持 review。
+func (a *App) OpenWorkspaceByName(name string) {
+	switch name {
+	case "review":
+		a.OpenReview()
+	}
+}
+
 // revealWorkspace 保证工作区可见,并让它的边框闪一下。
 func (a *App) revealWorkspace() {
 	if a.mode == ModeAgent && !a.rightOn {

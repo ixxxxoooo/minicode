@@ -244,10 +244,15 @@ func main() {
 	}
 	a := app.New(opts)
 	a.SetRunDemo(demoMode)
+	if tab := os.Getenv("MINI_TAB"); tab != "" && opts.Screen == app.ScreenSettings { // 调试 / 截图:设置页直接停在某个分类(brand / about …)
+		a.OpenSettingsTab(tab)
+	}
 	var rs *realSetup
 	startSess := ""
 	if !secondary {
 		startSess = a.ApplySavedRuntime()
+	} else if v := strings.TrimSpace(os.Getenv("MINI_SESSION")); v != "" { // 截图脚本:--new-window 不恢复上次状态,但仍可指定会话
+		startSess = v
 	}
 	if demoMode {
 		a.SetRepo(demo.Repo())
@@ -375,6 +380,12 @@ func main() {
 				a.Attach(demo.Session("", speed))
 			}
 			a.SetAutomationRunnerCtx(demo.RunAutomationDemo)
+			if v := os.Getenv("MINI_OPEN"); v != "" { // 调试 / 截图:启动后直接打开工作区标签(review / plan)
+				a.OpenWorkspaceByName(v)
+			}
+			if v := os.Getenv("MINI_ED"); v != "" { // 调试 / 截图:启动后执行编辑器动作(同 cmd/shot -ed,如 goto:src/router.rs:17)
+				a.EditorDemo(v)
+			}
 			return
 		}
 		a.SetSessionOpener(rs.open)

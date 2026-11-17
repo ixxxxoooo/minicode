@@ -354,3 +354,6 @@ func (a *App) dialogIn(key string, backdrop, panel ui.Element) {
 	}
 	kit.DialogIn(backdrop, panel, a.dlgAt, a.frameSoon)
 }
+
+// OpenSettingsTab 供启动参数(MINI_TAB)与截图脚本使用:进入设置并停在某个分类。
+func (a *App) OpenSettingsTab(tab string) { a.openSettings(tab) }
