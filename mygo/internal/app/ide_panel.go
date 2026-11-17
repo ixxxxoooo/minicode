@@ -31,13 +31,14 @@ func (a *App) bottomPanel(c *ui.Context) {
 	if open {
 		target = h
 	}
-	if a.instantLayout() {
+	panelSnap := a.instantLayout() || a.belt.on // 形态切换传送带:开合记忆会变,高度不要另起 260ms 动画(探针会记成 ±面板高跳变)
+	if panelSnap {
 		dur = time.Millisecond // 拖动分隔线 / 拖窗口边缘:高度直接跟手
 	}
 	a.probe(pzPanel, box)
 	hv := box.AnimateWith("h", target, dur, kit.EaseIO)
-	if a.instantLayout() {
-		hv = target // 拖动分隔线:直接取目标高度,不用落后一帧的动画值
+	if panelSnap {
+		hv = target
 	}
 	switch {
 	case open && a.ly.panelMax:

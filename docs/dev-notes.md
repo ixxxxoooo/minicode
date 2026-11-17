@@ -334,6 +334,44 @@ Rust + gpui-kit 0.8 的 Claude Code 工作台。只支持 Claude Code,直连本�
 - 解析器缺陷只能靠 **mygo 升级** 或 vendor replace;应用层预处理不能修所有 CM Corner case。
 - 过长的 HTML / 表在会话流仍依赖 `md_chunk` 分块与横向滚动,极长文档性能未在真机压测(未测试)。
 
+## 大文件编辑性能排查记录
+
+### 现象(真实日志 / MiniDB `locales/zh-Hans.json`,约 1356 行)
+
+- 打开语言 JSON 后切换 Agent⇄IDE,`minicode.log` 反复出现 `[hang] 主线程停滞 400~750ms`,栈在 `bracketHL.depthAt` → `editor.view.lineTokens` → `scanBracket` / `jsonLexer.Tokenize`。
+- 同次切换 `[anim] 布局动画异常帧 空白≈620px`、`底部面板跳变±405px`(形态各自记住的底部开合瞬间变化,与 260ms 高度动画叠加)。
+
+### 根因
+
+1. **括号深度 `depthAt`**:基础 `tokenHighlighter` 在未 `Highlight` 定稿前对多数行 `Tokens(..., final=false)`;旧逻辑只有 `final=true` 才 `append` 深度缓存,于是 `scanBracket` 每访问一行都从「最后缓存行」重扫到第 i 行,大文件未定稿时近似 **O(n²)** 且每帧重复 JSON `Tokenize`。
+2. **形态切换底栏**: `SetMode` 通过 `restoreLayoutFor` 立刻换 `bottomOpen`,底栏高度另起 `AnimateWith(260ms)`;与传送带同一时段叠加,探针记成面板高度二阶差分跳变(±整栏高)。
+
+### 修复(2025-11,未 computer use 实测)
+
+| 项 | 文件 | 做法 |
+| --- | --- | --- |
+| 深度增量缓存 | `ide_brackets.go` | 未定稿行也写入 `depth[]`;`depthFinal` 随 `Highlight` 推进截断 provisional 后缀;`Edit` 截断时同步 `depthFinal` |
+| 切换时底栏高度 | `ide_panel.go` | `a.belt.on` 时与 `instantLayout` 一样直接取目标高度,不叠加开合动画 |
+| 回归 / 基准 | `ide_brackets_perf_test.go` | 读真实 `zh-Hans.json`;`TestBracketDepthLargeJSON` 全行 <200ms;`BenchmarkBracketDepthLocaleJSON` 报告 µs/行;`depthAtLegacy` 对比 ≥4× |
+
+### 基准(本机,优化后,`go test -run BracketDepth -count=1`)
+
+- 1356 行 locale JSON,**未先 Highlight**:全文件逐行 `Tokens` 约 **数十毫秒级**(旧逻辑 400 行累进 `depthAt` 常 **>1s**)。
+- 详细数字以本地 `go test -v -run TestBracketDepthLargeJSON` 输出为准(CI 无 MiniDB 文件时 `t.Skip`)。
+
+### 复现
+
+```sh
+cd mygo && unset GOROOT
+go test ./internal/app -run 'TestBracketDepth|BenchmarkBracketDepth' -bench=. -count=1 -v
+# 真实项目:打开 MiniDB locales/*.json,切 Agent⇄IDE,看 ~/.minicode/logs/minicode.log 的 hang/anim
+```
+
+### 仍待观察
+
+- 切换首帧「舞台空白」若仍出现:查 `beltStep` 首帧几何与 `probe` 空白判定(与底栏跳变已分拆);大文件下 `构建界面` 慢帧需对照 `diag.SpanSlow`。
+- MyGo `scanBracket` 已有 `bracketScanLines=1000` 上限;其它叠层(折叠 / 引导线 / 查找)全量扫描尚未逐一带 benchmark。
+
 ## 目录结构
 
 见 `AGENTS.md` 的「结构」表;运行、打包、发布命令也在那里。旧 Rust 实现(crate 表、`cargo` 命令、各功能的 `.rs` 实现细节)已从本文件删除,需要时从 git 历史取(删除前最后一个提交的父提交是 `ddd7452`)。

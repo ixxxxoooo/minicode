@@ -137,10 +137,11 @@ func (a *App) bracketTheme() *editor.Theme {
 type bracketHL struct {
 	base editor.Highlighter
 	text editor.Snapshot
-	// depth[i] = 第 i 行开头的嵌套深度;只缓存「基础 Token 已定稿」的行。
-	depth   []int
-	scratch []editor.Token
-	out     []editor.Token
+	// depth[i] = 第 i 行开头的嵌套深度;未定稿行也缓存(增量),避免 scanBracket 每行重复 O(n) 累计。
+	depth      []int
+	depthFinal int // 行 [0,depthFinal) 在写入 depth 时基础高亮已 final;其后再确认会截断并重算
+	scratch    []editor.Token
+	out        []editor.Token
 }
 
 func (h *bracketHL) Edit(old, new editor.Snapshot, changes []editor.Change) {
@@ -154,10 +155,33 @@ func (h *bracketHL) Edit(old, new editor.Snapshot, changes []editor.Change) {
 	if keep < len(h.depth) {
 		h.depth = h.depth[:keep]
 	}
+	if keep < h.depthFinal {
+		h.depthFinal = keep
+	}
 }
 
 func (h *bracketHL) Highlight(last int, budget time.Duration) bool {
-	return h.base.Highlight(last, budget)
+	done := h.base.Highlight(last, budget)
+	h.syncDepthFinal()
+	return done
+}
+
+// syncDepthFinal 随基础高亮推进,把已 final 的前缀记下来;超出前缀的临时深度丢弃,下回按新 token 重算。
+func (h *bracketHL) syncDepthFinal() {
+	n := h.text.LineCount()
+	for h.depthFinal < n {
+		line := h.text.Line(h.depthFinal)
+		_, fin := h.base.Tokens(h.depthFinal, line, h.scratch[:0])
+		h.scratch = h.scratch[:0]
+		if !fin {
+			break
+		}
+		h.depthFinal++
+	}
+	keep := h.depthFinal + 1
+	if len(h.depth) > keep {
+		h.depth = h.depth[:keep]
+	}
 }
 
 func (h *bracketHL) Tokens(i int, text string, dst []editor.Token) ([]editor.Token, bool) {
@@ -172,8 +196,7 @@ func (h *bracketHL) Tokens(i int, text string, dst []editor.Token) ([]editor.Tok
 	return dst, final
 }
 
-// depthAt 返回第 i 行开头的嵌套深度:缓存里没有就从已知的最后一行累计过来。
-// 基础 Token 还没定稿的行只用于本次计算,不进缓存。
+// depthAt 返回第 i 行开头的嵌套深度:缓存里没有就从已知的最后一行累计过来(只增不减,摊还 O(1))。
 func (h *bracketHL) depthAt(i int) (int, bool) {
 	if i > bracketMaxLines || i >= h.text.LineCount() {
 		return 0, false
@@ -185,15 +208,12 @@ func (h *bracketHL) depthAt(i int) (int, bool) {
 		h.depth = append(h.depth, 0)
 	}
 	d := h.depth[len(h.depth)-1]
-	cacheable := true
 	for j := len(h.depth) - 1; j < i; j++ {
-		toks, fin := h.base.Tokens(j, h.text.Line(j), h.scratch[:0])
+		line := h.text.Line(j)
+		toks, _ := h.base.Tokens(j, line, h.scratch[:0])
 		h.scratch = toks[:0]
-		_, d = splitBrackets(h.text.Line(j), toks, d, nil, false)
-		cacheable = cacheable && fin
-		if cacheable {
-			h.depth = append(h.depth, d)
-		}
+		_, d = splitBrackets(line, toks, d, nil, false)
+		h.depth = append(h.depth, d)
 	}
 	return d, true
 }
