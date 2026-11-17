@@ -208,13 +208,16 @@ func (a *App) flowListView(c *ui.Context) {
 		}
 		rc := r.Context
 		t0 := time.Now()
-		a.withFlowDisplay(func() {
-			ui.Column(rc).AlignItems(ui.Center).Children(func() {
+		rowWrap := ui.Column(rc).AlignItems(ui.Center)
+		rowWrap.Children(func() {
+			a.withFlowDisplay(func() {
 				a.flowColPad(rc, pad, func() { rows[r.Index].build(rc, r.Index) })
 			})
 		})
+		a.flowRiseRow(rowWrap, r.Index, len(rows))
 		a.flowPerf.note(rows[r.Index].key, time.Since(t0))
 	})
+	a.finishFlowRiseIfDone()
 	if b := list.Bounds(); b.H > 0 {
 		a.flowBox = b
 	}

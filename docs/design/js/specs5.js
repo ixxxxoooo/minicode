@@ -42,6 +42,21 @@
       cell('提问卡 → 回答卡的过渡', '', snip(`<div class="t2" style="line-height:1.7">提交后提问卡原位淡出(120 ms),输入框淡入并恢复草稿;同时会话流里<b>就地</b>出现回答卡片(插在提问发出的位置,不追加到末尾),吸底时随新内容滚入视野。</div>`), '回答卡片属于「回合」的一部分,回合折叠时和步骤行一起折进「已处理」。'),
       cell('运行中等待回答', '', snip(`<div class="note-line">${ic('info', 's12')}<span class="shimmer">等待你回答 2 个问题…</span></div>`), '提问未回答时,会话流只有一行流光提示;卡片在输入框位置,避免两处都有按钮。'))
     )}
+    ${sec('切换会话:入场只从视野内开始', '从侧栏 / 命令面板 / 搜索切回某条会话时,恢复上次的滚动位置后,各行做 a-rise 淡入下落(间隔 30ms,总延迟封顶 400ms)。<b>视口上方</b>与<b>视口下方</b>的行视为已出现,不排队,避免停在列表中间时先看到一片空白。<b>首帧尚未布局</b>时:有滚动偏移则按默认行高估算视口,否则首帧不播动画。同一会话本轮已看过的不重复播;回合进行中的新消息仍走原有发送 / 状态行动效。动效关闭或系统减弱动态时直达。', grid(
+      cell('停在列表中间', '', `<div class="snip" style="height:220px;width:560px;position:relative;padding:10px 14px;overflow:hidden">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,var(--bg) 0 20%,transparent 20% 55%,var(--bg) 55% 100%);opacity:.5;pointer-events:none"></div>
+        <div class="t3 fs-cap" style="margin-bottom:8px">灰色 = 已滚过,瞬时可见 · 彩色 = 视口内 stagger · 下方未构建的行滚动到时直接出现</div>
+        ${F.step('read', 'router.rs', 'src/', '86 行')}<div style="opacity:.35">${F.step('grep', '"match_path"', '', '5 处')}</div>
+        ${F.step('edit', 'router.rs', 'src/', '<span class="c-ok">+4</span>')}<div class="t3 fs-cap" style="margin-top:60px;opacity:.5">…下方 200 行不等待上方动画</div></div>`, '示意:不是从第 1 行开始排队,而是从当前可见的第一行起算序号。'),
+      cell('规则摘要', '', `<div class="snip" style="height:auto;width:560px;padding:6px 14px">${tbl([['项', 130], ['规则']], [
+        ['触发', '打开已有会话且条目载入完成(含接回后台会话);空会话 / 新会话不播'],
+        ['滚动', '离开会话时记住滚动偏移,切回来恢复'],
+        ['视口内', '从第一个可见行起 stagger,间隔 30ms,第 12 行起 8ms,总延迟 ≤ 400ms'],
+        ['视口外', '上方 / 下方(含虚拟列表未构建的行)不透明、无延迟'],
+        ['首帧', '列表尚未量高时,有偏移则估算视口;否则整帧不播'],
+        ['重复', '同一会话本轮进程内只播一次切换入场'],
+        ['不减', '新用户消息 / 状态行 / 工具流式到达仍用原有动效']])}</div>`, '实现: flow_rise.go + flow_rows.go;flowRiseViewport / flowRiseDelay 单测。'))
+    )}
     ${sec('回到最新:圆形向下箭头,输入框正上方居中', '对标 ChatGPT / Claude.ai / Cursor:滚离底部超过 32px 才出现,位置在会话流区的底边、水平居中,正好在输入框「正中往上一点」,滚到上面一眼就能点到;不再放右下角(会和滚动条、右侧内容抢位)。点击平滑滚到底并恢复自动跟随;已在底部时淡出。', grid(
       cell('滚离底部', '', chatMock(F.toLatest(false)), '30px 圆,raised 底 + 1px 描边 + 阴影 2,图标 12px 向下箭头;悬停底色变深并上移 1px。'),
       cell('离开期间有新内容', '', chatMock(F.toLatest(true)), '回合还在输出时,按钮右上角出现 7px 强调色圆点,提示「下面还在变」;点击后圆点消失。'),
@@ -64,6 +79,7 @@
       ['问答卡 · 多题切换', 'dock_ask 步骤条+上/下题+←→;dockBadge 审批序号。未测试', st('ok')],
       ['回答卡片', 'dock_ask.askEcho + askEchoMenu。未测试', st('ok')],
       ['回到最新按钮', 'flow_scroll.toLatestBtn + flowTailMark;距底阈值 32px,贴 dock 上缘 10px。未测试', st('ok')],
+      ['切换会话入场(视野内 stagger)', 'flow_rise.go:恢复 flowScroll + triggerFlowRise;视口外瞬时可见;flow_rise_test。未 computer use', st('part')],
       ['交互卡入场与呼吸描边', 'kit.PopUpIn/DockGlow + dock_pending.dockCardAt;处理完 composer PopIn 120ms。未测试', st('ok')],
       ['引导行附带图片', 'steerPend.imgN + queueImgBadge。未测试', st('ok')]]))}
   </div>`;

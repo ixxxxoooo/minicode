@@ -62,6 +62,7 @@ func (a *App) finishSessLoad() {
 	log.Info("会话载入完成", "to", a.curSess, "items", len(a.st.Items), "耗时", elapsed)
 	a.sessLoad.hold = nil
 	a.sessLoad.active = false
+	a.triggerFlowRise()
 }
 
 func (a *App) onSessLoadEvent(ev core.Event) {

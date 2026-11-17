@@ -186,29 +186,33 @@ type App struct {
 	codeActs   []lsp.CodeAction      // ⌘. 拉取的 LSP 代码操作
 
 	// 会话流的折叠状态:条目 id → 是否展开(没有记录就用默认)
-	folds        map[string]bool
-	thinkMq      map[string]thinkMqSt
-	thinkMqHide  map[string]time.Time
-	thinkWasLive map[string]bool
-	outFold      map[string]bool            // 长输出 / 用户消息展开
-	hlKey        string                     // 命令 / 输出高亮缓存对应的「主题|强调色|字号」
-	hlCache      map[string][]ui.Span       // 命令 / 输出行高亮结果(flow_hl.go)
-	refHlKey     string                     // 引用面板语法色缓存键(主题)
-	refHlCache   map[string][]ui.Span       // path+行内容 → 着色 span(ide_refs_hl.go)
-	foldSt       map[string]*ui.ScrollState // 命令卡 / 代码块输出的内部滚动位置(按 foldKey,必须跨帧保留)
-	tick         map[string]*tickState      // 「最新一步」行的翻滚动画状态(按行键,flow_group.go)
-	runWas       map[string]bool            // 精简摘要行上一帧是否在运行(结束时 120 ms 淡入换句)
-	fadeAt       map[string]time.Time       // 精简摘要行结束换句的淡入起点
-	termLive     map[string]string          // 运行中命令 output_file 尾读缓存
-	planOpened   map[string]bool            // 已因流式自动打开过的计划
-	userPinned   []pinnedUserEdit           // 悬浮编辑中的用户消息(可多条)
-	userAnchor   map[string]userMsgAnchor   // 用户消息卡上一帧位置(悬浮编辑定位)
-	lb           *lightboxState             // 图片灯箱
-	flowNoFollow bool                       // 会话流:用户上滑后停止贴底
-	flowAwayLen  int                        // 离开底部时的末尾标记(flowTailMark),变了 = 回到最新按钮出现「有新内容」圆点
-	projRealOf   string                     // projReal 对应的项目根
-	projReal     string                     // 项目根解开软链后的路径(与 proj 相同则为空)
-	dockH        float32                    // 输入框区域(任务坞 + 排队卡 + 输入框)上一帧高度,「回到最新」按钮据此抬高
+	folds          map[string]bool
+	thinkMq        map[string]thinkMqSt
+	thinkMqHide    map[string]time.Time
+	thinkWasLive   map[string]bool
+	outFold        map[string]bool            // 长输出 / 用户消息展开
+	hlKey          string                     // 命令 / 输出高亮缓存对应的「主题|强调色|字号」
+	hlCache        map[string][]ui.Span       // 命令 / 输出行高亮结果(flow_hl.go)
+	refHlKey       string                     // 引用面板语法色缓存键(主题)
+	refHlCache     map[string][]ui.Span       // path+行内容 → 着色 span(ide_refs_hl.go)
+	foldSt         map[string]*ui.ScrollState // 命令卡 / 代码块输出的内部滚动位置(按 foldKey,必须跨帧保留)
+	tick           map[string]*tickState      // 「最新一步」行的翻滚动画状态(按行键,flow_group.go)
+	runWas         map[string]bool            // 精简摘要行上一帧是否在运行(结束时 120 ms 淡入换句)
+	fadeAt         map[string]time.Time       // 精简摘要行结束换句的淡入起点
+	termLive       map[string]string          // 运行中命令 output_file 尾读缓存
+	planOpened     map[string]bool            // 已因流式自动打开过的计划
+	userPinned     []pinnedUserEdit           // 悬浮编辑中的用户消息(可多条)
+	userAnchor     map[string]userMsgAnchor   // 用户消息卡上一帧位置(悬浮编辑定位)
+	lb             *lightboxState             // 图片灯箱
+	flowNoFollow   bool                       // 会话流:用户上滑后停止贴底
+	flowAwayLen    int                        // 离开底部时的末尾标记(flowTailMark),变了 = 回到最新按钮出现「有新内容」圆点
+	flowScroll     map[string]flowScrollMem   // 各会话离开时的滚动位置(切换回来恢复)
+	flowRiseSess   string                     // 正在播切换入场的会话 id
+	flowRiseAt     time.Time                  // 切换入场起点(flow_rise.go)
+	flowRisePlayed map[string]bool            // 本会话内已播过切换入场(同一会话不重复)
+	projRealOf     string                     // projReal 对应的项目根
+	projReal       string                     // 项目根解开软链后的路径(与 proj 相同则为空)
+	dockH          float32                    // 输入框区域(任务坞 + 排队卡 + 输入框)上一帧高度,「回到最新」按钮据此抬高
 
 	// Markdown 选项(随主题重建)
 	md         *markdown.Options
@@ -566,6 +570,9 @@ func (a *App) OpenSession(id string) {
 	start := time.Now()
 	log.Info("切换会话", "from", a.curSess, "to", id)
 	end := diag.SpanSlow("app", "打开会话", 300*time.Millisecond, "from", a.curSess, "to", id)
+	if a.curSess != "" {
+		a.saveFlowScroll(a.curSess)
+	}
 	if id != "" && !strings.HasPrefix(id, "new:") {
 		a.sideBF = "" // 方案 B 的项目条跟着打开的会话走
 	}
@@ -593,6 +600,8 @@ func (a *App) OpenSession(id string) {
 		a.screen = ScreenWork
 		a.flowSt = ui.ScrollState{}
 		a.flowList = ui.ListState{}
+		a.restoreFlowScroll(id)
+		a.triggerFlowRise()
 		end()
 		log.Info("接回后台会话", "id", id, "耗时", time.Since(start))
 		return
@@ -623,6 +632,7 @@ func (a *App) OpenSession(id string) {
 	a.screen = ScreenWork
 	a.flowSt = ui.ScrollState{}
 	a.flowList = ui.ListState{}
+	a.restoreFlowScroll(id)
 	a.pickOnReady = id == "" || strings.HasPrefix(id, "new:") // 新会话沿用上次选的模型与思考强度
 	if a.opener != nil {
 		a.Attach(a.opener(id))
@@ -836,7 +846,7 @@ func (a *App) shortcuts(c *ui.Context) {
 		a.termPasteReq = false
 		if tp := a.ide.tpc(); tp != nil && tp.t != nil {
 			if s := c.ReadClipboard(); s != "" {
-				tp.t.Paste(s)
+				a.termPaste(tp, s)
 			}
 			tp.focusIt = true
 		}
