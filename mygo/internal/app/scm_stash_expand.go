@@ -112,9 +112,14 @@ func (a *App) scmStashFileRows(c *ui.Context, i int) {
 	}
 	for _, ch := range fs[:limit] {
 		ch := ch
+		tp := a.treePath(ch.Path)
+		diffID := "diff:stash-" + itoa(i) + ":" + tp
 		fr := ui.ButtonBase(c).Key("stashf-" + itoa(i) + ch.Path).Height(theme.Px(28)).PaddingX(22).Gap(6).
 			AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx2)
-		if fr.Hovered() {
+		on := a.ide.active == diffID
+		if on {
+			kit.SelStyle(fr)
+		} else if fr.Hovered() {
 			fr.Background(t.Fill1)
 		}
 		fr.ContextMenu(func(m *ui.Menu) { a.scmStashFileMenu(m, i, ch) })
