@@ -92,6 +92,7 @@ func (a *App) tabStripMenu(m *ui.Menu) {
 	if menuItem(m, "自动换行").Trailing("⌥Z").Checked(a.prefs.Bool(pEdWrap, false)).Chosen() {
 		a.toggleWrap()
 	}
+	a.minimapMenuItem(m)
 	m.Separator()
 	if menuItem(m, "重新打开已关闭的标签").Trailing("⇧⌘T").Disabled(len(d.closed) == 0).Chosen() {
 		a.reopenClosed()
@@ -119,6 +120,25 @@ func (a *App) tabStripMenu(m *ui.Menu) {
 		}
 		a.copyText = strings.Join(ps, "\n")
 		a.toast = "已复制 " + itoa(len(ps)) + " 个路径"
+	}
+}
+
+// minimapMenuItem 是标签条「···」里的「显示迷你地图」勾选项:与设置 → 编辑器 → 迷你地图 → 显示迷你地图是同一个偏好
+// (editor.minimap,默认开)。工作区窄于 600 时迷你地图自动让位,勾选项仍可改偏好,悬停说明为什么现在看不到。
+func (a *App) minimapMenuItem(m *ui.Menu) {
+	on := a.prefs.Bool(pMinimap, true)
+	it := menuItem(m, "显示迷你地图").Checked(on)
+	if on && a.wsNarrowMM() {
+		it.Tooltip("工作区较窄(< 600),迷你地图暂时让位;拉宽后自动恢复")
+	}
+	if it.Chosen() {
+		if on {
+			a.prefs.Set(pMinimap, false)
+		} else {
+			a.prefs.Reset(pMinimap)
+		}
+		a.toast = map[bool]string{true: "已关闭迷你地图", false: "已显示迷你地图"}[on]
+		uxLog.Info("切换迷你地图", "开", !on)
 	}
 }
 

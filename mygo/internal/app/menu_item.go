@@ -28,7 +28,7 @@ var menuIconTable = map[string]string{
 	// 编辑
 	"重命名": "edit", "重命名符号": "edit", "格式化文档": "align", "格式化选定内容": "align",
 	"源代码操作": "spark", "自动换行": "wrap", "开启自动换行": "wrap", "关闭自动换行": "wrap",
-	"默认以预览打开 Markdown": "code", "切换为源码": "code", "切换为预览": "code",
+	"显示迷你地图": "panelR", "默认以预览打开 Markdown": "code", "切换为源码": "code", "切换为预览": "code",
 	"命令面板": "cmd", "全选": "list", "剪切": "copy", "粘贴": "copy",
 	"新建文件": "filePlus", "新建文件夹": "folderPlus", "新建终端": "plus",
 	// 会话 / Claude
