@@ -47,7 +47,7 @@ func TestFlowRiseViewport(t *testing.T) {
 		{name: "单条行", row: 0, first: 0, last: 0, total: 1, laidOut: true, wantSt: 0},
 		{name: "空列表", row: 0, first: 0, last: -1, total: 0, laidOut: false, wantIns: true},
 		{name: "布局未知无滚动", row: 3, first: 0, last: -1, total: 20, laidOut: false, wantIns: true},
-		{name: "布局未知有滚动", row: 30, first: 0, last: -1, total: 100, laidOut: false, scroll: scrollMid, view: viewH},
+		{name: "布局未知有滚动", row: 30, first: 0, last: -1, total: 100, laidOut: false, scroll: scrollMid, view: viewH, wantSt: 3}, // 估算首行 2000/72=27,第 30 行是第 4 个
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

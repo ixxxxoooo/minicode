@@ -1,13 +1,16 @@
 package app
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/backend"
+	"github.com/ixxxxoooo/minicode/internal/claudecfg"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/demo"
+	"github.com/ixxxxoooo/minicode/internal/projects"
 )
 
 func scenarioSteps(id string) []demo.Step {
@@ -189,6 +192,12 @@ func TestCtxStateSixKinds(t *testing.T) {
 		a.ctxLoading = true
 	})
 	check("none", func() {
+		// 第三方服务商(非演示)拿不到订阅限额 → none;演示模式一律视为可展示
+		a.SetRegistry(projects.Open(filepath.Join(t.TempDir(), "ws.json")))
+		a.pvLoad().store = claudecfg.Store{
+			Providers: []claudecfg.Provider{{ID: "ds", Name: "DS", BaseURL: "https://x", Models: []string{"m1"}}},
+			Mapping:   claudecfg.Mapping{Enabled: true, Provider: "ds", Default: "m1"},
+		}
 		a.ctxLoading = false
 		a.st.Usage = core.Usage{LimitsState: core.LimitsUnavailable}
 	})

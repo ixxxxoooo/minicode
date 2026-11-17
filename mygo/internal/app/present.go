@@ -387,6 +387,10 @@ func failedRight(tc *core.ToolCall, cur string) string {
 	}
 	for _, ct := range tc.Content {
 		if tb, ok := ct.(*core.TerminalBlock); ok && tb.ExitCode != nil && *tb.ExitCode != 0 {
+			if deniedOutput(tb.Output) {
+				// 被用户拒绝的命令根本没跑过,「退出码 1」只是拒绝信号
+				return "未执行"
+			}
 			return "退出码 " + strconv.Itoa(*tb.ExitCode)
 		}
 	}

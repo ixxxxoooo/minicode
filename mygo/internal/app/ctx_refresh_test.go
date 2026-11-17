@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ixxxxoooo/minicode/internal/claudecfg"
 	"github.com/ixxxxoooo/minicode/internal/core"
 )
 
@@ -20,13 +21,14 @@ func TestCtxDebounceNoDoubleCmd(t *testing.T) {
 	}
 	a.ctxRefreshAt = time.Time{}
 	a.ctxEnsureLoaded()
-	if len(fb.cmds) != 1 {
-		t.Fatalf("应发一次命令, got %d", len(fb.cmds))
+	var ctxCmds int
+	for _, c := range fb.cmds {
+		if u, ok := c.(core.CmdRefreshUsage); ok && u.Context {
+			ctxCmds++
+		}
 	}
-	last := fb.cmds[0]
-	u, ok := last.(core.CmdRefreshUsage)
-	if !ok || !u.Context {
-		t.Fatalf("命令不对:%T", last)
+	if ctxCmds != 1 {
+		t.Fatalf("应发一次上下文查询, got %d cmds %v", ctxCmds, fb.cmds)
 	}
 }
 
@@ -52,6 +54,7 @@ func TestCtxNoProcNotLoading(t *testing.T) {
 
 func TestCtxOpenRefreshesLimitsWhenOfficial(t *testing.T) {
 	a := New(Options{})
+	realReg(a, t)
 	fb := &claudeFakeBE{}
 	a.Attach(fb)
 	a.sessProcLive = true
@@ -71,10 +74,14 @@ func TestCtxOpenRefreshesLimitsWhenOfficial(t *testing.T) {
 
 func TestCtxOpenSkipsLimitsForThirdParty(t *testing.T) {
 	a := New(Options{})
+	realReg(a, t)
 	fb := &claudeFakeBE{}
 	a.Attach(fb)
 	a.sessProcLive = true
-	a.pvLoad().store.Activate("deepseek", "m1")
+	a.pvLoad().store = claudecfg.Store{
+		Providers: []claudecfg.Provider{{ID: "ds", Name: "DS", BaseURL: "https://x", Models: []string{"m1"}}},
+		Mapping:   claudecfg.Mapping{Enabled: true, Provider: "ds", Default: "m1"},
+	}
 	fb.cmds = nil
 	a.ctxRefreshAt = time.Time{}
 	a.ctxEnsureLoaded()

@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/term"
 )
 
@@ -17,7 +18,16 @@ func setFakeFonts(t *testing.T, raw ...string) {
 		fontScan.files = append(fontScan.files, normFont(r))
 	}
 	fontScan.done.Store(true)
-	t.Cleanup(func() { fontScan.files, fontScan.raw = oldF, oldR; fontScan.done.Store(oldD) })
+	// 系统字体族枚举也算「已完成且为空」,否则 fontInstalled 会判成「检测中」而不是「未安装」
+	oldS, oldFams, oldBy := systemFontScan.done.Load(), systemFontScan.fams, systemFontScan.byLower
+	systemFontScan.fams, systemFontScan.byLower = nil, map[string]ui.FontFamily{}
+	systemFontScan.done.Store(true)
+	t.Cleanup(func() {
+		fontScan.files, fontScan.raw = oldF, oldR
+		fontScan.done.Store(oldD)
+		systemFontScan.fams, systemFontScan.byLower = oldFams, oldBy
+		systemFontScan.done.Store(oldS)
+	})
 }
 
 func puaPanel() *termPanel {

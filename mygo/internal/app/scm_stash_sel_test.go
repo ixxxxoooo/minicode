@@ -6,11 +6,13 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
 
+// 储藏展开后文件行的 diff 标签 id 要能与活动标签对上(选中态据此高亮)。
 func TestStashDiffActiveID(t *testing.T) {
-	a := New(Options{Mode: ModeIDE, Demo: true})
-	a.nav = "scm"
-	a.ide.openFile("src/router.rs", true)
-	a.scmTick()
+	stressDemo(t)
+	a, tt := demoIDE(t)
+	a.OpenSCM()
+	tt.Frame()
+	tt.Frame()
 	if len(a.sc.stashes) == 0 {
 		t.Fatal("演示应有储藏")
 	}
