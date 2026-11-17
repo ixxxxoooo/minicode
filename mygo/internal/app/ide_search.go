@@ -33,6 +33,7 @@ type searchState struct {
 	ignored               map[string]bool // 被忽略的匹配:path:line:col
 	selMatch              string          // 最近点开的匹配(mkey),行显示选中外观
 	list                  ui.ListState
+	listH                 float32 // 结果列表视口高(上一帧);落下动效要靠它才知道哪些行在视野里
 	rows                  []srow
 	cancel                context.CancelFunc
 	focusNext             bool // 打开面板后把焦点给搜索框
@@ -336,11 +337,14 @@ func (a *App) searchView(c *ui.Context) {
 			ui.Text(c, s.err).FontSize(theme.FsCap).TextColor(t.Err).Padding(0, 8).Shrink(0)
 		}
 		if len(s.rows) > 0 {
-			ui.List(c, &s.list, len(s.rows), func(i int) {
+			list := ui.List(c, &s.list, len(s.rows), func(i int) {
 				if i < len(s.rows) { // 菜单里「折叠 / 忽略」会在本帧中途重排 rows
 					a.searchRow(c, s.rows[i], i)
 				}
 			}).Grow(1).MinHeight(0)
+			if b := list.Bounds(); b.H > 0 {
+				s.listH = b.H
+			}
 		} else if s.running {
 			ui.Column(c).Grow(1).Justify(ui.Center).AlignItems(ui.Center).Gap(6).Children(func() {
 				ui.Text(c, "搜索中…").TextColor(t.Tx3)
@@ -425,7 +429,7 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 	t := a.tk
 	s := &a.sr
 	if f := r.file; f != nil {
-		row := a.listNavDrop(ui.ButtonBase(c).Key("sf-"+f.Path), i, len(s.rows), &s.list, 0, 0).Height(theme.Px(22)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
+		row := a.listNavDrop(ui.ButtonBase(c).Key("sf-"+f.Path), i, len(s.rows), &s.list, 0, searchDropViewH(s)).Height(theme.Px(22)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
 		if row.Hovered() {
 			row.Background(t.Fill1)
 		}
@@ -448,7 +452,7 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 	}
 	m := *r.match
 	ign := s.ignored[mkey(m)]
-	row := a.listNavDrop(ui.ButtonBase(c).Key("sm-"+mkey(m)), i, len(s.rows), &s.list, 0, 0).Height(theme.Px(20)).PaddingX(4).PaddingStart(22).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
+	row := a.listNavDrop(ui.ButtonBase(c).Key("sm-"+mkey(m)), i, len(s.rows), &s.list, 0, searchDropViewH(s)).Height(theme.Px(20)).PaddingX(4).PaddingStart(22).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
 	if s.selMatch == mkey(m) {
 		kit.SelStyle(row) // 点开过的匹配:选中外观(方案 B 白色浮起卡)
 	} else if row.Hovered() {
@@ -505,4 +509,13 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 			})
 		}
 	})
+}
+
+// searchDropViewH 是搜索结果落下动效用的视口高:取上一帧量到的列表高,第一帧还没量到时用一个够大的默认值。
+// 此前这里传 0,动效按「没有布局、没有滚动量」判成整屏瞬时出现,切到搜索时结果从来没有自上而下落下。
+func searchDropViewH(s *searchState) float32 {
+	if s.listH > 0 {
+		return s.listH
+	}
+	return 600
 }
