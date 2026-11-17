@@ -60,7 +60,8 @@ func (r *reviewState) init() {
 
 // reviewStat 一个块的增删行数。
 func reviewStat(d *core.DiffBlock) (int, int) {
-	return diff.Stat(diff.Lines(d.Old, d.New, d.Line, d.Line))
+	e := blockDiffOf(d)
+	return e.add, e.del
 }
 
 func hunkKey(path string, i int) string { return path + "#" + itoa(i) }
@@ -117,7 +118,7 @@ func (a *App) computeChangedFiles() []chFile {
 					if !ok {
 						continue
 					}
-					ad, de := diff.Stat(diff.Lines(d.Old, d.New, d.Line, d.Line))
+					ad, de := reviewStat(d)
 					i, seen := idx[d.Path]
 					if !seen {
 						st := "M"
@@ -182,7 +183,7 @@ func (a *App) OpenReview() { a.OpenWorkspaceTab(vReview, "") }
 
 // hunkRange 块在新文件里的行范围。
 func hunkRange(d *core.DiffBlock) (int, int) {
-	ls := diff.Lines(d.Old, d.New, d.Line, d.Line)
+	ls := blockLines(d)
 	first, last := 0, 0
 	for _, l := range ls {
 		if l.NewNo == 0 {
@@ -490,7 +491,7 @@ func (a *App) reviewHunk(c *ui.Context, f chFile, i int, d *core.DiffBlock) {
 	k := hunkKey(f.path, i)
 	st := a.rv.hunk[k]
 	lo, hi := hunkRange(d)
-	ls := diff.Lines(d.Old, d.New, d.Line, d.Line)
+	ls := blockLines(d)
 	ui.Row(c).Key("rvb-"+k).Height(theme.Px(24)).PaddingX(10).Gap(8).AlignItems(ui.Center).Background(t.Fill1).
 		BorderWidth(1, 0, 1, 0).BorderColor(t.Bd1).TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
 		lbl := "第 " + itoa(lo) + "–" + itoa(hi) + " 行"

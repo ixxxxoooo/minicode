@@ -6,7 +6,6 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/core"
-	"github.com/ixxxxoooo/minicode/internal/diff"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -545,9 +544,9 @@ func (a *App) permDiffPreview(c *ui.Context, r *core.PermissionRequest) {
 		if !ok {
 			continue
 		}
-		n := len(diff.Lines(d.Old, d.New, d.Line, d.Line))
+		n := len(blockLines(d))
 		if n > budget {
-			ad, de := diff.Stat(diff.Lines(d.Old, d.New, d.Line, d.Line))
+			ad, de := reviewStat(d)
 			hidden, hAdd, hDel = hidden+1, hAdd+ad, hDel+de
 			continue
 		}

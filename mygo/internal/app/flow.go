@@ -473,8 +473,8 @@ func (a *App) flowMonoLH() float32 { return a.FlowMonoSize() * 1.6 }
 // diffCard 画差异卡;head 为真时带「src/router.rs +4 −1」文件头。
 func (a *App) diffCard(c *ui.Context, d *core.DiffBlock, head bool) {
 	t := a.tk
-	ls := diff.Lines(d.Old, d.New, d.Line, d.Line)
-	add, del := diff.Stat(ls)
+	be := blockDiffOf(d)
+	ls, add, del := be.lines, be.add, be.del
 	var h func()
 	if head {
 		h = func() {

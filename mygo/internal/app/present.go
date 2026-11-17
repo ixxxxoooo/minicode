@@ -8,7 +8,6 @@ import (
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
-	"github.com/ixxxxoooo/minicode/internal/diff"
 )
 
 // 工具族(对应设计稿 data-tool 的色相):只染图标。
@@ -111,7 +110,7 @@ func firstText(tc *core.ToolCall) string {
 func diffStat(tc *core.ToolCall) (add, del int) {
 	for _, c := range tc.Content {
 		if d, ok := c.(*core.DiffBlock); ok {
-			a, r := diff.Stat(diff.Lines(d.Old, d.New, d.Line, d.Line))
+			a, r := reviewStat(d)
 			add, del = add+a, del+r
 		}
 	}
