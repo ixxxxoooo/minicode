@@ -221,9 +221,25 @@ func (a *App) resizeHandle(c *ui.Context, key, edge string, cur, def, lo, hi flo
 		if vertical {
 			line.Absolute().Left(0).Right(0).Top(3).Height(2)
 		} else {
-			line.Absolute().Top(0).Bottom(0).Left(2.5).Width(2)
+			// 竖线上下各缩进一个面板圆角半径:相邻面板是圆角岛时,线不再从圆角处凸出去
+			in := a.handleCornerInset(key)
+			line.Absolute().Top(in).Bottom(in).Left(2.5).Width(2)
 		}
 	})
+}
+
+// handleCornerInset 返回竖向拖拽把手的强调线上下需要缩进的距离。
+// 参数 key 是把手标识(lySide / lyWs / lyDock 紧挨圆角面板,其余在面板内部不需要缩进)。
+// 返回值:方案 B(圆角岛)下等于面板圆角半径,其余方案为 0。
+func (a *App) handleCornerInset(key string) float32 {
+	if a.tk.Scheme.ID != "b" {
+		return 0
+	}
+	switch key {
+	case lySide, lyWs, lyDock:
+		return a.tk.RLg()
+	}
+	return 0
 }
 
 var uiFade = ui.Animation{Duration: kit.DurFast, Ease: kit.EaseOut}
