@@ -64,3 +64,12 @@ func ApplyContextUsage(body obj, ok bool, usage *core.Usage) (core.Event, bool) 
 	}
 	return core.EvUsage{Usage: *usage}, true
 }
+
+// autoContext 自动查询上下文分类明细(get_context_usage,本地控制请求,不耗额度、不碰官方限额)。
+// 在会话进程握手完成与每个回合结束时调用;进程没起来或上一次查询还没回来就不重复发。
+func (b *Backend) autoContext() {
+	if b.p == nil || b.hasReq(rkContext) {
+		return
+	}
+	b.request(req{kind: rkContext}, ContextUsageReq)
+}

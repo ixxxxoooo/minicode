@@ -861,6 +861,9 @@ func (b *Backend) onLine(line string) {
 		}
 	}
 	b.emit(evs...)
+	if ty == "result" {
+		b.autoContext() // 回合结束上下文变了:自动刷新明细(本地请求,不耗额度)
+	}
 	if ty == "result" && len(b.carry) > 0 { // 收尾期间发的消息:紧接着开始它的回合,界面不留空档
 		t0 := b.carry[0]
 		b.carry = b.carry[1:]
@@ -943,6 +946,9 @@ func (b *Backend) onControlResponse(v obj) {
 			evs = append(evs, core.EvConn{State: core.ConnFailed, Why: errText})
 		}
 		b.emit(evs...)
+		if success {
+			b.autoContext() // 会话进程一就绪就自己取一次上下文明细,弹层点开时不必再查
+		}
 	case rkSetModel:
 		if success {
 			b.emit(core.EvModelChanged{Model: r.model})

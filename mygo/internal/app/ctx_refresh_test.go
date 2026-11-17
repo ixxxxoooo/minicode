@@ -36,19 +36,42 @@ type claudeFakeBE struct{ fakeBE }
 
 func (*claudeFakeBE) Name() string { return "claude" }
 
-// 进程没启动时点开面板:不发命令,也不能一直挂着「刷新中」。
-func TestCtxNoProcNotLoading(t *testing.T) {
+// 进程没启动且还没有明细时点开面板:只查一次明细并顺带启动进程(历史会话惰性启动)。
+func TestCtxNoProcStartsAndQueriesOnce(t *testing.T) {
 	a := New(Options{})
 	fb := &claudeFakeBE{}
 	a.Attach(fb)
 	fb.cmds = nil // 打开会话时的预热命令不算
 	a.sessProcLive = false
 	a.ctxEnsureLoaded()
-	if len(fb.cmds) != 0 {
-		t.Fatalf("进程未启动不应发命令, got %d", len(fb.cmds))
+	var n int
+	for _, c := range fb.cmds {
+		if u, ok := c.(core.CmdRefreshUsage); ok && u.Context && u.StartProc {
+			n++
+		}
+	}
+	if n != 1 || !a.ctxLoading {
+		t.Fatalf("应发一次带启动进程的明细查询并处于刷新中, got %d loading=%v", n, a.ctxLoading)
+	}
+}
+
+// 明细已经有了(后端在会话就绪 / 回合结束时自动取):点开弹层不再重查明细。
+func TestCtxOpenSkipsDetailWhenLoaded(t *testing.T) {
+	a := New(Options{})
+	fb := &claudeFakeBE{}
+	a.Attach(fb)
+	a.sessProcLive = true
+	a.st.Usage.ContextCategories = []core.ContextCategory{{Name: "System prompt", Tokens: 2600}}
+	fb.cmds = nil
+	a.ctxRefreshAt = time.Time{}
+	a.ctxEnsureLoaded()
+	for _, c := range fb.cmds {
+		if u, ok := c.(core.CmdRefreshUsage); ok && u.Context {
+			t.Fatalf("已有明细,点开不应再查明细: %v", c)
+		}
 	}
 	if a.ctxLoading {
-		t.Fatal("进程未启动不应处于刷新中")
+		t.Fatal("没发明细查询,不应处于刷新中")
 	}
 }
 

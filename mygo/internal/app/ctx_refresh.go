@@ -40,7 +40,24 @@ func (a *App) ctxQueryAll(force bool) {
 	})
 }
 
-// ctxEnsureLoaded 点开上下文面板时主动查询一次(防抖;先展示缓存 / 历史估算,结果回来后自动更新)。
+// ctxQueryOnOpen 真实后端点开弹层:上下文明细由后端在会话就绪 / 每回合结束时自动取,这里不再重查;
+// 每次点开只触发官方账号限额(30s 内复用缓存)。只有两种情况才查明细:
+// 还没取到过(明细为空),或限额需要而会话进程没起来(历史会话惰性启动,顺带启动它)。
+func (a *App) ctxQueryOnOpen() {
+	limits := a.subscriptionLimitsEligible()
+	needCtx := len(a.st.Usage.ContextCategories) == 0 || (limits && !a.sessProcLive)
+	if !needCtx && !limits {
+		return
+	}
+	if needCtx {
+		a.ctxLoading = true
+	}
+	a.send(core.CmdRefreshUsage{
+		Context: needCtx, Limits: limits, LimitsQuick: true, StartProc: needCtx,
+	})
+}
+
+// ctxEnsureLoaded 点开上下文面板时调用(防抖):真实后端见 ctxQueryOnOpen;演示后端照旧整查。
 func (a *App) ctxEnsureLoaded() {
 	now := a.now()
 	if !a.ctxRefreshAt.IsZero() && now.Sub(a.ctxRefreshAt) < ctxDebounce {
@@ -48,7 +65,7 @@ func (a *App) ctxEnsureLoaded() {
 	}
 	a.ctxRefreshAt = now
 	if a.be != nil && a.be.Name() == "claude" {
-		a.ctxQueryAll(false)
+		a.ctxQueryOnOpen()
 		return
 	}
 	a.ctxRequestQuery(false)
