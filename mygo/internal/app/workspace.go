@@ -84,19 +84,26 @@ func noPos(t ui.ElementTransition) ui.ElementTransition {
 func (a *App) wsPane(c *ui.Context, gap float32) {
 	active := a.wsOccupies()
 	ide := a.mode == ModeIDE
-	p := a.pane(c).Key("ws").ClipX().Transition(noPos(a.mt()))
+	// 宽度 / 间距用显式的逐帧动画值(paneW / paneGap),不用元素过渡(见 paneW 的说明)
+	p := a.pane(c).Key("ws").ClipX().Transition(noMotion)
 	switch {
 	case a.belt.on:
 		// 形态切换的传送带平移:新工作区绝对定位 + 固定终态宽度,自与对话栏相邻的一侧移进来(morph_belt.go)
 		r := a.belt.ws
 		p.Absolute().Left(r.x).Top(0).Bottom(0).Width(max(0, r.w)).Shrink(0).Transition(noMotion)
 		active = a.belt.wsOn
+		// 只为把宽度 / 外边距的动画状态推到终值,平移结束后不会再补一次滑动
+		right := !ide && a.belt.wsOn
+		_ = a.paneGap(p, right, gap)
+		_ = a.paneW(p, map[bool]float32{true: a.wsRW(), false: 0}[right], false)
 	case active && ide:
-		p.Grow(1).Basis(0)
+		p.Grow(1).Basis(0) // 同 chatPane:占满型宽度跟着相邻栏走
+		_ = a.paneGap(p, false, gap)
+		_ = a.paneW(p, 0, false)
 	case active:
-		p.Width(a.wsRW()).Shrink(0).Margin(0, 0, 0, gap)
+		p.Width(a.paneW(p, a.wsRW(), false)).Shrink(0).Margin(0, 0, 0, a.paneGap(p, true, gap))
 	default:
-		p.Width(0).Shrink(0)
+		p.Width(a.paneW(p, 0, false)).Shrink(0).Margin(0, 0, 0, a.paneGap(p, false, gap))
 	}
 	// 透明度 260ms ease-io(设计稿 .pane);宽度走 440ms 变形曲线(上面的 Transition)。平移中直接到位。
 	opDur := kit.DurSlow

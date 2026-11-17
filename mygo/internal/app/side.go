@@ -67,7 +67,9 @@ func (a *App) side(c *ui.Context) {
 		target = 0
 	}
 	// 开合:宽度 260ms ease-io(sideTransition),透明度 120ms ease(设计稿 .side 的 transition)
-	col := ui.Column(c).Key("side").Width(target).Shrink(0).ClipX().Transition(a.sideTransition())
+	// 宽度是显式的逐帧布局宽度(paneW,260ms ease-io):舞台与对话栏每一帧跟着它走;不用元素过渡(见 paneW 的说明)
+	col := ui.Column(c).Key("side").Shrink(0).ClipX().Transition(noMotion)
+	col.Width(a.paneW(col, target, true))
 	col.Opacity(col.AnimateWith("op", map[bool]float32{true: 1, false: 0}[a.sideOpen], kit.DurFast, kit.EaseCSS))
 	a.syncNavSwap()
 	a.syncNavDrop()

@@ -11,7 +11,8 @@ import (
 // chatPane 是对话栏:标题行 + 会话流 + 任务坞 + 输入框。
 func (a *App) chatPane(c *ui.Context, gap float32) {
 	t := a.tk
-	p := a.pane(c).Key("chat").Transition(noPos(a.mt()))
+	// 宽度 / 间距用显式的逐帧动画值(paneW / paneGap),不用元素过渡
+	p := a.pane(c).Key("chat").Transition(noMotion)
 	shown := true
 	switch {
 	case a.belt.on:
@@ -19,14 +20,21 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		r := a.belt.chat
 		p.Absolute().Left(r.x).Top(0).Bottom(0).Width(max(0, r.w)).Shrink(0).Transition(noMotion)
 		shown = r.w > .5
+		// 只为把宽度 / 外边距的动画状态推到终值,平移结束后不会再补一次滑动
+		dock := a.mode == ModeIDE && !a.chatMax && a.belt.chatOn
+		_ = a.paneGap(p, dock, gap)
+		_ = a.paneW(p, map[bool]float32{true: a.dockW(), false: 0}[dock], false)
 	case a.mode == ModeAgent || a.chatMax:
+		// 占满型不带自己的动画:宽度完全跟着相邻栏(左栏 / 右栏)每一帧的宽度走(设计稿里它是 flex: 1,没有 width 过渡)
 		p.Grow(1).Basis(0)
+		_ = a.paneGap(p, false, gap)
+		_ = a.paneW(p, 0, false)
 	case a.rightOn && !a.useDockRail():
 		// IDE 形态:对话栏停靠在右侧,固定 352 宽(设计稿 --w-dock)
-		p.Width(a.dockW()).Shrink(0).Margin(0, 0, 0, gap)
+		p.Width(a.paneW(p, a.dockW(), false)).Shrink(0).Margin(0, 0, 0, a.paneGap(p, true, gap))
 	default:
 		// 收起(右栏关了 / 窄窗收成图标条):宽度归零(440ms 变形曲线),透明度 260ms ease-io 淡出
-		p.Width(0).Shrink(0)
+		p.Width(a.paneW(p, 0, false)).Shrink(0).Margin(0, 0, 0, a.paneGap(p, false, gap))
 		shown = false
 	}
 	// 透明度 260ms ease-io(设计稿 .pane);形态切换那 440ms 里改走 chat-dock / chat-center:

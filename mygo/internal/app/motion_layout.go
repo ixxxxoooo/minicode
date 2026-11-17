@@ -61,6 +61,45 @@ func (a *App) syncNavSwap() {
 	a.navSwapKey = key
 }
 
+// paneSnap 此刻面板尺寸应直接到位、不做开合动画:形态切换进行中(平移由传送带摆位)、拖分隔线 / 连续缩放窗口时。
+func (a *App) paneSnap() bool {
+	if _, done := a.morphProgress(); !done || a.belt.on {
+		return true
+	}
+	return a.instantLayout()
+}
+
+// paneW 是侧栏 / 工作区 / 对话栏停靠的「布局宽度」逐帧动画值(设计稿 .side / .pane 的 width 过渡:
+// 左栏 260ms ease-io,右栏 440ms 变形曲线)。
+// 宽度直接作为布局宽度:占满型的栏(对话栏 / IDE 工作区)自然跟着相邻栏每一帧的宽度走,
+// 和 CSS 的 flex 布局语义一致;不用 MyGo 的 Transition——它的位置按父级局部坐标插值,
+// 左栏一收舞台原点瞬间跳走、右栏的位置再慢慢追,合成出来先在左边、再向右滑,看着就不对。
+// 参数 slow:true = 260ms ease-io(左栏),false = 440ms 变形曲线(右栏 / 对话栏停靠)。
+func (a *App) paneW(p ui.Element, target float32, slow bool) float32 {
+	dur, ease := kit.DurMorph, kit.EaseMorph
+	if slow {
+		dur, ease = kit.DurSlow, kit.EaseIO
+	}
+	if dur <= 0 || a.paneSnap() {
+		dur = time.Millisecond
+	}
+	return p.AnimateWith("w", target, dur, ease)
+}
+
+// paneGap 是面板左侧外边距(面板间距)的动画值:开合时随宽度同曲线渐变(设计稿 .pane 的 margin 过渡),
+// 否则收起 / 展开的第一帧会有一个间距宽度的跳动。
+func (a *App) paneGap(p ui.Element, on bool, gap float32) float32 {
+	target := float32(0)
+	if on {
+		target = gap
+	}
+	dur := kit.DurMorph
+	if dur <= 0 || a.paneSnap() {
+		dur = time.Millisecond
+	}
+	return p.AnimateWith("gap", target, dur, kit.EaseMorph)
+}
+
 // morphProgress 形态切换自身的进度 0..1(EaseMorph);没有切换或已结束返回 1,done = true。
 func (a *App) morphProgress() (p float32, done bool) {
 	if !kit.MotionOn() || morph.Duration <= 0 || a.morphAt.IsZero() {
