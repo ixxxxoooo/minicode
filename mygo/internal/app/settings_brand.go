@@ -132,10 +132,7 @@ func brandAppBody(a *App, c *ui.Context) {
 		a.brandPreviewDock(c)
 	})
 	a.settingsRow(c, setRow{key: pAppStyle, def: 0, title: "图标样式", desc: "五选一;应用图标与菜单栏图标同时换成同一种,立即生效。鼠标放在卡片上能看到菜单栏图标动起来的样子", kind: kNone, right: func(a *App, c *ui.Context) {
-		ui.Column(c).Gap(6).Children(func() {
-			ui.Text(c, appStyles[a.iconStyleIndex()]).FontWeight(500).TextColor(a.tk.Tx2)
-			a.brandAppStylePick(c)
-		})
+		a.brandAppStylePick(c)
 	}}, false)
 	rows := []setRow{
 		rSeg(pAppMode, "图标外观", "浅色 / 深色 / 透明 / 着色;「自动」随当前主题深浅", 0, "自动", "浅色", "深色", "透明", "着色"),
