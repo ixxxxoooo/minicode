@@ -117,6 +117,9 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 			if h := ev.Bounds().H; h > 0 {
 				a.ide.edViewH = h
 			}
+			if w := ev.Bounds().W; w > 0 { // 行末追溯提示按它算剩余宽度(blameRoom)
+				a.ide.edViewW = w
+			}
 			if !a.wsNarrowMM() && a.prefs.Bool(pMinimap, true) {
 				a.minimap(c, tb)
 			}

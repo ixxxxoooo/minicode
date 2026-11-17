@@ -106,7 +106,8 @@ func (a *App) blameInlay(tb *ideTab) {
 	if !ok {
 		return
 	}
-	txt := blameInlayText(bl.Author, bl.When, bl.Summary) // 单行 + 截断,完整说明在悬停的提交卡里
+	// 单行 + 按当前编辑器宽度自适应截断(见 ide_blame_text.go),完整说明在悬停的提交卡里
+	txt := blameInlayFit(bl.Author, bl.When, bl.Summary, a.blameRoom(tb, line))
 	// Pos.Col 是字节列:这里必须用字节数。按字符数算时,含中文的行(每字 3 字节)会把追溯文字插到行中间
 	end := tb.buf.Offset(editor.Pos{Line: line, Col: len(tb.buf.Line(line))})
 	key := tb.path + ":" + itoa(line) + ":" + txt + ":" + itoa(int(tb.buf.Version()))
@@ -114,7 +115,11 @@ func (a *App) blameInlay(tb *ideTab) {
 		return
 	}
 	tb.blameKey, tb.blameShown = key, true
-	tb.st.SetInlays([]editor.Inlay{{Offset: end, Text: txt, Trailing: true, Ellipsis: "…"}})
+	if txt == "" { // 这一行右边没有地方放了:不显示
+		tb.st.SetInlays(nil)
+		return
+	}
+	tb.st.SetInlays([]editor.Inlay{{Offset: end, Text: txt, Trailing: true}})
 }
 
 // timelineHeaderTools 时间线标题行右侧:刷新 / 来源(仅 Git)。

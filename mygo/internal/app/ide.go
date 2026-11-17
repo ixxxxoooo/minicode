@@ -190,6 +190,7 @@ type ide struct {
 	blameLine      int
 	blameHoverAt   time.Time           // 悬停追溯文字的起始时刻(满 300ms 才出卡)
 	edViewH        float32             // 上一帧编辑区的高度(浮层判断下方放不放得下)
+	edViewW        float32             // 上一帧编辑器的宽度(行末追溯提示算剩余格数)
 	rvBarBelow     bool                // 本帧行内审查条贴在光标行下方(提交卡要让开)
 	blameCardShow  bool                // 提交卡已显示
 	blameCardPin   bool                // 调试 -ed blamecard 钉住提交卡(不随鼠标移开收起,便于截图)
