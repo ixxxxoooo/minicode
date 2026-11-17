@@ -13,7 +13,8 @@ const (
 	shimmerCycle = 2100 * time.Millisecond
 	shimmerSweep = 1600 * time.Millisecond
 	shimmerTick  = 33 * time.Millisecond
-	shimmerBins  = 6
+	shimmerBins  = 10  // 光带分段数:分得越细扫过时越像渐变,6 段时每段占 17% 的字,光带是几个明显的色块
+	shimmerBase  = .12 // 光带之外的文字向高亮色靠拢的程度;原来 .35,底色与峰值只差 65%,流光显得太淡
 	shimmerMax   = 160 // 流光只扫前这么多字,更长的命令(单行裁切,多出的部分本来就看不见)后半段保持底色
 )
 
@@ -131,7 +132,7 @@ func shimmerSpans(text string, hi, dim ui.Color, pos float32) []ui.Span {
 	span := make([]ui.Span, 0, bins)
 	per := float32(n) / float32(bins)
 	center := pos * float32(n)
-	band := float32(n) * .38
+	band := float32(n) * .34 // 设计稿 .shimmer:渐变 32%–68% 是高亮,光带约占总宽 36%
 	for b := 0; b < bins; b++ {
 		i0 := int(float32(b) * per)
 		i1 := n
@@ -141,9 +142,9 @@ func shimmerSpans(text string, hi, dim ui.Color, pos float32) []ui.Span {
 		mid := (float32(i0) + float32(i1)) / 2
 		d := math.Abs(float64(mid - center))
 		w := float64(d)/float64(band)*math.Pi - math.Pi/2
-		bright := .35 + .65*(.5+.5*math.Sin(w))
+		bright := shimmerBase + (1-shimmerBase)*(.5+.5*math.Sin(w))
 		if w < -math.Pi/2 {
-			bright = .35
+			bright = shimmerBase
 		}
 		col := dim.Mix(hi, float32(bright))
 		span = append(span, ui.Span{Text: string(runes[i0:i1]), Color: col})

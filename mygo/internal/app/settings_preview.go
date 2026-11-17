@@ -230,7 +230,7 @@ func (a *App) pvShimmer(c *ui.Context) {
 			for i := 0; i < 3; i++ {
 				i := i
 				ui.Column(c).Gap(4).Opacity(pvOpacity(i == cur)).Children(func() {
-					kit.RunTextMode(c, "正在分析路由表…", t.Tx2, i, func(e ui.Element) ui.Element {
+					kit.RunTextMode(c, "正在分析路由表…", t.Tx1, i, func(e ui.Element) ui.Element {
 						return e.FontSize(theme.FsCap)
 					})
 					ui.Text(c, labels[i]).FontSize(theme.FsCap).TextColor(t.Tx4)
@@ -295,7 +295,7 @@ func (a *App) pvWaitStep(c *ui.Context, style int) {
 		ui.Row(c).Size(16, 16).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).Children(func() {
 			kit.SpinStyle(c, tone, style)
 		})
-		kit.RunTextS(c, "运行", t.Tx3, func(e ui.Element) ui.Element {
+		kit.RunTextS(c, "运行", t.Tx1, func(e ui.Element) ui.Element {
 			return e.TextColor(t.Tx3).Shrink(0).SingleLine()
 		})
 		ui.Text(c, "cargo test").FontWeight(500).TextColor(t.Tx1).SingleLine().Shrink(1)
