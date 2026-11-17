@@ -37,6 +37,13 @@ func tokenLineSpans(lang *editor.Language, text string, th *editor.Theme, size f
 	buf := editor.NewBuffer(text)
 	h := editor.NewTokenHighlighter(lang.Tokenizer, buf.Snapshot())
 	toks, _ := h.Tokens(0, text, nil)
+	return tokensToSpans(text, toks, th, size)
+}
+
+// tokensToSpans 把一行文本的词法结果按编辑器配色转成等宽 span(引用面板与 Markdown 围栏代码块共用)。
+// 参数 text 是该行文本,toks 是词法器给出的该行词(End 为字节偏移),th 取色,size 是字号。
+// 返回值:覆盖整行的 span;没有词法结果时整行取正文色。
+func tokensToSpans(text string, toks []editor.Token, th *editor.Theme, size float32) []ui.Span {
 	if len(toks) == 0 {
 		return []ui.Span{{Text: text, Font: "monospace", Size: size, Color: th.Text}}
 	}

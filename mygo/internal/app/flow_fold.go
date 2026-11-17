@@ -61,6 +61,12 @@ func (a *App) foldScroll(key string, live bool) *ui.ScrollState {
 
 // foldBody 渲染可折叠的等宽正文;live 为真时展开区滚到底。
 func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, copy func()) {
+	a.foldBodyHL(c, key, full, live, mono, copy, nil)
+}
+
+// foldBodyHL 同 foldBody,多一个 lines:已按语言着色的逐行 span(围栏代码块用);
+// 为 nil 或行数不够时,那一行退回命令 / 输出的通用着色(路径、错误、URL 等)。
+func (a *App) foldBodyHL(c *ui.Context, key, full string, live bool, mono bool, copy func(), hl [][]ui.Span) {
 	t := a.tk
 	lines := strings.Split(strings.TrimRight(full, "\n"), "\n")
 	n := len(lines)
@@ -96,11 +102,12 @@ func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, co
 					row = ui.Row(c).Key(i).Height(a.flowMonoLH()).AlignItems(ui.Center)
 				}
 				if mono {
+					sp := a.codeLineSpans(hl, i, ln)
 					row.Children(func() {
 						if wrap {
-							ui.RichText(c, a.termLineSz(ln, a.FlowMonoSize())...).Grow(1).MinWidth(0)
+							ui.RichText(c, sp...).Grow(1).MinWidth(0)
 						} else {
-							ui.RichText(c, a.termLineSz(ln, a.FlowMonoSize())...).NoWrap().Clip()
+							ui.RichText(c, sp...).NoWrap().Clip()
 						}
 						if live && i == len(show)-1 && !needFold {
 							kit.Caret(c)
@@ -150,6 +157,8 @@ func (a *App) hookMDFold(o *markdown.Options) {
 			return
 		}
 		t := a.tk
+		lang := mdCodeLang(b.Info)
+		hl := a.mdCodeLines(lang, b.Code(), a.FlowMonoSize(), b.Open)
 		box := ui.Column(c).Background(t.Sunken).Radius(t.RMd()).Border(1, t.Bd1).Clip()
 		box.Children(func() {
 			ui.Row(c).Height(theme.Px(24)).PaddingX(8).Gap(6).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
@@ -160,11 +169,19 @@ func (a *App) hookMDFold(o *markdown.Options) {
 				}
 				b.CopyButton(c)
 			})
-			a.foldBody(c, foldKey("cb", itoa(b.Index)), bodyTrim(b.Code()), false, true, func() {
+			a.foldBodyHL(c, foldKey("cb", itoa(b.Index)), bodyTrim(b.Code()), false, true, func() {
 				a.copyOut(b.Code(), "代码")
-			})
+			}, hl)
 		})
 	}
+}
+
+// codeLineSpans 取第 i 行的着色:有语言着色用它,否则按命令 / 输出的通用规则。
+func (a *App) codeLineSpans(hl [][]ui.Span, i int, ln string) []ui.Span {
+	if i < len(hl) {
+		return hl[i]
+	}
+	return a.termLineSz(ln, a.FlowMonoSize())
 }
 
 func bodyTrim(s string) string { return strings.TrimRight(s, "\n") }

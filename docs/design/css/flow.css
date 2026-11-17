@@ -109,6 +109,13 @@
 .md ul { margin: 0 0 6px; padding-left: 18px; } .md li { margin: 1px 0; } .md li::marker { color: var(--tx-4); }
 /* 行内代码跟随主题强调色:字色 ac-tx、底色强调色 11%,左右各 5px 内边距;助手正文与用户消息共用 */
 .md code, .msg-u code { font: var(--fs-mono) var(--font-mono); color: var(--ac-tx); background: color-mix(in srgb, var(--ac) 11%, transparent); padding: 1px 5px; border-radius: var(--r-xs); }
+/* 围栏代码块:凹槽底 + 1px 边 + r-md;头一行 24px(语言名 tx-3 + 复制按钮),正文等宽 1.6 行高,按语言着色(取 --syn-* 与编辑器同一套:kw / str / fn / type / num / mac / com);无语言标注或语言不认识 = 全部正文色;超 12 行限高折叠 */
+.md pre { margin: 0 0 8px; border-radius: var(--r-md); background: var(--bg-sunken); box-shadow: inset 0 0 0 1px var(--bd-1); overflow: hidden; }
+.md pre .ph { height: 24px; display: flex; align-items: center; gap: 6px; padding: 0 8px; color: var(--tx-3); font-size: var(--fs-cap); box-shadow: inset 0 -1px var(--bd-1); }
+.md pre code { display: block; padding: 6px 10px; border-radius: 0; background: none; color: var(--tx-1); font: var(--fs-mono)/1.6 var(--font-mono); white-space: pre; overflow-x: auto; }
+/* 表格:1px bd-1 边 + r-sm 圆角,表头底 fill-1 + 粗体,单元格 5px 10px;单元格里的行内代码与正文同一套胶囊(ac-tx 字 + ac 11% 底) */
+.md table { border-collapse: separate; border-spacing: 0; margin: 0 0 8px; border-radius: var(--r-sm); box-shadow: 0 0 0 1px var(--bd-1); overflow: hidden; }
+.md th, .md td { padding: 5px 10px; text-align: left; box-shadow: inset -1px -1px var(--bd-1); } .md th { background: var(--fill-1); font-weight: var(--fw-strong); }
 .tfoot { display: flex; align-items: center; gap: 2px; color: var(--tx-4); font-size: var(--fs-cap); height: 22px; margin-left: -4px; font-variant-numeric: tabular-nums; }
 .tfoot .meta { margin-left: 6px; display: flex; gap: 6px; align-items: center; }
 

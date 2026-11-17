@@ -29,6 +29,8 @@ func (a *App) mdTheme() *markdown.Theme {
 	th.QuoteBar = t.Bd3
 	th.QuoteText = t.Tx2
 	th.TableBorder = t.Bd1
+	th.TableHeader = t.Fill1                                                  // 设计稿 .md th:表头底 fill-1
+	th.TableCellPadding = [2]float32{10.0 / theme.FsRead, 5.0 / theme.FsRead} // 设计稿 .md td:5px 10px
 	return th
 }
 
