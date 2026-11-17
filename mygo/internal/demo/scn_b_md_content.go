@@ -81,6 +81,7 @@ func mdFullBody() string {
 
 	b.WriteString("## 数学与 HTML 片段\n\n")
 	b.WriteString("行内公式 `$E=mc^2$` 与块级 `$$\\sum_{i=1}^{n} i$$` 若未接 LaTeX 渲染,应原样显示。\n\n")
+	b.WriteString("<picture>\n  <source media=\"(prefers-color-scheme: dark)\" srcset=\"docs/assets/lockup-dark.png\">\n  <img src=\"docs/assets/lockup-light.png\" alt=\"MiniCode\" height=\"96\">\n</picture>\n\n")
 	b.WriteString("<details><summary>HTML details</summary><p>内联 <strong>HTML</strong> 片段。</p></details>\n\n")
 
 	b.WriteString("## 收尾\n\n")
