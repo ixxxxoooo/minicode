@@ -232,10 +232,11 @@ func (a *App) probeCheck(f *AnimFrame) {
 			fl = append(fl, fmt.Sprintf("舞台右缘偏离%.1fpx", ref-gap-(st.X+st.W)))
 		}
 	}
-	// 1b) 底部面板的右缘必须与工作区右缘重合(面板在工作区里,宽度同帧一致);
-	// 落后 = 终端比编辑器窄一截、旁边露出空白(曾因给面板宽度挂了元素过渡而出现)
+	// 1b) 底部面板的右缘不能落在工作区右缘之内(面板在工作区里,宽度同帧一致);
+	// 偏窄 = 终端比编辑器窄一截、旁边露出空白(曾因给面板宽度挂了元素过渡而出现)。
+	// 偏宽(d<0)不算:工作区在收窄动画里,面板内容保持原宽被工作区裁切,和导航栏收起时一样,不是空白。
 	if f.Has[pzPanel] && f.Has[pzWs] && f.R[pzPanel].H > 1.5 && f.R[pzWs].W > 40 && !f.Has[pzGhost] {
-		if d := (f.R[pzWs].X + f.R[pzWs].W) - (f.R[pzPanel].X + f.R[pzPanel].W); absF(d) > 1.5 {
+		if d := (f.R[pzWs].X + f.R[pzWs].W) - (f.R[pzPanel].X + f.R[pzPanel].W); d > 1.5 {
 			fl = append(fl, fmt.Sprintf("底部面板右缘偏离工作区%.1fpx", d))
 		}
 	}
@@ -247,7 +248,12 @@ func (a *App) probeCheck(f *AnimFrame) {
 	}
 	if p.prev != nil && (winMove > 0 || (!f.Inst && !p.prev.Inst)) && f.Dt > 0 {
 		norm := float32(f.Dt) / float32(16*time.Millisecond)
-		norm = min(max(norm, .5), 3) + winMove*3/40
+		// 帧间隔短于 16 ms(窗口缩放时一次刷新会连构建几遍)不收紧阈值;形态曲线(ease-morph)前段本来就陡,
+		// 窗口同时在变时再放宽一档
+		norm = min(max(norm, 1), 3) + winMove*3/40
+		if winMove > 0 {
+			norm *= 2
+		}
 		for _, z := range []int{pzSide, pzChat, pzWs, pzPanel} {
 			if !f.Has[z] || !p.prev.Has[z] {
 				continue
