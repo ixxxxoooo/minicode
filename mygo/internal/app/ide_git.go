@@ -103,7 +103,8 @@ func (a *App) blameInlay(tb *ideTab) {
 		return
 	}
 	txt := "    " + bl.Author + " · " + bl.When + " · " + bl.Summary
-	end := tb.buf.Offset(editor.Pos{Line: line, Col: len([]rune(tb.buf.Line(line)))})
+	// Pos.Col 是字节列:这里必须用字节数。按字符数算时,含中文的行(每字 3 字节)会把追溯文字插到行中间
+	end := tb.buf.Offset(editor.Pos{Line: line, Col: len(tb.buf.Line(line))})
 	key := tb.path + ":" + itoa(line) + ":" + txt + ":" + itoa(int(tb.buf.Version()))
 	if tb.blameKey == key {
 		return
