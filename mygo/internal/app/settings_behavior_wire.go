@@ -109,7 +109,7 @@ func (a *App) HandleComposerPaste(text string) bool {
 		behWireLog.Warn("写入粘贴附件失败", "err", err)
 		return false
 	}
-	a.insertRefs("@" + path) // 以「@路径」插进输入框正文光标处(带样式),发送时展开
+	a.queuePill(atomPaste+":"+itoa(len([]rune(text))), path) // 折叠成一枚胶囊插在光标处,发送时展开成 @路径
 	behWireLog.Info("粘贴折叠为附件", "chars", len([]rune(text)), "path", path)
 	a.ux.focusDraft = true
 	return true

@@ -145,7 +145,8 @@ func (a *App) slashApply(row slashRow) {
 	a.ux.focusDraft = true
 }
 
-func (a *App) slashTextKey(k ui.TextKey) bool {
+// slashKey 斜杠补全开着时接管 ↑ ↓ Tab Enter Esc;返回 true = 已处理。
+func (a *App) slashKey(key ui.Key, mods ui.Modifiers) bool {
 	if !a.slashOpen() {
 		a.slashSel = 0
 		return false
@@ -154,7 +155,7 @@ func (a *App) slashTextKey(k ui.TextKey) bool {
 	if len(rows) == 0 {
 		return false
 	}
-	switch k.Key {
+	switch key {
 	case ui.KeyUp:
 		a.slashSel = (a.slashSel - 1 + len(rows)) % len(rows)
 		return true
@@ -162,13 +163,10 @@ func (a *App) slashTextKey(k ui.TextKey) bool {
 		a.slashSel = (a.slashSel + 1) % len(rows)
 		return true
 	case ui.KeyTab, ui.KeyEnter:
-		if k.Key == ui.KeyEnter && k.Mods != 0 {
+		if key == ui.KeyEnter && mods != 0 {
 			return false
 		}
 		a.slashApply(rows[a.slashSel])
-		if k.Key == ui.KeyEnter {
-			return true
-		}
 		return true
 	case ui.KeyEscape:
 		a.draft = ""

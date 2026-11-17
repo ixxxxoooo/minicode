@@ -294,9 +294,10 @@ func TestDragFileToChat(t *testing.T) {
 	if !tt.DropFiles(chatX, chatY, "/x/y.txt") {
 		t.Fatal("对话栏应接住拖入的文件")
 	}
+	tt.Frame() // 这一帧编辑器插入胶囊,下一帧同步回草稿
 	tt.Frame()
-	if a.draftBody != "@/x/y.txt " || len(a.draftImgs) != 0 {
-		t.Fatalf("应把 @路径 插进输入框正文(不是上方的附件):body=%q imgs=%v", a.draftBody, a.draftImgs)
+	if want := atomString(atomFile, "/x/y.txt"); a.draft != want || len(a.draftImgs) != 0 {
+		t.Fatalf("应把胶囊插进输入框正文(不是上方的附件、不带 @):draft=%q imgs=%v", a.draft, a.draftImgs)
 	}
 	if a.ux.focusDraft {
 		t.Fatal("焦点交给输入框后标志应清掉")
@@ -305,8 +306,9 @@ func TestDragFileToChat(t *testing.T) {
 	a.draft = ""
 	tt.DropFiles(500, 300, "/x/z.txt")
 	tt.Frame()
-	if a.draft != "" || a.ux.pendingInsert != "" {
-		t.Fatalf("落在对话栏以外不应引用:%q %q", a.draft, a.ux.pendingInsert)
+	tt.Frame()
+	if a.draft != "" || len(a.ux.pendingPills) != 0 {
+		t.Fatalf("落在对话栏以外不应引用:%q %v", a.draft, a.ux.pendingPills)
 	}
 	// 文件树 → 对话栏(无头测试里用右键「引用到对话」,与拖放共用 dropRefs)
 	if err := tt.RightClick("router.rs"); err != nil {
@@ -317,33 +319,33 @@ func TestDragFileToChat(t *testing.T) {
 	}
 	tt.Frame()
 	tt.Frame()
-	if !strings.Contains(a.draftBody, "@") || !strings.Contains(a.draftBody, "router.rs") {
-		t.Fatalf("文件树引用到对话栏应把 @路径 写进正文,得 %q", a.draftBody)
+	if !strings.Contains(a.draft, atomOpen) || !strings.Contains(a.draft, "router.rs") || strings.Contains(a.draft, "@") {
+		t.Fatalf("文件树引用到对话栏应把胶囊(不带 @)写进正文,得 %q", a.draft)
 	}
 }
 
-// 文件引用写进正文:一批里去重、正文里已有的不重复、插在光标处并按前文补空格、@路径 带样式范围。
+// 文件引用写进正文成胶囊:一批里去重、正文里已有的不重复;草稿 ↔ 富文本互逆;发送时展开成 @路径。
 func TestInsertRefs(t *testing.T) {
 	a := &App{}
-	if n := a.insertRefs("@a.go", "@b/", "@a.go"); n != 2 || a.ux.pendingInsert != "@a.go @b/ " {
-		t.Fatalf("应去重:n=%d ins=%q", n, a.ux.pendingInsert)
+	if n := a.insertRefs("@a.go", "@b/", "@a.go"); n != 2 || len(a.ux.pendingPills) != 2 {
+		t.Fatalf("应去重:n=%d pills=%v", n, a.ux.pendingPills)
 	}
-	if got := a.takePendingInsert("看 ", 2); got != "@a.go @b/ " {
-		t.Fatalf("前面已是空格,不应再补:%q", got)
+	if p := a.ux.pendingPills; p[0] != (pillData{atomFile, "a.go"}) || p[1] != (pillData{atomDir, "b"}) {
+		t.Fatalf("类型 / 路径不对:%v", p)
 	}
-	if a.ux.pendingInsert != "" {
-		t.Fatal("取走后应清空")
+	draft := "看 " + atomString(atomFile, "c.go") + " 和 " + atomString(atomDir, "docs") + " 吧\n第二行"
+	mk := func(kind, path string) *richtext.Attachment { return &richtext.Attachment{Data: pillData{kind, path}} }
+	txt := draftToText(draft, mk)
+	if got := textToDraft(txt); got != draft {
+		t.Fatalf("草稿 ↔ 富文本应互逆:\n%q\n%q", got, draft)
 	}
-	a.draftBody = "看 @c.go 吧"
-	if a.insertRefs("@c.go") != 0 {
-		t.Fatal("正文里已有的引用不应重复插入")
+	if got := atomsToSend(draft); got != "看 @c.go 和 @docs/ 吧\n第二行" {
+		t.Fatalf("发送应展开成 @路径:%q", got)
 	}
-	a.insertRefs("@x.go")
-	if got := a.takePendingInsert("解释", 2); got != " @x.go " {
-		t.Fatalf("前面不是空白应补一个空格:%q", got)
+	if got := atomsToSend("先" + atomString(atomFile, "x.go") + "再"); got != "先 @x.go 再" {
+		t.Fatalf("紧贴文字的胶囊展开时应补空格:%q", got)
 	}
-	rs := refTextRanges("看 @a.go 和 @b/ 吧 x@y.com", ui.Color{})
-	if len(rs) != 2 || rs[0].Start != 2 || rs[0].End != 7 || rs[1].Start != 10 || rs[1].End != 13 {
-		t.Fatalf("样式范围不对(邮箱不算):%+v", rs)
+	if got := appendRefAtoms("看", "@a.go", "@b/", "@a.go"); got != "看 "+atomString(atomFile, "a.go")+" "+atomString(atomDir, "b")+" " {
+		t.Fatalf("appendRefAtoms:%q", got)
 	}
 }

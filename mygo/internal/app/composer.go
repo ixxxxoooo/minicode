@@ -31,13 +31,11 @@ func (a *App) composer(c *ui.Context) {
 		box.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
 	_ = a.chatDrop(box)
-	a.syncDraft() // 在拖放处理之后:别处改了草稿就重新拆出正文与附件
+	a.syncDraft(c) // 在拖放处理之后:别处改了草稿就重新拆出正文(含胶囊)与图片附件
 	anchor := box
 	box.Children(func() {
 		a.composerAttachRow(c)
-		in := ui.TextArea(c.Key("draft"), &a.draftBody).Lines(1, 8).Placeholder(a.composerHint()).
-			PlaceholderColor(t.Tx3).Background(ui.Transparent).BorderWidth(0).Padding(9, 12, 3, 12).FontSize(a.FlowFontSize()).LineHeight(a.FlowReadLH()).
-			MinHeight(36).TextColor(t.Tx1).FocusRing(false)
+		in := a.composerEditor(c, c.Services()) // 回调里不能用 *ui.Context,读剪贴板走 Services
 		a.warmTypingSignal()
 		if a.welcomeFocus {
 			in.AutoFocus()
@@ -46,41 +44,6 @@ func (a *App) composer(c *ui.Context) {
 			in.Focus()
 			a.ux.focusDraft = false
 		}
-		svc := c.Services() // 回调里不能用 *ui.Context,读剪贴板走 Services
-		in.OnPaste(func(text string) bool {
-			if text == "" && a.composerPasteImage(svc) { // 剪贴板里是图片(没有文本)
-				return true
-			}
-			return a.HandleComposerPaste(text)
-		})
-		in.TextRanges(refTextRanges(a.draftBody, a.refRangeColor())...) // 正文里的 @路径 带样式
-		if a.ux.pendingInsert != "" {                                   // 拖入 / 添加的文件引用:插在光标处(一步撤销)
-			start, end := in.TextSelection()
-			if ins := a.takePendingInsert(a.draftBody, start); ins != "" {
-				in.ReplaceText(start, end, ins)
-			}
-		}
-		in.OnTextKey(func(k ui.TextKey) bool {
-			if a.slashTextKey(k) {
-				return true
-			}
-			if k.Key != ui.KeyEnter || (k.Mods != 0 && k.Mods != ui.Cmd) {
-				return false
-			}
-			cmdSend := a.prefs.Int(pSend, 0) == 1 // 「⌘ Enter 发送」:Enter 只换行
-			if cmdSend && k.Mods == 0 {
-				return false
-			}
-			// 回合进行中:发送键按「再发消息」偏好排队或引导;另一个修饰键(Enter 发送模式下的 ⌘Enter)取相反
-			steer := a.prefs.Int(pBusy, 0) == 1
-			if !cmdSend && k.Mods == ui.Cmd {
-				steer = !steer
-			}
-			txt := composeDraft(k.Text(), a.draftImgs) // 正文 + 图片附件
-			k.SetText("")
-			a.submitKey(txt, steer)
-			return true
-		})
 		a.composerBar(c)
 	})
 	if a.slashOpen() {
@@ -91,6 +54,7 @@ func (a *App) composer(c *ui.Context) {
 
 // submitKey 回车发送:回合进行中 Enter 排队、⌘Enter 立即引导;空闲时都是直接发送。
 func (a *App) submitKey(text string, steer bool) {
+	text = atomsToSend(text) // 胶囊展开成 @路径
 	if trim(text) == "" && len(parseDraftAttaches(text)) == 0 {
 		return
 	}

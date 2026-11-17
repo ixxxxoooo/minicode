@@ -3,11 +3,15 @@ package app
 import (
 	"regexp"
 	"strings"
+
+	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/richtext"
 )
 
 // 输入框正文与图片附件分离:`a.draft` 仍是「正文 + 末尾的 ![](路径)」的完整草稿(发送、排队、会话恢复都读它),
-// 但输入框(TextArea)只绑定正文 a.draftBody,图片附件以缩略图卡显示在输入框上方,
+// 但输入框只显示正文(编辑器文档 a.compDoc,见 composer_rich.go),图片附件以缩略图卡显示在输入框上方,
 // 不再把 `![](/Users/…/xxx.png)` 这串路径露在输入框里(ChatGPT / Claude.ai 都是这么做的)。
+// 正文里的胶囊(文件 / 文件夹 / 折叠文本)在草稿字符串里是原子标记串(composer_atoms.go)。
 //
 // @author ixxxxoooo
 
@@ -40,29 +44,47 @@ func composeDraft(body string, tokens []string) string {
 // syncDraft 每帧在输入框构建前调用,让 a.draft 与输入框正文保持一致:
 //   - 别处改了 a.draft(拖入、清空、切会话、插入文字……)→ 重新拆分,刷新输入框正文与附件;
 //   - 否则是用户在输入框里打字改了 a.draftBody → 合成回 a.draft。
-func (a *App) syncDraft() {
+func (a *App) syncDraft(c *ui.Context) {
+	if a.compDoc == nil {
+		a.compDoc = richtext.NewDocument(richtext.NewText(""))
+		a.compVer = a.compDoc.Version()
+	}
 	if a.draft != a.draftSeen {
 		a.draftBody, a.draftImgs = splitDraftBody(a.draft)
+		a.compDoc.SetText(draftToText(a.draftBody, func(kind, path string) *richtext.Attachment {
+			return a.pillAttachment(c, kind, path)
+		}))
+		a.compVer = a.compDoc.Version()
 		a.draftSeen = a.draft
 		return
+	}
+	if v := a.compDoc.Version(); v != a.compVer { // 用户在编辑器里改了:导出正文
+		a.compVer = v
+		a.draftBody = textToDraft(a.compDoc.Text())
 	}
 	if cur := composeDraft(a.draftBody, a.draftImgs); cur != a.draft {
 		a.draft, a.draftSeen = cur, cur
 	}
 }
 
-// draftNow 返回此刻的完整草稿(含输入框里还没同步回 a.draft 的最新输入),发送 / 排队用。
-func (a *App) draftNow() string { return composeDraft(a.draftBody, a.draftImgs) }
+// draftParts 返回此刻的正文与图片附件(含编辑器里还没同步回 a.draft 的最新输入)。
+// 别处刚改过 a.draft、还没同步时以 a.draft 为准。
+func (a *App) draftParts() (body string, imgs []string) {
+	if a.compDoc == nil || a.draft != a.draftSeen {
+		return splitDraftBody(a.draft)
+	}
+	return textToDraft(a.compDoc.Text()), a.draftImgs
+}
+
+// draftNow 返回此刻的完整草稿(胶囊仍是原子标记串),发送 / 排队用。
+func (a *App) draftNow() string { return composeDraft(a.draftParts()) }
 
 // addDraftImage 在草稿里加一张图片附件(路径可为绝对路径);同一张不重复。
-// 在输入回调(粘贴、拖放)里调用也安全:以输入框最新正文为底,不会丢掉刚打的字。
+// 在输入回调(粘贴、拖放)里调用也安全:以编辑器最新内容为底,不会丢掉刚打的字。
 // 返回:是否新增。
 func (a *App) addDraftImage(path string) bool {
 	tk := "![](" + path + ")"
-	body, imgs := a.draftBody, a.draftImgs
-	if a.draft != a.draftSeen { // 别处刚改过 a.draft、还没同步:以它为准
-		body, imgs = splitDraftBody(a.draft)
-	}
+	body, imgs := a.draftParts()
 	for _, x := range imgs {
 		if x == tk {
 			return false

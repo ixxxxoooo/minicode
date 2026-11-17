@@ -20,7 +20,7 @@ var uxLog = diag.L("edit")
 // uxState 汇总这一批编辑体验用到的界面状态。
 type uxState struct {
 	focusDraft    bool            // 下一帧把键盘焦点给输入框(拖入引用之后接着写)
-	pendingInsert string          // 排队等下一帧插进输入框光标处的文字(拖入 / 添加的「@路径」;回调里直接改输入框的值会被覆盖,见 composer_refs.go)
+	pendingPills  []pillData      // 排队等下一帧插进输入框光标处的胶囊(拖入 / 添加的文件、文件夹、折叠文本;见 composer_rich.go)
 	mdNoteOff     map[string]bool // 已点掉「写法会被规范化」提示条的文件
 	demoHint      string          // 截图 / 调试:强制显示「可放」态的提示文字(ide_debug 的 -ed drag)
 	rt            *richtext.Theme // 所见即所得的外观(换主题时清掉)

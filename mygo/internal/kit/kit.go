@@ -121,6 +121,9 @@ func svgOf(name string) *ui.SVG {
 	return s
 }
 
+// IconSVG 取某个图标的 SVG(给自绘用:Painter.Icon 画在胶囊等自绘元素里)。
+func IconSVG(name string) *ui.SVG { return svgOf(name) }
+
 // 图标尺寸:对应设计稿 svg.ic 的默认 14px 与 .s12 / .s16 / .s20。
 const (
 	S12 = 12

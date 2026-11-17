@@ -1,6 +1,12 @@
 package app
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/richtext"
+	"github.com/ixxxxoooo/minicode/internal/demo"
+)
 
 // 正文与图片附件拆分 / 合成互为逆运算,输入框里不出现图片语法。
 // @author ixxxxoooo
@@ -26,8 +32,8 @@ func TestComposerBodyHidesImageTokens(t *testing.T) {
 	a, tt := sessionApp(t, "flow-gaps-b4")
 	a.draft = "看看这个\n![](/tmp/a.png)\n![](/tmp/b.png)"
 	tt.Frame()
-	if a.draftBody != "看看这个" || len(a.draftImgs) != 2 {
-		t.Fatalf("正文应只有文字、附件 2 张:%q %v", a.draftBody, a.draftImgs)
+	if a.draftBody != "看看这个" || len(a.draftImgs) != 2 || textToDraft(a.compDoc.Text()) != "看看这个" {
+		t.Fatalf("输入框正文应只有文字、附件 2 张:%q %v", a.draftBody, a.draftImgs)
 	}
 	if tt.HasText("![](") {
 		t.Fatal("输入框里不应露出图片语法")
@@ -41,9 +47,27 @@ func TestComposerBodyHidesImageTokens(t *testing.T) {
 		t.Fatalf("发送用的草稿不对:%q", got)
 	}
 	// 用户在输入框里改了正文 → 合回 a.draft,附件不丢
-	a.draftBody = "改过了"
+	a.compDoc.SetText(richtext.NewText("改过了"))
 	tt.Frame()
 	if a.draft != "改过了\n![](/tmp/b.png)" {
 		t.Fatalf("正文改动应合回草稿:%q", a.draft)
+	}
+}
+
+// 带胶囊的草稿在输入框里按 Enter 发送:胶囊展开成 @路径(不带私有标记),发完输入框清空。
+func TestComposerEnterSendsPillsAsAtPaths(t *testing.T) {
+	a, tt, fb := pendingApp(t, demo.FixBug(false))
+	a.draft = "看 " + atomString(atomFile, "src/a.rs") + " 和 " + atomString(atomDir, "docs") + " 吧"
+	a.ux.focusDraft = true
+	tt.Frame()
+	tt.Frame()
+	tt.Key(0, ui.KeyEnter)
+	tt.Frame()
+	if got := fb.last(); !isPrompt(got, "看 @src/a.rs 和 @docs/ 吧", false) {
+		t.Fatalf("发送应把胶囊展开成 @路径:%v", got)
+	}
+	tt.Frame()
+	if a.draft != "" || textToDraft(a.compDoc.Text()) != "" {
+		t.Fatalf("发送后输入框应清空:%q", a.draft)
 	}
 }

@@ -103,8 +103,8 @@ func TestHandleComposerPaste(t *testing.T) {
 	if !a.HandleComposerPaste(long) {
 		t.Fatal("应折叠长粘贴")
 	}
-	if !strings.HasPrefix(a.ux.pendingInsert, "@") || !strings.HasSuffix(a.ux.pendingInsert, ".txt ") {
-		t.Fatalf("折叠后应排队插入一条 @ 引用到正文:%q", a.ux.pendingInsert)
+	if len(a.ux.pendingPills) != 1 || a.ux.pendingPills[0].Kind != atomPaste+":2100" || !strings.HasSuffix(a.ux.pendingPills[0].Path, ".txt") {
+		t.Fatalf("折叠后应排队插入一枚「粘贴的文本 · 2100 字」胶囊:%v", a.ux.pendingPills)
 	}
 }
 
