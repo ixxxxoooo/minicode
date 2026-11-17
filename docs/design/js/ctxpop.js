@@ -3,7 +3,7 @@
    内容:用量与阈值 → 分类明细 → 账户限额 → 更新时间与刷新 → 跳转「用量与成本」。
    状态:ok 常态 / warn 接近阈值(建议压缩)/ busy 压缩中 / load 明细或官方限额加载中 / none 第三方(限额区占位+手动点获取)/ err 查询失败;
    历史会话可先显示「来自历史记录的估算」;点刷新才向 Claude 发 get_context_usage(3 秒防抖);惰性会话有「启动并查询」。
-   官方 Anthropic 登录:点开圆环时后台 get_usage(30s 内复用);第三方不自动查限额,仅点限额区或刷新按钮。
+   官方 Anthropic 登录:点开圆环时后台 get_usage(30s 内复用);判定以实际通道为准(映射未启用、非 Bedrock/Vertex、~/.claude settings 无第三方 Base URL 即官方;仅有 AWS_PROFILE 等环境变量不算第三方);第三方不自动查限额,仅点限额区或刷新按钮。
    F.ctxBody(o) 只返回内部内容(两处的外壳不同),F.ctxPop(o) 是输入框里的外壳。
    @author ixxxxoooo */
 (function () {
