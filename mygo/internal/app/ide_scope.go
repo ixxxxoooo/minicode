@@ -143,11 +143,11 @@ func (a *App) scopeOverlay(c *ui.Context, tb *ideTab, edEl ui.Element) {
 		z.Background(col).Radius(1)
 		// 首尾横杆
 		cap := func(top bool) {
-			yy := y0
+			yy, suffix := y0, "-cap-t"
 			if !top {
-				yy = y1 - 2
+				yy, suffix = y1-2, "-cap-b"
 			}
-			ui.Box(c).Key(key + "-cap").Absolute().Left(bx - 1).Top(yy).Width(4).Height(2).Background(col).Radius(1)
+			ui.Box(c).Key(key + suffix).Absolute().Left(bx - 1).Top(yy).Width(4).Height(2).Background(col).Radius(1)
 		}
 		cap(true)
 		cap(false)
