@@ -29,19 +29,19 @@ var (
 // fileMenuIcon 面包屑 / 右键等菜单项用的文件图标(与左侧文件树同一套规则)。
 func (a *App) fileMenuIcon(name string) ui.MenuIcon {
 	key := fileIconID(name)
+	// 注意:这里不能持锁调用 menuFileBadgeIcon(它自己也要加锁,Mutex 不可重入,会把主线程永久卡死)
+	if strings.HasPrefix(key, "badge:") {
+		if k, ok := fileKindOf(name); ok {
+			return menuFileBadgeIcon(k.label, a.fileKindColor(k.tone))
+		}
+		return nil
+	}
 	fileMenuMu.Lock()
 	defer fileMenuMu.Unlock()
 	if ic, ok := fileMenuCache[key]; ok {
 		return ic
 	}
-	var ic ui.MenuIcon
-	if strings.HasPrefix(key, "badge:") {
-		if k, ok := fileKindOf(name); ok {
-			ic = menuFileBadgeIcon(k.label, a.fileKindColor(k.tone))
-		}
-	} else {
-		ic = kit.MenuIcon(key)
-	}
+	ic := kit.MenuIcon(key)
 	fileMenuCache[key] = ic
 	return ic
 }
