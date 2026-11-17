@@ -114,7 +114,21 @@ func (a *App) filesView(c *ui.Context) {
 					if d.fltActive() {
 						a.treeFiltered(c, "", 0)
 					} else {
-						a.treeDir(c, "", 0)
+						lines := a.treeLineCache()
+						d.treeHit = -1
+						if d.revealTo != "" {
+							for i, ln := range lines {
+								if treeLinePath(ln) == d.revealTo {
+									d.treeHit = i
+									break
+								}
+							}
+						}
+						ui.List(c, &d.treeList, len(lines), func(i int) {
+							if i < len(lines) {
+								a.treeLineAt(c, lines[i], i)
+							}
+						}).Grow(1).MinHeight(0)
 					}
 				}
 			})
@@ -131,30 +145,8 @@ func (a *App) filesView(c *ui.Context) {
 					lyKey, defH = lySideTimeline, sideTimelineDef
 				}
 				bodyH := a.sideSecHeight(lyKey, defH, outerH)
-				hdr := ui.Row(c).Key("sec-h-" + name).Height(theme.Px(26)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).
-					FontSize(theme.Px(11.5)).FontWeight(500).Shrink(0)
-				hdr.Children(func() {
-					tog := ui.ButtonBase(c).Key("sec-" + name).Grow(1).Height(theme.Px(26)).Justify(ui.Start).Gap(5).AlignItems(ui.Center).
-						TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(500).Cursor(ui.CursorDefault)
-					if tog.Clicked() {
-						d.sections[name] = !open
-						diag.L("ide").Info("折叠侧栏区块", "区块", name, "展开", !open)
-					}
-					tog.Children(func() {
-						icon := "chevR"
-						if open {
-							icon = "chevD"
-						}
-						kit.Ic(c, icon, kit.S12)
-						ui.Text(c, name)
-					})
-					if name == "时间线" && open {
-						a.timelineHeaderTools(c)
-					}
-				})
-				if open {
-					body := ui.Column(c).Key("sec-body-" + name).Height(bodyH).Shrink(0)
-					body.Children(func() {
+				ui.Column(c).Key("sec-wrap-" + name).Shrink(0).Children(func() {
+					if open {
 						a.resizeHandle(c, lyKey, "t", bodyH, defH, sideSecMin, a.sideSecMax(outerH), func(v float32) {
 							switch lyKey {
 							case lySideOutline:
@@ -163,28 +155,54 @@ func (a *App) filesView(c *ui.Context) {
 								a.ly.sideTimeline = v
 							}
 						})
-						scroll := kit.VScroll(c).Key("sec-scroll-" + name).Grow(1).MinHeight(0)
-						scroll.OnShortcut(0, ui.KeyUp, func() {
-							if name == "时间线" {
-								a.timelineStep(-1)
+					}
+					hdr := ui.Row(c).Key("sec-h-" + name).Height(theme.Px(26)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).
+						FontSize(theme.Px(11.5)).FontWeight(500).Shrink(0)
+					hdr.Children(func() {
+						tog := ui.ButtonBase(c).Key("sec-" + name).Grow(1).Height(theme.Px(26)).Justify(ui.Start).Gap(5).AlignItems(ui.Center).
+							TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(500).Cursor(ui.CursorDefault)
+						if tog.Clicked() {
+							d.sections[name] = !open
+							diag.L("ide").Info("折叠侧栏区块", "区块", name, "展开", !open)
+						}
+						tog.Children(func() {
+							icon := "chevR"
+							if open {
+								icon = "chevD"
 							}
+							kit.Ic(c, icon, kit.S12)
+							ui.Text(c, name)
 						})
-						scroll.OnShortcut(0, ui.KeyDown, func() {
-							if name == "时间线" {
-								a.timelineStep(1)
-							}
-						})
-						scroll.Children(func() {
-							ui.Column(c).Children(func() {
-								if name == "大纲" {
-									a.outlineRows(c)
-								} else {
-									a.timelineRows(c)
+						if name == "时间线" && open {
+							a.timelineHeaderTools(c)
+						}
+					})
+					if open {
+						body := ui.Column(c).Key("sec-body-" + name).Height(bodyH).Shrink(0)
+						body.Children(func() {
+							scroll := kit.VScroll(c).Key("sec-scroll-" + name).Grow(1).MinHeight(0)
+							scroll.OnShortcut(0, ui.KeyUp, func() {
+								if name == "时间线" {
+									a.timelineStep(-1)
 								}
 							})
+							scroll.OnShortcut(0, ui.KeyDown, func() {
+								if name == "时间线" {
+									a.timelineStep(1)
+								}
+							})
+							scroll.Children(func() {
+								ui.Column(c).Children(func() {
+									if name == "大纲" {
+										a.outlineRows(c)
+									} else {
+										a.timelineRows(c)
+									}
+								})
+							})
 						})
-					})
-				}
+					}
+				})
 			}
 		})
 	})
@@ -212,13 +230,15 @@ func (d *ide) listing(dir string) []workspace.Entry {
 }
 
 func (a *App) treeDir(c *ui.Context, dir string, depth int) {
+	d := a.ide
 	if o := a.fo; (o.kind == "new" || o.kind == "newdir") && o.dir == dir && !(dir == "" && a.multiRoot()) {
 		a.fileOpInput(c, depth, o.kind == "newdir", "file") // 新建:输入行插在这个文件夹子项的最前
 	}
 	for _, e := range a.ide.listing(dir) {
 		if e.Dir && a.fo.kind != "rename" && a.fo.path != e.Path {
 			if tail, label, compact := a.ide.compactFolderTail(e.Path); compact {
-				a.treeCompactRow(c, tail, label, depth)
+				a.treeCompactRow(c, tail, label, depth, d.treeIdx)
+				d.treeIdx++
 				continue
 			}
 		}
@@ -229,22 +249,29 @@ func (a *App) treeDir(c *ui.Context, dir string, depth int) {
 			}
 			continue
 		}
-		a.treeRow(c, e, depth)
+		a.treeRow(c, e, depth, 0)
 		if e.Dir && a.ide.open[e.Path] {
 			a.treeDir(c, e.Path, depth+1)
 		}
 	}
 }
 
-func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
+func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth, row int) {
 	t := a.tk
 	d := a.ide
 	on := d.sel == e.Path // 文件夹点过之后也高亮,否则只看得到文件被选中
-	if e.Path == d.revealTo {
-		d.treeHit = d.treeIdx
+	rowEl := kit.RowEl(c, on).Key("tr-" + e.Path)
+	var r ui.Element
+	if d.fltActive() {
+		if e.Path == d.revealTo {
+			d.treeHit = d.treeIdx
+		}
+		d.treeIdx++
+		r = a.navDrop(rowEl)
+	} else {
+		r = a.treeNavDrop(rowEl, row)
 	}
-	d.treeIdx++
-	r := a.navDrop(kit.RowEl(c, on).Key("tr-" + e.Path)).PaddingStart(6 + float32(depth)*14).Gap(6)
+	r = r.PaddingStart(6 + float32(depth)*14).Gap(6)
 	dragRef(r, e.Path, e.Dir) // 拖到对话栏 = 引用
 	if e.Dir {
 		if ref, ok := ui.Drop[fileRef](r); ok && !ref.Dir {
