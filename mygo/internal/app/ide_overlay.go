@@ -84,10 +84,10 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 			editor.DefaultFindBar(c, bar, f)
 		}
 	}
-	if r := tb.reveal; r != nil { // 搜索结果 / 跳转:选中命中处并滚到可见
+	if r := tb.reveal; r != nil { // 搜索结果 / 跳转:先展开折叠再选中命中处
 		tb.reveal = nil
+		unfoldLineForNav(tb, r[0])
 		p0 := editor.Pos{Line: r[0], Col: r[1]}
-		st.GoTo(p0)
 		st.Select(tb.buf.Offset(p0), tb.buf.Offset(editor.Pos{Line: r[0], Col: r[2]}))
 	}
 	st.OnInput = func(ev ui.InputEvent) bool {

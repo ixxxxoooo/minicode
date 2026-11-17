@@ -112,7 +112,7 @@
     ${rows.map(([i, a, b, on]) => `<div class="mi ${on ? 'on' : ''}" style="height:26px">${ic(i, 's12')}<span class="grow">${a}</span><span class="t3 fs-cap">${b}</span></div>`).join('')}<div class="f ai g3 t3 fs-micro" style="padding:5px 8px">${hint}</div></div></div>`;
   const crumbPick = `<div class="snip" style="height:200px"><div class="crumbs" style="margin-top:6px">src${ic('chevR', 's12')}<b>router.rs</b>${ic('chevR', 's12')}<span class="sym">${ic('cube', 's12')}impl Router</span>${ic('chevR', 's12')}<b>match_path</b></div>
     <div class="pop" style="position:absolute;left:150px;top:34px;width:200px"><div class="cap">impl Router 中的符号</div>${[['add', 0], ['match_path', 1]].map(([n, on]) => `<div class="mi ${on ? 'on' : ''}">${ic('cube', 's12')}<span class="grow mono">${n}</span><span class="t3 fs-micro">${n === 'add' ? 11 : 17}</span></div>`).join('')}</div></div>`;
-  P['ide-nav'] = () => `<div class="ds" style="max-width:1240px">${head('编辑器能力 · 跳转与浮层', '对标 VS Code / Zed / Cursor 的常用能力。每一项都由语言服务器(LSP)或编辑器本身提供,弹层位置全部相对代码区;Claude 相关的动作(问、改、审)是编辑器的一等公民,不用切到对话栏。')}
+  P['ide-nav'] = () => `<div class="ds" style="max-width:1240px">${head('编辑器能力 · 跳转与浮层', '对标 VS Code / Zed / Cursor 的常用能力。每一项都由语言服务器(LSP)或编辑器本身提供,弹层全部相对<b>代码区</b>定位(不占满窗口)。下方每格写清:<b>触发 → 看到什么 → 怎么退出</b>;空态 / 错误态 / 置灰原因单独成格。Claude 的「问 / 改 / 审」是编辑器一等公民,不用切回对话栏。本页末尾有<b>能力汇总表</b>(与代码审计同步)。')}
     ${sec('看得见的辅助(不用触发)', '迷你地图是缩略的「语法色块」:当前视口(滑块,可拖)、Git 改动竖条(左缘)、搜索命中(黄)、同词出现(蓝框)、Claude 改过的行(紫)。右边另有概览标尺(整篇缩放):错误 / 警告 / 搜索 / Git / 光标。点任意位置跳转。', `<div class="gal">
       ${cell('迷你地图 + 概览标尺 + 同词高亮', '', snip({}, 0, 560, 300), '光标在 <span class="mono">Handler</span> 上:所有同词浅蓝高亮,地图与标尺同步出刻度;行号旁折叠箭头悬停才出现。<b>CodeLens(引用数 / 测试数 / 问 Claude)默认不显示</b>(设置 → 编辑器 → 显示 里可开);迷你地图悬停只高亮对应行,不弹源码摘要。')}
       ${cell('粘性滚动', '', snip({ sticky: 1, scroll: 14 }, 0), '滚进长函数后,所属的 <span class="mono">impl</span> 与 <span class="mono">fn</span> 头固定在顶部,点击跳回该行(对标 VS Code sticky scroll)。')}</div>`)}
@@ -159,6 +159,19 @@
       ${cell('行内编辑', ['⌘', 'I'], snip({ ov: 'inline', word: '' }, 300, 560, 260), '在选区上方弹小输入框,用一句话描述修改;不进对话历史,只产出一个改动块。')}
       ${cell('行内审查', ['⌘', '⏎'], snip({ ov: 'claude', word: '' }, 290, 560, 220), 'Claude 改过的行底色偏紫、地图与标尺出紫色刻度;块上方「撤销 / 接受」;全部改动见工作区「审查」标签。')}
       ${cell('导航历史', ['⌃', '-'], `<div class="snip" style="height:150px;padding:14px 18px"><div class="f ai g3">${ib('arrowL', '', '后退')}${ib('arrow', '', '前进')}<span class="t3">跳转历史(标题栏左侧同一对按钮)</span></div><div class="fc g1" style="margin-top:10px">${[['router.rs · 17', 1], ['router.rs · 23(转到定义)', 0], ['router_test.rs · 8', 0]].map(([t, on]) => `<div class="mi ${on ? 'on' : ''}">${ic('code', 's12')}<span class="grow">${t}</span></div>`).join('')}</div></div>`, '记录的是「位置」不是标签:转到定义、搜索命中、差异块、会话里的文件链接都会入栈;⌃- / ⌃⇧- 前进后退。')}</div>`)}
+    ${sec('三区清单补充原型(左栏 / 固定标签 / 状态栏)', '总表以外的可见形态与菜单文案,实现前先在稿面对齐。', `<div class="gal">
+      ${cell('打开的编辑器', '', box(`<div class="tree-sec"><div class="mi dim" style="height:26px">${ic('chevD', 's12')}<span class="grow t2" style="font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.04em">打开的编辑器</span><span class="t3">3</span></div>
+        ${[['code', 'router.rs', 1], ['code', 'main.rs', 0], ['code', 'users.rs', 1]].map(([i, n, dirty]) => `<div class="mi" style="height:26px;padding-left:22px">${ic(i, 's12')}<span class="grow mono">${n}</span>${dirty ? '<span class="mod"></span>' : ''}${ib('x', 'sm', '')}</div>`).join('')}</div>`, 120, 560), '文件树根区块<b>上方</b>的折叠分区:与标签条同源,点行激活标签,圆点 = 未保存,× 关闭;分区默认可折叠。')}
+      ${cell('紧凑文件夹', '', box(`<div class="tree-sec" style="padding:6px 0">${ic('chevR', 's12')}<span class="grow mono t1">compact/only/a/b</span>${ic('folder', 's14')}</div>
+        <div class="tree-sec" style="padding:6px 0;margin-top:4px">${ic('chevD', 's12')}<span class="grow mono">src</span>${ic('folder', 's14')}</div>
+        <div class="tree-sec" style="padding-left:20px;height:26px" class="mi">${ic('code', 's12')}<span class="mono">router.rs</span></div>`, 120, 560), '仅一条子文件夹链合并成一行 <span class="mono">a/b/c</span>;点箭头仍按真实路径折叠,链中断(同级出现第二个文件夹或文件)时恢复普通缩进。')}
+      ${cell('固定标签(对比)', '', `<div class="fc g3">
+        ${box(`<div class="etabs"><div class="etab on pin">${ic('code', 's12')}<span class="nm mono">router.rs</span></div><div class="etab pin">${ic('code', 's12')}</div><div class="etab">${ic('code', 's12')}<span class="nm mono">main.rs</span><span class="mod"></span></div></div>
+        ${menu([['', '取消固定标签', '', ''], ['', '关闭', '⌘W', ''], ['', '关闭其他', '', ''], ['', '关闭右侧', '', '']])}`, 200, 560)}
+        ${box(`<motion-note type="tip">固定 = 仅图标宽、贴最左;「关闭其他」保留</motion-note>`, 80, 560)}</div>`, '右键「固定标签」/「取消固定」;预览标签也可直接固定(不等同于仅把 preview 关掉);重启记忆固定路径。')}
+      ${cell('状态栏 · 缩进与语言', '', `${menu([['', '跟随文件(自动检测)', '', ''], ['', '空格:2', '', ''], ['', '空格:4', '', 'on'], ['', '空格:8', '', ''], ['', '制表符(Tab)', '', '']])}
+        <div class="sep" style="height:8px"></div>
+        ${menu([['', '跟随文件名', '', 'on'], ['', 'Rust', '', ''], ['', 'Go', '', ''], ['', 'TypeScript', '', ''], ['', '纯文本', '', '']])}`, '缩进菜单补<b>空格 8</b>;语言芯片可点开手动指定(空 = 按扩展名),GBK 等编码仍置灰说明。')}</div>`)}
     ${sec('IDE 三区功能清单(对标 VS Code / Zed / JetBrains)', '左栏、编辑器、底部面板与状态栏各自「该有什么、怎么交互」的总清单。状态是代码核对后的结果:已实现的细节见上面各节与 ide-search / ide-problems / ide-scm 页;待做项列在这里,按优先级补。', tbl([['区域 · 功能', 200], ['交互', 380], ['状态']], [
       ['左栏 · 文件树基本操作', '单击预览 / 双击固定、新建 / 重命名(F2)/ 删除(⌘⌫ 进废纸篓)、拖拽移动、拖到对话栏引用、右键菜单、Git 状态着色、彩色图标、多根工作区', tag('已实现', 'ok')],
       ['左栏 · 自动定位当前文件', '切换编辑器标签时展开各级目录并选中该文件(只在标签变化时执行一次,不覆盖用户手动折叠);设置 → 外观 → 自动定位当前文件可关。目标行不在视口内时自动滚进可见范围(已可见不动,上 / 下方各多留一行余量)。<b>未实机验证</b>', tag('部分', 'warn')],
@@ -166,8 +179,8 @@
       ['左栏 · 树内筛选', '标题行 ⏷ 按钮或树内 ⌘F 展开筛选条(输入框 + 命中数 + 清空);输入即缩小树:只留命中的文件和祖先目录、目录强制展开,文件夹名命中则整个文件夹留着;不区分大小写,带 / 按整条路径匹配;无命中显示「没有名称含「x」的文件」+「清空过滤」;Esc 清空并收起,收起后树恢复原来的展开状态。<b>未做:命中文字高亮、在树里直接打字触发、上下键在命中项间移动</b>', tag('部分', 'warn')],
       ['左栏 · 紧凑文件夹', '只有单个子文件夹的链 <span class="mono">a/b/c</span> 合并成一行显示', tag('待做', '')],
       ['左栏 · 文件复制 / 剪切 / 粘贴', '⌘C / ⌘X / ⌘V 在树里复制移动;重名自动加「副本」', tag('待做', '')],
-      ['编辑器 · ⌘ 悬停可跳转', '按住 ⌘:可跳转的词加下划线 + 手型,⌘点击跳转;见上方「⌘ 悬停可跳转」', tag('部分', 'warn')],
-      ['编辑器 · 折叠代码', '行号栏箭头 / 占位胶囊 / ⌘⌥[ ⌘⌥] ⌘K⌘0 ⌘K⌘J,右键菜单与命令面板同入口。<b>未做:折叠状态随标签记忆、折叠区里有搜索命中时自动展开</b>', tag('部分', 'warn')],
+      ['编辑器 · ⌘ 悬停可跳转', '按住 ⌘:本地索引或 LSP 确认有定义才下划线 + 手型;⌘ 期间不弹悬停卡。无定义词与关键字不加样式。见上方格与各空态', tag('已实现', 'ok')],
+      ['编辑器 · 折叠代码', '行号栏箭头 / 「…」胶囊 / 快捷键与菜单;关标签再开同文件恢复折叠(会话内);查找条上一步下一步与有查询时点小地图会展开挡住命中行的折叠。', tag('已实现', 'ok')],
       ['编辑器 · 标签固定(Pin)', '右键「固定标签」:固定标签缩成图标宽、排在最左、批量「关闭其他」不关它', tag('待做', '')],
       ['编辑器 · 语义高亮', '语言服务器给的类型 / 函数着色;库没有前景着色 API,不做', tag('不做', '')],
       ['底部 · 终端 / 问题 / 输出 / 引用', '多终端标签、搜索、字体设置、链接、命令装饰;问题按文件分组;输出三通道;引用按文件分组语法高亮', tag('已实现', 'ok')],
@@ -240,7 +253,40 @@
         ['磁盘外部修改', '可编辑的工作区外文件与项目内相同轮询;只读标签不轮询'],
         ['格式化', '只读标签跳过;可编辑工作区外文件有语言服务器则试格式化'],
         ['LSP', '以文件所在目录为项目根;URI 用真实绝对路径']]), '演示模式(Mem)不包装磁盘层,显式绝对路径打开仍不可用。')}</div>`)}
-    ${sec('其它常见能力(清单)', '下列能力形态沿用 VS Code;详细画面见上文各节或 Git / 搜索专页。', tbl([['能力', 150], ['键位', 120], ['说明']], [['转到行 / 符号', '⌃G / ⇧⌘O', '转到行见上文;符号来自语言服务器,Markdown 取标题'], ['折叠 / 展开', '⌥⌘[ / ⌥⌘]', '行号旁箭头悬停出现;折叠后行尾显示「…」徽标,点击展开'], ['括号配对 / 着色 / 缩进线', '', '当前配对高亮;括号字符本身按嵌套深度换字色(金 / 紫 / 蓝 / 青循环,与 VS Code 一致,不加背景色块);字符串与注释里的括号不着色;光标所在缩进块的引导线更亮'], ['多光标', '⌥点击 / ⌘D / ⇧⌘L', '见上文「多光标」'], ['移动 / 复制行', '⌥↑↓ / ⇧⌥↑↓', ''], ['行注释 / 块注释', '⌘/ / ⌥⇧A', '块注释见上文'], ['格式化', '⇧⌥F', '保存时格式化是设置项'], ['拆分编辑器', '⌘\\', '标签可在两组间拖动'], ['内联 Git 追溯', '', '见 Git 页「追溯栏 / 行内追溯」'], ['自动保存 / 外部修改', '', '见上文「磁盘外部修改」']]))}</div>`;
+    ${sec('空态 / 错误态 / 置灰(跳转与浮层)', '下列画面补在上文各能力缺数据或不可用时的表现;退出方式与正常态一致(Esc / 点 ✕ / 移开指针)。', `<div class="gal">
+      ${cell('悬停无信息', '', box(`<div class="code" style="min-height:120px"><div class="src-wrap"><div class="src"><div class="ln-src"><span class="k">let</span> x = <span class="v">42</span>;<span class="cursor"></span></div></div></div><div class="t3 fs-cap" style="padding:8px 12px">关键字 / 字面量 / 无定义名:不弹卡;LSP 未就绪时本地索引也没有则静默。</div>`, 130), '触发:指针停 300ms。看到:无浮层。退出:移开或滚动。')}
+      ${cell('预览定义找不到', ['⌥', 'F12'], box(`<div style="padding:14px 16px" class="fc g2">${ic('info', 'c-info')}<b class="t2">找不到定义</b><span class="t3">语言服务器无结果且本地索引也没有;toast 同名文案,F12 同逻辑。</span></div>${snip({}, 40, 560, 100)}`, 160), '退出:Esc 或点别处。')}
+      ${cell('补全无结果 / 加载', ['⌃', 'Space'], `<div class="fc g2">${box(`<div class="pop a-pop-up" style="width:260px;padding:8px"><div class="t3" style="padding:8px 10px">没有建议</div></div>${snip({}, 60, 560, 120)}`, 120, 560)}${box(`<div class="pop a-pop-up" style="width:260px;padding:8px"><div class="f ai g2" style="padding:8px 10px">${ic('wait', 's12')}<span class="t2">正在向语言服务器请求…</span></div></div>`, 80, 560)}</div>`, '补全列表空时一行文案;LSP 慢时顶行转圈(库内) + 本地兜底。Tab 接受 Claude 行预测另见「补全」格。')}
+      ${cell('代码操作无项', ['⌘', '.'], box(`<div class="pop a-pop-up" style="width:280px;padding:6px"><div class="mi dim">没有可用的代码操作</div><div class="mi">✦ 让 Claude 修复</div></div>`, 100), '灯泡仍可点;「让 Claude 修复」永远第一位,其余 LSP 项在其后。')}
+      ${cell('转到符号无结果', ['⇧', '⌘', 'O'], box(`<div class="pop" style="width:320px;max-height:200px;padding:6px"><div class="goto-strip">${ic('list', 's12')}<span class="grow t2">符号</span></div><div class="t3" style="padding:12px 14px">没有匹配的符号</div></div>`, 130), '⌘P 输入 @ 同理;Markdown 走标题索引。')}
+      ${cell('查找无结果 / 正则错误', ['⌘', 'F'], `<div class="fc g2">${box(`${snip({ ov: 'find' }, 20, 560, 160)}<div class="goto-strip" style="border-top:1px solid var(--bd-1)"><span class="t3">0 / 0</span><span class="grow"></span><span class="t4">没有结果</span></div>`, 200, 560)}${box(`<div class="goto-strip">${ic('warn', 'c-warn')}<span class="grow t2">无效的正则表达式</span></div>${snip({ ov: 'find' }, 20, 560, 120)}`, 150, 560)}</div>`, '退出:Esc 关闭查找条。')}
+      ${cell('重命名冲突 / 只读', ['F2'], `<div class="fc g2">${box(`<div style="padding:12px 14px" class="fc g1"><b class="t2">名称已存在</b><span class="t3">同作用域内已有同名符号;输入框红描边,⏎ 不应用。</span></div>`, 80, 560)}${box(`<div class="goto-strip">${ic('lock', 's12 t3')}<span class="grow t2">只读文件不能重命名</span></div>`, 70, 560)}</div>`, 'LSP 未就绪:菜单置灰「语言服务器未就绪」。')}
+      ${cell('导航历史空', ['⌃', '-'], box(`<div class="f ai g3" style="padding:14px 18px">${ib('arrowL', '', 'dim')}${ib('arrow', '', 'dim')}<span class="t3">尚无跳转记录</span></div>`, 60), '后退 / 前进按钮与快捷键置灰;有跳转后入栈。')}</div>`)}
+    ${sec('其它常见能力(清单)', '下列能力形态沿用 VS Code;详细画面见上文各节或 Git / 搜索专页。', tbl([['能力', 150], ['键位', 120], ['说明']], [['转到行 / 符号', '⌃G / ⇧⌘O', '转到行见上文;符号来自语言服务器,Markdown 取标题'], ['折叠 / 展开', '⌥⌘[ / ⌥⌘]', '行号旁箭头悬停出现;折叠后行尾显示「…」徽标,点击展开'], ['括号配对 / 着色 / 缩进线', '', '当前配对高亮;括号字符本身按嵌套深度换字色(金 / 紫 / 蓝 / 青循环,与 VS Code 一致,不加背景色块);字符串与注释里的括号不着色;光标所在缩进块的引导线更亮'], ['多光标', '⌥点击 / ⌘D / ⇧⌘L', '见上文「多光标」'], ['移动 / 复制行', '⌥↑↓ / ⇧⌥↑↓', ''], ['行注释 / 块注释', '⌘/ / ⌥⇧A', '块注释见上文'], ['格式化', '⇧⌥F', '保存时格式化是设置项'], ['拆分编辑器', '⌘\\', '标签可在两组间拖动'], ['内联 Git 追溯', '', '见 Git 页「追溯栏 / 行内追溯」'], ['自动保存 / 外部修改', '', '见上文「磁盘外部修改」']]))}
+    ${sec('能力汇总(审计 · 实现 · 测试)', '由子代理对照代码填写;「未测试」= 本阶段未 go test / 未 computer use。scope 高亮由并行任务单独维护。', tbl([['能力', 200], ['实现状态', 110], ['代码入口', 260], ['单测 / 备注']], [
+      ['迷你地图 + 标尺 + 同词高亮', tag('已实现', 'ok'), 'ide_minimap.go:minimap;ide_overlay.go:decorate', '—;未测试'],
+      ['粘性滚动', tag('已实现', 'ok'), 'ide_sticky_rows.go:stickyScroll', '未测试'],
+      ['当前文件查找 / 替换', tag('已实现', 'ok'), '库 FindBar;ide_overlay.go:RenderFindBar', 'ide_search_*;未实测'],
+      ['悬停 300ms / 卡片停留', tag('已实现', 'ok'), 'ide_nav.go:hoverAt;lsp_app.go:lspHover', '未测试'],
+      ['⌘ 悬停可跳转', tag('已实现', 'ok'), 'ide_link.go:linkHover/linkProbeDef', 'ide_link_test;未实测'],
+      ['折叠 + 标签记忆 + 查找展开', tag('已实现', 'ok'), 'ide_fold*.go;ide_minimap.go(有查询点击)', 'ide_fold_logic_test;未实测'],
+      ['预览定义 ⌥F12 / F12', tag('已实现', 'ok'), 'ide_nav.go;ide_overlay.go:ovPanel', '未测试'],
+      ['查看引用 ⇧F12', tag('已实现', 'ok'), 'ide_nav.go:showRefs → ide_refs.go', 'ide_refs_logic_test;未实测'],
+      ['面包屑 / 大纲同级下拉', tag('部分', 'warn'), 'ide_crumb.go', 'ide_crumb_test;未实测'],
+      ['补全 + ✦ Claude', tag('已实现', 'ok'), 'ide_suggest.go;lsp_app.go', '未测试'],
+      ['代码操作 ⌘.', tag('已实现', 'ok'), 'lsp_codeaction.go;lsp_actions.go', '未测试'],
+      ['重命名 F2', tag('已实现', 'ok'), 'lsp_app.go + overlay', '未测试'],
+      ['⌘P / 行 / 符号', tag('已实现', 'ok'), 'palette.go;ide_goto.go', 'ide_goto_test'],
+      ['选中工具条 / ⌘I / 审查', tag('已实现', 'ok'), 'ide_inline.go;ide_claude_edit.go', '未测试'],
+      ['导航历史', tag('已实现', 'ok'), 'ide_nav.go:navPush/jumpTo', 'ide_nav_test'],
+      ['多光标', tag('部分', 'warn'), 'ide_multicursor.go', 'ide_multicursor_test;库 Esc 未实测'],
+      ['转到行 ⌃G', tag('已实现', 'ok'), 'ide_goto.go;ide_goto_ui.go', 'ide_goto_test;部分实测'],
+      ['块注释 ⌥⇧A', tag('已实现', 'ok'), 'ide_blockcomment.go', '未测试'],
+      ['磁盘外部修改', tag('部分', 'warn'), 'ide_extmod.go', '—;未测试'],
+      ['工作区外 / LSP 只读跳转', tag('部分', 'warn'), 'ide_lsp_jump.go', 'ide_external_test;未测试'],
+      ['语义高亮(类型着色)', tag('不做', ''), '库无前景 Token API', 'status.js 已说明'],
+      ['左栏自动定位', tag('部分', 'warn'), 'ide_reveal.go', 'ide_reveal_test;未实测'],
+      ['高亮当前所在范围', tag('部分', 'warn'), 'ide_scope*.go(并行)', 'ide_scope_logic_test;未测']]))}</div>`;
 
   /* ───────── Git 与差异 ───────── */
   const box = (body, h = 240, w = 560, extra = '') => `<div class="snip" style="height:${h}px;width:${w}px;${extra}">${body}</div>`;

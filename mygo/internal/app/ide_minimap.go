@@ -220,8 +220,13 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 			if x >= mmW && h > 0 { // 概览标尺:整篇缩放
 				st.SetScrollY(float64(y/h*total - view/2))
 			} else {
-				content := mmRowH * float32(n)
-				st.SetScrollY(float64(y/content*total - view/2))
+				line := int((y - 4) / mmRowH)
+				if q, _ := tb.findQuery(); q != "" && line >= 0 && line < n {
+					unfoldLineForNav(tb, line)
+				} else {
+					content := mmRowH * float32(n)
+					st.SetScrollY(float64(y/content*total - view/2))
+				}
 			}
 		}
 	}

@@ -24,6 +24,8 @@ func (a *App) foldRun(tb *ideTab, cmd editor.Command, what string) {
 	foldLog.Info("折叠操作", "path", tb.path, "动作", what, "生效", ok)
 	if !ok {
 		a.toast = "光标所在位置没有可折叠的块"
+	} else {
+		a.ide.saveFolds(tb)
 	}
 	a.redraw()
 }

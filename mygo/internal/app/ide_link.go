@@ -3,13 +3,13 @@ package app
 import (
 	"math"
 	"sort"
-	"unicode/utf8"
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
 
 	"github.com/ixxxxoooo/minicode/internal/diag"
+	"github.com/ixxxxoooo/minicode/internal/lsp"
 )
 
 // ⌘ 悬停可跳转(设计稿 ide-nav「⌘ 悬停可跳转」):按住 ⌘,指针下能跳转的标识符
@@ -26,12 +26,14 @@ type edLink struct {
 	c0, c1 int // 显示列(Tab / 宽字符已换算)
 }
 
-// linkMemo 缓存「单词 → 是否有定义」,避免指针每动一下就扫一遍符号索引。
+// linkMemo 缓存「单词 → 是否有定义」,避免指针每动一下就扫一遍符号索引 / LSP。
 type linkMemo struct {
 	word string
 	path string
+	off  int
 	ok   bool
 	at   uint64 // 缓存时的缓冲区版本,变了就重算
+	lsp  int8   // -1 未查,0 无定义,1 有定义
 }
 
 // edTextPad 是行号栏右边到第一列字符之间的内边距(实测 5~6pt)。
@@ -133,23 +135,60 @@ func linkLineAt(tb *ideTab, y float32) (int, bool) {
 	return l, true
 }
 
-// linkJumpable 判断这个词能不能转到定义:本地符号索引有定义,或语言服务器就绪(由它解析)。
-func (a *App) linkJumpable(tb *ideTab, w string) bool {
+// linkJumpable 判断这个词能不能转到定义:本地索引或已确认的 LSP 答案;未确认前不加下划线。
+func (a *App) linkJumpable(tb *ideTab, w string, off int) bool {
 	if w == "" || isKeyword(w) {
 		return false
 	}
 	c := a.ide.linkMemo
 	ver := tb.buf.Version()
-	if c.word == w && c.path == tb.path && c.at == ver {
-		return c.ok
+	if c.word == w && c.path == tb.path && c.at == ver && c.off == off {
+		if c.ok || c.lsp == 1 {
+			return true
+		}
+		if c.lsp == 0 {
+			return false
+		}
 	}
-	ok := len(a.ide.findDefs(w, tb.path)) > 0
-	if !ok && a.lspReadyFor(tb.path) != nil {
-		b := w[0]
-		ok = b == '_' || b >= 'A' && b <= 'Z' || b >= 'a' && b <= 'z' || b >= utf8.RuneSelf
+	if len(a.ide.findDefs(w, tb.path)) > 0 {
+		a.ide.linkMemo = linkMemo{word: w, path: tb.path, off: off, ok: true, at: ver, lsp: 1}
+		return true
 	}
-	a.ide.linkMemo = linkMemo{word: w, path: tb.path, ok: ok, at: ver}
-	return ok
+	a.ide.linkMemo = linkMemo{word: w, path: tb.path, off: off, ok: false, at: ver, lsp: -1}
+	if s := a.lspReadyFor(tb.path); s != nil {
+		a.linkProbeDef(tb, off, w, ver, s)
+	}
+	return false
+}
+
+// linkProbeDef 后台问 LSP 是否有定义,答了再画下划线(不误标关键字 / 无定义词)。
+func (a *App) linkProbeDef(tb *ideTab, off int, w string, ver uint64, s *lspSess) {
+	key := tb.path + ":" + itoa(off)
+	if a.ide.linkProbe == key {
+		return
+	}
+	a.ide.linkProbe = key
+	uri := lsp.PathToURI(a.absPath(tb.path))
+	pos := lspPos(tb, off)
+	a.lspJob("link", s, func() func() {
+		locs, err := s.c.Definition(uri, pos)
+		has := err == nil && len(locs) > 0
+		return func() {
+			a.ide.linkProbe = ""
+			if tb.buf == nil || tb.buf.Version() != ver {
+				return
+			}
+			lv := int8(0)
+			if has {
+				lv = 1
+			}
+			a.ide.linkMemo = linkMemo{word: w, path: tb.path, off: off, ok: has, at: ver, lsp: lv}
+			if has {
+				linkLog.Debug("⌘ 悬停:有定义", "path", tb.path, "词", w)
+			}
+			a.frameSoon()
+		}
+	})
 }
 
 // linkHover 每帧根据 ⌘ 与指针位置更新 tb.link,并给编辑器元素设手型光标。
@@ -180,7 +219,8 @@ func (a *App) linkHover(c *ui.Context, tb *ideTab, ev ui.Element) {
 	cell := int((x - gw) / (edChar * edScale))
 	col := byteAtCell(ln, cell, tb.st.TabSize)
 	w, b0, b1 := wordAt(ln, col)
-	if w == "" || col >= len(ln) || !a.linkJumpable(tb, w) {
+	off := tb.buf.Offset(editor.Pos{Line: l, Col: col})
+	if w == "" || col >= len(ln) || !a.linkJumpable(tb, w, off) {
 		return
 	}
 	c0, c1 := displayCols(ln, b0, b1, tb.st.TabSize)

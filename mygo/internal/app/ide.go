@@ -24,6 +24,7 @@ type ideTab struct {
 	dvNew   string
 	label   string // 对比标签的说明,如「HEAD ↔ 工作区」「a3f9c21 的改动」
 	preview bool   // 预览标签(斜体,下一次单击会被替换)
+	pinned  bool   // 固定标签:缩成图标宽、排在最左、「关闭其他」不关
 	buf     *editor.Buffer
 	st      *editor.State
 	dv      *editor.DiffState
@@ -117,7 +118,9 @@ type ide struct {
 	headOf func(string) (string, bool)
 
 	tabs      []*ideTab
-	linkMemo  linkMemo // ⌘ 悬停可跳转的判定缓存(ide_link.go)
+	linkMemo  linkMemo         // ⌘ 悬停可跳转的判定缓存(ide_link.go)
+	linkProbe string           // 进行中的 LSP 跳转探测(路径:偏移)
+	fileFolds map[string][]int // 文件折叠行号(关标签后再开恢复,ide_fold_logic.go)
 	active    string
 	tabs2     []*ideTab // 第二编辑器组(拆分)
 	active2   string
@@ -337,6 +340,7 @@ func (d *ide) loadText(t *ideTab) {
 		if head, ok := d.headOf(p); ok && !ro {
 			t.st.DiffBase = editor.NewBuffer(head) // 行号栏的改动色条
 		}
+		d.restoreFolds(t)
 	}
 }
 
@@ -402,6 +406,7 @@ func (d *ide) addTabTo(pane int8, t *ideTab) {
 	if t.preview {
 		for i, o := range *tabs { // 替换已有预览标签,原位
 			if o.preview {
+				d.saveFolds(o)
 				(*tabs)[i] = t
 				*active, d.sel = t.id, t.path
 				return
@@ -417,6 +422,7 @@ func (d *ide) addTabTo(pane int8, t *ideTab) {
 	*tabs = append(*tabs, nil)
 	copy((*tabs)[at+1:], (*tabs)[at:])
 	(*tabs)[at] = t
+	*tabs = reorderPinnedTabs(*tabs)
 	*active, d.sel = t.id, t.path
 }
 
@@ -431,6 +437,7 @@ func (d *ide) closeOnPane(id string, tabs *[]*ideTab, active *string) {
 		if t.id != id {
 			continue
 		}
+		d.saveFolds(t)
 		*tabs = append((*tabs)[:i], (*tabs)[i+1:]...)
 		if isFileTab(t) && !t.diff && !(workspace.IsExternalPath(t.path) && t.diskRO) {
 			d.closed = append(d.closed, t.path)

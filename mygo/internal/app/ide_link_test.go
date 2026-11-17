@@ -1,6 +1,10 @@
 package app
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/egoist/mygo/ui/editor"
+)
 
 func TestDisplayColsAndByteAtCell(t *testing.T) {
 	// 行首一个 Tab(宽 4)+ "foo(" ,单词 foo 的字节区间 [1,4)
@@ -23,5 +27,22 @@ func TestDisplayColsAndByteAtCell(t *testing.T) {
 	// 指针在行尾之外 → 行长
 	if b := byteAtCell("ab", 9, 4); b != 2 {
 		t.Fatalf("行尾之外应返回行长,实际 %d", b)
+	}
+}
+
+func TestLinkJumpableLocalOnly(t *testing.T) {
+	a := New(Options{Mode: ModeIDE})
+	a.ide.openFile("src/router.rs", true)
+	tb := a.ide.cur()
+	w, _, _ := wordUnder(tb, tb.buf.Offset(editor.Pos{Line: 16, Col: 12}))
+	if w == "" {
+		t.Skip("演示文件第 17 行无单词")
+	}
+	off := tb.buf.Offset(editor.Pos{Line: 16, Col: 12})
+	if !a.linkJumpable(tb, w, off) && len(a.ide.findDefs(w, tb.path)) > 0 {
+		t.Fatalf("本地有定义的词应可跳转: %q", w)
+	}
+	if a.linkJumpable(tb, "not_a_real_symbol_xyz", off) {
+		t.Fatal("无定义的词不应立即标为可跳转")
 	}
 }
