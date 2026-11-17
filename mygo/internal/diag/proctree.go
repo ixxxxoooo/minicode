@@ -95,6 +95,10 @@ func refreshChildProcs(root int) {
 		if !ok {
 			continue
 		}
+		// 采样用的 ps 自己也是本进程的子进程,不算
+		if strings.HasPrefix(r.cmd, "ps -ax") {
+			continue
+		}
 		out = append(out, ChildProc{
 			Name: classifyCmd(r.cmd),
 			PID:  r.pid,
