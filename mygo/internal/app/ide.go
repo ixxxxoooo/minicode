@@ -39,7 +39,8 @@ type ideTab struct {
 	ref     string        // 虚拟标签引用的对象 id(子 Agent / 任务 id、冲突文件路径)
 
 	lay     int8      // 差异视图:0 跟随偏好 scm.diff,1 左右,2 统一(用户在标签上点过的选择,窄档只是临时强制统一、不改它)
-	dk      string    // 差异来源:head / work / staged(空 = 提交里的差异)
+	dk      string    // 差异来源:head / work / staged / timeline(空 = 其它提交差异)
+	revHash string    // 时间线预览对比对应的提交(完整哈希)
 	hooked  bool      // 已接上悬停 / 转到定义 / 补全
 	link    *edLink   // ⌘ 悬停时指针下可跳转的单词(ide_link.go)
 	diagSet bool      // 演示诊断已装
@@ -116,7 +117,8 @@ func (t *ideTab) title() string {
 // 这里只放「只有 IDE 才有」的东西:编辑器标签、文件树展开状态、底部面板。
 type ide struct {
 	fs     workspace.FS
-	git    map[string]string // 相对路径 → M / A
+	git    map[string]string    // 相对路径 → M / A / U / …
+	dirGit map[string]dirGitAgg // 目录 → 后代改动聚合(ide_tree_dir_git.go)
 	headOf func(string) (string, bool)
 
 	tabs      []*ideTab
@@ -168,6 +170,8 @@ type ide struct {
 	treeIdx  int             // 本帧已画的树行数(算目标行的内容位置)
 	treeHit  int             // 目标行的行序号(-1 = 本帧没画到)
 	treeH    float32         // 文件树视口高度(上一帧估算)
+	tlMore   map[string]int  // 时间线:按文件多加载的条数上限
+	tlIx     int             // 时间线键盘焦点行(-1 = 无)
 
 	tabSt          ui.ScrollState     // 标签条的横向滚动
 	tabSeen        string             // 已滚动到可见的标签
@@ -383,6 +387,42 @@ func (d *ide) openRevDiff(short, p, old, nw string, pin bool) {
 		return
 	}
 	d.addDiffTab(id, p, short+" 的改动", old, nw, pin)
+}
+
+// openTimelineDiff 在预览对比标签里打开文件历史(单击替换、双击固定;同一文件复用 diff:tl: 标签)。
+func (d *ide) openTimelineDiff(hash, short, p, old, nw, label string, pin bool) {
+	id := timelineDiffID(p)
+	if t := d.tab(id); t != nil {
+		d.applyDiffSnapshot(t, old, nw, label, hash, pin)
+		d.active, d.sel = id, p
+		return
+	}
+	d.addDiffTab(id, p, label, old, nw, pin)
+	if t := d.tab(id); t != nil {
+		t.dk, t.revHash = dkTimeline, hash
+		t.dv.Editable = false
+	}
+}
+
+// applyDiffSnapshot 把已打开的差异标签换成新的两侧内容与说明。
+func (d *ide) applyDiffSnapshot(t *ideTab, old, nw, label, hash string, pin bool) {
+	if pin {
+		t.preview = false
+	}
+	md := diffMediaState(t.path, old, nw)
+	if md != nil && !md.textOK {
+		t.imgd = md
+		old, nw = "", ""
+	} else {
+		t.imgd = nil
+	}
+	if t.dv == nil {
+		return
+	}
+	t.dv.Old.Reset(old)
+	t.dv.New.Reset(nw)
+	t.dvOld, t.dvNew, t.label, t.revHash = old, nw, label, hash
+	t.dk = dkTimeline
 }
 
 func (d *ide) addDiffTab(id, p, label, oldSrc, newSrc string, pin bool) {

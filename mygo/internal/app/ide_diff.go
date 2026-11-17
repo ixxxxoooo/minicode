@@ -23,10 +23,14 @@ import (
 // 所以「只暂存这一块」与 git add -p 等价。工作区一侧是可编辑的:改了按 ⌘S 写回文件。
 
 const (
-	dkHead   = "head"
-	dkWork   = "work"
-	dkStaged = "staged"
+	dkHead     = "head"
+	dkWork     = "work"
+	dkStaged   = "staged"
+	dkTimeline = "timeline"
 )
+
+// timelineDiffID 时间线预览对比标签 id(每个文件一个,单击只替换内容)。
+func timelineDiffID(p string) string { return "diff:tl:" + p }
 
 // diffID 差异标签的 id。
 func diffID(kind, p string) string {

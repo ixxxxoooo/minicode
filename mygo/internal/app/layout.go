@@ -16,17 +16,28 @@ import (
 //	dock   IDE 形态右侧对话栏宽度  300 – 560   默认 352
 //	panel  底部面板高度           96 – 工作区高度 − 120   默认 172(问题 / 引用 236)
 const (
-	lySide     = "side"
-	lyWs       = "ws"
-	lyDock     = "dock"
-	lyPanel    = "panel"
-	lyTermList = "termList"
+	lySide         = "side"
+	lyWs           = "ws"
+	lyDock         = "dock"
+	lyPanel        = "panel"
+	lyTermList     = "termList"
+	lySideOutline  = "sideOutline"
+	lySideTimeline = "sideTimeline"
+)
+
+const (
+	sideOutlineDef  float32 = 140
+	sideTimelineDef float32 = 160
+	sideSecMin      float32 = 64
+	sideSecMax      float32 = 280
 )
 
 // layoutSizes 是用户拖出来的尺寸(0 = 用默认值)。
 type layoutSizes struct {
 	side, ws, dock, panel float32
 	termList              float32   // 竖向终端列表宽(term.listWidth)
+	sideOutline           float32   // 左栏「大纲」展开高度
+	sideTimeline          float32   // 左栏「时间线」展开高度
 	resizing              string    // 正在拖的把手(拖动期间面板的宽度过渡关闭,否则会跟不上鼠标)
 	lastDrag              time.Time // 最近一次拖动(松手后几帧内仍不开过渡)
 	panelMax              bool      // 底部面板最大化(占满工作区)
@@ -40,6 +51,8 @@ func (a *App) loadLayout() {
 	a.ly.side, a.ly.ws, a.ly.dock, a.ly.panel = get(lySide), get(lyWs), get(lyDock), get(lyPanel)
 	w := float32(a.prefs.Int(pTermListW, int(termListDefW)))
 	a.ly.termList = clampF(w, termListMinW, termListMaxW)
+	a.ly.sideOutline = clampF(get(lySideOutline), sideSecMin, sideSecMax)
+	a.ly.sideTimeline = clampF(get(lySideTimeline), sideSecMin, sideSecMax)
 }
 
 func orDef(v, def float32) float32 {
@@ -233,6 +246,10 @@ func (a *App) saveLayout(key string) {
 		v = a.ly.termList
 		a.prefs.Set(pTermListW, int(v))
 		return
+	case lySideOutline:
+		v = a.ly.sideOutline
+	case lySideTimeline:
+		v = a.ly.sideTimeline
 	}
 	if v > 0 {
 		a.prefs.Set("layout."+key, int(v))

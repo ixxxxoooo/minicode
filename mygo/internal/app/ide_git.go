@@ -3,6 +3,8 @@ package app
 import (
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
+	"github.com/ixxxxoooo/minicode/internal/diag"
+	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 	"github.com/ixxxxoooo/minicode/internal/vcs"
 	"github.com/ixxxxoooo/minicode/internal/workspace"
@@ -15,6 +17,7 @@ import (
 type gitInfo struct {
 	key   string // 文件 + HEAD 哈希
 	busy  bool
+	err   error
 	blame []vcs.BlameLine
 	log   []vcs.Commit
 }
@@ -38,7 +41,8 @@ func (a *App) gitInfoFor(p string) *gitInfo {
 	if a.gi == nil {
 		a.gi = map[string]*gitInfo{}
 	}
-	key := p + "@" + a.headKey()
+	lim := a.gitInfoLimit(p)
+	key := p + "@" + a.headKey() + "#" + itoa(lim)
 	g := a.gi[p]
 	if g != nil && (g.key == key || g.busy) {
 		return g
@@ -49,10 +53,10 @@ func (a *App) gitInfoFor(p string) *gitInfo {
 	}
 	g.key, g.busy = key, true
 	a.bg("git.file", func() func() {
-		lg, _ := repo.FileLog(rel, 40)
+		lg, lerr := repo.FileLog(rel, lim)
 		bl, err := repo.Blame(rel)
 		return func() {
-			g.busy = false
+			g.busy, g.err = false, lerr
 			g.log = lg
 			if err != nil || len(bl) == 0 {
 				bl = nil // 没有追溯数据(演示仓库):由 blameLine 用历史兜底
@@ -113,80 +117,173 @@ func (a *App) blameInlay(tb *ideTab) {
 	tb.st.SetInlays([]editor.Inlay{{Offset: end, Text: txt, Trailing: true, Ellipsis: "…"}})
 }
 
-// timelineRows 是左栏「时间线」:当前文件的提交历史,点一条在编辑区开该次提交里这个文件的差异。
+// timelineHeaderTools 时间线标题行右侧:刷新 / 来源(仅 Git)。
+func (a *App) timelineHeaderTools(c *ui.Context) {
+	p := a.timelineSubject()
+	flt := kit.Ib(c, "filter", kit.IbOpt{Small: true, Tip: "来源: Git 历史(本地历史尚未接入)"})
+	flt.Opacity(0.45).Cursor(ui.CursorDefault)
+	kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() {
+		if p != "" {
+			a.timelineReload(p)
+			diag.L("ide").Info("刷新时间线", "path", p)
+		}
+	})
+}
+
+func (a *App) timelineStep(d int) {
+	p := a.timelineSubject()
+	if p == "" {
+		return
+	}
+	g := a.gitInfoFor(p)
+	if g == nil {
+		return
+	}
+	n := len(g.log)
+	if a.timelineHasLocal() {
+		n++
+	}
+	if n == 0 {
+		return
+	}
+	ix := a.ide.tlIx + d
+	if ix < -1 {
+		ix = -1
+	}
+	if ix >= n {
+		ix = n - 1
+	}
+	a.ide.tlIx = ix
+}
+
+func (a *App) timelineHasLocal() bool {
+	p := a.timelineSubject()
+	if p == "" {
+		return false
+	}
+	tb := a.ide.tab(p)
+	if tb == nil {
+		tb = a.ide.cur()
+	}
+	if tb == nil || tb.path != p {
+		if t := a.ide.cur(); t != nil && t.diff && t.path == p {
+			tb = t
+		}
+	}
+	if tb != nil && (a.ide.git[p] != "" || (!tb.diff && tb.dirty())) {
+		return true
+	}
+	if t := a.ide.cur(); t != nil && t.diff && t.path == p && t.dk == dkHead {
+		return true
+	}
+	return a.ide.git[p] != ""
+}
+
+// timelineRows 是左栏「时间线」:跟随活动编辑器对应文件;单击预览对比、双击固定。
 func (a *App) timelineRows(c *ui.Context) {
 	t := a.tk
-	tb := a.ide.cur()
-	if tb == nil || tb.diff || tb.virt != "" {
+	p := a.timelineSubject()
+	if p == "" {
 		ui.Text(c, "打开一个文件后显示它的历史").FontSize(theme.FsCap).TextColor(t.Tx4).Margin(2, 8, 6, 28)
 		return
 	}
-	g := a.gitInfoFor(tb.path)
+	if !a.timelineFileGit(p) {
+		ui.Text(c, "不在 Git 仓库里").FontSize(theme.FsCap).TextColor(t.Tx4).Margin(2, 8, 6, 28)
+		return
+	}
+	g := a.gitInfoFor(p)
 	if g == nil {
 		ui.Text(c, "不在 Git 仓库里").FontSize(theme.FsCap).TextColor(t.Tx4).Margin(2, 8, 6, 28)
 		return
 	}
-	// 顶部:还没提交的本地更改(含未保存的编辑),点开是 HEAD ↔ 工作区
-	if a.ide.git[tb.path] != "" || tb.dirty() {
-		r := ui.ButtonBase(c).Key("tl-local").Height(theme.Px(34)).PaddingX(8).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).Margin(0, 4)
-		if r.Hovered() {
-			r.Background(t.Fill1)
-		}
+	pick := a.timelinePickHash()
+	untracked := gitInfoUntracked(p, a.ide.git)
+	rowIx := 0
+	// 本地更改(工作区 / HEAD 对比)
+	if a.timelineHasLocal() {
+		on := pick == "__local__" || (a.ide.tlIx == 0 && pick == "")
+		r := kit.RowEl(c, on).Key("tl-local").Height(theme.Px(34)).PaddingX(8).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Margin(0, 4)
 		if r.Clicked() {
-			a.openDiffKind(dkHead, tb.path, false)
+			a.openDiffKind(dkHead, p, false)
+			a.ide.tlIx = 0
 		}
 		if r.DoubleClicked() {
-			a.openDiffKind(dkHead, tb.path, true)
+			a.openDiffKind(dkHead, p, true)
 		}
 		r.Children(func() {
+			if on {
+				kit.SelBar(c)
+			}
 			ui.Box(c).Size(7, 7).Radius(4).Border(1.5, t.Warn).Shrink(0)
 			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 				ui.Text(c, "本地更改").SingleLine().FontSize(theme.FsCap)
-				ui.Text(c, map[bool]string{true: "含未保存的修改", false: "未提交"}[tb.dirty()]).SingleLine().FontSize(theme.FsMicro).TextColor(t.Warn)
+				tb := a.ide.tab(p)
+				dirty := tb != nil && tb.dirty()
+				ui.Text(c, map[bool]string{true: "含未保存的修改", false: "未提交"}[dirty]).SingleLine().FontSize(theme.FsMicro).TextColor(t.Warn)
 			})
 		})
+		rowIx++
 	}
-	if len(g.log) == 0 {
-		msg := "这个文件还没有提交历史"
-		if g.busy {
-			msg = "读取中…"
-		}
+	if msg := timelineErrText(p, g, untracked); msg != "" && len(g.log) == 0 {
 		ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Tx4).Margin(2, 8, 6, 28)
 		return
 	}
 	for _, cm := range g.log {
-		cm := cm
-		r := ui.ButtonBase(c).Key("tl-"+cm.Hash).Height(theme.Px(34)).PaddingX(8).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).Margin(0, 4)
-		if r.Hovered() {
-			r.Background(t.Fill1)
-		}
+		cm, ix := cm, rowIx
+		rowIx++
+		on := pick == cm.Hash || a.ide.tlIx == ix
+		r := kit.RowEl(c, on).Key("tl-"+cm.Hash).Height(theme.Px(34)).PaddingX(8).Gap(8).AlignItems(ui.Center).Radius(t.RSm()).Margin(0, 4)
 		if r.Clicked() {
-			a.scmOpenCommitFile(cm, tb.path, false)
+			a.openTimelineCommit(cm, p, false)
+			a.ide.tlIx = ix
 		}
 		if r.DoubleClicked() {
-			a.scmOpenCommitFile(cm, tb.path, true)
+			a.openTimelineCommit(cm, p, true)
+			if t := a.ide.tab(timelineDiffID(p)); t != nil {
+				t.preview = false
+			}
 		}
 		r.ContextMenu(func(m *ui.Menu) {
-			if menuItem(m, "打开该次提交里的改动").Chosen() {
-				a.scmOpenCommitFile(cm, tb.path, true)
+			if menuItem(m, "与上一版本比较").Chosen() {
+				a.openTimelineVsParent(cm, p, false)
 			}
-			if menuItem(m, "在图谱中查看").Chosen() {
-				a.openGraph()
-				a.graphTab.sel = cm.Hash
-				a.scmCommitFiles(cm.Hash)
+			if menuItem(m, "与工作区比较").Chosen() {
+				a.openTimelineVsWork(cm, p, false)
 			}
 			m.Separator()
-			if menuItem(m, "复制哈希").Chosen() {
+			if menuItem(m, "在源代码管理中查看").Chosen() {
+				a.timelineViewInSCM(cm.Hash)
+			}
+			if menuItem(m, "在新标签页中打开").Chosen() {
+				a.scmOpenCommitFile(cm, p, true)
+			}
+			m.Separator()
+			if menuItem(m, "复制提交哈希").Chosen() {
 				a.scmCommitOp(cm, "copy")
 			}
 		})
 		r.Children(func() {
+			if on {
+				kit.SelBar(c)
+			}
 			ui.Box(c).Size(7, 7).Radius(4).Background(t.Ac).Shrink(0)
 			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 				ui.Text(c, cm.Subject).SingleLine().FontSize(theme.FsCap)
 				ui.Text(c, cm.Author+" · "+cm.When).SingleLine().FontSize(theme.FsMicro).TextColor(t.Tx4)
 			})
 			ui.Text(c, cm.Short()).Font("monospace").FontSize(theme.FsMicro).TextColor(t.Tx4).Shrink(0)
+		})
+	}
+	if g.busy && len(g.log) > 0 {
+		ui.Text(c, "读取中…").FontSize(theme.FsMicro).TextColor(t.Tx4).Margin(4, 8, 4, 28)
+	}
+	if len(g.log) >= a.gitInfoLimit(p)-1 && !g.busy {
+		more := ui.ButtonBase(c).Key("tl-more").Height(theme.Px(28)).PaddingX(8).Justify(ui.Center).TextColor(t.Ac).FontSize(theme.FsCap).Cursor(ui.CursorPointer).Margin(4, 4, 6, 4)
+		if more.Clicked() {
+			a.timelineLoadMore(p)
+		}
+		more.Children(func() {
+			ui.Text(c, "加载更多…")
 		})
 	}
 }

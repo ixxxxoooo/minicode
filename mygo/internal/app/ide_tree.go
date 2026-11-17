@@ -18,7 +18,6 @@ func (a *App) filesView(c *ui.Context) {
 	}
 	t := a.tk
 	d := a.ide
-	a.autoReveal()
 	d.treeIdx, d.treeHit = 0, -1
 	// 外层竖排:文件树自己滚动,「大纲 / 时间线」像 VS Code 的分区那样钉在底部。
 	outer := ui.Column(c).Grow(1).MinHeight(0)
@@ -120,32 +119,69 @@ func (a *App) filesView(c *ui.Context) {
 				}
 			})
 		})
-		secBox, haveSec = ui.Column(c), true
+		outerH := outer.Bounds().H
+		secBox, haveSec = ui.Column(c).Shrink(0), true
 		secBox.Children(func() {
 			ui.Box(c).Height(1).Background(t.Bd1)
 			for _, name := range []string{"大纲", "时间线"} {
 				open := d.sections[name]
-				r := ui.ButtonBase(c).Key("sec-" + name).Height(theme.Px(26)).PaddingX(8).Justify(ui.Start).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).
-					FontSize(theme.Px(11.5)).FontWeight(500).Cursor(ui.CursorDefault)
-				if r.Clicked() {
-					d.sections[name] = !open
+				lyKey := lySideOutline
+				defH := sideOutlineDef
+				if name == "时间线" {
+					lyKey, defH = lySideTimeline, sideTimelineDef
 				}
-				r.Children(func() {
-					icon := "chevR"
-					if open {
-						icon = "chevD"
+				bodyH := a.sideSecHeight(lyKey, defH, outerH)
+				hdr := ui.Row(c).Key("sec-h-" + name).Height(theme.Px(26)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).
+					FontSize(theme.Px(11.5)).FontWeight(500).Shrink(0)
+				hdr.Children(func() {
+					tog := ui.ButtonBase(c).Key("sec-" + name).Grow(1).Height(theme.Px(26)).Justify(ui.Start).Gap(5).AlignItems(ui.Center).
+						TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(500).Cursor(ui.CursorDefault)
+					if tog.Clicked() {
+						d.sections[name] = !open
+						diag.L("ide").Info("折叠侧栏区块", "区块", name, "展开", !open)
 					}
-					kit.Ic(c, icon, kit.S12)
-					ui.Text(c, name)
+					tog.Children(func() {
+						icon := "chevR"
+						if open {
+							icon = "chevD"
+						}
+						kit.Ic(c, icon, kit.S12)
+						ui.Text(c, name)
+					})
+					if name == "时间线" && open {
+						a.timelineHeaderTools(c)
+					}
 				})
 				if open {
-					kit.VScroll(c).Key("sec-body-" + name).MaxHeight(200).Children(func() {
-						ui.Column(c).Children(func() {
-							if name == "大纲" {
-								a.outlineRows(c)
-							} else {
-								a.timelineRows(c)
+					body := ui.Column(c).Key("sec-body-" + name).Height(bodyH).Shrink(0)
+					body.Children(func() {
+						a.resizeHandle(c, lyKey, "t", bodyH, defH, sideSecMin, a.sideSecMax(outerH), func(v float32) {
+							switch lyKey {
+							case lySideOutline:
+								a.ly.sideOutline = v
+							default:
+								a.ly.sideTimeline = v
 							}
+						})
+						scroll := kit.VScroll(c).Key("sec-scroll-" + name).Grow(1).MinHeight(0)
+						scroll.OnShortcut(0, ui.KeyUp, func() {
+							if name == "时间线" {
+								a.timelineStep(-1)
+							}
+						})
+						scroll.OnShortcut(0, ui.KeyDown, func() {
+							if name == "时间线" {
+								a.timelineStep(1)
+							}
+						})
+						scroll.Children(func() {
+							ui.Column(c).Children(func() {
+								if name == "大纲" {
+									a.outlineRows(c)
+								} else {
+									a.timelineRows(c)
+								}
+							})
 						})
 					})
 				}
@@ -217,15 +253,27 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 	}
 	r.ContextMenu(func(m *ui.Menu) { a.treeMenu(m, e.Path, e.Dir) })
 	g := d.fileGit(e.Path)
+	var dagg dirGitAgg
 	if e.Dir {
-		g = ""
-		r.TextColor(t.Tx1) // 目录名不随子文件的改动染色(设计稿如此)
-	}
-	switch g {
-	case "M":
-		r.TextColor(t.Warn)
-	case "A", "U":
-		r.TextColor(t.Ok)
+		if a.ide.dirGit != nil {
+			dagg = a.ide.dirGit[e.Path]
+		}
+		if dagg.hasChange() {
+			r.TextColor(treeGitColor(t, dagg.worst))
+		} else if treeDirMuted(e.Name, e.Path, dagg) {
+			r.TextColor(t.Tx4)
+		} else {
+			r.TextColor(t.Tx1)
+		}
+	} else {
+		switch g {
+		case "M", "R":
+			r.TextColor(t.Warn)
+		case "A", "U":
+			r.TextColor(t.Ok)
+		case "D", "C":
+			r.TextColor(t.Err)
+		}
 	}
 	if r.Clicked() {
 		a.filesFocus = true
@@ -249,7 +297,7 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 				icon = "chevD"
 			}
 			kit.Ic(c, icon, kit.S12).TextColor(t.Tx3)
-			kit.Ic(c, "folder", kit.S14)
+			kit.Ic(c, treeFolderIcon(e.Name), kit.S14).TextColor(map[bool]ui.Color{true: t.Tx4, false: t.Tx3}[treeDirMuted(e.Name, e.Path, dagg)])
 		} else {
 			ui.Box(c).Size(theme.Px(12), theme.Px(12)).Shrink(0)
 			a.fileIc(c, e.Name)
@@ -271,6 +319,12 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 		}
 		if g != "" && !e.Dir {
 			ui.Text(c, g).FontSize(theme.Px(10)).FontWeight(600).Shrink(0)
+		}
+		if e.Dir && dagg.hasChange() {
+			dot := ui.Box(c).Size(6, 6).Radius(3).Shrink(0).Background(treeGitColor(t, dagg.worst))
+			if tip := dagg.tooltip(); tip != "" {
+				dot.Tooltip(tip)
+			}
 		}
 	})
 }
@@ -326,8 +380,36 @@ func (d *ide) allFiles() []string {
 func (a *App) outlineRows(c *ui.Context) {
 	t := a.tk
 	tb := a.ide.cur()
-	if tb == nil || tb.isVirt() || tb.diff || tb.st == nil || tb.buf == nil {
+	if tb == nil || tb.virt != "" {
 		ui.Text(c, "打开一个文件查看大纲").FontSize(theme.FsCap).TextColor(t.Tx4).Margin(2, 8, 6, 28)
+		return
+	}
+	if tb.diff || tb.buf == nil || tb.st == nil {
+		syms := a.symbolsForFile(tb.path)
+		if len(syms) == 0 {
+			ui.Text(c, "这个文件没有可识别的符号").FontSize(theme.FsCap).TextColor(t.Tx4).Margin(2, 8, 6, 28)
+			return
+		}
+		for i, s := range syms {
+			depth := 0
+			for k := s.Parent; k >= 0; k = syms[k].Parent {
+				depth++
+			}
+			i, s := i, s
+			r := kit.RowEl(c, false).Key("ol-" + itoa(i)).PaddingStart(22 + float32(depth)*12).Gap(5)
+			if r.Clicked() && tb.dv != nil {
+				a.jumpTo(tb.path, s.Line, s.Col, s.Col)
+			}
+			r.Children(func() {
+				icon := "cube"
+				if s.Kind == "h" {
+					icon = "fileText"
+				}
+				kit.Ic(c, icon, kit.S12).TextColor(t.AcTx)
+				ui.Text(c, s.Name).Grow(1).SingleLine()
+				ui.Text(c, itoa(s.Line+1)).FontSize(theme.FsMicro).TextColor(t.Tx4)
+			})
+		}
 		return
 	}
 	syms := a.symbolsForFile(tb.path)
