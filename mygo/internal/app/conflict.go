@@ -86,13 +86,6 @@ func parseConflicts(src string) []confSeg {
 	return segs
 }
 
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // composeConflicts 按各处的选择拼出结果;未选择的保留成冲突标记原样。
 func composeConflicts(segs []confSeg, choice map[int]int) string {
 	var out []string

@@ -1,7 +1,7 @@
 #!/bin/bash
 # 组装 .app 包(开发版 dev.sh 与正式版 package.sh 共用,避免 Info.plist / 图标清单两处各写一份):
 #   scripts/make-app.sh <App 路径> <可执行文件> <显示名> <BundleID> <版本显示串> <构建号>
-# 例:scripts/make-app.sh dist/MiniCode.app target/release/minicode MiniCode dev.minicode.app 0.3.0 812
+# 例:scripts/make-app.sh dist/MiniCode.app dist/minicode-bin MiniCode dev.minicode.app 0.3.0 812
 set -e
 cd "$(dirname "$0")/.."
 APP="$1"; BIN_SRC="$2"; NAME="$3"; BUNDLE_ID="$4"; VERSION="$5"; BUILD="$6"

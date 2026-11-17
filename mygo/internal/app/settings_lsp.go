@@ -25,13 +25,6 @@ type lspSettingRow struct {
 
 func (a *App) lspServerPrefKey(id string) string { return "lsp.server." + id }
 
-func (a *App) lspServerEnabled(id string) bool {
-	if !a.prefs.Bool("editor.lsp", true) {
-		return false
-	}
-	return a.prefs.Bool(a.lspServerPrefKey(id), true)
-}
-
 func (a *App) scanLspSettings() {
 	if a.demoWs() {
 		var rows []lspSettingRow

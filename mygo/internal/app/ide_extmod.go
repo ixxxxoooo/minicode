@@ -438,5 +438,3 @@ func (a *App) dbgExtmod(arg string) {
 		tb.extBanner = true
 	}
 }
-
-func (a *App) extmodLastForce() { a.ide.extmodLast = time.Time{} }

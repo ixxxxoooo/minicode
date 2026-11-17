@@ -195,14 +195,6 @@ func (a *App) LiveTaskOutput() bool {
 	return a.prefs.Bool(pAdvLiveOut, true)
 }
 
-// FlowMeasureAll 是否在载入长会话时一次测完行高(MyGo 暂无对应 API,只存偏好;设置行已注明)。
-func (a *App) FlowMeasureAll() bool {
-	if a == nil || a.prefs == nil {
-		return true
-	}
-	return a.prefs.Bool(pAdvFlowMeas, true)
-}
-
 // ApplyDiagPrefs 应用日志级别与看门狗开关(applyPrefs 末尾调用)。
 func (a *App) ApplyDiagPrefs() {
 	if a == nil || a.prefs == nil {

@@ -354,27 +354,6 @@ func (d *ide) openAt(p string, line, col, end int, pin bool) {
 	}
 }
 
-// openDiff 打开某个文件的对比标签(HEAD ↔ 工作区)。
-func (d *ide) openDiff(p string, pin bool) {
-	id := "diff:" + p
-	if t := d.tab(id); t != nil {
-		if pin {
-			t.preview = false
-		}
-		d.active = id
-		return
-	}
-	head, ok := d.headOf(p)
-	if !ok {
-		head = ""
-	}
-	cur, err := d.fs.Read(p)
-	if err != nil {
-		cur = ""
-	}
-	d.addDiffTab(id, p, "", head, cur, pin)
-}
-
 // openRevDiff 打开某次提交里某个文件的对比标签(父提交 ↔ 该提交)。
 func (d *ide) openRevDiff(short, p, old, nw string, pin bool) {
 	id := "diff:rev-" + short + ":" + p
@@ -510,16 +489,6 @@ func (d *ide) save() error {
 
 // fileGit 返回文件在工作区的 Git 状态("" = 未改动)。
 func (d *ide) fileGit(p string) string { return d.git[p] }
-
-// dirGit 目录下有改动时返回 "M"(树里目录名染色用)。
-func (d *ide) dirGit(dir string) string {
-	for p := range d.git {
-		if strings.HasPrefix(p, dir+"/") {
-			return "M"
-		}
-	}
-	return ""
-}
 
 func demoTermLinesFrom(in []demo.TermLine) []termLine {
 	out := make([]termLine, len(in))

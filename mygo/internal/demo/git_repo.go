@@ -26,9 +26,6 @@ var sandboxExtras = stress
 // SetSandboxExtras 单独开关沙盒的压力目录(不影响 Git 极端数据)。
 func SetSandboxExtras(on bool) { sandboxExtras = on }
 
-// Stress 报告极端数据是否开启。
-func Stress() bool { return stress }
-
 // buildRouterRepo 组装 router-demo 的完整演示仓库。
 func buildRouterRepo() *vcs.Mem {
 	changes := routerPreserveChanges()

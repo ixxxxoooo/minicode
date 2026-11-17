@@ -14,22 +14,6 @@ func (a *App) CloseHides() bool {
 	return a.prefs.Int(pCloseWin, 0) == 0
 }
 
-// WireMainWindowClose 接通 general.close:隐藏时保持进程与会话运行,Dock 再点可 Show。
-func (a *App) WireMainWindowClose(win *mygo.Window) {
-	if a == nil || win == nil || a.secondary {
-		return
-	}
-	win.OnClose(func(e *mygo.CloseEvent) {
-		if a.CloseHides() {
-			e.PreventDefault()
-			win.Hide()
-			log.Info("关闭窗口", "action", "隐藏")
-		} else {
-			log.Info("关闭窗口", "action", "退出")
-		}
-	})
-}
-
 // showMainWindow 把主窗口带回前台:窗口被「关闭」(其实是隐藏)之后,Dock / 托盘 / 通知 / 再次打开都要能让它重新出现。
 // 只调 mygo.App.Focus() 不够:它只激活应用,不会把已隐藏的窗口显示出来(此前关闭窗口后点 Dock 没反应)。
 func (a *App) showMainWindow(why string) {

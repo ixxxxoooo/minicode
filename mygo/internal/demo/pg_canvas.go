@@ -143,22 +143,6 @@ func cloneBlocks(in []canvas.Block) []canvas.Block {
 	return out
 }
 
-// CanvasFor 返回指定套的单张画布(套 1 默认返回样式总览)。
-func CanvasFor(set int, now time.Time) *canvas.Store {
-	switch set {
-	case 1:
-		return canvasStyleGuide(now)
-	case 2:
-		return canvasLong300(now)
-	case 3:
-		return canvasVersions30(now)
-	case 4:
-		return canvasClaudeBusy(now)
-	default:
-		return canvasQ3(now)
-	}
-}
-
 // CanvasDemoLibrary 返回某套的列表 id→存储与默认选中 id。
 func CanvasDemoLibrary(set int, now time.Time) (active string, stores map[string]*canvas.Store) {
 	stores = map[string]*canvas.Store{}

@@ -1,7 +1,6 @@
 package app
 
 import (
-	"math"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
@@ -202,35 +201,6 @@ func (a *App) ctxBar(c *ui.Context) {
 		})
 	}
 	kit.Sep(c)
-}
-
-func (a *App) bigRing(c *ui.Context, p float32) {
-	t := a.tk
-	e := ui.Box(c).Size(34, 34).Shrink(0)
-	e.Draw(func(pt *ui.Painter, r ui.Rect) {
-		cx, cy := r.X+r.W/2, r.Y+r.H/2
-		const rad = 14.0
-		arc := func(frac float32, col ui.Color) {
-			n := max(2, int(frac*60))
-			pts := make([][2]float32, 0, n+1)
-			for i := 0; i <= n; i++ {
-				ang := -1.5707963 + float64(i)/float64(n)*float64(frac)*6.2831853
-				pts = append(pts, [2]float32{cx + rad*float32(math.Cos(ang)), cy + rad*float32(math.Sin(ang))})
-			}
-			pt.StrokePolyline(pts, 5, col)
-		}
-		arc(1, t.Fill3)
-		if p > 0 {
-			arc(min(p, .999), t.Ac)
-		}
-	})
-}
-
-func limitText(p *float32) string {
-	if p == nil {
-		return "—"
-	}
-	return itoa(int(*p+.5)) + "%"
 }
 
 // fmtTok 把 token 数写成 76k / 1.2M。

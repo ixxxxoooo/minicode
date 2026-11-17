@@ -157,35 +157,6 @@ func queueShowText(draft string) string {
 	return draft
 }
 
-func (a *App) queueAttachChips(c *ui.Context, draft string) {
-	atts := parseDraftAttaches(draft)
-	if len(atts) == 0 {
-		return
-	}
-	t := a.tk
-	ui.Row(c).Gap(4).Shrink(0).Children(func() {
-		for _, at := range atts {
-			chip := ui.Row(c).Height(theme.Px(22)).PaddingX(3).Gap(3).Radius(t.RXs()).AlignItems(ui.Center).Border(1, t.Bd2).Background(t.Fill1).Shrink(0)
-			chip.Children(func() {
-				if abs := a.absAttach(at.Path); abs != "" {
-					if _, err := os.Stat(abs); err == nil {
-						if src := a.localImage(abs); src != nil {
-							ui.Image(c, src).Size(16, 16).Radius(t.RXs()).Fit(ui.Cover).Shrink(0)
-						} else {
-							kit.Ic(c, "image", kit.S12).Shrink(0)
-						}
-					} else {
-						kit.Ic(c, "image", kit.S12).TextColor(t.Tx3).Shrink(0)
-					}
-				} else {
-					kit.Ic(c, "image", kit.S12).Shrink(0)
-				}
-			})
-			_ = chip
-		}
-	})
-}
-
 func (a *App) removeDraftAttachPath(path string) {
 	path = strings.TrimSpace(path)
 	if path == "" {

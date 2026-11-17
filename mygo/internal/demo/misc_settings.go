@@ -16,11 +16,6 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/claudecfg"
 )
 
-// DemoProviders 第三方服务商各种连通状态与模型清单(密钥在界面只展示 sk-••••)。
-func DemoProviders() []claudecfg.Provider {
-	return DemoProviderStore().Providers
-}
-
 // DemoProviderStore 演示用的服务商与模型映射:覆盖「正常 / 清单为空 / 缺密钥 / 失败 / 不支持列表 / 测试中」。
 // 只在内存里用,不落盘。
 func DemoProviderStore() claudecfg.Store {

@@ -119,13 +119,8 @@ func (a *App) postNoticeQuiet(level, title, body string, actions []noticeAction)
 	log.Info("通知(静默)", "level", level, "title", title)
 }
 
-func (a *App) noticeInfo(title, body string) { a.postNotice("info", title, body, nil) }
-func (a *App) noticeOK(title, body string)   { a.postNotice("ok", title, body, nil) }
 func (a *App) noticeWarn(title, body string, act []noticeAction) {
 	a.postNotice("warn", title, body, act)
-}
-func (a *App) noticeErr(title, body string, act []noticeAction) {
-	a.postNotice("err", title, body, act)
 }
 
 // dismissToast 关掉右下角的一张卡片(不动通知中心里的历史)。

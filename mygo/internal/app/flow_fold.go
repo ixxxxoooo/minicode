@@ -137,13 +137,6 @@ func (a *App) foldBody(c *ui.Context, key, full string, live bool, mono bool, co
 	}
 }
 
-// foldCodeBlock 是会话流 Markdown 围栏代码块的折叠渲染。
-func (a *App) foldCodeBlock(c *ui.Context, b *markdown.CodeBlockView) {
-	key := foldKey("cb", itoa(b.Index))
-	body := strings.TrimRight(b.Code(), "\n")
-	a.foldBody(c, key, body, false, true, func() { a.copyOut(body, "代码") })
-}
-
 // hookMDFold 给 markdown.Options 装上代码块折叠。
 func (a *App) hookMDFold(o *markdown.Options) {
 	prev := o.CodeBlock

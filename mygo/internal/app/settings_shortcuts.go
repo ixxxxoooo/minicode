@@ -60,31 +60,6 @@ func (a *App) shortcutLabel(id string) string {
 	return ""
 }
 
-// comboMatches 判断窗口快捷键是否匹配录制结果(如 "⌘ K")。
-func comboMatches(label string, mods ui.Modifiers, key ui.Key) bool {
-	parts := strings.Fields(label)
-	wantMod := ui.Modifiers(0)
-	var wantKey ui.Key
-	for _, p := range parts {
-		switch p {
-		case "⌘", "Cmd", "cmd":
-			wantMod |= ui.Cmd
-		case "⇧", "Shift", "shift":
-			wantMod |= ui.Shift
-		case "⌥", "Alt", "alt", "Option":
-			wantMod |= ui.Alt
-		case "⌃", "Ctrl", "ctrl", "Control":
-			wantMod |= ui.Ctrl
-		default:
-			wantKey = keyName(p)
-		}
-	}
-	if wantKey == 0 {
-		wantKey = key
-	}
-	return mods == wantMod && key == wantKey
-}
-
 func keyName(s string) ui.Key {
 	switch strings.ToLower(s) {
 	case "k":

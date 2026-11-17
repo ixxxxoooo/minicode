@@ -9,27 +9,6 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
-// subagentTimeline 子 Agent 内嵌时间线:已答的提问画回答卡片,其余步骤行照常。
-func (a *App) subagentTimeline(c *ui.Context, items []core.Item) {
-	if len(items) == 0 {
-		return
-	}
-	ui.Column(c).Gap(6).Padding(4, 0, 0, 22).Children(func() {
-		for _, it := range items {
-			switch v := it.(type) {
-			case *core.QuestionRequest:
-				if v.Answered {
-					a.askEcho(c, v)
-				}
-			default:
-				if isStepItem(it) {
-					a.stepItem(c, it)
-				}
-			}
-		}
-	})
-}
-
 // 折叠工具分组的「最新一步」:分组折叠且运行中时,标题下方 22px 显示最后一个未结束的工具。
 
 func lastOpenTool(g []*core.ToolCall) *core.ToolCall {

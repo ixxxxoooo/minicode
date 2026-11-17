@@ -461,16 +461,6 @@ func (s *Store) ByPrimary(dir string) (Workspace, bool) {
 	return Workspace{}, false
 }
 
-// ByMember 找包含 dir 的第一个工作区。
-func (s *Store) ByMember(dir string) (Workspace, bool) {
-	for _, w := range s.Workspaces() {
-		if w.Has(dir) {
-			return w, true
-		}
-	}
-	return Workspace{}, false
-}
-
 // Has 路径是不是这个工作区的成员文件夹。
 func (w Workspace) Has(path string) bool {
 	c := Clean(path)

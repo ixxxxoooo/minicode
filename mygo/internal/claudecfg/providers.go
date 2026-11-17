@@ -182,19 +182,6 @@ func SaveStore(s Store) error {
 	return os.Rename(tmp, path)
 }
 
-// LoadProviders 读服务商列表(不含映射)。
-func LoadProviders() ([]Provider, error) {
-	s, err := LoadStore()
-	return s.Providers, err
-}
-
-// SaveProviders 只更新服务商列表,保留已有的模型映射。
-func SaveProviders(list []Provider) error {
-	s, _ := LoadStore()
-	s.Providers = list
-	return SaveStore(s)
-}
-
 // SetProviderKey 把密钥写入 0600 文件(不落 settings.json、不写日志值)。
 func SetProviderKey(id, key string) error {
 	keys, _ := LoadKeys()

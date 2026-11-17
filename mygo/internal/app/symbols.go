@@ -3,7 +3,6 @@ package app
 import (
 	"path"
 	"regexp"
-	"sort"
 	"strings"
 )
 
@@ -301,10 +300,3 @@ var keywordSet = func() map[string]bool {
 	}
 	return m
 }()
-
-// sortedSyms 按名字排序的副本(补全用)。
-func sortedSyms(in []symbol) []symbol {
-	out := append([]symbol(nil), in...)
-	sort.SliceStable(out, func(i, j int) bool { return out[i].Name < out[j].Name })
-	return out
-}

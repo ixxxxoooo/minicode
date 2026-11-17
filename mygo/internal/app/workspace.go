@@ -73,15 +73,6 @@ func (a *App) wsActive(left bool) bool {
 	return a.wsOccupies() && (a.mode == ModeIDE) == left
 }
 
-// noPos 去掉位置过渡:形态切换时 ws / chat 只是换顺序(设计稿 order 瞬间生效),不能让它们从旧位置滑过去。
-func noPos(t ui.ElementTransition) ui.ElementTransition {
-	t.Position = false
-	if !t.Size && !t.Width && !t.Height && !t.Colors && !t.Shadows {
-		t.Size = true
-	}
-	return t
-}
-
 // wsPane 是工作区:IDE 形态在主位(占满),Agent 形态在右侧(默认 560,收起时宽度归零)。
 func (a *App) wsPane(c *ui.Context, gap float32) {
 	active := a.wsOccupies()

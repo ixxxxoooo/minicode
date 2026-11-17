@@ -386,18 +386,3 @@ func (s *Store) Save(c Cat, it *Item, draft Item) error {
 	*it = draft
 	return nil
 }
-
-// TestHook 给出钩子「试运行」的说明:这里不真的执行命令,只列出会在什么条件下运行什么、以及会被拒绝的原因。
-func TestHook(h Item) string {
-	if strings.TrimSpace(h.Cmd) == "" {
-		return "命令为空,不会运行。"
-	}
-	if h.Scope == Project && !h.Trusted {
-		return "项目钩子尚未被信任,不会运行。"
-	}
-	m := h.Match
-	if m == "" {
-		m = "全部工具"
-	}
-	return "在 " + Events[h.Event%len(Events)] + "(" + m + ")时运行:\n$ " + h.Cmd + "\n超时 " + itoa(h.Timeout) + " 秒。"
-}

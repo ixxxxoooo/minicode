@@ -4,11 +4,6 @@ import (
 	"strings"
 )
 
-// SetSessionForker 保留扩展点(当前分叉走 forkTurn / CmdForkSession,不依赖注入)。
-func (a *App) SetSessionForker(f func(fromID string) (newID string, err error)) {
-	a.sessFork = f
-}
-
 // forkSession 从指定会话分叉出新会话(对话栏头部菜单);逻辑与回合操作条「分叉」一致,复制全量历史。
 func (a *App) forkSession(from string) {
 	if from == "" || strings.HasPrefix(from, "new:") {

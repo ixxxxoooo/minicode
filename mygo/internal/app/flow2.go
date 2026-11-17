@@ -37,21 +37,6 @@ func (a *App) assistantChunk(c *ui.Context, m *core.Assistant, text string, last
 	})
 }
 
-// turnEnd 返回 items[i] 是不是某个回合的最后一项(下一项是用户消息或已到末尾),以及该回合的用户消息 id。
-func turnEnd(items []core.Item, i int) (string, bool) {
-	if i+1 < len(items) {
-		if _, ok := items[i+1].(*core.User); !ok {
-			return "", false
-		}
-	}
-	for k := i; k >= 0; k-- {
-		if u, ok := items[k].(*core.User); ok {
-			return u.ID, true
-		}
-	}
-	return "", false
-}
-
 // padCode 给行内代码两侧各补一个窄空格,让底色比文字宽出一点(设计稿的行内代码有 1×5 px 内边距,
 // Markdown 组件没有这个选项)。围栏代码块里的反引号不处理;窄空格不会被 CommonMark 当作可裁掉的空白。
 func padCode(src string) string {

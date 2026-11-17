@@ -291,27 +291,6 @@ func (ds *DiskStore) SetMCPTool(server, tool string, on bool) error {
 	return writeAtomic(path, b, 0o600)
 }
 
-// MCPToolDenied 判断本地层 permissions.deny 是否禁用了该 MCP 工具。
-func (ds *DiskStore) MCPToolDenied(server, tool string) bool {
-	path := filepath.Join(ds.proj, ".claude", "settings.local.json")
-	var root map[string]any
-	if !readJSON(path, &root) {
-		return false
-	}
-	perms, _ := root["permissions"].(map[string]any)
-	if perms == nil {
-		return false
-	}
-	deny, _ := perms["deny"].([]any)
-	key := "mcp__" + strings.ReplaceAll(server, " ", "_") + "__" + tool
-	for _, x := range deny {
-		if s, ok := x.(string); ok && s == key {
-			return true
-		}
-	}
-	return false
-}
-
 // MCPDenySet 一次读出本地层 permissions.deny 里全部 mcp__ 规则(键即规则原文)。
 // 弹层里每个工具行都要问「是否被禁用」,逐个读文件每帧会读几十次,所以批量读一次再缓存。
 func (ds *DiskStore) MCPDenySet() map[string]bool {

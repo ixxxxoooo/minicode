@@ -53,9 +53,6 @@ func (a *App) usage() core.UsageReport {
 // SetUsageSource 注入真实的用量数据源(按范围出报告);未就绪时可返回没有 Days 的空报告。
 func (a *App) SetUsageSource(f func(rng int) core.UsageReport) { a.usageSrc = f }
 
-// SetUsageRange 切换用量范围(测试 / 截图用)。
-func (a *App) SetUsageRange(r int) { a.use.rng, a.use.set = r, true }
-
 // closeUsage 关闭用量整页,回到工作台(没有侧栏图标入口,这是它唯一的显式出口)。
 func (a *App) closeUsage() {
 	if a.screen != ScreenUsage {

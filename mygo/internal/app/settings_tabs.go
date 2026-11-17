@@ -232,19 +232,6 @@ func accentSwatches(a *App, c *ui.Context) {
 
 // ───────── 其它分类的自定义块(演示数据:真实配置接入后读 ~/.claude) ─────────
 
-func ruleRows(a *App, c *ui.Context, kind string, rules []string) {
-	t := a.tk
-	tagK := map[string]kit.TagKind{"allow": kit.KOk, "ask": kit.KWarn, "deny": kit.KErr}[kind]
-	lbl := map[string]string{"allow": "允许", "ask": "询问", "deny": "拒绝"}[kind]
-	for i, r := range rules {
-		rowBox(a, c, i == 0, 30).Children(func() {
-			kit.Tag(c, lbl, tagK)
-			kit.Mono(c, r, t.Tx1).Grow(1)
-			kit.Ib(c, "trash", kit.IbOpt{Small: true, Tip: "删除"})
-		})
-	}
-}
-
 func spark(a *App, c *ui.Context, vals []float64) {
 	t := a.tk
 	box := ui.Box(c).Size(120, 26).Shrink(0)
@@ -606,24 +593,6 @@ var settingsTabs = []setTabDef{
 			}),
 		}},
 	}},
-}
-
-// shortcutGroups 是快捷键分类的分组(显示当前生效的键位)。
-func shortcutGroups() []setGroup {
-	mk := func(title string, items ...[2]string) setGroup {
-		rows := make([]setRow, len(items))
-		for i, it := range items {
-			combo := it[1]
-			rows[i] = rCustom(it[0], "", func(a *App, c *ui.Context) { keycap(c, combo) })
-		}
-		return setGroup{title: title, rows: rows}
-	}
-	return []setGroup{
-		mk("全局", [2]string{"命令面板", "⌘ K"}, [2]string{"新对话", "⌘ N"}, [2]string{"新窗口", "⇧ ⌘ N"}, [2]string{"设置", "⌘ ,"}, [2]string{"循环权限模式", "⇧ ⇥"}),
-		mk("形态与面板", [2]string{"切换 Agent / IDE", "⌘ E"}, [2]string{"显示 / 隐藏导航栏", "⌘ B"}, [2]string{"显示 / 隐藏右侧栏", "⌥ ⌘ B"}, [2]string{"底部面板", "⌘ J"}, [2]string{"源代码管理", "⌃ ⇧ G"}),
-		mk("编辑器", [2]string{"当前文件查找", "⌘ F"}, [2]string{"项目内搜索", "⇧ ⌘ F"}, [2]string{"转到符号", "⇧ ⌘ O"}, [2]string{"保存", "⌘ S"}, [2]string{"行注释", "⌘ /"}),
-		mk("对话", [2]string{"立即引导", "⌘ ⏎"}, [2]string{"中断回合", "esc"}, [2]string{"编辑上一条消息", "↑"}),
-	}
 }
 
 // sysPromptArea 是「追加系统提示词」的多行输入。

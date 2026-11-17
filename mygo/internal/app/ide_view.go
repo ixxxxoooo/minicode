@@ -93,15 +93,3 @@ func (a *App) editorTheme() *editor.Theme {
 }
 
 // ───────── 空编辑器 ─────────
-
-func (a *App) ideEmpty(c *ui.Context) {
-	t := a.tk
-	ui.Column(c).Grow(1).Justify(ui.Center).AlignItems(ui.Center).Gap(10).Children(func() {
-		a.brandEmptyMark(c, 44)
-		ui.Text(c, "从左侧文件树打开文件").TextColor(t.Tx3)
-		ui.Row(c).Gap(6).Children(func() {
-			kit.Kbd(c, "⌘", "P")
-			ui.Text(c, "快速打开").TextColor(t.Tx4).FontSize(theme.FsCap)
-		})
-	})
-}

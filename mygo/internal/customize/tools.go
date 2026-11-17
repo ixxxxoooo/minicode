@@ -61,14 +61,6 @@ func ValidateToolRule(rule string) string {
 	return ""
 }
 
-// ToolBase 取规则的工具名部分(`Bash(git:*)` → `Bash`)。
-func ToolBase(rule string) string {
-	if i := strings.IndexByte(rule, '('); i > 0 {
-		return rule[:i]
-	}
-	return rule
-}
-
 // HasAllow 是否已允许了这条规则。
 func (it *Item) HasAllow(rule string) bool {
 	for _, t := range it.Allow {

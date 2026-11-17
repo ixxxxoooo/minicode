@@ -69,45 +69,6 @@ func (a *App) updFailTitle(def string) string {
 	return def
 }
 
-func (a *App) updSidebarCapsule(c *ui.Context) {
-	if a.updSt.Phase == updNone && a.update == "" {
-		return
-	}
-	t := a.tk
-	lbl := a.updLabel()
-	row := ui.ButtonBase(c).Key("upd-cap").Height(theme.Px(26)).PaddingX(8).Gap(6).Radius(t.RSm()).Background(t.AcSoft).AlignItems(ui.Center).Margin(4, 0, 0, 0).Cursor(ui.CursorPointer)
-	row.OnClick(func() {
-		if a.updSt.Phase == updReady {
-			a.applyUpdateRestart()
-			return
-		}
-		if a.updSt.Phase == updNone && a.upd == nil {
-			a.checkUpdateAsync()
-		}
-		a.togglePop("upd")
-	})
-	row.Children(func() {
-		ic := "download"
-		switch a.updSt.Phase {
-		case updChecking, updLatest:
-			ic = "refresh"
-		case updVerify:
-			ic = "shieldCk"
-		case updUnpack:
-			ic = "cube"
-		case updReady:
-			ic = "refresh"
-		case updFail, updNetErr:
-			ic = "alert"
-		}
-		kit.Ic(c, ic, kit.S12).TextColor(t.Ac)
-		ui.Text(c, lbl).TextColor(t.Ac).Grow(1).SingleLine()
-		if a.updSt.Phase == updDownload && a.updSt.Percent > 0 {
-			kit.Meter(c, float32(a.updSt.Percent)).Width(54)
-		}
-	})
-}
-
 func (a *App) updPopup(c *ui.Context, anchor ui.Element) {
 	t := a.tk
 	a.popOpen("upd", func(open *bool) {

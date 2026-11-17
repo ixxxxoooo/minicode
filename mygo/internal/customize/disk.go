@@ -522,12 +522,6 @@ func (ds *DiskStore) loadHooks() {
 	}
 }
 
-// ReloadMCPConfig 只从磁盘配置重载 MCP 列表,不启动子进程。
-// 同步版本(读盘 + 合并),只在界面线程或测试里用;后台线程请用 ReadMCPConfig + ApplyMCPConfig。
-func (ds *DiskStore) ReloadMCPConfig() {
-	ds.ApplyMCPConfig(ds.ReadMCPConfig())
-}
-
 // RefreshMCPStatus 用 claude mcp list 的输出更新状态(不启动会话)。
 // 同步版本只在测试里用:会跑子进程,界面线程请走 FetchMCPStatus(后台)+ ApplyMCPStatus(界面线程)。
 func (ds *DiskStore) RefreshMCPStatus() {

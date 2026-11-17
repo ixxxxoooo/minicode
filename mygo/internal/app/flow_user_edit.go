@@ -11,14 +11,6 @@ import (
 
 func (a *App) editingUser() bool { return a.userEd.id != "" }
 
-func (a *App) userEditEscape() bool {
-	if !a.editingUser() {
-		return false
-	}
-	a.cancelUserEdit()
-	return true
-}
-
 func (a *App) submitUserEdit() {
 	id := a.userEd.id
 	txt := strings.TrimSpace(a.userEd.draft)

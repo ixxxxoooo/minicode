@@ -114,11 +114,6 @@ func (a *App) latestTodos() *core.Todos {
 	return nil
 }
 
-// wsSection 是工作区内容里的小标题。
-func wsSection(c *ui.Context, t *theme.Tokens, s string) {
-	ui.Text(c, s).FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3).Margin(4, 0, 0, 0)
-}
-
 // ───────── 后台任务输出 ─────────
 
 // taskView 是后台命令 / 监听的实时输出标签。

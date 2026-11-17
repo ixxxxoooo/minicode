@@ -61,11 +61,6 @@ func (a *App) syncNavSwap() {
 	a.navSwapKey = key
 }
 
-// chatDockOn IDE 形态下对话栏是否以右侧停靠栏的形式占位(右栏开着、不是窄窗图标条、没被最大化)。
-func (a *App) chatDockOn() bool {
-	return a.mode == ModeIDE && !a.chatMax && a.rightOn && !a.useDockRail()
-}
-
 // absF 是 float32 的绝对值。
 func absF(v float32) float32 {
 	if v < 0 {

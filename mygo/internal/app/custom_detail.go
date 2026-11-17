@@ -506,10 +506,6 @@ func (a *App) cuCommand(c *ui.Context, st *customize.Store, it *customize.Item) 
 	}
 }
 
-func argvOf(it *customize.Item) string {
-	return argvOfDraft(it)
-}
-
 func argvOfDraft(it *customize.Item) string {
 	if it.Hint != "" {
 		return " "

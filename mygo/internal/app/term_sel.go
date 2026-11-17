@@ -82,11 +82,6 @@ func lineCells(ln term.Line) []string {
 	return cells
 }
 
-// lineString 把一行拼成纯文本(去掉尾部空白)。
-func lineString(ln term.Line) string {
-	return strings.TrimRight(strings.Join(lineCells(ln), ""), " ")
-}
-
 // norm 返回按先后排好的选区两端。
 func (s termSel) norm() (from, to cellPos) {
 	from, to = s.a, s.b

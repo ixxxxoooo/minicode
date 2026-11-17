@@ -79,7 +79,7 @@ func (a *App) brandLockup(c *ui.Context, tile float32, vertical bool) {
 		})
 		fs := tile * 0.58
 		// 字形视觉重心略偏下:底部留 .06em,与图标中心对齐
-		ui.Text(c, "MiniCode").FontSize(fs).FontWeight(600).LetterSpacing(-fs * 0.025).TextColor(a.tk.Tx1).Margin(0, 0, fs*0.06, 0)
+		ui.Text(c, "MiniCode").FontSize(fs).FontWeight(600).LetterSpacing(-fs*0.025).TextColor(a.tk.Tx1).Margin(0, 0, fs*0.06, 0)
 	}
 	if vertical {
 		ui.Column(c).Gap(tile / 8).AlignItems(ui.Center).Children(body)

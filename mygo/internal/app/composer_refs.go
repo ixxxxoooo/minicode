@@ -11,24 +11,6 @@ import (
 
 var draftAtRE = regexp.MustCompile(`@([^\s@]+)`)
 
-// draftRefPaths 从草稿里解析不重复的 @ 引用路径(不含 @ 前缀)。
-func draftRefPaths(draft string) []string {
-	seen := map[string]bool{}
-	var out []string
-	for _, m := range draftAtRE.FindAllStringSubmatch(draft, -1) {
-		if len(m) < 2 {
-			continue
-		}
-		p := strings.TrimSpace(m[1])
-		if p == "" || seen[p] {
-			continue
-		}
-		seen[p] = true
-		out = append(out, p)
-	}
-	return out
-}
-
 // 拖入 / 选择的文件引用(设计稿 drag-more 的 .ref 胶囊):不写进输入框正文,以胶囊显示在输入框顶部,
 // 发送时按「@路径」放在消息最前面。这样输入框里不会同时出现一段 @路径 文字和一枚重复的胶囊。
 

@@ -118,12 +118,3 @@ func RemoveRule(layer Layer, project, kind, rule string) error {
 	log.Info("删除权限规则", "layer", layer, "kind", kind, "rule", rule)
 	return writeJSON(path, root)
 }
-
-// DemoRules 演示数据。
-func DemoRules() PermRules {
-	return PermRules{
-		Allow: []string{"Bash(git status)", "Bash(cargo test:*)", "Read(src/**)"},
-		Ask:   []string{"Bash(git push:*)"},
-		Deny:  []string{"Read(.env)", "Bash(rm -rf:*)"},
-	}
-}

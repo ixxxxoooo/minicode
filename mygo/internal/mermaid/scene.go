@@ -56,7 +56,6 @@ func (p Paint) Accent() (uint8, bool) {
 
 func PaintRole(r Role) Paint  { return Paint{role: r} }
 func PaintRGB(v uint32) Paint { return Paint{rgb: v} }
-func rolePaint(r Role) Paint  { return Paint{role: r} }
 
 // Anchor 文字锚点。
 type Anchor int

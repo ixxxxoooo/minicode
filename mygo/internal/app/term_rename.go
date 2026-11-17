@@ -70,10 +70,6 @@ func (a *App) commitTermRename() {
 	a.termRen = termRen{}
 }
 
-func (a *App) termChip(c *ui.Context, i int) {
-	a.termChipSized(c, i, termTabMaxW)
-}
-
 func (a *App) termChipSized(c *ui.Context, i int, tabW float32) {
 	t := a.tk
 	raw := a.termTabRawTitle(i)

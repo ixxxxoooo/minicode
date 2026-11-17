@@ -94,15 +94,6 @@ func (a *App) brandAppImg(c *ui.Context, name string, px float32) {
 	ui.Box(c).Size(px, px).Radius(px / 4).Background(a.tk.Fill2)
 }
 
-// brandTrayImg 在菜单栏小底板上画一枚托盘图标:dark 为深色菜单栏(主体染白)。
-func (a *App) brandTrayImg(c *ui.Context, name string, px float32, dark bool) {
-	if src := brandImage(name, dark); src != nil {
-		ui.Image(c, src).Size(px, px).Fit(ui.Contain)
-		return
-	}
-	ui.Box(c).Size(px, px).Radius(4).Background(a.tk.Fill2)
-}
-
 // brandPreviewDock 应用图标组顶部的预览:同一枚图标在 Dock / ⌘Tab / 关于 里的三种尺寸(即时反映偏好)。
 func (a *App) brandPreviewDock(c *ui.Context) {
 	t := a.tk

@@ -150,9 +150,6 @@ func readUsage(path string) []UsageRec {
 // 范围:0 = 最近 7 天 / 1 = 最近 30 天 / 2 = 本月。
 var usageRangeNames = []string{"7 天", "30 天", "本月"}
 
-// RangeNames 是范围切换的选项。
-func RangeNames() []string { return usageRangeNames }
-
 func dayStart(t time.Time) time.Time {
 	y, m, d := t.Date()
 	return time.Date(y, m, d, 0, 0, 0, 0, t.Location())

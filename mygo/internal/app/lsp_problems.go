@@ -1,7 +1,6 @@
 package app
 
 import (
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -252,9 +251,6 @@ func (a *App) lspCard(c *ui.Context, s *lspSess) {
 		}
 	})
 }
-
-// lspRelFile 把项目相对路径换成绝对路径(测试用)。
-func (a *App) lspAbs(rel string) string { return filepath.Join(a.proj, rel) }
 
 // allProblemsText 把全部诊断拼成「文件:行 消息」的多行文本(右键「复制全部」)。
 func (a *App) allProblemsText(files []string) string {

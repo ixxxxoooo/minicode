@@ -1,8 +1,6 @@
 package app
 
 import (
-	"strings"
-
 	"github.com/ixxxxoooo/minicode/internal/kit"
 )
 
@@ -21,17 +19,4 @@ func (a *App) applyCheapPrefs() {
 	}
 	// 括号与语法类偏好:编辑器接线待 B5;动效已处理
 	_ = kit.MotionOn()
-}
-
-// ignoreGlobLines 把偏好 editor.ignore 拆成行(供搜索 / 监视读取)。
-func (a *App) ignoreGlobLines() []string {
-	raw := a.prefs.Str("editor.ignore", "target\nnode_modules\n.git\ndist")
-	var out []string
-	for _, ln := range strings.Split(raw, "\n") {
-		ln = strings.TrimSpace(ln)
-		if ln != "" {
-			out = append(out, ln)
-		}
-	}
-	return out
 }
