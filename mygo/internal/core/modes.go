@@ -21,11 +21,17 @@ const (
 // AllModes 按界面循环切换(⇧Tab)的顺序排列。
 var AllModes = [...]PermissionMode{ModeDefault, ModeAcceptEdits, ModePlan, ModeAuto, ModeDontAsk, ModeBypassPermissions}
 
+// 启动参数仍接受 default;运行中 set_permission_mode 与新版 CLI 选单以 manual 为准。
 var modeCLI = [...]string{"default", "acceptEdits", "plan", "auto", "dontAsk", "bypassPermissions"}
+
+var modeCLILive = [...]string{"manual", "acceptEdits", "plan", "auto", "dontAsk", "bypassPermissions"}
 var modeLabel = [...]string{"逐项确认", "自动接受编辑", "计划模式", "自动模式", "不再询问", "跳过权限确认"}
 
-// CLI 返回传给 `claude --permission-mode` 的参数值。
+// CLI 返回传给 `claude --permission-mode` 的参数值(启动与会话恢复)。
 func (m PermissionMode) CLI() string { return modeCLI[m] }
+
+// CLILive 返回运行中 set_permission_mode / stream-json 应用的模式名。
+func (m PermissionMode) CLILive() string { return modeCLILive[m] }
 
 // Label 返回界面显示名。
 func (m PermissionMode) Label() string { return modeLabel[m] }
@@ -33,10 +39,13 @@ func (m PermissionMode) Label() string { return modeLabel[m] }
 // Next 循环到下一个模式。
 func (m PermissionMode) Next() PermissionMode { return AllModes[(int(m)+1)%len(AllModes)] }
 
-// ParseMode 从 CLI 取值解析,未知值返回 false。
+// ParseMode 从 CLI / 会话状态取值解析;未知值返回 false。
 func ParseMode(s string) (PermissionMode, bool) {
+	if s == "manual" {
+		return ModeDefault, true
+	}
 	for _, m := range AllModes {
-		if m.CLI() == s {
+		if m.CLI() == s || m.CLILive() == s {
 			return m, true
 		}
 	}

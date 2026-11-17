@@ -215,8 +215,10 @@
       groups.push(`<div class="cap cfg-grp-h f ai g2 ${disabled ? 'dim' : ''}" data-act="cfg-fold" data-prov="${p.id}">${ic('chevD', `s12 fc-car ${chev}`)}${LOGOS.logo(provBrand(p), 13)}<span class="grow">${esc(p.name)}</span>${disabled ? `<span class="t3 fs-cap">${reason}</span>${btn('去设置', 'sm ghost', '', 'data-act="settab" data-tab="models" data-goto="settings"')}` : `<span class="t3 fs-cap">${p.selected.length} 个模型</span>`}</div><div class="cfg-grp ${folded}" data-grp="${p.id}">${disabled ? `<div class="t3 fs-cap" style="padding:6px 10px">填写密钥并勾选模型后可选。</div>` : models}</div>`);
     });
 
+    const permHint = `<div class="t3 fs-micro" style="padding:4px 10px 6px;line-height:1.45">⇧Tab 在六档间循环;弹层展示常用四档。CLI:<code class="mono">manual</code> / <code class="mono">acceptEdits</code> / <code class="mono">plan</code> / <code class="mono">bypassPermissions</code>(另 <code class="mono">auto</code>、<code class="mono">dontAsk</code>)。跳过=警示橙;设置可禁止绕过。</div>`;
     return `<div class="pop cfg-pop${o.shell ? ' sb-pop' : ''} a-pop-up" style="padding:4px;gap:0;max-width:320px"><div class="cap">权限模式</div>
       ${perm.map(([n, t, on, col]) => `<div class="mi ${on ? 'on' : ''}"><span style="color:${col};display:inline-flex">${ic(n, 's12')}</span><span class="grow">${t}</span>${on ? ic('check', 's12') : ''}</div>`).join('')}
+      ${permHint}
       <div class="sep"></div><div class="cap">模型</div><div class="cfg-models scroll">${groups.join('')}</div>
       <div class="sep"></div><div class="mi" data-act="settab" data-tab="models" data-goto="settings">${ic('sliders', 's12')}<span class="grow">管理服务商…</span></div>
       ${o.shell ? '' : `<div class="f ai jb" style="padding:4px 8px 6px"><span class="t3 fs-cap m">思考强度</span>${seg(['关', '低', '中', '高'], 2)}</div>`}</div>`;

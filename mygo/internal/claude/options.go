@@ -72,7 +72,8 @@ func (o Options) Args() []string {
 	if o.Model != "" && o.Model != "default" {
 		push("--model", o.Model)
 	}
-	if o.Mode != nil {
+	// 恢复会话时不要带 --permission-mode:以会话里保存的模式为准,避免被偏好里的默认模式覆盖。
+	if o.Mode != nil && o.Resume == "" {
 		push("--permission-mode", o.Mode.CLI())
 	}
 	if o.Effort != nil {

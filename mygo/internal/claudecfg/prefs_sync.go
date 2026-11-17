@@ -79,6 +79,6 @@ func PermModeCLI(ix int) string {
 	case 2:
 		return core.ModePlan.CLI()
 	default:
-		return core.ModeDefault.CLI()
+		return core.ModeDefault.CLILive()
 	}
 }

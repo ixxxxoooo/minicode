@@ -625,7 +625,11 @@ func (b *Backend) onCommand(c core.Command) {
 		if b.p == nil {
 			return
 		}
-		fresh := !c.Force && !b.usageAsked.IsZero() && time.Since(b.usageAsked) < core.LimitsTTLSecs*time.Second
+		ttl := core.LimitsTTLSecs
+		if c.LimitsQuick {
+			ttl = core.LimitsPopoverTTLSecs
+		}
+		fresh := !c.Force && !b.usageAsked.IsZero() && time.Since(b.usageAsked) < time.Duration(ttl)*time.Second
 		if fresh || b.hasReq(rkUsage) {
 			return
 		}
@@ -920,10 +924,10 @@ func (b *Backend) onControlResponse(v obj) {
 			b.models = models
 		}
 		mode := core.ModeDefault
-		if b.cfg.Mode != nil {
-			mode = *b.cfg.Mode
-		} else if m, ok := core.ParseMode(str(body, "current_permission_mode")); ok {
+		if m, ok := core.ParseMode(str(body, "current_permission_mode")); ok {
 			mode = m
+		} else if b.cfg.Mode != nil {
+			mode = *b.cfg.Mode
 		}
 		b.confirmedMode = mode
 		evs := []core.Event{core.EvReady{SessionID: b.sessionID, Models: b.models, Model: b.model(), Mode: mode}}

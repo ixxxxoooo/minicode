@@ -94,7 +94,7 @@ func SetModel(id, model string) obj {
 	return controlRequest(id, r)
 }
 func SetPermissionMode(id string, m core.PermissionMode) obj {
-	return controlRequest(id, obj{"subtype": "set_permission_mode", "mode": m.CLI()})
+	return controlRequest(id, obj{"subtype": "set_permission_mode", "mode": m.CLILive()})
 }
 
 // ApplyEnv 热更新进程环境变量(settings.env);空串 = 清除。
