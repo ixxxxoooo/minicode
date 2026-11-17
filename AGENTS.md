@@ -12,6 +12,8 @@ cd mygo && unset GOROOT                       # 每次执行 Go 命令前(残留
 gofmt -l . ; go build ./...                   # 日常:能编译即可
 go vet ./... && go test ./...                 # 集中测试阶段才跑
 scripts/dev.sh [--demo|--real]                # 编译(先 go vet)→ 杀旧实例 → 在 target/dev/MiniCode Dev.app 里启动唯一的新实例
+scripts/package.sh [--dmg]                    # 打包正式版 dist/MiniCode.app(--dmg 另出 dist/MiniCode-<版本>.dmg);版本取 mygo/main.go 的 version(去 -mygo)
+scripts/publish.sh                            # 发布:先改 main.go 版本号并提交推送;在干净 HEAD 检出里打包 → appcast.json(平铺 + stable 嵌套)→ tag → gh release;MINI_DRY_RUN=1 只演练
 scripts/with-deepseek.sh <命令…>              # 真实场景测试:从 ~/.minicode/provider-keys.json 注入 DeepSeek 密钥后执行
 ```
 
