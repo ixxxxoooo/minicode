@@ -15,6 +15,7 @@ import (
 	"strconv"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
@@ -25,6 +26,11 @@ type beltRect struct{ x, w float32 }
 type beltGeom struct {
 	chat, ws     beltRect
 	chatOn, wsOn bool // 对话栏 / 工作区此刻占位(不占位时宽度为 0)
+
+	// 以下只在切换那一刻(beltCapture)记下,供被挤出舞台的旧工作区「幽灵」画内容:
+	ghostSt *editor.State // 当前文件标签的只读影子编辑器(与真实编辑器共用缓冲区,滚动位置同切换那一刻);nil = 主体留空
+	ghostV  *ideTab       // 当前是虚拟标签(审查 / 计划 / 子 Agent / 任务 …)时记下它,幽灵直接再画一份它的视图
+	panelH  float32       // 旧工作区底部面板的高度(没开 = 0)
 }
 
 // beltFrame 是本帧传送带的摆位结果;on = false 表示不在平移中,面板走弹性布局。
@@ -89,7 +95,33 @@ func (a *App) beltCapture() {
 	if a.stageW <= 0 {
 		return
 	}
-	a.belt0, a.belt0Ok = a.beltGeomNow(a.stageW, a.tk.Scheme.GapPane), true
+	g := a.beltGeomNow(a.stageW, a.tk.Scheme.GapPane)
+	if g.wsOn {
+		g.ghostSt, g.panelH = a.beltGhostState()
+		if tb := a.ide.cur(); g.ghostSt == nil && tb != nil && tb.virt != "" && a.ide.splitDir == 0 && !(a.ly.panelMax && a.ide.bottomOpen) {
+			g.ghostV = tb
+		}
+	}
+	a.belt0, a.belt0Ok = g, true
+}
+
+// beltGhostState 给旧工作区的幽灵备好内容:当前是普通文件标签时,另建一个只读的编辑器状态,
+// 与真实编辑器共用同一份缓冲区(语法高亮随缓冲区走),滚动位置取切换那一刻的。
+// 真实的编辑器 / 终端不能在一帧里画两份(句柄只能绑一个元素),影子状态是独立的,不冲突。
+// 返回:影子状态(其它标签类型为 nil,主体留空)、底部面板高度(没开 / 已最大化为 0)。
+func (a *App) beltGhostState() (*editor.State, float32) {
+	d := a.ide
+	var panelH float32
+	if d.bottomOpen && !a.ly.panelMax {
+		panelH = a.panelHeight()
+	}
+	tb := d.cur()
+	if tb == nil || tb.buf == nil || tb.st == nil || tb.diff || tb.virt != "" || tb.viewer != "" || tb.err != "" || d.splitDir != 0 || (a.ly.panelMax && d.bottomOpen) {
+		return nil, panelH
+	}
+	st := &editor.State{Buffer: tb.buf, ReadOnly: true, WrapGuides: nil, NoScrollbars: true}
+	st.SetScrollY(tb.st.ScrollY())
+	return st, panelH
 }
 
 // beltStep 算本帧的摆位。不在平移中(没有真实窗口且没冻结 / 动效关 / 没记到旧几何 / 已走完)返回 on = false。
@@ -118,9 +150,12 @@ func (a *App) beltStep() beltFrame {
 
 // wsGhost 画被挤出舞台的旧工作区。
 // 同一份工作区内容(编辑器 / 终端等控件的句柄)一帧里只能绑定一个元素,不能再画第二份,
-// 所以幽灵是轻量版:面板外壳 + 标签条(标签名,当前标签高亮)+ 空白主体,不接收输入(切换期间整窗有指针罩)。
+// 所以幽灵是轻量版:面板外壳 + 标签条(标签名,当前标签高亮)+ 主体 + 底部面板占位,不接收输入(切换期间整窗有指针罩)。
+// 主体:当前是普通文件标签时画只读影子编辑器(真实代码 + 行号 + 高亮,不是一片空白);其它标签类型(对比 / 查看器 /
+// 虚拟标签)只画底色。
 func (a *App) wsGhost(c *ui.Context, r beltRect) {
 	t := a.tk
+	g := a.belt0
 	p := a.pane(c).Key("ws-ghost").ClipX().Absolute().Left(r.x).Top(0).Bottom(0).Width(r.w).Shrink(0).Transition(noMotion).PassThrough()
 	p.Children(func() {
 		ui.Row(c).Key("ws-ghost-tabs").Height(theme.HTab).Shrink(0).AlignItems(ui.Center).Padding(0, 6, 0, 6).Gap(2).
@@ -132,5 +167,23 @@ func (a *App) wsGhost(c *ui.Context, r beltRect) {
 				}
 			}
 		})
+		if st := g.ghostSt; st != nil {
+			st.Theme = a.editorTheme()
+			st.Font = ui.Font{Family: "monospace", Size: 12}
+			st.LineHeight = 20.0 / 12.0
+			ui.Column(c).Key("ghost-body").Grow(1).MinHeight(0).Clip().PassThrough().Children(func() {
+				editor.View(c.Key("ghost-ed"), st).Grow(1).MinWidth(0).FillHeight()
+			})
+		} else if tb := g.ghostV; tb != nil {
+			ui.Column(c).Key("ghost-body").Grow(1).MinHeight(0).Clip().PassThrough().Children(func() {
+				// 同一份视图画第二份:个别视图若有「只能绑一次」的控件会 panic,这里隔离,最坏只是幽灵主体留空(静默,5 秒后重试)
+				a.guard(c, "形态切换幽灵", "belt-ghost:"+tb.id, guardSilent, func() { a.virtView(c, tb) })
+			})
+		} else {
+			ui.Box(c).Key("ghost-body").Grow(1)
+		}
+		if g.panelH > 0 {
+			ui.Box(c).Key("ghost-panel").Height(g.panelH).Shrink(0).Background(t.BG).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2)
+		}
 	})
 }
