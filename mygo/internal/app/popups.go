@@ -321,7 +321,7 @@ func (a *App) acctPopup(c *ui.Context, which string, anchor ui.Element) {
 				item("keys", "kbd", "快捷键", "", func() { a.openSettings("shortcuts") })
 				kit.Sep(c)
 				item("update", "refresh", "检查更新", "", func() { a.openSettings("about") })
-				item("about", "info", "关于 MiniCode", "0.2.0", func() { a.openSettings("about") })
+				item("about", "info", "关于 MiniCode", strings.TrimSuffix(Version, "-mygo"), func() { a.openSettings("about") })
 			})
 		})
 	})

@@ -63,3 +63,27 @@ func (a *App) brandLogoSource(px float32) ui.ImageSource {
 	}
 	return nil
 }
+
+// brandLockup 画锁定版式(图标 + 字标),与设计稿 U.brand.lockup 同一套算法:
+// tile = 图标本体边长;图标与字标间距 = tile / 8;字号 = tile × .58,字距 −2.5%;vertical 时上下排列。
+// 外圈的安全留白(tile / 4)由调用方用 Padding 给,这里只画内容。
+func (a *App) brandLockup(c *ui.Context, tile float32, vertical bool) {
+	src := a.brandLogoSource(tile)
+	body := func() {
+		ui.Box(c).Size(tile, tile).Children(func() {
+			if src == nil {
+				kit.Ic(c, "mark", tile).TextColor(a.tk.Ac)
+				return
+			}
+			logoTile(c, src, tile, 0)
+		})
+		fs := tile * 0.58
+		// 字形视觉重心略偏下:底部留 .06em,与图标中心对齐
+		ui.Text(c, "MiniCode").FontSize(fs).FontWeight(600).LetterSpacing(-fs * 0.025).TextColor(a.tk.Tx1).Margin(0, 0, fs*0.06, 0)
+	}
+	if vertical {
+		ui.Column(c).Gap(tile / 8).AlignItems(ui.Center).Children(body)
+		return
+	}
+	ui.Row(c).Gap(tile / 8).AlignItems(ui.Center).Children(body)
+}

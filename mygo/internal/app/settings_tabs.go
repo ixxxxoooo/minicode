@@ -711,8 +711,8 @@ func perfBody(a *App, c *ui.Context) {
 func aboutCard(a *App, c *ui.Context) {
 	t := a.tk
 	ui.Column(c).Padding(22).Gap(6).AlignItems(ui.Center).Children(func() {
-		a.brandLogo(c, 96, false)
-		ui.Text(c, "MiniCode").FontSize(theme.FsHead).FontWeight(600).Margin(6, 0, 0, 0)
+		// 横版锁定版式(与 README 顶部同一个版式);四周留 tile/4 的安全留白
+		ui.Box(c).Padding(13).Margin(0, 0, 2, 0).Children(func() { a.brandLockup(c, 52, false) })
 		ui.Text(c, "版本 "+Version).TextColor(t.Tx3)
 		if hint, ok := a.updAboutHint(); ok {
 			col := t.Ok
