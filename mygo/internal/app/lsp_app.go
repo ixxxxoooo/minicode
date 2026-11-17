@@ -522,12 +522,24 @@ func (a *App) lspReferences(tb *ideTab, off int, word string, fallback func()) b
 			return items[i].line < items[j].line
 		})
 		return func() {
-			if err != nil || len(items) == 0 {
+			st := a.ide.refs
+			if st == nil || st.word != word {
+				st = a.refsBeginSearch(word)
+			}
+			st.loading = false
+			if err != nil {
+				st.err = "语言服务器查找失败:" + err.Error()
+				refsLog.Warn("引用查找失败", "word", word, "err", err)
+				if len(items) == 0 {
+					fallback()
+					return
+				}
+			}
+			if len(items) == 0 {
 				fallback()
 				return
 			}
-			a.ide.refs = &refsState{word: word, items: items}
-			a.ide.bottomOpen, a.ide.bottomTab = true, "refs"
+			a.refsFinishLocal(st, items)
 		}
 	})
 	return true

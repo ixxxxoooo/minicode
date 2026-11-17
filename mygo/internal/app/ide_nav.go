@@ -236,12 +236,6 @@ func codePart(ln string) string {
 	return ln
 }
 
-// refsState 是底部「引用」分段的内容。
-type refsState struct {
-	word  string
-	items []refItem
-}
-
 // showRefs 在底部面板的「引用」分段列出 word 的全部引用。
 func (a *App) showRefs(word string) {
 	d := a.ide
@@ -249,11 +243,20 @@ func (a *App) showRefs(word string) {
 		a.toast = "把光标放在一个符号上再查找引用"
 		return
 	}
+	refsLog.Info("查找引用", "word", word)
 	local := func() {
-		d.refs = &refsState{word: word, items: d.findRefs(word)}
-		d.bottomOpen, d.bottomTab = true, "refs"
+		st := a.refsBeginSearch(word)
+		var items []refItem
+		if a.proj == "" {
+			items = a.refsDemoItems(word)
+		} else {
+			items = d.findRefs(word)
+		}
+		a.refsFinishLocal(st, items)
 	}
 	if tb := d.cur(); tb != nil && tb.st != nil && tb.buf != nil && a.lspReferences(tb, tb.st.Cursor(), word, local) {
+		st := a.refsBeginSearch(word)
+		st.loading = true
 		return
 	}
 	local()

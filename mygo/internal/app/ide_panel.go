@@ -9,7 +9,6 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
-	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
 
 // bottomPanel 是编辑区底部面板:终端 / 问题 / 输出。
@@ -79,7 +78,6 @@ func (a *App) bottomPanel(c *ui.Context) {
 
 // bottomPanelBody 是底部面板里的标签条与当前分段的内容。
 func (a *App) bottomPanelBody(c *ui.Context, h float32) {
-	t := a.tk
 	{
 		def := float32(172)
 		if a.ide.bottomTab == "problems" || a.ide.bottomTab == "refs" {
@@ -122,9 +120,7 @@ func (a *App) bottomPanelBody(c *ui.Context, h float32) {
 		if id := kit.Tabs(c, items, a.ide.bottomTab, 28, func() {
 			ui.Row(c).Gap(1).AlignItems(ui.Center).Children(func() {
 				if a.ide.bottomTab == "refs" {
-					if r := a.ide.refs; r != nil {
-						ui.Text(c, "「"+r.word+"」").Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx3).Margin(0, 6, 0, 0)
-					}
+					a.refsHeadChrome(c, a.ide.refs)
 				} else if a.ide.bottomTab == "problems" {
 					kit.Chip(c, "全部", kit.ChipOpt{Icon: "filter", On: !a.ide.probErr}).OnClick(func() { a.ide.probErr = false })
 					kit.Chip(c, "仅错误", kit.ChipOpt{On: a.ide.probErr}).OnClick(func() { a.ide.probErr = true })
@@ -319,61 +315,6 @@ func (a *App) cmdOutput(c *ui.Context, v cmdView) {
 			for i, ln := range strings.Split(strings.TrimRight(v.output, "\n"), "\n") {
 				ui.Row(c).Key(i).MinHeight(monoLH).AlignItems(ui.Center).Children(func() {
 					ui.RichText(c, a.termLine(ln)...).NoWrap().Clip()
-				})
-			}
-		})
-	})
-}
-
-// refsPanel 是「引用」分段:按文件分组,点击跳转并保持面板,方便逐个看。
-func (a *App) refsPanel(c *ui.Context) {
-	t := a.tk
-	r := a.ide.refs
-	if r == nil {
-		return
-	}
-	if len(r.items) == 0 {
-		ui.Column(c).Grow(1).Padding(8, 12).Children(func() {
-			ui.Text(c, "没有找到「"+r.word+"」的引用").TextColor(t.Tx3)
-		})
-		return
-	}
-	kit.VScroll(c).Key("refs").Grow(1).Children(func() {
-		ui.Column(c).Padding(2, 6).Children(func() {
-			last := ""
-			for i, it := range r.items {
-				if it.path != last {
-					last = it.path
-					n := 0
-					for _, x := range r.items {
-						if x.path == it.path {
-							n++
-						}
-					}
-					disp := it.path
-					if workspace.IsExternalPath(it.path) {
-						disp = a.pathDisplay(it.path)
-					}
-					ui.Row(c).Key("rg-" + it.path).Height(theme.Px(24)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(10.5)).FontWeight(500).Children(func() {
-						kit.Ic(c, "chevD", kit.S12)
-						a.fileIc(c, path.Base(it.path))
-						ui.Text(c, disp).Grow(1)
-						kit.Cnt(c, itoa(n), false)
-					})
-				}
-				i, it := i, it
-				raw := it.text
-				hitLo, hitHi := it.col, it.col+len(r.word)
-				if raw == "" {
-					hitLo, hitHi = 0, 0
-				}
-				row := kit.RowEl(c, false).Key("rf-" + itoa(i)).Gap(8)
-				row.OnClick(func() { a.jumpTo(it.path, it.line, it.col, it.col+len(r.word)) })
-				row.Children(func() {
-					ui.Text(c, itoa(it.line+1)).FontSize(theme.FsMicro).TextColor(t.Tx4).Width(28).NoWrap()
-					ui.Box(c).Grow(1).Shrink(1).MinWidth(0).Clip().Children(func() {
-						ui.RichText(c, a.refLineSpans(it.path, raw, hitLo, hitHi)...).NoWrap()
-					})
 				})
 			}
 		})

@@ -19,7 +19,7 @@ scripts/gen-lockup.py                         # 锁定版式与样式条 → doc
 scripts/with-deepseek.sh <命令…>              # 真实场景测试:从 ~/.minicode/provider-keys.json 注入 DeepSeek 密钥后执行
 ```
 
-运行模式优先级:`--demo` / `--real` / `MINI_DEMO=1|0` > 开发版记住的上次选择 > 真实。常用调试变量:`MINI_MODE=ide`、`MINI_PROJECT=<目录>`、`MINI_THEME` / `MINI_SCHEME`、`MINI_SCREEN` + `MINI_TAB`(设置分类)、`MINI_SESSION`(演示用 `fixbug`)、`MINI_OPEN=review`、`MINI_ED=<编辑器动作>`(含 `lightbox` / `lightbox:/path` 打开图片灯箱)、`MINI_HOME`、`MINI_WIN_W/H`(完整列表见 README 与 `docs/dev-notes.md`)。
+运行模式优先级:`--demo` / `--real` / `MINI_DEMO=1|0` > 开发版记住的上次选择 > 真实。常用调试变量:`MINI_MODE=ide`、`MINI_PROJECT=<目录>`、`MINI_THEME` / `MINI_SCHEME`、`MINI_SCREEN` + `MINI_TAB`(设置分类)、`MINI_SESSION`(演示用 `fixbug`)、`MINI_OPEN=review`、`MINI_ED=<编辑器动作>`(含 `refs:demo` / `refs:fold` / `refs:sel:N` 直达引用面板各态;含 `lightbox` / `lightbox:/path` 打开图片灯箱)、`MINI_HOME`、`MINI_WIN_W/H`(完整列表见 README 与 `docs/dev-notes.md`)。
 日志 `~/.minicode/logs/minicode.log`,崩溃 `~/.minicode/crashes/`。**密钥只在本机文件里,不进仓库 / 日志 / 文档 / 提交。**
 
 ## 工作流(按顺序,不能跳步)

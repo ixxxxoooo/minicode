@@ -220,7 +220,8 @@
       R('Claude 行内补全(✦)', '真实 Haiku claude -p + SetSuggestion;演示占位,Tab 接受', 'ok', 'B5'),
       R('工作区外文件打开', 'workspace.WithExternal + openAnyFile:用户显式打开仍可编辑;标签「工作区外」chip、面包屑 ~ 路径;Git 降级;LSP URI 用 absPath;未测试', 'part', 'B5'),
       R('语言服务器跳到项目外(只读)', 'ide_lsp_jump.go:F12/⌘点击/引用面板/类型·实现;只读标签+🔒芯片+状态栏只读;>2MB 确认·二进制拒绝;后台读盘;不进最近关闭·不自动保存/格式化/追溯;引用列表含项目外路径;go test ide_external_test;未测试', 'part', 'B5'),
-      R('底部「引用」面板语法高亮', 'ide_refs_hl.go:编辑器 Token 主题着色+命中底色;按路径+行内容+主题缓存;ide_panel 分组头对外部路径 ~ 缩写;go test TestRefLineSpansSyntax;未测试', 'part', 'B5')],
+      R('底部「引用」面板语法高亮', 'ide_refs_hl.go:编辑器 Token 主题着色+命中底色;按路径+行内容+主题缓存;ide_panel 分组头对外部路径 ~ 缩写;go test TestRefLineSpansSyntax;未测试', 'part', 'B5'),
+      R('底部「引用」面板交互与分组', 'ide_refs.go:折叠/悬停/选中/标题摘要/右键菜单/加载·错误·空态;ide_refs_logic.go 纯逻辑+go test(本阶段未跑);demo/ed_refs.go 演示数据;-ed refs:demo|fold|sel:N;未用 Computer Use 实测', 'part', 'B5')],
     'ide-search': [
       R('⇧⌘F、选区预填、大小写 / 全词 / 正则、包含排除、文件折叠、虚拟列表、点击预览、替换预览、悬停忽略、全部替换', '', 'ok'),
       R('单条替换(⏎)', '替换行 ⏎ 替换当前选中匹配', 'ok', 'B5'),
