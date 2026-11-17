@@ -160,10 +160,7 @@ func (a *App) sideFoot(c *ui.Context) {
 		g := kit.Ib(c, "gear", kit.IbOpt{Tip: "账号与设置", On: a.popup == "acct@gear"})
 		g.OnClick(func() { a.togglePop("acct@gear") })
 		a.acctPopup(c, "gear", g)
-		if a.devBadge != "" {
-			// 开发版徽章(设计稿之外的开发辅助:主题色小标签)
-			kit.Tag(c, a.devBadge, kit.KAc)
-		}
+		// 开发版 / 演示模式徽章只在右下角状态栏显示一处,侧栏底部不再重复。
 	})
 }
 

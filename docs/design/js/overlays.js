@@ -41,7 +41,7 @@
       spec('输入框 · 点圆环展开', ['.ctx-chip', '.a-pop-up', '--sh-2'], `<div style="padding-top:330px;position:relative">${F.composer({ focus: true, ctx: true })}</div>`),
       spec('关于窗口', ['.dlg', '--sh-3', '--r-xl'], `<div class="f jc">${aboutCard()}</div>`),
       spec('Agent 左下角', ['.upd', '.chip', '.cnt'], `<div class="fc g3" style="width:228px;background:var(--bg-chrome);border-radius:var(--r-md);padding:8px">
-        <div class="f ai g2">${ib('timer', 'tip-u', '自动化')}${ib('canvas', 'tip-u', '画布')}${ib('globe', 'tip-u', '浏览器')}${ib('plug', 'tip-u', '自定义')}<span class="grow"></span>${ib('gear', 'tip-u', '设置')}</div><div class="upd">${ic('download', 's12')}<span class="grow">下载更新 42%</span></div><div class="f ai g2 t3 fs-cap"><span class="tag ac">开发版</span><span class="grow"></span>0.2.0</div></div>`)));
+        <div class="f ai g2">${ib('timer', 'tip-u', '自动化')}${ib('canvas', 'tip-u', '画布')}${ib('globe', 'tip-u', '浏览器')}${ib('plug', 'tip-u', '自定义')}<span class="grow"></span>${ib('gear', 'tip-u', '设置')}</div><div class="upd">${ic('download', 's12')}<span class="grow">下载更新 42%</span></div><div class="f ai g2 t3 fs-cap"><span class="grow"></span>0.2.0</div></div>`)));
 
   /* ───────── 会话流补充 ───────── */
   const msgSec = sec('会话流补充', '长消息折叠、编辑、回合折叠、回退文件、图表卡与附件;都沿用步骤行栅格与卡片层级。',
