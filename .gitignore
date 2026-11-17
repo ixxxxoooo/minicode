@@ -5,3 +5,7 @@ dist
 # MyGo 构建产物
 mygo/build/
 mygo/.mygo/
+
+# 应用按偏好写入项目的 Claude 设置与其备份(本机权限设置,不入库)
+.claude/settings.json
+.claude/settings.json.mini-backup
