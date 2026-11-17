@@ -121,12 +121,25 @@ func (a *App) browserPage(c *ui.Context) {
 		if !v.hideDr && pg.URL != "" {
 			drawer = func() { a.browserDrawer(c, b, pg) }
 		}
-		a.pageSplitW(c, "br", drawerW, &v.st, func() {
+		body := func() {
 			ui.Column(c).Grow(1).MinHeight(0).Children(func() {
 				a.browserReader(c, b, pg)
 				a.browserReaderSelectLayer(c, pg)
 			})
-		}, drawer)
+		}
+		if a.pageNarrowWide() {
+			ui.Column(c).Grow(1).MinHeight(0).Children(func() {
+				ui.Scroll(c).Key("br-main-n").Grow(1).TrackScroll(&v.st).Children(func() {
+					ui.Column(c).Padding(4, 12, 12, 12).Children(body)
+				})
+				if drawer != nil {
+					ui.Column(c).Key("br-drawer-b").MaxHeight(240).Padding(12, 16).Gap(8).
+						BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(drawer)
+				}
+			})
+		} else {
+			a.pageSplitW(c, "br", drawerW, &v.st, body, drawer)
+		}
 	})
 }
 

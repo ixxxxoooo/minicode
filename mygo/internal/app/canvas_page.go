@@ -58,7 +58,7 @@ func (a *App) canvasPage(c *ui.Context) {
 		return
 	}
 	a.canvasViewerOverlay(c)
-	narrow := a.winW > 0 && a.winW < 900
+	narrow := a.pageNarrowWide()
 	a.pane(c).Grow(1).Children(func() {
 		// 顶栏
 		ui.Row(c).Height(40).Padding(0, 16).Gap(8).AlignItems(ui.Center).Shrink(0).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {

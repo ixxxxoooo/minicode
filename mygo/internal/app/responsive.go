@@ -21,6 +21,12 @@ const (
 	palNarrow  = 520
 )
 
+// pageNarrowWide 整页功能(自动化 / 画布 / 浏览器)在窗口窄于 bpWide(1040)时收侧边栏为底栏 / 弹层等。
+func (a *App) pageNarrowWide() bool { return a.winW > 0 && a.winW < bpWide }
+
+// pageNarrowMid 自定义 / 用量等在 <900px 时的规则(与设置左栏断点一致)。
+func (a *App) pageNarrowMid() bool { return a.winW > 0 && a.winW < bpMid }
+
 // autoFit 记录自动收起的状态(用户手动打开后不再算自动)。
 type autoFit struct {
 	w      float32
@@ -68,11 +74,6 @@ func (a *App) compactTitle() bool {
 
 func (a *App) compactModeSeg() bool {
 	return a.winTier() >= 3
-}
-
-// pageNarrowMid 整页(设置 / 自定义 / 用量)在中等宽度下的紧凑布局。
-func (a *App) pageNarrowMid() bool {
-	return a.winW > 0 && a.winW < bpMid
 }
 
 // fitPanels 按断点自动收起 / 恢复次要区域;变宽只恢复曾被自动收起的项。

@@ -79,10 +79,31 @@ func (a *App) submitAutoNew() {
 	log.Info("新建自动化", "id", n.ID)
 }
 
-// autoModals 自动化页浮层(新建 / 查看运行)。
+// autoModals 自动化页浮层(新建 / 查看运行 / 窄窗编辑)。
 func (a *App) autoModals(c *ui.Context) {
 	a.autoNewDlg(c)
+	a.autoEditDlg(c)
 	a.autoRunView(c)
+}
+
+func (a *App) closeAutoEditDlg() {
+	a.au.editDlg = false
+}
+
+// autoEditDlg 窄窗下编辑抽屉改全屏弹层(设计稿 resp)。
+func (a *App) autoEditDlg(c *ui.Context) {
+	if !a.pageNarrowWide() || a.screen != ScreenAutomation || !a.au.editDlg {
+		return
+	}
+	it, ok := a.auto.Get(a.au.sel)
+	if !ok {
+		return
+	}
+	a.autoDlg(c, "au-edit", min(520, a.winW-24), "编辑 · "+it.Name, a.closeAutoEditDlg, func() {
+		ui.Scroll(c).Key("au-edit-scroll").MaxHeight(min(520, a.winH-160)).Children(func() {
+			a.autoDrawer(c)
+		})
+	})
 }
 
 func (a *App) autoDlg(c *ui.Context, key string, w float32, title string, close func(), body func()) {
@@ -91,7 +112,7 @@ func (a *App) autoDlg(c *ui.Context, key string, w float32, title string, close 
 		close()
 		return
 	}
-	want := (key == "auto-new" && a.au.newDlg) || (key == "au-run" && a.au.runView != "") || (key == "mcp-edit" && a.cu.mcpEdit)
+	want := (key == "auto-new" && a.au.newDlg) || (key == "au-run" && a.au.runView != "") || (key == "au-edit" && a.au.editDlg) || (key == "mcp-edit" && a.cu.mcpEdit)
 	t := a.tk
 	a.dialogOpen(key, want, func(open *bool) {
 		ui.DialogBase(c, open, func(backdrop, panel ui.Element) {

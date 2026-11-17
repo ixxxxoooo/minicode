@@ -182,7 +182,7 @@ func TestBrowserPage(t *testing.T) {
 	a, tt := newTestApp(t)
 	a.SeedDemoExtras()
 	a.screen = ScreenBrowser
-	tt.SetSize(1024, 330) // 矮窗口,正文才有可滚动的余量
+	tt.SetSize(1100, 330) // 矮窗口,正文才有可滚动的余量;宽度须 ≥ bpWide(1040),否则抽屉会落到底栏
 	tt.Frame()
 	tt.Frame()
 	b := a.brw()
@@ -234,7 +234,7 @@ func TestBrowserPage(t *testing.T) {
 	}
 	// 快捷提示 → 回对话并带上页面
 	a.screen = ScreenBrowser
-	tt.SetSize(1024, 640)
+	tt.SetSize(1100, 640)
 	tt.Frame()
 	tt.Frame()
 	if err := tt.Click("总结要点"); err != nil {
@@ -372,5 +372,50 @@ func TestCustomizePage(t *testing.T) {
 	}
 	if st.Count(customize.Plugins) != 5 || !a.cu.mk.Installed {
 		t.Fatal("应安装 frontend-design")
+	}
+}
+
+// 整页功能(自动化 / 画布 / 浏览器)在 <1040 的窄窗里改成单列 / 底栏 / 弹层,三页都应能正常出帧。
+func TestPagesNarrowWindow(t *testing.T) {
+	a, tt := newTestApp(t)
+	a.SeedDemoExtras()
+	tt.SetSize(900, 700)
+	for _, scr := range []Screen{ScreenAutomation, ScreenCanvas, ScreenBrowser} {
+		a.screen = scr
+		tt.Frame()
+		tt.Frame()
+		if !a.pageNarrowWide() {
+			t.Fatalf("900 宽应判为窄窗:winW=%v", a.winW)
+		}
+	}
+	// 自动化:窄窗下选中一条计划 = 弹出编辑浮层(不是右侧抽屉)
+	a.screen = ScreenAutomation
+	tt.Frame()
+	items := a.auto.List()
+	if len(items) == 0 {
+		t.Skip("演示数据里没有自动化")
+	}
+	tt.Frame()
+	if a.au.editDlg {
+		t.Fatal("刚进页面不该自动弹出编辑浮层")
+	}
+	a.autoPick(items[0].ID)
+	tt.Frame()
+	tt.Frame()
+	if _, ok := tt.Find("编辑 · " + items[0].Name); !ok {
+		t.Fatalf("窄窗点计划应出现编辑浮层「编辑 · %s」", items[0].Name)
+	}
+	a.closeAutoEditDlg()
+	tt.Frame()
+	tt.Frame()
+	if _, ok := tt.Find("编辑 · " + items[0].Name); ok {
+		t.Fatal("关闭后浮层应消失")
+	}
+	// 宽窗:点计划只换抽屉,不弹浮层
+	tt.SetSize(1280, 700)
+	tt.Frame()
+	a.autoPick(items[0].ID)
+	if a.au.editDlg {
+		t.Fatal("宽窗不该弹编辑浮层")
 	}
 }

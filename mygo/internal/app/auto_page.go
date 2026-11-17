@@ -30,6 +30,7 @@ type autoState struct {
 
 	// 新建模态
 	newDlg                      bool
+	editDlg                     bool // 窄窗下的编辑浮层(宽窗用右侧抽屉);只在用户点了卡片 / 计划后才弹出
 	newName, newPrompt, newTime string
 	newDays, newPerm, newProj   string
 	newErr                      string
@@ -41,6 +42,15 @@ var autoPerms = []string{"只读 · 计划模式", "逐项确认", "自动编辑
 
 // SetAutoSel 选中一条自动化(测试 / 截图用)。
 func (a *App) SetAutoSel(id int) { a.au.sel = id }
+
+// autoPick 点了某条自动化:宽窗换右侧抽屉,窄窗弹出编辑浮层。
+func (a *App) autoPick(id int) {
+	a.au.sel = id
+	if a.pageNarrowWide() {
+		a.au.editDlg = true
+		log.Info("窄窗打开自动化编辑浮层", "id", id)
+	}
+}
 
 func (a *App) autoLoadDraft() {
 	s := &a.au
@@ -69,11 +79,22 @@ func (a *App) autoPage(c *ui.Context) {
 				a.openAutoNewDlg()
 			}
 		})
-		a.pageSplit(c, "au", func() {
-			a.autoWeek(c, items)
-			ui.Box(c).Height(18)
-			a.autoList(c, items)
-		}, func() { a.autoDrawer(c) })
+		narrow := a.pageNarrowWide()
+		if narrow {
+			ui.Scroll(c).Key("au-main-n").Grow(1).MinHeight(0).Children(func() {
+				ui.Column(c).Padding(4, 20, 24, 20).Children(func() {
+					a.autoWeek(c, items)
+					ui.Box(c).Height(18)
+					a.autoList(c, items)
+				})
+			})
+		} else {
+			a.pageSplit(c, "au", func() {
+				a.autoWeek(c, items)
+				ui.Box(c).Height(18)
+				a.autoList(c, items)
+			}, func() { a.autoDrawer(c) })
+		}
 	})
 	a.autoModals(c)
 }
@@ -114,6 +135,31 @@ func (a *App) autoWeek(c *ui.Context, items []automation.Automation) {
 		kit.Ib(c, "chevR", kit.IbOpt{Small: true, Tip: "下一周"}).OnClick(func() { s.weekOf++ })
 	})
 	names := automation.Weekdays()
+	if a.pageNarrowWide() {
+		ui.Column(c).Gap(6).Children(func() {
+			for i := 0; i < 7; i++ {
+				d := mon.AddDate(0, 0, i)
+				today := s.weekOf == 0 && i == (int(now.Weekday()+6)%7)
+				col := ui.Column(c.Key("wk-v-"+itoa(i))).Gap(4).Padding(8, 10).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd1)
+				if today {
+					col.BorderColor(t.Ac).Border(1.5, t.Ac)
+				}
+				col.Children(func() {
+					ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+						ui.Text(c, names[i]).FontWeight(600)
+						ui.Text(c, itoa(int(d.Month()))+"月"+itoa(d.Day())+"日").FontSize(theme.FsCap).TextColor(t.Tx3)
+					})
+					if len(week[i]) == 0 {
+						ui.Text(c, "没有计划").FontSize(theme.FsCap).TextColor(t.Tx4)
+					}
+					for _, sl := range week[i] {
+						a.autoSlot(c, sl, i)
+					}
+				})
+			}
+		})
+		return
+	}
 	ui.Row(c).Gap(6).AlignItems(ui.Stretch).Children(func() {
 		for i := 0; i < 7; i++ {
 			d := mon.AddDate(0, 0, i)
@@ -151,7 +197,7 @@ func (a *App) autoSlot(c *ui.Context, sl automation.Slot, day int) {
 	case sl.Err:
 		b.Background(t.ErrSoft).TextColor(t.Err)
 	}
-	b.OnClick(func() { a.au.sel = sl.ID })
+	b.OnClick(func() { a.autoPick(sl.ID) })
 	b.Children(func() {
 		ui.Text(c, sl.Time).FontFeatures("tnum").Shrink(0)
 		n := ui.Text(c, sl.Name).SingleLine().MinWidth(0).Shrink(1)
@@ -190,13 +236,16 @@ func (a *App) autoList(c *ui.Context, items []automation.Automation) {
 		})
 		return
 	}
-	// 两列卡片
-	for i := 0; i < len(shown); i += 2 {
+	cols := 2
+	if a.pageNarrowWide() {
+		cols = 1
+	}
+	for i := 0; i < len(shown); i += cols {
 		ui.Row(c.Key("aurow-"+itoa(i))).Gap(10).AlignItems(ui.Stretch).Padding(0, 0, 10, 0).Children(func() {
-			for j := i; j < i+2; j++ {
+			for j := i; j < i+cols; j++ {
 				if j < len(shown) {
 					a.autoCard(c, shown[j])
-				} else {
+				} else if cols > 1 {
 					ui.Box(c).Grow(1).Basis(0)
 				}
 			}
@@ -218,7 +267,7 @@ func (a *App) autoCard(c *ui.Context, it automation.Automation) {
 	} else if card.Hovered() {
 		card.BorderColor(t.Bd3)
 	}
-	card.OnClick(func() { s.sel = it.ID })
+	card.OnClick(func() { a.autoPick(it.ID) })
 	last, st := it.Last(a.now())
 	card.Children(func() {
 		ui.Column(c).Grow(1).MinWidth(0).Gap(10).Children(func() {
