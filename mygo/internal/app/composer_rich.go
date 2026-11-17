@@ -32,8 +32,19 @@ func (a *App) composerEditor(c *ui.Context, svc ui.Services) ui.Element {
 	}
 	h = min(h, line*8)
 	var ed ui.Element
+	if a.ux.clipHave { // 上一次接管粘贴时临时清空了剪贴板,把原内容写回
+		svc.WriteClipboardData(a.ux.clipRestore)
+		a.ux.clipHave = false
+	}
 	// 编辑器自己不带内边距,套一层容器补上(上 9 下 3 左右 12,与原来的文本区一致),点内边距也能聚焦
 	wrap := ui.Column(c.Key("draft-wrap")).Padding(9, 12, 3, 12).MinHeight(36).Cursor(ui.CursorText)
+	// 真实应用里 ⌘V 多半不是按键事件,而是菜单的「粘贴」命令直接交给编辑器(OnKey 看不到),
+	// 所以在外层先看一眼(捕获阶段、先于编辑器):剪贴板里有文件 / 图片 / 文本就自己处理
+	wrap.ObserveInput(func(ev ui.InputEvent) {
+		if ev.Kind == ui.InputCommand && (ev.Text == "paste" || ev.Text == "pasteAndMatchStyle") {
+			a.composerPasteCommand(svc)
+		}
+	})
 	wrap.Children(func() {
 		ed = richtext.EditorBase(c.Key("draft"), doc, richtext.EditorOptions{
 			Label:       "输入消息",
@@ -99,6 +110,18 @@ func (a *App) composerPaste(svc ui.Services) bool {
 	}
 	a.compDoc.InsertText(text)
 	return true
+}
+
+// composerPasteCommand 处理菜单「粘贴」命令:先于编辑器看到它,自己接管后把系统剪贴板临时清空,
+// 编辑器随后的原生粘贴就什么也粘不进去(不会重复,也不会混进富文本格式),下一帧再把剪贴板原样写回。
+func (a *App) composerPasteCommand(svc ui.Services) {
+	orig := svc.ReadClipboardData(svc.ClipboardFormats()...).Snapshot()
+	if !a.composerPaste(svc) {
+		return
+	}
+	a.ux.clipRestore, a.ux.clipHave = orig, true
+	svc.WriteClipboardData(transfer.New(transfer.NewItem(transfer.Bytes(transfer.Text, nil))))
+	attachLog.Info("接管粘贴命令", "formats", len(svc.ClipboardFormats()))
 }
 
 // queuePill 排队一枚胶囊,下一帧在光标处插入(按键 / 拖放回调里没有 *ui.Context,量字要等构建期)。

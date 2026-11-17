@@ -5,11 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/egoist/mygo/transfer"
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/richtext"
 	"github.com/ixxxxoooo/minicode/internal/diag"
-	"github.com/ixxxxoooo/minicode/internal/kit"
-	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 // 设计稿 ide-md / drag-more:拖拽引用到对话、Markdown 所见即所得、自动换行与格式化、各处「···」菜单。
@@ -19,7 +18,10 @@ var uxLog = diag.L("edit")
 
 // uxState 汇总这一批编辑体验用到的界面状态。
 type uxState struct {
-	focusDraft    bool            // 下一帧把键盘焦点给输入框(拖入引用之后接着写)
+	focusDraft    bool          // 下一帧把键盘焦点给输入框(拖入引用之后接着写)
+	clipRestore   transfer.Data // 接管粘贴时临时清空了系统剪贴板(防编辑器再粘一遍),下一帧把原内容写回(composer_rich.go)
+	clipHave      bool
+	dropOn        bool            // 此刻有文件正拖在对话栏上:输入框画成虚线「拖入框」,松手即恢复(chat.go 每帧重算)
 	pendingPills  []pillData      // 排队等下一帧插进输入框光标处的胶囊(拖入 / 添加的文件、文件夹、折叠文本;见 composer_rich.go)
 	mdNoteOff     map[string]bool // 已点掉「写法会被规范化」提示条的文件
 	demoHint      string          // 截图 / 调试:强制显示「可放」态的提示文字(ide_debug 的 -ed drag)
@@ -114,23 +116,6 @@ func (a *App) chatDrop(p ui.Element) string {
 		return "文件"
 	}
 	return a.ux.demoHint
-}
-
-// dropOverlay 是「可放」态:整栏强调色描边 + 中央提示。
-func (a *App) dropOverlay(c *ui.Context, what string) {
-	t := a.tk
-	ui.Column(c).Key("dropzone").Absolute().Left(4).Right(4).Top(4).Bottom(4).PassThrough().Justify(ui.Center).AlignItems(ui.Center).
-		Background(t.Ac.Alpha(.08)).Radius(t.RLg()).Border(2, t.Ac).Children(func() {
-		pill := ui.Row(c).Padding(8, 14).Gap(8).AlignItems(ui.Center).Background(t.Raised).Radius(t.RMd()).Border(1, t.AcLine)
-		for _, s := range t.Shadow2() {
-			pill.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
-		}
-		pill.Children(func() {
-			kit.Ic(c, "link", kit.S12).TextColor(t.AcTx)
-			ui.Text(c, "松手插入").FontWeight(500)
-			ui.Text(c, what).Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx2).SingleLine()
-		})
-	})
 }
 
 // dragRef 让一个元素成为文件引用的拖拽源(元素副本会跟着指针)。

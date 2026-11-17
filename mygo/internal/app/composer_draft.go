@@ -18,6 +18,19 @@ import (
 // draftTokenRE 匹配草稿里的图片附件(含前面的一个换行,拆出后正文不留空行)。
 var draftTokenRE = regexp.MustCompile(`\n?!\[[^\]]*\]\([^)]+\)`)
 
+// 图片路径写进 `![](路径)` 时转义 % ( ),否则像「舆图志-陕西省 (3).png」这样带括号的文件名会把语法截断
+// (缩略图读不到、半截路径漏进输入框)。
+var (
+	imgPathEsc   = strings.NewReplacer("%", "%25", "(", "%28", ")", "%29")
+	imgPathUnesc = strings.NewReplacer("%25", "%", "%28", "(", "%29", ")")
+)
+
+// escImgPath 把路径转义成可安全放进 `![](…)` 的形式。
+func escImgPath(p string) string { return imgPathEsc.Replace(p) }
+
+// unescImgPath 是 escImgPath 的逆运算。
+func unescImgPath(p string) string { return imgPathUnesc.Replace(p) }
+
 // splitDraftBody 把完整草稿拆成「正文」与「图片附件语法串」(按出现顺序)。
 // 参数:draft 完整草稿。返回:去掉附件后的正文、各个 `![](路径)` 串。
 func splitDraftBody(draft string) (body string, tokens []string) {
@@ -83,7 +96,7 @@ func (a *App) draftNow() string { return composeDraft(a.draftParts()) }
 // 在输入回调(粘贴、拖放)里调用也安全:以编辑器最新内容为底,不会丢掉刚打的字。
 // 返回:是否新增。
 func (a *App) addDraftImage(path string) bool {
-	tk := "![](" + path + ")"
+	tk := "![](" + escImgPath(path) + ")"
 	body, imgs := a.draftParts()
 	for _, x := range imgs {
 		if x == tk {

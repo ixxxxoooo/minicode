@@ -66,9 +66,7 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		if h := a.chatDrop(drop); h != "" {
 			hint = h
 		}
-		if hint != "" {
-			defer a.dropOverlay(c, hint) // 盖在最上层(后画),各条返回路径都会执行
-		}
+		a.ux.dropOn = hint != "" // 有文件拖过来:输入框变成虚线「拖入框」(composer.go),不再盖整栏提示
 		if a.mode == ModeIDE && !a.chatMax {
 			a.resizeHandle(c, lyDock, "l", a.dockW(), theme.WDock, 300, 560, func(v float32) { a.ly.dock = v })
 		}

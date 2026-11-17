@@ -27,7 +27,7 @@ func parseDraftAttaches(draft string) []draftAttach {
 		if len(m) < 4 {
 			continue
 		}
-		out = append(out, draftAttach{Path: draft[m[2]:m[3]], Span: [2]int{m[0], m[1]}})
+		out = append(out, draftAttach{Path: unescImgPath(draft[m[2]:m[3]]), Span: [2]int{m[0], m[1]}})
 	}
 	return out
 }
@@ -37,7 +37,7 @@ func splitDraftImages(draft string) (string, []string) {
 	text := draftImgRE.ReplaceAllStringFunc(draft, func(m string) string {
 		sub := draftImgRE.FindStringSubmatch(m)
 		if len(sub) > 1 {
-			imgs = append(imgs, strings.TrimSpace(sub[1]))
+			imgs = append(imgs, unescImgPath(strings.TrimSpace(sub[1])))
 		}
 		return ""
 	})
@@ -159,7 +159,7 @@ func (a *App) removeDraftAttachPath(path string) {
 	if path == "" {
 		return
 	}
-	pat := `\n?!\[[^\]]*\]\(` + regexp.QuoteMeta(path) + `\)`
+	pat := `\n?!\[[^\]]*\]\(` + regexp.QuoteMeta(escImgPath(path)) + `\)`
 	// 以输入框里最新的内容为底(点击回调可能赶在同步之前),只去掉这一张图,正文保持原样
 	a.draft = regexp.MustCompile(pat).ReplaceAllString(a.draftNow(), "")
 }

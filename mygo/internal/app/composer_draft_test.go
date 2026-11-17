@@ -71,3 +71,31 @@ func TestComposerEnterSendsPillsAsAtPaths(t *testing.T) {
 		t.Fatalf("发送后输入框应清空:%q", a.draft)
 	}
 }
+
+// 带括号 / 百分号 / 中文的文件名:图片附件语法不能被截断,缩略图卡与发送拿到的都是完整原路径。
+func TestDraftImagePathWithParens(t *testing.T) {
+	for _, p := range []string{"/Users/x/Downloads/舆图志-陕西省 (3).png", "/a/b%c (1)).png", "/plain/渭南市.png"} {
+		a, tt := sessionApp(t, "flow-gaps-b4")
+		a.draft = ""
+		tt.Frame()
+		if !a.addDraftImage(p) {
+			t.Fatalf("应能加入:%q", p)
+		}
+		tt.Frame()
+		if a.draftBody != "" {
+			t.Fatalf("路径不应漏进输入框正文:%q(%q)", a.draftBody, p)
+		}
+		atts := parseDraftAttaches(a.draftNow())
+		if len(atts) != 1 || atts[0].Path != p {
+			t.Fatalf("解析出的路径应与原路径一致:%v(%q)", atts, p)
+		}
+		if _, imgs := splitDraftImages(a.draftNow()); len(imgs) != 1 || imgs[0] != p {
+			t.Fatalf("发送拆出的图片路径不对:%v(%q)", imgs, p)
+		}
+		a.removeDraftAttachPath(p)
+		tt.Frame()
+		if len(a.draftImgs) != 0 {
+			t.Fatalf("移除后应没有附件:%v", a.draftImgs)
+		}
+	}
+}

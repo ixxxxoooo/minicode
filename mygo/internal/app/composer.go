@@ -30,6 +30,12 @@ func (a *App) composer(c *ui.Context) {
 	for _, s := range t.Shadow1() {
 		box.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
+	if a.ux.dropOn { // 「拖入框」:文件拖在上面时整个输入框变成强调色虚线框,松手后恢复
+		box.Background(t.AcSoft)
+		box.DrawOver(func(p *ui.Painter, rc ui.Rect) {
+			p.StrokeDashed(ui.Rect{X: rc.X + 1, Y: rc.Y + 1, W: rc.W - 2, H: rc.H - 2}, t.Ac, r, 2)
+		})
+	}
 	_ = a.chatDrop(box)
 	a.syncDraft(c) // 在拖放处理之后:别处改了草稿就重新拆出正文(含胶囊)与图片附件
 	anchor := box

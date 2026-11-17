@@ -59,7 +59,7 @@ func (a *App) attachImageCard(c *ui.Context, rel string) {
 		if src != nil {
 			ui.Image(c, src).Size(attachCardH, attachCardH).Fit(ui.Cover)
 		} else {
-			a.fileIc(c, baseName(rel))
+			kit.Ic(c, "image", kit.S16).TextColor(t.Tx3) // 还在加载 / 读不出来:图片图标(不是文档图标)
 		}
 		a.attachRemoveBtn(c, "cmp-att-x-"+rel, "移除", func() { a.removeDraftAttachPath(rel) })
 	})
