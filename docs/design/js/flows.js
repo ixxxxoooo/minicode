@@ -116,6 +116,29 @@
     ${sec('看得见的辅助(不用触发)', '迷你地图是缩略的「语法色块」:当前视口(滑块,可拖)、Git 改动竖条(左缘)、搜索命中(黄)、同词出现(蓝框)、Claude 改过的行(紫)。右边另有概览标尺(整篇缩放):错误 / 警告 / 搜索 / Git / 光标。点任意位置跳转。', `<div class="gal">
       ${cell('迷你地图 + 概览标尺 + 同词高亮', '', snip({}, 0, 560, 300), '光标在 <span class="mono">Handler</span> 上:所有同词浅蓝高亮,地图与标尺同步出刻度;行号旁折叠箭头悬停才出现。<b>CodeLens(引用数 / 测试数 / 问 Claude)默认不显示</b>(设置 → 编辑器 → 显示 里可开);迷你地图悬停只高亮对应行,不弹源码摘要。')}
       ${cell('粘性滚动', '', snip({ sticky: 1, scroll: 14 }, 0), '滚进长函数后,所属的 <span class="mono">impl</span> 与 <span class="mono">fn</span> 头固定在顶部,点击跳回该行(对标 VS Code sticky scroll)。')}</div>`)}
+    ${sec('所在范围(光标 / 鼠标在方法内时怎样区分)', '光标所在的<b>最内层符号块</b>(函数 / 方法 / impl / 类)用行号槽左缘竖条 + 对应缩进参考线加亮 + 面包屑末级强调;无语言服务器时退回到本地符号索引(正则 + 花括号),精度低于 LSP,设计稿与实现状态如实标注。范围外代码不变暗。', `<div class="gal">
+      ${cell('① 光标在函数内', '', box(`<div class="crumbs">src${ic('chevR', 's12')}<b>router.rs</b>${ic('chevR', 's12')}<span class="t1">impl Router</span>${ic('chevR', 's12')}<b class="scope-crumb-on">match_path</b></div>
+        <div class="code scope-demo"><div class="gut scope-gut"><div class="scope-rail on" style="top:60px;height:60px"></div>${[14, 15, 16, 17, 18, 19, 20].map(n => `<div class="ln ${n === 17 ? 'cur' : ''} ${n >= 15 && n <= 19 ? 'scope-ln' : ''}">${n}</div>`).join('')}</div>
+          <div class="src-wrap"><div class="src">${[14, 15, 16, 17, 18, 19, 20].map((n, i) => `<div class="ln-src ${n >= 15 && n <= 19 ? 'scope-bg' : ''} ${n === 17 ? 'cur' : ''}">${U.rust(['impl Router {', '    pub fn match_path(&self, path: &str) -> Option<&Handler> {', '        let key = normalize(path);', '        self.routes.get(&key)', '    }', '    fn normalize(path: &str) -> String {', '    }'][i])}</div>`).join('')}</div></div></div>`, 300), '行号槽<b>最左</b> 2px 强调色竖条(首尾各一小横杆);块内缩进参考线更深;面包屑最后一级加粗;粘性滚动头左侧同色竖条;迷你地图左缘细线标范围。')}
+      ${cell('② 悬停预览(浅)', '', box(`<div class="code scope-demo"><div class="gut scope-gut"><div class="scope-rail on" style="top:40px;height:20px;opacity:.45"></div><div class="scope-rail hover" style="top:60px;height:60px"></div>${[14, 15, 16, 17].map(n => `<div class="ln">${n}</div>`).join('')}</div><div class="src-wrap"><div class="src"><div class="ln-src scope-bg">${U.rust('impl Router {')}</div>${[15, 16, 17].map(n => `<div class="ln-src ${n === 16 ? 'scope-bg hover' : ''}">${U.rust(['    pub fn match_path…', '        let key = normalize(path);', '    }'][n-15])}</div>`).join('')}</div></div></div><div class="t3 fs-cap" style="padding:6px 12px">鼠标停在<b>竖条</b>或块内<b>缩进线</b>上 → 该块竖条变浅预览;点击竖条选中整个块(或折叠,与折叠箭头不冲突)。光标所在块仍用深色竖条。</div>`, 220), '悬停 ≠ 光标:两层竖条可同时存在(外层 impl 预览 + 内层 fn 为光标)。')}
+      ${cell('③ 两种样式', '', `<div class="fc g2">${box(`<div class="code scope-demo" style="min-height:120px"><div class="gut scope-gut"><div class="scope-rail on" style="top:20px;height:40px"></div><div class="ln">11</div><div class="ln cur scope-ln">12</div><div class="ln scope-ln">13</div></div><div class="src-wrap"><div class="src"><div class="ln-src">fn foo() {</div><div class="ln-src cur">    bar();</div><div class="ln-src">}</div></div></div><motion-note type="tip">仅竖条(默认)</motion-note>`, 120, 270)}
+        ${box(`<div class="code scope-demo" style="min-height:120px"><div class="gut scope-gut"><div class="scope-rail on" style="top:20px;height:40px"></div><div class="ln scope-ln">11</div><div class="ln cur scope-ln">12</div><div class="ln scope-ln">13</div></div><div class="src-wrap"><div class="src"><div class="ln-src scope-bg">fn foo() {</div><div class="ln-src scope-bg cur">    bar();</div><div class="ln-src scope-bg">}</div></div></div><motion-note type="tip">竖条 + 极淡底色</motion-note>`, 120, 270)}</div>`, '设置 → 编辑器 → 显示:「高亮当前所在范围」「范围样式」分段;命令面板同名切换。')}
+      ${cell('④ 嵌套块', '', box(`<div class="code scope-demo" style="min-height:160px"><div class="gut scope-gut"><div class="scope-rail parent" style="top:20px;height:100px"></div><div class="scope-rail on" style="top:60px;height:40px"></div>${[10, 11, 12, 13, 14, 15].map(n => `<div class="ln ${n === 12 ? 'cur' : ''}">${n}</div>`).join('')}</div><div class="src-wrap"><div class="src">${U.rust(['impl Router {', '    fn match_path() {', '        normalize(p);', '    }', '}', ''])}</div></div></div>`, 180), '光标在内层 <span class="mono">fn</span> 时:内层竖条最深,外层 <span class="mono">impl</span> 竖条变淡一档(仍可见上下文)。')}
+      ${cell('⑤ 顶层 / 无符号', '', box(`<div class="code" style="min-height:80px"><div class="gut"><div class="ln cur">1</div><div class="ln">2</div></div><div class="src-wrap"><div class="src"><div class="ln-src cur">use std::path::Path;<span class="cursor"></span></div><div class="ln-src"></div></div></div></div><div class="t3 fs-cap" style="padding:6px 12px">不在任何符号块内时不画竖条 / 底色;面包屑只到文件。</div>`, 100), '')}
+      ${cell('⑥ 层叠顺序', '', tbl([['从下到上', 200], ['说明', 360]], [
+        ['编辑器底色 / 语法色', '默认'],
+        ['所在范围淡底色(可选)', '仅「竖条 + 底色」样式'],
+        ['当前行高亮', '库 ActiveLine'],
+        ['选区 / 非活动选区', 'Selection / InactiveSelection'],
+        ['Claude 改动紫底', '改动块 LineBackground'],
+        ['搜索 / 查找命中', 'Find 装饰(编辑器内置)'],
+        ['同词出现浅蓝', 'TextBackground'],
+        ['诊断波浪线', '最上']]), '竖条在行号槽,不进入代码叠层;不与紫底 / 同词打架。')}</div>
+      ${tbl([['产品', 120], ['做法', 240], ['我们', 200]], [
+        ['VS Code', '面包屑;粘性滚动;活动缩进线(editor.guides.highlightActiveIndentation);括号参考线;当前行', '竖条 + 活动缩进线 + 面包屑 + 粘性条 + 迷你地图刻度;无「范围外变暗」'],
+        ['JetBrains', '左侧作用域轮廓;面包屑;高亮当前作用域', '行号槽竖条对标轮廓条,不占额外栏宽'],
+        ['Zed', '活动缩进线;当前行;大纲', '同上,默认仅竖条'],
+        ['Sublime', 'BracketHighlighter 括号横线', '括号行为已有;符号范围走 LSP / 本地索引']])}`)}
     ${sec('查找与替换', '⌘F 是当前文件,⌘⇧F 是项目(见「搜索与替换」)。命中会同时在迷你地图与标尺上出刻度。', `<div class="gal">
       ${cell('当前文件查找', ['⌘', 'F'], snip({ ov: 'find' }, 280, 560, 220), '计数、上一个 / 下一个、区分大小写 / 全词 / 正则、在选区中查找;Esc 关闭并把光标留在当前命中。')}
       ${cell('查找替换', ['⌥', '⌘', 'F'], snip({ ov: 'find', rep: 1 }, 280, 560, 220), '替换行默认折起;「保留大小写」;全部替换前先预览数量。')}</div>`)}

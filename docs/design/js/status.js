@@ -206,6 +206,7 @@
       R('状态栏缩进菜单', 'ide_indent_menu.go:跟随文件 / 空格 2 / 空格 4 / Tab,写 editor.indent;已补行尾 LF / CRLF 菜单与 CRLF 文件保存还原(ide_eol.go,go test),编码菜单只有 UTF-8(其余置灰说明);语言手动切换未做;实机未测', 'part', 'B5'),
       R('折叠代码(箭头 / 占位 / 快捷键 / 菜单 / 命令面板)', '箭头、「…」占位与 ⌘⌥[ ⌘⌥] ⌘K⌘0 ⌘K⌘J 由编辑器库提供;ide_fold.go 补右键菜单四项(关闭折叠时置灰并写原因)与命令面板四条,foldRun 记日志;go test ide_fold_test;实机未测', 'part', 'B5'),
       R('⌘ 悬停可跳转(下划线 + 手型)', 'ide_link.go:按住 ⌘ 时指针下有定义的词(本地符号索引,或语言服务器就绪)加 1px 强调色下划线 + 手型光标,⌘点击走原有 OnDefinition;⌘ 按住期间不弹悬停卡;自动换行 / 差异标签不画;位置按行号栏宽 + 显示列估算(Tab / 宽字符已换算),有 go test(列换算);实机待测', 'part', 'B5'),
+      R('高亮当前所在范围', 'ide_scope*.go:行号槽竖条 + 首尾横杆、活动缩进线(库 bracketGuide)、可选块内淡底色、面包屑末级强调 + tooltip、粘性头 / 迷你地图刻度;LSP documentSymbol 优先否则本地索引;偏好 editor.scopeHighlight / editor.scopeStyle;命令面板切换;-ed scope:<行> / scope:hover;go test ide_scope_logic_test(本阶段未跑);未测试', 'part', 'B5'),
       R('粘性滚动、查找替换、悬停、预览定义、跳转定义 / 引用 / 类型 / 实现、补全、重命名、格式化、跳转历史', '', 'ok'),
       R('代码操作 ⌘.', 'LSP codeAction + 本地兜底;无服务器时仍为本地菜单', 'ok', 'B5'),
       R('选中工具条 / ⌘I 行内编辑', '真实模式 claude -p Haiku 生成替换预览,Esc/取消可中断;演示仍走占位', 'ok', 'B5'),
