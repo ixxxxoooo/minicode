@@ -267,8 +267,44 @@ func ListProjects(projects string) []ProjectMeta {
 		}
 		out = append(out, ProjectMeta{Cwd: cwd, Sessions: sessions})
 	}
+	out = mergeByCwd(out)
 	sort.SliceStable(out, func(i, j int) bool { return out[i].Sessions[0].Modified.After(out[j].Sessions[0].Modified) })
 	flushCache()
+	return out
+}
+
+// mergeByCwd 把工作目录相同的项目合成一个。
+// 用途:claude 按「启动时所在目录」分目录存会话,从别的目录 --resume 过来的会话会落在另一个
+// 目录里、cwd 却仍是原项目,不合并侧栏 / 项目下拉就会出现好几个同名同路径的项目;
+// 同一个会话 id 出现在多处时只留最近修改的那份。
+// 参数:projs 为按目录扫描出的项目列表。返回值:按 cwd 去重后的项目列表,会话仍按最近修改倒序。
+func mergeByCwd(projs []ProjectMeta) []ProjectMeta {
+	idx := map[string]int{}
+	var out []ProjectMeta
+	for _, p := range projs {
+		key := filepath.Clean(p.Cwd)
+		i, ok := idx[key]
+		if !ok {
+			idx[key] = len(out)
+			out = append(out, p)
+			continue
+		}
+		out[i].Sessions = append(out[i].Sessions, p.Sessions...)
+	}
+	for i := range out {
+		ss := out[i].Sessions
+		sort.SliceStable(ss, func(a, b int) bool { return ss[a].Modified.After(ss[b].Modified) })
+		seen := map[string]bool{}
+		kept := ss[:0]
+		for _, s := range ss {
+			if seen[s.ID] {
+				continue
+			}
+			seen[s.ID] = true
+			kept = append(kept, s)
+		}
+		out[i].Sessions = kept
+	}
 	return out
 }
 
