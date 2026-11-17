@@ -69,7 +69,9 @@ type ideTab struct {
 	extDeleted bool // 用户确认已删除
 	diskRO     bool // 工作区外只读(语言服务器跳转开的标准库 / 依赖,不可保存)
 
-	scopeHoverLn      int    // 代码区悬停行(0 起),-1 = 无
+	scopeHoverLn int    // 代码区悬停行(0 起),-1 = 无
+	langPick     string // 手动语言(假文件名后缀,空 = 按路径)
+
 	scopeDbgHover     bool   // -ed scope:hover 演示态
 	scopeCacheVer     uint64 // 范围查询缓存(按缓冲区版本 + 光标行)
 	scopeCacheLn      int
@@ -331,7 +333,11 @@ func (d *ide) loadText(t *ideTab) {
 	default:
 		t.err = ""
 		t.buf = editor.NewBuffer(src)
-		t.buf.SetLanguage(editor.LanguageFor(path.Base(p)))
+		if t.langPick != "" {
+			t.buf.SetLanguage(editor.LanguageFor(t.langPick))
+		} else {
+			t.buf.SetLanguage(editor.LanguageFor(path.Base(p)))
+		}
 		t.saved = t.buf.String() // 缓冲区已把 \r\n 归一;用原文比较会让 CRLF 文件一打开就显示未保存
 		t.eol = detectEOL(src)
 		t.eolDisk = t.eol

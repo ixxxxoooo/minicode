@@ -21,6 +21,7 @@ func (a *App) indentMenu(m *ui.Menu) {
 		{"跟随文件(自动检测)", -1, !has},
 		{"空格:2", 0, has && cur == 0},
 		{"空格:4", 1, has && cur == 1},
+		{"空格:8", 3, has && cur == 3},
 		{"制表符(Tab)", 2, has && cur == 2},
 	}
 	for _, o := range opts {

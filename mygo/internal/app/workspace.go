@@ -298,6 +298,12 @@ func (a *App) etabPane(c *ui.Context, tb *ideTab, pane int8) {
 	if narrowWs {
 		el.PaddingX(8).MaxWidth(130)
 	}
+	if tb.pinned {
+		el.PaddingX(6)
+		if !on {
+			el.MaxWidth(34).Tooltip(a.tabTitle(tb))
+		}
+	}
 	if isFileTab(tb) {
 		dragRef(el, tb.path, false) // 拖到对话栏 = 引用这个文件
 	}
@@ -357,18 +363,21 @@ func (a *App) etabPane(c *ui.Context, tb *ideTab, pane int8) {
 				ic.TextColor(t.Ac)
 			}
 		}
-		nm := ui.Text(c, a.tabTitle(tb)).SingleLine()
-		if narrowWs && !on {
-			nm.MaxWidth(70)
-		}
-		if tb.preview {
-			nm.Italic()
+		showName := !tb.pinned || on
+		if showName {
+			nm := ui.Text(c, a.tabTitle(tb)).SingleLine()
+			if narrowWs && !on {
+				nm.MaxWidth(70)
+			}
+			if tb.preview {
+				nm.Italic()
+			}
+			if tb.extDeleted && !tb.extOrphan {
+				nm.TextColor(t.Tx4).Strikethrough()
+			}
 		}
 		if a.isExternalTab(tb) {
 			a.externalChip(c, tb)
-		}
-		if tb.extDeleted && !tb.extOrphan {
-			nm.TextColor(t.Tx4).Strikethrough()
 		}
 		if bd := a.tabBadge(tb); bd != "" {
 			kit.Cnt(c, bd, true)

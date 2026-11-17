@@ -255,6 +255,24 @@ func (a *App) EditorDemo(spec string) {
 			a.ide.openFile(arg, true)
 			continue
 		}
+		if name == "pintab" { // pintab:路径1;路径2 固定多个标签(需先 open:)
+			for _, p := range strings.Split(arg, ";") {
+				p = strings.TrimSpace(p)
+				if p == "" {
+					continue
+				}
+				if t := a.ide.tabByPath(p); t != nil {
+					a.setTabPinned(t, true)
+				}
+			}
+			continue
+		}
+		if name == "openeditors" { // openeditors:展开「打开的编辑器」分区
+			a.SetMode(ModeIDE)
+			a.nav, a.sideOpen = "files", true
+			a.ide.sections["打开的编辑器"] = true
+			continue
+		}
 		if name == "goto" {
 			a.SetMode(ModeIDE)
 			if p, line, col, ok := parsePathLine(arg); ok {

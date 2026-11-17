@@ -129,16 +129,12 @@ func (a *App) statusbar(c *ui.Context) {
 					a.sbItem(c, "enc", func() { ui.Text(c, "UTF-8") }).Tooltip("文件编码(目前只支持 UTF-8)").Menu(a.encMenu)
 					a.sbItem(c, "eol", func() { ui.Text(c, eolLabel(tab.eolNow())) }).Tooltip("行尾序列(点击切换)").Menu(a.eolMenu)
 				}
-				lang := "纯文本"
-				if l := tab.buf.Language(); l != nil {
-					lang = l.Name
-				}
 				if tier < 2 {
-					a.sbItem(c, "lang", func() { ui.Text(c, lang) })
+					a.sbItem(c, "lang", func() { ui.Text(c, langLabel(tab)) }).Tooltip("语言模式(点击切换)").Menu(a.langMenu)
 				}
 				if a.proj != "" {
 					a.lspStatus(c, tab, tier >= 2)
-				} else if srv := lspName(lang); srv != "" && a.demoExtra && tier < 2 {
+				} else if srv := lspName(langLabel(tab)); srv != "" && a.demoExtra && tier < 2 {
 					a.sbItem(c, "lsp", func() { kit.Ic(c, "okc", kit.S12).TextColor(t.Ok); ui.Text(c, srv) })
 				}
 			}

@@ -27,6 +27,8 @@ func (a *App) filesView(c *ui.Context) {
 	outer.Children(func() {
 		files := kit.VScroll(c).Key("files").TrackScroll(&d.treeSt).Grow(1).MinHeight(0)
 		files.OnShortcut(ui.Cmd, ui.KeyF, a.toggleTreeFilter)
+		files.OnShortcut(0, ui.KeyUp, func() { a.treeFilterStep(-1) })
+		files.OnShortcut(0, ui.KeyDown, func() { a.treeFilterStep(1) })
 		files.OnShortcut(0, ui.KeyF2, func() {
 			if a.ide.sel == "" {
 				return
@@ -36,6 +38,7 @@ func (a *App) filesView(c *ui.Context) {
 		})
 		files.Children(func() {
 			ui.Column(c).Children(func() {
+				a.openedEditorsSection(c)
 				hdr := ui.Row(c).Key("tree-hdr").Height(theme.Px(26)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(600)
 				hdrHot := hdr.Hovered() || a.popup != ""
 				hdr.Children(func() {
@@ -177,6 +180,12 @@ func (a *App) treeDir(c *ui.Context, dir string, depth int) {
 		a.fileOpInput(c, depth, o.kind == "newdir", "file") // 新建:输入行插在这个文件夹子项的最前
 	}
 	for _, e := range a.ide.listing(dir) {
+		if e.Dir && a.fo.kind != "rename" && a.fo.path != e.Path {
+			if tail, label, compact := a.ide.compactFolderTail(e.Path); compact {
+				a.treeCompactRow(c, tail, label, depth)
+				continue
+			}
+		}
 		if a.fo.kind == "rename" && a.fo.path == e.Path { // 重命名:这一行换成输入框
 			a.fileOpInput(c, depth, e.Dir, fileIcon(e.Name))
 			if e.Dir && a.ide.open[e.Path] {
@@ -245,9 +254,17 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth int) {
 			ui.Box(c).Size(theme.Px(12), theme.Px(12)).Shrink(0)
 			a.fileIc(c, e.Name)
 		}
-		nm := ui.Text(c, e.Name).Grow(1).SingleLine()
-		if depth == 0 && e.Dir && a.multiRoot() { // 多根:顶层是各个文件夹,加粗并标注改动数 / 非仓库
-			nm.FontWeight(500)
+		plain := !d.fltActive()
+		if d.fltActive() {
+			a.treeHighlightName(c, e.Name, strings.TrimSpace(d.flt))
+		} else {
+			nm := ui.Text(c, e.Name).Grow(1).SingleLine()
+			if depth == 0 && e.Dir && a.multiRoot() { // 多根:顶层是各个文件夹,加粗并标注改动数 / 非仓库
+				nm.FontWeight(500)
+			}
+			_ = nm
+		}
+		if plain && depth == 0 && e.Dir && a.multiRoot() { // 徽章仍要画
 			a.rootBadges(c, e.Name)
 		} else if e.Dir && a.multiRoot() {
 			a.nestedBadges(c, e.Path) // 嵌套仓库 / 子模块的根目录:类别标签 + 改动数

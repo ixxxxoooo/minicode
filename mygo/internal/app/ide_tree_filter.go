@@ -20,6 +20,42 @@ var treeLog = diag.L("ide-tree")
 // fltActive 过滤条已展开且有关键字。
 func (d *ide) fltActive() bool { return d.fltOpen && strings.TrimSpace(d.flt) != "" }
 
+// treeFilterStep 在过滤命中文件间上下移动(需先有过滤关键字)。
+func (a *App) treeFilterStep(dy int) {
+	d := a.ide
+	if !d.fltActive() {
+		return
+	}
+	d.fltCompute()
+	var hits []string
+	for _, p := range d.allFiles() {
+		if d.fltVis[p] {
+			hits = append(hits, p)
+		}
+	}
+	if len(hits) == 0 {
+		return
+	}
+	ix := 0
+	for i, p := range hits {
+		if p == d.sel {
+			ix = i
+			break
+		}
+	}
+	ix += dy
+	if ix < 0 {
+		ix = len(hits) - 1
+	}
+	if ix >= len(hits) {
+		ix = 0
+	}
+	d.sel = hits[ix]
+	d.revealTo = hits[ix]
+	a.filesFocus = true
+	treeLog.Info("过滤命中间移动", "path", d.sel)
+}
+
 func (a *App) toggleTreeFilter() {
 	d := a.ide
 	d.fltOpen = !d.fltOpen

@@ -2,6 +2,7 @@ package app
 
 import (
 	"errors"
+	"fmt"
 	"path"
 	"strings"
 
@@ -131,13 +132,20 @@ func (a *App) treePasteFile(into string) {
 		a.toast = err.Error()
 		return
 	}
+	if _, err := a.ide.fs.Read(dest); err == nil {
+		dest = uniqueTreeDest(into, base, a.ide.fs)
+	}
 	if err := mu.Create(dest, false); err != nil {
 		if errors.Is(err, workspace.ErrExist) {
-			a.toast = "目标位置已有同名文件"
+			dest = uniqueTreeDest(into, base, a.ide.fs)
+			if err2 := mu.Create(dest, false); err2 != nil {
+				a.toast = err2.Error()
+				return
+			}
 		} else {
 			a.toast = err.Error()
+			return
 		}
-		return
 	}
 	if err := a.ide.fs.Write(dest, data); err != nil {
 		a.toast = err.Error()
@@ -146,6 +154,23 @@ func (a *App) treePasteFile(into string) {
 	}
 	a.ide.listCache, a.ide.filesCache = nil, nil
 	a.toast = "已粘贴"
+}
+
+// uniqueTreeDest 粘贴复制时若重名,自动加「副本」后缀。
+func uniqueTreeDest(into, base string, fs workspace.FS) string {
+	ext := path.Ext(base)
+	stem := strings.TrimSuffix(base, ext)
+	try := path.Join(into, stem+" 副本"+ext)
+	if _, err := fs.Read(try); err != nil {
+		return try
+	}
+	for i := 2; i < 1000; i++ {
+		try = path.Join(into, fmt.Sprintf("%s 副本 %d%s", stem, i, ext))
+		if _, err := fs.Read(try); err != nil {
+			return try
+		}
+	}
+	return path.Join(into, stem+" 副本"+ext)
 }
 
 // treeFileActions 文件树「主要动作 / 导航 / 剪贴板」段(菜单 build 里调用)。

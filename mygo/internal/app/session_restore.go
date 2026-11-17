@@ -27,6 +27,7 @@ type lastRuntime struct {
 	NavAgent   string   `json:"navAgent,omitempty"`
 	NavIDE     string   `json:"navIDE,omitempty"`
 	EditorTabs []string `json:"editorTabs,omitempty"`
+	PinnedTabs []string `json:"pinnedTabs,omitempty"`
 	ActiveTab  string   `json:"activeTab,omitempty"`
 	BottomTab  string   `json:"bottomTab,omitempty"`
 
@@ -96,6 +97,16 @@ func (a *App) SaveRuntimeState() {
 		return
 	}
 	st.EditorTabs = collect(a.ide.tabs)
+	for _, tb := range a.ide.tabs {
+		if tb != nil && tb.pinned && isFileTab(tb) {
+			st.PinnedTabs = append(st.PinnedTabs, tb.path)
+		}
+	}
+	for _, tb := range a.ide.tabs2 {
+		if tb != nil && tb.pinned && isFileTab(tb) {
+			st.PinnedTabs = append(st.PinnedTabs, tb.path)
+		}
+	}
 	if t := a.ide.tab(a.ide.active); t != nil && t.virt == "" && !t.diff {
 		st.ActiveTab = t.path
 	}
@@ -189,9 +200,19 @@ func (a *App) ApplySavedRuntime() string {
 	if st.Project != "" && !a.runDemo {
 		a.SetProject(st.Project)
 	}
+	pinned := map[string]bool{}
+	for _, p := range st.PinnedTabs {
+		pinned[p] = true
+	}
 	for _, p := range st.EditorTabs {
 		a.ide.openFile(p, true)
+		if pinned[p] {
+			if t := a.ide.tabByPath(p); t != nil {
+				t.pinned = true
+			}
+		}
 	}
+	a.ide.tabs = reorderPinnedTabs(a.ide.tabs)
 	if st.ActiveTab != "" {
 		if t := a.ide.tabByPath(st.ActiveTab); t != nil {
 			a.ide.active = t.id

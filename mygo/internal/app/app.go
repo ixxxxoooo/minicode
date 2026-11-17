@@ -860,6 +860,24 @@ func (a *App) shortcuts(c *ui.Context) {
 		a.openSide(a.ide.sel, true)
 		return
 	}
+	if a.filesFocus && a.nav == "files" {
+		if c.Shortcut(ui.Cmd, ui.KeyC) && a.ide.sel != "" && !workspace.IsDir(a.ide.fs, a.ide.sel) {
+			a.treeCopyFile(a.ide.sel, false)
+			return
+		}
+		if c.Shortcut(ui.Cmd, ui.KeyX) && a.ide.sel != "" && !workspace.IsDir(a.ide.fs, a.ide.sel) {
+			a.treeCopyFile(a.ide.sel, true)
+			return
+		}
+		if c.Shortcut(ui.Cmd, ui.KeyV) {
+			into := a.ide.sel
+			if into != "" && !workspace.IsDir(a.ide.fs, into) {
+				into = parentDir(into)
+			}
+			a.treePasteFile(into)
+			return
+		}
+	}
 	switch {
 	case a.shortcutHit(c, "nav", ui.Cmd, ui.KeyB):
 		a.sideOpen = !a.sideOpen

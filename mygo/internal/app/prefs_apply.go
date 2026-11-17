@@ -132,6 +132,8 @@ func (a *App) applyEditorPrefs(tb *ideTab) {
 		st.TabSize, st.Indent = 2, editor.IndentSpaces
 	case 1:
 		st.TabSize, st.Indent = 4, editor.IndentSpaces
+	case 3:
+		st.TabSize, st.Indent = 8, editor.IndentSpaces
 	default:
 		st.TabSize, st.Indent = 4, editor.IndentTabs
 	}

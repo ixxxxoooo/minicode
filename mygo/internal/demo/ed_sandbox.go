@@ -156,6 +156,7 @@ export const oneLine = "` + strings.Repeat("normalize ", 400) + `";
 		"data/sample.csv":            "id,name,normalize\n1,alpha,yes\n2,beta,yes\n",
 		"data/sample.tsv":            "id\tname\tnormalize\n1\talpha\tyes\n",
 		deepPathLeaf():               "深层目录第 10 层 · normalize\n",
+		"compact/only/a/b/chain.rs":    "// 紧凑文件夹演示:compact/only/a/b 合并成一行\n",
 		".gitignore":                 "target/\nnode_modules/\n.env\n",
 		"samples/lints/multi_diag.rs": `fn main() {
     let fallback = 0;

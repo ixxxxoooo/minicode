@@ -150,7 +150,7 @@ func (a *App) tabMenu(m *ui.Menu, tb *ideTab) {
 		a.closeWsTab(tb.id)
 	}
 	if menuItem(m, "关闭其他").Disabled(len(d.tabs) < 2).Chosen() {
-		a.closeTabsWhere(func(x *ideTab) bool { return x.id == tb.id })
+		a.closeTabsWhere(func(x *ideTab) bool { return x.id == tb.id || x.pinned })
 	}
 	if menuItem(m, "关闭右侧").Disabled(ix < 0 || ix >= len(d.tabs)-1).Chosen() {
 		a.closeTabsWhere(func(x *ideTab) bool { return a.tabIndex(x.id) <= ix })
@@ -161,9 +161,7 @@ func (a *App) tabMenu(m *ui.Menu, tb *ideTab) {
 	if menuItem(m, "向下拆分").Chosen() {
 		a.splitEditor(2)
 	}
-	if menuItem(m, "固定标签").Disabled(!tb.preview).Chosen() {
-		tb.preview = false
-	}
+	a.pinTabMenu(m, tb)
 	if menuItem(m, "在侧边打开").Trailing("⌘⏎").Chosen() {
 		a.openSide(tb.path, true)
 	}
