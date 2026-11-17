@@ -119,15 +119,6 @@ func (a *App) termVerticalList(c *ui.Context) {
 		a.resizeHandle(c, lyTermList, "l", w, termListDefW, termListMinW, termListMaxW, func(v float32) {
 			a.ly.termList = v
 		})
-		ui.Row(c).Height(theme.Px(30)).PaddingX(6).Gap(4).AlignItems(ui.Center).Shrink(0).
-			BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
-			// 图标已经是「+」,文字不再带「+」;「···」菜单只在面板头部放一个(与设置、最大化同一排),这里不重复
-			kit.Btn(c, "新终端", kit.BtnOpt{Small: true, Icon: "plus"}).OnClick(func() {
-				if a.proj != "" {
-					a.newTerm()
-				}
-			})
-		})
 		kit.VScroll(c).Key("term-vscroll").Grow(1).Children(func() {
 			ui.Column(c).Children(func() {
 				for i := range a.ide.tps {

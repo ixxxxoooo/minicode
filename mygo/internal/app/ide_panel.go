@@ -141,17 +141,16 @@ func (a *App) bottomPanelBody(c *ui.Context, h float32) {
 					for _, v := range a.ide.cmds {
 						kit.Chip(c, v.title, kit.ChipOpt{Icon: "lock", On: a.ide.termSel == v.id, Tip: "只读 · Claude 运行的命令"}).OnClick(func() { a.ide.termSel = v.id })
 					}
-					if !vert {
-						tip := "新建终端"
-						if a.proj == "" {
-							tip = "演示模式没有真实终端"
-						}
-						kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: tip, Disabled: a.proj == ""}).OnClick(func() {
-							if a.proj != "" {
-								a.newTerm()
-							}
-						})
+					// 「+」固定在设置按钮左边,横向 / 竖向标签排列都一样(竖向列表里不再另放「新终端」按钮)
+					tip := "新建终端"
+					if a.proj == "" {
+						tip = "演示模式没有真实终端"
 					}
+					kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: tip, Disabled: a.proj == ""}).OnClick(func() {
+						if a.proj != "" {
+							a.newTerm()
+						}
+					})
 					gear := kit.Ib(c, "gear", kit.IbOpt{Small: true, Tip: "终端设置", On: a.popup == "termset"})
 					gear.OnClick(func() { a.togglePop("termset") })
 					a.termSettings(c, gear)
