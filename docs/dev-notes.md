@@ -303,6 +303,37 @@ Rust + gpui-kit 0.8 的 Claude Code 工作台。只支持 Claude Code,直连本�
 - **测试**:`anim_layout_test.go` 用 `kit.SetClock(tt.Now)` 把动效时钟接到 Tester 的虚拟时间,逐帧(16 ms)推进并断言探针 0 异常;`ANIM_DUMP=1|2 go test ./internal/app -run TestAnim -v` 打印汇总 / 逐帧表。动效里读时间一律用 `kit.Now()` / `kit.Since()`(不要直接 `time.Now()` / `time.Since()`)。
 - 向窗口要帧用 `frameSoon()`(= `Services.Invalidate`,CVDisplayLink 驱动,跟随屏幕刷新率),不要再用 16 ms 定时器。
 
+## Markdown 渲染器选型与兼容性
+
+### 现状
+
+- **解析与排版不在本仓库**:会话流助手正文、`markdown.View` / `markdown.Stream`、IDE Markdown 预览只读侧、设置预览、计划卡、浏览器页说明等,全部走依赖 **`github.com/egoist/mygo v0.9.0`** 的 `ui/markdown` + **`ui/markdown/parser`**(自研 CommonMark 解析器,对标 cmark-gfm 行为,自带流式 healing、增量 `Set`/`Edit`、HTML 导出测试夹具)。
+- **默认扩展**=`parser.Default` = GFM(表格 / 任务 / 删除线 / 自动链接)+ 脚注 + 数学($$, $)+ GitHub Alerts + @mention + #issue 引用;`mdOptions()` 未覆写 `Extensions` 时即此集合。
+- **编辑往返另一条路**:IDE 预览可编辑走 `richtext.ParseMarkdown` / `Document.Markdown()`(与解析器 AST 不同,仅支持可逆子集);`edit_md.go` 对 HTML / 脚注 / 嵌套表格标 `unsafe` 只读。
+- **样式**:主题映射在 `mdtheme.go`(`mdTheme` / `inlineCodeColors`);编辑器 WYSIWYG 用 `rtTheme()`。两处共用 `padCode` → **`mdcompat.Prepare`** 预处理。
+
+### 候选库对比(调研结论)
+
+| 方案 | 优点 | 缺点 | 结论 |
+| --- | --- | --- | --- |
+| **继续 MyGo 自研 parser**(当前) | 与原生 UI 深度集成(流式、选区复制、折叠代码块钩子);增量解析;已有 CM/GFM 测试夹具 | 升级需跟上游 mygo 发版;emoji 短码等扩展要应用层补 | **保留** |
+| **yuin/goldmark + GFM 扩展** | 生态成熟、扩展全 | AST 与 `richtext` / 视图不通,需整段转写或双重解析;多一套依赖与漂移 | 不引入 |
+| **gomarkdown / blackfriday** | 老牌 | blackfriday 已维护减弱;表格 / GFM 不全;同上集成成本 | 不用 |
+| **cmark-gfm CGO** | 与 GitHub 100% 一致 | CGO、跨平台打包与 mygo 静态链冲突 | 不用 |
+| **bluemonday + x/net/html** | HTML 白名单清洗 | 我们需「展示」而非消毒;块级 HTML 用 `mdHTMLBlock` + `x/net/html` 提取文本 / details 折叠即可 | 按需局部使用 |
+
+### 本仓库落地(`internal/mdcompat`)
+
+- **`Prepare`**:CRLF 归一、去零宽、常见 `:emoji:` 短码(围栏内不展开)、段落后紧挨 GFM 表时补空行。
+- **`PlainText` / 表驱动与 quick 容错测试**:保证字母与 CJK 不在截断 / 随机输入下静默丢失;不 panic。
+- **应用层 `mdHTMLBlock`**:HTML 块 `<details>` 折叠、其余 `VisibleTextFromHTML` 或横向滚动源码,**不丢块**。
+- **未做 / 待上游或后续**:完整 emoji 全表;复杂块级 HTML 的 WYSIWYG 映射;`$..$` 真排版(仍代码样式降级);引用式链接在流式尾部的边界与 mygo 同步修。
+
+### 风险
+
+- 解析器缺陷只能靠 **mygo 升级** 或 vendor replace;应用层预处理不能修所有 CM Corner case。
+- 过长的 HTML / 表在会话流仍依赖 `md_chunk` 分块与横向滚动,极长文档性能未在真机压测(未测试)。
+
 ## 目录结构
 
 见 `AGENTS.md` 的「结构」表;运行、打包、发布命令也在那里。旧 Rust 实现(crate 表、`cargo` 命令、各功能的 `.rs` 实现细节)已从本文件删除,需要时从 git 历史取(删除前最后一个提交的父提交是 `ddd7452`)。
