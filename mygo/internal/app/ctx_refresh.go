@@ -29,13 +29,28 @@ func (a *App) ctxRequestQuery(startProc bool) {
 	a.send(core.CmdRefreshUsage{Context: true, StartProc: startProc})
 }
 
-// ctxEnsureLoaded 点开上下文面板时按防抖查询 get_context_usage(先展示缓存)。
+// ctxQueryAll 一条命令同时查「上下文分类明细」(get_context_usage)与「官方账号限额」(get_usage,仅官方账号)。
+// 会话进程还没起来(打开的是历史会话、惰性启动)就顺带启动它:这是用户主动点开面板 / 点刷新,
+// 要的就是精确值,不该只给一句「估算,点刷新」再让人点「启动并查询」。force 为真时限额越过缓存。
+func (a *App) ctxQueryAll(force bool) {
+	a.ctxLoading = true
+	a.send(core.CmdRefreshUsage{
+		Context: true, Limits: a.subscriptionLimitsEligible(),
+		Force: force, LimitsQuick: !force, StartProc: true,
+	})
+}
+
+// ctxEnsureLoaded 点开上下文面板时主动查询一次(防抖;先展示缓存 / 历史估算,结果回来后自动更新)。
 func (a *App) ctxEnsureLoaded() {
 	now := a.now()
 	if !a.ctxRefreshAt.IsZero() && now.Sub(a.ctxRefreshAt) < ctxDebounce {
 		return
 	}
 	a.ctxRefreshAt = now
+	if a.be != nil && a.be.Name() == "claude" {
+		a.ctxQueryAll(false)
+		return
+	}
 	a.ctxRequestQuery(false)
 	a.ctxEnsureLimitsOnOpen()
 }
@@ -71,11 +86,19 @@ func (a *App) ctxEnsureLimitsOnOpen() {
 
 func (a *App) ctxManualRefresh() {
 	a.ctxRefreshAt = a.now()
+	if a.be != nil && a.be.Name() == "claude" {
+		a.ctxQueryAll(false)
+		return
+	}
 	a.ctxRequestQuery(false)
 }
 
 func (a *App) ctxStartAndQuery() {
 	a.ctxRefreshAt = a.now()
+	if a.be != nil && a.be.Name() == "claude" {
+		a.ctxQueryAll(false)
+		return
+	}
 	a.ctxRequestQuery(true)
 }
 
@@ -84,8 +107,8 @@ func (a *App) ctxRefreshLimitsManual() {
 		a.toast = "还没有活动会话"
 		return
 	}
-	if a.be.Name() == "claude" && !a.sessProcLive {
-		a.toast = "会话进程尚未启动,发送消息后可查询"
+	if a.be.Name() == "claude" {
+		a.ctxQueryAll(true) // 进程没起来就顺带启动;限额越过缓存
 		return
 	}
 	a.send(core.CmdRefreshUsage{Limits: true, Force: true})

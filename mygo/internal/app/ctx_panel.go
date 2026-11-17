@@ -63,7 +63,15 @@ func (a *App) ctxRingColor(p float32) ui.Color {
 
 // ctxAnchorPopup 输入框 / 状态栏共用的上下文弹层。
 func (a *App) ctxAnchorPopup(c *ui.Context, key string, anchor ui.Element, attach ui.Anchor) {
-	a.ctxEnsureLoaded()
+	// 只在「这一次点开」时查询一次:此前锚点每帧都调,弹层没开也每 3 秒查一次
+	if a.popup == key {
+		if a.ctxOpenKey != key {
+			a.ctxOpenKey = key
+			a.ctxEnsureLoaded()
+		}
+	} else if a.ctxOpenKey == key {
+		a.ctxOpenKey = ""
+	}
 	a.popOpen(key, func(open *bool) {
 		ui.PopoverBase(c, anchor, open, func(panel ui.Element) {
 			panel = a.popPanel(panel, 300).Padding(10, 12).Gap(9)
@@ -184,8 +192,8 @@ func (a *App) ctxPanelBody(c *ui.Context) {
 		ui.Text(c, a.ctxUpdatedText(st, u)).Grow(1)
 		kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() {
 			a.ctxRefreshAt = a.now()
-			if a.be != nil && a.be.Name() == "claude" && !a.sessProcLive {
-				a.toast = "会话进程尚未启动,发送消息后可查询;也可点「启动并查询」"
+			if a.be != nil && a.be.Name() == "claude" {
+				a.ctxQueryAll(true) // 会话进程没起来就启动它;限额与明细一起查
 				return
 			}
 			a.ctxLoading = true
@@ -261,9 +269,10 @@ func (a *App) ctxLimitsBlock(c *ui.Context, st string, u core.Usage) {
 		return
 	}
 	if u.FiveHourPct == nil && u.WeeklyPct == nil {
-		ui.Row(c).Gap(6).Padding(6, 8).Children(func() {
+		ui.Row(c).Gap(6).Padding(6, 8).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "info", kit.S12).TextColor(t.Tx3)
-			ui.Text(c, "无账户限额数据(真实模式需接 get_usage)。").FontSize(theme.FsCap).TextColor(t.Tx3)
+			ui.Text(c, "还没有取到账户限额。").FontSize(theme.FsCap).TextColor(t.Tx3).Grow(1)
+			kit.Btn(c, "查询", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "refresh"}).OnClick(a.ctxRefreshLimitsManual)
 		})
 		return
 	}

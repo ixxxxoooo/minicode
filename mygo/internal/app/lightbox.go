@@ -60,6 +60,9 @@ func (a *App) openLightbox(paths []string, names []string, idx int) {
 	if idx < 0 || idx >= len(paths) {
 		idx = 0
 	}
+	for len(names) < len(paths) { // 显示名少于图片数时补齐(否则按序号取名会越界)
+		names = append(names, "")
+	}
 	for i := range names {
 		if names[i] == "" {
 			names[i] = baseName(paths[i])
@@ -171,7 +174,7 @@ func (a *App) lightboxOverlay(c *ui.Context) {
 			}
 			closeFn()
 		})
-		panel.Grow(1).Column()
+		panel.Grow(1).AlignSelf(ui.Stretch).Column() // 铺满整个窗口:此前面板只有内容那么宽(约 270),滚轮 / 拖动只在这一小块里有效
 		panel.Children(func() {
 			panel.OnShortcut(0, ui.KeyEscape, closeFn)
 			panel.OnShortcut(0, ui.KeyEqual, func() { a.lbZoomBy(1.25) })
@@ -196,6 +199,11 @@ func (a *App) lightboxOverlay(c *ui.Context) {
 			})
 			area := ui.Box(c).Grow(1).MinHeight(0)
 			area.HandleInput(lbPanZoomInput(lb))
+			if lb.drag != nil && lb.drag.moved {
+				area.Cursor(ui.CursorGrabbing)
+			} else {
+				area.Cursor(ui.CursorGrab)
+			}
 			if b := area.Bounds(); b.W > 0 && b.H > 0 {
 				lb.aw, lb.ah = b.W, b.H
 				vw, vh = b.W, b.H // 图片按图片区域居中 / 适应(此前按整个面板算,垂直方向偏了半个工具条)
@@ -203,16 +211,20 @@ func (a *App) lightboxOverlay(c *ui.Context) {
 			dw, dh := lightboxDisplaySize(lb.natW, lb.natH, vw, vh, lb.zoom)
 			if area.Pressed() {
 				if dx, dy, ok := area.Dragged(); ok {
+					// Dragged 返回的是「自上一帧起」指针挪动的量,不是从按下起的总量:要累加
 					if lb.drag == nil {
-						lb.drag = &lbDrag{ox: lb.offX, oy: lb.offY}
+						lb.drag = &lbDrag{}
 					}
 					d := lb.drag
-					if !d.moved && (dx*dx+dy*dy) >= lbDragSlop*lbDragSlop {
+					d.sx += dx
+					d.sy += dy
+					if !d.moved && (d.sx*d.sx+d.sy*d.sy) >= lbDragSlop*lbDragSlop {
 						d.moved = true
+						dx, dy = d.sx, d.sy // 越过阈值的那一帧把累积量一次补上,图片不会少走一截
 					}
 					if d.moved {
-						lb.offX = d.ox + dx
-						lb.offY = d.oy + dy
+						lb.offX += dx
+						lb.offY += dy
 					}
 				}
 			} else if lb.drag != nil {
@@ -220,6 +232,17 @@ func (a *App) lightboxOverlay(c *ui.Context) {
 			}
 			lx := (vw-dw)/2 + lb.offX
 			ly := (vh-dh)/2 + lb.offY
+			// 点图片外面的空白关闭,点图片本身(含拖动结束)不关
+			area.OnClick(func() {
+				if lb.drag != nil && lb.drag.moved {
+					return
+				}
+				x, y, ok := area.PointerPosition()
+				if ok && x >= lx && x <= lx+dw && y >= ly && y <= ly+dh {
+					return
+				}
+				closeFn()
+			})
 			area.Draw(func(p *ui.Painter, r ui.Rect) {
 				_ = p
 				_ = r
@@ -238,13 +261,9 @@ func (a *App) lightboxOverlay(c *ui.Context) {
 					return
 				}
 				src := a.localImage(lb.paths[lb.idx])
+				// 图片自己不接任何指针事件(没有点击 / 光标):按下与拖动都落在外面的图片区域上,
+				// 此前图片上挂了一个吞点击的空处理,按下被它拿走,图片上怎么拖都不动
 				imgBox := ui.Box(c).Absolute().Left(lx).Top(ly).Size(dw, dh).Scale(scale, scale)
-				if lb.drag != nil && lb.drag.moved {
-					imgBox.Cursor(ui.CursorGrabbing)
-				} else {
-					imgBox.Cursor(ui.CursorGrab)
-				}
-				imgBox.OnClick(func() { /* 阻止冒泡到 backdrop */ })
 				imgBox.Children(func() {
 					if src != nil {
 						ui.Image(c, src).Size(dw, dh).Fit(ui.Contain)
