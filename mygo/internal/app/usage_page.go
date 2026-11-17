@@ -219,7 +219,7 @@ func abs(f float64) float64 {
 // stat 是汇总卡(.stat-c):大数字 + 说明 + 可选的小字。
 func (a *App) stat(c *ui.Context, v, label, sub string, subCol ui.Color) {
 	t := a.tk
-	a.box(c).Grow(1).Basis(0).Padding(14, 16).Gap(3).Children(func() {
+	a.box(c).Grow(1).Basis(0).Padding(14, 16).Gap(3).Tooltip(usageStatTip(v, label, sub)).Children(func() {
 		ui.Text(c, v).FontSize(theme.Px(20)).FontWeight(600).FontFeatures("tnum")
 		ui.Text(c, label).FontSize(theme.FsCap).TextColor(t.Tx3)
 		if sub != "" {
@@ -240,6 +240,7 @@ func (a *App) usageChart(c *ui.Context, u core.UsageReport) {
 		a.use.chartAt = time.Now()
 		a.frameSoon()
 	}
+	dayMean := usageDayMean(u)
 	frac := float32(1)
 	dur := kit.DurSlow + time.Duration(len(u.Days))*24*time.Millisecond
 	if kit.MotionOn() {
@@ -263,7 +264,9 @@ func (a *App) usageChart(c *ui.Context, u core.UsageReport) {
 				if i == len(u.Days)-1 {
 					col = t.Ac
 				}
-				b := ui.Box(c.Key("bar-" + itoa(i))).Grow(1).Basis(0).HeightPercent(h).Radius(2).Background(col).Tooltip(d.Label + " · " + core.FormatMoney(d.Cost))
+				b := ui.ButtonBase(c).Key("bar-" + itoa(i)).Grow(1).Basis(0).HeightPercent(h).Radius(2).
+					Background(col).Cursor(ui.CursorDefault).
+					Tooltip(usageDayBarTip(d.Label, d.Cost, dayMean))
 				kit.GrowY(b, frac, time.Duration(i)*24*time.Millisecond, dur)
 				if b.Hovered() {
 					b.Background(t.Ac)
@@ -286,10 +289,13 @@ func (a *App) usageModels(c *ui.Context, u core.UsageReport) {
 		ui.Text(c, "按模型").FontWeight(500)
 		for _, m := range u.Models {
 			col := []ui.Color{t.Info, t.Vio, t.Ok}[m.Kind%3]
-			ui.Row(c).Height(theme.Px(28)).Gap(8).AlignItems(ui.Center).Children(func() {
+			row := ui.Row(c).Height(theme.Px(28)).Gap(8).AlignItems(ui.Center).
+				Tooltip(usageModelTip(m.Name, m.Fraction, m.Cost, u.Total))
+			row.Children(func() {
 				ui.Text(c, m.Name).Width(96).SingleLine()
 				ui.Box(c).Grow(1).Height(6).Radius(3).Background(t.Fill2).Clip().Children(func() {
-					ui.Box(c).HeightPercent(100).WidthPercent(float32(m.Fraction * 100)).Radius(3).Background(col)
+					ui.Box(c).HeightPercent(100).WidthPercent(float32(m.Fraction * 100)).Radius(3).Background(col).
+						Tooltip(usageModelTip(m.Name, m.Fraction, m.Cost, u.Total))
 				})
 				ui.Text(c, usageModelCost(m.Name, m.Cost)).Width(58).TextColor(t.Tx3).FontFeatures("tnum").TextAlign(ui.End)
 			})
@@ -302,7 +308,8 @@ func (a *App) usageProjects(c *ui.Context, u core.UsageReport) {
 	a.box(c).Grow(1).Basis(0).Padding(10, 14).Gap(4).Children(func() {
 		ui.Text(c, "按项目").FontWeight(500)
 		for _, p := range u.Projects {
-			ui.Row(c).Height(theme.Px(28)).Gap(8).AlignItems(ui.Center).Children(func() {
+			ui.Row(c).Height(theme.Px(28)).Gap(8).AlignItems(ui.Center).
+				Tooltip(usageProjectTip(p.Name, p.Sessions, p.Cost)).Children(func() {
 				ui.Text(c, p.Name).Grow(1).SingleLine().MinWidth(0)
 				ui.Text(c, itoa(p.Sessions)+" 个会话").FontSize(theme.FsCap).TextColor(t.Tx3).FontFeatures("tnum").Shrink(0)
 				ui.Text(c, core.FormatMoney(p.Cost)).Width(54).FontFeatures("tnum").TextAlign(ui.End)
@@ -379,7 +386,8 @@ func (a *App) usageLimitsBlock(c *ui.Context, u core.UsageReport) {
 	}
 	ui.Column(c).Gap(10).Children(func() {
 		for _, l := range u.Limits {
-			ui.Column(c).Gap(4).Children(func() {
+			col := ui.Column(c).Gap(4).Tooltip(usageLimitTip(l.Name, l.Percent, l.Reset))
+			col.Children(func() {
 				ui.Row(c).Children(func() {
 					ui.Text(c, l.Name).FontWeight(500).Grow(1)
 					ui.Text(c, itoa(l.Percent)+"%").TextColor(t.Tx3).FontFeatures("tnum")

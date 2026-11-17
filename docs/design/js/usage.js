@@ -15,7 +15,11 @@
 
   const stat = (v, l, sub = '') => `<div class="stat-c"><b class="num">${v}</b><span class="t3 fs-cap">${l}</span>${sub ? `<span class="fs-micro ${sub.startsWith('↑') ? 'c-warn' : 'c-ok'}">${sub}</span>` : ''}</div>`;
   const chart = (data) => { const mx = Math.max(...data.map(x => x.v));
-    return `<div class="bars" style="--n:${data.length}">${data.map((x, k) => `<i class="tip-u" style="--k:${k};height:${Math.max(4, x.v / mx * 100)}%" data-tip="${x.d} · ${money(x.v)}"></i>`).join('')}</div>
+    const mean = total / data.length;
+    return `<div class="bars" style="--n:${data.length}">${data.map((x, k) => {
+      const cmp = Math.abs(x.v - mean) < .02 ? '与均值持平' : (x.v > mean ? `高于均值 ${Math.round((x.v - mean) / mean * 100)}%` : `低于均值 ${Math.round((mean - x.v) / mean * 100)}%`);
+      return `<i class="tip-u" style="--k:${k};height:${Math.max(4, x.v / mx * 100)}%" data-tip="${x.d} · ${money(x.v)} · ${cmp}"></i>`;
+    }).join('')}</div>
       <div class="f jb t4 fs-micro" style="padding:4px 2px 0"><span>${data[0].d}</span><span>${data[Math.floor(data.length / 2)].d}</span><span>${data[data.length - 1].d}</span></div>`; };
   const bar = (n, p, v, c = '') => `<div class="f ai g4" style="height:28px"><span style="width:96px" class="ell">${n}</span><div class="meter grow" style="height:6px"><i style="width:${p * 100}%;${c ? `background:var(--${c.startsWith('c-') ? c : c})` : ''}"></i></div><span class="num t3" style="width:58px;text-align:right">${v}</span></div>`;
 
