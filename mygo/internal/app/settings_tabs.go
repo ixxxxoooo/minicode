@@ -724,7 +724,7 @@ func aboutCard(a *App, c *ui.Context) {
 }
 
 // Version 是显示用的版本号(构建时可用 -ldflags 覆盖)。
-var Version = "0.3.0-mygo"
+var Version = "0.3.1-mygo"
 
 // fmtPerfDur 把耗时写成易读形式:不足 1 秒用毫秒(两位小数),否则用秒(两位小数)。
 func fmtPerfDur(d time.Duration) string {
