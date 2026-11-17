@@ -214,7 +214,6 @@ func (a *App) flowListView(c *ui.Context) {
 				a.flowColPad(rc, pad, func() { rows[r.Index].build(rc, r.Index) })
 			})
 		})
-		a.flowRiseRow(rowWrap, r.Index, len(rows))
 		a.flowPerf.note(rows[r.Index].key, time.Since(t0))
 	})
 	a.finishFlowRiseIfDone()

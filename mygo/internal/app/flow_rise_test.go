@@ -3,6 +3,8 @@ package app
 import (
 	"testing"
 	"time"
+
+	"github.com/ixxxxoooo/minicode/internal/core"
 )
 
 func TestFlowRiseDelay(t *testing.T) {
@@ -76,5 +78,15 @@ func TestFlowRiseEstimateRows(t *testing.T) {
 	last := flowRiseEstimateLast(720, 400, 72, 50, 10)
 	if last < 10 || last > 25 {
 		t.Fatalf("估算末可见行异常: %d", last)
+	}
+}
+
+func TestFlowRiseDisabled(t *testing.T) {
+	a, _ := demoIDE(t)
+	a.curSess = "demo"
+	a.st.Items = []core.Item{&core.User{ID: "u1", Text: "hi"}}
+	a.triggerFlowRise()
+	if !a.flowRiseAt.IsZero() || a.flowRiseSess != "" {
+		t.Fatalf("会话流切换入场应已关闭")
 	}
 }

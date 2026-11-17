@@ -64,6 +64,9 @@ func (a *App) treeRevealScroll() {
 		a.frameSoon()
 		return
 	}
+	if d.treeHit >= 0 && len(d.treeLineBuf) > 0 {
+		d.treeList.ScrollIntoView(d.treeHit)
+	}
 	rowH := a.tk.Scheme.RowH
 	top := 26 + float32(d.treeHit)*rowH
 	d.treeSt.Y = scrollRowIntoView(d.treeSt.Y, d.treeH, top, rowH)

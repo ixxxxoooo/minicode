@@ -53,6 +53,66 @@ func navDropDelay(i int) time.Duration {
 	return min(navDropMaxIdx*navDropStep+time.Duration(i-navDropMaxIdx)*navDropTail, navDropCap)
 }
 
+// navDropViewport 与 flowRiseViewport 同语义:视野外(尤其上方)不排队,视野内从第一可见行起 stagger。
+func (a *App) navDropViewport(el ui.Element, row, first, last, total int, scrollY, viewH, rowH float32) ui.Element {
+	if !kit.MotionOn() || a.navDropAt.IsZero() || a.navDropRate <= 0 {
+		return el
+	}
+	laidOut := viewH > 0
+	stagger, instant := flowRiseViewport(row, first, last, total, laidOut, scrollY, viewH)
+	if instant {
+		return el
+	}
+	if stagger < 0 {
+		return el.Opacity(0).Translate(0, -navDropShift)
+	}
+	dur := time.Duration(float64(kit.DurSlow) * a.navDropRate)
+	delay := time.Duration(float64(kit.Scale(navDropDelay(stagger))) * a.navDropRate)
+	p := float32(kit.Since(a.navDropAt)-delay) / float32(dur)
+	if p >= 1 {
+		return el
+	}
+	a.frameSoon()
+	if p <= 0 {
+		return el.Opacity(0).Translate(0, -navDropShift)
+	}
+	e := kit.EaseOut(p)
+	return el.Opacity(e).Translate(0, -navDropShift*(1-e))
+}
+
+// treeNavDrop 文件树行:按滚动位置只对视口内行播落下,视口上方瞬时就位。
+func (a *App) treeNavDrop(el ui.Element, row int) ui.Element {
+	d := a.ide
+	total := len(d.treeLineBuf)
+	if total == 0 {
+		return el
+	}
+	rowH := a.tk.Scheme.RowH
+	first, last := d.treeList.Visible()
+	if last < first {
+		first = flowRiseEstimateFirst(d.treeSt.Y, d.treeH, rowH, total)
+		last = flowRiseEstimateLast(d.treeSt.Y, d.treeH, rowH, total, first)
+	}
+	return a.navDropViewport(el, row, first, last, total, d.treeSt.Y, d.treeH, rowH)
+}
+
+// listNavDrop 虚拟列表行(搜索等):用 ListState 的可见范围。
+func (a *App) listNavDrop(el ui.Element, row, total int, st *ui.ListState, scrollY, viewH float32) ui.Element {
+	if total <= 0 {
+		return a.navDrop(el)
+	}
+	first, last := st.Visible()
+	rowH := a.tk.Scheme.RowH
+	if last < first && viewH <= 0 {
+		return a.navDropViewport(el, row, 0, min(total, navDropMaxIdx+4), total, scrollY, viewH, rowH)
+	}
+	if last < first {
+		first = flowRiseEstimateFirst(scrollY, viewH, rowH, total)
+		last = flowRiseEstimateLast(scrollY, viewH, rowH, total, first)
+	}
+	return a.navDropViewport(el, row, first, last, total, scrollY, viewH, rowH)
+}
+
 // navDrop 给导航栏里的一行套上落下入场,并占用一个行序号(调用顺序 = 自上而下的顺序)。
 // 参数 el:这一行的元素。返回同一个元素,便于链式调用。动效关闭、从未触发或已播完时什么都不做。
 func (a *App) navDrop(el ui.Element) ui.Element {

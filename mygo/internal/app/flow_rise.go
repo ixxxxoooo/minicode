@@ -1,7 +1,6 @@
 package app
 
 import (
-	"strings"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -130,23 +129,9 @@ func (a *App) restoreFlowScroll(sess string) {
 }
 
 // triggerFlowRise 在切换到已有内容的会话时启动入场(同一会话只播一次,直到进程重启)。
+// 会话流切换入场已关闭;仍恢复 flowScroll,flowRiseViewport 供侧栏列表用。
 func (a *App) triggerFlowRise() {
-	sid := a.curSess
-	if sid == "" || strings.HasPrefix(sid, "new:") {
-		a.flowRiseAt, a.flowRiseSess = time.Time{}, ""
-		return
-	}
-	if a.st == nil || len(a.st.Items) == 0 {
-		a.flowRiseAt, a.flowRiseSess = time.Time{}, ""
-		return
-	}
-	if a.flowRisePlayed != nil && a.flowRisePlayed[sid] {
-		a.flowRiseAt, a.flowRiseSess = time.Time{}, ""
-		return
-	}
-	a.flowRiseSess = sid
-	a.flowRiseAt = kit.Now()
-	flowRiseLog.Info("会话流入场", "会话", sid, "条目", len(a.st.Items))
+	a.flowRiseAt, a.flowRiseSess = time.Time{}, ""
 }
 
 func (a *App) finishFlowRiseIfDone() {

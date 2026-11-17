@@ -1,7 +1,6 @@
 package app
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/ixxxxoooo/minicode/internal/diag"
@@ -10,12 +9,11 @@ import (
 
 func TestSettingsPerfRenders(t *testing.T) {
 	_, tt, _ := settingsApp(t, "perf")
-	body := tt.Text()
-	if !strings.Contains(body, "悬停") {
+	if !tt.HasText("悬停") {
 		t.Fatal("趋势区应包含悬停提示")
 	}
-	if !strings.Contains(body, "帧率") && !strings.Contains(body, "数据不足") {
-		t.Fatalf("性能页应渲染概览或空态,得到: %q", trunc(body, 240))
+	if !tt.HasText("帧率") && !tt.HasText("数据不足") {
+		t.Fatal("性能页应渲染概览或空态")
 	}
 }
 
@@ -38,9 +36,3 @@ func TestLogLevelPersistsViaPrefs(t *testing.T) {
 	}
 }
 
-func trunc(s string, n int) string {
-	if len(s) <= n {
-		return s
-	}
-	return s[:n]
-}

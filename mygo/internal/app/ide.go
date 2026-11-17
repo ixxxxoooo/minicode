@@ -157,21 +157,24 @@ type ide struct {
 	termTabW   map[int]float32 // 各终端标签上一帧宽度
 	panelW     float32         // 底部面板内容区宽度(上一帧)
 
-	sections map[string]bool // 资源管理器区块折叠(大纲 / 时间线)
-	rootShut bool            // 「文件夹」区块(文件树本体)是否已折叠
-	revealed string          // 上次自动在文件树里定位的标签路径(ide_reveal.go)
-	revealTo string          // 待滚入可见的树行路径(自动定位后一次性消费)
-	fltOpen  bool            // 文件树过滤条已展开(ide_tree_filter.go)
-	flt      string          // 过滤关键字
-	fltKey   string          // 过滤结果缓存的键(关键字 + 文件清单版本)
-	fltVis   map[string]bool // 过滤后应显示的路径(命中文件 + 祖先目录)
-	fltN     int             // 命中的文件数
-	treeSt   ui.ScrollState  // 文件树的滚动状态
-	treeIdx  int             // 本帧已画的树行数(算目标行的内容位置)
-	treeHit  int             // 目标行的行序号(-1 = 本帧没画到)
-	treeH    float32         // 文件树视口高度(上一帧估算)
-	tlMore   map[string]int  // 时间线:按文件多加载的条数上限
-	tlIx     int             // 时间线键盘焦点行(-1 = 无)
+	sections    map[string]bool // 资源管理器区块折叠(大纲 / 时间线)
+	rootShut    bool            // 「文件夹」区块(文件树本体)是否已折叠
+	revealed    string          // 上次自动在文件树里定位的标签路径(ide_reveal.go)
+	revealTo    string          // 待滚入可见的树行路径(自动定位后一次性消费)
+	fltOpen     bool            // 文件树过滤条已展开(ide_tree_filter.go)
+	flt         string          // 过滤关键字
+	fltKey      string          // 过滤结果缓存的键(关键字 + 文件清单版本)
+	fltVis      map[string]bool // 过滤后应显示的路径(命中文件 + 祖先目录)
+	fltN        int             // 命中的文件数
+	treeSt      ui.ScrollState  // 文件树的滚动状态
+	treeList    ui.ListState    // 文件树虚拟列表(只构建视口内行)
+	treeLineBuf []treeLine      // 拍平的树行(见 ide_tree_flat.go)
+	treeLineSig string          // 展开 / 过滤等签名,变了才重算拍平
+	treeIdx     int             // 本帧已画的树行数(算目标行的内容位置)
+	treeHit     int             // 目标行的行序号(-1 = 本帧没画到)
+	treeH       float32         // 文件树视口高度(上一帧估算)
+	tlMore      map[string]int  // 时间线:按文件多加载的条数上限
+	tlIx        int             // 时间线键盘焦点行(-1 = 无)
 
 	tabSt          ui.ScrollState     // 标签条的横向滚动
 	tabSeen        string             // 已滚动到可见的标签

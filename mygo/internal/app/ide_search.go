@@ -425,7 +425,7 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 	t := a.tk
 	s := &a.sr
 	if f := r.file; f != nil {
-		row := a.navDrop(ui.ButtonBase(c).Key("sf-" + f.Path)).Height(theme.Px(22)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
+		row := a.listNavDrop(ui.ButtonBase(c).Key("sf-"+f.Path), i, len(s.rows), &s.list, 0, 0).Height(theme.Px(22)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
 		if row.Hovered() {
 			row.Background(t.Fill1)
 		}
@@ -448,7 +448,7 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 	}
 	m := *r.match
 	ign := s.ignored[mkey(m)]
-	row := a.navDrop(ui.ButtonBase(c).Key("sm-" + mkey(m))).Height(theme.Px(20)).PaddingX(4).PaddingStart(22).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
+	row := a.listNavDrop(ui.ButtonBase(c).Key("sm-"+mkey(m)), i, len(s.rows), &s.list, 0, 0).Height(theme.Px(20)).PaddingX(4).PaddingStart(22).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer)
 	if s.selMatch == mkey(m) {
 		kit.SelStyle(row) // 点开过的匹配:选中外观(方案 B 白色浮起卡)
 	} else if row.Hovered() {

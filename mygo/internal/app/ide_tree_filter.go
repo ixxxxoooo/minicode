@@ -139,7 +139,7 @@ func (a *App) treeFiltered(c *ui.Context, dir string, depth int) {
 		if !d.fltVis[e.Path] {
 			continue
 		}
-		a.treeRow(c, e, depth)
+		a.treeRow(c, e, depth, 0)
 		if e.Dir {
 			a.treeFiltered(c, e.Path, depth+1)
 		}

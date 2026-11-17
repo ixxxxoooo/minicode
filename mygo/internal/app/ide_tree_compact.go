@@ -45,16 +45,12 @@ func (d *ide) compactFolderTail(start string) (tail, label string, ok bool) {
 	return cur, strings.Join(parts, "/"), true
 }
 
-func (a *App) treeCompactRow(c *ui.Context, tail, label string, depth int) {
+func (a *App) treeCompactRow(c *ui.Context, tail, label string, depth, row int) {
 	t := a.tk
 	d := a.ide
 	expanded := d.open[tail]
 	on := d.sel == tail || strings.HasPrefix(d.sel, tail+"/")
-	if d.revealTo != "" && (d.revealTo == tail || strings.HasPrefix(d.revealTo, tail+"/")) {
-		d.treeHit = d.treeIdx
-	}
-	d.treeIdx++
-	r := a.navDrop(kit.RowEl(c, on).Key("tr-cmp-" + tail)).PaddingStart(6 + float32(depth)*14).Gap(6)
+	r := a.treeNavDrop(kit.RowEl(c, on).Key("tr-cmp-"+tail), row).PaddingStart(6 + float32(depth)*14).Gap(6)
 	r.ContextMenu(func(m *ui.Menu) { a.treeMenu(m, tail, true) })
 	if r.Clicked() {
 		a.filesFocus = true
@@ -73,7 +69,4 @@ func (a *App) treeCompactRow(c *ui.Context, tail, label string, depth int) {
 		kit.Ic(c, "folder", kit.S14)
 		ui.Text(c, label).Grow(1).SingleLine().FontFeatures("tnum")
 	})
-	if expanded {
-		a.treeDir(c, tail, depth) // 链内仍走普通树(文件与同层夹断的文件夹)
-	}
 }

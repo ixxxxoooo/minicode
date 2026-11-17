@@ -42,7 +42,7 @@
       cell('提问卡 → 回答卡的过渡', '', snip(`<div class="t2" style="line-height:1.7">提交后提问卡原位淡出(120 ms),输入框淡入并恢复草稿;同时会话流里<b>就地</b>出现回答卡片(插在提问发出的位置,不追加到末尾),吸底时随新内容滚入视野。</div>`), '回答卡片属于「回合」的一部分,回合折叠时和步骤行一起折进「已处理」。'),
       cell('运行中等待回答', '', snip(`<div class="note-line">${ic('info', 's12')}<span class="shimmer">等待你回答 2 个问题…</span></div>`), '提问未回答时,会话流只有一行流光提示;卡片在输入框位置,避免两处都有按钮。'))
     )}
-    ${sec('切换会话:入场只从视野内开始', '从侧栏 / 命令面板 / 搜索切回某条会话时,恢复上次的滚动位置后,各行做 a-rise 淡入下落(间隔 30ms,总延迟封顶 400ms)。<b>视口上方</b>与<b>视口下方</b>的行视为已出现,不排队,避免停在列表中间时先看到一片空白。<b>首帧尚未布局</b>时:有滚动偏移则按默认行高估算视口,否则首帧不播动画。同一会话本轮已看过的不重复播;回合进行中的新消息仍走原有发送 / 状态行动效。动效关闭或系统减弱动态时直达。', grid(
+    ${sec('左栏资源管理器:视口内落下(会话流无切换入场)', '换分段回到「文件 / 搜索 / 源代码管理」时,列表行仍可用 <b>navDrop</b> 自上而下落下,但<b>只对视口内行排队</b>:视口上方瞬时就位、下方不等待。文件树用虚拟列表只构建视口附近行,滚动位置首帧恢复(<code>treeList.ScrollIntoView</code>)。<b>会话流</b>不再播切换入场 stagger(仍记住滚动);发送 / 状态行等原有动效保留。', grid(
       cell('停在列表中间', '', `<div class="snip" style="height:220px;width:560px;position:relative;padding:10px 14px;overflow:hidden">
         <div style="position:absolute;inset:0;background:linear-gradient(180deg,var(--bg) 0 20%,transparent 20% 55%,var(--bg) 55% 100%);opacity:.5;pointer-events:none"></div>
         <div class="t3 fs-cap" style="margin-bottom:8px">灰色 = 已滚过,瞬时可见 · 彩色 = 视口内 stagger · 下方未构建的行滚动到时直接出现</div>
@@ -79,7 +79,10 @@
       ['问答卡 · 多题切换', 'dock_ask 步骤条+上/下题+←→;dockBadge 审批序号。未测试', st('ok')],
       ['回答卡片', 'dock_ask.askEcho + askEchoMenu。未测试', st('ok')],
       ['回到最新按钮', 'flow_scroll.toLatestBtn + flowTailMark;距底阈值 32px,贴 dock 上缘 10px。未测试', st('ok')],
-      ['切换会话入场(视野内 stagger)', 'flow_rise.go:恢复 flowScroll + triggerFlowRise;视口外瞬时可见;flow_rise_test。未 computer use', st('part')],
+      ['会话流切换入场', '已关闭 triggerFlowRise/flowRiseRow;仍恢复 flowScroll。flowRiseViewport 复用于侧栏', st('ok')],
+      ['资源管理器视口落下 + 虚拟树', 'ide_tree_flat + ui.List + treeNavDrop;side_drop navDropViewport。未 computer use', st('part')],
+      ['面包屑下拉文件图标', 'file_menu_icon.go mItemFile 与 fileIc 同源徽标;fileIconID 单测。未 computer use', st('part')],
+      ['大纲时间线 sash 在标题上缘', 'ide_tree.go resizeHandle 在 sec-h 上;ide_side_sash_test。未 computer use', st('part')],
       ['交互卡入场与呼吸描边', 'kit.PopUpIn/DockGlow + dock_pending.dockCardAt;处理完 composer PopIn 120ms。未测试', st('ok')],
       ['引导行附带图片', 'steerPend.imgN + queueImgBadge。未测试', st('ok')]]))}
   </div>`;
