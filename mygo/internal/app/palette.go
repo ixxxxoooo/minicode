@@ -294,9 +294,14 @@ func (a *App) palItems() []palItem {
 	}
 	cmds, common := a.palCommands()
 	var cs, ss, fs []scored
+	var recent []palItem // 无查询时置顶的「最近使用」(最近执行的命令,新→旧)
+	var recentUsed map[int]bool
+	if q == "" {
+		recent, recentUsed = a.palRecentItems(cmds)
+	}
 	for i, cm := range cmds {
 		if q == "" {
-			if common[i] {
+			if common[i] && !recentUsed[i] {
 				cs = append(cs, scored{cm, 0, i})
 			}
 			continue
@@ -386,7 +391,7 @@ func (a *App) palItems() []palItem {
 	if q != "" && a.mode == ModeIDE { // IDE 里搜东西多半是找文件:文件 → 命令 → 会话
 		order = [][]scored{fs, cs, ss}
 	}
-	var out []palItem
+	out := recent
 	for _, g := range order {
 		for _, s := range g {
 			out = append(out, s.palItem)
@@ -489,6 +494,7 @@ func (a *App) paletteView(c *ui.Context) {
 			a.closePalette()
 			return
 		}
+		a.palRecordRecent(it)
 		it.run()
 		if !it.keep {
 			a.closePalette()
