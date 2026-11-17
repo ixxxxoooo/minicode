@@ -19,29 +19,31 @@ func (a *App) filesView(c *ui.Context) {
 	t := a.tk
 	d := a.ide
 	d.treeIdx, d.treeHit = 0, -1
-	// 外层竖排:文件树自己滚动,「大纲 / 时间线」像 VS Code 的分区那样钉在底部。
+	// 外层竖排:顶部是固定的「打开的编辑器」与根标题(含新建 / 过滤 / 全部收起 / 刷新,不随树滚动,
+	// 长列表里也能随时收起),中间的文件树自己是滚动容器(虚拟列表,只构建视口内的行),
+	// 「大纲 / 时间线」像 VS Code 的分区那样钉在底部。
+	// 曾经整块放在一个 VScroll 里:里面的 ui.List 量不到视口,685 行全部每帧构建(一帧 40 ms+,展开大目录后
+	// 切回来要卡好几秒才出内容);现在 List 直接做滚动容器,只构建可见行。
 	outer := ui.Column(c).Grow(1).MinHeight(0)
-	var secBox ui.Element
+	outer.OnShortcut(ui.Cmd, ui.KeyF, a.toggleTreeFilter)
+	outer.OnShortcut(0, ui.KeyUp, func() { a.treeFilterStep(-1) })
+	outer.OnShortcut(0, ui.KeyDown, func() { a.treeFilterStep(1) })
+	outer.OnShortcut(0, ui.KeyF2, func() {
+		if a.ide.sel == "" {
+			return
+		}
+		a.filesFocus = true
+		a.beginRenameFile(a.ide.sel)
+	})
+	var secBox, treeBox ui.Element
+	haveTree := false
 	haveSec := false
 	outer.Children(func() {
-		files := kit.VScroll(c).Key("files").TrackScroll(&d.treeSt).Grow(1).MinHeight(0)
-		files.OnShortcut(ui.Cmd, ui.KeyF, a.toggleTreeFilter)
-		files.OnShortcut(0, ui.KeyUp, func() { a.treeFilterStep(-1) })
-		files.OnShortcut(0, ui.KeyDown, func() { a.treeFilterStep(1) })
-		files.OnShortcut(0, ui.KeyF2, func() {
-			if a.ide.sel == "" {
-				return
-			}
-			a.filesFocus = true
-			a.beginRenameFile(a.ide.sel)
-		})
-		files.Children(func() {
-			ui.Column(c).Children(func() {
-				a.openedEditorsSection(c)
-				// 文件树区块自成父容器,根标题(含全部收起等工具)滚到顶部时吸顶,长列表里也能随时收起 / 刷新
-				ui.Column(c).Key("tree-sec").Children(func() {
-					hdr := ui.Row(c).Key("tree-hdr").Height(theme.Px(26)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(600).
-						Background(t.Chrome).Sticky().Top(0)
+		a.openedEditorsSection(c)
+		{
+			{
+				{
+					hdr := ui.Row(c).Key("tree-hdr").Height(theme.Px(26)).PaddingX(8).Gap(5).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(600)
 					hdrHot := hdr.Hovered() || a.popup != ""
 					hdr.Children(func() {
 						title := strings.ToUpper(d.fs.Name())
@@ -113,9 +115,14 @@ func (a *App) filesView(c *ui.Context) {
 						})
 					})
 					a.treeFilterBar(c)
-					if !d.rootShut {
+					if d.rootShut {
+						ui.Spacer(c).Grow(1) // 树折叠了:把「大纲 / 时间线」顶在底部
+					} else {
 						if d.fltActive() {
-							a.treeFiltered(c, "", 0)
+							// 过滤结果是递归画出来的(没有虚拟列表),自己放进一个滚动容器
+							kit.VScroll(c).Key("files").TrackScroll(&d.treeSt).Grow(1).MinHeight(0).Children(func() {
+								ui.Column(c).Children(func() { a.treeFiltered(c, "", 0) })
+							})
 						} else {
 							lines := a.treeLineCache()
 							d.treeHit = -1
@@ -127,16 +134,17 @@ func (a *App) filesView(c *ui.Context) {
 									}
 								}
 							}
-							ui.List(c, &d.treeList, len(lines), func(i int) {
+							list := ui.List(c, &d.treeList, len(lines), func(i int) {
 								if i < len(lines) {
 									a.treeLineAt(c, lines[i], i)
 								}
-							}).Grow(1).MinHeight(0)
+							}).Grow(1).MinHeight(0).TrackScroll(&d.treeSt)
+							treeBox, haveTree = kit.ApplyNativeScroll(list, "files", &d.treeSt, false, true), true // 滚动条显示策略与活动追踪
 						}
 					}
-				}) // tree-sec
-			})
-		})
+				}
+			}
+		}
 		outerH := outer.Bounds().H
 		secBox, haveSec = ui.Column(c).Shrink(0), true
 		secBox.Children(func() {
@@ -210,8 +218,10 @@ func (a *App) filesView(c *ui.Context) {
 			}
 		})
 	})
-	// 文件树视口高 ≈ 外层高 − 钉在底部的区块高(都取上一帧);然后把待定位的行滚进可见范围
-	if h := outer.Bounds().H; h > 0 && haveSec {
+	// 文件树视口高:树滚动容器自己的高度(取上一帧);没有树容器(折叠 / 过滤)时按外层高 − 钉在底部的区块高估算
+	if haveTree && treeBox.Bounds().H > 0 {
+		d.treeH = treeBox.Bounds().H
+	} else if h := outer.Bounds().H; h > 0 && haveSec {
 		d.treeH = h - secBox.Bounds().H
 	}
 	a.treeRevealScroll()

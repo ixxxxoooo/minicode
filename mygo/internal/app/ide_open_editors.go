@@ -37,11 +37,10 @@ func (a *App) openedEditorsSection(c *ui.Context) {
 		d.sections = map[string]bool{}
 	}
 	open := d.sections["打开的编辑器"]
-	// 区块自成一个父容器:标题吸顶(Sticky)只在这个区块还在视野里时有效,区块滚出去标题跟着走,下一个区块的标题接上
-	ui.Column(c).Key("sec-open-editors-box").Children(func() {
+	// 区块固定在文件树上方(标题永远可见);行多时限高并自己滚动,不把文件树挤没
+	ui.Column(c).Key("sec-open-editors-box").Shrink(0).Children(func() {
 		head := ui.ButtonBase(c).Key("sec-open-editors").Height(theme.Px(26)).PaddingX(8).Justify(ui.Start).Gap(5).AlignItems(ui.Center).
-			TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(500).Cursor(ui.CursorDefault).
-			Background(t.Chrome).Sticky().Top(0) // 底色必须不透明,否则滚动时下面的行从标题里透出来
+			TextColor(t.Tx3).FontSize(theme.Px(11.5)).FontWeight(500).Cursor(ui.CursorDefault)
 		if head.Clicked() {
 			d.sections["打开的编辑器"] = !open
 		}
@@ -57,11 +56,18 @@ func (a *App) openedEditorsSection(c *ui.Context) {
 		if !open {
 			return
 		}
-		for _, tb := range tabs {
-			a.openedEditorRow(c, tb)
-		}
+		kit.VScroll(c).Key("oe-scroll").MaxHeight(openEditorsMaxH).Children(func() {
+			ui.Column(c).Children(func() {
+				for _, tb := range tabs {
+					a.openedEditorRow(c, tb)
+				}
+			})
+		})
 	})
 }
+
+// openEditorsMaxH 是「打开的编辑器」展开后的最大高度(约 8 行);更多行在区块内滚动。
+const openEditorsMaxH = 8 * 26
 
 func (a *App) openedEditorRow(c *ui.Context, tb *ideTab) {
 	t := a.tk

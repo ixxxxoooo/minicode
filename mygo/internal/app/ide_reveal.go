@@ -68,7 +68,7 @@ func (a *App) treeRevealScroll() {
 		d.treeList.ScrollIntoView(d.treeHit)
 	}
 	rowH := a.tk.Scheme.RowH
-	top := 26 + float32(d.treeHit)*rowH
+	top := float32(d.treeHit) * rowH // 根标题现在固定在滚动区外,行位置不再含标题行高
 	d.treeSt.Y = scrollRowIntoView(d.treeSt.Y, d.treeH, top, rowH)
 	uxLog.Info("文件树滚到当前文件", "path", d.revealTo, "row", d.treeHit)
 	d.revealTo = ""
