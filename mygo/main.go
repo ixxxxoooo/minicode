@@ -384,7 +384,12 @@ func main() {
 				a.OpenWorkspaceByName(v)
 			}
 			if v := os.Getenv("MINI_ED"); v != "" { // 调试 / 截图:启动后执行编辑器动作(同 cmd/shot -ed,如 goto:src/router.rs:17)
-				a.EditorDemo(v)
+				// 编辑器状态在第一帧构建后才存在:延后到窗口出帧再执行,否则光标 / 范围等动作会静默落空
+				go func() {
+					defer diag.Recover("启动后执行编辑器动作")
+					time.Sleep(1500 * time.Millisecond)
+					win.Update(func() { a.EditorDemo(v) })
+				}()
 			}
 			return
 		}
