@@ -13,6 +13,7 @@ package app
 import (
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
@@ -30,7 +31,9 @@ type beltGeom struct {
 	// 以下只在切换那一刻(beltCapture)记下,供被挤出舞台的旧工作区「幽灵」画内容:
 	ghostSt *editor.State // 当前文件标签的只读影子编辑器(与真实编辑器共用缓冲区,滚动位置同切换那一刻);nil = 主体留空
 	ghostV  *ideTab       // 当前是虚拟标签(审查 / 计划 / 子 Agent / 任务 …)时记下它,幽灵直接再画一份它的视图
+	empty   bool          // 没有任何标签(工作区显示启动页 wsEmpty):幽灵再画一份启动页
 	panelH  float32       // 旧工作区底部面板的高度(没开 = 0)
+	term    []string      // 底部面板当前终端画面的最后几行文字(幽灵里的终端预览,纯文字)
 }
 
 // beltFrame 是本帧传送带的摆位结果;on = false 表示不在平移中,面板走弹性布局。
@@ -100,6 +103,10 @@ func (a *App) beltCapture() {
 		g.ghostSt, g.panelH = a.beltGhostState()
 		if tb := a.ide.cur(); g.ghostSt == nil && tb != nil && tb.virt != "" && a.ide.splitDir == 0 && !(a.ly.panelMax && a.ide.bottomOpen) {
 			g.ghostV = tb
+		}
+		g.empty = a.ide.cur() == nil && a.ide.splitDir == 0 && !(a.ly.panelMax && a.ide.bottomOpen)
+		if g.panelH > 0 {
+			g.term = a.ghostTermLines(9)
 		}
 	}
 	a.belt0, a.belt0Ok = g, true
@@ -179,11 +186,61 @@ func (a *App) wsGhost(c *ui.Context, r beltRect) {
 				// 同一份视图画第二份:个别视图若有「只能绑一次」的控件会 panic,这里隔离,最坏只是幽灵主体留空(静默,5 秒后重试)
 				a.guard(c, "形态切换幽灵", "belt-ghost:"+tb.id, guardSilent, func() { a.virtView(c, tb) })
 			})
+		} else if g.empty {
+			ui.Column(c).Key("ghost-body").Grow(1).MinHeight(0).Clip().PassThrough().Children(func() {
+				a.guard(c, "形态切换幽灵", "belt-ghost:empty", guardSilent, func() { a.wsEmpty(c) })
+			})
 		} else {
 			ui.Box(c).Key("ghost-body").Grow(1)
 		}
 		if g.panelH > 0 {
-			ui.Box(c).Key("ghost-panel").Height(g.panelH).Shrink(0).Background(t.BG).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2)
+			a.ghostPanel(c, g)
 		}
 	})
+}
+
+// ghostPanel 画幽灵里的底部面板:标签条(终端 / 问题 / 输出)+ 终端画面最后几行文字。
+// 真实终端控件的句柄只能绑一个元素,所以这里是静态预览。
+func (a *App) ghostPanel(c *ui.Context, g beltGeom) {
+	t := a.tk
+	ui.Column(c).Key("ghost-panel").Height(g.panelH).Shrink(0).ClipX().Background(t.BG).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2).Children(func() {
+		ui.Row(c).Key("ghost-ptabs").Height(theme.HTab).Shrink(0).AlignItems(ui.Center).Padding(0, 8, 0, 8).Gap(4).Children(func() {
+			for i, s := range []string{"终端", "问题", "输出"} {
+				x := ui.Text(c, s).SingleLine().FontSize(theme.Px(11.5)).Padding(0, 6, 0, 6).TextColor(t.Tx3)
+				if i == 0 {
+					x.TextColor(t.Tx1).FontWeight(500)
+				}
+			}
+		})
+		ui.Column(c).Key("ghost-pbody").Grow(1).MinHeight(0).Clip().Padding(4, 10, 0, 10).Children(func() {
+			for _, ln := range g.term {
+				ui.Text(c, ln).SingleLine().Font("monospace").FontSize(termFont).TextColor(t.Tx2)
+			}
+		})
+	})
+}
+
+// ghostTermLines 取当前终端画面的最后 n 行非空文字(没有终端 / 还没有画面返回 nil)。
+func (a *App) ghostTermLines(n int) []string {
+	if len(a.ide.tps) == 0 {
+		return nil
+	}
+	tp := a.ide.tpc()
+	if tp == nil || tp.scr == nil {
+		return nil
+	}
+	var out []string
+	for _, ln := range tp.scr.Lines[min(len(tp.scr.Lines), max(0, tp.scr.ScreenTop)):] {
+		var sb strings.Builder
+		for _, r := range ln {
+			sb.WriteString(r.Text)
+		}
+		if s := strings.TrimRight(sb.String(), " "); s != "" {
+			out = append(out, s)
+		}
+	}
+	if len(out) > n {
+		out = out[len(out)-n:]
+	}
+	return out
 }

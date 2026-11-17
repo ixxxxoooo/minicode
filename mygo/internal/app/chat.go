@@ -20,21 +20,20 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		r := a.belt.chat
 		p.Absolute().Left(r.x).Top(0).Bottom(0).Width(max(0, r.w)).Shrink(0).Transition(noMotion)
 		shown = r.w > .5
-		// 只为把宽度 / 外边距的动画状态推到终值,平移结束后不会再补一次滑动
-		dock := a.mode == ModeIDE && !a.chatMax && a.belt.chatOn
-		_ = a.paneGap(p, dock, gap)
-		_ = a.paneW(p, map[bool]float32{true: a.dockW(), false: 0}[dock], false)
+		// 只为把外边距的动画状态推到终值,平移结束后不会再补一次滑动
+		_ = a.paneGap(p, a.mode == ModeIDE && !a.chatMax && a.belt.chatOn, gap)
 	case a.mode == ModeAgent || a.chatMax:
 		// 占满型不带自己的动画:宽度完全跟着相邻栏(左栏 / 右栏)每一帧的宽度走(设计稿里它是 flex: 1,没有 width 过渡)
 		p.Grow(1).Basis(0)
 		_ = a.paneGap(p, false, gap)
-		_ = a.paneW(p, 0, false)
 	case a.rightOn && !a.useDockRail():
-		// IDE 形态:对话栏停靠在右侧,固定 352 宽(设计稿 --w-dock)
-		p.Width(a.paneW(p, a.dockW(), false)).Shrink(0).Margin(0, 0, 0, a.paneGap(p, true, gap))
+		// IDE 形态:对话栏停靠在右侧(设计稿 .chat { flex: 1 1 0 }):占满工作区让出来的那一段。
+		// 宽度 = 舞台 − 工作区(wsPane 里显式动画) − 间距,所以展开时它随工作区收窄而逐帧变宽,稳态正好是 --w-dock
+		p.Grow(1).Basis(0).Margin(0, 0, 0, a.paneGap(p, true, gap))
 	default:
-		// 收起(右栏关了 / 窄窗收成图标条):宽度归零(440ms 变形曲线),透明度 260ms ease-io 淡出
-		p.Width(a.paneW(p, 0, false)).Shrink(0).Margin(0, 0, 0, a.paneGap(p, false, gap))
+		// 收起(右栏关了 / 窄窗收成图标条):设计稿 .chat { flex: 0 0 0; width: 0 } 宽度瞬间归零(不过渡),
+		// 只有工作区在 440ms 里向右扩展填满;透明度 260ms ease-io、间距 440ms 照常渐变
+		p.Width(0).Shrink(0).Margin(0, 0, 0, a.paneGap(p, false, gap))
 		shown = false
 	}
 	// 透明度 260ms ease-io(设计稿 .pane);形态切换那 440ms 里改走 chat-dock / chat-center:

@@ -95,11 +95,27 @@ func (a *App) wsPane(c *ui.Context, gap float32) {
 		// 只为把宽度 / 外边距的动画状态推到终值,平移结束后不会再补一次滑动
 		right := !ide && a.belt.wsOn
 		_ = a.paneGap(p, right, gap)
-		_ = a.paneW(p, map[bool]float32{true: a.wsRW(), false: 0}[right], false)
+		w := float32(0)
+		if right {
+			w = a.wsRW()
+		} else if ide {
+			w = a.belt.ws.w
+		}
+		_ = a.paneW(p, w, false)
 	case active && ide:
-		p.Grow(1).Basis(0) // 同 chatPane:占满型宽度跟着相邻栏走
+		// IDE:设计稿 .ws { width: calc(100% - --w-dock - gap) },右栏关了是 100%,这个宽度走 440ms 变形曲线。
+		// 对话栏收起时宽度瞬间归零,只有这里在逐帧向右扩展;展开时这里收窄、对话栏(flex)随之变宽。
+		// 稳态(动画走完)改回占满,窗口缩放时不会落后一帧。
+		target := a.stageW
+		if a.chatDockOn() {
+			target = max(0, a.stageW-a.dockW()-gap)
+		}
 		_ = a.paneGap(p, false, gap)
-		_ = a.paneW(p, 0, false)
+		if v := a.paneW(p, target, false); a.stageW <= 0 || absF(v-target) < .5 {
+			p.Grow(1).Basis(0)
+		} else {
+			p.Width(v).Shrink(0)
+		}
 	case active:
 		p.Width(a.paneW(p, a.wsRW(), false)).Shrink(0).Margin(0, 0, 0, a.paneGap(p, true, gap))
 	default:

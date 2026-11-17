@@ -34,6 +34,7 @@ func main() {
 	popup := flag.String("popup", "", "打开某个弹层:cfg / sbcfg / ctx / upd / acct")
 	clicks := flag.String("click", "", "截图前依次点击,形如 IDE;100,200(文字或 DIP 坐标);每次点击后推进 -step 毫秒")
 	step := flag.Int("step", 600, "每次点击后推进的毫秒数")
+	trace := flag.String("trace", "", "点击后按 16ms 逐帧推进,打印这些文字(逗号分隔)的位置,用来读动画曲线;之后不再截图")
 	noMotion := flag.Bool("nomotion", false, "关闭动效直接取终态(截图里没有窗口,frameSoon 是空操作,按真实时钟推进的入场动画如用量柱状图会停在第一帧)")
 	palette := flag.String("palette", "", "打开命令面板并预填查询(用 _ 表示空查询)")
 	tab := flag.String("tab", "", "设置页 / 自定义页分类(配合 -screen settings / customize)")
@@ -200,7 +201,8 @@ func main() {
 		tt.Frame()
 		tt.Advance(500 * time.Millisecond)
 	}
-	for _, cl := range strings.Split(*clicks, ";") {
+	clickList := strings.Split(strings.TrimSuffix(*clicks, ";"), ";")
+	for ci, cl := range clickList {
 		if cl == "" {
 			continue
 		}
@@ -210,6 +212,21 @@ func main() {
 		} else if err := tt.Click(cl); err != nil { // 非坐标:按文字 / 标签点击
 			fmt.Fprintln(os.Stderr, "点击失败:", err)
 			os.Exit(2)
+		}
+		if *trace != "" && ci == len(clickList)-1 {
+			for ms := 0; ms <= *step; ms += 16 {
+				fmt.Printf("%4d", ms)
+				for _, s := range strings.Split(*trace, ",") {
+					if r, ok := tt.Find(s); ok {
+						fmt.Printf("  %s x%.1f y%.1f w%.1f", s, r.X, r.Y, r.W)
+					} else {
+						fmt.Printf("  %s -", s)
+					}
+				}
+				fmt.Println()
+				tt.Advance(16 * time.Millisecond)
+			}
+			os.Exit(0)
 		}
 		tt.Advance(time.Duration(*step) * time.Millisecond)
 	}
