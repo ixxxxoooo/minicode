@@ -14,6 +14,7 @@ type Spec struct {
 	Name    string   // 显示名,如「rust-analyzer」
 	Lang    string   // 语言名,如「Rust」
 	Exts    []string // 含点,如 ".rs"
+	Names   []string // 没有扩展名的文件名,如 "Dockerfile"
 	LangIDs map[string]string
 	Bins    []string
 	Args    []string
@@ -42,14 +43,68 @@ var Specs = []Spec{
 		Bins:    []string{"clangd"}, Install: "brew install llvm", Hint: "Xcode 命令行工具自带 clangd", Roots: []string{"compile_commands.json", "CMakeLists.txt", ".clangd"}},
 	{ID: "swift", Name: "SourceKit-LSP", Lang: "Swift", Exts: []string{".swift"}, Bins: []string{"sourcekit-lsp"},
 		Install: "xcode-select --install", Hint: "随 Xcode / Swift 工具链提供", Roots: []string{"Package.swift"}},
+	{ID: "java", Name: "jdtls", Lang: "Java", Exts: []string{".java"}, Bins: []string{"jdtls"},
+		Install: "brew install jdtls", Hint: "需要 JDK 17+(brew install openjdk)", Roots: []string{"pom.xml", "build.gradle", "build.gradle.kts", "settings.gradle", ".project"}},
+	{ID: "kotlin", Name: "kotlin-language-server", Lang: "Kotlin", Exts: []string{".kt", ".kts"}, Bins: []string{"kotlin-language-server"},
+		Install: "brew install kotlin-language-server", Hint: "需要 JDK 17+", Roots: []string{"settings.gradle.kts", "settings.gradle", "build.gradle.kts", "build.gradle", "pom.xml"}},
+	{ID: "csharp", Name: "csharp-ls", Lang: "C#", Exts: []string{".cs", ".csx"}, Bins: []string{"csharp-ls"},
+		Install: "dotnet tool install --global csharp-ls", Hint: "需要 .NET SDK;装完把 ~/.dotnet/tools 加进 PATH", Roots: []string{"*.sln", "*.csproj", "global.json"}},
+	{ID: "php", Name: "Intelephense", Lang: "PHP", Exts: []string{".php", ".phtml"}, Bins: []string{"intelephense"}, Args: []string{"--stdio"},
+		Install: "npm install -g intelephense", Hint: "需要 Node.js / npm", Roots: []string{"composer.json", ".git"}},
+	{ID: "ruby", Name: "ruby-lsp", Lang: "Ruby", Exts: []string{".rb", ".rake", ".gemspec", ".erb"}, Bins: []string{"ruby-lsp"},
+		LangIDs: map[string]string{".erb": "erb"},
+		Install: "gem install ruby-lsp", Hint: "需要 Ruby / RubyGems", Roots: []string{"Gemfile", ".ruby-version"}},
+	{ID: "html", Name: "vscode-html-language-server", Lang: "HTML", Exts: []string{".html", ".htm"}, Bins: []string{"vscode-html-language-server"}, Args: []string{"--stdio"},
+		Install: "npm install -g vscode-langservers-extracted", Hint: "需要 Node.js / npm;同一个包也提供 CSS / JSON", Roots: []string{"package.json", "index.html"}},
+	{ID: "css", Name: "vscode-css-language-server", Lang: "CSS / SCSS / Less", Exts: []string{".css", ".scss", ".less"}, Bins: []string{"vscode-css-language-server"}, Args: []string{"--stdio"},
+		LangIDs: map[string]string{".css": "css", ".scss": "scss", ".less": "less"},
+		Install: "npm install -g vscode-langservers-extracted", Hint: "需要 Node.js / npm;同一个包也提供 HTML / JSON", Roots: []string{"package.json"}},
+	{ID: "json", Name: "vscode-json-language-server", Lang: "JSON", Exts: []string{".json", ".jsonc"}, Bins: []string{"vscode-json-language-server"}, Args: []string{"--stdio"},
+		LangIDs: map[string]string{".json": "json", ".jsonc": "jsonc"},
+		Install: "npm install -g vscode-langservers-extracted", Hint: "需要 Node.js / npm;同一个包也提供 HTML / CSS", Roots: []string{"package.json"}},
+	{ID: "yaml", Name: "yaml-language-server", Lang: "YAML", Exts: []string{".yaml", ".yml"}, Bins: []string{"yaml-language-server"}, Args: []string{"--stdio"},
+		Install: "npm install -g yaml-language-server", Hint: "需要 Node.js / npm"},
+	{ID: "toml", Name: "taplo", Lang: "TOML", Exts: []string{".toml"}, Bins: []string{"taplo"}, Args: []string{"lsp", "stdio"},
+		Install: "brew install taplo", Hint: "需要 Homebrew(或 cargo install taplo-cli --features lsp)"},
+	{ID: "sql", Name: "sqls", Lang: "SQL", Exts: []string{".sql"}, Bins: []string{"sqls"},
+		Install: "go install github.com/sqls-org/sqls@latest", Hint: "需要 Go 工具链;补全 / 诊断要在项目里放 .sqls/config.yml 配数据库连接,没配时只有语法层面的功能"},
+	{ID: "bash", Name: "bash-language-server", Lang: "Shell", Exts: []string{".sh", ".bash", ".zsh"}, Bins: []string{"bash-language-server"}, Args: []string{"start"},
+		LangIDs: map[string]string{".sh": "shellscript", ".bash": "shellscript", ".zsh": "shellscript"},
+		Install: "npm install -g bash-language-server", Hint: "需要 Node.js / npm;装 shellcheck(brew install shellcheck)后诊断更全"},
+	{ID: "docker", Name: "docker-langserver", Lang: "Dockerfile", Exts: []string{".dockerfile"}, Names: []string{"Dockerfile", "Containerfile"},
+		Bins: []string{"docker-langserver"}, Args: []string{"--stdio"}, LangIDs: map[string]string{"": "dockerfile", ".dockerfile": "dockerfile"},
+		Install: "npm install -g dockerfile-language-server-nodejs", Hint: "需要 Node.js / npm"},
+	{ID: "terraform", Name: "terraform-ls", Lang: "Terraform", Exts: []string{".tf", ".tfvars"}, Bins: []string{"terraform-ls"}, Args: []string{"serve"},
+		LangIDs: map[string]string{".tf": "terraform", ".tfvars": "terraform-vars"},
+		Install: "brew install hashicorp/tap/terraform-ls", Hint: "需要 Homebrew", Roots: []string{".terraform", "main.tf"}},
+	{ID: "svelte", Name: "svelte-language-server", Lang: "Svelte", Exts: []string{".svelte"}, Bins: []string{"svelteserver"}, Args: []string{"--stdio"},
+		Install: "npm install -g svelte-language-server", Hint: "需要 Node.js / npm", Roots: []string{"svelte.config.js", "svelte.config.ts", "package.json"}},
+	{ID: "dart", Name: "Dart 分析服务", Lang: "Dart / Flutter", Exts: []string{".dart"}, Bins: []string{"dart"}, Args: []string{"language-server", "--protocol=lsp"},
+		Install: "brew install dart-sdk", Hint: "Flutter 自带 dart;需要 Dart SDK", Roots: []string{"pubspec.yaml"}},
+	{ID: "zig", Name: "zls", Lang: "Zig", Exts: []string{".zig", ".zon"}, Bins: []string{"zls"},
+		Install: "brew install zls", Hint: "需要 Homebrew", Roots: []string{"build.zig"}},
+	{ID: "elixir", Name: "elixir-ls", Lang: "Elixir", Exts: []string{".ex", ".exs", ".heex"}, Bins: []string{"elixir-ls"},
+		LangIDs: map[string]string{".ex": "elixir", ".exs": "elixir", ".heex": "phoenix-heex"},
+		Install: "brew install elixir-ls", Hint: "需要 Elixir / Erlang", Roots: []string{"mix.exs"}},
+	{ID: "haskell", Name: "haskell-language-server", Lang: "Haskell", Exts: []string{".hs", ".lhs"}, Bins: []string{"haskell-language-server-wrapper"}, Args: []string{"--lsp"},
+		Install: "ghcup install hls", Hint: "需要 ghcup(https://www.haskell.org/ghcup)", Roots: []string{"stack.yaml", "cabal.project", "hie.yaml", "package.yaml"}},
+	{ID: "latex", Name: "texlab", Lang: "LaTeX", Exts: []string{".tex", ".bib", ".sty", ".cls"}, Bins: []string{"texlab"},
+		LangIDs: map[string]string{".tex": "latex", ".sty": "latex", ".cls": "latex", ".bib": "bibtex"},
+		Install: "brew install texlab", Hint: "需要 Homebrew;编译另需 TeX 发行版", Roots: []string{".latexmkrc", "latexmkrc"}},
 }
 
 // ForFile 按扩展名选服务器。
 func ForFile(path string) *Spec {
 	ext := strings.ToLower(filepath.Ext(path))
+	base := filepath.Base(path)
 	for i := range Specs {
 		for _, e := range Specs[i].Exts {
 			if e == ext {
+				return &Specs[i]
+			}
+		}
+		for _, n := range Specs[i].Names {
+			if n == base || strings.HasPrefix(base, n+".") { // Dockerfile / Dockerfile.dev
 				return &Specs[i]
 			}
 		}
@@ -61,6 +116,9 @@ func ForFile(path string) *Spec {
 func (s *Spec) LangID(path string) string {
 	if id, ok := s.LangIDs[strings.ToLower(filepath.Ext(path))]; ok {
 		return id
+	}
+	if len(s.Names) > 0 && s.LangIDs[""] != "" {
+		return s.LangIDs[""]
 	}
 	return s.ID
 }
@@ -114,6 +172,12 @@ func (s *Spec) Root(file, fallback string) string {
 	dir := filepath.Dir(file)
 	for {
 		for _, m := range s.Roots {
+			if strings.ContainsAny(m, "*?[") { // 通配,如 *.sln / *.csproj
+				if g, _ := filepath.Glob(filepath.Join(dir, m)); len(g) > 0 {
+					return dir
+				}
+				continue
+			}
 			if _, err := os.Stat(filepath.Join(dir, m)); err == nil {
 				return dir
 			}

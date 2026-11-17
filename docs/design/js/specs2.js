@@ -86,7 +86,7 @@
   const langRow = (n, srv, state, act) => `<div class="set-row"><span class="si-box">${ic('code')}</span><div class="grow"><div class="m">${n}</div><div class="d mono">${srv}</div></div>${state}${act}</div>`;
   P['lsp-spec'] = () => `<div class="ds" style="max-width:1240px">${head('语言服务(LSP)· 识别、安装、状态', '原则:打开文件才启动(不预热);找不到就说清楚并给一条能复制 / 一键运行的安装命令;失败不阻塞编辑,自动退回「本地符号索引」(正则级,不懂语义)。')}
     ${sec('从打开文件到可用:状态机', '', tbl([['阶段', 120], ['界面', 300], ['说明']], [
-      ['识别', '无', '按扩展名选服务器:rs → rust-analyzer、go → gopls、py → pyright / pylsp、lua → lua-language-server、ts/js → typescript-language-server、c/cpp → clangd、swift → sourcekit-lsp'],
+      ['识别', '无', '按扩展名选服务器:rs → rust-analyzer、go → gopls、py → pyright / pylsp、lua → lua-language-server、ts/js → typescript-language-server、c/cpp → clangd、swift → sourcekit-lsp,另有 Java / Kotlin / C# / PHP / Ruby / HTML / CSS / JSON / YAML / TOML / SQL(sqls)/ Shell / Dockerfile(按文件名)/ Terraform / Svelte / Dart / Zig / Elixir / Haskell / LaTeX(见下表);Vue 暂未接(需要与 tsserver 配合,单独做)'],
       ['查找', '无', 'PATH + 常见目录(~/go/bin、~/.cargo/bin、Homebrew、npm 全局);rust-analyzer 跳过 rustup 代理(工具链没装该组件时它一启动就退出)'],
       ['未安装', '状态栏「⚠ rust-analyzer 未安装」;底部「输出 → 语言服务」写明命令;点状态栏弹出安装卡', '安装卡:命令文本 + 「在终端里运行」(开一个可见终端标签并预填命令,让用户看见过程)+「复制」;每种服务器每次运行只主动提示一次'],
       ['启动中', '状态栏转圈「rust-analyzer 索引中 42%」(来自 $/progress)', '期间悬停 / 跳转可用但可能不全,用本地索引兜底'],
@@ -99,7 +99,26 @@
       ['Python', '<span class="mono">npm i -g pyright</span> 或 <span class="mono">pipx install pyright</span>', '二选一,检测到谁用谁'],
       ['Lua', '<span class="mono">brew install lua-language-server</span>', 'macOS;其它平台给发行页链接'],
       ['TypeScript', '<span class="mono">npm i -g typescript typescript-language-server</span>', ''],
-      ['C / C++', '随 Xcode 命令行工具(<span class="mono">xcode-select --install</span>)', 'clangd']]))}
+      ['C / C++', '随 Xcode 命令行工具(<span class="mono">xcode-select --install</span>)', 'clangd'],
+      ['Swift', '<span class="mono">xcode-select --install</span>', 'SourceKit-LSP,随 Xcode'],
+      ['Java', '<span class="mono">brew install jdtls</span>', '需要 JDK 17+'],
+      ['Kotlin', '<span class="mono">brew install kotlin-language-server</span>', '需要 JDK 17+'],
+      ['C#', '<span class="mono">dotnet tool install --global csharp-ls</span>', '需要 .NET SDK;项目根认 *.sln / *.csproj'],
+      ['PHP', '<span class="mono">npm i -g intelephense</span>', ''],
+      ['Ruby', '<span class="mono">gem install ruby-lsp</span>', ''],
+      ['HTML / CSS / JSON', '<span class="mono">npm i -g vscode-langservers-extracted</span>', '一个包提供三种服务器'],
+      ['YAML', '<span class="mono">npm i -g yaml-language-server</span>', ''],
+      ['TOML', '<span class="mono">brew install taplo</span>', ''],
+      ['SQL', '<span class="mono">go install github.com/sqls-org/sqls@latest</span>', '项目里放 .sqls/config.yml 配数据库连接才有补全 / 诊断'],
+      ['Shell', '<span class="mono">npm i -g bash-language-server</span>', '装 shellcheck 后诊断更全'],
+      ['Dockerfile', '<span class="mono">npm i -g dockerfile-language-server-nodejs</span>', '按文件名 Dockerfile / Containerfile 识别'],
+      ['Terraform', '<span class="mono">brew install hashicorp/tap/terraform-ls</span>', ''],
+      ['Svelte', '<span class="mono">npm i -g svelte-language-server</span>', ''],
+      ['Dart / Flutter', '<span class="mono">brew install dart-sdk</span>', 'Flutter 自带 dart'],
+      ['Zig', '<span class="mono">brew install zls</span>', ''],
+      ['Elixir', '<span class="mono">brew install elixir-ls</span>', ''],
+      ['Haskell', '<span class="mono">ghcup install hls</span>', ''],
+      ['LaTeX', '<span class="mono">brew install texlab</span>', '']]))}
     ${sec('编辑器里能用到什么', '', tbl([['能力', 160], ['键位', 120], ['来源', 160], ['状态']], [
       ['诊断(波浪线 / 问题面板 / 状态栏计数)', '', 'publishDiagnostics', st('ok')], ['悬停', '', 'textDocument/hover', st('ok')], ['转到定义 / 类型定义 / 实现', 'F12 / 右键', 'definition / typeDefinition / implementation', st('ok')],
       ['查找引用 → 底部「引用」面板', '⇧F12', 'references', st('ok')], ['补全', '⌃Space', 'completion', st('ok')], ['重命名(跨文件)', 'F2', 'rename + 工作区编辑', st('ok')], ['格式化', '⇧⌥F', 'formatting', st('ok')],
