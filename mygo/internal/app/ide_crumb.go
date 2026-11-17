@@ -57,9 +57,9 @@ func (a *App) crumbPartMenu(m *ui.Menu, tb *ideTab, partIx int) {
 	sortCrumbEntries(es)
 	for _, e := range es {
 		p := e.Path
-		ic := "code"
+		ic := fileIcon(e.Name)
 		if e.Dir {
-			ic = "folder"
+			ic = treeFolderIcon(e.Name)
 		}
 		it := mItem(m, ic, e.Name)
 		if e.Name == cur {
