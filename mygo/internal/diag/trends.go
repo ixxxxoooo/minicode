@@ -5,13 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"time"
 )
 
@@ -87,9 +84,7 @@ func StartTrendSampler() {
 func takeTrendPoint() TrendPoint {
 	var ms runtime.MemStats
 	runtime.ReadMemStats(&ms)
-	var ru syscall.Rusage
-	_ = syscall.Getrusage(syscall.RUSAGE_SELF, &ru)
-	cpu := sampleCPU()
+	cpu := sampleProcessCPU()
 	runCPUMu.Lock()
 	runCPU = cpu
 	runCPUMu.Unlock()
@@ -103,7 +98,7 @@ func takeTrendPoint() TrendPoint {
 	return TrendPoint{
 		At:         time.Now(),
 		CPU:        cpu,
-		RSS:        uint64(ru.Maxrss),
+		RSS:        sampleProcessRSS(),
 		HeapAlloc:  ms.HeapAlloc,
 		Goroutines: runtime.NumGoroutine(),
 		FrameBuild: avgBuild,
@@ -137,34 +132,33 @@ func CurrentCPU() float64 {
 	return runCPU
 }
 
-func sampleCPU() float64 {
-	out, err := exec.Command("ps", "-o", "%cpu=", "-p", strconv.Itoa(os.Getpid())).Output()
-	if err != nil {
-		return 0
-	}
-	f, err := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
-	if err != nil {
-		return 0
-	}
-	return f
+// ChartData 是趋势图序列。
+type ChartData struct {
+	Labels []string
+	CPU    []float64
+	RSS    []float64
+	Heap   []float64
 }
 
-// ChartSeries 按范围返回 CPU 与内存序列(5 分钟内优先用 1s 采样,更长用 5s 趋势)。
-func ChartSeries(window time.Duration) (cpu, mem []float64, labels []string) {
+// ChartSeries 按范围返回 CPU / RSS / 堆(5 分钟用 1s 采样,更长用 5s 趋势)。
+func ChartSeries(window time.Duration) ChartData {
+	var d ChartData
 	if window <= 5*time.Minute+time.Second {
 		for _, s := range Samples() {
-			mem = append(mem, float64(s.HeapAlloc))
-			cpu = append(cpu, CurrentCPU()) // 5 分钟图暂无历史 CPU,用当前值占位
-			labels = append(labels, s.At.Format("15:04:05"))
+			d.Labels = append(d.Labels, s.At.Format("15:04:05"))
+			d.CPU = append(d.CPU, s.CPU)
+			d.RSS = append(d.RSS, float64(s.RSS))
+			d.Heap = append(d.Heap, float64(s.HeapAlloc))
 		}
-		return cpu, mem, labels
+		return d
 	}
 	for _, p := range Trends(window) {
-		mem = append(mem, float64(p.HeapAlloc))
-		cpu = append(cpu, p.CPU)
-		labels = append(labels, p.At.Format("15:04"))
+		d.Labels = append(d.Labels, p.At.Format("15:04"))
+		d.CPU = append(d.CPU, p.CPU)
+		d.RSS = append(d.RSS, float64(p.RSS))
+		d.Heap = append(d.Heap, float64(p.HeapAlloc))
 	}
-	return cpu, mem, labels
+	return d
 }
 
 // PerformanceSnapshotJSON 供诊断包附带的性能快照。
@@ -209,11 +203,7 @@ func FormatCPU(p float64) string {
 }
 
 // ReadProcRSS 当前进程 RSS(字节)。
-func ReadProcRSS() uint64 {
-	var ru syscall.Rusage
-	_ = syscall.Getrusage(syscall.RUSAGE_SELF, &ru)
-	return uint64(ru.Maxrss)
-}
+func ReadProcRSS() uint64 { return sampleProcessRSS() }
 
 // LogViewLine 是日志查看器的一行。
 type LogViewLine struct {

@@ -53,6 +53,7 @@ func Init(o Options) {
 	go heartbeatLoop(started)
 	StartSampler()
 	StartTrendSampler()
+	StartProctreeSampler()
 }
 
 // heartbeatLoop 每 5 秒刷新运行标记的心跳时间。
@@ -194,7 +195,8 @@ type Sample struct {
 	Goroutines int
 	NumGC      uint32
 	GCPause    time.Duration // 累计 GC 暂停
-	MaxRSS     uint64        // 进程历史峰值常驻内存(字节)
+	RSS        uint64        // 当前常驻内存
+	CPU        float64       // 进程 CPU%
 }
 
 const sampleKeep = 300 // 保留 5 分钟(每秒一次)
@@ -244,7 +246,16 @@ func takeSample() Sample {
 	runtime.ReadMemStats(&ms)
 	var ru syscall.Rusage
 	_ = syscall.Getrusage(syscall.RUSAGE_SELF, &ru)
-	return Sample{At: time.Now(), HeapAlloc: ms.HeapAlloc, HeapSys: ms.HeapSys, Goroutines: runtime.NumGoroutine(), NumGC: ms.NumGC, GCPause: time.Duration(ms.PauseTotalNs), MaxRSS: uint64(ru.Maxrss)}
+	return Sample{
+		At:         time.Now(),
+		HeapAlloc:  ms.HeapAlloc,
+		HeapSys:    ms.HeapSys,
+		Goroutines: runtime.NumGoroutine(),
+		NumGC:      ms.NumGC,
+		GCPause:    time.Duration(ms.PauseTotalNs),
+		RSS:        sampleProcessRSS(),
+		CPU:        sampleProcessCPU(),
+	}
 }
 
 // Samples 返回最近的采样(最旧的在前),诊断页画曲线用。

@@ -5,19 +5,22 @@ import (
 	"time"
 )
 
-func TestFrameMetricsPercentile(t *testing.T) {
+func TestFrameMetricsIdleAndActive(t *testing.T) {
 	ResetFrameMetrics()
-	for _, d := range []time.Duration{8 * time.Millisecond, 12 * time.Millisecond, 20 * time.Millisecond, 40 * time.Millisecond} {
-		RecordFrame(d)
-	}
 	m := FrameMetricsSnapshot()
-	if m.Samples != 4 {
-		t.Fatalf("samples=%d", m.Samples)
+	if !m.Idle {
+		t.Fatal("无帧应空闲")
 	}
-	if m.P50 < 10*time.Millisecond || m.P50 > 15*time.Millisecond {
-		t.Fatalf("p50=%v", m.P50)
+	for i := 0; i < 30; i++ {
+		RecordUIFrame(8*time.Millisecond, 16*time.Millisecond)
 	}
-	if m.Jank167Pct <= 0 {
-		t.Fatal("应有 >16.7ms 占比")
+	m = FrameMetricsSnapshot()
+	if m.Idle || m.Samples < 10 || m.FPS < 30 {
+		t.Fatalf("应有活跃帧率: %+v", m)
+	}
+	time.Sleep(frameIdleGap + 50*time.Millisecond)
+	m = FrameMetricsSnapshot()
+	if !m.Idle {
+		t.Fatal("长时间无帧应回到空闲")
 	}
 }

@@ -3,98 +3,142 @@ package diag
 import (
 	"math"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
-// 最近帧耗时环形缓冲,供性能页估算帧率与卡顿占比(解析 stderr 帧日志写入)。
-const frameRingN = 600
+// 帧指标只看最近 frameWindow;超过 frameIdleGap 没有新帧视为空闲。
+const (
+	frameRingN   = 512
+	frameWindow  = 5 * time.Second
+	frameIdleGap = 1200 * time.Millisecond
+	ms167        = 167 * time.Microsecond * 100 // 16.7ms
+	ms33         = 33 * time.Millisecond
+	ms100        = 100 * time.Millisecond
+)
+
+type frameTick struct {
+	At    time.Time
+	Build time.Duration
+	Gap   time.Duration // 与上一帧的间隔;首帧为 0
+}
 
 var (
-	frameMu    sync.Mutex
-	frameBuf   = make([]time.Duration, frameRingN)
-	frameHead  int
-	frameCount int64
-	// 卡顿分档计数(>16.7 / >33 / >100 ms)
-	frameJank167 int64
-	frameJank33  int64
-	frameJank100 int64
+	frameMu     sync.Mutex
+	frameBuf    = make([]frameTick, frameRingN)
+	frameHead   int
+	frameTotal  int64
+	lastFrameAt atomic.Int64 // unix nano
 )
 
-const (
-	ms167 = 167 * time.Microsecond * 100 // 16.7ms
-	ms33  = 33 * time.Millisecond
-	ms100 = 100 * time.Millisecond
-)
+// RecordFrame 兼容 stderr 解析:记入总帧耗时(含 present)。
+func RecordFrame(d time.Duration) { recordFrameTick(frameTick{At: time.Now(), Build: d, Gap: 0}) }
 
-// RecordFrame 记入一帧总耗时(ui.frame 与 ParseFrameLine 调用)。
-func RecordFrame(d time.Duration) {
+// RecordUIFrame 在每次 View 构建结束调用:build=构建耗时,gap=距上次 View 的间隔。
+func RecordUIFrame(build, gap time.Duration) {
+	now := time.Now()
+	recordFrameTick(frameTick{At: now, Build: build, Gap: gap})
+	lastFrameAt.Store(now.UnixNano())
+	slow := build >= FrameSlow || gap >= 34*time.Millisecond
+	PerfFrame(build, gap, slow)
+}
+
+func recordFrameTick(t frameTick) {
 	frameMu.Lock()
-	frameBuf[frameHead] = d
+	frameBuf[frameHead] = t
 	frameHead = (frameHead + 1) % frameRingN
-	frameCount++
-	if d > ms167 {
-		frameJank167++
-	}
-	if d > ms33 {
-		frameJank33++
-	}
-	if d > ms100 {
-		frameJank100++
-	}
+	frameTotal++
 	frameMu.Unlock()
 }
 
 // FrameMetrics 是帧与卡顿的只读快照。
 type FrameMetrics struct {
-	Samples    int64
+	Idle       bool
+	Samples    int
 	FPS        float64
 	P50        time.Duration
 	P95        time.Duration
 	P99        time.Duration
-	Jank167Pct float64 // >16.7ms
+	Jank167Pct float64
 	Jank33Pct  float64
 	Jank100Pct float64
 }
 
-// FrameMetricsSnapshot 返回当前帧指标;无样本时各值为 0。
+// FrameMetricsSnapshot 返回最近窗口内的帧指标。
 func FrameMetricsSnapshot() FrameMetrics {
-	frameMu.Lock()
-	defer frameMu.Unlock()
+	now := time.Now()
+	ticks := recentTicks(now)
 	var out FrameMetrics
-	if frameCount == 0 {
+	if len(ticks) == 0 {
+		out.Idle = true
 		return out
 	}
-	n := int(frameCount)
+	last := ticks[len(ticks)-1].At
+	if now.Sub(last) > frameIdleGap {
+		out.Idle = true
+		return out
+	}
+	out.Samples = len(ticks)
+	var builds, gaps []float64
+	var j167, j33, j100 int
+	for _, t := range ticks {
+		builds = append(builds, float64(t.Build))
+		if t.Gap > 0 {
+			gaps = append(gaps, float64(t.Gap))
+		}
+		if t.Build > ms167 {
+			j167++
+		}
+		if t.Build > ms33 {
+			j33++
+		}
+		if t.Build > ms100 {
+			j100++
+		}
+	}
+	if n := len(ticks); n > 0 {
+		out.Jank167Pct = 100 * float64(j167) / float64(n)
+		out.Jank33Pct = 100 * float64(j33) / float64(n)
+		out.Jank100Pct = 100 * float64(j100) / float64(n)
+	}
+	if sum := sumDur(gaps); sum > 0 && len(gaps) > 0 {
+		out.FPS = float64(len(gaps)) / (sum / float64(time.Second))
+	}
+	out.P50 = durPercentile(builds, 0.50)
+	out.P95 = durPercentile(builds, 0.95)
+	out.P99 = durPercentile(builds, 0.99)
+	return out
+}
+
+func recentTicks(now time.Time) []frameTick {
+	frameMu.Lock()
+	defer frameMu.Unlock()
+	cut := now.Add(-frameWindow)
+	n := int(frameTotal)
 	if n > frameRingN {
 		n = frameRingN
 	}
-	ds := make([]float64, n)
+	var rev []frameTick
 	for i := 0; i < n; i++ {
-		idx := frameHead - 1 - i
-		if idx < 0 {
-			idx += frameRingN
+		idx := (frameHead - 1 - i + frameRingN) % frameRingN
+		t := frameBuf[idx]
+		if t.At.IsZero() || t.At.Before(cut) {
+			break
 		}
-		ds[i] = float64(frameBuf[idx])
+		rev = append(rev, t)
 	}
-	out.Samples = frameCount
-	// 最近窗口内 FPS: 以 60 帧或全部样本时间跨度估算
-	span := ds[0]
-	for i := 1; i < n; i++ {
-		span += ds[i]
+	for i, j := 0, len(rev)-1; i < j; i, j = i+1, j-1 {
+		rev[i], rev[j] = rev[j], rev[i]
 	}
-	if span > 0 {
-		out.FPS = float64(n) / span
+	return rev
+}
+
+func sumDur(fs []float64) float64 {
+	var s float64
+	for _, f := range fs {
+		s += f
 	}
-	out.P50 = durPercentile(ds, 0.50)
-	out.P95 = durPercentile(ds, 0.95)
-	out.P99 = durPercentile(ds, 0.99)
-	if frameCount > 0 {
-		c := float64(frameCount)
-		out.Jank167Pct = 100 * float64(frameJank167) / c
-		out.Jank33Pct = 100 * float64(frameJank33) / c
-		out.Jank100Pct = 100 * float64(frameJank100) / c
-	}
-	return out
+	return s
 }
 
 func durPercentile(ds []float64, q float64) time.Duration {
@@ -123,10 +167,10 @@ func durPercentile(ds []float64, q float64) time.Duration {
 func ResetFrameMetrics() {
 	frameMu.Lock()
 	frameHead = 0
-	frameCount = 0
-	frameJank167, frameJank33, frameJank100 = 0, 0, 0
+	frameTotal = 0
 	for i := range frameBuf {
-		frameBuf[i] = 0
+		frameBuf[i] = frameTick{}
 	}
 	frameMu.Unlock()
+	lastFrameAt.Store(0)
 }

@@ -23,13 +23,9 @@ func initRunID() {
 	runID = hex.EncodeToString(b)
 }
 
-// LogUISwitch 记录界面切换耗时(详细性能日志开启时写 DEBUG,否则 INFO)。
-func LogUISwitch(from, to string, d time.Duration, verbose bool) {
-	lv := LevelInfo
-	if verbose {
-		lv = LevelDebug
-	}
-	write(lv, "ui", "界面切换", []any{"run", runID, "从", from, "到", to, "耗时", d})
+// LogUISwitch 记录界面切换耗时(仅 VerbosePerf)。
+func LogUISwitch(from, to string, d time.Duration) {
+	PerfLog("ui", "界面切换", "从", from, "到", to, "耗时", d)
 }
 
 // WriteStartupEnv 启动时写一条环境摘要(不含密钥)。
@@ -55,4 +51,5 @@ func ResetAllMetrics() {
 	ResetFrameMetrics()
 	ResetTrends()
 	ResetHangEvents()
+	ResetProcs()
 }
