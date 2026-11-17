@@ -61,7 +61,10 @@ func (a *App) bg(name string, work func() func()) {
 	}
 	go func() {
 		defer diag.Recover("app." + name)
-		if ap := work(); ap != nil {
+		t0 := time.Now()
+		ap := work()
+		diag.PerfLog("app", "后台任务", "name", name, "耗时", time.Since(t0))
+		if ap != nil {
 			a.win.Update(ap)
 		}
 	}()

@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -150,7 +151,11 @@ func (a *App) sideTop(c *ui.Context) {
 			}
 		}
 		if i := kit.Seg(c, items, on, kit.SegOpt{Icons: true, Fill: true, Key: "navseg"}); i >= 0 {
+			old := a.nav
 			a.nav = navs[i].id
+			if old != a.nav {
+				diag.LogUISwitch("nav:"+old, "nav:"+a.nav, 0)
+			}
 			a.leavePage()
 			a.focusSearchOnEnter(navs[i].id)
 		}

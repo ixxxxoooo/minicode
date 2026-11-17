@@ -144,6 +144,7 @@ func Start(o Options) (*Term, error) {
 	t.em.SetCallbacks(cb)
 	t.installShellIntegration(shell)
 	log.Info("终端已启动", "shell", shell, "cwd", o.Cwd, "pid", cmd.Process.Pid, "size", fmt.Sprintf("%dx%d", o.Cols, o.Rows))
+	diag.PerfLog("term", "子进程启动", "kind", "terminal", "pid", cmd.Process.Pid, "shell", shell)
 
 	go t.readLoop()
 	go t.replyLoop()

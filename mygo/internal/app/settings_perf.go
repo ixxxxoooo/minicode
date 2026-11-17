@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -95,10 +96,6 @@ func perfOverviewBody(a *App, c *ui.Context) {
 	fm := diag.FrameMetricsSnapshot()
 	cpu := diag.CurrentCPU()
 	rss := diag.ReadProcRSS()
-	gr := 0
-	if ss := diag.Samples(); len(ss) > 0 {
-		gr = ss[len(ss)-1].Goroutines
-	}
 	cold, coldOk := diag.BootMetrics()
 	if a.demoWs() && a.perfDemoSet() != 2 {
 		d := demo.PerfOverviewFor(a.perfDemoSet())
@@ -109,7 +106,6 @@ func perfOverviewBody(a *App, c *ui.Context) {
 		fm.Jank167Pct, fm.Jank33Pct, fm.Jank100Pct = d.Jank167, d.Jank33, d.Jank100
 		cpu = d.CPU
 		rss = uint64(d.RSSMB * (1 << 20))
-		gr = d.Goroutines
 	}
 	card := func(title, val, sub string) {
 		ui.Column(c).Grow(1).Basis(0).MinWidth(0).Padding(10, 12).Gap(2).Children(func() {
@@ -121,17 +117,29 @@ func perfOverviewBody(a *App, c *ui.Context) {
 		})
 	}
 	ui.Row(c).Wrap().Children(func() {
-		fps := "—"
-		if fm.FPS > 0 {
+		fps, fpsSub := "—", "最近 5 秒"
+		if fm.Idle {
+			fps, fpsSub = "空闲(无帧)", "窗口暂未绘制"
+		} else if fm.FPS > 0 {
 			fps = fmt.Sprintf("%.0f", fm.FPS)
 		}
-		card("帧率", fps, "最近窗口")
-		card("帧耗时 p50", fmtPerfDur(fm.P50), "p95 "+fmtPerfDur(fm.P95)+" · p99 "+fmtPerfDur(fm.P99))
-		card("卡顿 >16.7ms", fmt.Sprintf("%.1f%%", fm.Jank167Pct), fmt.Sprintf(">33ms %.1f%% · >100ms %.1f%%", fm.Jank33Pct, fm.Jank100Pct))
+		card("帧率", fps, fpsSub)
+		p50 := fmtPerfDur(fm.P50)
+		if fm.Idle {
+			p50 = "—"
+		}
+		card("帧耗时 p50", p50, "p95 "+fmtPerfDur(fm.P95)+" · p99 "+fmtPerfDur(fm.P99))
+		jank := fmt.Sprintf("%.1f%%", fm.Jank167Pct)
+		if fm.Idle {
+			jank = "—"
+		}
+		card("卡顿 >16.7ms", jank, fmt.Sprintf(">33ms %.1f%% · >100ms %.1f%%", fm.Jank33Pct, fm.Jank100Pct))
 		card("CPU", diag.FormatCPU(cpu), "100% = 单核满载")
 		card("内存 RSS", diag.FormatBytes(rss), "堆 "+diag.FormatBytes(readHeap()))
-		card("协程", itoa(gr), "子进程计数未接入")
+		procs := diag.ChildProcs()
+		card("子进程", itoa(len(procs)), "Claude / LSP / 终端等")
 	})
+	perfProcsBody(a, c)
 	rowBox(a, c, true, 36).Children(func() {
 		titled(a, c, "启动到首帧", "冷启动耗时", false)
 		val := "采集中…"
@@ -160,31 +168,36 @@ func perfTrendBody(a *App, c *ui.Context) {
 		rng := a.prefs.Int(pPerfChartRng, 0)
 		if i := kit.Seg(c, []kit.SegItem{{Text: "最近 5 分钟"}, {Text: "最近 1 小时"}}, rng, kit.SegOpt{Key: "perf-rng"}); i >= 0 {
 			a.prefs.Set(pPerfChartRng, i)
-			a.set.perfHover = -1
+			a.set.perfHover = map[string]int{}
 		}
 		ui.Text(c, "悬停显示数值与十字线").FontSize(theme.FsCap).TextColor(t.Tx3).Grow(1).TextAlign(ui.End)
 	})
 	win := a.perfChartWindow()
-	cpu, mem, labels := diag.ChartSeries(win)
-	if a.demoWs() && len(mem) < 8 {
-		cpu, mem, labels = demo.PerfTrendDemo(a.perfDemoSet(), 48)
+	series := diag.ChartSeries(win)
+	if a.demoWs() && len(series.RSS) < 8 {
+		cpu, mem, labels := demo.PerfTrendDemo(a.perfDemoSet(), 48)
+		series = diag.ChartData{Labels: labels, CPU: cpu, RSS: mem, Heap: mem}
 	}
-	if len(mem) < 2 {
+	if len(series.RSS) < 2 {
 		ui.Column(c).Padding(24, 12).AlignItems(ui.Center).Children(func() {
 			ui.Text(c, "数据不足").TextColor(t.Tx3)
 			ui.Text(c, "启动后约 10 秒会有曲线").FontSize(theme.FsCap).TextColor(t.Tx4)
 		})
 		return
 	}
-	perfLineChart(a, c, "内存", mem, labels, t.Info)
-	perfLineChart(a, c, "CPU", cpu, labels, t.Ac)
+	perfLineChart(a, c, "RSS", series.RSS, series.Labels, t.Info)
+	perfLineChart(a, c, "Go 堆", series.Heap, series.Labels, t.Vio)
+	perfLineChart(a, c, "CPU", series.CPU, series.Labels, t.Ac)
 }
 
 func perfLineChart(a *App, c *ui.Context, title string, vals []float64, labels []string, col ui.Color) {
 	t := a.tk
+	if a.set.perfHover == nil {
+		a.set.perfHover = map[string]int{}
+	}
 	a.box(c).Padding(10, 12).Gap(6).Children(func() {
 		ui.Text(c, title).FontWeight(500)
-		hover := a.set.perfHover
+		hover := a.set.perfHover[title]
 		ui.Box(c).Grow(1).Height(120).Clip().Children(func() {
 			ui.Box(c).Grow(1).Draw(func(p *ui.Painter, r ui.Rect) {
 				drawPerfSeries(p, r, vals, col, hover)
@@ -193,25 +206,60 @@ func perfLineChart(a *App, c *ui.Context, title string, vals []float64, labels [
 				n := len(vals)
 				for i := 0; i < n; i++ {
 					i := i
-					str := fmtVal(title, vals[i], labels[i])
+					str := labels[i] + " · " + fmtVal(title, vals[i])
 					strip := ui.Box(c.Key(fmt.Sprintf("perf-%s-%d", title, i))).Grow(1).Basis(0).Tooltip(str)
 					if strip.Hovered() {
-						a.set.perfHover = i
+						a.set.perfHover[title] = i
 					}
 				}
 			})
 		})
-		if hover := a.set.perfHover; hover >= 0 && hover < len(labels) {
-			ui.Text(c, labels[hover]+" · "+fmtVal(title, vals[hover], labels[hover])).FontSize(theme.FsCap).TextColor(t.Tx3).FontFeatures("tnum")
+		if hover := a.set.perfHover[title]; hover >= 0 && hover < len(labels) {
+			ui.Text(c, labels[hover]+" · "+fmtVal(title, vals[hover])).FontSize(theme.FsCap).TextColor(t.Tx3).FontFeatures("tnum")
 		}
 	})
 }
 
-func fmtVal(title string, v float64, _ string) string {
+func fmtVal(title string, v float64) string {
 	if title == "CPU" {
-		return fmt.Sprintf("%.1f%%", v)
+		return title + " " + fmt.Sprintf("%.1f%%", v)
 	}
-	return diag.FormatBytes(uint64(v))
+	return title + " " + diag.FormatBytes(uint64(v))
+}
+
+func perfProcsBody(a *App, c *ui.Context) {
+	t := a.tk
+	procs := diag.ChildProcs()
+	if a.demoWs() {
+		procs = []diag.ChildProc{{Name: "Claude", PID: 4242, CPU: 3.2, RSS: 120 << 20, Cmd: "claude (演示)"}}
+	}
+	if len(procs) == 0 {
+		return
+	}
+	rowBox(a, c, false, 36).Children(func() {
+		titled(a, c, "进程", "本进程的子进程(约每 8 秒刷新)", false)
+		kit.Btn(c, "展开", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() {
+			a.set.perfProcOpen = !a.set.perfProcOpen
+		})
+	})
+	limit := 3
+	if a.set.perfProcOpen {
+		limit = 12
+	}
+	if limit > len(procs) {
+		limit = len(procs)
+	}
+	for i, p := range procs[:limit] {
+		p := p
+		rowBox(a, c, i == 0, 40).Children(func() {
+			ui.Column(c).Grow(1).Gap(1).Children(func() {
+				ui.Text(c, fmt.Sprintf("%s · %d", p.Name, p.PID)).FontWeight(500)
+				ui.Text(c, p.Cmd).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine()
+			})
+			ui.Text(c, diag.FormatCPU(p.CPU)).FontFeatures("tnum").Width(48).TextAlign(ui.End)
+			ui.Text(c, diag.FormatBytes(p.RSS)).FontFeatures("tnum").Width(72).TextAlign(ui.End)
+		})
+	}
 }
 
 func drawPerfSeries(p *ui.Painter, r ui.Rect, vals []float64, col ui.Color, hover int) {
@@ -239,6 +287,22 @@ func drawPerfSeries(p *ui.Painter, r ui.Rect, vals []float64, col ui.Color, hove
 }
 
 func perfSlowBody(a *App, c *ui.Context) {
+	ui.Row(c).Padding(8, 12, 4, 12).Gap(8).Children(func() {
+		kit.Btn(c, "复制 JSON", kit.BtnOpt{Small: true, Icon: "copy"}).OnClick(func() {
+			b, err := json.MarshalIndent(diag.Stats(), "", "  ")
+			if err != nil {
+				a.flash("导出失败")
+				return
+			}
+			a.svc.WriteClipboard(string(b))
+			a.flash("已复制慢操作 JSON")
+		})
+		kit.Btn(c, "导出", kit.BtnOpt{Small: true, Icon: "download"}).OnClick(func() {
+			b, _ := json.MarshalIndent(diag.Stats(), "", "  ")
+			a.copyText = string(b)
+			a.flash("已复制慢操作 JSON")
+		})
+	})
 	stats := diag.Stats()
 	if len(stats) == 0 {
 		rowBox(a, c, true, 40).Children(func() {

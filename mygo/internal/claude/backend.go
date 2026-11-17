@@ -340,6 +340,7 @@ func (b *Backend) startProc() error {
 		return fmt.Errorf("启动 claude 失败(%s):%w", path, err)
 	}
 	p := &proc{cmd: cmd, stdin: stdin, pid: cmd.Process.Pid, started: time.Now(), stop: make(chan struct{})}
+	diag.PerfLog("claude", "子进程启动", "pid", cmd.Process.Pid, "resume", b.resume)
 	b.p = p
 	b.reqs = map[string]req{}
 	b.tr = NewTranslator(b.cfg.Cwd)

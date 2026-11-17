@@ -2,9 +2,11 @@ package app
 
 import (
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
+	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -310,6 +312,8 @@ func (a *App) avatarSized(c *ui.Context, size, font float32, initial string) ui.
 
 // openSettings 打开设置并跳到某个分类。
 func (a *App) openSettings(tab string) {
+	from := screenPerfName(a.screen)
+	t0 := time.Now()
 	a.screen = ScreenSettings
 	if tab != "" {
 		a.setTab = resolveSetTabID(tab)
@@ -317,6 +321,7 @@ func (a *App) openSettings(tab string) {
 		a.setTab = resolveSetTabID(a.setTab)
 	}
 	a.set.query = ""
+	diag.LogUISwitch(from, "settings:"+a.setTab, time.Since(t0))
 }
 
 // dialogOpen 把居中对话框的 open 与 DialogOut 退场挂钩:关时先播动画再卸。

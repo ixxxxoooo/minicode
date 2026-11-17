@@ -2,12 +2,16 @@ package app
 
 import (
 	"testing"
+	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/prefs"
 )
 
 func TestSettingsPerfRenders(t *testing.T) {
+	for i := 0; i < 24; i++ {
+		diag.RecordUIFrame(9*time.Millisecond, 16*time.Millisecond)
+	}
 	_, tt, _ := settingsApp(t, "perf")
 	if !tt.HasText("悬停") {
 		t.Fatal("趋势区应包含悬停提示")

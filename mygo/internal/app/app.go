@@ -238,6 +238,7 @@ type App struct {
 	guardAlways     bool                  // 测试里也拦截界面 panic(默认测试不吞,免得藏缺陷)
 	blinkPending    bool                  // 终端光标闪烁:已排好下一次切换的重绘
 	pr              animProbe             // 布局动画探针(anim_probe.go)
+	perfLastView    time.Time             // 上一帧 View 开始时刻(帧间隔)
 	svc             ui.Services           // 本窗口的持久服务(每帧刷新),frameSoon 用它请求下一帧
 	driveFrames     bool                  // 无窗口时也让 frameSoon 出帧(cmd/shot 逐帧追踪与动画测试)
 	extHold         bool                  // 窗口还没出来:系统要求打开的文件先排队
@@ -571,7 +572,8 @@ func (a *App) SetSessionOpener(f func(id string) backend.Backend) { a.opener = f
 // OpenSession 切到某个会话:关掉旧后端、清空状态与排队、接上新后端(空 id = 新会话)。
 func (a *App) OpenSession(id string) {
 	start := time.Now()
-	log.Info("切换会话", "from", a.curSess, "to", id)
+	prev := a.curSess
+	log.Info("切换会话", "from", prev, "to", id)
 	end := diag.SpanSlow("app", "打开会话", 300*time.Millisecond, "from", a.curSess, "to", id)
 	if a.curSess != "" {
 		a.saveFlowScroll(a.curSess)
@@ -607,6 +609,7 @@ func (a *App) OpenSession(id string) {
 		a.triggerFlowRise()
 		end()
 		log.Info("接回后台会话", "id", id, "耗时", time.Since(start))
+		diag.LogUISwitch("session:"+prev, "session:"+id, time.Since(start))
 		return
 	}
 	a.beginSessLoad(id)
@@ -645,6 +648,7 @@ func (a *App) OpenSession(id string) {
 	}
 	end()
 	log.Info("会话切换已排队", "to", id, "耗时", time.Since(start))
+	diag.LogUISwitch("session:"+prev, "session:"+a.curSess, time.Since(start))
 }
 
 // NewSessionIn 在某个项目里开新会话(侧栏项目行的「+」)。
@@ -722,6 +726,7 @@ func (a *App) SetMode(m Mode) {
 		return
 	}
 	from := a.mode
+	t0 := time.Now()
 	log.Info("切换形态", "from", from, "to", m)
 	a.beltCapture() // 必须在模式与开合还没换之前:记下旧几何,作为传送带平移的起点
 	a.rememberLayout()
@@ -729,6 +734,7 @@ func (a *App) SetMode(m Mode) {
 	a.mode = m
 	a.restoreLayoutFor(m)
 	a.beginMorph()
+	diag.LogUISwitch(modePerfName(from), modePerfName(m), time.Since(t0))
 }
 
 // layMem 是一个形态记住的开合(见 layout_mem.go)。
@@ -742,6 +748,15 @@ var viewFirstFrame sync.Once
 // View 是窗口的根视图。
 func (a *App) View(c *ui.Context) {
 	viewFirstFrame.Do(diag.MarkFirstFrame)
+	viewStart := time.Now()
+	var gap time.Duration
+	if !a.perfLastView.IsZero() {
+		gap = viewStart.Sub(a.perfLastView)
+	}
+	a.perfLastView = viewStart
+	defer func() {
+		diag.RecordUIFrame(time.Since(viewStart), gap)
+	}()
 	defer diag.SpanSlow("app", "构建界面", 33*time.Millisecond)()
 	kit.SetViewActive(a.win != nil && a.win.IsFocused())
 	// 界面构建中 panic:不能吞(控件树做到一半会错乱),但崩溃前必须把调用栈写进日志与 crashes/,

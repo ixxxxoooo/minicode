@@ -209,6 +209,7 @@ func (a *App) ApplyDiagPrefs() {
 		diag.SetLevel(lv[i])
 	}
 	diag.SetWatchdogEnabled(a.prefs.Bool(pAdvWatchdog, true))
+	diag.SetVerbosePerf(a.prefs.Bool(pPerfVerbose, false))
 }
 
 // ApplySystemAppearance 跟随系统深浅色时按配对切换主题(不改变用户选的 appearance.theme 键值)。

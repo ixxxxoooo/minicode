@@ -313,8 +313,12 @@ func (d *ide) openFile(p string, pin bool) {
 		}
 		return
 	}
+	t0 := time.Now()
 	end := diag.SpanSlow("ide", "打开文件", 50*time.Millisecond, "path", p)
-	defer end()
+	defer func() {
+		end()
+		diag.PerfLog("ide", "打开文件", "path", p, "预览", !pin, "耗时", time.Since(t0))
+	}()
 	t := &ideTab{id: p, path: p, preview: !pin}
 	if k := viewerKind(p); k != "" { // 图片 / 表格:不当文本读,交给查看器(ide_viewer.go)
 		t.viewer, t.vw = k, &viewerState{}
