@@ -14,10 +14,10 @@ func RefPanelDemo(word string) ([]RefHit, bool) {
 	}
 	long := "let payload = \"" + refPadRepeat("scroll", 80) + "\"; let _ = normalize(payload); // 尾注释"
 	return []RefHit{
-		{"src/router.rs", 11, 16, "let key = normalize(path);"},
-		{"src/router.rs", 17, 16, "let key = normalize(path);"},
+		{"src/router.rs", 11, 18, "        let key = normalize(path);"},
+		{"src/router.rs", 17, 18, "        let key = normalize(path);"},
 		{"src/router.rs", 22, 3, "fn normalize(path: &str) -> String {"},
-		{"tests/router_test.rs", 7, 15, "assert_eq!(normalize(\"/A/\"), \"/a\");"},
+		{"tests/router_test.rs", 7, 15, "    assert_eq!(normalize(\"/A/\"), \"/a\");"},
 		{"edge/wrap_scroll.ts", 0, 38, long},
 		{"/opt/demo/stdlib/unicode.go", 320, 12, "return strings.Contains(s, sub)"},
 	}, true
