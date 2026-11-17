@@ -7,7 +7,7 @@ import (
 // termFallbackTail 终端字体链末尾:系统等宽 + CJK + Emoji,减少缺字形方框。
 var termFallbackTail = []string{
 	"SF Mono", "Menlo", "Monaco", "monospace",
-	"PingFang SC", "Hiragino Sans GB", "Apple Color Emoji",
+	"PingFang SC", "Hiragino Sans GB", "Apple SD Gothic Neo", "Apple Symbols", "Apple Color Emoji",
 }
 
 // commonMonoFonts 设置里「常见等宽」分组(顺序即展示顺序)。
@@ -16,10 +16,9 @@ var commonMonoFonts = []string{
 	"SF Mono", "Menlo", "Monaco", "Courier New",
 	"JetBrains Mono", "Fira Code", "Cascadia Code", "Source Code Pro", "IBM Plex Mono", "Hack",
 	"MesloLGS NF", "JetBrainsMono Nerd Font", "FiraCode Nerd Font", "Hack Nerd Font",
-	"Symbols Nerd Font", "MesloLGS Nerd Font",
+	"Symbols Nerd Font", "MesloLGS Nerd Font", "CaskaydiaCove Nerd Font",
+	"Sarasa Mono SC", // 更纱黑体:中英文严格 2:1 等宽,适合中文用户
 }
-
-const termFontPreview = "Aa中文 中文   ╭─★ →≠①"
 
 // parseFontFamilies 解析 VSCode 式字体列表(支持逗号与引号)。
 func parseFontFamilies(s string) []string {

@@ -196,10 +196,15 @@
 
     terminal: { t: '终端', d: '内置终端的外观与 Shell。', body: () => `
       ${G('外观', R('字号', '终端文字大小', stp(12, 'px', { min: 9, max: 24 })), R('字重', '常规 / 粗体默认', seg(['常规', '粗体'], 0)), R('行高', '', seg(['紧凑', '标准', '宽松'], 1)), R('光标形状', '', seg(['块', '竖线', '下划线'], 0)), R('选择即复制', '', tog(0)), R('滚轮灵敏度', '回看历史每次滚动行数', stp(3, '行', { min: 1, max: 5 })), R('字体连字', 'calt / liga', tog(0)), R('标签排列', '竖向时单终端也竖排;自动 ≥2 且面板 ≥640', seg(['横向', '竖向', '自动'], 2)))}
-      ${G('字体', '<div class="card" style="padding:10px"><div class="t3 fs-cap">常见等宽 · 系统字体搜索 · 手动回退链 · 实时预览(中文 / Nerd / 盒绘)</div></div>')}
+      ${G('字体', `<div style="padding:8px 12px 10px;display:flex;flex-direction:column;gap:8px">${seg(['常见等宽', '全部字体'], 0)}
+        <div class="f ai g2" style="height:40px;padding:0 8px;border-radius:var(--r-sm);background:var(--sel)">${ic('check', 's14 c-ac')}<div class="grow"><div style="font-weight:500">JetBrainsMono Nerd Font</div><div class="t3 fs-cap">已安装 · Nerd Font</div></div></div>
+        <div class="f ai g2" style="height:40px;padding:0 8px"><span style="width:14px"></span><div class="grow"><div style="font-weight:500">Fira Code</div><div class="t3 fs-cap" style="color:var(--warn)">未安装</div></div>${btn('安装', 'sm', 'download')}</div>
+        <div class="t3 fs-cap">预览 · JetBrainsMono Nerd Font ${tag('当前使用', 'ac')}</div>
+        <div class="mono fs-cap" style="padding:4px 10px;border:1px solid var(--bd-1);border-radius:var(--r-sm)">${[['字母数字', 'Aa Bb 0O 1lI {}[]', '自带'], ['中日韩', '中文 日本語 한국어', '回退补全'], ['盒绘 / 方块', '╭─┬─╮ ├─┼─┤ ▀▄█', '自带'], ['Powerline', '    ', '自带'], ['Nerd 图标', '    ', '自带'], ['Emoji', '😀 🚀 ✅', '回退补全']].map(r => `<div class="f ai g3" style="min-height:26px;border-top:1px solid var(--bd-1)"><span class="t3" style="width:78px">${r[0]}</span><span class="grow">${r[1]}</span><span class="t3">${r[2]}</span></div>`).join('')}</div>
+        <div class="t3 fs-cap">规则:整行可点,已安装的点一下立刻应用;鼠标悬停 / 点选 / 手动输入都会让预览实时切换(没装的字体只预览回退效果)。名字用它自己的字体渲染。预览按终端真实的字体链逐类检查字形:自带(绿勾)/ 回退补全(灰字,悬停写明由哪个字体补)/ 缺字形 N(红标,终端会显示成方框)。Nerd 图标缺字形时出现黄条 +「安装」(后台 brew install --cask,行内显示安装中 / 失败原因 / 重试,装完立刻重新检测)。</div></div>`)}
       ${G('交互', R('右键', '', seg(['菜单', '粘贴'], 0)), R('打开链接', '⌘ / ⌃ 点击', seg(['⌘', '⌃'], 0)), R('Option→Meta', '', tog(0)), R('响铃', 'BEL 视觉闪屏', seg(['关', '视觉', '记录'], 1)), R('关闭前确认', '', seg(['有命令', '始终', '从不'], 0)))}
       ${G('Shell', R('Shell', '', field('', 160, { mono: 1, ph: '$SHELL' })), R('参数', '', field('', 200, { mono: 1 })), R('登录 shell', '', tog(1)), R('OSC 133 集成', '', tog(1)), R('环境变量', '每行 KEY=VALUE', area('FOO=bar', { mono: 1, rows: 3 })))}
-      <p class="t3 fs-cap">实现:字体选择器与回退链已接;字间距 / 自定义 ANSI / 最小对比度 / 系统蜂鸣未做(part)</p>` },
+      <p class="t3 fs-cap">实现:字体选择器(整行点选 / 实时预览 / 字形覆盖检查 / 一键安装)与回退链已接,未测试;字间距 / 自定义 ANSI / 最小对比度 / 系统蜂鸣未做(part)</p>` },
 
     scm: { t: '源代码管理', d: '改动面板、差异与 Worktree。', body: () => `
       ${G('改动面板', R('Diff 视图', '改动、提交详情里差异的默认呈现;差异块右上角也能随时切换', seg(['左右', '统一'], 0)), R('Diff 大小上限', '超过这个大小的文件不计算 diff,避免卡顿', field('512 KB', 100)), R('AI 提交说明', '用 Haiku 根据改动生成', tog(1)), R('自动获取远端', '每 5 分钟 git fetch', tog(0)), R('多仓库:全部展开', '多根工作区里每个仓库各显示一整块更改与提交框(默认只显示活动仓库 + 总览)', tog(0)))}

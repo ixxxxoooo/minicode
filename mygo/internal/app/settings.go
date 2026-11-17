@@ -99,9 +99,12 @@ type settingsState struct {
 	fieldShake map[string]time.Time
 	enterAt    time.Time // 分类切换时分组 stagger 起点
 	// 终端字体选择器
-	termFontTab int
-	termFontQ   string
-	navDrop     bool // 窄窗分类下拉展开
+	termFontTab  int
+	termFontQ    string
+	termFontSeen string                  // 手动输入框上一帧的内容(变了就把预览切到它)
+	termFontPrev string                  // 字体选择器里点过的字体(预览用;没装的字体只预览、不应用)
+	fontInst     map[string]*fontInstall // 字体一键安装的进度(见 font_install.go)
+	navDrop      bool                    // 窄窗分类下拉展开
 	// 权限 / 环境变量表单
 	ruleDraft string
 	ruleKind  int

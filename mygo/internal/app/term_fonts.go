@@ -87,6 +87,10 @@ func fontInstalled(family string) (installed, known bool) {
 	if family == "" || strings.EqualFold(family, "monospace") {
 		return true, true
 	}
+	// macOS:直接问 CoreText,即时且准确(装完字体立刻能认出来,不用等目录重新扫描)
+	if _, inst, known := fontHas(family, glyphCats[0]); known {
+		return inst, true
+	}
 	sysDone := systemFontScan.done.Load()
 	fileDone := fontScan.done.Load()
 	if !sysDone && !fileDone {
@@ -153,4 +157,12 @@ func systemMonoFamilies() []ui.FontFamily {
 		}
 	}
 	return out
+}
+
+// resetFontScans 让字体目录与系统字体枚举在下次使用时重新来一遍(装了新字体之后)。
+func resetFontScans() {
+	fontScan.once, systemFontScan.once = sync.Once{}, sync.Once{}
+	fontScan.done.Store(false)
+	systemFontScan.done.Store(false)
+	resetFontCoverage()
 }
