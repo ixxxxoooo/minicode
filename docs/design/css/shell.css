@@ -108,3 +108,5 @@
 /* 只在某个方案 / 模式下出现的部件 */
 .only-c { display: none; } [data-scheme="c"] .only-c { display: inline-flex; }
 .navseg .seg { display: grid; }
+/* 源代码管理有未提交改动:图标右上角 7px 强调色圆点(带 1.5px 底色描边);有合并冲突改用 --err;悬停提示写「N 项改动」 */
+.nav-dot { position: absolute; top: 2px; left: calc(50% + 3px); width: 7px; height: 7px; border-radius: 50%; background: var(--ac); box-shadow: 0 0 0 1.5px var(--fill-2); pointer-events: none; }

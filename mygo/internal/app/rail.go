@@ -35,11 +35,13 @@ func (a *App) rail(c *ui.Context) {
 			return b
 		}
 		for _, n := range navs {
-			badge := 0
+			badge, tip := 0, n.name
 			if n.id == "scm" {
-				badge = 3
+				var conflict bool
+				badge, conflict = a.scmBadge()
+				tip = scmTip(badge, conflict)
 			}
-			if ri(n.icon, n.name, a.NavID() == n.id && a.screen == ScreenWork, badge).Clicked() {
+			if ri(n.icon, tip, a.NavID() == n.id && a.screen == ScreenWork, badge).Clicked() {
 				a.nav = n.id
 				a.leavePage()
 				a.focusSearchOnEnter(n.id)

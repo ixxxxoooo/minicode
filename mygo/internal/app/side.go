@@ -137,8 +137,13 @@ func (a *App) sideTop(c *ui.Context) {
 		}
 		items := make([]kit.SegItem, len(navs))
 		on := 0
+		nChg, conflict := a.scmBadge()
 		for i, n := range navs {
 			items[i] = kit.SegItem{Icon: n.icon, Tip: n.name}
+			if n.id == "scm" { // 有未提交改动时,图标右上角亮一个点,不用切过去也知道
+				items[i].Tip = scmTip(nChg, conflict)
+				items[i].Dot, items[i].DotKind = nChg > 0, scmDotKind(conflict)
+			}
 			if n.id == a.NavID() {
 				on = i
 			}

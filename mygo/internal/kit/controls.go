@@ -31,6 +31,8 @@ func TextW(s string, size float32) float32 {
 // SegItem 是分段控件的一段:图标、文字或两者都有。
 type SegItem struct {
 	Icon, Text, Tip string
+	Dot             bool    // 图标右上角带一个 6px 状态圆点(如源代码管理有未提交改动)
+	DotKind         TagKind // 圆点颜色,默认强调色 KAc
 }
 
 // SegOpt 是分段控件的可选项。
@@ -123,7 +125,14 @@ func Seg(c *ui.Context, items []SegItem, on int, o ...SegOpt) int {
 				}
 				clickFocusRing(b)
 				b.Children(func() {
-					if it.Icon != "" {
+					if it.Icon != "" && it.Dot {
+						// 圆点相对图标定位;带 1.5px 的底色描边,压在图标上也不糊
+						ui.Row(c).Shrink(0).Children(func() {
+							Ic(c, it.Icon, segIconSize(it))
+							ui.Box(c).Absolute().Right(-4).Top(-3).Size(theme.Px(7), theme.Px(7)).Radius(theme.Px(3.5)).
+								Background(dotColor(it.DotKind)).Border(1.5, T.Fill2)
+						})
+					} else if it.Icon != "" {
 						Ic(c, it.Icon, segIconSize(it))
 					}
 					if it.Text != "" {

@@ -58,7 +58,7 @@
   const side = (st) => {
     const nav = W.navOf(st), k = NAVS.findIndex(n => n[0] === nav);
     return `<aside class="side"><div class="side-in">
-      <div class="side-top"><div class="navseg grow">${seg(NAVS.map(n => ic(n[1])), k, 'icons', 'nav')}</div>
+      <div class="side-top"><div class="navseg grow">${seg(NAVS.map(n => ic(n[1]) + (n[0] === 'scm' ? '<i class="nav-dot" title="有未提交的改动"></i>' : '')), k, 'icons', 'nav')}</div>
         <span class="side-title grow">${NAVS[k][2]}</span><span class="only-c">${ib('plus', 'sm', '新建')}</span></div>
       <div class="side-body">${W.panel(nav, st.scheme, st.io)}</div>
       <div class="side-foot">${PAGES.map(([n, t, id]) => ib(n, 'tip-u ' + (st.screen === id ? 'on' : ''), t, `data-act="screen" data-screen="${id}"`)).join('')}<span class="grow"></span>${ib('gear', 'tip-u acct-btn', '账号与设置', 'data-act="acct"')}</div>

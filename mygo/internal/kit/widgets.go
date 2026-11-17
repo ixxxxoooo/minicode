@@ -295,22 +295,26 @@ func Kbd(c *ui.Context, keys ...string) ui.Element {
 	})
 }
 
-// Dot 是 6px 状态圆点。
-func Dot(c *ui.Context, k TagKind) ui.Element {
-	col := T.Tx4
+// dotColor 把状态种类换成圆点颜色。
+func dotColor(k TagKind) ui.Color {
 	switch k {
 	case KAc:
-		col = T.Ac
+		return T.Ac
 	case KOk:
-		col = T.Ok
+		return T.Ok
 	case KErr:
-		col = T.Err
+		return T.Err
 	case KWarn:
-		col = T.Warn
+		return T.Warn
 	case KInfo:
-		col = T.Info
+		return T.Info
 	}
-	return ui.Box(c).Size(theme.Px(6), theme.Px(6)).Radius(theme.Px(3)).Background(col).Shrink(0)
+	return T.Tx4
+}
+
+// Dot 是 6px 状态圆点。
+func Dot(c *ui.Context, k TagKind) ui.Element {
+	return ui.Box(c).Size(theme.Px(6), theme.Px(6)).Radius(theme.Px(3)).Background(dotColor(k)).Shrink(0)
 }
 
 // Sep 是水平分隔线(设计稿 .sep:1px bd-1,上下 4px)。
