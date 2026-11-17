@@ -2,6 +2,7 @@ package app
 
 import (
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
@@ -13,7 +14,8 @@ import (
 type pinnedUserEdit struct {
 	id    string
 	draft string
-	focus bool // 刚打开:本帧自动聚焦
+	focus bool      // 刚打开:本帧自动聚焦
+	at    time.Time // 打开的时刻:卡片从原来那张的大小「浮起并展开」的动画起点
 }
 
 // userMsgAnchor 记录用户消息卡上一帧的位置(供悬浮编辑卡定位)。
@@ -49,7 +51,7 @@ func (a *App) openPinnedUserEdit(u *core.User) {
 			return
 		}
 	}
-	a.userPinned = append(a.userPinned, pinnedUserEdit{id: u.ID, draft: userDisplayText(u.Text), focus: true})
+	a.userPinned = append(a.userPinned, pinnedUserEdit{id: u.ID, draft: userDisplayText(u.Text), focus: true, at: kit.Now()})
 }
 
 func (a *App) closePinnedUserEdit(id string) {
@@ -130,7 +132,12 @@ func (a *App) pinnedEditPlacement(anch userMsgAnchor, hasAnch bool, box ui.Rect)
 	if hasAnch {
 		stuck := a.prefs.Bool(pStickyUser, true) && a.userStuck(anch.rect, anch.row)
 		if stuck {
+			// 吸顶的原卡贴在列表顶部的实际位置就是它的矩形(上一帧);用它,编辑卡才与原卡完全重合,
+			// 不会比原卡低几像素、露出底下那一张的边
 			top = pinnedEditorInset
+			if y := anch.rect.Y - box.Y; y >= 0 && y < 40 {
+				top = y
+			}
 		} else {
 			top = anch.rect.Y - box.Y
 			if top < pinnedEditorInset {
@@ -166,6 +173,20 @@ func (a *App) renderPinnedUserEdit(c *ui.Context, u *core.User, id string, cardW
 		Padding(9, 11, 7, 11).Gap(6).AlignItems(ui.Stretch).Border(1, t.AcLine).Width(cardW)
 	for _, s := range t.Shadow2() {
 		card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+	}
+	// 原地浮起并展开:这张卡就是原来那张(原卡此刻已隐藏,见 userMsg),起始高度 = 原卡高度,
+	// 在 pinnedExpandDur 内长到编辑器的高度,而不是原卡还在、上面又弹出一张新的
+	if pe := a.pinnedEditByID(id); pe != nil && kit.MotionOn() {
+		if p := float32(kit.Since(pe.at)) / float32(pinnedExpandDur); p < 1 {
+			a.frameSoon()
+			if anch, ok := a.userAnchor[id]; ok && anch.rect.H > 0 {
+				e := kit.EaseOut(max(p, 0))
+				fin := a.pinnedEditEstimateH(u, *draft, maxBody)
+				if fin > anch.rect.H {
+					card.MaxHeight(anch.rect.H + (fin-anch.rect.H)*e).Clip()
+				}
+			}
+		}
 	}
 	card.OnClick(func() {}) // 拦住点穿到背板
 	card.Children(func() {
@@ -258,4 +279,19 @@ func (a *App) renderPinnedUserThumbs(c *ui.Context, u *core.User) {
 			})
 		}
 	})
+}
+
+// pinnedExpandDur 是悬浮编辑卡从原卡大小展开到编辑器大小的时长。
+const pinnedExpandDur = 200 * time.Millisecond
+
+// pinnedEditEstimateH 估算编辑卡展开后的高度(文字行数 × 行高 + 缩略图 + 分隔线与按钮行 + 内边距),动画终点用。
+func (a *App) pinnedEditEstimateH(u *core.User, draft string, maxBody float32) float32 {
+	lineH := a.FlowFontSize() * a.FlowReadLH()
+	lines := max(estimatedUserLines(draft, 44), 3)
+	body := min(float32(lines)*lineH, maxBody)
+	thumbs := float32(0)
+	if len(u.Images) > 0 {
+		thumbs = float32(userThumbH) + 6
+	}
+	return body + thumbs + 62
 }

@@ -141,6 +141,12 @@ func (a *App) userMsg(c *ui.Context, u *core.User, rowIdx int) {
 		card.Shadow(0, 0, 0, 1, t.Bd1.Alpha(.7))
 	}
 	hov := card.Hovered()
+	// 正在悬浮编辑:这张卡就是被「浮起来展开」的那一张(编辑卡盖在它的位置上),原卡自己隐藏、只占位,
+	// 否则底下还留着一张、上面又弹出一张新的
+	if a.pinnedUserOpen(u.ID) {
+		card.Opacity(0)
+		hov = false
+	}
 	card.OnClick(func() { a.userCardClick(u, stuck) }).Cursor(ui.CursorPointer)
 	card.Children(func() {
 		if clamp && exp && lines > userFoldExp {
