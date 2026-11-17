@@ -205,8 +205,15 @@ func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 	t := a.tk
 	open := a.projOpen[p.ID]
 	on := a.ctxIsProject(p)
-	r := a.navDrop(kit.RowEl(c, false).Key("proj-" + p.ID)).Gap(5).TextColor(t.Tx1).FontWeight(500)
+	r := a.navDrop(kit.RowEl(c, false).Key("proj-" + p.ID)).Gap(5).FontWeight(500)
 	hov := r.Hovered()
+	// 配色层次:当前项目 = 强调色图标 + 正文色名字;其余项目 = 灰图标 + 次级色名字(悬停变正文色),
+	// 不再一长排全是黑色粗体、压过下面的会话标题
+	nameCol := t.Tx2
+	if on || hov {
+		nameCol = t.Tx1
+	}
+	r.TextColor(nameCol)
 	r.OnClick(func() {
 		if !on {
 			a.selectProject(p)
@@ -225,11 +232,15 @@ func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 		if on {
 			ic.TextColor(t.Ac)
 		}
-		ui.Text(c, p.Name).Grow(1).SingleLine()
+		ui.Text(c, p.Name).SingleLine().Shrink(1).MinWidth(0)
+		if hint := a.projParentHint(p); hint != "" { // 同名项目靠上一级目录名区分
+			ui.Text(c, hint).FontSize(theme.FsCap).FontWeight(400).TextColor(t.Tx4).SingleLine().Shrink(2).MinWidth(0)
+		}
+		ui.Spacer(c).Grow(1)
 		if hov {
 			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "在此项目新建会话"}).Margin(0, -4, 0, 0).OnClick(func() { a.NewSessionIn(p) })
 		} else if a.registry().HasProject(p.Path) && !a.isRepoDir(p.Path) {
-			kit.Tag(c, "非仓库")
+			nonRepoMark(c, t)
 		}
 		// 项目行末尾不再显示会话数量:数字对找会话没有帮助,还让每行右侧参差不齐
 	})

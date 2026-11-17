@@ -2,7 +2,6 @@ package app
 
 import (
 	"github.com/egoist/mygo/ui"
-	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 	"os"
 	"path/filepath"
@@ -114,7 +113,15 @@ func (a *App) seedDemoRegistry() {
 
 // sideProject 是侧栏里的一行项目:Claude 索引里的项目 + 手动添加但还没有会话的文件夹。
 func (a *App) sideProjects() []core.ProjectInfo {
-	out := append([]core.ProjectInfo(nil), a.projects...)
+	out := make([]core.ProjectInfo, 0, len(a.projects))
+	for _, p := range a.projects {
+		// 临时目录里的项目(测试 / 脚本在 /var/folders、/tmp 下跑 claude 留下的会话)不进侧栏:
+		// 用户手动添加过的、正在用的不算。此前侧栏里排着十几个同名的「001」
+		if isTempProjectPath(p.Path) && !a.registry().HasProject(p.Path) && projects.Clean(p.Path) != projects.Clean(a.proj) {
+			continue
+		}
+		out = append(out, p)
+	}
 	have := map[string]bool{}
 	for _, p := range out {
 		have[projects.Clean(p.Path)] = true
@@ -554,7 +561,7 @@ func (a *App) rootBadges(c *ui.Context, name string) {
 			continue
 		}
 		if e.repo == nil && e.checked {
-			kit.Tag(c, "非仓库")
+			nonRepoMark(c, t)
 			return
 		}
 		if _, _, _, n := a.repoSummary(i); n > 0 {
@@ -570,4 +577,60 @@ func (a *App) repoBranchLabel() string {
 		return e.name + " · " + a.branch
 	}
 	return a.branch
+}
+
+// isTempProjectPath 判断目录是不是系统临时目录里的(/var/folders/…、/private/tmp、/tmp 与 os.TempDir)。
+func isTempProjectPath(p string) bool {
+	p = projects.Clean(p)
+	if p == "" {
+		return false
+	}
+	roots := []string{"/var/folders/", "/private/var/folders/", "/tmp/", "/private/tmp/"}
+	if t := projects.Clean(os.TempDir()); t != "" && t != "/" {
+		roots = append(roots, t+"/")
+	}
+	for _, r := range roots {
+		if strings.HasPrefix(p+"/", r) {
+			return true
+		}
+	}
+	return false
+}
+
+// projParentHint 同名项目(如多个「001」)之间的区分:返回上一级目录名,不同名时返回空。
+func (a *App) projParentHint(p core.ProjectInfo) string {
+	n := 0
+	for _, o := range a.sideProjects() {
+		if o.Name == p.Name {
+			n++
+		}
+	}
+	if n < 2 {
+		return ""
+	}
+	return filepath.Base(filepath.Dir(p.Path))
+}
+
+// nonRepoMark 是「非仓库」的轻量标记:一行微型灰字(不用实心胶囊,整排文件夹里不抢眼),悬停说明含义。
+func nonRepoMark(c *ui.Context, t *theme.Tokens) {
+	ui.Text(c, "非仓库").FontSize(theme.FsMicro).FontWeight(400).TextColor(t.Tx4).Shrink(0).SingleLine().Tooltip("这个文件夹不是 Git 仓库")
+}
+
+// rootFolderColor 多根文件树顶层文件夹图标的颜色:当前活动仓库(源代码管理正在操作的那个)用强调色,
+// 非仓库文件夹最淡,其余仓库用次级色。
+func (a *App) rootFolderColor(name string) ui.Color {
+	t := a.tk
+	for i, e := range a.repos {
+		if e.name != name {
+			continue
+		}
+		switch {
+		case e.repo == nil && e.checked:
+			return t.Tx4
+		case i == a.repoAct:
+			return t.Ac
+		}
+		return t.Tx2
+	}
+	return t.Tx3
 }

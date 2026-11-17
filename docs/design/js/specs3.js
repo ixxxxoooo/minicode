@@ -25,7 +25,7 @@
     <div class="row" style="height:28px;margin-left:18px">完整修复一个 Bug:路由大小写<span class="aux">刚刚</span></div>
     <div class="row" style="height:28px;margin-left:18px">权限请求:修改配置…<span class="aux">5 分钟</span></div>
     <div class="row" style="height:28px">${ic('chevR', 's12')}${ic('folder', 's12')}<span class="grow b">scenario-lab</span><span class="t4 fs-micro">61</span></div>
-    <div class="row" style="height:28px">${ic('chevR', 's12')}${ic('folder', 's12')}<span class="grow b">design-assets</span>${tag('非仓库', '')}</div></div>`;
+    <div class="row" style="height:28px">${ic('chevR', 's12')}${ic('folder', 's12')}<span class="grow b">design-assets</span><span class="nonrepo t4 fs-micro">非仓库</span></div></div>`;
   const field = (l, v, ph, extra = '') => `<div class="fc g1" style="margin-bottom:8px"><div class="t3 fs-cap">${l}</div><div class="inp ${v ? '' : 'fill'}" ${extra}>${v ? `<span class="v">${v}</span>` : `<span class="t4">${ph}</span>`}</div></div>`;
   const dlgAddProject = `<div class="pop a-pop-up" style="width:460px;padding:14px 16px;margin:14px auto;display:flex;flex-direction:column;gap:6px">
     <div class="f ai"><b class="fs-head">添加项目</b><span class="grow"></span>${ib('x', 'sm')}</div>

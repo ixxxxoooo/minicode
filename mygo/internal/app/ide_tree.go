@@ -48,7 +48,7 @@ func (a *App) filesView(c *ui.Context) {
 					hdr.Children(func() {
 						title := strings.ToUpper(d.fs.Name())
 						if a.multiRoot() {
-							title = strings.ToUpper(a.ws.Name) + "(工作区)"
+							title = strings.ToUpper(a.ws.Name) // 工作区用图标表达,不再拼「(工作区)」后缀
 						}
 						// 标题 + 箭头整块可点,点一下折叠 / 展开整棵文件树(与「大纲 / 时间线」区块一致)
 						head := ui.ButtonBase(c).Key("tree-root-head").Grow(1).Height(theme.Px(26)).Justify(ui.Start).Gap(5).AlignItems(ui.Center).
@@ -68,7 +68,14 @@ func (a *App) filesView(c *ui.Context) {
 								icon = "chevR"
 							}
 							kit.Ic(c, icon, kit.S12)
-							ui.Text(c, title).Grow(1).SingleLine()
+							if a.multiRoot() {
+								kit.Ic(c, "layers", kit.S14).TextColor(t.Tx3) // 工作区标志(与侧栏会话列表里的工作区同一图标)
+							}
+							ui.Text(c, title).SingleLine().Shrink(1).MinWidth(0)
+							if a.multiRoot() {
+								ui.Text(c, itoa(len(a.repos))+" 个文件夹").FontSize(theme.FsMicro).FontWeight(400).TextColor(t.Tx4).SingleLine().Shrink(0)
+							}
+							ui.Spacer(c).Grow(1)
 						})
 						// 图标各有各的含义:添加文件夹 / 新建文件夹 = 带加号的文件夹,新建文件 = 带加号的文件,
 						// 全部收起 = 两枚相对的箭头夹一条线;多根时「新建文件夹」只留在 ··· 菜单(顶层要先选文件夹)
@@ -299,7 +306,9 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth, row int) {
 		if a.ide.dirGit != nil {
 			dagg = a.ide.dirGit[e.Path]
 		}
-		if dagg.hasChange() {
+		if depth == 0 && a.multiRoot() {
+			r.TextColor(t.Tx1) // 工作区顶层文件夹名不随改动染色:改动数与状态点已经表达了,整排彩色名字很吵
+		} else if dagg.hasChange() {
 			r.TextColor(treeGitColor(t, dagg.worst))
 		} else if treeDirMuted(e.Name, e.Path, dagg) {
 			r.TextColor(t.Tx4)
@@ -338,7 +347,11 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth, row int) {
 				icon = "chevD"
 			}
 			kit.Ic(c, icon, kit.S12).TextColor(t.Tx3)
-			kit.Ic(c, treeFolderIcon(e.Name), kit.S14).TextColor(map[bool]ui.Color{true: t.Tx4, false: t.Tx3}[treeDirMuted(e.Name, e.Path, dagg)])
+			folderCol := map[bool]ui.Color{true: t.Tx4, false: t.Tx3}[treeDirMuted(e.Name, e.Path, dagg)]
+			if depth == 0 && a.multiRoot() {
+				folderCol = a.rootFolderColor(e.Name) // 多根顶层:活动仓库强调色、非仓库更淡、其余次级色
+			}
+			kit.Ic(c, treeFolderIcon(e.Name), kit.S14).TextColor(folderCol)
 		} else {
 			ui.Box(c).Size(theme.Px(12), theme.Px(12)).Shrink(0)
 			a.fileIc(c, e.Name)

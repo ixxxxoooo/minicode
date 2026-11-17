@@ -72,7 +72,11 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 	t := a.tk
 	open := a.projOpen[w.ID]
 	on := a.ws != nil && a.ws.ID == w.ID
-	r := a.navDrop(kit.RowEl(c, false).Key("ws-" + w.ID)).Gap(5).TextColor(t.Tx1).FontWeight(500)
+	nameCol := t.Tx2
+	if a.ws != nil && a.ws.ID == w.ID {
+		nameCol = t.Tx1
+	}
+	r := a.navDrop(kit.RowEl(c, false).Key("ws-" + w.ID)).Gap(5).FontWeight(500)
 	r.Drag(wsDrag{ID: w.ID}) // 拖动换位
 	if d, ok := ui.Drop[wsDrag](r); ok {
 		a.moveWorkspace(d.ID, w.ID)
@@ -80,6 +84,10 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 	d, over := ui.DragOver[wsDrag](r)
 	over = over && d.ID != w.ID
 	hov := r.Hovered()
+	if hov {
+		nameCol = t.Tx1
+	}
+	r.TextColor(nameCol)
 	r.OnClick(func() {
 		if !on {
 			a.selectWorkspace(w)
