@@ -9,6 +9,9 @@ import (
 // 点开面板时数据还新就不再请求;想要最新的,点面板里的「刷新」。
 const LimitsTTLSecs = 300
 
+// LimitsPopoverTTLSecs 是上下文弹层点开时限额短缓存(秒);过期后再次点开圆环会重新查询。
+const LimitsPopoverTTLSecs = 30
+
 // McpConn 是 MCP 服务器的连接状态(取自 claude system init 的 mcp_servers)。
 type McpConn int
 

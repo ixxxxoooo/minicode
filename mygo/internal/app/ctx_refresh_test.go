@@ -49,3 +49,38 @@ func TestCtxNoProcNotLoading(t *testing.T) {
 		t.Fatal("进程未启动不应处于刷新中")
 	}
 }
+
+func TestCtxOpenRefreshesLimitsWhenOfficial(t *testing.T) {
+	a := New(Options{})
+	fb := &claudeFakeBE{}
+	a.Attach(fb)
+	a.sessProcLive = true
+	fb.cmds = nil
+	a.ctxRefreshAt = time.Time{}
+	a.ctxEnsureLoaded()
+	var lim int
+	for _, c := range fb.cmds {
+		if u, ok := c.(core.CmdRefreshUsage); ok && u.Limits && u.LimitsQuick {
+			lim++
+		}
+	}
+	if lim != 1 {
+		t.Fatalf("官方账号点开应发一次限额查询, got %d cmds %v", lim, fb.cmds)
+	}
+}
+
+func TestCtxOpenSkipsLimitsForThirdParty(t *testing.T) {
+	a := New(Options{})
+	fb := &claudeFakeBE{}
+	a.Attach(fb)
+	a.sessProcLive = true
+	a.pvLoad().store.Activate("deepseek", "m1")
+	fb.cmds = nil
+	a.ctxRefreshAt = time.Time{}
+	a.ctxEnsureLoaded()
+	for _, c := range fb.cmds {
+		if u, ok := c.(core.CmdRefreshUsage); ok && u.Limits {
+			t.Fatalf("第三方不应自动查限额: %v", c)
+		}
+	}
+}

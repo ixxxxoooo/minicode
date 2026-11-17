@@ -255,10 +255,11 @@ type (
 	CmdBackgroundCurrent struct{ ToolUseID string }
 	// CmdRefreshUsage 按需查询上下文分类与/或账户限额;界面指定 Context / Limits,不默认全查。
 	CmdRefreshUsage struct {
-		Force     bool // 限额:越过 LimitsTTLSecs 缓存
-		Context   bool // get_context_usage
-		Limits    bool // get_usage
-		StartProc bool // 惰性后端:为查上下文而启动 claude 进程
+		Force       bool // 限额:越过缓存
+		LimitsQuick bool // 限额:用 LimitsPopoverTTLSecs 短缓存(弹层点开)
+		Context     bool // get_context_usage
+		Limits      bool // get_usage
+		StartProc   bool // 惰性后端:为查上下文而启动 claude 进程
 	}
 	// CmdRefreshMcp 刷新 MCP:界面先重读配置,Runtime 为真且进程在跑时发 mcp_status。
 	CmdRefreshMcp struct {

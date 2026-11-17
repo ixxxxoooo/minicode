@@ -34,11 +34,11 @@ func (a *App) ctxState() string {
 	if u.ContextDetailErr != "" && len(u.ContextCategories) == 0 {
 		return "err"
 	}
-	if u.LimitsState == core.LimitsUnavailable && u.FiveHourPct == nil && u.WeeklyPct == nil {
+	if !a.subscriptionLimitsEligible() {
 		return "none"
 	}
-	if u.LimitsState == core.LimitsUnavailable && u.LimitsAt == 0 && len(u.ContextCategories) == 0 {
-		return "none"
+	if u.LimitsState == core.LimitsUnavailable && u.FiveHourPct == nil && u.WeeklyPct == nil && u.LimitsAt != 0 {
+		return "err"
 	}
 	r := u.ContextRatio()
 	if r >= 0.95 {
@@ -223,9 +223,30 @@ func (a *App) ctxLimitsBlock(c *ui.Context, st string, u core.Usage) {
 		return
 	}
 	if st == "none" {
-		ui.Row(c).Gap(6).Padding(6, 8).Radius(t.RSm()).Background(t.Fill1).Children(func() {
-			kit.Ic(c, "info", kit.S12).TextColor(t.Tx3)
-			ui.Text(c, "当前使用第三方服务商,没有账户限额数据。").FontSize(theme.FsCap).TextColor(t.Tx3)
+		ui.Column(c).Gap(6).Children(func() {
+			ui.Row(c).Gap(6).Padding(6, 8).Radius(t.RSm()).Background(t.Fill1).AlignItems(ui.Center).Children(func() {
+				kit.Ic(c, "info", kit.S12).TextColor(t.Tx3)
+				ui.Text(c, "当前使用第三方服务商或未登录 Anthropic 订阅,无法读取官方账户限额。").FontSize(theme.FsCap).TextColor(t.Tx3).Grow(1)
+			})
+			click := ui.ButtonBase(c).Padding(6, 8).Radius(t.RSm()).Cursor(ui.CursorPointer)
+			if click.Hovered() {
+				click.Background(t.Fill2)
+			}
+			click.OnClick(func() { a.ctxRefreshLimitsManual() })
+			click.Children(func() {
+				ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+					kit.Ic(c, "chart", kit.S12).TextColor(t.Tx3)
+					ui.Text(c, "点击尝试获取限额").FontSize(theme.FsCap).Grow(1)
+					kit.Ic(c, "refresh", kit.S12).TextColor(t.Tx4)
+				})
+			})
+		})
+		return
+	}
+	if u.LimitsState == core.LimitsChecking && u.FiveHourPct == nil && u.WeeklyPct == nil {
+		ui.Row(c).Gap(6).AlignItems(ui.Center).Padding(6, 8).TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
+			kit.Spin(c, t.Tx3)
+			ui.Text(c, "正在查询账户限额…")
 		})
 		return
 	}
