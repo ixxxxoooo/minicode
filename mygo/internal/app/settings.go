@@ -453,11 +453,15 @@ func (a *App) settingsRow(c *ui.Context, r setRow, first bool) {
 	}
 	hov := row.Hovered()
 	row.Children(func() {
-		if changed {
-			ui.Box(c).Absolute().Left(4).Top(16).Size(5, 5).Radius(3).Background(t.Ac)
-		}
 		ui.Column(c).Grow(1).MinWidth(0).Gap(1).Children(func() {
 			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+				if changed {
+					// 改动圆点跟着「标题这一行」垂直居中:此前按整行顶边固定 Top(16),
+					// 行高随说明行数、右侧控件高度变化(文字块在行内居中),点就时高时低
+					ui.Column(c).Absolute().Left(-8).Top(0).Bottom(0).Width(5).Justify(ui.Center).Children(func() {
+						ui.Box(c).Size(5, 5).Radius(3).Background(t.Ac)
+					})
+				}
 				ui.Text(c, r.title).FontWeight(500)
 				if r.restart {
 					kit.Tag(c, "需重启", kit.KWarn)

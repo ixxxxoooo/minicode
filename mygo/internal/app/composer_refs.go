@@ -3,10 +3,6 @@ package app
 import (
 	"regexp"
 	"strings"
-
-	"github.com/egoist/mygo/ui"
-	"github.com/ixxxxoooo/minicode/internal/kit"
-	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 var draftAtRE = regexp.MustCompile(`@([^\s@]+)`)
@@ -59,35 +55,4 @@ func (a *App) foldRefs(text string) string {
 		return head
 	}
 	return head + " " + text
-}
-
-// composerRefChips 输入框上方的引用胶囊(与图片附件同一行区域):类型图标 + 文件名 + 移除。
-func (a *App) composerRefChips(c *ui.Context) {
-	if len(a.refs) == 0 {
-		return
-	}
-	t := a.tk
-	ui.Row(c).Padding(8, 12, 0, 12).Gap(6).Wrap().Children(func() {
-		for _, r := range a.refs {
-			r := r
-			p := strings.TrimPrefix(r, "@")
-			chip := ui.Row(c).Key("ref-"+p).Height(theme.Px(22)).Padding(0, 3, 0, 7).Gap(4).Radius(t.RXs()).AlignItems(ui.Center).
-				Background(t.InfoSoft).Shrink(0).Cursor(ui.CursorPointer)
-			if chip.Hovered() {
-				chip.Background(t.Info.Alpha(.2))
-			}
-			chip.Tooltip(p)
-			chip.OnClick(func() { a.openPathRef(p) })
-			chip.Children(func() {
-				name := baseName(strings.TrimSuffix(p, "/"))
-				if strings.HasSuffix(p, "/") {
-					kit.Ic(c, "folder", kit.S12).TextColor(t.Info).Shrink(0)
-				} else {
-					a.fileIc(c, name)
-				}
-				ui.Text(c, name).FontSize(theme.FsCap).TextColor(t.Info).SingleLine().MaxWidth(180).Shrink(0)
-				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "移除引用"}).Size(16, 16).OnClick(func() { a.removeRef(r) })
-			})
-		}
-	})
 }

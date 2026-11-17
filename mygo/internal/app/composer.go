@@ -31,11 +31,11 @@ func (a *App) composer(c *ui.Context) {
 		box.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
 	_ = a.chatDrop(box)
+	a.syncDraft() // 在拖放处理之后:别处改了草稿就重新拆出正文与附件
 	anchor := box
 	box.Children(func() {
-		a.composerRefChips(c)
 		a.composerAttachRow(c)
-		in := ui.TextArea(c.Key("draft"), &a.draft).Lines(1, 8).Placeholder(a.composerHint()).
+		in := ui.TextArea(c.Key("draft"), &a.draftBody).Lines(1, 8).Placeholder(a.composerHint()).
 			PlaceholderColor(t.Tx3).Background(ui.Transparent).BorderWidth(0).Padding(9, 12, 3, 12).FontSize(a.FlowFontSize()).LineHeight(a.FlowReadLH()).
 			MinHeight(36).TextColor(t.Tx1).FocusRing(false)
 		a.warmTypingSignal()
@@ -53,11 +53,6 @@ func (a *App) composer(c *ui.Context) {
 			}
 			return a.HandleComposerPaste(text)
 		})
-		if a.ux.pasteInsert != "" { // 上一次粘贴的图片:在光标处插入(一步撤销)
-			start, end := in.TextSelection()
-			in.ReplaceText(start, end, a.ux.pasteInsert)
-			a.ux.pasteInsert = ""
-		}
 		in.OnTextKey(func(k ui.TextKey) bool {
 			if a.slashTextKey(k) {
 				return true
@@ -74,7 +69,7 @@ func (a *App) composer(c *ui.Context) {
 			if !cmdSend && k.Mods == ui.Cmd {
 				steer = !steer
 			}
-			txt := k.Text()
+			txt := composeDraft(k.Text(), a.draftImgs) // 正文 + 图片附件
 			k.SetText("")
 			a.submitKey(txt, steer)
 			return true
@@ -149,8 +144,7 @@ func (a *App) composerBar(c *ui.Context) {
 				b.Background(t.Ac.Mix(t.Tx1, .10))
 			}
 			b.OnClick(func() {
-				txt := a.draft
-				a.submitKey(txt, false)
+				a.submitKey(a.draftNow(), false)
 			})
 		}
 	})

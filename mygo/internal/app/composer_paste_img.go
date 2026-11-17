@@ -11,8 +11,8 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/diag"
 )
 
-// 会话输入框粘贴剪贴板图片:存到 ~/.minicode/paste/,在光标处插入 `![](绝对路径)`,
-// 与「添加图片…」/ 拖入图片同一种附件写法(缩略图行、发送时拆成 Images)。
+// 会话输入框粘贴剪贴板图片:存到 ~/.minicode/paste/,作为图片附件加进草稿(输入框上方出缩略图卡,
+// 发送时拆成 Images),与「添加图片…」/ 拖入图片同一种附件。
 //
 // @author ixxxxoooo
 
@@ -58,9 +58,7 @@ func (a *App) composerPasteImage(svc ui.Services) bool {
 		attachLog.Warn("写入粘贴图片失败", "err", err)
 		return true
 	}
-	a.ux.pasteInsert = "![](" + path + ")"
-	a.ux.focusDraft = true
-	a.toast = "已添加图片附件"
+	a.addDraftImage(path) // 缩略图卡显示在输入框上方,正文里不露路径
 	attachLog.Info("粘贴图片为附件", "bytes", len(raw), "path", path)
 	return true
 }

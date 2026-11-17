@@ -103,8 +103,11 @@ func TestHandleComposerPaste(t *testing.T) {
 	if !a.HandleComposerPaste(long) {
 		t.Fatal("应折叠长粘贴")
 	}
-	if !strings.Contains(a.draft, "@") {
-		t.Fatalf("草稿应含 @ 引用:%q", a.draft)
+	if len(a.refs) != 1 || !strings.HasPrefix(a.refs[0], "@") {
+		t.Fatalf("折叠后应成为一张附件卡(@ 引用):%v", a.refs)
+	}
+	if a.draft != "" {
+		t.Fatalf("折叠的长文本不应写进输入框正文:%q", a.draft)
 	}
 }
 

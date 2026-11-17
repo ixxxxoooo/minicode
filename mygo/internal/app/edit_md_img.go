@@ -70,20 +70,18 @@ func (a *App) handleDroppedImages(paths []string) {
 	for _, abs := range paths {
 		ext := strings.ToLower(filepath.Ext(abs))
 		if ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif" || ext == ".webp" || ext == ".svg" {
-			rel, err := a.saveImageForMD(abs)
-			if err != nil {
-				a.toast = "无法保存图片:" + err.Error()
-				mdImgLog.Warn("保存图片失败", "src", abs, "err", err)
-				continue
-			}
 			tb := a.ide.cur()
 			if tb != nil && isMarkdownFile(tb.path) && !a.mdSource(tb) {
+				rel, err := a.saveImageForMD(abs) // 只有插进 Markdown 文档才复制进工作区
+				if err != nil {
+					a.toast = "无法保存图片:" + err.Error()
+					mdImgLog.Warn("保存图片失败", "src", abs, "err", err)
+					continue
+				}
 				a.insertMdImage(tb, rel, "")
 				a.toast = "已插入图片 " + rel
 			} else {
-				a.draft = strings.TrimSpace(a.draft + "\n![](" + rel + ")")
-				a.ux.focusDraft = true
-				a.toast = "已添加图片附件"
+				a.addDraftImage(abs) // 对话附件:直接用原文件,不往项目里复制
 			}
 			continue
 		}

@@ -1,7 +1,6 @@
 package app
 
 import (
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -11,8 +10,6 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/diag"
-	"github.com/ixxxxoooo/minicode/internal/kit"
-	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 var attachLog = diag.L("composer.attach")
@@ -137,9 +134,9 @@ func (a *App) pickAttachRefs() {
 			for _, p := range paths {
 				refs = append(refs, refText(a.relRefForAttach(p), false))
 			}
-			a.draft = appendRefs(a.draft, refs...)
+			n := a.addRefs(refs...) // 与拖入文件一样:输入框上方的附件卡,不写进输入框正文
 			a.ux.focusDraft = true
-			attachLog.Info("添加文件引用", "n", len(refs))
+			attachLog.Info("添加文件引用", "n", n)
 		}
 	})
 }
@@ -162,47 +159,9 @@ func (a *App) removeDraftAttachPath(path string) {
 	if path == "" {
 		return
 	}
-	pat := `!\[[^\]]*\]\(` + regexp.QuoteMeta(path) + `\)`
-	a.draft = strings.TrimSpace(regexp.MustCompile(pat).ReplaceAllString(a.draft, ""))
-}
-
-func (a *App) composerAttachRow(c *ui.Context) {
-	atts := parseDraftAttaches(a.draft)
-	if len(atts) == 0 {
-		return
-	}
-	t := a.tk
-	ui.Row(c).Padding(6, 12, 0, 12).Gap(6).Wrap().Children(func() {
-		for _, at := range atts {
-			at := at
-			abs := a.absAttach(at.Path)
-			chip := ui.ButtonBase(c).Key("cmp-att-"+at.Path).Height(theme.Px(24)).PaddingX(4).Gap(4).Radius(t.RSm()).
-				AlignItems(ui.Center).Border(1, t.Bd2).Background(t.Fill1).Cursor(ui.CursorPointer).Tooltip("点击预览")
-			if chip.Hovered() {
-				chip.Background(t.Fill2)
-			}
-			chip.Children(func() {
-				if abs != "" {
-					if _, err := os.Stat(abs); err == nil {
-						if src := a.localImage(abs); src != nil {
-							ui.Image(c, src).Size(18, 18).Radius(t.RXs()).Fit(ui.Cover).Shrink(0)
-						} else {
-							a.fileIc(c, baseName(at.Path))
-						}
-					} else {
-						a.fileIc(c, baseName(at.Path))
-					}
-				} else {
-					a.fileIc(c, baseName(at.Path))
-				}
-				ui.Text(c, baseName(at.Path)).FontSize(theme.FsCap).TextColor(t.Tx2).SingleLine().MaxWidth(120)
-				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "移除"}).OnClick(func() { a.removeDraftAttachPath(at.Path) })
-			})
-			if abs != "" {
-				chip.OnClick(func() { a.openImageLightboxPath(abs) })
-			}
-		}
-	})
+	pat := `\n?!\[[^\]]*\]\(` + regexp.QuoteMeta(path) + `\)`
+	// 以输入框里最新的内容为底(点击回调可能赶在同步之前),只去掉这一张图,正文保持原样
+	a.draft = regexp.MustCompile(pat).ReplaceAllString(a.draftNow(), "")
 }
 
 // submitPrompt 发送输入框内容(拆分图片附件、处理内置斜杠)。

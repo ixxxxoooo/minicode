@@ -20,7 +20,6 @@ var uxLog = diag.L("edit")
 // uxState 汇总这一批编辑体验用到的界面状态。
 type uxState struct {
 	focusDraft    bool            // 下一帧把键盘焦点给输入框(拖入引用之后接着写)
-	pasteInsert   string          // 粘贴图片后待插入输入框光标处的 `![](路径)`(粘贴回调里改值会被输入框覆盖,下一帧构建时用 ReplaceText 插入)
 	mdNoteOff     map[string]bool // 已点掉「写法会被规范化」提示条的文件
 	demoHint      string          // 截图 / 调试:强制显示「可放」态的提示文字(ide_debug 的 -ed drag)
 	rt            *richtext.Theme // 所见即所得的外观(换主题时清掉)
@@ -68,18 +67,16 @@ func appendRefs(draft string, refs ...string) string {
 	return draft + " " + tail
 }
 
-// dropRefs 是落到对话栏的结果:「@路径」直接写进输入框正文(与打的字在一起),并把焦点交给它。
-// 只有图片不一样(走输入框顶部的缩略图附件),不经过这里。
+// dropRefs 是落到对话栏的结果:文件 / 文件夹成为输入框上方的附件卡(与图片缩略图同一行、同一套样式),
+// 不写进输入框正文;发送时按「@路径」并到消息最前面(foldRefs)。并把焦点交给输入框接着写。
 func (a *App) dropRefs(refs ...string) {
-	next := appendRefs(a.draft, refs...)
-	if next == a.draft {
+	n := a.addRefs(refs...)
+	if n == 0 {
 		a.toast = "已经引用过了"
 		return
 	}
-	a.draft = next
 	a.ux.focusDraft = true
-	uxLog.Info("拖入引用", "n", len(refs))
-	a.toast = "已引用 " + itoa(len(refs)) + " 项到对话"
+	uxLog.Info("拖入引用", "n", n)
 }
 
 // dropPaths 处理从访达等其它应用拖进来的文件:项目内的写相对路径,项目外写绝对路径。

@@ -340,9 +340,12 @@ type App struct {
 	mcpExp            map[string]bool // MCP 弹层里各服务器是否展开工具列表
 	ctxLoading        bool
 	ctxCompacting     bool
-	ctxOpenKey        string // 上下文弹层当前已触发过查询的那一次打开(popup 键);关掉后清空
-	pageKey           string // 整页功能(自动化 / 画布 / 浏览器 / 自定义 / 用量)打开时的工作台上下文,变了就自动退出整页(page_auto_leave.go)
-	notifyDeniedShown bool   // 「系统通知已关闭」提示这次运行里已经给过
+	draftBody         string   // 输入框正文(不含图片附件语法),TextArea 绑它;与 a.draft 的同步见 composer_draft.go
+	draftImgs         []string // 草稿里的图片附件(`![](路径)` 串,按顺序),缩略图卡的数据源
+	draftSeen         string   // 上一次同步时的 a.draft;a.draft 变了说明别处改过草稿,需要重新拆分
+	ctxOpenKey        string   // 上下文弹层当前已触发过查询的那一次打开(popup 键);关掉后清空
+	pageKey           string   // 整页功能(自动化 / 画布 / 浏览器 / 自定义 / 用量)打开时的工作台上下文,变了就自动退出整页(page_auto_leave.go)
+	notifyDeniedShown bool     // 「系统通知已关闭」提示这次运行里已经给过
 	ctxRefreshAt      time.Time
 	mcpRefreshAt      time.Time
 	mcpRefreshing     bool
