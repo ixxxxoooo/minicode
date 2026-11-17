@@ -51,25 +51,26 @@
   /** 外观 → 应用图标 / 菜单栏图标:样式卡、外观、配色、Dock 与菜单栏行为(控件与预览在 brand.js,改动即时生效) */
   const brandGroups = () => { const B = U.brand;
     return `${G('应用图标',
-      `<div style="padding:10px 12px 2px">${B.previewDocks()}</div>`,
-      R('图标样式', '五选一,共用同一套线宽、配色与光影;默认「提示符」', `<b class="t2" data-bi-name="app">${B.styleName('app')}</b>`),
+      `<div style="padding:10px 12px 2px"><div class="usage-card" style="min-height:0;padding:12px"><div class="f ai g2"><b>动态预览</b><span class="t3 fs-cap">Dock 与菜单栏用的是同一个样式:选一次,两处同时换</span></div>${B.live()}</div></div>`,
+      `<div style="padding:8px 12px 2px">${B.previewDocks()}</div>`,
+      R('图标样式', '五选一;应用图标与菜单栏图标同时换成同一种,立即生效。鼠标放在卡片上能看到菜单栏图标动起来的样子;默认「提示符」', `<b class="t2" data-bi-name="app">${B.styleName()}</b>`),
       `<div style="padding:0 12px 12px">${B.pickApp()}</div>`,
       R('图标外观', '对应 macOS 26 的默认 / 深色 / 透明 / 着色;「自动」随系统深浅在浅色与深色之间选', B.segOpt('icoMode', ['自动', '浅色', '深色', '透明', '着色'])),
       R('配色', '跟随当前主题,或固定为某一套主题的色板(图标不再随主题变)', B.tintPick()),
       R('Dock 角标', '图标右上角的红色数字', B.segOpt('dockBadge', ['关', '待处理数', '运行中数'])),
       R('需要确认时 Dock 弹跳', '权限请求或提问到达、而 MiniCode 不在前台时', B.segOpt('dockBounce', ['不弹', '一次', '直到处理'])),
       R('Dock 图标显示进度', '下载更新、导出诊断包等超过 2 秒的操作', B.togOpt('dockProgress')),
-      R('同时更换访达里的图标', '默认只改 Dock、⌘Tab 与应用内;打开后把所选图标写进 MiniCode.app 的自定义图标(应用更新后需重新套用)', B.togOpt('fileIcon')))}
-      ${note('运行时换的图标只在 MiniCode 运行期间有效;通知中心、启动台与「保留在 Dock」的那一格仍是包内默认图标。')}
+      R('同时更换访达里的图标', '默认只改 Dock、⌘Tab 与应用内;打开后把所选图标写进 MiniCode.app 的自定义图标(访达、启动台、关于本机);关闭即还原。应用更新后第一次启动会自动重新套用', B.togOpt('fileIcon')),
+      R('当前生效', '改完设置会立刻套用,不需要重启;哪一处没变,点右边「重新应用」', `<div class="fc g1" style="align-items:flex-end"><span class="fs-cap"><span class="t4">Dock</span> <span class="t3">已套用</span></span><span class="fs-cap"><span class="t4">访达</span> <span class="t3">已更换 / 未开启 / 失败:原因</span></span><span class="fs-cap"><span class="t4">菜单栏</span> <span class="t3">已显示 · 提示符</span></span>${btn('重新应用', 'sm', 'refresh', 'data-act="brand-reapply"')}</div>`))}
+      ${note('运行时换的图标只在 MiniCode 运行期间有效;通知中心与「保留在 Dock」的那一格仍是包内默认图标。打开「同时更换访达里的图标」后,访达与启动台也会换;该开关会让 .app 在 codesign --verify --strict 下报「resource fork」,但不影响启动与更新。')}
       ${G('菜单栏图标',
       R('在菜单栏显示图标', '关闭后可在本类重新打开;⌘ 拖出菜单栏也等于关闭', B.togOpt('trayOn')),
-      R('图标样式', '与应用图标同源的单色版;系统按菜单栏明暗自动着色,点开时自动反白', `<b class="t2" data-bi-name="tray">${B.styleName('tray')}</b>`),
-      `<div style="padding:0 12px 12px">${B.pickTray()}</div>`,
+      R('图标样式', '与应用图标是同一个样式(单色模板图,系统按菜单栏明暗自动着色,点开时自动反白);要换样式请在上方「应用图标」里选,两处同时变', `<b class="t2" data-bi-name="tray">${B.styleName()}</b>`),
       R('随会话状态变化', '运行中动画,以及待确认(!)/ 已完成 / 出错(×)/ 有更新的徽标;关闭后始终是静态图标', B.togOpt('trayDyn')),
       R('运行中动画', '标记的片段依次明暗(提示符是光标闪烁),或整体呼吸;开启「减弱动态效果」时静止', B.segOpt('trayAnim', ['逐段点亮', '呼吸', '无'])),
       R('彩色徽标', '徽标改用系统语义色(橙 / 绿 / 红 / 蓝),形状不变;关闭则保持纯单色模板', B.togOpt('trayColor')),
       R('在图标旁显示数字', '待处理数(权限 + 提问),为 0 时隐藏', B.togOpt('trayCount')),
-      R('单击图标', '⌥ 单击执行另一个', B.segOpt('trayClick', ['弹出菜单', '打开窗口'])))}
+      R('单击图标', '「弹出菜单」:单击弹出菜单;「打开窗口」:单击打开主窗口,右键弹出菜单', B.segOpt('trayClick', ['弹出菜单', '打开窗口'])))}
       ${note('完整的状态、动画与各场景(Dock、⌘Tab、通知、安装盘……)见规范页「图标与品牌」。')}`; };
 
   /** 界面布局三选一:点击立即切换整个查看器的方案(data-act="layout") */

@@ -11,7 +11,7 @@
   const S = () => (window.APP && window.APP.st) || {};
 
   /* ───────── 选择项与默认值 ───────── */
-  const DEF = { icoStyle: 'prompt', icoMode: 'auto', icoTint: 'follow', trayStyle: 'prompt', trayAnim: 'flow', trayColor: 1, trayCount: 0, trayOn: 1, trayDyn: 1, trayClick: 'menu',
+  const DEF = { icoStyle: 'prompt', icoMode: 'auto', icoTint: 'follow', trayAnim: 'flow', trayColor: 1, trayCount: 0, trayOn: 1, trayDyn: 1, trayClick: 'menu',
     dockBadge: 'pending', dockBounce: 'once', dockProgress: 1, fileIcon: 0 };
   /** 分段控件的取值表:下标 ↔ 取值 */
   const OPT = { icoMode: ['auto', 'light', 'dark', 'clear', 'tint'], dockBadge: ['off', 'pending', 'running'], dockBounce: ['off', 'once', 'until'], trayAnim: ['flow', 'breathe', 'none'], trayClick: ['menu', 'window'] };
@@ -19,7 +19,6 @@
   const cur = (k) => {
     const v = S()[k] ?? DEF[k];
     if (k === 'icoStyle' && !STYLES.some(s => s.id === v)) return DEF[k];
-    if (k === 'trayStyle' && !TRAYS.some(s => s.id === v)) return DEF[k];
     return v;
   };
   const themeOf = (id) => THEMES.find(t => t.id === id) || THEMES[0];
@@ -31,7 +30,8 @@
     { id: 'lines', name: '行', en: 'Lines', d: '四行代码:缩进、被高亮的片段、长短不一。工具感最强。' },
     { id: 'braces', name: '花括号', en: 'Braces', d: '{ } 抱着一个线结,像在代码里找到了那根线。' },
   ];
-  const TRAYS = STYLES.filter(s => s.id !== 'warp');
+  /** 菜单栏图标样式 = 应用图标样式(五种全有,同一个选择):切换时 Dock / ⌘Tab / 访达 / 菜单栏同时换成同一种 */
+  const TRAYS = STYLES;
   const TRAY_STATES = [
     ['idle', '空闲', '没有运行中的回合,也没有待处理的事'],
     ['running', '运行中', '至少一个会话在跑回合 / 后台任务;图标动画,不加徽标'],
@@ -124,6 +124,7 @@
   /* ───────── 菜单栏模板图标(36 画布,单色 currentColor) ───────── */
   const TRAY = {
     prompt: (lv) => `<path d="M10.5 9.5 18 18l-7.5 8.5" fill="none" stroke="currentColor" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/><rect ${lv(1)} x="20.5" y="23.6" width="8" height="4.4" rx="2.2"/>`,
+    warp: (lv) => { const { warp, weft } = weaveParts(W2); return `<g transform="translate(18 18) scale(.04) translate(-512 -512)"><path d="${warp.join('')}"/>${weft.map((d, j) => `<path ${lv(j)} d="${d}" fill-opacity=".6"/>`).join('')}</g>`; },
     grid: (lv) => { const c = 7.4, g = 2.4, o = 18 - (3 * c + 2 * g) / 2; let s = '', k = 0;
       for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { const r = `x="${o + i * (c + g)}" y="${o + j * (c + g)}" width="${c}" height="${c}" rx="2.2"`; s += (i + j) % 2 === 0 ? `<rect ${r}/>` : `<rect ${lv(k++)} ${r} fill-opacity=".42"/>`; } return s; },
     lines: (lv) => { const sx = 27 / 424, x0 = 4.5, h = 4.4, gap = 3.6, y0 = 18 - (4 * h + 3 * gap) / 2, rows = [[[0, 150, 1], [174, 250, 0]], [[96, 328, 0]], [[96, 190, 1], [214, 114, 0]], [[0, 230, 0], [254, 96, 1]]]; let s = '', k = 0;
@@ -140,7 +141,7 @@
   };
   /** 一枚菜单栏图标。o:{ s 样式, state 状态, z 边长, col 彩色徽标, frame 动画定格帧 } */
   const traySvg = (o) => {
-    const id = 'bt' + (++uid), st = o.s && TRAY[o.s] ? o.s : cur('trayStyle'), state = o.state || 'idle', z = o.z || 18, col = +(o.col ?? cur('trayColor')), fr = o.frame;
+    const id = 'bt' + (++uid), st = o.s && TRAY[o.s] ? o.s : cur('icoStyle'), state = o.state || 'idle', z = o.z || 18, col = +(o.col ?? cur('trayColor')), fr = o.frame;
     const lv = (i) => `class="lv" style="--d:${i}${fr !== undefined ? `;opacity:${i === fr % 3 ? 1 : .26}` : ''}"`;
     let body = TRAY[st](lv), badge = '';
     const bd = BADGE[state], x = 28.2, y = 8;
@@ -152,7 +153,7 @@
       else badge = bd.g ? `<mask id="${id}b" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36"><rect width="36" height="36" fill="#fff"/>${bd.g(x, y, '#000')}</mask><circle cx="${x}" cy="${y}" r="${r}" fill="currentColor" mask="url(#${id}b)"/>` : `<circle cx="${x}" cy="${y}" r="${r}" fill="currentColor"/>`;
     }
     const anim = state === 'running' && fr === undefined ? (o.anim || cur('trayAnim')) : 'none';
-    return `<svg class="bi-tray ${anim === 'none' ? '' : anim}" width="${z}" height="${z}" viewBox="0 0 36 36" fill="currentColor" aria-hidden="true"><g ${state === 'paused' ? 'opacity=".5"' : ''}>${body}</g>${badge}</svg>`;
+    return `<svg class="bi-tray ${anim === 'none' ? '' : 'tr-' + anim}" width="${z}" height="${z}" viewBox="0 0 36 36" fill="currentColor" aria-hidden="true"><g ${state === 'paused' ? 'opacity=".5"' : ''}>${body}</g>${badge}</svg>`;
   };
 
   /* ───────── 对外:带数据属性的包装(live 刷新靠它)与刷新 ───────── */
@@ -165,22 +166,32 @@
       el.innerHTML = el.dataset.bi === 'tray' ? traySvg(o) : appSvg(o); });
     root.querySelectorAll('[data-bi-name]').forEach(el => { el.textContent = styleName(el.dataset.biName); });
   };
-  const styleName = (kind) => { const k = kind === 'tray' ? cur('trayStyle') : cur('icoStyle'); return (STYLES.find(s => s.id === k) || STYLES[0]).name; };
+  const styleName = () => { const k = cur('icoStyle'); return (STYLES.find(s => s.id === k) || STYLES[0]).name; };
   /** 查看器里各处「小标」:边长为 size 的图形(图标本体占 80%,所以画布放大 1.24 倍) */
   const logo = (size, extra = '') => `<span class="logo brand" style="width:${size}px;height:${size}px;${extra}">${app({ z: Math.round(size * 1.24) })}</span>`;
 
   /* ───────── 设置里用的构件 ───────── */
-  /** 应用图标选择器:五张卡,样式固定、外观与配色跟随当前设置 */
-  const pickApp = () => `<div class="ico-pick" role="radiogroup" aria-label="应用图标样式">${STYLES.map(s => `<div class="ico-card ${s.id === cur('icoStyle') ? 'on' : ''}" data-act="ico-style" data-v="${s.id}" tabindex="0" role="radio" aria-checked="${s.id === cur('icoStyle')}" data-tip="${s.d}">${app({ s: s.id, z: 72 })}<b>${s.name}</b><span>${s.en}</span></div>`).join('')}</div>`;
-  /** 菜单栏图标选择器:每张卡同时给出浅色 / 深色菜单栏上的样子 */
-  const pickTray = () => `<div class="tray-pick" role="radiogroup" aria-label="菜单栏图标样式">${TRAYS.map(s => `<div class="tray-card ${s.id === cur('trayStyle') ? 'on' : ''}" data-act="tray-style" data-v="${s.id}" tabindex="0" role="radio" aria-checked="${s.id === cur('trayStyle')}" data-tip="${s.d}"><div class="pr"><span class="mb-chip l">${tray({ s: s.id, z: 20 })}</span><span class="mb-chip d">${tray({ s: s.id, z: 20 })}</span></div><b>${s.name}</b><span class="en">${s.en}</span></div>`).join('')}</div>`;
+  /** 图标样式选择器:五张卡,每张同时给出应用图标与它在浅 / 深菜单栏上的样子(同一个样式,一次换两处);悬停或选中时菜单栏图标播放「运行中」动画 */
+  const pickApp = () => `<div class="ico-pick" role="radiogroup" aria-label="图标样式(应用图标与菜单栏图标同步)">${STYLES.map(s => `<div class="ico-card ${s.id === cur('icoStyle') ? 'on' : ''}" data-act="ico-style" data-v="${s.id}" tabindex="0" role="radio" aria-checked="${s.id === cur('icoStyle')}" data-tip="${s.d}">${app({ s: s.id, z: 72 })}<div class="pr tr-hov"><span class="mb-chip l">${tray({ s: s.id, state: 'running', z: 18, anim: 'flow' })}</span><span class="mb-chip d">${tray({ s: s.id, state: 'running', z: 18, anim: 'flow' })}</span></div><b>${s.name}</b><span>${s.en}</span></div>`).join('')}</div>`;
   /** 配色:跟随主题 + 六套主题各一枚小图标 */
   const tintPick = () => `<span class="ico-tints" role="radiogroup" aria-label="图标配色"><span class="ico-sw fol ${cur('icoTint') === 'follow' ? 'on' : ''}" data-act="ico-tint" data-v="follow" tabindex="0" data-tip="跟随当前主题"><i class="ring"></i></span>${THEMES.map(t => `<span class="ico-sw ${cur('icoTint') === t.id ? 'on' : ''}" data-act="ico-tint" data-v="${t.id}" tabindex="0" data-tip="${t.name} · ${t.sub}">${app({ t: t.id, m: 'auto', z: 34, flat: 1 })}</span>`).join('')}</span>`;
   /** 浅 / 深两张壁纸上的 Dock 预览 + 各尺寸并排,设置里改选项时实时变 */
   const previewDocks = () => `<div class="ico-prev">${['l', 'd'].map(k => `<div class="wall wall-${k}"><div class="mk-dock ${k === 'd' ? 'd' : ''}"><span class="dk sm"><i class="gen-ic" style="--h:${k === 'l' ? 205 : 255}"></i></span><span class="dk run">${app({ z: 56 })}</span><span class="dk sm"><i class="gen-ic" style="--h:${k === 'l' ? 340 : 160}"></i></span></div><div class="sz">${app({ z: 40 })}${app({ z: 24 })}${app({ z: 16 })}</div></div>`).join('')}</div>`;
+  /** 动态预览:Dock + 浅 / 深菜单栏三处用同一个样式播放某个托盘状态;遵守「Dock 角标 / 弹跳 / 运行中动画 / 彩色徽标 / 显示数字」设置。state = TRAY_STATES 的 id */
+  const liveInner = (id) => {
+    const bd = cur('dockBadge'), n = bd === 'pending' && id === 'waiting' ? 2 : bd === 'running' && (id === 'running' || id === 'waiting') ? 1 : 0;
+    const bounce = id === 'waiting' && cur('dockBounce') !== 'off', cnt = +cur('trayCount') ? (id === 'waiting' ? 2 : id === 'running' ? 1 : '') : '';
+    const bar = (k) => `<div class="blv-bar ${k}"><i></i><i></i>${tray({ state: id, z: 20 })}${cnt ? `<b>${cnt}</b>` : ''}</div>`;
+    const pins = `<div class="blv-pins"><span class="chip ${S().brandPin ? '' : 'on'}" data-act="brand-pin" data-v="">自动循环</span>${TRAY_STATES.map(([k, n2]) => `<span class="chip ${S().brandPin === k ? 'on' : ''}" data-act="brand-pin" data-v="${k}">${n2}</span>`).join('')}</div>`;
+    const d = TRAY_STATES.find(x => x[0] === id) || TRAY_STATES[0];
+    return `<div class="blv-row"><div><div class="wall wall-l blv-wall"><div class="mk-dock"><span class="dk run ${bounce ? 'bounce' : ''}">${app({ z: 56 })}${n ? `<b class="dk-badge">${n}</b>` : ''}</span></div></div><span class="t4 fs-micro">Dock</span></div><div style="flex:1;min-width:160px"><div class="blv-bar l"><i></i><i></i>${tray({ state: id, z: 20 })}${cnt ? `<b>${cnt}</b>` : ''}</div><span class="t4 fs-micro">浅色菜单栏</span></div><div style="flex:1;min-width:160px">${bar('d')}<span class="t4 fs-micro">深色菜单栏</span></div></div>${pins}<div class="t3 fs-cap">${d[1]}:${d[2]}</div>`;
+  };
+  const live = () => `<div class="blv" data-blv>${liveInner(S().brandPin || 'idle')}</div>`;
+  /** 锁定版式:tile = 图标本体的边长。图标本体撑满布局盒,间距 = tile / 8,字号 = tile × .58,外圈虚线 = 安全留白(tile / 4) */
+  const lockup = (tile, vertical = false) => `<span class="lockup ${vertical ? 'v' : ''}" style="--tile:${tile}px">${app({ z: Math.round(tile / .8047), flat: tile < 40 ? 1 : undefined })}<span class="wm">MiniCode</span></span>`;
   /** 分段:取值写在 OPT 里,data-ikey 告诉交互层改的是哪个偏好 */
   const segOpt = (key, labels) => seg(labels, Math.max(0, OPT[key].indexOf(cur(key))), '', 'ico-opt').replace('<div class="seg ', `<div data-ikey="${key}" class="seg `);
   const togOpt = (key) => tog(+cur(key) ? 1 : 0, `data-live="ico" data-ikey="${key}"`);
 
-  window.U.brand = { app, tray, appSvg, traySvg, refresh, logo, STYLES, TRAYS, TRAY_STATES, PAL, OPT, DEF, cur, resolve, themeOf, styleName, pickApp, pickTray, tintPick, previewDocks, segOpt, togOpt, ART, weaveParts, SQ, mix, uidNext: () => 'bu' + (++uid) };
+  window.U.brand = { app, tray, appSvg, traySvg, refresh, logo, STYLES, TRAYS, TRAY_STATES, PAL, OPT, DEF, cur, resolve, themeOf, styleName, pickApp, live, liveInner, lockup, tintPick, previewDocks, segOpt, togOpt, ART, weaveParts, SQ, mix, uidNext: () => 'bu' + (++uid) };
 })();

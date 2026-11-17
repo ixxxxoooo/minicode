@@ -28,7 +28,7 @@
 
   /** 读取上次的选择(存不了就用默认值) */
   const load = () => {
-    const d = { page: 'overview', scheme: 'a', theme: 'paper', mode: 'agent', setTab: 'appearance', cust: 'mcp', cuSel: 0, cuScope: 'all', cuTab: '', auSel: 1, auF: 0, wkOff: 0, useR: 1, bare: 0, ws: '', ov: '', right: '', panel: '', panelKind: '', unified: '', staged: '', sel: '', scroll: '', sticky: '', cmenu: '', icoStyle: 'prompt', icoMode: 'auto', icoTint: 'follow', trayStyle: 'prompt' };
+    const d = { page: 'overview', scheme: 'a', theme: 'paper', mode: 'agent', setTab: 'appearance', cust: 'mcp', cuSel: 0, cuScope: 'all', cuTab: '', auSel: 1, auF: 0, wkOff: 0, useR: 1, bare: 0, ws: '', ov: '', right: '', panel: '', panelKind: '', unified: '', staged: '', sel: '', scroll: '', sticky: '', cmenu: '', icoStyle: 'prompt', icoMode: 'auto', icoTint: 'follow', brandPin: '' };
     try { Object.assign(d, JSON.parse(localStorage.getItem('mc-design-v3c') || '{}')); } catch (e) { /* 读不到就用默认值 */ }
     // 地址栏 #page=work&scheme=b&theme=ink&mode=ide 可直达某个状态,方便分享与截图
     new URLSearchParams(location.hash.slice(1)).forEach((v, k) => { if (k in d) d[k] = v; });

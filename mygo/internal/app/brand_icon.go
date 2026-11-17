@@ -115,10 +115,14 @@ func (a *App) dockIconData(dark bool) []byte {
 func (a *App) setDockIconFromPrefs(dark bool) {
 	data := a.dockIconData(dark)
 	if len(data) == 0 {
+		a.brand.dockState = "失败:没有找到图标素材,保持包内默认图标"
 		brandLog.Warn("没有找到可用的 Dock 图标素材,保持包内默认图标")
 		return
 	}
 	if err := mygo.App.Dock.SetIcon(data); err != nil {
+		a.brand.dockState = "失败:" + err.Error()
 		brandLog.Warn("设置 Dock 图标失败", "err", err)
+		return
 	}
+	a.brand.dockState = "已套用"
 }

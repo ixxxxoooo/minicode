@@ -71,11 +71,12 @@ var setNavGroups = []struct {
 
 // settingsState 是设置页自己的临时状态。
 type settingsState struct {
-	query   string
-	bufs    map[string]*string // 输入框的编辑缓冲(键 → 文本)
-	restart map[string]bool    // 改过且需要重启的项
-	mainSt  ui.ScrollState
-	lastTab string
+	brandPin string // 设置 → 图标:动态预览固定在哪个托盘状态(空 = 自动循环)
+	query    string
+	bufs     map[string]*string // 输入框的编辑缓冲(键 → 文本)
+	restart  map[string]bool    // 改过且需要重启的项
+	mainSt   ui.ScrollState
+	lastTab  string
 	// 搜索跳转高亮
 	jumpKey    string
 	flashKey   string

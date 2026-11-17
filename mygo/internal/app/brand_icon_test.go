@@ -46,10 +46,10 @@ func TestEmbeddedThemeIconsComplete(t *testing.T) {
 	}
 }
 
-// 四种托盘样式 × 全部状态(含运行动画三帧)的内嵌素材必须齐全。
+// 五种托盘样式(与应用图标样式一一对应) × 全部状态(含运行动画三帧)的内嵌素材必须齐全。
 func TestEmbeddedTrayIconsComplete(t *testing.T) {
 	states := []string{"idle", "running", "running-0", "running-1", "running-2", "waiting", "unread", "error", "update", "paused", "demo"}
-	for si := range trayStyles {
+	for si := range appStyles {
 		pre := "tray"
 		if si > 0 {
 			pre = "tray-s" + itoa(si)
@@ -119,7 +119,7 @@ func TestTrayAssetName(t *testing.T) {
 	if n := a.trayAssetName(traySum{mode: "waiting"}, 0); n != "tray-waiting.png" {
 		t.Fatalf("默认样式: %s", n)
 	}
-	a.prefs.Set(pTrayStyle, 2)
+	a.prefs.Set(pAppStyle, 2) // 菜单栏图标样式 = 应用图标样式
 	if n := a.trayAssetName(traySum{mode: "error"}, 0); n != "tray-s2-error.png" {
 		t.Fatalf("样式 2: %s", n)
 	}
@@ -217,45 +217,100 @@ func TestBrandLogoSource(t *testing.T) {
 	}
 }
 
-// 默认样式是提示符;删掉织纹前保存的样式下标只迁移一次,选过的样式换算后保持不变。
+// 默认样式是提示符;删掉织纹前保存的样式下标只迁移一次,选过的样式换算后保持不变;
+// 菜单栏图标的独立样式偏好被清掉(一律跟随应用图标样式)。
 func TestIconStyleDefaultsAndMigration(t *testing.T) {
-	if appStyles[0] != "提示符" || trayStyles[0] != "提示符" {
-		t.Fatalf("默认应为提示符: %v / %v", appStyles, trayStyles)
+	if appStyles[0] != "提示符" || len(appStyles) != 5 {
+		t.Fatalf("默认应为提示符且共五种: %v", appStyles)
 	}
-	for _, s := range append(append([]string{}, appStyles...), trayStyles...) {
+	for _, s := range appStyles {
 		if s == "织纹" {
 			t.Fatal("织纹应已删除")
 		}
 	}
-	cases := []struct{ oldApp, oldTray, newApp, newTray int }{
-		{0, 0, 0, 0}, // 织纹 → 提示符
-		{1, 1, 1, 0}, // 经纬保持;托盘提示符
-		{2, 2, 0, 1}, // 提示符;托盘棋盘
-		{3, 3, 2, 2}, // 棋盘;托盘行
-		{4, 4, 3, 3}, // 行;托盘花括号
-		{5, 0, 4, 0}, // 花括号
+	cases := []struct{ oldApp, newApp int }{
+		{0, 0}, // 织纹 → 提示符
+		{1, 1}, // 经纬保持
+		{2, 0}, // 提示符
+		{3, 2}, // 棋盘
+		{4, 3}, // 行
+		{5, 4}, // 花括号
 	}
 	for _, c := range cases {
 		p := prefs.Memory()
 		p.Set(pAppStyle, c.oldApp)
-		p.Set(pTrayStyle, c.oldTray)
+		p.Set(pTrayStyleLegacy, 2)
 		migrateIconStyles(p)
 		if got := p.Int(pAppStyle, 0); got != c.newApp {
 			t.Errorf("应用图标 %d 应迁移成 %d,得到 %d", c.oldApp, c.newApp, got)
 		}
-		if got := p.Int(pTrayStyle, 0); got != c.newTray {
-			t.Errorf("托盘图标 %d 应迁移成 %d,得到 %d", c.oldTray, c.newTray, got)
+		if p.Has(pTrayStyleLegacy) {
+			t.Errorf("独立的菜单栏样式偏好应被清掉")
 		}
 		// 再迁移一次不能再动
 		migrateIconStyles(p)
-		if p.Int(pAppStyle, 0) != c.newApp || p.Int(pTrayStyle, 0) != c.newTray {
+		if p.Int(pAppStyle, 0) != c.newApp {
 			t.Errorf("迁移应只做一次: %+v", c)
 		}
 	}
-	// 从没选过:不写样式键,默认就是提示符
+	// 已经是版本 2 的人(应用样式已是新编号):只清菜单栏旧键,应用样式保持
 	p := prefs.Memory()
+	p.Set(pIconStyleRev, 2)
+	p.Set(pAppStyle, 3)
+	p.Set(pTrayStyleLegacy, 1)
 	migrateIconStyles(p)
-	if p.Has(pAppStyle) || p.Has(pTrayStyle) {
+	if p.Int(pAppStyle, 0) != 3 || p.Has(pTrayStyleLegacy) {
+		t.Fatalf("版本 2 的偏好只应清掉菜单栏旧键: app=%d legacy=%v", p.Int(pAppStyle, 0), p.Has(pTrayStyleLegacy))
+	}
+	// 从没选过:不写样式键,默认就是提示符
+	p = prefs.Memory()
+	migrateIconStyles(p)
+	if p.Has(pAppStyle) || p.Has(pTrayStyleLegacy) {
 		t.Fatal("没选过的人不应被写入样式键")
+	}
+}
+
+// 应用图标与菜单栏图标必须是同一种样式:改一个偏好,Dock 图标素材与托盘素材同时跟着变,任何一种样式都不缺托盘素材。
+func TestAppAndTrayStyleStayInSync(t *testing.T) {
+	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true, Prefs: prefs.Memory()})
+	for si, name := range appStyles {
+		a.prefs.Set(pAppStyle, si)
+		if got := a.trayStyleIndex(); got != si {
+			t.Fatalf("样式 %s:菜单栏样式 %d 应等于应用图标样式 %d", name, got, si)
+		}
+		if got := a.appIconName(si); !embeddedHas(got) {
+			t.Errorf("样式 %s 缺应用图标素材 %s", name, got)
+		}
+		asset := a.trayAssetName(traySum{mode: "idle"}, 0)
+		if !embeddedHas(asset) {
+			t.Errorf("样式 %s 缺菜单栏素材 %s", name, asset)
+		}
+		if want := trayFileName(si, "idle"); asset != want {
+			t.Errorf("样式 %s 的托盘素材应为 %s,得到 %s", name, want, asset)
+		}
+	}
+}
+
+// 动态预览用到的几个纯函数:弹跳曲线(一次 / 直到处理)、托盘渲染与真实托盘共用同一处。
+func TestBrandLiveBounceAndRender(t *testing.T) {
+	if h := brandBounceDy(0, 100); h != 0 {
+		t.Fatalf("不弹时位移应为 0,得到 %v", h)
+	}
+	if brandBounceDy(1, 350) >= -10 {
+		t.Fatalf("一次弹跳中点应明显抬起,得到 %v", brandBounceDy(1, 350))
+	}
+	if brandBounceDy(1, 800) != 0 {
+		t.Fatalf("一次弹跳结束后应落回原位,得到 %v", brandBounceDy(1, 800))
+	}
+	if brandBounceDy(2, 1100+350) >= -10 {
+		t.Fatalf("「直到处理」第二轮也应在弹,得到 %v", brandBounceDy(2, 1450))
+	}
+	a := New(Options{Palette: "paper", Scheme: "a", FakeLights: true, Prefs: prefs.Memory()})
+	for si := range appStyles {
+		for _, st := range trayStateList {
+			if a.brandTraySrc(si, st.id, 5, false) == nil || a.brandTraySrc(si, st.id, 5, true) == nil {
+				t.Errorf("样式 %d 状态 %s 的动态预览图为空", si, st.id)
+			}
+		}
 	}
 }

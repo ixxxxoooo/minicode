@@ -15,8 +15,8 @@
 @keyframes tr-flow { 0%, 100% { opacity: 1; } 40% { opacity: .3; } }
 @keyframes tr-breathe { 0%, 100% { opacity: 1; } 50% { opacity: .38; } }
 @keyframes dk-bounce { 0%, 55%, 100% { translate: 0 0; } 20% { translate: 0 -15px; } 38% { translate: 0 0; } 46% { translate: 0 -5px; } }
-.bi-tray.flow .lv { animation: tr-flow 1.5s var(--ease-io) infinite; animation-delay: calc(var(--d, 0) * .17s); }
-.bi-tray.breathe { animation: tr-breathe 2.2s var(--ease-io) infinite; }
+.bi-tray.tr-flow .lv { animation: tr-flow 1.5s var(--ease-io) infinite; animation-delay: calc(var(--d, 0) * .17s); }
+.bi-tray.tr-breathe { animation: tr-breathe 2.2s var(--ease-io) infinite; }
 body.no-motion .bi-tray .lv, body.no-motion .bi-tray, body.no-motion .dk.bounce { animation: none !important; }
 @media (prefers-reduced-motion: reduce) { .bi-tray .lv, .bi-tray, .dk.bounce { animation: none !important; } }
 
@@ -79,8 +79,8 @@ body.no-motion .bi-tray .lv, body.no-motion .bi-tray, body.no-motion .dk.bounce 
 .dmg { width: 100%; height: 218px; border-radius: 10px; overflow: hidden; position: relative; background: linear-gradient(180deg, #f7f6f2, #e6e3da); box-shadow: 0 0 0 .5px rgba(0, 0, 0, .2), 0 14px 34px -10px rgba(0, 0, 0, .3); color: rgba(0, 0, 0, .78); font: 12px/1.4 var(--font-ui); }
 .dmg .tb { height: 26px; display: flex; align-items: center; padding: 0 10px; background: rgba(255, 255, 255, .5); box-shadow: inset 0 -1px rgba(0, 0, 0, .08); }
 .dmg .tb b { position: absolute; left: 0; right: 0; text-align: center; font-weight: 600; font-size: 12px; pointer-events: none; }
-.dmg .stage { position: absolute; inset: 26px 0 0; display: flex; align-items: center; justify-content: center; gap: 56px; padding-bottom: 18px; }
-.dmg .stage .fi { display: flex; flex-direction: column; align-items: center; gap: 0; font-size: 12px; font-weight: 500; }
+.dmg .stage { position: absolute; inset: 26px 0 0; display: flex; align-items: center; justify-content: center; gap: 28px; padding-bottom: 18px; }
+.dmg .stage .fi { display: flex; flex-direction: column; align-items: center; gap: 0; font-size: 12px; font-weight: 500; flex: none; white-space: nowrap; }
 .dmg .stage .fi .bi-svg { width: 118px; height: 118px; margin: -10px; }
 .dmg .arr { width: 64px; height: 24px; flex: none; color: rgba(0, 0, 0, .3); }
 .dmg .hint { position: absolute; left: 0; right: 0; bottom: 12px; text-align: center; font-size: 11.5px; opacity: .55; }
@@ -109,11 +109,6 @@ body.no-motion .bi-tray .lv, body.no-motion .bi-tray, body.no-motion .dk.bounce 
 .mb-chip.l { background: #e9e9ee; color: rgba(0, 0, 0, .86); } .mb-chip.d { background: #2a2a31; color: rgba(255, 255, 255, .92); }
 .mb-chip.sel { background: rgba(0, 0, 0, .3); color: #fff; } .mb-chip.dsel { background: rgba(255, 255, 255, .26); color: #fff; }
 .mb-chip.w { background: linear-gradient(120deg, #c9d6f2, #efd8e6); color: rgba(0, 0, 0, .86); }
-.tray-pick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-.tray-card { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 8px 4px 7px; border-radius: var(--r-md); cursor: pointer; box-shadow: inset 0 0 0 1px var(--bd-2); transition: box-shadow var(--dur-fast), background var(--dur-fast), transform var(--dur-instant); }
-.tray-card:hover { box-shadow: inset 0 0 0 1px var(--bd-3); background: var(--fill-1); } .tray-card:active { transform: scale(.98); }
-.tray-card.on { box-shadow: inset 0 0 0 1.5px var(--ac); background: var(--ac-soft); }
-.tray-card .pr { display: flex; gap: 4px; } .tray-card b { font-size: 11.5px; } .tray-card span.en { font-size: 10px; color: var(--tx-3); margin-top: -4px; }
 
 /* NSMenu */
 .nsmenu { width: 100%; max-width: 236px; padding: 5px; border-radius: 10px; background: rgba(246, 246, 249, .84); backdrop-filter: blur(30px) saturate(1.8); box-shadow: 0 0 0 .5px rgba(0, 0, 0, .18), 0 14px 34px -6px rgba(0, 0, 0, .3); color: rgba(0, 0, 0, .88); font: 13px/1 -apple-system, "SF Pro Text", "PingFang SC", sans-serif; box-sizing: border-box; }
@@ -145,6 +140,8 @@ body.no-motion .bi-tray .lv, body.no-motion .bi-tray, body.no-motion .dk.bounce 
 .ico-card:hover { box-shadow: inset 0 0 0 1px var(--bd-3); background: var(--fill-1); } .ico-card:active { transform: scale(.98); }
 .ico-card.on { box-shadow: inset 0 0 0 1.5px var(--ac); background: var(--ac-soft); }
 .ico-card .bi-svg { transition: transform var(--dur-base) var(--ease-spring); margin: -4px 0; } .ico-card:hover .bi-svg { transform: scale(1.07); }
+.ico-card .pr { display: flex; gap: 4px; margin: 4px 0 1px; } .ico-card .pr .mb-chip { min-width: 34px; height: 22px; padding: 0 6px; border-radius: 5px; }
+.ico-card:hover .tr-hov .lv, .ico-card.on .tr-hov .lv { animation: tr-flow 1.5s var(--ease-io) infinite; animation-delay: calc(var(--d, 0) * .17s); }
 .ico-card b { font-size: 11.5px; margin-top: 2px; } .ico-card span { font-size: 10px; color: var(--tx-3); }
 .ico-card.big { padding: 14px 10px 12px; gap: 3px; align-items: center; } .ico-card.big .bi-svg { margin: -8px 0; } .ico-card.big p { margin: 4px 0 0; color: var(--tx-3); font-size: 11px; line-height: 1.5; }
 .ico-prev { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -168,8 +165,23 @@ body.no-motion .bi-tray .lv, body.no-motion .bi-tray, body.no-motion .dk.bounce 
 .usage-card { padding: 14px; border-radius: var(--r-lg); background: var(--bg); box-shadow: var(--sh-1); min-height: 130px; display: flex; flex-direction: column; gap: 8px; }
 .brand-load { display: inline-flex; align-items: center; gap: 8px; color: var(--ac); }
 .halo { position: relative; display: inline-grid; place-items: center; } .halo::before { content: ""; position: absolute; inset: -26px; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--ac) 30%, transparent), transparent); }
-.lockup { display: inline-flex; align-items: center; gap: 2px; font: 600 26px/1 var(--font-ui); letter-spacing: -.025em; } .lockup .bi-svg { margin: -8px; }
-.lockup.v { flex-direction: column; font-size: 24px; gap: 0; } .lockup.v .bi-svg { margin: -14px; }
+/* 锁定版式:图标本体(824 / 1024)撑满布局盒,所以按 --tile 反推图标画布与负边距;图标与字标间距 = 本体宽 / 8;字号 = 本体宽 × .58;
+   外面一圈虚线 = 安全留白(本体宽 / 4)。图标的投影与高光溢出布局盒,不参与间距计算。 */
+.lockup { --tile: 44px; display: inline-flex; align-items: center; gap: calc(var(--tile) / 8); padding: calc(var(--tile) / 4); border-radius: 6px; outline: 1px dashed var(--bd-2); outline-offset: -1px;
+  font: 600 calc(var(--tile) * .58)/1 var(--font-ui); letter-spacing: -.025em; white-space: nowrap; color: var(--tx-1); }
+.lockup .bi { width: var(--tile); height: var(--tile); display: block; position: relative; }
+.lockup .bi-svg { position: absolute; left: 50%; top: 50%; translate: -50% -50%; max-width: none; }
+.lockup .wm { display: block; padding-bottom: .06em; }  /* SF 的字形视觉重心略偏下,抬 .06em 与图标中心对齐 */
+.lockup.v { flex-direction: column; text-align: center; }
+.blv { display: flex; flex-direction: column; gap: 10px; }
+.blv-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
+.blv-row > div { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.blv-wall { width: 112px; height: 72px; display: grid; place-items: end center; padding-bottom: 6px; }
+.blv-bar { display: flex; justify-content: flex-end; align-items: center; gap: 6px; height: 28px; min-width: 150px; padding: 0 10px; border-radius: 6px; }
+.blv-bar.l { background: #eee; color: #222; } .blv-bar.d { background: #2a2a2c; color: #f2f2f4; }
+.blv-bar i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .22; }
+.blv-bar b { font: 500 12px/1 -apple-system, "SF Pro Text", sans-serif; }
+.blv-pins { display: flex; flex-wrap: wrap; gap: 4px; }
 .dim-t { font: 600 24px var(--font-mono); fill: var(--ac-tx); }
 .kcode { font: 11px var(--font-mono); color: var(--tx-2); background: var(--fill-1); padding: 1px 5px; border-radius: var(--r-xs); }
 @container (max-width: 700px) { .bg-hero { grid-template-columns: 1fr; } }

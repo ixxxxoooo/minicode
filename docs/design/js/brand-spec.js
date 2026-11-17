@@ -92,9 +92,9 @@
       `<div>${cap('Spotlight')}<div class="wall wall-l wall-c" style="height:176px"><div class="spot"><div class="q"><span>mini</span><span class="caret-b"></span></div><div class="r on">${app({ z: 44 })}<span>MiniCode</span><small>应用程序</small></div><div class="r"><i class="gen-ic" style="--h:150;width:30px;height:30px"></i><span>MiniTool</span><small>应用程序</small></div></div></div></div>`,
       `<div>${cap('访达 · 侧栏 / 列表 / 图标')}<div class="wall wall-l wall-c" style="height:176px"><div class="fndr"><div class="sb"><h6>个人收藏</h6><div class="it on">${app({ z: 20, flat: 1 })}应用程序</div><div class="it">下载</div></div><div class="mn"><div class="rw sm">${app({ z: 20, flat: 1 })}MiniCode.app<small>0.2.0</small></div><div class="rw on">${app({ z: 50 })}MiniCode<small>应用程序</small></div></div></div></div></div>`))}
 
-    ${sec('窗口与安装盘', '关于窗口是应用自绘的(图标 96,随主题走);安装盘背景是固定的浅色画面,图标取浅色外观、不随主题变,避免用户在不同机器上看到不同的安装界面。', cards(2,
-      `<div>${cap('关于 MiniCode')}<div class="wall wall-c" style="height:272px;background:var(--bg-sunken)"><div class="about-w"><span class="tl"><i></i><i></i><i></i></span>${app({ z: 116 })}<b class="fs-head" style="margin-top:2px">MiniCode</b><span class="t3 fs-cap">版本 0.2.0(构建 4f2a91c)<br>构建于 3 天前</span><span style="display:flex;gap:6px;margin-top:6px">${btn('检查更新', 'sm', 'refresh')}${btn('复制版本信息', 'sm ghost', 'copy')}</span></div></div></div>`,
-      `<div>${cap('MiniCode-0.2.0.dmg')}<div class="wall wall-l wall-c" style="height:272px"><div class="dmg" style="width:100%"><div class="tb"><span class="tl"><i></i><i></i><i></i></span><b>MiniCode</b></div><div class="stage"><div class="fi">${app({ z: 118, m: 'light', t: 'paper' })}MiniCode</div><svg class="arr" viewBox="0 0 64 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h54M48 4l10 8-10 8"/></svg><div class="fi"><span class="fold-ic"></span>应用程序</div></div><div class="hint">将 MiniCode 拖到「应用程序」文件夹</div></div></div></div>`))}
+    ${sec('窗口与安装盘', '关于窗口是应用自绘的(顶部是横版锁定版式,图标本体 52,随主题走;README 顶部是同一个版式);安装盘背景是固定的浅色画面,图标取浅色外观、不随主题变,避免用户在不同机器上看到不同的安装界面。', cards(2,
+      `<div>${cap('关于 MiniCode')}<div class="wall wall-c" style="height:272px;background:var(--bg-sunken)"><div class="about-w"><span class="tl"><i></i><i></i><i></i></span><span style="margin:10px 0 6px">${B.lockup(52)}</span><span class="t3 fs-cap">版本 0.3.1(构建 4f2a91c)<br>构建于 3 天前</span><span style="display:flex;gap:6px;margin-top:6px">${btn('检查更新', 'sm', 'refresh')}${btn('复制版本信息', 'sm ghost', 'copy')}</span></div></div></div>`,
+      `<div>${cap('MiniCode-0.3.1.dmg')}<div class="wall wall-l wall-c" style="height:272px"><div class="dmg" style="width:100%"><div class="tb"><span class="tl"><i></i><i></i><i></i></span><b>MiniCode</b></div><div class="stage"><div class="fi">${app({ z: 118, m: 'light', t: 'paper' })}MiniCode</div><svg class="arr" viewBox="0 0 64 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h54M48 4l10 8-10 8"/></svg><div class="fi"><span class="fold-ic"></span>应用程序</div></div><div class="hint">将 MiniCode 拖到「应用程序」文件夹</div></div></div></div>`))}
 
     ${sec('通知横幅', '通知图标一律是应用图标(系统取包内的图标,不是运行时换上的)。标题放项目名,正文一句话,不堆符号;需要你拍板的通知带「允许 / 拒绝」动作,并标成「时效性」,可穿透专注模式。', cards(3,
       `<div>${cap('回合完成')}<div class="wall wall-l wall-c" style="height:122px"><div class="notif"><div class="ni">${app({ z: 48, flat: 1 })}</div><div class="nb"><b>router-demo</b><p>已完成:修复路径匹配的大小写问题,3 个文件有改动。</p></div><span class="nt">现在</span></div></div></div>`,
@@ -106,7 +106,7 @@
       `<div class="usage-card">${cap('徽标规范')}${tbl([['徽标', 90], ['形状与位置']], [['待确认', '右上角 12.8 px 实心圆 + 镂空「!」'], ['已完成', '右上角 9 px 实心圆,无符号'], ['出错', '圆 + 镂空「×」'], ['更新', '圆 + 镂空向下箭头'], ['暂停 / 演示', '半透明主体 + 暂停符;演示为空心圆环']])}${why('徽标周围先镂空 2.3 px 再画,保证和主体之间有缝;符号用镂空而不是描线,小尺寸不糊。')}</div>`,
       `<div class="usage-card">${cap('彩色徽标(可选)')}<div class="f g3 ai" style="margin:2px 0 4px">${['waiting', 'done', 'error', 'update'].map(s => `<span class="mb-chip w">${tray({ state: s, z: 22, col: 1 })}</span>`).join('')}</div>${why('开启后徽标用系统语义色(橙 / 绿 / 红 / 蓝),主体仍是模板图,因此整体不再是纯模板——我们在 NSAppearance 变化时重绘一次。徽标形状始终不变,色弱用户不依赖颜色也能分辨;「减弱透明度 / 增强对比度」时自动回退成纯模板。')}</div>`))}
 
-    ${sec('菜单栏图标样式 · 四选一', '与应用图标是同一个图形的单色版(「经纬」图形太密,菜单栏里不单列)。点卡片即换,每张同时给出浅色与深色菜单栏上的样子。', `<div class="usage-card" style="padding:12px">${B.pickTray()}</div>`)}
+    ${sec('图标样式 · 应用图标与菜单栏图标同步', '菜单栏图标与应用图标是同一个图形的单色版,五种样式一一对应(「经纬」也有菜单栏版:2×2 织纹缩小后经线常亮、纬线两行轮流点亮)。样式只有一个选择:点上面「应用图标样式」的卡片,Dock、⌘Tab、访达、菜单栏同时换,不会出现两处不一致。下面是实时的动态预览:三处同步播放同一个状态,遵守设置里的「Dock 角标 / 弹跳 / 运行中动画 / 彩色徽标 / 显示数字」。', `<div class="usage-card" style="padding:12px">${B.live()}</div>`)}
 
     ${sec('托盘状态矩阵', '八个状态、四种背景:浅色菜单栏、深色菜单栏、被点开时的高亮底、以及彩色徽标版(壁纸上)。优先级:待确认 > 出错 > 已完成 > 运行中 > 有更新 > 暂停 > 空闲(演示是叠加标记,与其余并存时只留一个徽标,保留演示环)。',
       tbl([['状态', 78], ['浅色', 70], ['深色', 70], ['点开', 70], ['彩色', 70], ['何时出现']], B.TRAY_STATES.map(([id, n, d]) => [n,
@@ -131,7 +131,7 @@
       `<div class="usage-card">${cap('标题栏 / 侧栏小标', '18 px')}<div class="f ai g3" style="height:34px;padding:0 12px;border-radius:var(--r-md);background:var(--bg-chrome);box-shadow:inset 0 0 0 1px var(--bd-1)"><span class="tl"><i></i><i></i><i></i></span>${B.logo(18)}<b>router-demo</b><span class="t4 fs-cap">main</span></div>${why('图标本体 18 px、无投影无高光;和标题文字同一基线,不加背景块。')}</div>`,
       `<div class="usage-card" style="align-items:center;text-align:center">${cap('欢迎页', '64 px · 光晕取强调色')}<span class="halo" style="margin:14px 0 10px">${B.logo(64)}</span><b class="fs-head">今天想做点什么?</b><span class="t3 fs-cap">只在没有任何内容的新会话里出现一次</span></div>`,
       `<div class="usage-card">${cap('加载 / 空状态', '同源动画')}<div class="brand-load">${tray({ s: 'prompt', state: 'running', z: 22, anim: 'flow' })}<span class="t2">正在启动 claude…</span></div><div class="fc ai g2" style="margin-top:8px;color:var(--tx-4)">${tray({ s: 'prompt', z: 44 })}<span class="t3 fs-cap">还没有会话</span></div>${why('这段动画就是菜单栏「运行中」的那一套,用来替代通用转圈;空状态用 25% 的单色图形,不抢内容。')}</div>`))}
-    ${cards(2, `<div class="usage-card">${cap('锁定版式 · 横 / 竖')}<div class="f g6 ai" style="gap:36px;flex-wrap:wrap"><span class="lockup">${app({ z: 56 })}MiniCode</span><span class="lockup v">${app({ z: 76 })}MiniCode</span></div>${why('字标用系统 SF Pro Semibold、字距 −2.5%,不另造字体。图标与字标间距 = 图标本体宽的 1/8;安全留白 = 图标本体宽的 1/4。')}</div>`,
+    ${cards(2, `<div class="usage-card">${cap('锁定版式 · 横 / 竖', '虚线 = 安全留白')}<div class="f g6 ai" style="gap:28px;flex-wrap:wrap;align-items:center">${B.lockup(44)}${B.lockup(60, true)}</div>${why('字标用系统 SF Pro Semibold、字距 −2.5%,不另造字体。图标与字标间距 = 图标本体宽的 1/8;安全留白 = 图标本体宽的 1/4。')}</div>`,
       `<div class="usage-card">${cap('不要这样用')}${tbl([['错误', 150], ['原因']], [['给图标再加一圈描边 / 背景块', '系统已有图形遮罩;重复会变成「图标里套图标」'], ['把线头裁掉', '线头是识别点,去掉就只剩一个格子'], ['拉伸或改比例', '连续圆角与线宽比例会失真'], ['在图标上叠文字', '名字交给标签;状态交给角标'], ['用彩色图标做菜单栏主体', '模板图才能适配深浅与选中态']])}</div>`)}
 
     ${sec('设置里怎么换', '入口在 设置 → 应用与菜单栏图标(一项配置只有一个家;「通知」里只有跳转)。选了立刻生效,不需要重启。', `<div class="f g3" style="margin-bottom:10px">${btn('打开 设置 → 图标', 'pri', 'arrow', 'data-act="settab" data-tab="brand" data-goto="settings"')}<span class="t3 fs-cap" style="align-self:center">里面的预览(浅 / 深壁纸上的 Dock + 16 / 24 / 40 px)会随选项实时变化</span></div>
@@ -161,12 +161,13 @@
     ${sec('实现状态', '如实标出 Go 版(feat/mygo 分支)现在做到哪一步,避免设计稿与代码对不上。', tbl([['能力', 240], ['现状'], ['状态']], [
       ['应用图标:提示符(默认)浅 / 深 + .icns', 'brandassets 内嵌 + dockIconData 兜底磁盘/.icns;默认 MiniCode.icns / MiniCode-dark.icns', stt('ok')],
       ['运行时 Dock 图标随主题 / 系统深浅', 'retheme→syncBrand;appIconMode 自动=0 跟系统', stt('ok')],
-      ['图标样式 / 外观 / 配色偏好', 'app-style{0-4}[-dark|-clear|-tint].icns;样式 0 = 提示符(默认)。旧偏好里的下标启动时迁移一次(已删除织纹)', stt('ok')],
+      ['图标样式 / 外观 / 配色偏好', 'app-style{0-4}[-dark|-clear|-tint].icns;样式 0 = 提示符(默认)。旧偏好里的下标启动时迁移一次(已删除织纹);应用图标与菜单栏图标共用一个样式偏好,旧「菜单栏样式」偏好迁移后清除', stt('ok')],
+      ['设置里的动态预览与「当前生效」', 'brand_live.go:Dock + 浅 / 深菜单栏三处同步播放八态(自动循环 / 固定)、样式卡悬停播放;状态行显示 Dock / 访达 / 菜单栏的套用结果,失败给原因,「重新应用」强制重试;未测试', stt('part')],
       ['Dock 角标 / 弹跳 / 进度', 'syncDockBadge(SetBadge)·maybeDockBounce(仅 EvPromoteToPermission)·dockSetProgress(下载/偏好开时回合 0.35);问答待确认不弹跳;进度偏好默认关', stt('part')],
-      ['菜单栏图标(<span class="kcode">general.tray</span> 开关)', '五样式 × 八态 PNG 内嵌进二进制(不依赖工作目录)+ running 三帧 + 彩色徽标(随菜单栏深浅重绘);设置里有真实预览与八态条', stt('ok')],
-      ['托盘状态 / 动画 / 菜单 / 数字', 'brandSummarize 优先级与八态内嵌素材(样式 0–3)已接;出错/已完成 notice_sys+前台清除;MINI_TRAY 八种图标已 Computer Use 截图核对;菜单(按项目分组 + 四点 / 橙点 / 蓝点标记 + 重启,宽度 ≤ 236px)/暂停/数字/单击偏好已接;缺口:各样式无设计稿专属运行动效(仍用 running 三帧/静态图);应用内无品牌加载动画;未测菜单项图标库不渲染(用 emoji 状态点)', stt('part')],
+      ['菜单栏图标(<span class="kcode">general.tray</span> 开关)', '五样式(含经纬)× 八态 PNG 内嵌进二进制(不依赖工作目录)+ running 三帧 + 彩色徽标(随菜单栏深浅重绘);设置里有真实预览与八态条', stt('ok')],
+      ['托盘状态 / 动画 / 菜单 / 数字', 'brandSummarize 优先级与八态内嵌素材(样式 0–4)已接;出错/已完成 notice_sys+前台清除;MINI_TRAY 八种图标已 Computer Use 截图核对;菜单(按项目分组 + 四点 / 橙点 / 蓝点标记 + 重启,宽度 ≤ 236px)/暂停/数字/单击偏好已接(「打开窗口」时右键才弹菜单,改完立即生效);缺口:各样式无设计稿专属运行动效(仍用 running 三帧/静态图);应用内无品牌加载动画;未测菜单项图标库不渲染(用 emoji 状态点)', stt('part')],
       ['应用菜单栏(MiniCode / 文件 / 编辑 / 视图 / 窗口 / 帮助)', '标准项走系统角色(关于 / 服务 / 隐藏 / 退出 / 编辑 / 窗口 / 全屏);自定义项不挂快捷键,快捷键仍由应用内按用户设置分发;新建窗口 ⇧⌘N', stt('ok')],
       ['文件类型图标与关联', 'dev.sh Info.plist UTType + 文档 .icns;OnOpenFile 接 open_external.go:.mcworkspace 导入并进入 / .mccanvas 导入成新画布 / .mcsettings 弹确认后合并(剔除密钥键);冷启动先排队;出口:画布行 ··· / 工作区右键 / 设置 → 高级导出;go test 覆盖,真实双击待 Computer Use 实测', stt('part')],
-      ['应用内小标统一用应用图标', '欢迎 64px / 关于 96px brandLogo、IDE 空态 brandEmptyMark(托盘样式·25% 单色)已接;标题栏/侧栏 18px 小标未接(titlebar 仍无 brandLogo);未测试', stt('part')]]))}
+      ['应用内小标统一用应用图标', '欢迎 64px brandLogo、关于页横版锁定版式、IDE 空态 brandEmptyMark(托盘样式·25% 单色)已接;标题栏/侧栏 18px 小标未接(titlebar 仍无 brandLogo);未测试', stt('part')]]))}
     </div>`;
 })();

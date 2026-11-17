@@ -14,31 +14,46 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/kit"
 )
 
-// trayStyleIndex 菜单栏图标样式下标(提示符 / 棋盘 / 行 / 花括号),越界按默认 0。
-func (a *App) trayStyleIndex() int {
+// trayStyleIndex 菜单栏图标样式下标:与应用图标样式是同一个偏好(pAppStyle),越界按默认 0。
+// 选一次样式,Dock / ⌘Tab / 访达 / 菜单栏同时换成同一种,两者不可能不一致。
+func (a *App) trayStyleIndex() int { return a.iconStyleIndex() }
+
+// iconStyleIndex 当前图标样式下标(应用图标与菜单栏图标共用),越界按默认 0。
+func (a *App) iconStyleIndex() int {
 	if a.prefs == nil {
 		return 0
 	}
-	if i := a.prefs.Int(pTrayStyle, 0); i >= 0 && i < len(trayStyles) {
+	if i := a.prefs.Int(pAppStyle, 0); i >= 0 && i < len(appStyles) {
 		return i
 	}
 	return 0
 }
 
-// trayAssetName 当前托盘状态对应的素材文件名(样式 0 沿用 tray-<状态>.png,其余 tray-s<N>-<状态>.png)。
-func (a *App) trayAssetName(sum traySum, frame int) string {
-	mode := sum.mode
+// trayEffMode 托盘实际显示的模式:关掉「随会话状态变化」时永远是空闲。
+func (a *App) trayEffMode(mode string) string {
 	if a.prefs != nil && !a.prefs.Bool(pTrayDyn, true) {
-		mode = "idle" // 关掉「随会话状态变化」:永远是空闲图
+		return "idle"
 	}
+	return mode
+}
+
+// trayAssetFor 某样式、模式、动画帧对应的托盘素材名(样式 0 沿用 tray-<状态>.png,其余 tray-s<N>-<状态>.png);
+// stepped 为真且模式是运行中时取「逐段点亮」的三帧之一。
+func trayAssetFor(style int, mode string, frame int, stepped bool) string {
 	pre := "tray"
-	if i := a.trayStyleIndex(); i > 0 {
-		pre = "tray-s" + strconv.Itoa(i)
+	if style > 0 {
+		pre = "tray-s" + strconv.Itoa(style)
 	}
-	if mode == "running" && !a.trayAnimStatic() && a.trayAnimMode() == 0 {
-		return pre + "-running-" + strconv.Itoa(frame%3) + ".png" // 逐段点亮:三帧轮流点亮
+	if mode == "running" && stepped {
+		return pre + "-running-" + strconv.Itoa(frame%3) + ".png"
 	}
 	return pre + "-" + mode + ".png"
+}
+
+// trayAssetName 当前托盘状态对应的素材文件名。
+func (a *App) trayAssetName(sum traySum, frame int) string {
+	mode := a.trayEffMode(sum.mode)
+	return trayAssetFor(a.trayStyleIndex(), mode, frame, mode == "running" && !a.trayAnimStatic() && a.trayAnimMode() == 0)
 }
 
 // trayAnimMode 运行中动画:0 逐段点亮 / 1 呼吸 / 2 无。
@@ -56,6 +71,26 @@ func (a *App) trayAnimStatic() bool {
 	return a11yReduceMotion() || kit.SystemReduceMotion()
 }
 
+// trayBreathK 「呼吸」动画第 frame 帧的不透明度(一个周期 8 帧,在 45%~100% 之间起伏)。
+func trayBreathK(frame int) float64 {
+	ph := 2 * math.Pi * float64(frame%8) / 8
+	return 0.45 + 0.55*(0.5+0.5*math.Cos(ph))
+}
+
+// trayRender 把单色模板图按模式 / 呼吸 / 彩色徽标处理成最终要画的图:breath < 0 表示不做呼吸;
+// 有彩色徽标时返回非模板图(必须按菜单栏深浅 dark 上色),否则是模板图。真实托盘与设置里的动态预览共用这一处,所以两边一致。
+func trayRender(data []byte, mode string, breath float64, color, dark bool) ([]byte, bool) {
+	if breath >= 0 {
+		data = fadeTrayPNG(data, breath)
+	}
+	if color {
+		if tinted, ok := tintTrayPNG(data, mode, dark); ok {
+			return tinted, false
+		}
+	}
+	return data, true
+}
+
 // trayIconData 返回当前应显示的托盘图像与是否按模板图绘制。
 // 优先用内嵌素材,找不到再退回磁盘上的 assets/icon(开发时直接改素材即时生效)。
 func (a *App) trayIconData(sum traySum) (data []byte, template bool, err error) {
@@ -70,17 +105,13 @@ func (a *App) trayIconData(sum traySum) (data []byte, template bool, err error) 
 			return nil, true, err
 		}
 	}
-	if sum.mode == "running" && !a.trayAnimStatic() && a.trayAnimMode() == 1 {
-		// 呼吸:一个周期 8 帧,透明度在 45%~100% 之间起伏
-		ph := 2 * math.Pi * float64(a.brand.trayFrame%8) / 8
-		data = fadeTrayPNG(data, 0.45+0.55*(0.5+0.5*math.Cos(ph)))
+	mode := a.trayEffMode(sum.mode)
+	breath := -1.0
+	if mode == "running" && !a.trayAnimStatic() && a.trayAnimMode() == 1 {
+		breath = trayBreathK(a.brand.trayFrame)
 	}
-	if a.trayWantsColor() {
-		if tinted, ok := tintTrayPNG(data, sum.mode, a.trayMenuBarDark()); ok {
-			return tinted, false, nil
-		}
-	}
-	return data, true, nil
+	data, template = trayRender(data, mode, breath, a.trayWantsColor(), a.trayMenuBarDark())
+	return data, template, nil
 }
 
 // trayWantsColor 是否使用彩色徽标:偏好开启,且没有「增强对比度 / 降低透明度」。
@@ -377,7 +408,7 @@ func (a *App) scheduleTrayAnim() {
 		return
 	}
 	sum := a.brandSummarize()
-	if sum.mode != "running" {
+	if a.trayEffMode(sum.mode) != "running" {
 		return
 	}
 	if a.brand.animStop != nil {

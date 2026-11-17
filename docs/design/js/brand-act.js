@@ -7,11 +7,21 @@
   const ICO_KEYS = ['icoStyle', 'icoMode', 'icoTint'];
 
   /** 选项变了:重绘所有图标;应用图标相关的还要刷新顶栏小标 */
-  const changed = (key) => { B.refresh(); if (ICO_KEYS.includes(key)) A.renderBar(); A.save(); };
+  const changed = (key) => { B.refresh(); liveTick(); if (ICO_KEYS.includes(key)) A.renderBar(); A.save(); };
+
+  /* 动态预览(设置 → 图标、规范页):没固定状态时每 2.8 秒换一个托盘状态,三处(Dock / 浅 / 深菜单栏)同步播放;点状态胶囊可固定,再点「自动循环」恢复 */
+  let liveIdx = 0;
+  function liveTick(step) {
+    const ids = B.TRAY_STATES.map(x => x[0]);
+    if (step) liveIdx = (liveIdx + 1) % ids.length;
+    const id = st.brandPin || ids[liveIdx];
+    $$('[data-blv]').forEach(el => { el.innerHTML = B.liveInner(id); });
+  }
+  setInterval(() => liveTick(!st.brandPin), 2800);
+  ACT['brand-pin'] = (el) => { st.brandPin = el.dataset.v || ''; liveTick(); A.save(); };
   const sel = (sel, el, attr) => $$(sel).forEach(c => { const on = c.dataset[attr] === el.dataset[attr]; c.classList.toggle('on', on); c.setAttribute('aria-checked', on); });
 
   ACT['ico-style'] = (el) => { st.icoStyle = el.dataset.v; sel('[data-act="ico-style"]', el, 'v'); changed('icoStyle'); };
-  ACT['tray-style'] = (el) => { st.trayStyle = el.dataset.v; sel('[data-act="tray-style"]', el, 'v'); changed('trayStyle'); };
   ACT['ico-tint'] = (el) => { st.icoTint = el.dataset.v; sel('[data-act="ico-tint"]', el, 'v'); changed('icoTint'); };
   /** 分段:data-ikey 在容器上,取值查 OPT 表 */
   ACT['ico-opt'] = (el) => { const key = el.parentElement.dataset.ikey; if (!key) return; st[key] = B.OPT[key][+el.dataset.i]; changed(key); };

@@ -17,8 +17,9 @@ THEME_OUT = None  # 由 --theme-dir 指定:各主题配色图标的 SVG 输出�
 
 # Go appearance.appIcon 下标 → 样式 id(与设计稿 brand.js::STYLES、settings_brand.appStyles 顺序一致,默认下标 0 = 提示符)
 STYLES = ("prompt", "warp", "grid", "lines", "braces")
-# 菜单栏图标样式(设计稿 TRAYS = STYLES 去掉 warp);下标即 appearance.trayStyle
-TRAY_STYLES = ("prompt", "grid", "lines", "braces")
+# 菜单栏图标样式 = 应用图标样式(五种全有,下标一一对应):切换样式时 Dock 图标与菜单栏图标永远是同一种。
+# 托盘素材名 tray-s<下标>-<状态>.png(下标 0 沿用 tray-<状态>.png)
+TRAY_STYLES = STYLES
 APPEARANCES = ("light", "dark", "clear", "tint")
 TRAY_STATES = ("idle", "running", "waiting", "unread", "error", "update", "paused", "demo")
 
@@ -249,13 +250,20 @@ def _lv(i: int, frame: int | None) -> str:
 
 
 def tray_body(style: str, frame: int | None = None) -> str:
-    """四种菜单栏图标的主体(36 画布、单色黑;白底在渲染成模板图时转成透明)。移植自设计稿 brand.js::TRAY。"""
+    """五种菜单栏图标的主体(36 画布、单色黑;白底在渲染成模板图时转成透明)。移植自设计稿 brand.js::TRAY。"""
     if style == "prompt":
         return (
             '<path d="M10.5 9.5 18 18l-7.5 8.5" fill="none" stroke="#000" stroke-width="4.4" '
             'stroke-linecap="round" stroke-linejoin="round"/>'
             f'<rect {_lv(1, frame)} x="20.5" y="23.6" width="8" height="4.4" rx="2.2" fill="#000"/>'
         )
+    if style == "warp":
+        # 经纬的单色版:2×2 织纹缩到约 23px;经线(竖)常亮,纬线(横)两行轮流点亮(与设计稿 brand.js::TRAY.warp 一致)
+        warp, weft = weave_parts(W2)
+        out = f'<g transform="translate(18 18) scale(.04) translate(-512 -512)"><path d="{"".join(warp)}" fill="#000"/>'
+        for j, d in enumerate(weft):
+            out += f'<path {_lv(j, frame)} d="{d}" fill="#000" fill-opacity=".6"/>'
+        return out + "</g>"
     if style == "grid":
         c, g = 7.4, 2.4
         o = 18 - (3 * c + 2 * g) / 2
