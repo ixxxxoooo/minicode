@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -77,18 +76,11 @@ func (g GitHubAppcastFetcher) Check(ctx context.Context) (string, string, string
 	if resp.StatusCode != http.StatusOK {
 		return "", "", "", false, fmt.Errorf("appcast HTTP %d", resp.StatusCode)
 	}
-	var ac struct {
-		Version string `json:"version"`
-		URL     string `json:"url"`
-		Sha256  string `json:"sha256"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&ac); err != nil {
+	ver, pkgURL, sha, err := parseAppcast(resp.Body, g.Channel)
+	if err != nil {
 		return "", "", "", false, err
 	}
-	if ac.Version == "" || ac.URL == "" {
-		return "", "", "", false, nil
-	}
-	return ac.Version, ac.URL, ac.Sha256, true, nil
+	return ver, pkgURL, sha, ver != "" && pkgURL != "", nil
 }
 
 type DemoFetcher struct{ Version string }
@@ -96,7 +88,7 @@ type DemoFetcher struct{ Version string }
 func (d DemoFetcher) Check(ctx context.Context) (string, string, string, bool, error) {
 	v := d.Version
 	if v == "" {
-		v = "0.2.2"
+		v = "0.9.0"
 	}
 	return v, "", "", true, nil
 }
@@ -148,7 +140,7 @@ func (r *Runner) run(ctx context.Context) {
 		r.emit(Progress{Err: err.Error(), ErrStage: "check"})
 		return
 	}
-	if !ok || ver == r.CurrentVer {
+	if !ok || !IsNewer(ver, r.CurrentVer) {
 		r.emit(Progress{Version: r.CurrentVer, UpToDate: true})
 		return
 	}
@@ -247,7 +239,13 @@ func (r *Runner) download(ctx context.Context, url string, pct func(int)) (strin
 		return "", err
 	}
 	defer resp.Body.Close()
-	path := filepath.Join(r.WorkDir(), "download.pkg")
+	if resp.StatusCode != http.StatusOK { // 404 / 5xx 的错误页不能当安装包存下来
+		return "", fmt.Errorf("下载失败 HTTP %d", resp.StatusCode)
+	}
+	if err := os.MkdirAll(r.WorkDir(), 0o755); err != nil {
+		return "", err
+	}
+	path := filepath.Join(r.WorkDir(), pkgFileName(url))
 	f, err := os.Create(path)
 	if err != nil {
 		return "", err

@@ -143,11 +143,14 @@ func WriteReplaceScript(staging, targetBundle, scriptPath string) error {
 	if targetBundle == "" {
 		targetBundle = filepath.Join("/Applications", appName)
 	}
+	// 先等当前进程退出(最多约 10 秒)再覆盖:正在运行的包被替换会导致新旧文件混用;
+	// 覆盖后清掉下载带来的隔离属性,避免「已损坏 / 无法验证开发者」的拦截,最后重新打开。
 	body := fmt.Sprintf(`#!/bin/sh
-set -e
-sleep 1
-ditto %q %q
-open -a %q
-`, src, targetBundle, targetBundle)
+i=0
+while kill -0 %d 2>/dev/null && [ $i -lt 100 ]; do sleep 0.1; i=$((i+1)); done
+ditto %q %q || exit 1
+xattr -dr com.apple.quarantine %q 2>/dev/null
+open %q
+`, os.Getpid(), src, targetBundle, targetBundle, targetBundle)
 	return os.WriteFile(scriptPath, []byte(body), 0o755)
 }

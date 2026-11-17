@@ -25,7 +25,7 @@ func (a *App) initUpdater(demo bool) {
 	}
 	var fetch update.Fetcher = gh
 	if demo || os.Getenv("MINI_UPDATE_DEMO") == "1" {
-		fetch = update.DemoFetcher{Version: "0.2.2"}
+		fetch = update.DemoFetcher{Version: "0.9.0"}
 	}
 	target := update.BundlePath()
 	a.upd = &update.Runner{
