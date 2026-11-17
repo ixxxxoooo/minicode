@@ -156,7 +156,20 @@ func (a *App) beltStep() beltFrame {
 	// 若新旧工作区都照「平移 dx」摆,对话栏变窄 / 变宽的那一段就会在它与旧工作区(或新工作区)之间留一条空白
 	// (实测最大 140 px,整个切换里都在)。改成「首尾相接的一串」:新 / 旧工作区各自紧贴对话栏的外缘(隔一个面板间距),
 	// 对话栏自己的位置与宽度仍按进度插值。两端落点与上面的刚性公式一致(在起点与终点都严格重合),只是中间不再有缝。
-	if g0.chatOn && g1.chatOn && g0.chat.w > .5 && g1.chat.w > .5 {
+	if g0.wsOn && g1.wsOn && g0.chatOn != g1.chatOn {
+		// 只有一边有对话栏(IDE 对话栏收起 ↔ Agent):工作区在两个形态里都在,没有「被挤出舞台的旧工作区」。
+		// 对话栏贴着左缘长出来(或缩回去),工作区就是同一块面板:紧贴对话栏右缘、宽度从旧宽度渐变到新宽度,
+		// 一路被对话栏挤过去(旧公式把新工作区一开始就摆在终点、旧工作区原地不动,中间露出一块多余的内容)。
+		// 两块宽度加间距恒等于舞台宽:间距随对话栏宽度占满开宽度的比例渐变。
+		f.ghOn = false
+		f.chat.x = 0
+		full := max(g0.chat.w, g1.chat.w)
+		gf := float32(1)
+		if full > .5 {
+			gf = clampF(f.chat.w/full, 0, 1)
+		}
+		f.ws = beltRect{x: f.chat.w + gap*gf, w: lerp(g0.ws.w, g1.ws.w)}
+	} else if g0.chatOn && g1.chatOn && g0.chat.w > .5 && g1.chat.w > .5 {
 		right := f.chat.x + f.chat.w + gap // 对话栏右缘 + 间距:右侧那块面板的左缘
 		left := func(w float32) float32 { return f.chat.x - gap - w }
 		if a.mode == ModeIDE { // Agent → IDE:新工作区在对话栏左边,旧工作区在右边

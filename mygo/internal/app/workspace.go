@@ -127,7 +127,11 @@ func (a *App) wsPane(c *ui.Context, gap float32) {
 		inner := ui.Column(c).Grow(1).MinHeight(0)
 		a.zoneMarkEditor(inner)
 		if !ide {
-			inner.Width(a.wsRW())
+			if a.belt.on { // 平移中内容宽度跟着面板(被对话栏挤窄时逐帧收窄),不是终点宽度
+				inner.Width(max(0, a.belt.ws.w))
+			} else {
+				inner.Width(a.wsRW())
+			}
 			if active {
 				a.resizeHandle(c, lyWs, "l", a.wsRW(), theme.WWs, 360, max(360, a.winW-a.sideW()-360), func(v float32) { a.ly.ws = v })
 			}

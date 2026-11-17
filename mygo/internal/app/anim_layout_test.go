@@ -200,6 +200,48 @@ func TestAnimModeSwitchSideDiffers(t *testing.T) {
 	animCheck(t, "Agent→IDE(左栏收→开)", animRun(t, a, tt, "Agent→IDE(左栏收→开)", func() { a.SetMode(ModeIDE) }, 800*time.Millisecond))
 }
 
+// beltChain 断言平移中「对话栏 | 工作区」首尾相接:没有被挤出舞台的幽灵,工作区左缘紧贴对话栏右缘(隔一个面板间距),
+// 工作区右缘贴着舞台右缘。回归:IDE(对话栏收起)→ Agent 时,工作区曾一开始就摆在终点位置,
+// 旧工作区(幽灵)留在原地被对话栏盖住,中间露出一块多余的内容。
+func beltChain(t *testing.T, a *App, name string, fr []AnimFrame) {
+	t.Helper()
+	gap := a.tk.Scheme.GapPane
+	for _, f := range fr {
+		if f.Has[pzGhost] {
+			t.Errorf("%s:%dms 不该有幽灵(同一个工作区在被对话栏挤过去)", name, f.T.Milliseconds())
+		}
+		if !f.Has[pzChat] || !f.Has[pzWs] || f.R[pzChat].W < 1 || f.R[pzWs].W < 1 {
+			continue
+		}
+		if f.R[pzChat].X >= f.R[pzWs].X { // 动画结束后 IDE 的收起对话栏是停在右缘的 1 px 占位,不在检查范围
+			continue
+		}
+		right := f.R[pzChat].X + f.R[pzChat].W
+		if d := f.R[pzWs].X - right; d < -1.5 || d > gap+1.5 {
+			t.Errorf("%s:%dms 工作区左缘 %.1f 没有贴着对话栏右缘 %.1f(间距 %.0f)", name, f.T.Milliseconds(), f.R[pzWs].X, right, gap)
+		}
+	}
+}
+
+// IDE(对话栏收起、工作区占满)→ Agent:对话框从左边长出来,把工作区向右挤、同时压窄;反向亦然。
+func TestAnimBeltPushWorkspace(t *testing.T) {
+	a, tt := quickApp(t)
+	a.SetMode(ModeAgent)
+	tt.Frame()
+	a.rightOn = true // Agent 记住「工作区开」
+	tt.Advance(time.Second)
+	a.SetMode(ModeIDE)
+	tt.Advance(time.Second)
+	a.rightOn, a.sideOpen = false, true // IDE:对话栏收起、左栏开(用户截图的状态)
+	tt.Advance(time.Second)
+	fr := animRun(t, a, tt, "IDE(无对话栏)→Agent", func() { a.SetMode(ModeAgent) }, 800*time.Millisecond)
+	animCheck(t, "IDE(无对话栏)→Agent", fr)
+	beltChain(t, a, "IDE(无对话栏)→Agent", fr)
+	fr = animRun(t, a, tt, "Agent→IDE(无对话栏)", func() { a.SetMode(ModeIDE) }, 800*time.Millisecond)
+	animCheck(t, "Agent→IDE(无对话栏)", fr)
+	beltChain(t, a, "Agent→IDE(无对话栏)", fr)
+}
+
 // 拖窗口边缘(逐帧改窗口宽):跨过 1040 / 900 / 720 断点时导航栏、工作区、对话栏都是连续变化,
 // 舞台右缘始终贴着窗口右缘,没有空白、没有一帧跳几百像素。
 func TestAnimResize(t *testing.T) {
