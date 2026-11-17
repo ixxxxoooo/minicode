@@ -5,6 +5,7 @@ import (
 	"path"
 	"strings"
 	"time"
+	"unsafe"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
@@ -29,6 +30,7 @@ type ideTab struct {
 	st      *editor.State
 	dv      *editor.DiffState
 	imgd    *imgDiffState // 图片 / 二进制文件的差异:不逐行对比,改成并排预览(ide_imgdiff.go)
+	dirtyM  dirtyMemo     // dirty() 的比较结果缓存
 	saved   string        // 最近一次落盘的内容(已把 \r\n 归一成 \n,与缓冲区同口径;判断是否有未保存修改)
 	eol     string        // 保存时使用的行尾(空 = LF;状态栏可切换,ide_eol.go)
 	eolDisk string        // 磁盘上现在的行尾
@@ -82,8 +84,39 @@ type ideTab struct {
 	scopeCache        scopeSnap
 }
 
+// dirtyMemo 缓存「缓冲区文本与磁盘文本是否一致」的比较结果。
+// 比较要把整篇缓冲区拼成字符串,大文件上每帧每个标签做一次会让主线程停滞数百毫秒(见 00:52 的栈),
+// 所以按 (缓冲区版本, 磁盘文本指针与长度) 记忆:两者都没变就直接用上次结果。
+type dirtyMemo struct {
+	ok    bool
+	ver   uint64
+	saved *byte
+	slen  int
+	text  bool // 文本是否与磁盘不同
+}
+
 func (t *ideTab) dirty() bool {
-	return !t.diff && t.buf != nil && (t.buf.String() != t.saved || t.eolNow() != t.eolSaved())
+	if t.diff || t.buf == nil {
+		return false
+	}
+	return t.textDirty() || t.eolNow() != t.eolSaved()
+}
+
+// textDirty 文本本身是否与磁盘版本不同(不含行尾)。
+func (t *ideTab) textDirty() bool {
+	// 长度不同必然不同:O(1) 的快路径,输入时每次击键都走这里。
+	if t.buf.Len() != len(t.saved) {
+		return true
+	}
+	ver := t.buf.Version()
+	sp := unsafe.StringData(t.saved)
+	m := &t.dirtyM
+	if m.ok && m.ver == ver && m.saved == sp && m.slen == len(t.saved) {
+		return m.text
+	}
+	diff := t.buf.String() != t.saved
+	*m = dirtyMemo{ok: true, ver: ver, saved: sp, slen: len(t.saved), text: diff}
+	return diff
 }
 
 // eolNow / eolSaved:当前选用的行尾 / 磁盘上的行尾(空 = LF)。改行尾本身也算未保存修改。
