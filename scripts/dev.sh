@@ -21,6 +21,8 @@ sleep 0.5
 scripts/make-app.sh "$APP" target/dev/minicode-new "MiniCode Dev" dev.minicode.app.dev dev 0
 rm -f target/dev/minicode-new
 codesign --force --sign - "$APP" >/dev/null 2>&1 || true
+# 向 LaunchServices 登记这个包:系统通知的图标取自它登记的包内图标,没登记 / 换了包路径时横幅会显示成通用图标
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP" >/dev/null 2>&1 || true
 
 [ -f target/dev.log ] && mv -f target/dev.log target/dev.log.prev
 : >target/dev.log

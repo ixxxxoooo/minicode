@@ -33,10 +33,10 @@ func (a *App) runOSA(script string) {
 	})
 }
 
-func (a *App) notifyMacNative(title, body, sessID string, sound bool) {
+func (a *App) notifyMacNative(n sysNote, sound bool) {
 	macNotifyApp = a
 	initMacNotifyBundle()
-	postMacNotification(title, body, sessID, sound)
+	postMacNotification(n, sound)
 }
 
 // OpenSessionFromNotify 供未来原生通知点击回调跳到会话。

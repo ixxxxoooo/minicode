@@ -83,10 +83,18 @@ func DrawerSlide(panel ui.Element, openedAt time.Time, fromRight bool, frame fun
 
 // ToastSlide 右上角提示条自右侧滑入。
 func ToastSlide(card ui.Element, at time.Time, frame func()) ui.Element {
+	return ToastSlideKeep(card, at, frame, false)
+}
+
+// ToastSlideKeep 同 ToastSlide;keep 为真时只做入场滑入,之后一直显示(带操作按钮的通知,等用户自己关 / 点)。
+func ToastSlideKeep(card ui.Element, at time.Time, frame func(), keep bool) ui.Element {
 	if !MotionOn() || at.IsZero() {
 		return card
 	}
 	age := Since(at)
+	if keep && age > DurSlow {
+		return card
+	}
 	if age > 6*time.Second {
 		return card.Opacity(0).Translate(40, 0)
 	}

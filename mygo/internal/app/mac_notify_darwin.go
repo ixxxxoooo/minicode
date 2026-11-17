@@ -27,6 +27,29 @@ func goMCNotifySession(sess *C.char) {
 	}
 }
 
+//export goMCNotifyAction
+func goMCNotifyAction(sess, permID, action *C.char) {
+	if macNotifyApp == nil {
+		return
+	}
+	s, p, act := C.GoString(sess), C.GoString(permID), C.GoString(action)
+	a := macNotifyApp
+	if a.win != nil {
+		a.win.Update(func() { a.NotifyAction(s, p, act) })
+	} else {
+		a.NotifyAction(s, p, act)
+	}
+}
+
+//export goMCNotifyDenied
+func goMCNotifyDenied() {
+	if macNotifyApp == nil || macNotifyApp.win == nil {
+		return
+	}
+	a := macNotifyApp
+	a.win.Update(func() { a.notifyDenied() })
+}
+
 func installMacNotifyDelegate() bool {
 	var inApp C.int
 	C.mc_install_notify_delegate(&inApp)
@@ -37,27 +60,38 @@ func installMacNotifyDelegate() bool {
 	return ok
 }
 
-func postMacNotification(title, body, sessID string, sound bool) {
+func postMacNotification(n sysNote, sound bool) {
 	if macNotifyApp == nil {
 		return
 	}
 	if !macNotifyBundle {
 		if sound {
-			macNotifyApp.notifyOSAScript(title, body)
+			macNotifyApp.notifyOSAScript(n.title, n.body)
 		} else {
-			macNotifyApp.notifyOSAScriptSilent(title, body)
+			macNotifyApp.notifyOSAScriptSilent(n.title, n.body)
 		}
 		return
 	}
-	ct, cb, cs := C.CString(title), C.CString(body), C.CString(sessID)
+	ct, cb, cs, cp := C.CString(n.title), C.CString(n.body), C.CString(n.sess), C.CString(n.permID)
 	defer C.free(unsafe.Pointer(ct))
 	defer C.free(unsafe.Pointer(cb))
 	defer C.free(unsafe.Pointer(cs))
+	defer C.free(unsafe.Pointer(cp))
 	snd := 0
 	if sound {
 		snd = 1
 	}
-	C.mc_post_notify(ct, cb, cs, C.int(snd))
+	C.mc_post_notify(ct, cb, cs, cp, C.int(n.kind), C.int(snd))
+}
+
+// clearMacNotification 撤掉某个确认请求的系统横幅(已在应用里处理)。
+func clearMacNotification(permID string) {
+	if !macNotifyBundle || permID == "" {
+		return
+	}
+	cp := C.CString(permID)
+	defer C.free(unsafe.Pointer(cp))
+	C.mc_clear_notify(cp)
 }
 
 var macNotifyBundle bool

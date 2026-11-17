@@ -4,14 +4,15 @@ package app
 
 func initMacNotifyBundle() {}
 
-// postMacNotification 非 macOS 或禁用 cgo 时回退 osascript(无点击回调)。
-func postMacNotification(title, body, sessID string, sound bool) {
+// postMacNotification 非 macOS 或禁用 cgo 时回退 osascript(无点击回调、没有动作按钮)。
+func postMacNotification(n sysNote, sound bool) {
 	if macNotifyApp != nil {
 		if sound {
-			macNotifyApp.notifyOSAScript(title, body)
+			macNotifyApp.notifyOSAScript(n.title, n.body)
 		} else {
-			macNotifyApp.notifyOSAScriptSilent(title, body)
+			macNotifyApp.notifyOSAScriptSilent(n.title, n.body)
 		}
 	}
-	_ = sessID
 }
+
+func clearMacNotification(permID string) {}

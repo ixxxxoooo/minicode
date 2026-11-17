@@ -12,7 +12,7 @@ func TestNeedsApprovalQuietInWork(t *testing.T) {
 	a.screen = ScreenWork
 	a.noticeInit()
 	before := len(a.nt.toasts)
-	a.onNeedsApproval("权限请求")
+	a.onNeedsApproval("权限请求", nil)
 	if len(a.nt.toasts) != before {
 		t.Fatalf("会话页不应弹浮层,toasts %d → %d", before, len(a.nt.toasts))
 	}

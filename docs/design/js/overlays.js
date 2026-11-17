@@ -18,7 +18,7 @@
 
   /* ───────── 通知中心 · 更新 · 关于 ───────── */
   const nt = (lv, t, d, acts = '', time = '刚刚') => `<div class="nt ${lv}">${ic(lv === 'err' ? 'errc' : lv === 'warn' ? 'alert' : lv === 'ok' ? 'okc' : 'info', 's12 ' + { err: 'c-err', warn: 'c-warn', ok: 'c-ok', info: 'c-info' }[lv])}<div class="grow"><div class="m">${t}</div><div class="t3 fs-cap" style="line-height:1.45">${d}</div>${acts ? `<div class="f g2" style="margin-top:6px">${acts}</div>` : ''}</div><span class="t4 fs-micro">${time}</span></div>`;
-  const noticeSec = sec('通知 · 更新 · 关于', 'IDE 里所有提示走通知中心:右下角弹出并记入历史,状态栏铃铛显示未读数。Agent 窗口保持顶部轻提示。',
+  const noticeSec = sec('通知 · 更新 · 关于', 'IDE 里所有提示走通知中心:右下角弹出并记入历史,状态栏铃铛显示未读数;带操作按钮的通知不自动消失(等点按钮或关掉),其余 6 秒淡出。Agent 窗口保持顶部轻提示。',
     g3(spec('通知面板(状态栏铃铛)', ['.nt', '--sh-2', '.cnt.ac'], `<div class="pop" style="padding:0;overflow:hidden"><div class="f ai g3" style="padding:8px 10px;box-shadow:inset 0 -1px var(--bd-1)"><b class="grow">通知</b>${cnt(3, 'ac')}${btn('全部清除', 'sm ghost')}</div>
         ${nt('warn', '未安装 rust-analyzer', '语言智能暂不可用。', btn('复制安装命令', 'sm', 'copy'))}${nt('info', '发现新版本 0.2.0', '已自动下载,重启后生效。', btn('重启更新', 'sm soft'), '3 分钟')}${nt('err', '保存失败', 'router.rs:磁盘上的文件已被外部修改。', btn('重新载入', 'sm') + btn('覆盖保存', 'sm ghost'), '12 分钟')}</div>`),
       spec('右下角弹出(自动消失)', ['.a-toast', '--dur-slow'], `<div class="fc g3" style="align-items:flex-end"><div class="pop a-toast" style="width:260px;padding:0">${nt('ok', '已提交', 'fix(router): 路径匹配忽略大小写', '', '')}</div><div class="pop a-toast" style="width:260px;padding:0;animation-delay:.12s">${nt('info', '已切换到分支 feat/auth', '', '', '')}</div></div>`),

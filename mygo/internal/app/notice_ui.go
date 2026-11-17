@@ -136,7 +136,8 @@ func (a *App) noticeToasts(c *ui.Context) {
 	now := a.now()
 	var live []noticeItem
 	for _, it := range a.nt.toasts {
-		if now.Sub(it.at) < 6*time.Second {
+		// 带操作按钮的通知不自动消失(等用户点按钮或关掉),其余 6 秒后淡出
+		if len(it.actions) > 0 || now.Sub(it.at) < 6*time.Second {
 			live = append(live, it)
 		}
 	}
@@ -151,13 +152,28 @@ func (a *App) noticeToasts(c *ui.Context) {
 			for _, s := range t.Shadow2() {
 				card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 			}
-			card = kit.ToastSlide(card, it.at, a.frameSoon)
+			card = kit.ToastSlideKeep(card, it.at, a.frameSoon, len(it.actions) > 0)
 			card.Children(func() {
 				kit.Ic(c, icon, kit.S12).TextColor(col).Margin(2, 0, 0, 0)
 				ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 					ui.Text(c, it.title).FontWeight(500).MaxLines(3)
 					if it.body != "" {
 						ui.Text(c, it.body).FontSize(theme.FsCap).TextColor(t.Tx3).MaxLines(2)
+					}
+					if len(it.actions) > 0 { // 与通知面板同样的操作按钮:第一个是主操作
+						ui.Row(c).Gap(6).Margin(6, 0, 0, 0).Children(func() {
+							for i, act := range it.actions {
+								act, id := act, it.id
+								v := kit.BtnGhost
+								if i == 0 {
+									v = kit.BtnPri
+								}
+								kit.Btn(c, act.label, kit.BtnOpt{Small: true, Variant: v}).OnClick(func() {
+									act.run()
+									a.dismissToast(id)
+								})
+							}
+						})
 					}
 				})
 				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭"}).OnClick(func() { a.dismissToast(it.id) })

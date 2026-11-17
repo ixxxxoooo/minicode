@@ -340,6 +340,7 @@ type App struct {
 	mcpExp            map[string]bool // MCP 弹层里各服务器是否展开工具列表
 	ctxLoading        bool
 	ctxCompacting     bool
+	notifyDeniedShown bool // 「系统通知已关闭」提示这次运行里已经给过
 	ctxRefreshAt      time.Time
 	mcpRefreshAt      time.Time
 	mcpRefreshing     bool
