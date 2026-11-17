@@ -97,7 +97,7 @@ func (a *App) scopeOverlay(c *ui.Context, tb *ideTab, edEl ui.Element) {
 		return
 	}
 	t := a.tk
-	bx := scopeBarX(tb, a)
+	bx := scopeBarX(tb, a) + scopeGutterPad - 2
 	// 指针在代码区:按可见行更新悬停预览(符号表已缓存,只查该行最内层块)
 	if edEl.Hovered() {
 		if px, py, ok := edEl.PointerPosition(); ok && px >= edGutterW(tb) {
