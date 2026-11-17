@@ -254,10 +254,14 @@ func (a *App) showRefs(word string) {
 		}
 		a.refsFinishLocal(st, items)
 	}
-	if tb := d.cur(); tb != nil && tb.st != nil && tb.buf != nil && a.lspReferences(tb, tb.st.Cursor(), word, local) {
+	if tb := d.cur(); tb != nil && tb.st != nil && tb.buf != nil {
+		// 先进入「正在查找」状态再发请求:后台任务无窗口(测试)时是同步执行的,
+		// 要是请求返回后才开始新一轮查找,刚填好的结果会被清空。
 		st := a.refsBeginSearch(word)
 		st.loading = true
-		return
+		if a.lspReferences(tb, tb.st.Cursor(), word, local) {
+			return
+		}
 	}
 	local()
 }
