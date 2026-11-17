@@ -64,7 +64,9 @@ func TestRevealScrollsTreeAfterOpen(t *testing.T) {
 		tt.Frame()
 	}
 	a.ide.openFile("d39/f.txt", true)
+	a.nav, a.sideOpen = "files", true
 	for i := 0; i < 6; i++ {
+		a.autoReveal()
 		tt.Frame()
 	}
 	if a.ide.revealTo != "" {

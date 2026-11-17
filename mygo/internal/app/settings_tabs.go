@@ -322,7 +322,6 @@ var settingsTabs = []setTabDef{
 			rPreview("width"),
 		}},
 		{title: "文件树", rows: []setRow{
-			rTog("explorer.autoReveal", "自动定位当前文件", "切换编辑器标签时,在文件树里展开并选中对应文件", true),
 			rTog("appearance.fileIcons", "彩色文件图标", "按文件类型给图标上色;关闭后全部用灰色。作用于文件树、标签、搜索与源代码管理", true),
 		}},
 	}},
@@ -427,6 +426,11 @@ var settingsTabs = []setTabDef{
 	}},
 
 	{id: "editor", title: "编辑器", icon: "code", desc: "代码编辑器的字体、显示、格式化与 Git 追溯。", groups: []setGroup{
+		{title: "文件树", rows: []setRow{
+			rTog("explorer.autoReveal", "自动定位当前文件", "切换编辑器标签时,在左侧文件树展开各级目录并选中该文件(只随标签变化触发一次)", true),
+			rTog("explorer.autoRevealWhenVisible", "仅在文件树可见时自动定位", "左侧导航停在「源代码管理」等其它分段时,先不切树;回到「文件」后再定位", false),
+			rTog("explorer.autoRevealScroll", "定位后滚动到可见", "选中后若该行不在文件树视口内则自动滚动(已可见则不滚)", true),
+		}},
 		{title: "字体与缩进", rows: []setRow{
 			rStp("editor.fontSize", "字号", "", 12, 9, 24, 1, "px"),
 			rSeg("editor.indent", "缩进", "", 1, "2 空格", "4 空格", "Tab"),

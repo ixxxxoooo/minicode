@@ -3,24 +3,35 @@ package app
 import "strings"
 
 // autoReveal 切换编辑器标签后,在文件树里展开各级目录并选中该文件(设计稿「左栏 · 自动定位」)。
-// 只在标签变化时执行一次,之后用户在树里自己点、自己折叠都不再被覆盖;偏好 explorer.autoReveal 可关。
+// 只在标签变化时执行一次,之后用户在树里自己点、自己折叠都不再被覆盖;偏好 explorer.* 可关或限制。
 func (a *App) autoReveal() {
+	if a.mode != ModeIDE || a.ide == nil {
+		return
+	}
 	d := a.ide
 	tb := d.cur()
 	if tb == nil || tb.virt != "" || tb.diff || tb.path == "" || tb.path == d.revealed {
 		return
 	}
-	d.revealed = tb.path
 	if !a.prefs.Bool("explorer.autoReveal", true) {
+		d.revealed = tb.path
 		return
 	}
+	if a.prefs.Bool("explorer.autoRevealWhenVisible", false) {
+		if a.NavID() != "files" || !a.sideOpen {
+			return
+		}
+	}
+	d.revealed = tb.path
 	parts := strings.Split(tb.path, "/")
 	for i := 1; i < len(parts); i++ {
 		d.open[strings.Join(parts[:i], "/")] = true
 	}
 	d.sel = tb.path
-	d.revealTo = tb.path // 展开后还要把这一行滚进视口(下一帧行位置才算得出来)
-	uxLog.Info("自动定位当前文件", "path", tb.path)
+	if a.prefs.Bool("explorer.autoRevealScroll", true) {
+		d.revealTo = tb.path // 展开后还要把这一行滚进视口(下一帧行位置才算得出来)
+	}
+	uxLog.Info("自动定位当前文件", "path", tb.path, "scroll", d.revealTo != "")
 }
 
 // scrollRowIntoView 返回让某一行完全落进视口所需的滚动位置:已可见则原样返回,

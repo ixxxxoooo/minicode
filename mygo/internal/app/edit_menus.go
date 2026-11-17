@@ -230,6 +230,7 @@ func (a *App) revealInTree(rel string) {
 		a.ide.open[strings.Join(parts[:i], "/")] = true
 	}
 	a.ide.sel = rel
+	a.ide.revealTo = rel
 	uxLog.Info("在文件树中定位", "path", rel)
 }
 

@@ -91,6 +91,7 @@ func (a *App) side(c *ui.Context) {
 					swap.Opacity(p)
 				}
 				swap.Children(func() {
+					a.autoReveal()
 					a.morphWrap(c, "nav", func() {
 						switch a.NavID() {
 						case "chat":
