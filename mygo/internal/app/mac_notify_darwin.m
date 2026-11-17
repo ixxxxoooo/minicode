@@ -9,6 +9,14 @@ static void mc_go_notify_open(const char *sess);
 @end
 
 @implementation MCNotifyDelegate
+// 应用在前台时系统默认不展示通知;这里让它照常弹横幅并响提示音。
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center
+       willPresentNotification:(UNNotification *)notification
+         withCompletionHandler:(void (^)(UNNotificationPresentationOptions))completionHandler {
+  completionHandler(UNNotificationPresentationOptionBanner | UNNotificationPresentationOptionList |
+                    UNNotificationPresentationOptionSound);
+}
+
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center
     didReceiveNotificationResponse:(UNNotificationResponse *)response
              withCompletionHandler:(void (^)(void))completionHandler {

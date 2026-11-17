@@ -277,6 +277,7 @@ var settingsTabs = []setTabDef{
 	{id: "notify", title: "通知", icon: "bell", desc: "系统通知、提示音与菜单栏入口。", groups: []setGroup{
 		{title: "系统通知", rows: []setRow{
 			rTog("general.notify", "任务完成时通知", "回合结束且 MiniCode 不在前台时发送系统通知", true),
+			rTog("general.notifyFront", "前台也通知", "MiniCode 在前台时回合结束 / 出错也弹系统通知并响提示音", true),
 			rTog("general.notifyAsk", "需要确认时提醒", "权限请求、提问在后台出现时弹通知", true),
 			rTog("general.pauseNotify", "暂停通知", "暂停后不发系统通知、不播提示音,菜单栏图标变为半透明暂停态;限时暂停在菜单栏图标菜单里", false),
 			rSeg("general.sound", "通知声音", "", 1, "静音", "轻提示"),
