@@ -130,6 +130,9 @@ type (
 		Stats TurnStats
 	}
 	EvTurnEnded struct{ Reason StopReason }
+	// EvReplay 标记历史回放的开始(On=true)与结束(On=false):区间内的事件都是过去已经发生的,
+	// 界面只还原画面,不能再触发通知 / 提示音 / 托盘徽标 / 出队排队消息。
+	EvReplay struct{ On bool }
 	// EvTurnTiming 本回合从「发送」起的实测耗时;ID 为用户消息 id,空表示最近一条用户消息。
 	EvTurnTiming struct {
 		ID     string
@@ -218,6 +221,7 @@ func (EvTasksChanged) event()        {}
 func (EvTaskOutput) event()          {}
 func (EvTurnStats) event()           {}
 func (EvTurnEnded) event()           {}
+func (EvReplay) event()              {}
 func (EvCompact) event()             {}
 func (EvTurnPhase) event()           {}
 func (EvTurnTiming) event()          {}

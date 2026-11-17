@@ -487,6 +487,9 @@ func (a *App) applyEv(be backend.Backend, ev core.Event) {
 // afterEvent 归约之后的界面侧反应:回合结束时处理排队。
 func (a *App) afterEvent(ev core.Event) {
 	a.onSessLoadEvent(ev)
+	// 历史回放区间:事件早已发生,只还原画面。回合结束 / 待审批 / 后台任务完成都不能再弹通知、响提示音、
+	// 亮托盘徽标,也不能把排队的消息当成「刚结束的回合」发出去(此前打开历史会话会突然弹一条「回合结束」)。
+	replay := a.st != nil && (a.st.Replaying || isReplayEv(ev))
 	a.warmOnEvent(ev)
 	// 新会话的 id 在握手后才知道:记下来,侧栏就能高亮它(演示后端的占位 id 不记)
 	if e, ok := ev.(core.EvReady); ok {
@@ -511,7 +514,7 @@ func (a *App) afterEvent(ev core.Event) {
 			a.QueuePrompts(demo.QueuePromptSamples()...)
 		}
 	}
-	if e, ok := ev.(core.EvTurnEnded); ok {
+	if e, ok := ev.(core.EvTurnEnded); ok && !replay {
 		// 回合里 Claude 可能新建了被 .gitignore 忽略的文件(git 状态看不到),文件树缓存一并作废
 		a.ide.listCache, a.ide.filesCache = nil, nil
 		if a.q.preempt != "" {
@@ -525,7 +528,7 @@ func (a *App) afterEvent(ev core.Event) {
 			a.mcpAfterTurnEnd()
 		}
 	}
-	if e, ok := ev.(core.EvPlanUpdated); ok && e.Streaming {
+	if e, ok := ev.(core.EvPlanUpdated); ok && e.Streaming && !replay {
 		a.onPlanUpdated(e.ID, true)
 	}
 	if e, ok := ev.(core.EvTaskOutput); ok {
@@ -548,7 +551,9 @@ func (a *App) afterEvent(ev core.Event) {
 			a.ingestCompactNotice(no.Text)
 		}
 	}
-	a.afterEventNotify(ev)
+	if !replay {
+		a.afterEventNotify(ev)
+	}
 	a.afterEventCanvas(ev)
 	a.brandAfterEvent(ev)
 }
@@ -798,6 +803,12 @@ func (a *App) View(c *ui.Context) {
 	}
 	a.root(c)
 	a.probeEnd(c.Now())
+}
+
+// isReplayEv 是不是历史回放的开始 / 结束标记。
+func isReplayEv(ev core.Event) bool {
+	_, ok := ev.(core.EvReplay)
+	return ok
 }
 
 func evName(ev core.Event) string {
@@ -1056,6 +1067,9 @@ func (a *App) applyParked(be backend.Backend, ev core.Event) {
 			continue
 		}
 		lv.st.Apply(ev)
+		if lv.st.Replaying {
+			return
+		}
 		switch e := ev.(type) {
 		case core.EvTurnStarted:
 			lv.idleSince = time.Time{}

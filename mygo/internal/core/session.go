@@ -54,6 +54,9 @@ type State struct {
 	// Rev 每归约一次事件加一:界面据此判断是否需要重建缓存(避免逐项比较)。
 	Rev uint64
 
+	// Replaying 为真时正在回放历史会话(EvReplay{On:true} 到 EvReplay{On:false} 之间),这段时间的事件不触发任何副作用。
+	Replaying bool
+
 	// Now 是时钟(unix 毫秒),默认取系统时间;测试里注入固定值,让归约结果确定。
 	Now       func() int64
 	noticeSeq int
@@ -214,6 +217,8 @@ func findRev(list []Item, id string) int {
 func (s *State) Apply(ev Event) {
 	s.Rev++
 	switch e := ev.(type) {
+	case EvReplay:
+		s.Replaying = e.On
 	case EvReady:
 		s.SessionID = e.SessionID
 		if len(e.Models) > 0 {

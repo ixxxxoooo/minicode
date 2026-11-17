@@ -262,7 +262,9 @@ func (b *Backend) run() {
 			b.emit(notice(core.NoticeWarning, "读取历史会话失败:"+err.Error()))
 		}
 		log.Info("历史已回放", "events", len(evs))
+		b.emit(core.EvReplay{On: true})
 		b.emit(evs...)
+		b.emit(core.EvReplay{On: false})
 	}
 	b.emit(core.EvReady{SessionID: b.sessionID, Models: b.models, Model: b.model(), Mode: b.mode()})
 	for {
