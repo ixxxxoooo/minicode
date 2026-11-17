@@ -244,6 +244,9 @@ type App struct {
 	extQueue        []string              // 排队中的文件(窗口出来后依次处理)
 	foldAt          map[string]time.Time  // 步骤行展开的时刻(入场动画)
 	dlgSeen         string                // 已开始计时入场动画的居中浮层
+	motionCatOpen   bool                  // 动效总览弹层
+	motionReplayKey string
+	motionReplayAt  time.Time
 	dlgAt           time.Time
 	popSeen         string    // 已开始计时入场动画的弹层
 	popAt           time.Time // 该弹层打开的时刻
@@ -902,6 +905,8 @@ func (a *App) shortcuts(c *ui.Context) {
 		} else {
 			a.SetMode(ModeAgent)
 		}
+	case a.motionCatOpen && c.Shortcut(0, ui.KeyEscape):
+		a.closeMotionCatalog()
 	case a.paletteOn && c.Shortcut(0, ui.KeyEscape):
 		a.closePalette()
 	case a.shortcutHit(c, "palette", ui.Cmd, ui.KeyK):

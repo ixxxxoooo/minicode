@@ -327,6 +327,14 @@ var settingsTabs = []setTabDef{
 	}},
 
 	{id: "motion", title: "动效与反馈", icon: "spark", desc: "动画、形态切换、等待指示与滚动条。", groups: []setGroup{
+		{title: "演示", rows: []setRow{{
+			title: "动效总览",
+			desc:  "只读清单与预览重放;命令面板也可搜「动效总览」",
+			kind:  kNone,
+			right: func(a *App, c *ui.Context) {
+				kit.Btn(c, "打开…", kit.BtnOpt{Small: true, Icon: "spark"}).OnClick(a.openMotionCatalog)
+			},
+		}}},
 		{title: "动效", rows: []setRow{
 			rTog("appearance.motion", "动效", "流光、滑入与布局变形;关闭后所有动画直接到位(也跟随系统「减弱动态效果」)", true),
 			rSeg("appearance.morph", "形态切换动画", "Agent ⇄ IDE 的布局变形,约 0.44 秒;「简化」只淡入淡出", 0, "流畅", "简化", "无"),

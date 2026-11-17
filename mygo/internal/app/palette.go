@@ -269,6 +269,7 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 		}
 	}
 	add("fork", "Git:打开提交图谱", "", "在工作区打开完整的 Git 图谱(搜索、详情、右键操作)。", a.openGraph)
+	add("spark", "演示:动效总览…", "", "集中查看并重放常见动效;可切换「减少动效」对比。", a.openMotionCatalog)
 	add("chart", "用量与成本", "", "打开用量整页。", func() { a.screen = ScreenUsage })
 	add("clock", "自动化", "", "打开自动化页面。", func() { a.screen = ScreenAutomation })
 	add("layers", "画布", "", "打开画布页面。", func() { a.screen = ScreenCanvas })

@@ -38,6 +38,10 @@ func (a *App) EditorDemo(spec string) {
 			return editor.Pos{Line: max(l-1, 0), Col: max(c-1, 0)}
 		}
 		switch name {
+		case "motion":
+			a.openSettings("motion")
+			a.openMotionCatalog()
+			continue
 		case "closeall": // 关掉全部标签(看工作区起始页)
 			for len(a.ide.tabs) > 0 {
 				a.ide.closeTab(a.ide.tabs[0].id)

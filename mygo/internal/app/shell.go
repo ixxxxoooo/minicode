@@ -38,6 +38,7 @@ func (a *App) root(c *ui.Context) {
 		a.guard(c, "命令面板", "palette", guardSilent, func() { a.paletteView(c) })
 		a.guard(c, "快速选择", "quick", guardSilent, func() { a.quickView(c) })
 		a.guard(c, "项目对话框", "projdlg", guardSilent, func() { a.projDialogs(c) })
+		a.guard(c, "动效总览", "motion", guardSilent, func() { a.motionCatalogOverlay(c) })
 		a.guard(c, "浮层", "overlay", guardSilent, func() { a.overlayLayer(c) })
 		a.guard(c, "图表查看器", "mermaid", guardSilent, func() { a.mermaidViewerOverlay(c) })
 		a.guard(c, "图片灯箱", "lightbox", guardSilent, func() { a.lightboxOverlay(c) })
