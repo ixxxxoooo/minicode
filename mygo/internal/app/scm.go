@@ -161,6 +161,7 @@ func (a *App) syncTreeGit() {
 		a.ide.listCache, a.ide.filesCache = nil, nil
 	}
 	a.ide.git = m
+	a.rebuildTreeDirGit(m)
 }
 
 // treeKeysChanged 两份改动表的路径集合是否不同(只比路径,不比状态字母)。
