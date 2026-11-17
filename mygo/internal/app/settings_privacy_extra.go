@@ -184,6 +184,7 @@ func writeDiagZip(a *App) (string, error) {
 	if b, err := os.ReadFile(logPath); err == nil && len(b) < 2<<20 {
 		_ = zipWrite(zw, "logs/minicode.log.tail", tailBytes(b, 200<<10))
 	}
+	_ = zipWrite(zw, "performance.json", diag.PerformanceSnapshotJSON())
 	return outPath, nil
 }
 

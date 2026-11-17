@@ -536,33 +536,22 @@ var settingsTabs = []setTabDef{
 		}},
 	}},
 
-	{id: "privacy", title: "隐私与诊断", icon: "lock", desc: "默认不上报任何数据;性能、崩溃与卡顿记录都在本机。", groups: []setGroup{
+	{id: "privacy", title: "隐私", icon: "lock", desc: "数据上报与凭据存放说明;性能监测与诊断包见「性能与诊断」分类。", groups: []setGroup{
 		{title: "数据上报", rows: []setRow{
 			rTog("privacy.crash", "崩溃报告", "本应用不会上报任何数据,此开关暂无作用", false),
 			rTog("privacy.usage", "使用统计", "本应用不会上报任何数据,此开关暂无作用", false),
 			rCustom("凭据", "MiniCode 不读取钥匙串;服务商 API Key 单独存放在 0600 权限的文件里", func(a *App, c *ui.Context) { kit.Tag(c, "本地", kit.KOk) }),
 		}},
-		{title: "性能(最近 5 分钟,来自本进程的实时采样)", body: perfBody},
-		{title: "日志与诊断包", rows: []setRow{
-			rSeg(pPrivacyLvl, "日志级别", "环境变量 MINI_LOG 优先", 2, "错误", "警告", "信息", "调试"),
-			rCustom("记录目录", "panic、崩溃、卡死、异常退出的记录与日志文件", func(a *App, c *ui.Context) {
-				kit.Btn(c, "在访达中显示", kit.BtnOpt{Small: true, Icon: "folder"}).OnClick(func() { a.openPath(diag.Home()) })
-			}),
-			rCustom("诊断包", "家目录显示为 ~,只含配置概况与变量名,不含密钥和环境变量值", func(a *App, c *ui.Context) {
-				kit.Btn(c, "导出", kit.BtnOpt{Small: true, Icon: "download"}).OnClick(func() { a.exportDiagBundle() })
-			}),
-		}, body: func(a *App, c *ui.Context) {
-			ui.Column(c).Children(func() {
-				ui.Text(c, "崩溃与卡顿").FontSize(theme.FsCap).FontWeight(500).TextColor(a.tk.Tx3).Padding(8, 12, 4, 12)
-				a.privacyCrashesBody(c)
-				rowBox(a, c, false, 36).Children(func() {
-					ui.Text(c, "claude doctor").FontWeight(500).Grow(1)
-					kit.Btn(c, "运行", kit.BtnOpt{Small: true, Icon: "play"}).OnClick(func() { a.runClaudeDoctor() })
-				})
-				a.doctorFoldBody(c)
+		{title: "Claude 环境", body: func(a *App, c *ui.Context) {
+			rowBox(a, c, true, 36).Children(func() {
+				ui.Text(c, "claude doctor").FontWeight(500).Grow(1)
+				kit.Btn(c, "运行", kit.BtnOpt{Small: true, Icon: "play"}).OnClick(func() { a.runClaudeDoctor() })
 			})
+			a.doctorFoldBody(c)
 		}},
 	}},
+
+	{id: "perf", title: "性能与诊断", icon: "activity", desc: "帧率、资源曲线、慢操作、日志与诊断包;数据仅在本机,默认不上报。", groups: perfGroups, note: perfTabNote},
 
 	{id: "advanced", title: "高级", icon: "wrench", desc: "数据、运行模式、实验功能与重置。", groups: []setGroup{
 		{title: "数据", rows: []setRow{
@@ -582,7 +571,6 @@ var settingsTabs = []setTabDef{
 		}},
 		{title: "实验功能", rows: []setRow{
 			rTog("adv.liveOut", "前台命令实时输出", "命令运行期间每 0.7 秒读取任务输出文件,在工具卡里实时显示", true),
-			rTog(pAdvWatchdog, "主线程卡死看门狗", "停滞超过阈值时抓取调用栈,写入诊断记录", true),
 		}},
 		{title: "Claude 配置摘要", body: func(a *App, c *ui.Context) { a.claudeDiagBody(a, c) }},
 		{title: "重置", rows: []setRow{
@@ -659,44 +647,6 @@ func ignoreArea(a *App, c *ui.Context) {
 		in := ui.TextArea(c.Key("ign"), buf).Height(80).Font("monospace").FontSize(theme.FsCap + .5)
 		in.OnChange(func() { a.prefs.Set(key, *buf) })
 		ui.Text(c, "同时作用于文件树、搜索与文件监视").FontSize(theme.FsCap).TextColor(t.Tx3)
-	})
-}
-
-// perfBody 是隐私页的「性能」块:读 diag 的真实采样与统计(内存、协程数、界面构建耗时)。
-func perfBody(a *App, c *ui.Context) {
-	t := a.tk
-	ss := diag.Samples()
-	var mem, gr []float64
-	for _, s := range ss {
-		mem = append(mem, float64(s.HeapAlloc))
-		gr = append(gr, float64(s.Goroutines))
-	}
-	memTxt, grTxt := "—", "—"
-	if n := len(ss); n > 0 {
-		memTxt = diag.FormatBytes(ss[n-1].HeapAlloc)
-		grTxt = itoa(ss[n-1].Goroutines)
-	}
-	frame := "暂无"
-	for _, st := range diag.Stats() {
-		if st.Name == "app.构建界面" && st.Count > 0 {
-			frame = "平均 " + fmtPerfDur(time.Duration(int64(st.Total)/st.Count)) + " · 最慢 " + fmtPerfDur(st.Max)
-		}
-	}
-	line := func(first bool, title, desc, val string, vals []float64) {
-		rowBox(a, c, first, 38).Children(func() {
-			titled(a, c, title, desc, false)
-			if vals != nil {
-				spark(a, c, vals)
-			}
-			ui.Text(c, val).FontWeight(600).FontFeatures("tnum").MinWidth(70).TextAlign(ui.End)
-		})
-	}
-	line(true, "内存", "本进程堆上存活对象", memTxt, mem)
-	line(false, "协程", "goroutine 数,持续增长说明有泄漏", grTxt, gr)
-	line(false, "界面构建耗时", "每帧构建界面的耗时;超过 33 ms 会记「慢帧」日志", frame, nil)
-	rowBox(a, c, false, 38).Children(func() {
-		titled(a, c, "最近一次卡顿", "界面线程停滞超过 3 秒才会记录", false)
-		ui.Text(c, "无").TextColor(t.Tx3)
 	})
 }
 

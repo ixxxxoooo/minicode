@@ -10,7 +10,8 @@ func TestResolveSetTabID(t *testing.T) {
 		"bogus":       "appearance",
 		"":            "appearance",
 		"prompts":     "chat",
-		"diagnostics": "privacy",
+		"diagnostics": "perf",
+		"perf":        "perf",
 	}
 	for in, want := range cases {
 		if got := resolveSetTabID(in); got != want {

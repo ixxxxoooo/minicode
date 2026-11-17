@@ -12,19 +12,19 @@
     ['外观', ['appearance', 'typography', 'motion', 'brand']],
     ['Claude Code', ['models', 'chat', 'permissions', 'runtime']],
     ['工作台', ['editor', 'lsp', 'terminal', 'scm', 'browser']],
-    ['其他', ['privacy', 'advanced', 'about']],
+    ['其他', ['privacy', 'perf', 'advanced', 'about']],
   ];
   const ICON = {
     general: 'sliders', notify: 'bell', shortcuts: 'kbd',
     appearance: 'palette', typography: 'align', motion: 'spark', brand: 'grid',
     models: 'cpu', chat: 'chat', permissions: 'shield', runtime: 'cube',
     editor: 'code', lsp: 'brain', terminal: 'terminal', scm: 'branch', browser: 'globe',
-    privacy: 'lock', advanced: 'wrench', about: 'info',
+    privacy: 'lock', perf: 'activity', advanced: 'wrench', about: 'info',
   };
   /** 旧分类 id → 新分类 id(地址栏 / 旧记忆里的 setTab 仍能落到正确位置) */
   const ALIAS = {
     customize: 'general', model: 'models', providers: 'models', prompts: 'chat', trust: 'permissions', perm: 'permissions',
-    env: 'runtime', network: 'runtime', intel: 'lsp', usage: 'general', diagnostics: 'privacy',
+    env: 'runtime', network: 'runtime', intel: 'lsp', usage: 'general', diagnostics: 'perf',
   };
 
   /* ───────── 行索引:渲染时顺带记录,搜索用 ───────── */
@@ -207,13 +207,18 @@
 
     browser: { t: '浏览器', d: '内置阅读模式浏览器的抓取参数。浏览器页右上角的齿轮会直接跳到这里。', body: () => `${G('抓取', R('请求超时', '单个页面的最长等待时间', stp(20, '秒', { min: 5, max: 120 })), R('User-Agent', '留空使用内置标识;个别站点会按它返回不同内容', field('', 220, { ph: '默认' })), R('默认进入阅读模式', '内置浏览器目前只有阅读模式,此开关暂无作用', tog(1)))}` },
 
-    privacy: { t: '隐私与诊断', d: '默认不上报任何数据;性能、崩溃与卡顿记录都在本机。', body: () => {
-      const spark = (d) => `<svg class="spk" viewBox="0 0 120 26" preserveAspectRatio="none"><polyline points="${d}" /></svg>`;
-      return `${G('数据上报', R('崩溃报告', '崩溃时是否允许上传匿名堆栈', tog(0)), R('使用统计', '匿名的功能使用次数', tog(0)), R('凭据', 'MiniCode 不读取钥匙串;服务商 API Key 单独存放在 0600 权限的文件里', tag('本地', 'ok')))}
-      ${G('性能(最近 5 分钟)', R('内存', '本进程常驻内存', `<b class="num">412 MB</b>`), R('', '', spark('0,20 12,18 24,19 36,14 48,15 60,11 72,12 84,9 96,10 108,7 120,8')), R('CPU', '100% = 一个核心满载', `<b class="num">6%</b>`), R('', '', spark('0,22 12,21 24,22 36,10 48,20 60,22 72,21 84,12 96,22 108,21 120,22')), R('界面构建耗时', '', `<b class="num">平均 1.8 ms</b>`), R('最近一次卡顿', '界面线程停滞超过 3 秒才会记录', '<span class="t3">无</span>'))}
-      ${G('日志与诊断包', R('日志级别', '环境变量 MINI_LOG 优先', seg(['错误', '警告', '信息', '调试'], 2)), R('记录目录', 'panic、原生崩溃、卡死、异常退出与系统崩溃报告摘要', btn('在访达中显示', 'sm', 'folder', 'data-act="toast" data-msg="已在访达中显示 ~/.minicode/logs"')), R('诊断包', '家目录显示为 ~,只含配置概况与变量名,不含密钥和环境变量值', btn('导出', 'sm', 'download', 'data-act="diag-export"')))}
-      ${G('崩溃与卡顿', `<div class="set-row">${ic('okc', 'c-ok')}<span class="grow t2">最近 30 天没有崩溃记录</span></div>`, R('claude doctor', '检查安装方式、版本、自动更新与配置问题(最多等待 30 秒)', btn('运行', 'sm', 'play', 'data-act="doctor"')))}
-      <div class="fold" id="doctor-out"><div class="fold-in"><div class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:5px"><div class="f ai g3 fs-cap">${ic('okc', 's12 c-ok')}安装方式:原生安装(~/.local/bin/claude)</div><div class="f ai g3 fs-cap">${ic('okc', 's12 c-ok')}版本 2.1.318,已是最新</div><div class="f ai g3 fs-cap">${ic('okc', 's12 c-ok')}自动更新已启用</div><div class="f ai g3 fs-cap">${ic('alert', 's12 c-warn')}~/.claude.json 里有 1 个已失效的项目路径</div></div></div></div>`; } },
+    privacy: { t: '隐私', d: '数据上报与凭据说明;性能监测与诊断包已迁至「性能与诊断」。', body: () => `${G('数据上报', R('崩溃报告', '崩溃时是否允许上传匿名堆栈', tog(0)), R('使用统计', '匿名的功能使用次数', tog(0)), R('凭据', 'MiniCode 不读取钥匙串;服务商 API Key 单独存放在 0600 权限的文件里', tag('本地', 'ok')))}
+      ${G('Claude 环境', R('claude doctor', '检查安装方式、版本、自动更新与配置问题(最多等待 30 秒)', btn('运行', 'sm', 'play', 'data-act="doctor"')))}
+      <div class="fold" id="doctor-out"><div class="fold-in"><div class="card" style="padding:10px 12px;display:flex;flex-direction:column;gap:5px"><div class="f ai g3 fs-cap">${ic('okc', 's12 c-ok')}安装方式:原生安装(~/.local/bin/claude)</div></div></div></div>` },
+
+    perf: { t: '性能与诊断', d: '帧率、资源曲线、慢操作、日志与诊断包;数据仅在本机。MINI_TAB=perf 直达。', body: () => {
+      const spark = (d) => `<svg class="spk" viewBox="0 0 120 80" preserveAspectRatio="none" style="height:80px;width:100%"><polyline points="${d}" stroke="var(--ac)" fill="none" stroke-width="1.5"/><line x1="60" y1="0" x2="60" y2="80" stroke="var(--tx-3)" stroke-dasharray="3 3" opacity=".6"/></svg>`;
+      return `${G('实时概览', R('帧率 / 帧耗时', 'p50 · p95 · p99 与卡顿占比', '<span class="f g2 nw"><b class="num">58</b><span class="t3">p95 22ms</span></span>'), R('CPU / 内存', '本进程采样', '<span class="f g2 nw"><b class="num">6%</b><b class="num">412 MB</b></span>'), R('协程', '子进程明细未做', '<b class="num">92</b>'), R('启动到首帧', '冷启动耗时', '<b class="num">1.24 s</b>'))}
+      ${G('趋势', R('范围', '5 分钟 / 1 小时', seg(['5 分钟', '1 小时'], 0)), R('内存曲线', '悬停显示数值与十字线(硬要求)', spark('0,70 10,68 20,62 30,55 40,58 50,52 60,48 70,50 80,42 90,44 100,38 110,40 120,35')), R('CPU 曲线', '同上', spark('0,72 20,70 40,62 60,68 80,65 100,60 120,58')))}
+      ${G('慢操作', `<div class="set-row"><span class="grow m mono">app.构建界面</span><span class="t3 nw">次数 1280 · p95 12ms</span>${ic('chevD', 's12 t4')}</div>`, R('卡死记录', '看门狗停滞摘要', '<span class="t3">无</span>'))}
+      ${G('日志', R('日志级别', '即时生效', seg(['错误', '警告', '信息', '调试'], 2)), R('详细性能日志', '界面切换 / 慢帧 / 后台任务', tog(0)), R('日志查看', '按模块与搜索过滤', btn('复制最近 200 行', 'sm', 'copy')))}
+      ${G('诊断', R('诊断包', '含 performance.json', btn('导出', 'sm', 'download', 'data-act="diag-export"')), R('看门狗', '主线程停滞抓栈', tog(1)), R('重置统计', '清空内存计数', btn('重置…', 'sm danger')))}
+      <p class="t3 fs-cap">实现:Go 版已接 diag 采样;趋势图 tooltip + 十字线;演示模式三套数据(正常/卡顿多/空)。子进程 CPU/内存、完整日志导出筛选为 part。</p>`; } },
 
     advanced: { t: '高级', d: '数据、运行模式、实验功能与重置。', body: () => `
       ${G('数据', R('数据目录', '设置、服务商、日志与诊断包所在目录', `<span class="f g2 ai">${field('~/.minicode', 150, { mono: 1 })}${btn('打开', 'sm', 'folder', 'data-act="toast" data-msg="已在访达中显示 ~/.minicode"')}</span>`), R('设置文件', '导出 / 导入 settings.json(不含密钥)', `<span class="f g2">${btn('导出', 'sm', 'download', 'data-act="toast" data-msg="已导出 settings.json"')}${btn('导入…', 'sm', 'upload')}</span>`))}

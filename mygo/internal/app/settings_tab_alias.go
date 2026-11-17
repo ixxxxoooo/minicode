@@ -12,7 +12,7 @@ var setTabAliases = map[string]string{
 	"network":     "runtime",
 	"intel":       "lsp",
 	"usage":       "general",
-	"diagnostics": "privacy",
+	"diagnostics": "perf",
 }
 
 // setTabIDs 与 settings_tabs 里的分类 id 同步(单独列出以免包初始化循环)。
@@ -21,7 +21,7 @@ var setTabIDs = map[string]struct{}{
 	"appearance": {}, "typography": {}, "motion": {}, "brand": {},
 	"models": {}, "chat": {}, "permissions": {}, "runtime": {},
 	"editor": {}, "lsp": {}, "terminal": {}, "scm": {}, "browser": {},
-	"privacy": {}, "advanced": {}, "about": {},
+	"privacy": {}, "perf": {}, "advanced": {}, "about": {},
 }
 
 // resolveSetTabID 解析并校验设置分类 id;未知 id 落到「主题与布局」。

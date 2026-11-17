@@ -734,8 +734,11 @@ type layMem struct {
 	chatMax            bool
 }
 
+var viewFirstFrame sync.Once
+
 // View 是窗口的根视图。
 func (a *App) View(c *ui.Context) {
+	viewFirstFrame.Do(diag.MarkFirstFrame)
 	defer diag.SpanSlow("app", "构建界面", 33*time.Millisecond)()
 	kit.SetViewActive(a.win != nil && a.win.IsFocused())
 	// 界面构建中 panic:不能吞(控件树做到一半会错乱),但崩溃前必须把调用栈写进日志与 crashes/,

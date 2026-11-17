@@ -66,7 +66,7 @@ var setNavGroups = []struct {
 	{"外观", []string{"appearance", "typography", "motion", "brand"}},
 	{"Claude Code", []string{"models", "chat", "permissions", "runtime"}},
 	{"工作台", []string{"editor", "lsp", "terminal", "scm", "browser"}},
-	{"其他", []string{"privacy", "advanced", "about"}},
+	{"其他", []string{"privacy", "perf", "advanced", "about"}},
 }
 
 // settingsState 是设置页自己的临时状态。
@@ -137,6 +137,8 @@ type settingsState struct {
 	cr          []crashBrief // 崩溃记录缓存(后台刷新)
 	crAt        time.Time
 	crBusy      bool
+	perfHover   int
+	perfSlowOpen map[string]bool
 	sum         []string // Claude 配置摘要缓存
 	sumAt       time.Time
 	sumBusy     bool
