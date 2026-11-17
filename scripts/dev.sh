@@ -20,7 +20,13 @@ sleep 0.5
 # 组包(Info.plist 与图标清单和正式版共用 scripts/make-app.sh)
 scripts/make-app.sh "$APP" target/dev/minicode-new "MiniCode Dev" dev.minicode.app.dev dev 0
 rm -f target/dev/minicode-new
-codesign --force --sign - "$APP" >/dev/null 2>&1 || true
+# 签名:先清掉扩展属性(resource fork / Finder 信息 / provenance 会让 codesign 报 detritus 失败),
+# 否则包停在「只有链接器的临时签名、Identifier=a.out、Info.plist 未绑定」的状态,
+# 系统通知授权会直接报 UNErrorDomain Code=1(通知不被允许),横幅也没有图标。失败要说出来,不再静默。
+xattr -cr "$APP" 2>/dev/null || true
+if ! codesign --force --sign - --identifier dev.minicode.app.dev "$APP" 2>target/codesign.err; then
+  echo "警告:开发版签名失败(系统通知会不可用):$(tail -1 target/codesign.err)" >&2
+fi
 # 向 LaunchServices 登记这个包:系统通知的图标取自它登记的包内图标,没登记 / 换了包路径时横幅会显示成通用图标
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP" >/dev/null 2>&1 || true
 

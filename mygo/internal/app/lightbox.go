@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
@@ -16,6 +17,16 @@ import (
 var lbLog = diag.L("app.lightbox")
 
 var lbInk = ui.Color{R: 255, G: 255, B: 255, A: 255}
+
+// lbScrim 是灯箱的遮罩:近乎不透明的深色(约 93%),图片周围干净、不被背后的界面干扰。
+// (MyGo 没有「背景模糊」滤镜,只能模糊元素自身,所以用更实的遮罩而不是半透明。)
+var lbScrim = ui.Color{R: 8, G: 8, B: 10, A: 238}
+
+// 灯箱出现 / 消失的动画时长:遮罩与内容一起淡入,图片从 94% 缓缓放大到位;关闭时反向、更快。
+const (
+	lbOpenDur  = 280 * time.Millisecond
+	lbCloseDur = 160 * time.Millisecond
+)
 
 func lbInkA(a float32) ui.Color { return lbInk.Alpha(a) }
 
@@ -30,6 +41,9 @@ type lightboxState struct {
 	loaded     bool
 	miss       bool // 当前图读不到
 	drag       *lbDrag
+	at         time.Time // 打开时刻(入场动画起点)
+	closeAt    time.Time // 开始关闭的时刻(零值 = 没在关);关闭动画结束后才真正销毁
+	aw, ah     float32   // 图片区域上一帧的宽高:滚轮缩放要把光标换算成相对区域中心的位置
 }
 
 type lbDrag struct {
@@ -51,18 +65,61 @@ func (a *App) openLightbox(paths []string, names []string, idx int) {
 			names[i] = baseName(paths[i])
 		}
 	}
-	lb := &lightboxState{paths: paths, names: names, idx: idx, zoom: 1}
+	lb := &lightboxState{paths: paths, names: names, idx: idx, zoom: 1, at: kit.Now()}
 	a.lb = lb
 	a.lbRefreshNatural()
 	a.frameSoon()
 	lbLog.Info("打开灯箱", "path", paths[idx], "n", len(paths), "idx", idx)
 }
 
+// closeLightbox 关闭灯箱:有动效时先播 lbCloseDur 的淡出再销毁(重复调用不重置),没有动效立刻销毁。
 func (a *App) closeLightbox() {
-	if a.lb != nil {
-		lbLog.Info("关闭灯箱")
+	if a.lb == nil {
+		return
 	}
-	a.lb = nil
+	if !kit.MotionOn() {
+		lbLog.Info("关闭灯箱")
+		a.lb = nil
+		return
+	}
+	if a.lb.closeAt.IsZero() {
+		lbLog.Info("关闭灯箱")
+		a.lb.closeAt = kit.Now()
+		a.frameSoon()
+	}
+}
+
+// lbProgress 返回入场 / 退场进度:p 是遮罩与内容的不透明度(0..1),s 是图片缩放系数。
+// 入场 ease-out(先快后慢,落位柔和),退场更快;动效关闭时恒为 1。
+func (lb *lightboxState) lbProgress() (p, s float32) {
+	if !kit.MotionOn() {
+		return 1, 1
+	}
+	if !lb.closeAt.IsZero() {
+		q := float32(kit.Since(lb.closeAt)) / float32(lbCloseDur)
+		q = min(max(q, 0), 1)
+		return 1 - kit.EaseOut(q), 1 - .03*kit.EaseOut(q)
+	}
+	e := kit.EaseOut(min(max(float32(kit.Since(lb.at))/float32(lbOpenDur), 0), 1))
+	return e, .94 + .06*e
+}
+
+// zoomAt 以 (px, py)(相对图片区域左上角)为中心缩放 f 倍:光标下的那一点在缩放前后保持不动,
+// 与 Preview / 地图 / 设计工具的滚轮缩放一致。
+func (lb *lightboxState) zoomAt(f, px, py float32) {
+	old := lb.zoom
+	nz := clamp(old*f, lbZoomMin, lbZoomMax)
+	if math.Abs(float64(nz-1)) < 0.01 {
+		nz = 1
+	}
+	if nz == old {
+		return
+	}
+	r := nz / old
+	cx, cy := px-lb.aw/2, py-lb.ah/2 // 图片中心偏移是相对区域中心记的
+	lb.offX = cx - (cx-lb.offX)*r
+	lb.offY = cy - (cy-lb.offY)*r
+	lb.zoom = nz
 }
 
 func (a *App) lbRefreshNatural() {
@@ -96,9 +153,17 @@ func (a *App) lightboxOverlay(c *ui.Context) {
 		return
 	}
 	t := a.tk
+	if !lb.closeAt.IsZero() && kit.Since(lb.closeAt) >= lbCloseDur {
+		a.lb = nil
+		return
+	}
+	alpha, scale := lb.lbProgress()
+	if alpha < 1 || !lb.closeAt.IsZero() {
+		a.frameSoon() // 动画期间持续出帧
+	}
 	open := true
 	ui.DialogBase(c, &open, func(backdrop, panel ui.Element) {
-		backdrop.Background(t.Scrim).Grow(1)
+		backdrop.Background(lbScrim).Grow(1).Opacity(alpha)
 		closeFn := func() { a.closeLightbox() }
 		backdrop.OnClick(func() {
 			if lb.drag != nil && lb.drag.moved {
@@ -131,6 +196,10 @@ func (a *App) lightboxOverlay(c *ui.Context) {
 			})
 			area := ui.Box(c).Grow(1).MinHeight(0)
 			area.HandleInput(lbPanZoomInput(lb))
+			if b := area.Bounds(); b.W > 0 && b.H > 0 {
+				lb.aw, lb.ah = b.W, b.H
+				vw, vh = b.W, b.H // 图片按图片区域居中 / 适应(此前按整个面板算,垂直方向偏了半个工具条)
+			}
 			dw, dh := lightboxDisplaySize(lb.natW, lb.natH, vw, vh, lb.zoom)
 			if area.Pressed() {
 				if dx, dy, ok := area.Dragged(); ok {
@@ -169,7 +238,7 @@ func (a *App) lightboxOverlay(c *ui.Context) {
 					return
 				}
 				src := a.localImage(lb.paths[lb.idx])
-				imgBox := ui.Box(c).Absolute().Left(lx).Top(ly).Size(dw, dh)
+				imgBox := ui.Box(c).Absolute().Left(lx).Top(ly).Size(dw, dh).Scale(scale, scale)
 				if lb.drag != nil && lb.drag.moved {
 					imgBox.Cursor(ui.CursorGrabbing)
 				} else {
@@ -220,24 +289,13 @@ func lbPanZoomInput(lb *lightboxState) func(ev ui.InputEvent) bool {
 			if ev.Scale <= 0 {
 				return false
 			}
-			lb.zoom = clamp(lb.zoom*ev.Scale, lbZoomMin, lbZoomMax)
-			if math.Abs(float64(lb.zoom-1)) < 0.01 {
-				lb.zoom = 1
-			}
+			lb.zoomAt(ev.Scale, ev.X, ev.Y) // 触控板捏合:以手指位置为中心
 			return true
 		case ui.InputScroll:
 			if ev.DY == 0 {
 				return false
 			}
-			cx, cy := ev.X, ev.Y
-			f := lightboxWheelFactor(ev.DY)
-			old := lb.zoom
-			lb.zoom = clamp(lb.zoom*f, lbZoomMin, lbZoomMax)
-			if lb.zoom != old {
-				r := lb.zoom / old
-				lb.offX = cx - (cx-lb.offX)*r
-				lb.offY = cy - (cy-lb.offY)*r
-			}
+			lb.zoomAt(lightboxWheelFactor(ev.DY), ev.X, ev.Y) // 滚轮:以光标为中心
 			return true
 		}
 		return false
@@ -248,10 +306,7 @@ func (a *App) lbZoomBy(f float32) {
 	if a.lb == nil {
 		return
 	}
-	a.lb.zoom = clamp(a.lb.zoom*f, lbZoomMin, lbZoomMax)
-	if math.Abs(float64(a.lb.zoom-1)) < 0.01 {
-		a.lb.zoom = 1
-	}
+	a.lb.zoomAt(f, a.lb.aw/2, a.lb.ah/2) // 键盘 / 按钮缩放:以图片区域中心为中心
 }
 
 func (a *App) lbStep(d int) {

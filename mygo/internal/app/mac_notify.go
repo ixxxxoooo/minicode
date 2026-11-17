@@ -48,3 +48,13 @@ func (a *App) OpenSessionFromNotify(sessID string) {
 	log.Info("通知点击打开会话", "sess", sessID)
 	a.OpenSession(sessID)
 }
+
+// PrepareNotify 启动时就登记系统通知(安装代理 + 申请授权):授权弹窗在应用打开时出现,
+// 而不是等到第一条通知要发的时候;被拒绝 / 签名不对导致的失败也在启动日志里就能看到。
+func (a *App) PrepareNotify() {
+	if a == nil || a.secondary {
+		return
+	}
+	macNotifyApp = a
+	initMacNotifyBundle()
+}
