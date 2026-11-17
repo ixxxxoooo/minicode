@@ -22,7 +22,10 @@ func (a *App) composer(c *ui.Context) {
 	if !a.composerInAt.IsZero() {
 		box = kit.PopIn(box, a.composerInAt)
 	}
-	focus := box.FocusWithin() || box.Hovered()
+	// 文件拖到输入框上时,命中的是输入框自己(最内层),外层对话栏算不到;两边任一有拖拽都算「拖入中」
+	dragHint := a.chatDrop(box)
+	dropOn := a.ux.dropOn || dragHint != ""
+	focus := !dropOn && (box.FocusWithin() || box.Hovered())
 	if focus {
 		box.BorderColor(t.AcLine)
 		box.Shadow(0, 0, 0, 3, t.Ring())
@@ -30,13 +33,12 @@ func (a *App) composer(c *ui.Context) {
 	for _, s := range t.Shadow1() {
 		box.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
-	if a.ux.dropOn { // 「拖入框」:文件拖在上面时整个输入框变成强调色虚线框,松手后恢复
-		box.Background(t.AcSoft)
+	if dropOn { // 「拖入框」:整个输入框变成强调色虚线框(去掉实线边与光晕,免得叠在一起),松手后恢复
+		box.Background(t.AcSoft).BorderColor(ui.Transparent)
 		box.DrawOver(func(p *ui.Painter, rc ui.Rect) {
 			p.StrokeDashed(ui.Rect{X: rc.X + 1, Y: rc.Y + 1, W: rc.W - 2, H: rc.H - 2}, t.Ac, r, 2)
 		})
 	}
-	_ = a.chatDrop(box)
 	a.syncDraft(c) // 在拖放处理之后:别处改了草稿就重新拆出正文(含胶囊)与图片附件
 	anchor := box
 	box.Children(func() {

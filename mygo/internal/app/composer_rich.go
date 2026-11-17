@@ -25,12 +25,18 @@ func (a *App) composerEditor(c *ui.Context, svc ui.Services) ui.Element {
 		Caret: t.Ac, Selection: t.Ac.Alpha(.22),
 	}
 	// 编辑器高度:单行起步,内容多了按量到的末段底边长高,最多 8 行,再多就在里面滚
-	h := line
+	// 不能直接用末段底边:编辑器太矮时会为露出光标把内容滚上去,底边就恒等于视口底、永远长不高。
+	// 段落的 Top 是滚动后的坐标、Height 是整段的高,所以「首个可见段顶 → 末段底」的跨度与滚动无关;
+	// 首个可见段不是第 0 段,说明上面还有内容被滚走了,直接给到最大高度。
+	h, maxH := line, line*8
 	if boxes := doc.VisibleParagraphs(); len(boxes) > 0 {
-		last := boxes[len(boxes)-1]
-		h = max(h, last.Top+last.Height)
+		first, last := boxes[0], boxes[len(boxes)-1]
+		h = max(h, last.Top+last.Height-first.Top)
+		if first.Index > 0 {
+			h = maxH
+		}
 	}
-	h = min(h, line*8)
+	h = min(h, maxH)
 	var ed ui.Element
 	if a.ux.clipHave { // 上一次接管粘贴时临时清空了剪贴板,把原内容写回
 		svc.WriteClipboardData(a.ux.clipRestore)
@@ -46,17 +52,20 @@ func (a *App) composerEditor(c *ui.Context, svc ui.Services) ui.Element {
 		}
 	})
 	wrap.Children(func() {
-		ed = richtext.EditorBase(c.Key("draft"), doc, richtext.EditorOptions{
-			Label:       "输入消息",
-			Placeholder: a.composerHint(),
-			Font:        ui.Font{Size: fs, LineHeight: lh},
-			NoMarkdown:  true,
-			Theme:       th,
-			Menu:        func(m *ui.Menu) {}, // 不给系统的富文本菜单:它的「粘贴」会绕过上面的纯文本 / 图片 / 文件处理
-			OnKey: func(key ui.Key, mods ui.Modifiers) bool {
-				return a.composerKey(svc, key, mods)
-			},
-		}).Height(h)
+		// 编辑器是自绘的,滚动后会画出自己的矩形(盖住上面的缩略图行),所以套一层不带内边距的裁剪容器
+		ui.Column(c.Key("draft-clip")).Clip().Children(func() {
+			ed = richtext.EditorBase(c.Key("draft"), doc, richtext.EditorOptions{
+				Label:       "输入消息",
+				Placeholder: a.composerHint(),
+				Font:        ui.Font{Size: fs, LineHeight: lh},
+				NoMarkdown:  true,
+				Theme:       th,
+				Menu:        func(m *ui.Menu) {}, // 不给系统的富文本菜单:它的「粘贴」会绕过上面的纯文本 / 图片 / 文件处理
+				OnKey: func(key ui.Key, mods ui.Modifiers) bool {
+					return a.composerKey(svc, key, mods)
+				},
+			}).Height(h)
+		})
 	})
 	if wrap.Clicked() {
 		a.ux.focusDraft = true
