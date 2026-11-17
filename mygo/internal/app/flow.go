@@ -292,7 +292,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			}
 			sep()
 			objCol := t.Tx2
-			if sp.fam == famThink || sp.fam == famExec || sp.path != "" { // 命令与文件名同色(Tx3,与动词一致):对象是长串 / 文件名,不比动词更深
+			if sp.fam == famThink || sp.fam == famExec || sp.path != "" || sp.plainObj { // 命令 / 文件名 / 联网搜索的查询词同色(Tx3,与动词一致):对象是长串 / 一句话,不比动词更深
 				objCol = t.Tx3
 			}
 			obj = ui.Text(c, sp.obj).TextColor(objCol).SingleLine().Shrink(1).MinWidth(0).LineHeight(1)

@@ -15,6 +15,7 @@
 .step .si { width: 16px; height: 16px; display: grid; place-items: center; flex: none; border-radius: 50%; color: color-mix(in srgb, var(--tone, var(--tx-3)) 78%, var(--tx-3)); }
 .step .sv { color: var(--tx-3); flex: none; }
 .step .so { color: var(--tx-2); font-weight: var(--fw-regular); }  /* 对象 = 次要灰,不加粗(对标 Cursor):动词 tx-3 → 对象 tx-2 → 附注 tx-3 → 结果 tx-4 */
+.step[data-tool="search"] .so { color: var(--tx-3); }  /* 联网搜索的查询词是一句话、不是对象:与动词「联网搜索」同色同字体(tx-3 常规),不比动词更深 */
 .step .sm { color: var(--tx-3); font: var(--fs-ctl) var(--font-mono); }
 .step .sr { margin-left: auto; padding-left: 8px; color: var(--tx-4); font-size: var(--fs-cap); display: flex; gap: 6px; align-items: center; flex: none; font-variant-numeric: tabular-nums; }
 .step .chev { color: var(--tx-4); opacity: 0; transition: transform var(--dur-base) var(--ease-out), opacity var(--dur-fast); }

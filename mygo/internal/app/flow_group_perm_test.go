@@ -42,7 +42,7 @@ func TestToolTokens(t *testing.T) {
 	}
 	ws := done(core.NewToolCall("w", "WebSearch", "搜索网页").WithInput(map[string]any{"query": "axum case insensitive route"}))
 	ws.Content = []core.ToolContent{&core.TextBlock{Text: `Links: [{"title":"a","url":"https://a"},{"title":"b","url":"https://b"}]`}}
-	if s := a.presentTool(ws); s.verb != "联网搜索" || s.obj != "axum case insensitive route" || s.right != "2 条结果" {
+	if s := a.presentTool(ws); s.verb != "联网搜索" || s.obj != "axum case insensitive route" || s.right != "2 条结果" || !s.plainObj {
 		t.Errorf("WebSearch:%+v", s)
 	}
 	glob := done(core.NewToolCall("g", "Glob", "查找").WithInput(map[string]any{"pattern": "**/*_test.rs"}))

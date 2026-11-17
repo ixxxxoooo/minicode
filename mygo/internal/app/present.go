@@ -57,6 +57,7 @@ type step struct {
 	state      string // "" 完成 / run 运行中 / err 失败 / deny 已拒绝
 	open       bool   // 默认展开
 	hasBody    bool
+	plainObj   bool // 对象是一句话(如联网搜索的查询词):与动词同色(Tx3),不按「对象」提亮
 
 	// 行内动作(悬停出现,点对象名 / 图标也能跳):
 	path    string              // 涉及的文件(原样,可能是绝对路径),空 = 无
@@ -224,8 +225,9 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 	case core.KindFetch:
 		s.fam = famWeb
 		s.icon, s.verb, s.obj = "globe", "抓取", firstNonEmpty(inputStr(tc, "url"), inputStr(tc, "query"), tc.Title)
-		if tc.Name == "WebSearch" { // 设计稿:联网搜索 <查询词>,右侧「N 条结果」
+		if tc.Name == "WebSearch" { // 设计稿:联网搜索 <查询词>,右侧「N 条结果」;查询词与动词同色同字体(plainObj)
 			s.verb = "联网搜索"
+			s.plainObj = true
 			if n := strings.Count(firstText(tc), `"url"`); n > 0 {
 				s.right = fmt.Sprintf("%d 条结果", n)
 			}
