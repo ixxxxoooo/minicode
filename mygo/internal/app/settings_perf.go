@@ -190,43 +190,6 @@ func perfTrendBody(a *App, c *ui.Context) {
 	perfLineChart(a, c, "CPU", series.CPU, series.Labels, t.Ac)
 }
 
-func perfLineChart(a *App, c *ui.Context, title string, vals []float64, labels []string, col ui.Color) {
-	t := a.tk
-	if a.set.perfHover == nil {
-		a.set.perfHover = map[string]int{}
-	}
-	a.box(c).Padding(10, 12).Gap(6).Children(func() {
-		ui.Text(c, title).FontWeight(500)
-		hover := a.set.perfHover[title]
-		ui.Box(c).Grow(1).Height(120).Clip().Children(func() {
-			ui.Box(c).Grow(1).Draw(func(p *ui.Painter, r ui.Rect) {
-				drawPerfSeries(p, r, vals, col, hover)
-			})
-			ui.Row(c).Grow(1).Absolute().Left(0).Right(0).Top(0).Bottom(0).Children(func() {
-				n := len(vals)
-				for i := 0; i < n; i++ {
-					i := i
-					str := labels[i] + " · " + fmtVal(title, vals[i])
-					strip := ui.Box(c.Key(fmt.Sprintf("perf-%s-%d", title, i))).Grow(1).Basis(0).Tooltip(str)
-					if strip.Hovered() {
-						a.set.perfHover[title] = i
-					}
-				}
-			})
-		})
-		if hover := a.set.perfHover[title]; hover >= 0 && hover < len(labels) {
-			ui.Text(c, labels[hover]+" · "+fmtVal(title, vals[hover])).FontSize(theme.FsCap).TextColor(t.Tx3).FontFeatures("tnum")
-		}
-	})
-}
-
-func fmtVal(title string, v float64) string {
-	if title == "CPU" {
-		return title + " " + fmt.Sprintf("%.1f%%", v)
-	}
-	return title + " " + diag.FormatBytes(uint64(v))
-}
-
 func perfProcsBody(a *App, c *ui.Context) {
 	t := a.tk
 	procs := diag.ChildProcs()
@@ -259,30 +222,6 @@ func perfProcsBody(a *App, c *ui.Context) {
 			ui.Text(c, diag.FormatCPU(p.CPU)).FontFeatures("tnum").Width(48).TextAlign(ui.End)
 			ui.Text(c, diag.FormatBytes(p.RSS)).FontFeatures("tnum").Width(72).TextAlign(ui.End)
 		})
-	}
-}
-
-func drawPerfSeries(p *ui.Painter, r ui.Rect, vals []float64, col ui.Color, hover int) {
-	if len(vals) < 2 {
-		return
-	}
-	lo, hi := vals[0], vals[0]
-	for _, v := range vals {
-		lo, hi = min(lo, v), max(hi, v)
-	}
-	if hi == lo {
-		hi = lo + 1
-	}
-	pts := make([][2]float32, len(vals))
-	for i, v := range vals {
-		x := r.X + float32(i)/float32(len(vals)-1)*r.W
-		y := r.Y + r.H - 2 - float32((v-lo)/(hi-lo))*(r.H-4)
-		pts[i] = [2]float32{x, y}
-	}
-	p.StrokePolyline(pts, 1.5, col)
-	if hover >= 0 && hover < len(pts) {
-		x := pts[hover][0]
-		p.StrokePolyline([][2]float32{{x, r.Y}, {x, r.Y + r.H}}, 1, col.Alpha(.5))
 	}
 }
 

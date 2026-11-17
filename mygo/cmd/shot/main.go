@@ -34,6 +34,7 @@ func main() {
 	popup := flag.String("popup", "", "打开某个弹层:cfg / sbcfg / ctx / upd / acct")
 	clicks := flag.String("click", "", "截图前依次点击,形如 IDE;100,200(文字或 DIP 坐标);每次点击后推进 -step 毫秒")
 	step := flag.Int("step", 600, "每次点击后推进的毫秒数")
+	hover := flag.String("hover", "", "截图前把鼠标移到 x,y(DIP)并停住,用来看悬停态(悬浮卡、十字线等)")
 	drag := flag.String("drag", "", "拖拽追踪:x0,y0,x1,y1,帧数。按住 (x0,y0) 拖到 (x1,y1),每帧(16ms)打印 -trace 里文字的位置,之后不再截图")
 	trace := flag.String("trace", "", "点击后按 16ms 逐帧推进,打印这些文字(逗号分隔)的位置,用来读动画曲线;之后不再截图")
 	noMotion := flag.Bool("nomotion", false, "关闭动效直接取终态(截图里没有窗口,frameSoon 是空操作,按真实时钟推进的入场动画如用量柱状图会停在第一帧)")
@@ -235,6 +236,20 @@ func main() {
 			os.Exit(0)
 		}
 		tt.Advance(time.Duration(*step) * time.Millisecond)
+	}
+	if *hover != "" {
+		var hx, hy float32
+		if _, err := fmt.Sscanf(*hover, "%f,%f", &hx, &hy); err != nil {
+			fmt.Fprintln(os.Stderr, "-hover 格式:x,y")
+			os.Exit(2)
+		}
+		for i := 0; i < 3; i++ { // 先到旁边再移过去,多推几帧:悬停态要经过「进入」事件才会建立
+			tt.Move(hx-3, hy)
+			tt.Frame()
+			tt.Move(hx, hy)
+			tt.Frame()
+			tt.Advance(100 * time.Millisecond)
+		}
 	}
 	if *drag != "" {
 		var x0, y0, x1, y1 float32
