@@ -15,6 +15,7 @@ type sysNote struct {
 	sess        string // 所属会话 id:点击回到它,通知中心里同一会话叠成一组
 	kind        int    // 0 普通 / 1 需要确认(带动作、时效性)/ 2 出错(时效性)
 	permID      string // kind=1 时的权限请求 id
+	icon        []byte // 当前所选样式的应用图标 PNG(发送时填入),作为通知附件,保证换了图标通知也跟着换
 }
 
 // 通知种类。
@@ -56,6 +57,7 @@ func (a *App) sendSystemNotify(n sysNote) {
 	}
 	n.sess = strings.TrimSpace(n.sess)
 	sound := a.notifySoundOn()
+	n.icon = a.dockIconData(a.tk != nil && a.tk.Palette.Dark)
 	a.bg("system-notify", func() func() {
 		return func() { a.notifyMacNative(n, sound) }
 	})

@@ -81,7 +81,9 @@ func postMacNotification(n sysNote, sound bool) {
 	if sound {
 		snd = 1
 	}
-	C.mc_post_notify(ct, cb, cs, cp, C.int(n.kind), C.int(snd))
+	ci := C.CString(notifyIconFile(n.icon))
+	defer C.free(unsafe.Pointer(ci))
+	C.mc_post_notify(ct, cb, cs, cp, C.int(n.kind), C.int(snd), ci)
 }
 
 // clearMacNotification 撤掉某个确认请求的系统横幅(已在应用里处理)。

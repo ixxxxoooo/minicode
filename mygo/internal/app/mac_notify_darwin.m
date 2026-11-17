@@ -86,7 +86,7 @@ static void mc_go_notify_open(const char *sess) {
   goMCNotifySession((char *)sess);
 }
 
-void mc_post_notify(const char *title, const char *body, const char *sess, const char *permID, int kind, int playSound) {
+void mc_post_notify(const char *title, const char *body, const char *sess, const char *permID, int kind, int playSound, const char *iconPath) {
   if (@available(macOS 10.14, *)) {
     if (!mc_bundle_app) {
       return;
@@ -108,6 +108,24 @@ void mc_post_notify(const char *title, const char *body, const char *sess, const
       info[@"perm"] = permStr;
     }
     c.userInfo = info;
+    if (iconPath && iconPath[0]) {
+      // 附上当前样式的应用图标(通知右侧缩略图);系统会把附件文件搬走,所以先复制一份临时文件
+      NSString *src = [NSString stringWithUTF8String:iconPath];
+      NSString *tmp = [NSTemporaryDirectory() stringByAppendingPathComponent:
+                          [NSString stringWithFormat:@"minicode-notify-%f.png", [NSDate timeIntervalSinceReferenceDate]]];
+      NSError *cpErr = nil;
+      if ([[NSFileManager defaultManager] copyItemAtPath:src toPath:tmp error:&cpErr]) {
+        NSError *atErr = nil;
+        UNNotificationAttachment *att = [UNNotificationAttachment attachmentWithIdentifier:@"icon"
+                                                                                       URL:[NSURL fileURLWithPath:tmp]
+                                                                                   options:nil error:&atErr];
+        if (att) {
+          c.attachments = @[ att ];
+        } else {
+          NSLog(@"MiniCode notify icon: %@", atErr);
+        }
+      }
+    }
     c.categoryIdentifier = (kind == 1 && permStr.length > 0) ? @"minicode.approval" : @"minicode.session";
     if (kind >= 1) {
       // 时效性:需要你拍板 / 出错的通知可以穿透专注模式(没有该权限的系统上等同普通通知)

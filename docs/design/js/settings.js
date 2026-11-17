@@ -60,9 +60,9 @@
       R('Dock 角标', '图标右上角的红色数字', B.segOpt('dockBadge', ['关', '待处理数', '运行中数'])),
       R('需要确认时 Dock 弹跳', '权限请求或提问到达、而 MiniCode 不在前台时', B.segOpt('dockBounce', ['不弹', '一次', '直到处理'])),
       R('Dock 图标显示进度', '下载更新、导出诊断包等超过 2 秒的操作', B.togOpt('dockProgress')),
-      R('同时更换访达里的图标', '默认只改 Dock、⌘Tab 与应用内;打开后把所选图标写进 MiniCode.app 的自定义图标(访达、启动台、关于本机);关闭即还原。应用更新后第一次启动会自动重新套用', B.togOpt('fileIcon')),
+      R('同时更换访达里的图标', '默认只改 Dock、⌘Tab 与应用内,系统通知右侧附带当前样式图标;打开后把所选图标写进 MiniCode.app 的自定义图标(访达、启动台、关于本机、通知左侧应用图标);关闭即还原。应用更新后第一次启动会自动重新套用', B.togOpt('fileIcon')),
       R('当前生效', '改完设置会立刻套用,不需要重启;哪一处没变,点右边「重新应用」', `<div class="fc g1" style="align-items:flex-end"><span class="fs-cap"><span class="t4">Dock</span> <span class="t3">已套用</span></span><span class="fs-cap"><span class="t4">访达</span> <span class="t3">已更换 / 未开启 / 失败:原因</span></span><span class="fs-cap"><span class="t4">菜单栏</span> <span class="t3">已显示 · 提示符</span></span>${btn('重新应用', 'sm', 'refresh', 'data-act="brand-reapply"')}</div>`))}
-      ${note('运行时换的图标只在 MiniCode 运行期间有效;通知中心与「保留在 Dock」的那一格仍是包内默认图标。打开「同时更换访达里的图标」后,访达与启动台也会换;该开关会让 .app 在 codesign --verify --strict 下报「resource fork」,但不影响启动与更新。')}
+      ${note('运行时换的图标只在 MiniCode 运行期间有效;通知左侧的应用小图标与「保留在 Dock」的那一格仍是包内默认图标(通知右侧会附带当前样式图标作缩略图)。打开「同时更换访达里的图标」后,访达与启动台也会换;该开关会让 .app 在 codesign --verify --strict 下报「resource fork」,但不影响启动与更新。')}
       ${G('菜单栏图标',
       R('在菜单栏显示图标', '关闭后可在本类重新打开;⌘ 拖出菜单栏也等于关闭', B.togOpt('trayOn')),
       R('图标样式', '与应用图标是同一个样式(单色模板图,系统按菜单栏明暗自动着色,点开时自动反白);要换样式请在上方「应用图标」里选,两处同时变', `<b class="t2" data-bi-name="tray">${B.styleName()}</b>`),
