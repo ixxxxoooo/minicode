@@ -310,7 +310,7 @@ func (a *App) refsFileRow(c *ui.Context, r *refsState, file string, i int) {
 		r.folded[file] = !folded
 		r.rebuildRows()
 	})
-	btn.ContextMenu(func(m *ui.Menu) { a.refsFileMenu(m, r, file) })
+	kit.CtxMenu(btn, func(m *ui.Menu) { a.refsFileMenu(m, r, file) })
 	btn.Children(func() {
 		chev := map[bool]string{true: "chevR", false: "chevD"}[folded]
 		kit.Ic(c, chev, kit.S12).TextColor(t.Tx3).Transition(kit.Fade)
@@ -345,7 +345,7 @@ func (a *App) refsHitRow(c *ui.Context, r *refsState, it refItem, ix, i int) {
 	key := refItemKey(it, word)
 	on := r.selKey == key || (r.list.Selected != nil && *r.list.Selected == i)
 	row := kit.RowEl(c, on).Key("rf-" + key).Gap(6).PaddingStart(22).MinHeight(theme.Px(22))
-	row.ContextMenu(func(m *ui.Menu) { a.refsHitMenu(m, r, it) })
+	kit.CtxMenu(row, func(m *ui.Menu) { a.refsHitMenu(m, r, it) })
 	row.OnClick(func() {
 		r.selKey = key
 		r.list.Selected = &i

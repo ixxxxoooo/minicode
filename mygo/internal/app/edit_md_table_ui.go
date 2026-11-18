@@ -226,7 +226,7 @@ func (a *App) mdTableView(c *ui.Context, tb *ideTab, md *mdState, idx int, s *md
 								})
 							}
 						}
-						in.ContextMenu(func(m *ui.Menu) { a.mdTableMenu(m, md, s, rr, cc) })
+						kit.CtxMenu(in, func(m *ui.Menu) { a.mdTableMenu(m, md, s, rr, cc) })
 					}
 					ui.Row(c).Width(mdDelW).Shrink(0).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
 						if rr >= 0 {

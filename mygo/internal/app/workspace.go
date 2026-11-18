@@ -266,7 +266,7 @@ func (a *App) etabs(c *ui.Context) {
 			}
 			kit.Ib(c, "cols", kit.IbOpt{Small: true, Tip: "向右拆分 ⌘\\"}).OnClick(func() { a.splitEditor(1) })
 			kit.Ib(c, "rows", kit.IbOpt{Small: true, Tip: "向下拆分"}).OnClick(func() { a.splitEditor(2) })
-			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.tabStripMenu)
+			kit.MenuBtn(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}), a.tabStripMenu)
 		})
 	})
 }
@@ -313,7 +313,7 @@ func (a *App) etabPane(c *ui.Context, tb *ideTab, pane int8) {
 	if a.ide.splitDir != 0 {
 		a.etabDrag(el, tb, pane)
 	}
-	el.ContextMenu(func(m *ui.Menu) { a.tabMenu(m, tb) })
+	kit.CtxMenu(el, func(m *ui.Menu) { a.tabMenu(m, tb) })
 	// 鼠标中键关闭标签(对标 VS Code / 浏览器)
 	a.onMiddleClick(el, tb.id, func() {
 		ideLog.Info("中键关闭标签", "tab", tb.id)

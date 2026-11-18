@@ -146,7 +146,7 @@ func (a *App) scmHead(c *ui.Context) {
 		if s.ahead > 0 {
 			ui.Text(c, itoa(s.ahead)).FontSize(theme.FsMicro).TextColor(t.AcTx).FontFeatures("tnum").Shrink(0)
 		}
-		kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.scmHeadMenu)
+		kit.MenuBtn(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}), a.scmHeadMenu)
 	})
 }
 
@@ -254,7 +254,7 @@ func (a *App) scmGroup(c *ui.Context, id, title string, cs []vcs.Change, actIcon
 		h.Background(t.Fill1)
 	}
 	h.OnClick(func() { s.folded[id] = !s.folded[id] })
-	h.ContextMenu(func(m *ui.Menu) { a.scmGroupMenu(m, id, cs) })
+	kit.CtxMenu(h, func(m *ui.Menu) { a.scmGroupMenu(m, id, cs) })
 	h.Children(func() {
 		kit.Ic(c, map[bool]string{true: "chevR", false: "chevD"}[s.folded[id]], kit.S12)
 		ui.Text(c, title).FontSize(theme.Px(10.5)).FontWeight(500).LetterSpacing(.3)
@@ -344,7 +344,7 @@ func (a *App) scmCommitRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow,
 	} else if r.Hovered() {
 		r.Background(t.Fill2)
 	}
-	r.ContextMenu(func(m *ui.Menu) { a.commitMenu(m, cm) })
+	kit.CtxMenu(r, func(m *ui.Menu) { a.commitMenu(m, cm) })
 	r.OnClick(func() {
 		if open {
 			s.expanded = ""

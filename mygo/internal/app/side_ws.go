@@ -95,7 +95,7 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 		}
 		a.projOpen[w.ID] = !open
 	})
-	r.ContextMenu(func(m *ui.Menu) { a.wsMenu(m, w) })
+	kit.CtxMenu(r, func(m *ui.Menu) { a.wsMenu(m, w) })
 	kit.DragLift(r, r.Dragging())
 	r.Children(func() {
 		if over {

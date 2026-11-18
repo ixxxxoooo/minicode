@@ -51,7 +51,7 @@ func (a *App) treeCompactRow(c *ui.Context, tail, label string, depth, row int) 
 	expanded := d.open[tail]
 	on := d.sel == tail || strings.HasPrefix(d.sel, tail+"/")
 	r := a.treeNavDrop(kit.RowEl(c, on).Key("tr-cmp-"+tail), row).PaddingStart(6 + float32(depth)*14).Gap(6)
-	r.ContextMenu(func(m *ui.Menu) { a.treeMenu(m, tail, true) })
+	kit.CtxMenu(r, func(m *ui.Menu) { a.treeMenu(m, tail, true) })
 	if r.Clicked() {
 		a.filesFocus = true
 		d.sel = tail

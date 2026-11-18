@@ -82,8 +82,8 @@ func (a *App) crumbPartMenu(m *ui.Menu, tb *ideTab, partIx int) {
 // crumbSegment 渲染可点击的路径段。
 func (a *App) crumbSegment(c *ui.Context, tb *ideTab, name string, partIx int, last bool) {
 	t := a.tk
-	b := ui.ButtonBase(c).Key("crumb-" + tb.path + "-" + itoa(partIx)).Height(18).PaddingX(3).Gap(3).
-		Radius(t.RXs()).AlignItems(ui.Center).Cursor(ui.CursorPointer).Menu(func(m *ui.Menu) {
+	b := kit.MenuBtn(ui.ButtonBase(c).Key("crumb-"+tb.path+"-"+itoa(partIx)).Height(18).PaddingX(3).Gap(3).
+		Radius(t.RXs()).AlignItems(ui.Center).Cursor(ui.CursorPointer), func(m *ui.Menu) {
 		a.crumbPartMenu(m, tb, partIx)
 	})
 	if b.Hovered() {
@@ -108,8 +108,8 @@ func (a *App) crumbSymSegment(c *ui.Context, tb *ideTab, syms []symbol, symIx in
 	sy := syms[symIx]
 	t := a.tk
 	active := a.scopeOn() && symIx == len(enclosing(syms, tb.st.CursorPos().Line))-1
-	b := ui.ButtonBase(c).Key("crumb-sym-" + tb.path + "-" + itoa(symIx)).Height(18).PaddingX(3).Gap(3).
-		Radius(t.RXs()).AlignItems(ui.Center).Cursor(ui.CursorPointer).Menu(func(m *ui.Menu) {
+	b := kit.MenuBtn(ui.ButtonBase(c).Key("crumb-sym-"+tb.path+"-"+itoa(symIx)).Height(18).PaddingX(3).Gap(3).
+		Radius(t.RXs()).AlignItems(ui.Center).Cursor(ui.CursorPointer), func(m *ui.Menu) {
 		a.crumbSymMenu(m, tb, syms, symIx)
 	})
 	if active {

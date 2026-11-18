@@ -593,7 +593,7 @@ func wordBound(rs []rune, a, b int) bool {
 
 // termMenu 是终端的右键菜单。
 func (a *App) termMenu(c *ui.Context, body ui.Element, tp *termPanel) {
-	body.ContextMenu(func(m *ui.Menu) {
+	kit.CtxMenu(body, func(m *ui.Menu) {
 		has := tp.selectedText() != ""
 		live := tp.t != nil
 		if menuItem(m, "复制").Trailing("⌘C").Disabled(!has).Tooltip(map[bool]string{true: "先在终端里选中文字"}[!has]).Chosen() {

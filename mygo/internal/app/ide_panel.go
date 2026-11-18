@@ -151,7 +151,7 @@ func (a *App) bottomPanelBody(c *ui.Context, h float32) {
 							a.newTerm()
 						}
 					})
-					kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.termMoreMenu)
+					kit.MenuBtn(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}), a.termMoreMenu)
 				}
 				mi, mt := "max", "最大化面板 ⌘⇧J"
 				if a.ly.panelMax {
@@ -273,7 +273,7 @@ func (a *App) problems(c *ui.Context) {
 						continue
 					}
 					row := kit.RowEl(c, false).Key("dp-" + g.rel + itoa(p.line)).Gap(6)
-					row.ContextMenu(func(m *ui.Menu) {
+					kit.CtxMenu(row, func(m *ui.Menu) {
 						a.problemMenu(m, g.rel, p.line, p.msg, func() string {
 							var sb strings.Builder
 							for _, item := range g.items {

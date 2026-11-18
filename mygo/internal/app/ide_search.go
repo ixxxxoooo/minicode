@@ -437,7 +437,7 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 			s.folded[f.Path] = !s.folded[f.Path]
 			s.rows = s.flatten() // 行列表是缓存的拍平结果,折叠状态变了必须重排,否则只有箭头转了、内容不收
 		})
-		row.ContextMenu(func(m *ui.Menu) { a.searchFileMenu(m, f.Path) })
+		kit.CtxMenu(row, func(m *ui.Menu) { a.searchFileMenu(m, f.Path) })
 		row.Children(func() {
 			kit.Ic(c, map[bool]string{true: "chevR", false: "chevD"}[s.folded[f.Path]], kit.S12).TextColor(t.Tx3)
 			a.fileIc(c, path.Base(f.Path))
@@ -458,7 +458,7 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 	} else if row.Hovered() {
 		row.Background(t.Fill1)
 	}
-	row.ContextMenu(func(menu *ui.Menu) { a.searchMatchMenu(menu, m) })
+	kit.CtxMenu(row, func(menu *ui.Menu) { a.searchMatchMenu(menu, m) })
 	row.OnClick(func() {
 		s.selMatch = mkey(m)
 		a.ide.navMark()

@@ -58,7 +58,7 @@ func (a *App) scmExpandAllView(c *ui.Context) {
 				kit.Cnt(c, itoa(len(a.repos)), false)
 			})
 			kit.Tag(c, "全部展开", kit.KAc)
-			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多"}).Menu(a.repoOverviewMenu)
+			kit.MenuBtn(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多"}), a.repoOverviewMenu)
 		})
 		if !open {
 			return

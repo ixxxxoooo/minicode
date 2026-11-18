@@ -122,7 +122,7 @@ func (a *App) scmStashFileRows(c *ui.Context, i int) {
 		} else if fr.Hovered() {
 			fr.Background(t.Fill1)
 		}
-		fr.ContextMenu(func(m *ui.Menu) { a.scmStashFileMenu(m, i, ch) })
+		kit.CtxMenu(fr, func(m *ui.Menu) { a.scmStashFileMenu(m, i, ch) })
 		fr.OnClick(func() { a.scmOpenStashDiff(i, ch) })
 		fr.Children(func() {
 			a.fileIc(c, path.Base(ch.Path))

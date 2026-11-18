@@ -449,7 +449,7 @@ func (a *App) tableView(c *ui.Context, tb *ideTab) {
 					v.sheet = i
 				}
 			} else {
-				kit.Btn(c, clipRunes(sh.Name, 16)+"  ▾", kit.BtnOpt{Small: true, Tip: "切换工作表"}).Menu(func(m *ui.Menu) {
+				kit.MenuBtn(kit.Btn(c, clipRunes(sh.Name, 16)+"  ▾", kit.BtnOpt{Small: true, Tip: "切换工作表"}), func(m *ui.Menu) {
 					for i := range wb.Sheets {
 						if menuItem(m, wb.Sheets[i].Name).Chosen() {
 							v.sheet = i

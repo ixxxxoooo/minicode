@@ -90,11 +90,24 @@ func FloatLift(el ui.Element) ui.Element {
 	if !T.Glass() {
 		return el
 	}
-	el.Material(GlassMat(0))
+	el.Material(GlassMat(0)).BorderColor(T.Tone().RimLo) // 描边换成玻璃的浅色高光边,不要灰色硬线
 	for _, s := range T.Shadow1() {
 		el.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
 	return el
+}
+
+// GlassSheen 给玻璃面板顶部叠一层渐隐的白色高光(设计稿 --glass-sheen:顶部 26% 高度的白色渐变),
+// 让玻璃有「厚度」而不是平的半透明。画在面板底(材质)之后、内容之前;高度取面板的 26%,最高 220。
+func GlassSheen(el ui.Element) ui.Element {
+	if !T.Glass() {
+		return el
+	}
+	c := T.Tone().Sheen
+	return el.Draw(func(p *ui.Painter, r ui.Rect) {
+		h := min(r.H*.26, 220)
+		p.FillGradient(ui.Rect{X: r.X, Y: r.Y, W: r.W, H: h}, ui.LinearGradient{Angle: 180, From: c, To: c.Alpha(0)}, 0)
+	})
 }
 
 // GlassTinted 返回带着色的玻璃(主要按钮、发送键):tint 的透明度决定染得多重。

@@ -346,7 +346,7 @@ func (a *App) reviewView(c *ui.Context) {
 			}
 		}
 		if a.wsNarrow() { // 窄档:头部只留「提交」,批量操作收进「更多」
-			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作:全部接受 / 全部撤销"}).Menu(func(m *ui.Menu) {
+			kit.MenuBtn(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作:全部接受 / 全部撤销"}), func(m *ui.Menu) {
 				if menuItem(m, "全部接受").Chosen() {
 					a.reviewAll(files, "ok")
 				}

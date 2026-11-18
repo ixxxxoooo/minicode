@@ -174,7 +174,7 @@ func (a *App) permCard(c *ui.Context, r *core.PermissionRequest) {
 				kit.Btn(c, o.Label, kit.BtnOpt{Variant: v, Small: true}).OnClick(func() { resolve(id) })
 			}
 			if len(more) > 0 {
-				kit.Btn(c, "更多", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "chevD"}).Menu(func(m *ui.Menu) {
+				kit.MenuBtn(kit.Btn(c, "更多", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "chevD"}), func(m *ui.Menu) {
 					for _, o := range more {
 						o := o
 						if menuItem(m, o.Label).Chosen() {
@@ -387,7 +387,7 @@ func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 				}
 				ui.Spacer(c).Grow(1)
 				if a.chatTier() == tierNarrow { // 窄档:次要按钮(自动模式 / 继续规划)收进「更多」
-					kit.Btn(c, "更多", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "chevD"}).Menu(func(m *ui.Menu) {
+					kit.MenuBtn(kit.Btn(c, "更多", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "chevD"}), func(m *ui.Menu) {
 						if menuItem(m, "自动模式").Chosen() {
 							resolve(true, core.ModeAuto)
 						}

@@ -111,7 +111,7 @@ func (a *App) termChipSized(c *ui.Context, i int, tabW float32) {
 	if len(a.ide.tps) > 1 {
 		a.onMiddleClick(chip, "term-"+itoa(i), func() { a.askCloseTermTab(i) })
 	}
-	chip.ContextMenu(func(m *ui.Menu) { a.termTabContextMenu(m, i) })
+	kit.CtxMenu(chip, func(m *ui.Menu) { a.termTabContextMenu(m, i) })
 	if w := chip.Bounds().W; w > 0 {
 		if a.ide.termTabW == nil {
 			a.ide.termTabW = map[int]float32{}

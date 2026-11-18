@@ -218,7 +218,7 @@ func (a *App) etabsSplitBar(c *ui.Context) {
 	ui.Row(c).Height(theme.HTab).PaddingX(8).Gap(4).AlignItems(ui.Center).Shrink(0).Children(func() {
 		ui.Text(c, "编辑器组已拆分").Grow(1).FontSize(theme.FsCap).TextColor(a.tk.Tx3)
 		kit.Ib(c, "merge", kit.IbOpt{Small: true, Tip: "合并拆分"}).OnClick(a.mergeSplit)
-		kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.tabStripMenu)
+		kit.MenuBtn(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}), a.tabStripMenu)
 	})
 }
 

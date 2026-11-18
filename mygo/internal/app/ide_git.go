@@ -248,7 +248,7 @@ func (a *App) timelineRows(c *ui.Context) {
 				t.preview = false
 			}
 		}
-		r.ContextMenu(func(m *ui.Menu) {
+		kit.CtxMenu(r, func(m *ui.Menu) {
 			if menuItem(m, "与上一版本比较").Chosen() {
 				a.openTimelineVsParent(cm, p, false)
 			}

@@ -50,7 +50,7 @@ func (a *App) canvasListRow(c *ui.Context, l *canvas.Library, id string, s *canv
 		a.canv = s
 		v.preview = false
 	})
-	row.ContextMenu(func(m *ui.Menu) { a.canvasListMenu(m, l, id, title) })
+	kit.CtxMenu(row, func(m *ui.Menu) { a.canvasListMenu(m, l, id, title) })
 	row.Children(func() {
 		kit.Ic(c, "fileText", kit.S12)
 		ui.Column(c).Grow(1).MinWidth(0).Children(func() {
@@ -62,7 +62,7 @@ func (a *App) canvasListRow(c *ui.Context, l *canvas.Library, id string, s *canv
 			ui.Text(c, canvas.Ago(a.now(), at)).FontSize(theme.FsMicro).TextColor(t.Tx4)
 		})
 		more := kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多"})
-		more.Menu(func(m *ui.Menu) { a.canvasListMenu(m, l, id, title) }) // 左键点「···」弹出(行本身右键同一份菜单)
+		kit.MenuBtn(more, func(m *ui.Menu) { a.canvasListMenu(m, l, id, title) }) // 左键点「···」弹出(行本身右键同一份菜单)
 	})
 }
 

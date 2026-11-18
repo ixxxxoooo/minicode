@@ -239,7 +239,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 		}
 	}
 	if stepHasMenu(sp) { // 右键:复制路径 / 命令 / 输出 / 网址、在访达中显示、查看差异…(按这一行的类型)
-		row.ContextMenu(func(m *ui.Menu) { a.stepMenu(m, sp) })
+		kit.CtxMenu(row, func(m *ui.Menu) { a.stepMenu(m, sp) })
 	}
 	switch {
 	case body != nil && sp.hasBody:
@@ -467,7 +467,7 @@ func (a *App) cardHead(c *ui.Context, head func(), menu func(m *ui.Menu), body f
 					BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1)
 			}
 			if menu != nil {
-				hr.ContextMenu(menu)
+				kit.CtxMenu(hr, menu)
 			}
 			hr.Children(head)
 		}

@@ -336,7 +336,7 @@ func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 				a.jumpTo(tb.path, 0, 0, 0)
 			})
 		}
-		kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(func(m *ui.Menu) { a.diffMoreMenu(m, tb) })
+		kit.MenuBtn(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}), func(m *ui.Menu) { a.diffMoreMenu(m, tb) })
 	})
 	a.diffLineBar(c, tb)
 	if len(hunks) == 0 {

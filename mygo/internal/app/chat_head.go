@@ -88,7 +88,7 @@ func (a *App) chatHead(c *ui.Context, title string) {
 			}
 			kit.Ib(c, ic, kit.IbOpt{Small: true, Tip: tip, On: a.chatMax}).OnClick(a.toggleChatMax)
 		}
-		kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多:复制会话 ID / 标题、历史会话"}).Menu(func(m *ui.Menu) { a.sessionMenu(m, a.curSess, a.st.Title, true) })
+		kit.MenuBtn(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多:复制会话 ID / 标题、历史会话"}), func(m *ui.Menu) { a.sessionMenu(m, a.curSess, a.st.Title, true) })
 	})
 }
 

@@ -157,7 +157,7 @@ func (a *App) termSideRow(c *ui.Context, i int, textW float32) {
 		if row.DoubleClicked() {
 			a.beginTermRename(i)
 		}
-		row.ContextMenu(func(m *ui.Menu) { a.termTabContextMenu(m, i) })
+		kit.CtxMenu(row, func(m *ui.Menu) { a.termTabContextMenu(m, i) })
 		row.Children(func() {
 			ui.Box(c).Size(6, 6).Radius(3).Background(termDotColor(a.termDotKind(tp), t))
 			ui.Text(c, show).SingleLine().Grow(1).MinWidth(0).TextColor(map[bool]ui.Color{true: t.Tx1, false: t.Tx2}[on])

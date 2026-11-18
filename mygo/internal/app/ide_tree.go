@@ -118,7 +118,7 @@ func (a *App) filesView(c *ui.Context) {
 								shut.Opacity(0.4).Cursor(ui.CursorDefault)
 							}
 							kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache, d.filesCache = nil, nil })
-							kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Menu(a.treeHeadMenu)
+							kit.MenuBtn(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}), a.treeHeadMenu)
 						})
 					})
 					a.treeFilterBar(c)
@@ -299,7 +299,7 @@ func (a *App) treeRow(c *ui.Context, e workspace.Entry, depth, row int) {
 			a.moveFile(ref.Path, e.Path)
 		}
 	}
-	r.ContextMenu(func(m *ui.Menu) { a.treeMenu(m, e.Path, e.Dir) })
+	kit.CtxMenu(r, func(m *ui.Menu) { a.treeMenu(m, e.Path, e.Dir) })
 	g := d.fileGit(e.Path)
 	var dagg dirGitAgg
 	if e.Dir {

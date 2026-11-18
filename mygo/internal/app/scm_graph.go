@@ -203,7 +203,7 @@ func (a *App) graphBigRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow, 
 	if !hit {
 		r.Opacity(.35)
 	}
-	r.ContextMenu(func(m *ui.Menu) { a.commitMenu(m, cm) })
+	kit.CtxMenu(r, func(m *ui.Menu) { a.commitMenu(m, cm) })
 	r.OnClick(func() {
 		if r.ClickModifiers()&ui.Cmd != 0 {
 			a.graphTogglePick(cm.Hash)

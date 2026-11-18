@@ -87,6 +87,7 @@ func (a *App) side(c *ui.Context) {
 			// 流光:导航栏是一块玻璃(方案 B 是带阴影的圆角岛,右侧留出面板间隙;A / C 与舞台相接,只留细线)
 			gap := t.Scheme.GapPane
 			inner.Material(kit.GlassPane(kit.ClaritySidebar, t.Tone().SideTint)).Width(max(0, w-gap))
+			kit.GlassSheen(inner)
 			if t.Scheme.ID == "b" {
 				inner.Radius(t.RLg())
 				kit.GlassRim(inner)
@@ -236,7 +237,7 @@ func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 		}
 		a.projOpen[p.ID] = !open
 	})
-	r.ContextMenu(func(m *ui.Menu) { a.projMenu(m, p) })
+	kit.CtxMenu(r, func(m *ui.Menu) { a.projMenu(m, p) })
 	r.Children(func() {
 		// 没有行首箭头:图标本身表达展开(展开 = 翻开的文件夹),整行可点
 		name := "folder"
@@ -285,7 +286,7 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 		}
 		a.OpenSession(s.ID)
 	})
-	r.ContextMenu(func(m *ui.Menu) { a.sessionMenu(m, s.ID, s.Title, false) })
+	kit.CtxMenu(r, func(m *ui.Menu) { a.sessionMenu(m, s.ID, s.Title, false) })
 	r.Children(func() {
 		if on {
 			kit.SelBar(c) // 选中行左侧一道强调色竖线(所有布局方案统一)
@@ -309,7 +310,7 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 			title.TextColor(t.Tx3)
 		}
 		if hov {
-			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Margin(0, -4, 0, 0).Menu(func(m *ui.Menu) { a.sessionMenu(m, s.ID, s.Title, false) })
+			kit.MenuBtn(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Margin(0, -4, 0, 0), func(m *ui.Menu) { a.sessionMenu(m, s.ID, s.Title, false) })
 		} else {
 			lbl := s.Label
 			switch state {

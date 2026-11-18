@@ -207,7 +207,10 @@ func Chip(c *ui.Context, text string, o ...ChipOpt) ui.Element {
 	if op.Line {
 		b.Background(T.Raised).Border(1, T.Bd2)
 		if T.Glass() {
-			b.Material(GlassControl()) // 流光:带描边的胶囊是一小块可交互的真玻璃
+			b.Material(GlassControl()).BorderColor(T.Tone().RimLo) // 流光:带描边的胶囊是一小块可交互的真玻璃,边是浅色高光而不是灰线
+			for _, s := range T.Shadow1() {
+				b.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+			}
 		}
 	}
 	switch {

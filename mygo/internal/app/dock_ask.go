@@ -253,7 +253,7 @@ func (a *App) askEcho(c *ui.Context, q *core.QuestionRequest) {
 		box.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
 	kit.Float(box)
-	box.ContextMenu(func(m *ui.Menu) { a.askEchoMenu(m, q) })
+	kit.CtxMenu(box, func(m *ui.Menu) { a.askEchoMenu(m, q) })
 	box.Children(func() {
 		ui.Row(c).Gap(7).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "check", kit.S12).TextColor(t.Ok)

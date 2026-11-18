@@ -234,6 +234,11 @@ func Resolve(p Palette, s Scheme, accent string) *Tokens {
 	t.Tx3 = mix(ink, 46, surface)
 	t.Tx4 = mix(ink, 30, surface)
 	t.Bd1, t.Bd2, t.Bd3 = over(ink, 7), over(ink, 12), over(ink, 20)
+	if p.Glass {
+		// 玻璃主题的描边更淡:原型里卡片 / 输入框几乎没有轮廓线,靠柔和的高光边与软阴影「浮」起来;
+		// 沿用常规浓度会是一圈灰色硬线,看起来是贴在底上的实色块
+		t.Bd1, t.Bd2, t.Bd3 = over(ink, 4), over(ink, 7), over(ink, 13)
+	}
 	t.Fill1, t.Fill2, t.Fill3 = over(ink, 5), over(ink, 8.5), over(ink, 13)
 
 	t.Ac, t.OnAc = ac, h(p.OnAccent)
@@ -292,6 +297,9 @@ type ShadowLayer struct {
 }
 
 func (t *Tokens) Shadow1() []ShadowLayer {
+	if t.Palette.Glass {
+		return t.GlassShadowS() // 卡片 / 选中行 / 输入框 / 滑块:柔和的「抬起」阴影(设计稿 --glass-sh-s)
+	}
 	return []ShadowLayer{{0, 1, 2, 0, t.shadeColor(.06 * t.kShade)}}
 }
 

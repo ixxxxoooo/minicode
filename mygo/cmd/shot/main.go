@@ -33,6 +33,7 @@ func main() {
 	top := flag.Bool("top", true, "会话流停在顶部(设计稿的截图就是这样)")
 	popup := flag.String("popup", "", "打开某个弹层:cfg / sbcfg / ctx / upd / acct")
 	clicks := flag.String("click", "", "截图前依次点击,形如 IDE;100,200(文字或 DIP 坐标);每次点击后推进 -step 毫秒")
+	rclick := flag.String("rclick", "", "截图前在 x,y(DIP)或带该文字的元素上右键点一次(在 -click 之后),用来看右键菜单")
 	step := flag.Int("step", 600, "每次点击后推进的毫秒数")
 	hover := flag.String("hover", "", "截图前把鼠标移到 x,y(DIP)并停住,用来看悬停态(悬浮卡、十字线等)")
 	drag := flag.String("drag", "", "拖拽追踪:x0,y0,x1,y1,帧数。按住 (x0,y0) 拖到 (x1,y1),每帧(16ms)打印 -trace 里文字的位置,之后不再截图")
@@ -234,6 +235,16 @@ func main() {
 				tt.Advance(16 * time.Millisecond)
 			}
 			os.Exit(0)
+		}
+		tt.Advance(time.Duration(*step) * time.Millisecond)
+	}
+	if *rclick != "" {
+		var rx, ry float32
+		if _, err := fmt.Sscanf(*rclick, "%f,%f", &rx, &ry); err == nil {
+			tt.RightClickAt(rx, ry)
+		} else if err := tt.RightClick(*rclick); err != nil {
+			fmt.Fprintln(os.Stderr, "右键点击失败:", err)
+			os.Exit(2)
 		}
 		tt.Advance(time.Duration(*step) * time.Millisecond)
 	}

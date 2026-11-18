@@ -89,7 +89,7 @@ func (a *App) scmGroupFiles(c *ui.Context, id string, cs []vcs.Change) {
 // scmFileInner 画文件行内容(scmFile 与树形缩进复用)。
 func (a *App) scmFileInner(c *ui.Context, grp string, ch vcs.Change, r ui.Element) {
 	t := a.tk
-	r.ContextMenu(func(m *ui.Menu) { a.scmFileMenu(m, grp, ch) })
+	kit.CtxMenu(r, func(m *ui.Menu) { a.scmFileMenu(m, grp, ch) })
 	hov := r.Hovered()
 	if grp != "merge" && a.ide.active == diffID(grpDiffKind(grp), a.treePath(ch.Path)) { // 正在看这个文件的差异:选中外观
 		kit.SelStyle(r)

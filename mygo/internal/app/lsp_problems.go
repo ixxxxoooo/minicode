@@ -176,7 +176,7 @@ func (a *App) problemFileGroup(c *ui.Context, f string, ds []lsp.Diagnostic) {
 			icon, col = "info", t.Info
 		}
 		prow := kit.RowEl(c, false).Key("pd-" + f + itoa(i)).Gap(6)
-		prow.ContextMenu(func(m *ui.Menu) {
+		kit.CtxMenu(prow, func(m *ui.Menu) {
 			a.problemMenu(m, f, d.Range.Start.Line+1, d.Message, func() string { return a.allProblemsText(a.sortedProblemFiles(a.probScope())) })
 		})
 		prow.Children(func() {

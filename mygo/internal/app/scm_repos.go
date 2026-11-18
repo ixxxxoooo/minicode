@@ -34,7 +34,7 @@ func (a *App) repoOverview(c *ui.Context) {
 			}
 			kit.Ib(c, "download", kit.IbOpt{Small: true, Tip: "全部拉取"}).OnClick(func() { a.syncAllRepos(true) })
 			kit.Ib(c, "sync", kit.IbOpt{Small: true, Tip: "全部同步(先拉取再推送)"}).OnClick(func() { a.syncAllRepos(false) })
-			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "仓库视图与批量操作"}).Menu(a.repoOverviewMenu)
+			kit.MenuBtn(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "仓库视图与批量操作"}), a.repoOverviewMenu)
 		})
 		if !open {
 			return
@@ -77,7 +77,7 @@ func (a *App) repoRows(c *ui.Context) {
 					r.Background(t.Fill1)
 				}
 				r.OnClick(func() { a.setActiveRepo(i) })
-				r.ContextMenu(func(m *ui.Menu) { a.repoRowMenu(m, i) })
+				kit.CtxMenu(r, func(m *ui.Menu) { a.repoRowMenu(m, i) })
 				r.Children(func() {
 					kit.Ic(c, "folder", kit.S12)
 					ui.Text(c, e.name).Grow(1).SingleLine()
@@ -90,7 +90,7 @@ func (a *App) repoRows(c *ui.Context) {
 			r := kit.RowEl(c, i == a.repoAct).Key("repo-"+itoa(i)).Height(theme.Px(scmRepoRowH)).PaddingX(4).Gap(6).Margin(0, 0, 0, indent)
 			hov := r.Hovered()
 			r.OnClick(func() { a.setActiveRepo(i) })
-			r.ContextMenu(func(m *ui.Menu) { a.repoRowMenu(m, i) })
+			kit.CtxMenu(r, func(m *ui.Menu) { a.repoRowMenu(m, i) })
 			r.Children(func() {
 				kit.Ic(c, "branch", kit.S12).TextColor(t.Tx3)
 				ui.Row(c).Grow(1).MinWidth(0).Gap(6).AlignItems(ui.Center).Children(func() {

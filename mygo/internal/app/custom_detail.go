@@ -104,7 +104,7 @@ func (a *App) cuHead(c *ui.Context, st *customize.Store, it *customize.Item, ico
 		}
 		mb := kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多"})
 		if it != nil {
-			mb.Menu(func(m *ui.Menu) { a.cuMoreMenu(m, st, it) })
+			kit.MenuBtn(mb, func(m *ui.Menu) { a.cuMoreMenu(m, st, it) })
 		}
 	})
 }
@@ -897,7 +897,7 @@ func (a *App) cuMCPTools(c *ui.Context, it *customize.Item) {
 		}
 		ui.Spacer(c).Grow(1)
 		if len(names) > 0 {
-			kit.Btn(c, "批量", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "chevD"}).Menu(func(m *ui.Menu) {
+			kit.MenuBtn(kit.Btn(c, "批量", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "chevD"}), func(m *ui.Menu) {
 				if menuItem(m, "全部启用").Chosen() {
 					a.setMcpToolsBulk(it.Name, names, true)
 				}

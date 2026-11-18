@@ -31,6 +31,11 @@ func (t *Tokens) GlassShadow() []ShadowLayer {
 	return []ShadowLayer{{0, 14, 36, -12, t.shadeColor(.24)}, {0, 2, 8, 0, t.shadeColor(.07)}}
 }
 
+// GlassShadowS 是小块玻璃 / 卡片的抬起阴影(设计稿 --glass-sh-s:0 6 16 -8 / 0 1 3):整体偏下的一圈软影,让元素像浮在面板上。
+func (t *Tokens) GlassShadowS() []ShadowLayer {
+	return []ShadowLayer{{0, 6, 16, -8, t.shadeColor(.22)}, {0, 1, 3, 0, t.shadeColor(.08)}}
+}
+
 // GlassTone 是玻璃之上的几个半透明色(设计稿 --glass-3 / --glass-card / --glass-sel / 边缘高光)。
 type GlassTone struct {
 	Thin  ui.Color // 薄玻璃:按钮、输入框、分段槽

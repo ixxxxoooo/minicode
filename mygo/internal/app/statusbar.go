@@ -109,9 +109,9 @@ func (a *App) statusbar(c *ui.Context) {
 				if tier >= 1 {
 					// 窄了先让出缩进 / 编码 / 行尾(低频,命令面板与右键里仍可改)
 				} else if tab.st.Indent == editor.IndentTabs {
-					a.sbItem(c, "indent", func() { ui.Text(c, "Tab") }).Tooltip("缩进方式(点击切换)").Menu(a.indentMenu)
+					kit.MenuBtn(a.sbItem(c, "indent", func() { ui.Text(c, "Tab") }).Tooltip("缩进方式(点击切换)"), a.indentMenu)
 				} else {
-					a.sbItem(c, "indent", func() { ui.Text(c, "空格:"+itoa(indent)) }).Tooltip("缩进方式(点击切换)").Menu(a.indentMenu)
+					kit.MenuBtn(a.sbItem(c, "indent", func() { ui.Text(c, "空格:"+itoa(indent)) }).Tooltip("缩进方式(点击切换)"), a.indentMenu)
 				}
 				if n := a.prefs.Int(pEdFont, edFontDefault); tier < 2 && a.prefs.Has(pEdFont) && n != edFontDefault {
 					// 字号被改过:状态栏常驻提示,点一下恢复默认(⌘0)
@@ -126,11 +126,11 @@ func (a *App) statusbar(c *ui.Context) {
 					a.sbItem(c, "ro", func() { ui.Text(c, "只读") }).Tooltip("点击解除只读,开始编辑").OnClick(func() { a.unlockReadOnly(tab) })
 				}
 				if tier < 1 {
-					a.sbItem(c, "enc", func() { ui.Text(c, "UTF-8") }).Tooltip("文件编码(目前只支持 UTF-8)").Menu(a.encMenu)
-					a.sbItem(c, "eol", func() { ui.Text(c, eolLabel(tab.eolNow())) }).Tooltip("行尾序列(点击切换)").Menu(a.eolMenu)
+					kit.MenuBtn(a.sbItem(c, "enc", func() { ui.Text(c, "UTF-8") }).Tooltip("文件编码(目前只支持 UTF-8)"), a.encMenu)
+					kit.MenuBtn(a.sbItem(c, "eol", func() { ui.Text(c, eolLabel(tab.eolNow())) }).Tooltip("行尾序列(点击切换)"), a.eolMenu)
 				}
 				if tier < 2 {
-					a.sbItem(c, "lang", func() { ui.Text(c, langLabel(tab)) }).Tooltip("语言模式(点击切换)").Menu(a.langMenu)
+					kit.MenuBtn(a.sbItem(c, "lang", func() { ui.Text(c, langLabel(tab)) }).Tooltip("语言模式(点击切换)"), a.langMenu)
 				}
 				if a.proj != "" {
 					a.lspStatus(c, tab, tier >= 2)
