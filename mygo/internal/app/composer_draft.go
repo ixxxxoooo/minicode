@@ -64,6 +64,8 @@ func (a *App) syncDraft(c *ui.Context) {
 	}
 	if a.draft != a.draftSeen {
 		a.draftBody, a.draftImgs = splitDraftBody(a.draft)
+		a.draftBody = dropOrphanImgAtoms(a.draftBody, a.draftImgs) // 缩略图被移除了,正文里它的位置胶囊也去掉
+		a.imgPilled = imgAtomPaths(a.draftBody)
 		a.compDoc.SetText(draftToText(a.draftBody, func(kind, path string) *richtext.Attachment {
 			return a.pillAttachment(c, kind, path)
 		}))
@@ -74,6 +76,7 @@ func (a *App) syncDraft(c *ui.Context) {
 	if v := a.compDoc.Version(); v != a.compVer { // 用户在编辑器里改了:导出正文
 		a.compVer = v
 		a.draftBody = textToDraft(a.compDoc.Text())
+		a.dropImgsWithoutPill()
 	}
 	if cur := composeDraft(a.draftBody, a.draftImgs); cur != a.draft {
 		a.draft, a.draftSeen = cur, cur
@@ -103,7 +106,71 @@ func (a *App) addDraftImage(path string) bool {
 			return false
 		}
 	}
-	a.draft = composeDraft(body, append(append([]string(nil), imgs...), tk))
+	imgs = append(append([]string(nil), imgs...), tk)
+	a.draft = composeDraft(body, imgs)
+	if a.compDoc != nil {
+		// 不让输入框按新草稿重建(重建会丢光标):正文与编辑器保持原样,只补上附件;位置胶囊稍后插在光标处
+		a.draftBody, a.draftImgs, a.draftSeen = body, imgs, a.draft
+	}
+	a.queuePill(atomImg, path)
 	a.ux.focusDraft = true
 	return true
+}
+
+// imgAtomPaths 取正文里所有图片位置胶囊的路径。
+func imgAtomPaths(body string) map[string]bool {
+	out := map[string]bool{}
+	for _, m := range atomRE.FindAllStringSubmatch(body, -1) {
+		if kind, path, ok := atomParts(m[1]); ok && kind == atomImg {
+			out[path] = true
+		}
+	}
+	return out
+}
+
+// dropOrphanImgAtoms 去掉正文里指向「已不在附件里的图片」的位置胶囊。
+func dropOrphanImgAtoms(body string, imgs []string) string {
+	have := map[string]bool{}
+	for _, tk := range imgs {
+		for _, at := range parseDraftAttaches(tk) {
+			have[at.Path] = true
+		}
+	}
+	return atomRE.ReplaceAllStringFunc(body, func(m string) string {
+		sm := atomRE.FindStringSubmatch(m)
+		if kind, path, ok := atomParts(sm[1]); ok && kind == atomImg && !have[path] {
+			return ""
+		}
+		return m
+	})
+}
+
+// dropImgsWithoutPill 用户在输入框里删掉了某张图的位置胶囊:同时把这张图的附件移除(只处理「原来有、现在没了」的)。
+func (a *App) dropImgsWithoutPill() {
+	now := imgAtomPaths(a.draftBody)
+	var gone []string
+	for p := range a.imgPilled {
+		if !now[p] {
+			gone = append(gone, p)
+		}
+	}
+	a.imgPilled = now
+	if len(gone) == 0 {
+		return
+	}
+	var keep []string
+	for _, tk := range a.draftImgs {
+		drop := false
+		for _, at := range parseDraftAttaches(tk) {
+			for _, g := range gone {
+				if at.Path == g {
+					drop = true
+				}
+			}
+		}
+		if !drop {
+			keep = append(keep, tk)
+		}
+	}
+	a.draftImgs = keep
 }

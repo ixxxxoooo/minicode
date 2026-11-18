@@ -138,7 +138,7 @@ func (a *App) composerPasteCommand(svc ui.Services) {
 // 返回:是否真的排上了(同一个文件 / 文件夹已在输入框里或已排队则不重复)。
 func (a *App) queuePill(kind, path string) bool {
 	d := pillData{Kind: kind, Path: path}
-	if kind == atomFile || kind == atomDir {
+	if kind == atomFile || kind == atomDir || kind == atomImg {
 		for _, q := range a.ux.pendingPills {
 			if q == d {
 				return false

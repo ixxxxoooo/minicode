@@ -126,6 +126,12 @@ func (a *App) pillClickOpen(el ui.Element, doc *richtext.Document) {
 		}
 		kind, path, _ := strings.Cut(k, "\x1f")
 		if strings.Contains(txt, atomString(kind, path)) {
+			if kind == atomImg { // 图片位置胶囊:打开灯箱预览
+				if abs := a.absAttach(path); abs != "" {
+					a.openImageLightboxPath(abs)
+				}
+				return
+			}
 			a.openRefPath(path, kind == atomDir)
 			return
 		}

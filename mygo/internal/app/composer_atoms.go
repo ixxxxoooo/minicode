@@ -24,6 +24,7 @@ const (
 	atomFile  = "file"
 	atomDir   = "dir"
 	atomPaste = "paste"
+	atomImg   = "img" // 图片在正文里的位置标记:只是界面上的行内胶囊,图片本身仍走输入框上方的缩略图附件,发送时不进文字
 )
 
 // atomRE 匹配草稿里的一个原子,捕获「类型\x1f路径」。
@@ -78,6 +79,9 @@ func atomsToSend(s string) string {
 		kind, path, ok := atomParts(s[m[2]:m[3]])
 		last = m[1]
 		if !ok {
+			continue
+		}
+		if kind == atomImg { // 位置标记不发给模型(图片另走附件)
 			continue
 		}
 		if kind == atomDir && !strings.HasSuffix(path, "/") {

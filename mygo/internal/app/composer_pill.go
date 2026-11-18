@@ -26,6 +26,8 @@ func pillLabel(kind, path string) (label, icon, name string) {
 	switch {
 	case kind == atomDir:
 		return name, "folder", name
+	case kind == atomImg:
+		return "图片", "image", name
 	case strings.HasPrefix(kind, atomPaste):
 		n := strings.TrimPrefix(strings.TrimPrefix(kind, atomPaste), ":")
 		if n == "" {
@@ -57,6 +59,15 @@ func clipMiddle(s string, max float32, span func(string) float32) string {
 // 参数:c 构建界面期间的上下文(量字用);kind / path 同 pillLabel。
 func (a *App) pillAttachment(c *ui.Context, kind, path string) *richtext.Attachment {
 	label, icon, name := pillLabel(kind, path)
+	if kind == atomImg { // 「图片 N」:N 是它在缩略图行里的序号
+		for i, tk := range a.draftImgs {
+			for _, at := range parseDraftAttaches(tk) {
+				if at.Path == path {
+					label = "图片 " + itoa(i+1)
+				}
+			}
+		}
+	}
 	fs := a.FlowFontSize() * 0.92
 	span := func(s string) float32 {
 		w, _ := c.MeasureText(0, ui.Span{Text: s, Size: fs})
@@ -68,7 +79,7 @@ func (a *App) pillAttachment(c *ui.Context, kind, path string) *richtext.Attachm
 	var badge fileKind
 	hasBadge := false
 	var badgeSz, badgeW float32
-	if icon != "folder" && !strings.HasPrefix(kind, atomPaste) && a.prefs.Bool("appearance.fileIcons", true) {
+	if icon != "folder" && kind != atomImg && !strings.HasPrefix(kind, atomPaste) && a.prefs.Bool("appearance.fileIcons", true) {
 		if k, ok := fileKindOf(name); ok {
 			badge, hasBadge = k, true
 			badgeSz = 9.5

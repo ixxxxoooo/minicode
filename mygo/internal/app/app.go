@@ -352,6 +352,7 @@ type App struct {
 	compDoc           *richtext.Document // 输入框的富文本文档(正文里的文件 / 文件夹是行内胶囊原子),见 composer_rich.go
 	compVer           uint64             // compDoc 上次同步回 a.draft 时的版本
 	draftBody         string             // 输入框正文(不含图片附件语法;胶囊以原子标记串出现),由 compDoc 导出;与 a.draft 的同步见 composer_draft.go
+	imgPilled         map[string]bool    // 输入框正文里现有的图片位置胶囊(路径集合):胶囊被删就把对应图片附件一并移除
 	draftImgs         []string           // 草稿里的图片附件(`![](路径)` 串,按顺序),缩略图卡的数据源
 	draftSeen         string             // 上一次同步时的 a.draft;a.draft 变了说明别处改过草稿,需要重新拆分
 	ctxOpenKey        string             // 上下文弹层当前已触发过查询的那一次打开(popup 键);关掉后清空
