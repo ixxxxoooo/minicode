@@ -149,7 +149,11 @@ func (a *App) userImgChip(c *ui.Context, u *core.User, k int) {
 		chip.OnClick(func() { a.openUserImageLightbox(u, k-1) })
 	}
 	chip.Children(func() {
-		kit.Ic(c, "image", kit.S12).TextColor(t.Tx3)
+		name := "x.png" // 图标颜色与输入框 / 编辑卡里的图片胶囊同源:按图片文件类型着色
+		if k-1 < len(u.Images) {
+			name = baseName(u.Images[k-1])
+		}
+		kit.Ic(c, "image", kit.S12).TextColor(a.fileTint(name, t.Tx3))
 		ui.Text(c, "图片 "+itoa(k)).FontSize(fs).TextColor(t.Tx1).SingleLine()
 	})
 }
