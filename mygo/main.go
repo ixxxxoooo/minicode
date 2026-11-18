@@ -252,8 +252,8 @@ func main() {
 	}
 	var rs *realSetup
 	startSess := ""
-	if !secondary {
-		startSess = a.ApplySavedRuntime()
+	if !secondary && demoMode {
+		startSess = a.ApplySavedRuntime() // 真实模式要等注册表与项目装配好再恢复(见下方),否则工作区被跳过、项目被覆盖
 	} else if v := strings.TrimSpace(os.Getenv("MINI_SESSION")); v != "" { // 截图脚本:--new-window 不恢复上次状态,但仍可指定会话
 		startSess = v
 	}
@@ -297,6 +297,9 @@ func main() {
 		a.SetProjects(ix.Projects, "")
 		a.SetProject(rs.curCwd)
 		rs.onCwd = a.SetProject
+		if !secondary {
+			startSess = a.ApplySavedRuntime() // 注册表已就绪:能恢复工作区;项目也在默认项目设好之后再覆盖成上次的
+		}
 		a.SetProjectRefresher(func() []core.ProjectInfo { return rs.refresh().Projects })
 	}
 
