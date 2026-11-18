@@ -96,7 +96,7 @@ Go 原生界面,无 WebView、不依赖 Node,直连本机 `claude` 的 stream-js
 
 | 依赖 | 说明 |
 | --- | --- |
-| macOS 13+ | 目前只在 macOS 上开发和验证(cgo 调 AppKit / UserNotifications) |
+| macOS 13+(通用二进制:Apple Silicon + Intel) | 部署目标 13.0;目前只在较新的 macOS 上验证过,低版本与 Intel 未实测(cgo 调 AppKit / UserNotifications) |
 | Go 1.27.4 | `mygo/go.mod` 指定;用 Homebrew 装的 Go 即可 |
 | Xcode 命令行工具 | cgo 需要 `clang`、`codesign` |
 | Python 3 + Pillow + PyObjC | 只在重新生成图标 / 截图 / 锁定版式时需要 |

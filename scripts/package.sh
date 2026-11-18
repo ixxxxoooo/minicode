@@ -1,5 +1,5 @@
 #!/bin/bash
-# 打包正式版 macOS 应用(MyGo):scripts/package.sh [--dmg]
+# 打包正式版 macOS 应用(MyGo,通用二进制,部署目标 13.0):scripts/package.sh [--dmg]
 # 产物 dist/MiniCode.app;加 --dmg 同时生成 dist/MiniCode-<版本>.dmg(应用内更新下载的就是它)。
 # 版本号取 mygo/main.go 的 version(去掉 -mygo 后缀),编进二进制并写进 Info.plist。
 #   DEVELOPER_ID="Developer ID Application: 名字 (TEAMID)"   可选,缺省为临时签名(用户首次打开需右键 → 打开)
@@ -16,7 +16,18 @@ BUILD="${MINI_BUILD:-$(git rev-list --count HEAD 2>/dev/null || echo 0)}"
 
 echo "==> 编译发布版 (v$VERSION, build $BUILD, $(uname -m))"
 mkdir -p dist
-(cd mygo && go build -trimpath -ldflags "-s -w -X main.version=$VERSION" -o "$PWD/../dist/minicode-bin" .)
+# 部署目标固定 13.0(否则链接器取当前 SDK 版本,二进制 minos 会变成构建机系统,低版本 Mac 上图标显示禁止符号);
+# arm64 + x86_64 各编一份再 lipo 合成通用二进制,Intel 与 Apple Silicon 通用。
+export MACOSX_DEPLOYMENT_TARGET=13.0 CGO_ENABLED=1
+export CGO_CFLAGS="-mmacosx-version-min=13.0" CGO_LDFLAGS="-mmacosx-version-min=13.0"
+for ARCH in arm64 amd64; do
+  CCARCH=$([ "$ARCH" = amd64 ] && echo x86_64 || echo arm64)
+  (cd mygo && GOARCH=$ARCH CC="clang -arch $CCARCH" go build -trimpath -ldflags "-s -w -X main.version=$VERSION" -o "$PWD/../dist/minicode-$ARCH" .)
+done
+lipo -create dist/minicode-arm64 dist/minicode-amd64 -output dist/minicode-bin
+rm -f dist/minicode-arm64 dist/minicode-amd64
+MINOS=$(otool -l dist/minicode-bin | grep -A5 LC_BUILD_VERSION | awk '/minos/{print $2; exit}')
+[ "$MINOS" = "13.0" ] || { echo "错误:二进制 minos=$MINOS,应为 13.0" >&2; exit 1; }
 
 APP=dist/MiniCode.app
 rm -rf "$APP"
