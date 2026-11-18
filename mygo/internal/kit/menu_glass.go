@@ -17,15 +17,15 @@ func glassMenuPanel(panel ui.Element) {
 	GlassSheen(panel, T.RSm()+2) // 框架里菜单面板的圆角 = Theme.Radius + 2,Theme.Radius 取的是 RSm
 }
 
-// glassMenuItem 给菜单项的悬停态套上「更亮的选中玻璃」。框架画的菜单把悬停 / 键盘高亮的项涂成实色强调色底(陶土橙块 + 浅色字),
-// 在玻璃面板上很突兀;这里在框架的样式之后覆盖:悬停时换成选中玻璃色 + 顶部内高光 + 正文色。
-// 局限:Item 回调拿不到「键盘高亮」状态,只能处理鼠标悬停;键盘上下选中的项仍是框架的强调色底;
-// 悬停到危险项时文字也会变回正文色(框架在高亮时才改色,这里无法分辨危险项)。
+// glassMenuItem 给菜单里「被高亮」的项套上「更亮的选中玻璃」。框架把高亮项(鼠标移上去或键盘上下选中)涂成实色强调色底(陶土橙块),
+// 在玻璃面板上很突兀;这里在框架的样式之后只覆盖背景:换成选中玻璃色 + 顶部内高光。
+// 必须按框架的 Highlighted() 判断,而不是 Hovered():两者不同步时(键盘选中、指针移出后高亮还在、动画中途)会漏出橙色块或出现两行同时有底。
+// 文字 / 图标色不动:th.AccentText 已取正文色,危险项的红字由框架自己处理。
 func glassMenuItem(item ui.Element) {
-	if !item.Hovered() {
+	if !item.Highlighted() {
 		return
 	}
-	item.Background(T.Tone().Sel).TextColor(T.Tx1)
+	item.Background(T.Tone().Sel)
 	GlassHi(item)
 }
 
