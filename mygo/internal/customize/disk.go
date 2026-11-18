@@ -428,7 +428,9 @@ func (ds *DiskStore) loadAgents() {
 			it := &Item{
 				Name: name, Scope: sc, On: true, Path: ds.relDisplay(p), Body: body,
 				Note: fmLine(fm, "description"), Desc: sc.Label() + " · " + fmLine(fm, "description"),
+				Model: agentModelIndex(fmLine(fm, "model")), Color: agentColorIndex(fmLine(fm, "color")),
 			}
+			it.Allow = append(it.Allow, SplitTools(fmLine(fm, "tools"))...) // 工具权限:此前读不出来,界面里一个都不勾
 			ds.items[Agents] = append(ds.items[Agents], it)
 		}
 	}

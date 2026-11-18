@@ -594,6 +594,20 @@ func (a *App) cuAgent(c *ui.Context, st *customize.Store, it *customize.Item) fu
 				kit.Chip(c, tl, kit.ChipOpt{Line: !on, On: on}).Key("ca-t-" + tl).OnClick(func() { d.ToggleAllow(tl) })
 			}
 		})
+		// 内置工具之外已授予的(MCP 工具 / 带参数的规则):单独列出,点一下移除;「+ MCP 工具」打开与命令里同一个选择器
+		ui.Row(c).Gap(6).Wrap().Margin(4, 0, 0, 0).Children(func() {
+			for _, r := range d.Allow {
+				if isBuiltinTool(r) {
+					continue
+				}
+				kit.Chip(c, r, kit.ChipOpt{On: true, Tip: "点一下移除"}).Key("ca-x-" + r).OnClick(func() { d.ToggleAllow(r) })
+			}
+			pick := kit.Chip(c, "+ MCP 工具", kit.ChipOpt{Line: true, On: a.popup == toolPickKey}).OnClick(func() {
+				a.cu.toolQ, a.cu.toolErr = "", ""
+				a.togglePop(toolPickKey)
+			})
+			a.cuToolPicker(c, pick, d, st)
+		})
 	})
 	a.cuLbl(c, "系统提示词", func() { a.cuArea(c, "ca-p", &d.Body, 110, false) })
 	if a.cu.runOut != "" {
@@ -831,4 +845,14 @@ func (a *App) cuMCPProbe(it *customize.Item) {
 		})
 		return func() { a.mcpProbe[name] = res }
 	})
+}
+
+// isBuiltinTool 是不是内置工具(AllTools 里的那几个)。
+func isBuiltinTool(name string) bool {
+	for _, x := range customize.AllTools {
+		if x == name {
+			return true
+		}
+	}
+	return false
 }

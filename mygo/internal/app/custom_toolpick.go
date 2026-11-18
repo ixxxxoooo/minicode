@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/customize"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -69,7 +70,7 @@ func (a *App) cuToolPicker(c *ui.Context, anchor ui.Element, d *customize.Item, 
 				}
 			}
 			var mcp []string
-			for _, r := range st.MCPToolRules() {
+			for _, r := range a.mcpToolRules(st) {
 				if match(r) {
 					mcp = append(mcp, r)
 				}
@@ -105,4 +106,30 @@ func (a *App) cuToolPicker(c *ui.Context, anchor ui.Element, d *customize.Item, 
 			}
 		})
 	})
+}
+
+// mcpToolRules 是可以勾选的 MCP 规则:配置层(claude mcp list 读到的)加上运行中会话汇报的(mcp_status)。
+// 只看配置层会漏:`claude mcp list` 没读到工具(连接失败 / 没查询)时一个都没有,而会话里其实已经连上、有一堆工具。
+func (a *App) mcpToolRules(st *customize.Store) []string {
+	seen := map[string]bool{}
+	var out []string
+	add := func(r string) {
+		if !seen[r] {
+			seen[r] = true
+			out = append(out, r)
+		}
+	}
+	for _, r := range st.MCPToolRules() {
+		add(r)
+	}
+	if a.st != nil {
+		for _, s := range a.st.Mcp {
+			base := "mcp__" + core.McpNormName(s.Name)
+			add(base)
+			for _, tl := range s.Tools {
+				add(base + "__" + tl)
+			}
+		}
+	}
+	return out
 }

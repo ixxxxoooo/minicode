@@ -28,15 +28,17 @@ func (ds *DiskStore) cmdPath(it *Item, draft Item) string {
 }
 
 func (ds *DiskStore) saveCommand(old *Item, draft Item) error {
-	fm := setFmLine("", "description", strings.TrimSpace(draft.Note))
+	path := ds.cmdPath(old, draft)
+	fm := setFmLine(existingFm(path), "description", strings.TrimSpace(draft.Note)) // 以原头为底,只改编辑过的字段
 	if draft.Hint != "" {
 		fm = setFmLine(fm, "argument-hint", draft.Hint)
 	}
 	if len(draft.Allow) > 0 {
 		fm = setFmLine(fm, "allowed-tools", strings.Join(draft.Allow, ", "))
+	} else {
+		fm = delFmLine(fm, "allowed-tools")
 	}
 	body := joinFrontmatter(fm, draft.Body)
-	path := ds.cmdPath(old, draft)
 	if err := writeAtomic(path, []byte(body), 0o644); err != nil {
 		return err
 	}
@@ -63,9 +65,25 @@ func (ds *DiskStore) agentPath(old *Item, draft Item) string {
 }
 
 func (ds *DiskStore) saveAgent(old *Item, draft Item) error {
-	fm := setFmLine("", "description", strings.TrimSpace(draft.Note))
-	body := joinFrontmatter(fm, draft.Body)
 	path := ds.agentPath(old, draft)
+	prev := existingFm(path)
+	fm := setFmLine(prev, "description", strings.TrimSpace(draft.Note)) // 以原头为底,只改编辑过的字段
+	if strings.Contains(prev, "tools:") && fmLine(prev, "tools") == "" {
+		// 原文件的 tools 是多行 YAML 列表,这里只会处理单行写法;动它会写坏文件,保持原样
+	} else if len(draft.Allow) > 0 {
+		fm = setFmLine(fm, "tools", strings.Join(draft.Allow, ", "))
+	} else {
+		fm = delFmLine(fm, "tools") // 不写 = 继承全部工具
+	}
+	if draft.Model > 0 && draft.Model < len(Models) {
+		fm = setFmLine(fm, "model", strings.ToLower(strings.Fields(Models[draft.Model])[0]))
+	} else {
+		fm = delFmLine(fm, "model")
+	}
+	if draft.Color > 0 || fmLine(prev, "color") != "" {
+		fm = setFmLine(fm, "color", agentColorNames[draft.Color%len(agentColorNames)])
+	}
+	body := joinFrontmatter(fm, draft.Body)
 	if err := writeAtomic(path, []byte(body), 0o644); err != nil {
 		return err
 	}
