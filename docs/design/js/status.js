@@ -356,8 +356,8 @@
     'glow-spec': [
       R('设计稿:流光 / 流光·夜两套色板 + css/glass.css 材质层 + 主题卡 / 顶栏圆点 / 品牌图标配色', '已补稿;仅用无头 Chrome 截图自查过规格页与工作台,未逐页核对其余页面', 'ok'),
       R('theme.Palettes 增加 glow / glow-night', 'theme/glass.go 追加两套(Palette.Glass=true)+ Tokens.Wall / Tone;主题卡 / 命令面板 / 跟随系统深浅 / 应用图标配色(沿用 mist / graphite 素材)已接;未测试', 'ok'),
-      R('壁纸层(静态渐变,画一次缓存)', '玻璃采样的底;不做漂移动画', 'todo', 'B9'),
-      R('面板玻璃:侧栏 / 对话 / 工作区 / 整页', 'glass.Glass{Style: Regular, Clarity};方案 B 才有悬浮阴影', 'todo', 'B9'),
+      R('壁纸层(静态渐变)', 'app/glass_wall.go:根元素 Draw 两色底 + 四团径向色晕,不做漂移动画;未画成缓存位图(每次重绘画 5 笔);未测试', 'ok'),
+      R('面板玻璃:侧栏 / 对话 / 工作区 / 整页', 'kit.GlassMat(clarity) = glass.Glass;对话 / 整页 0、导航栏 / 工作区 .35;方案 B 圆角 + 玻璃阴影,A / C 细线;设置页(自带底色)与面板内的卡片 / 浮层还没接;未测试', 'part', 'B9'),
       R('控件玻璃:按钮 / 输入框 / 分段 / 开关 / 选中行 / 标题栏搜索胶囊', 'glass.Glass{Interactive: true};主要按钮用 Tint 或实色渐变 + 高光', 'todo', 'B9'),
       R('浮层玻璃:命令面板 / 菜单 / 提示条 / 弹窗 / 输入框', '不叠玻璃超过两层', 'todo', 'B9'),
       R('降低透明度兜底', 'Preferences().ReduceTransparency → 不透明色板', 'todo', 'B9'),

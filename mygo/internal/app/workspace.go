@@ -79,6 +79,9 @@ func (a *App) wsPane(c *ui.Context, gap float32) {
 	ide := a.mode == ModeIDE
 	// 宽度 / 间距 = 开合因子(stageFactors)× 满开值,不用元素过渡(见 paneOpen 的说明)
 	p := a.pane(c).Key("ws").ClipX().Transition(noMotion)
+	if a.tk.Glass() {
+		p.Material(kit.GlassMat(.35)) // 工作区比对话更通透:壁纸的色晕能透出一点
+	}
 	switch {
 	case a.belt.on:
 		// 形态切换的传送带平移:新工作区绝对定位 + 固定终态宽度,自与对话栏相邻的一侧移进来(morph_belt.go)

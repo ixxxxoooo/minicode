@@ -13,7 +13,10 @@ func (a *App) t() *theme.Tokens { return a.tk }
 func (a *App) root(c *ui.Context) {
 	t := a.tk
 	root := ui.Column(c).Fill().FontSize(theme.FsBody).TextColor(t.Tx1)
-	if t.Scheme.ID == "b" {
+	if t.Glass() {
+		// 流光:壁纸(静态渐变),面板玻璃抓取的就是它
+		a.glassWall(root)
+	} else if t.Scheme.ID == "b" {
 		// 方案 B:底色带一抹强调色光晕(径向渐变)
 		root.Background(t.Chrome)
 		root.RadialGradient(ui.RadialGradient{
@@ -72,15 +75,28 @@ func (a *App) body(c *ui.Context) {
 // pane 是舞台里的一块面板:底色 BG;方案 A / C 左侧一条细线,方案 B 是带阴影的圆角岛。
 func (a *App) pane(c *ui.Context) ui.Element {
 	t := a.tk
-	p := ui.Column(c).Background(t.BG).MinWidth(0).Clip()
+	p := ui.Column(c).MinWidth(0).Clip()
+	if t.Glass() {
+		p.Material(kit.GlassMat(0)) // 流光:玻璃面板(对话 / 整页最磨砂,工作区另设更通透)
+	} else {
+		p.Background(t.BG)
+	}
 	switch t.Scheme.ID {
 	case "b":
 		p.Radius(t.RLg())
-		for _, s := range t.Shadow1() {
+		shadow := t.Shadow1()
+		if t.Glass() {
+			shadow = t.GlassShadow()
+		}
+		for _, s := range shadow {
 			p.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
 	default:
-		p.BorderWidth(0, 0, 0, 1).BorderColor(t.Bd2)
+		bd := t.Bd2
+		if t.Glass() {
+			bd = t.Tone().RimLo
+		}
+		p.BorderWidth(0, 0, 0, 1).BorderColor(bd)
 	}
 	return p
 }

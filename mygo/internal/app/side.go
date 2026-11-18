@@ -82,7 +82,21 @@ func (a *App) side(c *ui.Context) {
 		if inline {
 			a.resizeHandle(c, lySide, "r", w, a.sideWidth(), 180, 420, func(v float32) { a.ly.side = v })
 		}
-		ui.Column(c).Width(w).Grow(1).MinHeight(0).Children(func() {
+		inner := ui.Column(c).Width(w).Grow(1).MinHeight(0)
+		if t.Glass() {
+			// 流光:导航栏是一块玻璃(方案 B 是带阴影的圆角岛,右侧留出面板间隙;A / C 与舞台相接,只留细线)
+			gap := t.Scheme.GapPane
+			inner.Material(kit.GlassMat(.35)).Width(max(0, w-gap))
+			if t.Scheme.ID == "b" {
+				inner.Radius(t.RLg())
+				for _, s := range t.GlassShadow() {
+					inner.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+				}
+			} else {
+				inner.BorderWidth(0, 0, 0, 1).BorderColor(t.Tone().RimLo)
+			}
+		}
+		inner.Children(func() {
 			a.sideTop(c)
 			ui.Column(c).Grow(1).MinHeight(0).PaddingX(6).Clip().Children(func() {
 				// 换分段 / 换形态:内容自左 8px 滑入并淡入(a-swap);外层 Clip 把滑出左缘的部分裁掉

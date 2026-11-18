@@ -44,6 +44,11 @@ func (t *Tokens) Wall() (top, bottom ui.Color, blobs []WallBlob) {
 	}
 }
 
+// GlassShadow 是玻璃岛的悬浮阴影(设计稿 --glass-sh):不乘 KShade,夜色下也只是一圈很淡的深蓝黑。
+func (t *Tokens) GlassShadow() []ShadowLayer {
+	return []ShadowLayer{{0, 14, 36, -12, t.shadeColor(.24)}, {0, 2, 8, 0, t.shadeColor(.07)}}
+}
+
 // GlassTone 是玻璃之上的几个半透明色(设计稿 --glass-3 / --glass-card / --glass-sel / 边缘高光)。
 type GlassTone struct {
 	Thin  ui.Color // 薄玻璃:按钮、输入框、分段槽
