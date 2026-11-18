@@ -372,7 +372,7 @@ func (a *App) settingsMain(c *ui.Context) {
 		a.set.enterAt = time.Now()
 	}
 	main := ui.Column(c).Grow(1).MinWidth(0)
-	a.glassIsland(main, kit.ClarityContent, ui.Transparent) // 流光:内容岛(与主界面对话栏同一档,最亮)
+	a.glassIsland(main, kit.ClarityContent, t.Tone().ChatTint) // 流光:内容岛(与主界面对话栏同一档,最亮)
 	main.Children(func() {
 		kit.VScroll(c).Key("set-main").TrackScroll(&a.set.mainSt).Grow(1).MinHeight(0).Children(func() {
 			// 左右各留 16 的边距:窄窗口(内容列撑满整宽)时不贴边;宽窗口里内容列定宽居中,不受影响

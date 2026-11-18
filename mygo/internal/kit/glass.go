@@ -106,9 +106,15 @@ func GlassSheen(el ui.Element, radius float32) ui.Element {
 	if !T.Glass() {
 		return el
 	}
-	c := T.Tone().Sheen
+	tn := T.Tone()
+	c, depth := tn.Sheen, tn.Depth
 	return el.Draw(func(p *ui.Painter, r ui.Rect) {
 		p.Clip(r, radius, func() {
+			// 底部的暖色「深度」:顶部 35% 以上为 0,往下渐强到底(原型里面板从顶到底逐渐变深)
+			p.FillGradient(r, ui.LinearGradient{Angle: 180, Stops: []ui.GradientStop{
+				{Color: depth.Alpha(0), At: .35}, {Color: depth, At: 1},
+			}}, 0)
+			// 顶部的白色高光
 			h := min(r.H*.26, 220)
 			p.FillGradient(ui.Rect{X: r.X, Y: r.Y, W: r.W, H: h}, ui.LinearGradient{Angle: 180, From: c, To: c.Alpha(0)}, 0)
 		})

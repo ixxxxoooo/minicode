@@ -12,9 +12,12 @@ import (
 func (a *App) dockEdge(c *ui.Context) {
 	t := a.tk
 	h := a.dockH + 40
+	// 渐隐色 = 面板底色再带上底部「深度」:用纯 t.BG 会把面板底部的暖色渐变盖掉,底部反而比中部亮
+	d := t.Tone().Depth
+	base := t.BG.Mix(ui.Color{R: d.R, G: d.G, B: d.B, A: 255}, float32(d.A)/255*1.3)
 	ui.Box(c).Key("dock-edge").Absolute().Left(0).Right(0).Bottom(0).Height(h).PassThrough().
 		LinearGradient(ui.LinearGradient{Angle: 180, Stops: []ui.GradientStop{
-			{Color: t.BG.Alpha(0), At: 0}, {Color: t.BG.Alpha(.9), At: 40 / h}, {Color: t.BG.Alpha(.9), At: 1},
+			{Color: base.Alpha(0), At: 0}, {Color: base.Alpha(.9), At: 40 / h}, {Color: base.Alpha(.9), At: 1},
 		}})
 }
 
