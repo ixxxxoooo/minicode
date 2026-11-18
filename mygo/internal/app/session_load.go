@@ -144,7 +144,15 @@ func (a *App) chatEmptyOpened(c *ui.Context) {
 }
 
 func (a *App) chatDockColumn(c *ui.Context) {
+	if a.tk.Glass() {
+		a.dockEdge(c) // 输入区背后的渐隐,在 dockBox 之前画(见 glass_wall.go)
+	}
 	dockBox := ui.Column(c).Key("chat-dock").Padding(4, 0, 10, 0).Shrink(0).AlignItems(ui.Center)
+	if a.tk.Glass() {
+		// 流光:输入区悬浮在会话流之上(会话流延伸到它下面,底部留出等高空白,见 flowListView),
+		// 滚动的内容从玻璃背后穿过,这才是液态玻璃看得出效果的地方;整块容器不吃点击,只有里面的部件响应。
+		dockBox.Absolute().Left(0).Right(0).Bottom(0).PassThrough()
+	}
 	a.dockH = dockBox.Bounds().H
 	dockBox.Children(func() {
 		a.flowCol(c, func() {

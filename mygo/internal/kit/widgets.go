@@ -206,6 +206,9 @@ func Chip(c *ui.Context, text string, o ...ChipOpt) ui.Element {
 	col := T.Tx2
 	if op.Line {
 		b.Background(T.Raised).Border(1, T.Bd2)
+		if T.Glass() {
+			b.Material(GlassControl()) // 流光:带描边的胶囊是一小块可交互的真玻璃
+		}
 	}
 	switch {
 	case op.On:

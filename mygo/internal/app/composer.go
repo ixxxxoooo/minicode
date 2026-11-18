@@ -19,7 +19,7 @@ func (a *App) composer(c *ui.Context) {
 		r = t.RMd()
 	}
 	box := ui.Column(c).Key("composer").Background(t.Raised).Radius(r).Border(1, t.Bd2).Transition(ui.ElementTransition{Colors: true, Shadows: true, Duration: kit.DurBase, Ease: kit.EaseOut})
-	kit.Float(box) // 流光:输入框是浮在会话流上的厚玻璃(滚动内容会从它下面穿过)
+	kit.FloatLift(box) // 流光:输入框是浮在会话流上的玻璃(会话流延伸到它下面,滚动内容从它背后穿过,见 chatDockColumn)
 	if !a.composerInAt.IsZero() {
 		box = kit.PopIn(box, a.composerInAt)
 	}

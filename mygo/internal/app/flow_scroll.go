@@ -34,10 +34,15 @@ func (a *App) toLatestBtn(c *ui.Context, key string, fresh bool, bottom float32,
 		for _, s := range t.Shadow2() {
 			b.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
+		if t.Glass() {
+			b.Material(kit.GlassControl()) // 流光:真玻璃,背后滚动的文字被磨砂,不需要不透明底
+		}
 		col := t.Tx2
 		if b.Hovered() {
 			// Fill2 是半透明的墨色;直接当底色会让按钮变透明、露出后面滚动的文字,要先叠在不透明的 Raised 上。
-			b.Background(t.Fill2.Over(t.Raised))
+			if !t.Glass() {
+				b.Background(t.Fill2.Over(t.Raised))
+			}
 			col = t.Tx1
 			if kit.MotionOn() {
 				b.Translate(0, -1)

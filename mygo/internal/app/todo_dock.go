@@ -86,6 +86,7 @@ func (a *App) todoDock(c *ui.Context) {
 	t := a.tk
 	open := a.todoDockOpen
 	box := ui.Column(c).Key("todo-dock").Margin(0, 0, 6, 0).Radius(t.RMd()).Background(t.Raised).Border(1, t.Bd2).Clip()
+	kit.FloatLift(box) // 流光:浮在会话流上的玻璃
 	box.Children(func() {
 		head := ui.ButtonBase(c).Key("todo-dock-head").Height(theme.Px(30)).PaddingX(10).Gap(8).Justify(ui.Start).AlignItems(ui.Center).
 			Cursor(ui.CursorPointer).Tooltip(map[bool]string{true: "收起待办", false: "展开待办"}[open])

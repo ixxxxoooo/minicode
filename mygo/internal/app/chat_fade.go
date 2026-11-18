@@ -11,6 +11,9 @@ func (a *App) flowFadeMask(c *ui.Context) {
 		return
 	}
 	t := a.tk
+	if t.Glass() {
+		return // 流光:输入区是玻璃,内容在它背后被磨砂,不需要再叠一层渐隐
+	}
 	if !kit.MotionOn() {
 		return
 	}

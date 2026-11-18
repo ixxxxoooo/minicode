@@ -78,6 +78,19 @@ func GlassRim(el ui.Element) ui.Element {
 	}})
 }
 
+// FloatLift 是 Float 加一层轻阴影:给浮在会话流之上的输入区部件(输入框、待办条、排队卡、计划卡)用,
+// 让它们从内容上「抬起来」。阴影取最小一档(Shadow1),玻璃自己的高光边负责勾轮廓。
+func FloatLift(el ui.Element) ui.Element {
+	if !T.Glass() {
+		return el
+	}
+	el.Material(GlassMat(0))
+	for _, s := range T.Shadow1() {
+		el.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+	}
+	return el
+}
+
 // GlassTinted 返回带着色的玻璃(主要按钮、发送键):tint 的透明度决定染得多重。
 func GlassTinted(tint ui.Color) ui.Material { return glass.Glass{Tint: tint, Interactive: true} }
 

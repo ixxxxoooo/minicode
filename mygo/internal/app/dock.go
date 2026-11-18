@@ -41,6 +41,7 @@ func (a *App) cardShell(c *ui.Context, key string) ui.Element {
 	for _, s := range t.Shadow2() {
 		b.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
+	kit.Float(b)
 	if !a.dockCardAt.IsZero() {
 		b = kit.PopUpIn(b, a.dockCardAt, a.frameSoon)
 		b = kit.DockGlow(b, a.frameSoon)
@@ -331,6 +332,7 @@ func (a *App) planCard(c *ui.Context, p *core.PlanApproval) {
 	for _, s := range t.Shadow1() {
 		box.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
+	kit.Float(box)
 	box.Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 			kit.Ic(c, "list", kit.S12).TextColor(t.Warn)
@@ -436,6 +438,7 @@ func (a *App) queueCard(c *ui.Context) {
 	for _, s := range t.Shadow1() {
 		box.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
+	kit.Float(box)
 	box.Children(func() {
 		ui.Row(c).Gap(8).Padding(2, 6, 3, 6).AlignItems(ui.Center).TextColor(t.Tx3).FontSize(theme.FsCap).Children(func() {
 			kit.Ic(c, "clock", kit.S12)

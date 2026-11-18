@@ -252,6 +252,7 @@ func (a *App) askEcho(c *ui.Context, q *core.QuestionRequest) {
 	for _, s := range t.Shadow1() {
 		box.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
+	kit.Float(box)
 	box.ContextMenu(func(m *ui.Menu) { a.askEchoMenu(m, q) })
 	box.Children(func() {
 		ui.Row(c).Gap(7).AlignItems(ui.Center).Children(func() {

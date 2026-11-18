@@ -205,7 +205,11 @@ func (a *App) flowListView(c *ui.Context) {
 	st.Header = func(i int) bool { return rows[i].header }
 	pad := a.flowPad()
 	c.Key("flow") // 列表的 Key 必须在构造之前给
-	list := ui.List(c, st, len(rows)).Grow(1).MinHeight(0).Gap(8).Padding(12, 0, 18, 0).TrackScroll(&a.flowSt)
+	bottomPad := float32(18)
+	if a.tk.Glass() {
+		bottomPad += a.dockH // 输入区悬浮在流之上:末尾内容要停在它上面,滚动时才能从它下面穿过
+	}
+	list := ui.List(c, st, len(rows)).Grow(1).MinHeight(0).Gap(8).Padding(12, 0, bottomPad, 0).TrackScroll(&a.flowSt)
 	list = kit.ApplyNativeScroll(list, "flow", &a.flowSt, false, true) // 滚动条显示策略(自动隐藏 / 常驻)与活动追踪
 	list.Rows(func(r ui.ListRow) {
 		if r.Index < 0 || r.Index >= len(rows) {
