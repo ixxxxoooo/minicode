@@ -81,8 +81,27 @@ func (a *App) scmBody(c *ui.Context) {
 		a.wizardBar(c)
 		a.scmCommitBox(c, len(staged))
 		a.scmReviewRow(c)
+		// 更改列表 + 图形:图形默认占满更改列表下方的剩余空间(更改少 / 为空时图形自动上移),
+		// 更改多时图形保持用户拖出的高度,更改列表自己滚动。两个高度都取上一帧的实测值。
+		split := ui.Column(c).Key("scm-split").Grow(1).MinHeight(0)
+		defer func() { s.splitH = split.Bounds().H }()
+		split.Children(func() {
+			a.scmChanges(c, staged, work, conf)
+			a.scmGraph(c) // 固定在底部,不随更改列表滚走
+		})
+	})
+}
+
+// scmChanges 画中间可滚动的更改区(冲突 / 暂存 / 更改 / 储藏),并记下内容的自然高度供图形分区上移用。
+// 参数 staged / work / conf:已拆好的暂存、工作区、冲突三组改动。
+func (a *App) scmChanges(c *ui.Context, staged, work, conf []vcs.Change) {
+	t := a.tk
+	s := &a.sc
+	{
 		kit.VScroll(c).Key("scm").Grow(1).MinHeight(0).Children(func() {
-			ui.Column(c).Padding(0, 0, 8, 0).Children(func() {
+			content := ui.Column(c).Padding(0, 0, 8, 0)
+			defer func() { s.contentH = content.Bounds().H }()
+			content.Children(func() {
 				a.scmNestedHints(c)
 				if len(conf) > 0 {
 					a.scmGroup(c, "merge", "合并冲突", conf, "", "")
@@ -97,8 +116,7 @@ func (a *App) scmBody(c *ui.Context) {
 				a.scmStashes(c)
 			})
 		})
-		a.scmGraph(c) // 固定在底部,不随更改列表滚走
-	})
+	}
 }
 
 // scmHead 是分支行:分支按钮 + 刷新 / 拉取 / 推送。

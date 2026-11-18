@@ -26,6 +26,20 @@ func (a *App) scmGraphHeight() float32 {
 	return clampF(orDef(a.ly.scmGraph, scmGraphDef), sideSecMin, a.scmGraphMax())
 }
 
+// scmGraphBodyHeight 返回图形列表区(不含标题)的实际高度:
+// 取「用户拖出的高度 / 默认高度」与「更改列表下方的剩余空间」中较大的一个——
+// 更改少或为空时图形自动上移、占满剩余空间;更改多时保持设定高度,更改列表自己滚动。
+// 上一帧尚未量到区域高度时只用设定高度。
+func (a *App) scmGraphBodyHeight() float32 {
+	s := &a.sc
+	h := a.scmGraphHeight()
+	if s.splitH > 0 && s.contentH >= 0 {
+		const headBorder = 27 // 标题行 26 + 上边线 1
+		h = max(h, s.splitH-s.contentH-headBorder)
+	}
+	return h
+}
+
 // scmGraphMax 返回图形分区的高度上限:源代码管理区高度的 60%(上一帧取到的高度,尚未取到时给 400)。
 func (a *App) scmGraphMax() float32 {
 	if a.sc.bodyH <= 0 {
@@ -41,15 +55,12 @@ func (a *App) scmGraph(c *ui.Context) {
 	s := &a.sc
 	open := !s.folded["graph"]
 	has := len(s.log) > 0
-	h := a.scmGraphHeight()
+	h := a.scmGraphBodyHeight()
 	ui.Column(c).Key("scm-graph-pane").Shrink(0).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
 		if open && has { // 把手只在有内容、展开时出现
 			a.resizeHandle(c, lyScmGraph, "t", h, scmGraphDef, sideSecMin, a.scmGraphMax(), func(v float32) { a.ly.scmGraph = v })
 		}
-		hd := a.navDrop(ui.ButtonBase(c).Key("scm-h-graph")).Height(theme.Px(26)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3)
-		if hd.Hovered() {
-			hd.Background(t.Fill1)
-		}
+		hd := a.navDrop(ui.ButtonBase(c).Key("scm-h-graph")).Height(theme.Px(26)).PaddingX(4).Gap(4).AlignItems(ui.Center).Cursor(ui.CursorPointer).TextColor(t.Tx3) // 标题行悬停不加底色,直接点
 		hd.OnClick(func() { s.folded["graph"] = !s.folded["graph"] })
 		hd.Children(func() {
 			kit.Ic(c, map[bool]string{true: "chevD", false: "chevR"}[open], kit.S12)
