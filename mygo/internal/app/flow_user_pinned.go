@@ -1,7 +1,9 @@
 package app
 
 import (
+	"github.com/egoist/mygo/transfer"
 	"github.com/egoist/mygo/ui/richtext"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -20,6 +22,11 @@ type pinnedUserEdit struct {
 	// doc 是编辑卡的富文本文档:正文里的 @文件 引用与输入框一样是行内胶囊;draft 始终是它展开后的发送文本。
 	doc *richtext.Document
 	ver uint64 // doc 上次同步回 draft 时的版本
+	// 图片:与输入框一致,正文里是「图片 N」位置胶囊,缩略图在上方可移除、可粘贴新的(绝对路径,按序)。
+	imgs       []string
+	pendingImg []string        // 刚粘贴、等下一帧在光标处插胶囊的图片
+	pilled     map[string]bool // 文档里现有的图片位置胶囊(路径集合):胶囊被删就移除对应图片
+	rebuild    *string         // 移除缩略图后要按这段正文重建文档(建胶囊要 *ui.Context,点击回调里没有,留到下一帧画的时候做)
 }
 
 // userMsgAnchor 记录用户消息卡上一帧的位置(供悬浮编辑卡定位)。
@@ -55,7 +62,13 @@ func (a *App) openPinnedUserEdit(u *core.User) {
 			return
 		}
 	}
-	a.userPinned = append(a.userPinned, pinnedUserEdit{id: u.ID, draft: pinnedDraftText(u), focus: true, at: kit.Now()})
+	var imgs []string
+	for _, raw := range u.Images {
+		if abs := a.resolveUserImage(raw); abs != "" {
+			imgs = append(imgs, abs)
+		}
+	}
+	a.userPinned = append(a.userPinned, pinnedUserEdit{id: u.ID, draft: pinnedDraftText(u), focus: true, at: kit.Now(), imgs: imgs})
 }
 
 func (a *App) closePinnedUserEdit(id string) {
@@ -194,7 +207,7 @@ func (a *App) renderPinnedUserEdit(c *ui.Context, u *core.User, id string, cardW
 	}
 	card.OnClick(func() {}) // 拦住点穿到背板
 	card.Children(func() {
-		a.renderPinnedUserThumbs(c, u)
+		a.renderPinnedUserThumbs(c, u, a.pinnedEditByID(id))
 		fs := a.FlowFontSize()
 		lh := a.FlowReadLH()
 		lineH := fs * lh
@@ -205,17 +218,31 @@ func (a *App) renderPinnedUserEdit(c *ui.Context, u *core.User, id string, cardW
 		if maxLines > 32 {
 			maxLines = 32
 		}
+		svc := c.Services() // 按键回调里没有 *ui.Context,读剪贴板走 Services
 		pe := a.pinnedEditByID(id)
-		if pe.doc == nil { // 第一次画:按草稿建文档,@路径 变成胶囊(与输入框同款)
-			pe.doc = richtext.NewDocument(draftToText(userDraftBody(*draft, u.Images), func(kind, path string) *richtext.Attachment {
+		a.pillImgPaths = pe.imgs // 建「图片 N」胶囊的序号按编辑卡自己的图片列表
+		defer func() { a.pillImgPaths = nil }()
+		if pe.doc == nil { // 第一次画:按草稿建文档,@路径 / [Image #N] 变成胶囊(与输入框同款)
+			pe.doc = richtext.NewDocument(draftToText(userDraftBody(*draft, pe.imgs), func(kind, path string) *richtext.Attachment {
 				return a.pillAttachment(c, kind, path)
 			}))
 			pe.ver = pe.doc.Version()
+			pe.pilled = imgAtomPaths(textToDraft(pe.doc.Text()))
+		}
+		if pe.rebuild != nil { // 移除了某张图:按去掉它的位置胶囊后的正文重建(其余胶囊序号随之重排)
+			pe.doc.SetText(draftToText(*pe.rebuild, func(kind, path string) *richtext.Attachment {
+				return a.pillAttachment(c, kind, path)
+			}))
+			pe.pilled, pe.rebuild = imgAtomPaths(*pe.rebuild), nil
+			a.syncPinnedDoc(pe)
 		}
 		doc := pe.doc
+		for _, ip := range pe.pendingImg { // 刚粘贴的图:在光标处插位置胶囊
+			doc.InsertAttachment(a.pillAttachment(c, atomImg, ip))
+		}
+		pe.pendingImg = nil
 		if v := doc.Version(); v != pe.ver { // 用户改了:展开成发送文本,提交 / 复制 / 估高都用 *draft
-			*draft = atomsToSend(textToDraft(doc.Text()))
-			pe.ver = v
+			a.syncPinnedDoc(pe)
 		}
 		h := min(lineH*3, lineH*float32(maxLines))
 		if boxes := doc.VisibleParagraphs(); len(boxes) > 0 {
@@ -235,11 +262,13 @@ func (a *App) renderPinnedUserEdit(c *ui.Context, u *core.User, id string, cardW
 					Menu:       func(m *ui.Menu) {},
 					OnKey: func(key ui.Key, mods ui.Modifiers) bool {
 						switch {
+						case key == ui.KeyV && mods == ui.Cmd: // ⌘V:图片 / 图片文件进这张卡(正文里插位置胶囊),文字走编辑器自己的粘贴
+							return a.pinnedPaste(svc, id)
 						case key == ui.KeyEscape && mods == 0:
 							a.closePinnedUserEdit(id)
 							return true
 						case key == ui.KeyEnter && mods == 0:
-							*draft = atomsToSend(textToDraft(doc.Text()))
+							a.syncPinnedDoc(pe)
 							a.submitPinnedUserEdit(id)
 							return true
 						}
@@ -286,22 +315,14 @@ func (a *App) pinnedEditByID(id string) *pinnedUserEdit {
 	return nil
 }
 
-func (a *App) renderPinnedUserThumbs(c *ui.Context, u *core.User) {
-	if len(u.Images) == 0 {
+func (a *App) renderPinnedUserThumbs(c *ui.Context, u *core.User, pe *pinnedUserEdit) {
+	if pe == nil || len(pe.imgs) == 0 {
 		return
 	}
 	t := a.tk
 	ui.Row(c).Wrap().Gap(6).AlignItems(ui.Center).Children(func() {
-		for i, raw := range u.Images {
-			i := i
-			abs := a.resolveUserImage(raw)
-			if abs == "" {
-				ui.Row(c).Height(theme.Px(28)).Padding(0, 10).Radius(t.RSm()).Background(t.Fill1).AlignItems(ui.Center).Children(func() {
-					a.fileIc(c, baseName(raw))
-					ui.Text(c, baseName(raw)).FontSize(theme.FsMicro).TextColor(t.Tx4).Margin(0, 0, 0, 6)
-				})
-				continue
-			}
+		for i, abs := range pe.imgs {
+			i, abs := i, abs
 			src := a.localImage(abs)
 			w, h := float32(userThumbMinW), float32(userThumbH)
 			if src != nil {
@@ -309,13 +330,14 @@ func (a *App) renderPinnedUserThumbs(c *ui.Context, u *core.User) {
 			}
 			btn := ui.ButtonBase(c).Key("upin-img-"+u.ID+"-"+itoa(i)).Size(w, h).Radius(t.RSm()).
 				Cursor(ui.CursorPointer).Background(t.Fill1).Border(1, t.Bd1).Tooltip("点击预览")
-			btn.OnClick(func() { a.openUserImageLightbox(u, i) })
+			btn.OnClick(func() { a.openImageLightboxPath(abs) })
 			btn.Children(func() {
 				if src != nil {
 					ui.Image(c, src).Size(w, h).Radius(t.RSm()).Fit(ui.Cover)
 				} else {
 					kit.Ic(c, "image", kit.S12).TextColor(t.Tx4)
 				}
+				a.attachRemoveBtn(c, "upin-img-x-"+u.ID+"-"+itoa(i), "移除", func() { a.removePinnedImage(pe, i) })
 			})
 		}
 	})
@@ -330,7 +352,7 @@ func (a *App) pinnedEditEstimateH(u *core.User, draft string, maxBody float32) f
 	lines := max(estimatedUserLines(draft, 44), 3)
 	body := min(float32(lines)*lineH, maxBody)
 	thumbs := float32(0)
-	if len(u.Images) > 0 {
+	if pe := a.pinnedEditByID(u.ID); pe != nil && len(pe.imgs) > 0 {
 		thumbs = float32(userThumbH) + 6
 	}
 	return body + thumbs + 62
@@ -348,7 +370,7 @@ func userDraftBody(txt string, imgs []string) string {
 			imgK++
 			if imgK-1 < len(imgs) {
 				b.WriteString(txt[last:m[0]])
-				b.WriteString(atomString(atomImg+":"+itoa(imgK), imgs[imgK-1]))
+				b.WriteString(atomString(atomImg, imgs[imgK-1]))
 				last = m[1]
 			}
 			continue
@@ -373,4 +395,84 @@ func pinnedDraftText(u *core.User) string {
 		return strings.TrimSpace(u.Text)
 	}
 	return userDisplayText(u.Text)
+}
+
+// syncPinnedDoc 把编辑卡文档的当前内容展开成发送文本写回 draft;并处理「用户删了某张图的位置胶囊 → 移除这张图」。
+func (a *App) syncPinnedDoc(pe *pinnedUserEdit) {
+	if pe == nil || pe.doc == nil {
+		return
+	}
+	body := textToDraft(pe.doc.Text())
+	now := imgAtomPaths(body)
+	var gone []string
+	for p := range pe.pilled {
+		if !now[p] {
+			gone = append(gone, p)
+		}
+	}
+	pe.pilled = now
+	if len(gone) > 0 {
+		var keep []string
+		for _, ip := range pe.imgs {
+			drop := false
+			for _, g := range gone {
+				drop = drop || ip == g
+			}
+			if !drop {
+				keep = append(keep, ip)
+			}
+		}
+		pe.imgs = keep
+	}
+	pe.draft = atomsToSendImgs(body, pe.imgs)
+	pe.ver = pe.doc.Version()
+}
+
+// addPinnedImage 往编辑卡加一张图(粘贴 / 拖入):进缩略图行,并排队在光标处插位置胶囊;同一张不重复。
+func (a *App) addPinnedImage(id, path string) bool {
+	pe := a.pinnedEditByID(id)
+	if pe == nil || path == "" {
+		return false
+	}
+	for _, ip := range pe.imgs {
+		if ip == path {
+			return false
+		}
+	}
+	pe.imgs = append(pe.imgs, path)
+	pe.pendingImg = append(pe.pendingImg, path)
+	return true
+}
+
+// pinnedPaste 编辑卡里 ⌘V:剪贴板有图片 / 图片文件就加进这张卡并返回 true;否则返回 false 交给编辑器粘贴文字。
+func (a *App) pinnedPaste(svc ui.Services, id string) bool {
+	a.pasteTo = id
+	defer func() { a.pasteTo = "" }()
+	if fs, err := svc.ReadClipboardData(transfer.FileList).Files(); err == nil && len(fs) > 0 {
+		n := 0
+		for _, f := range fs {
+			switch strings.ToLower(filepath.Ext(f)) {
+			case ".png", ".jpg", ".jpeg", ".gif", ".webp":
+				if a.addDraftImage(f) {
+					n++
+				}
+			}
+		}
+		return n > 0
+	}
+	return a.composerPasteImage(svc)
+}
+
+// removePinnedImage 移除编辑卡里第 i 张图;正文里它的位置胶囊在下一帧画的时候去掉(见 rebuild)。
+func (a *App) removePinnedImage(pe *pinnedUserEdit, i int) {
+	if pe == nil || i < 0 || i >= len(pe.imgs) {
+		return
+	}
+	path := pe.imgs[i]
+	pe.imgs = append(append([]string(nil), pe.imgs[:i]...), pe.imgs[i+1:]...)
+	if pe.doc != nil {
+		body := strings.ReplaceAll(textToDraft(pe.doc.Text()), atomString(atomImg, path), "")
+		pe.rebuild = &body
+	}
+	a.frameSoon()
 }

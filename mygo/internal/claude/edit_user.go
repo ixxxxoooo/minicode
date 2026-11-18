@@ -7,6 +7,7 @@ import (
 // pendingUserEdit 等待 resume_session_at 应答后要发的正文。
 type pendingUserEdit struct {
 	text, uuid string
+	images     []string
 }
 
 // ResumeSessionAtReq 尝试从某条用户消息处恢复会话(协议子类型,部分 claude 版本可能不支持)。
@@ -22,12 +23,12 @@ func (b *Backend) onEditUser(c core.CmdEditUser) {
 	if c.MsgUUID == "" {
 		b.emit(notice(core.NoticeWarning, "这条消息没有检查点 id,无法用 resume_session_at 从该处重发;请用「分叉会话…」或本地演示"))
 		// 演示 / 无 uuid 时仍允许当普通新消息发出
-		if c.Text != "" {
-			b.onPrompt(core.CmdPrompt{Text: c.Text})
+		if c.Text != "" || len(c.Images) > 0 {
+			b.onPrompt(core.CmdPrompt{Text: c.Text, Images: c.Images})
 		}
 		return
 	}
-	b.pendingEdit = &pendingUserEdit{text: c.Text, uuid: c.MsgUUID}
+	b.pendingEdit = &pendingUserEdit{text: c.Text, uuid: c.MsgUUID, images: c.Images}
 	if !b.ensureProc() {
 		b.pendingEdit = nil
 		return
@@ -46,8 +47,8 @@ func (b *Backend) finishResumeAt(ok bool, errText string) {
 		log.Warn("resume_session_at 失败", "err", errText)
 		b.emit(notice(core.NoticeWarning, "无法从该消息处恢复会话("+errText+");已仅更新本地时间线,下一条将照常追加"))
 	}
-	if p.text == "" {
+	if p.text == "" && len(p.images) == 0 {
 		return
 	}
-	b.onPrompt(core.CmdPrompt{Text: p.text})
+	b.onPrompt(core.CmdPrompt{Text: p.text, Images: p.images})
 }

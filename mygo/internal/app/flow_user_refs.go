@@ -128,11 +128,7 @@ func (a *App) pillClickOpen(el ui.Element, doc *richtext.Document) {
 		kind, path, _ := strings.Cut(k, "\x1f")
 		if strings.Contains(txt, atomString(kind, path)) {
 			if isImgKind(kind) { // 图片位置胶囊:打开灯箱预览(输入框里的路径是附件路径,编辑卡里是消息里的图片引用)
-				abs := a.absAttach(path)
-				if kind != atomImg {
-					abs = a.resolveUserImage(path)
-				}
-				if abs != "" {
+				if abs := a.absAttach(path); abs != "" {
 					a.openImageLightboxPath(abs)
 				}
 				return

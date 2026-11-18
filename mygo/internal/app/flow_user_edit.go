@@ -26,7 +26,11 @@ func (a *App) submitPinnedUserEdit(id string) {
 	if id == "" {
 		return
 	}
-	if txt == "" {
+	var imgs []string
+	if pe := a.pinnedEditByID(id); pe != nil {
+		imgs = append(imgs, pe.imgs...)
+	}
+	if txt == "" && len(imgs) == 0 {
 		a.toast = "消息不能为空"
 		return
 	}
@@ -49,11 +53,9 @@ func (a *App) submitPinnedUserEdit(id string) {
 	a.closePinnedUserEdit(id)
 	switch be {
 	case "claude":
-		a.send(core.CmdEditUser{UserID: id, Text: txt, MsgUUID: uuid})
-	case "demo", "":
-		a.send(core.CmdPrompt{Text: txt})
+		a.send(core.CmdEditUser{UserID: id, Text: txt, MsgUUID: uuid, Images: imgs})
 	default:
-		a.send(core.CmdPrompt{Text: txt})
+		a.send(core.CmdPrompt{Text: txt, Images: imgs})
 	}
 	log.Info("编辑并发送用户消息", "id", id, "backend", be)
 }

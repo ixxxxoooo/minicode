@@ -77,12 +77,20 @@ func appendRefAtoms(draft string, refs ...string) string {
 
 // atomsToSend 把草稿里的原子展开成发给 Claude 的文字:`@路径`(文件夹 `@路径/`),前后没有空白就补一个。
 func atomsToSend(s string) string {
+	var imgs []string
+	for _, at := range parseDraftAttaches(s) { // 草稿里的图片附件(按序),图片位置胶囊靠它找序号
+		imgs = append(imgs, at.Path)
+	}
+	return atomsToSendImgs(s, imgs)
+}
+
+// atomsToSendImgs 同 atomsToSend,图片附件列表(按序的路径)由调用方给:编辑卡的图片不在草稿字符串里。
+func atomsToSendImgs(s string, imgPaths []string) string {
 	if !strings.Contains(s, atomOpen) {
 		return s
 	}
 	var b strings.Builder
 	last := 0
-	imgAtts := parseDraftAttaches(s) // 草稿里的图片附件(按序),图片位置胶囊靠它找序号
 	for _, m := range atomRE.FindAllStringSubmatchIndex(s, -1) {
 		b.WriteString(s[last:m[0]])
 		kind, path, ok := atomParts(s[m[2]:m[3]])
@@ -95,8 +103,8 @@ func atomsToSend(s string) string {
 			if k, num, ok := strings.Cut(kind, ":"); ok && k == atomImg {
 				n, _ = strconv.Atoi(num)
 			} else {
-				for i, at := range imgAtts {
-					if at.Path == path {
+				for i, ip := range imgPaths {
+					if ip == path {
 						n = i + 1
 					}
 				}

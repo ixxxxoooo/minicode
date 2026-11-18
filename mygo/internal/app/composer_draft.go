@@ -99,6 +99,9 @@ func (a *App) draftNow() string { return composeDraft(a.draftParts()) }
 // 在输入回调(粘贴、拖放)里调用也安全:以编辑器最新内容为底,不会丢掉刚打的字。
 // 返回:是否新增。
 func (a *App) addDraftImage(path string) bool {
+	if a.pasteTo != "" {
+		return a.addPinnedImage(a.pasteTo, path)
+	}
 	tk := "![](" + escImgPath(path) + ")"
 	body, imgs := a.draftParts()
 	for _, x := range imgs {

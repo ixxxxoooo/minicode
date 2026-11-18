@@ -63,10 +63,18 @@ func clipMiddle(s string, max float32, span func(string) float32) string {
 func (a *App) pillAttachment(c *ui.Context, kind, path string) *richtext.Attachment {
 	label, icon, name := pillLabel(kind, path)
 	if kind == atomImg { // 输入框里 「图片 N」:N 是它在缩略图行里的序号
-		for i, tk := range a.draftImgs {
-			for _, at := range parseDraftAttaches(tk) {
-				if at.Path == path {
+		if a.pillImgPaths != nil { // 编辑卡建胶囊时给的图片列表
+			for i, ip := range a.pillImgPaths {
+				if ip == path {
 					label = "图片 " + itoa(i+1)
+				}
+			}
+		} else {
+			for i, tk := range a.draftImgs {
+				for _, at := range parseDraftAttaches(tk) {
+					if at.Path == path {
+						label = "图片 " + itoa(i+1)
+					}
 				}
 			}
 		}

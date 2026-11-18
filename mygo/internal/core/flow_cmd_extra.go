@@ -4,6 +4,8 @@ package core
 // MsgUUID 是对应的 claude 消息 uuid(无 uuid 时真实后端会拒绝)。
 type CmdEditUser struct {
 	UserID, Text, MsgUUID string
+	// Images 是重发时带上的图片(绝对路径):编辑卡里保留 / 新粘贴的那些。此前重发只带文字,图片被悄悄丢掉。
+	Images []string
 }
 
 func (CmdEditUser) command() {}
