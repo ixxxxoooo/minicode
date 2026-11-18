@@ -765,6 +765,7 @@ func (a *App) SetMode(m Mode) {
 	a.rememberLayout()
 	a.morphFrom, a.morphAt = from, kit.Now()
 	a.mode = m
+	a.persistLastMode() // rememberLayout 里写的是切换前的旧形态,这里补写新形态,否则下次启动总是回到上一个形态
 	a.restoreLayoutFor(m)
 	a.beginMorph()
 	diag.LogUISwitch(modePerfName(from), modePerfName(m), time.Since(t0))
