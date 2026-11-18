@@ -18,6 +18,7 @@ Go 原生界面,无 WebView、不依赖 Node,直连本机 `claude` 的 stream-js
 ![平台](https://img.shields.io/badge/macOS-13%2B-black?logo=apple)
 ![Go](https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white)
 [![UI](https://img.shields.io/badge/UI-MyGo%20原生-orange)](https://mygo.run/zh)
+[![许可证](https://img.shields.io/badge/许可证-GPL--3.0-blue)](LICENSE)
 
 <img src="docs/assets/shot-agent.png" alt="Agent 形态:会话流 + 审查本轮改动" width="880">
 
@@ -229,3 +230,9 @@ scripts/publish.sh            # 先改 main.go 版本号并提交推送;脚本�
 | 工具链版本对不上 | `unset GOROOT` |
 | 改了图标设置没变化 | 设置 → 应用与菜单栏图标 →「当前生效」看哪一处失败,点「重新应用」 |
 | 设置页「崩溃与卡顿」里出现 `unclean-exit` | `dev.sh` 重启杀旧实例留下的记录,不是真崩溃 |
+
+## 许可证
+
+以 [GNU GPL-3.0](LICENSE) 发布,版权所有 © 2026 ixxxxoooo。你可以自由使用、修改和分发,但分发修改后的版本或包含本项目代码的程序时,必须同样以 GPL-3.0 开放对应源码。
+
+依赖的开源库各自遵循自己的许可证,例如界面框架 [MyGo](https://mygo.run/zh) 为 MIT。
