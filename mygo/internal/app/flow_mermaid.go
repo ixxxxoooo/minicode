@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/markdown"
@@ -30,6 +31,10 @@ type mmViewer struct {
 	panX  float32
 	panY  float32
 	fit   bool
+
+	at, closeAt time.Time // 入场 / 退场动画起点(与图片灯箱同一套:遮罩淡入、内容轻微放大到位)
+	drag        *lbDrag   // 拖动累计(区分「点一下」与「拖动」:拖动结束不算点击)
+	aw, ah      float32   // 画布区域上一帧的宽高(按钮缩放要以区域中心为中心)
 }
 
 func mmKey(src string) string {
@@ -107,7 +112,7 @@ func (a *App) foldMermaidBlock(c *ui.Context, b *markdown.CodeBlockView) {
 				ui.Text(c, "正在排版…").FontSize(theme.FsCap).TextColor(t.Tx3)
 			})
 		} else {
-			a.mmSceneCard(c, &entry.scene, 1, false)
+			a.mmSceneCard(c, &entry.scene, tile, src)
 		}
 	})
 }
@@ -145,24 +150,30 @@ func (a *App) mmSourceBody(c *ui.Context, src string, err error) {
 	})
 }
 
-func (a *App) mmSceneCard(c *ui.Context, sc *mermaid.Scene, scale float32, wheelZoom bool) {
-	if sc == nil || scale <= 0 {
-		scale = 1
-	}
-	const maxH = float32(360)
-	// 绘制层必须有明确尺寸:文字层是绝对定位,撑不开高度,否则整张图高度为 0 看不见
-	w, h := a.mmSceneSize(sc, scale)
-	if w <= 0 || h <= 0 {
+func (a *App) mmSceneCard(c *ui.Context, sc *mermaid.Scene, title, src string) {
+	if sc == nil || sc.Width <= 0 || sc.Height <= 0 {
 		return
 	}
-	box := ui.Box(c).Clip()
-	if wheelZoom {
-		box.Grow(1)
-	} else {
-		box.Height(min(h+16, maxH)).Cursor(ui.CursorPointer)
+	const maxH = float32(480)
+	const pad = float32(8)
+	// 按卡片宽度适应(只缩小不放大):此前固定 1:1 画,宽图被右边裁掉、左边留一大片空白
+	box := ui.Box(c).Clip().Cursor(ui.CursorPointer)
+	bw := box.Bounds().W
+	scale := float32(1)
+	if bw > 0 {
+		scale = min(1, (bw-pad*2)/sc.Width)
 	}
+	scale = max(scale, 0.2)
+	w, h := a.mmSceneSize(sc, scale)
+	left := pad
+	if bw > w+pad*2 {
+		left = (bw - w) / 2 // 窄图居中
+	}
+	box.Height(min(h+pad*2, maxH)).Tooltip("点击全屏查看")
+	box.OnClick(func() { a.openMmViewer(title, src) })
 	box.Children(func() {
-		layer := ui.Box(c).Size(w, h).Margin(8)
+		// 绘制层必须有明确尺寸:文字层是绝对定位,撑不开高度,否则整张图高度为 0 看不见
+		layer := ui.Box(c).Size(w, h).Margin(pad, 0, 0, left)
 		layer.Draw(func(p *ui.Painter, r ui.Rect) {
 			a.paintMmScene(p, sc, scale, r.X, r.Y)
 		})
@@ -281,7 +292,8 @@ func (a *App) mmColor(p *mermaid.Paint, fill bool) ui.Color {
 }
 
 func (a *App) openMmViewer(title, src string) {
-	a.mmView = mmViewer{open: true, title: title, src: src, scale: 1, fit: true}
+	a.mmView = mmViewer{open: true, title: title, src: src, scale: 1, fit: true, at: kit.Now()}
+	a.frameSoon()
 	diag.L("app").Info("打开 Mermaid 全屏", "title", title)
 }
 
