@@ -10,9 +10,7 @@
 Agent 与 IDE 是同一个窗口的两种形态,共用一份会话、编辑器和终端。
 Go 原生界面,无 WebView、不依赖 Node,直连本机 `claude` 的 stream-json 协议。
 
-[下载最新版](https://github.com/ixxxxoooo/minicode/releases/latest) ·
-[设计稿](docs/design) ·
-[开发笔记](docs/dev-notes.md)
+[下载最新版](https://github.com/ixxxxoooo/minicode/releases/latest)
 
 [![版本](https://img.shields.io/github/v/release/ixxxxoooo/minicode?label=版本&color=blue)](https://github.com/ixxxxoooo/minicode/releases/latest)
 ![平台](https://img.shields.io/badge/macOS-13%2B-black?logo=apple)
@@ -25,7 +23,7 @@ Go 原生界面,无 WebView、不依赖 Node,直连本机 `claude` 的 stream-js
 </div>
 
 > 截图来自**演示模式**(脚本化后端 + 沙盒项目),界面是真实运行中的窗口;演示数据不等于真实能力。
-> 大量功能是「代码已写、编译通过、有单测」,但没有在真实环境逐项验证,以设计稿「缺口总表」为准(见文末)。
+> 大量功能是「代码已写、编译通过、有单测」,但没有在真实环境逐项验证,已知缺口见文末「缺口与进度」。
 
 ---
 
@@ -102,7 +100,7 @@ Go 原生界面,无 WebView、不依赖 Node,直连本机 `claude` 的 stream-js
 | Go 1.27.4 | `mygo/go.mod` 指定;用 Homebrew 装的 Go 即可 |
 | Xcode 命令行工具 | cgo 需要 `clang`、`codesign` |
 | Python 3 + Pillow + PyObjC | 只在重新生成图标 / 截图 / 锁定版式时需要 |
-| Google Chrome | 给设计稿出截图、渲染锁定版式 |
+| Google Chrome | 渲染锁定版式 |
 
 **每次执行 Go 命令前先 `unset GOROOT`**(残留的 `GOROOT` 会让工具链对不上)。
 
@@ -170,7 +168,6 @@ gofmt -l . ; go vet ./... && go test ./...
 - 界面用 `ui.Tester` 写测试(`internal/app/*_test.go`)。真实 claude 的集成测试默认跳过,要 `MINI_REAL_CLAUDE=1`。
 - 构建缓存会长到几个 GB;报 `no space left on device` 时先 `go clean -cache`。
 - **无窗口截图** `cmd/shot`(辅助排查,不能代替实测):`go build -o /tmp/shotbin ./cmd/shot && /tmp/shotbin -screen settings -tab brand -o /tmp/x.png`;常用参数 `-scheme` `-theme` `-mode` `-screen` `-state`(welcome / perm / ask / plan / queue … 或 `scn:<场景 id>`)`-popup` `-click` `-tab` `-ed`,`-h` 看全部。
-- **设计稿截图**(对照用):`scripts/proto-shot.sh <页面> <方案> <主题> <形态> <输出.png>`;`scripts/compare.sh work agent a:paper b:mist c:ink` 并排对比。
 - **README 截图**:`scripts/readme-shots.py [agent|ide|dark|icons]` 用演示模式启动真实窗口、截图并合成到渐变背景上,输出 `docs/assets/shot-*.png`(需要给终端开「屏幕录制」权限)。
 - **锁定版式 / 样式条**:`scripts/gen-lockup.py` 生成 `docs/assets/lockup*.png` 与 `icon-styles.png`。
 - **图标资源**:`assets/icon/gen.py` 出 SVG,`build_all.sh` 渲染 PNG / `.icns` / 托盘图并同步到 `mygo/internal/app/brandassets/`(内嵌进二进制)。
@@ -197,9 +194,8 @@ scripts/publish.sh            # 先改 main.go 版本号并提交推送;脚本�
 | `mygo/internal/mermaid` | Mermaid 解析与排版(流程 / 时序 / 饼 / 状态图) |
 | `mygo/internal/diag` | 日志、慢操作计时、崩溃与卡死看门狗 |
 | `mygo/cmd/shot` | 无窗口截图工具 |
-| `docs/design` | 设计稿(HTML 原型,浏览器打开 `index.html`) |
 | `docs/assets` | README 用的截图与锁定版式 |
-| `scripts/` | `dev.sh` `package.sh` `publish.sh` `make-app.sh` `proto-shot.sh` `compare.sh` `with-deepseek.sh` `readme-shots.py` `gen-lockup.py` `gen-icons.mjs` `gen-logos.py` |
+| `scripts/` | `dev.sh` `package.sh` `publish.sh` `make-app.sh` `with-deepseek.sh` `readme-shots.py` `gen-lockup.py` `gen-icons.mjs` `gen-logos.py` |
 | `assets/icon/` | 图标源与产物(五样式 × 四外观、托盘、文档图标) |
 
 数据流:`Backend` → `core.Event` → `core.State.Apply` → 界面;界面交互转成 `core.Command` 交回后端。演示与真实后端共用同一套界面。
@@ -207,17 +203,15 @@ scripts/publish.sh            # 先改 main.go 版本号并提交推送;脚本�
 ### 开发约定
 
 - 回答、注释、文档、提交信息一律中文;提交用 Conventional Commits(`feat:` / `fix:` …),**一个功能一个提交**,改完立刻 `git push origin HEAD`。
-- **设计稿 `docs/design` 是界面的唯一依据**,先改设计稿再写代码;设计稿「缺口总表」页由各页「实现状态」自动汇总(数据主要在 `js/status.js`)。
 - 并行 / 多会话开发时只按路径 `git add` 自己改的文件;提交后用干净检出验证 HEAD 能编译。
 - 日志一律 `diag.L("包名")`;耗时操作用 `diag.SpanSlow`;后台任务经 `a.bg(name, work)`。
 - 不提交 `target` / `dist`;不读取、不输出密钥。
-- 三阶段工作流(补缺口 → 逐项审查 → 集中测试)与「必踩的坑」见 [`AGENTS.md`](AGENTS.md),历史做法与已知缺口见 [`docs/dev-notes.md`](docs/dev-notes.md)。
+- 三阶段工作流(补缺口 → 逐项审查 → 集中测试)与「必踩的坑」见 [`AGENTS.md`](AGENTS.md)。
 
 ---
 
 ## 缺口与进度
 
-- 缺口总表:设计稿「缺口总表」页,数据来自各页「实现状态」。
 - 汇报口径:区分 **已实现 / 部分 / 未做 / 未测试**;演示数据不等于真实能力。
 - 当前明确**未做**:语义高亮(MyGo 无前景着色 API)、Mermaid 的 gantt / 类图 / ER 图、`perm.sandbox` 与 `adv.flowMeasure` 只存偏好不生效。
 
