@@ -159,6 +159,7 @@ func (a *App) compactSubRow(c *ui.Context, s *core.SubagentCard) {
 	run := s.Active()
 	row := ui.ButtonBase(c).Key("subrow-"+s.ID).Background(t.Raised).Radius(t.RSm()).Padding(6, 8).Margin(0, 0, 4, 0).
 		Cursor(ui.CursorPointer).Transition(kit.Fade)
+	kit.Lift(row)
 	row.OnClick(func() { a.openSubTab(s.ID) })
 	row.Children(func() {
 		ui.Column(c).Gap(3).WidthPercent(100).Children(func() {

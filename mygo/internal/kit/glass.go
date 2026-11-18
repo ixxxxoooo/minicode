@@ -65,6 +65,7 @@ func glassBtn(b ui.Element, _ bool) {
 	for _, s := range T.Shadow1() {
 		b.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
+	GlassHi(b)
 }
 
 // glassPri 是主要按钮:着色玻璃(强调色几乎不透明,只透出一点)+ 强调色光晕(设计稿 --ac-glow:整页唯一「发光」的地方)。
@@ -94,7 +95,29 @@ func FloatLift(el ui.Element) ui.Element {
 	for _, s := range T.Shadow1() {
 		el.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
-	return el
+	return GlassHi(el)
+}
+
+// GlassHi 给元素顶部加 1px 的内高光(设计稿 inset 0 1px 0 --glass-hi):按钮、卡片、输入框的「厚度」感。
+// 非玻璃主题 / 降低透明度时 Tone().Hi 是透明的,等于什么都不画。
+func GlassHi(el ui.Element) ui.Element {
+	if !T.Glass() {
+		return el
+	}
+	return el.InsetShadow(0, 1, 0, 0, T.Tone().Hi)
+}
+
+// Lift 让面板上的卡片「浮」起来:软阴影 + 顶部内高光 + 玻璃卡片底色(设计稿 .card)。只在玻璃主题生效。
+// 参数 el:已设好圆角与描边的卡片元素。返回 el。
+func Lift(el ui.Element) ui.Element {
+	if !T.Glass() {
+		return el
+	}
+	el.Background(RaisedBG())
+	for _, s := range T.Shadow1() {
+		el.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+	}
+	return GlassHi(el)
 }
 
 // GlassSheen 给玻璃面板顶部叠一层渐隐的白色高光(设计稿 --glass-sheen:顶部 26% 高度的白色渐变),

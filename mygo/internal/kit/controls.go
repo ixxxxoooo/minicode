@@ -170,6 +170,14 @@ func Tog(c *ui.Context, on bool, key string, o ...TogOpt) bool {
 		b.Cursor(ui.CursorPointer)
 	}
 	b.Label("开关")
+	if T.Glass() {
+		// 流光:打开是着色玻璃(顶部内高光 + 强调色光晕),关闭是略深的凹槽(内阴影),与设计稿 .tog 一致
+		if on {
+			b.InsetShadow(0, 1, 0, 0, ui.RGBA(255, 255, 255, .45)).Shadow(0, 3, 8, -3, T.Ac.Alpha(.55))
+		} else {
+			b.InsetShadow(0, 1, 2, 0, T.Tone().Rim.Alpha(0)).InsetShadow(0, 1, 3, 0, ui.RGBA(0, 0, 0, .12))
+		}
+	}
 	x := 2 * theme.UIScale()
 	if on {
 		x = 13 * theme.UIScale()

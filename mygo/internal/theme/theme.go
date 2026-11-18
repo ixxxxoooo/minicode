@@ -185,6 +185,9 @@ type Tokens struct {
 	SynKw, SynStr, SynFn, SynType, SynNum, SynMac, SynCom ui.Color
 	// 差异
 	DiffAdd, DiffDel ui.Color
+	// ReduceTransp 是系统「降低透明度」/「增强对比度」是否开启(由 app.retheme 写入):开启时玻璃主题的 Tone() 全部换成不透明色,
+	// 面板的染色 / 深度 / 高光也都归零(MyGo 的玻璃插件自己会退成不透明的表面色)。
+	ReduceTransp bool
 	// 遮罩与阴影基色
 	Scrim  ui.Color
 	shade  [3]uint8

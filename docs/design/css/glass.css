@@ -128,6 +128,10 @@
 .gl-stk { position: relative; height: 150px; border-radius: 14px; background: var(--wall); overflow: hidden; box-shadow: var(--sh-1); color: var(--tx-1); font: var(--fs-body)/var(--lh-body) var(--font-ui); }
 .gl-sw { display: inline-block; width: 48px; height: 22px; border-radius: 6px; background: var(--wall); overflow: hidden; margin-right: 4px; box-shadow: inset 0 0 0 1px var(--bd-2); } .gl-sw i { display: block; width: 100%; height: 100%; }
 
+/* 方案 A / C:面板相接,两侧各一条不透明细线(--glass-hair);Go 版用它盖住玻璃着色器在形状边缘留下的 1px 深色暗边 */
+[data-theme^="glow"] { --glass-hair: color-mix(in srgb, var(--c-base) 90%, var(--c-ink)); } [data-theme="glow-night"] { --glass-hair: color-mix(in srgb, var(--c-base) 88%, var(--c-ink)); }
+[data-scheme="a"] :is(.pane, .side), [data-scheme="c"] :is(.pane, .side) { box-shadow: inset 1px 0 var(--glass-hair), inset -1px 0 var(--glass-hair); }
+
 /* 提示条:深色半透明玻璃(原来是不透明的墨色块,在玻璃主题里最突兀) */
 [data-theme^="glow"] [data-tip]:hover::after { background: color-mix(in srgb, var(--c-ink) 84%, transparent); color: var(--c-surface); -webkit-backdrop-filter: blur(10px) saturate(1.4); backdrop-filter: blur(10px) saturate(1.4);
   box-shadow: var(--glass-sh-s), inset 0 0 0 1px rgb(255 255 255 / .10); }

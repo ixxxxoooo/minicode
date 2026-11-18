@@ -53,19 +53,24 @@ type GlassTone struct {
 	Depth, ChatTint ui.Color
 	// Hair 是不透明的细线色(≈ 原版主题里 --bd-2 画出的浅线):方案 A / C 面板相接处用它盖住玻璃着色器在形状边缘留下的 1px 暗边
 	Hair ui.Color
+	// Hi 是元素顶部 1px 的内高光(设计稿 inset 0 1px 0 --glass-hi):按钮、卡片、输入框的「厚度」感
+	Hi ui.Color
 }
 
 // Tone 返回当前主题的玻璃半透明色;非玻璃主题返回由常规令牌推出的不透明近似,调用方可以直接用。
+// 系统开了「降低透明度」(Tokens.ReduceTransp)时,玻璃主题也返回同样的不透明近似:染色 / 深度 / 高光全部归零。
 func (t *Tokens) Tone() GlassTone {
-	if !t.Palette.Glass {
-		return GlassTone{Thin: t.Fill1, Card: t.Raised, Sel: t.Raised, Rim: t.Bd1, RimLo: t.Bd1, Sheen: ui.Transparent, Mid: t.BG, SideTint: ui.Transparent, WsTint: ui.Transparent, Depth: ui.Transparent, ChatTint: ui.Transparent, Hair: t.Bd2}
+	if !t.Palette.Glass || t.ReduceTransp {
+		return GlassTone{Thin: t.Fill1, Card: t.Raised, Sel: t.Raised, Rim: t.Bd1, RimLo: t.Bd1, Sheen: ui.Transparent, Mid: t.BG, SideTint: ui.Transparent, WsTint: ui.Transparent, Depth: ui.Transparent, ChatTint: ui.Transparent, Hair: t.Bd2, Hi: ui.Transparent}
 	}
 	if t.Palette.Dark {
 		return GlassTone{Thin: ui.RGBA(255, 235, 220, .08), Card: ui.RGBA(58, 50, 44, .46), Sel: ui.RGBA(255, 235, 220, .16),
 			Rim: ui.RGBA(255, 240, 230, .30), RimLo: ui.RGBA(255, 240, 230, .09), Sheen: ui.RGBA(255, 236, 222, .14), Mid: ui.RGBA(38, 34, 30, .60),
-			SideTint: ui.RGBA(0, 0, 0, .36), WsTint: ui.RGBA(0, 0, 0, .20), Depth: ui.RGBA(0, 0, 0, .16), ChatTint: ui.RGBA(0, 0, 0, .06), Hair: t.Chrome.Mix(t.Tx1, .12)}
+			SideTint: ui.RGBA(0, 0, 0, .36), WsTint: ui.RGBA(0, 0, 0, .20), Depth: ui.RGBA(0, 0, 0, .16), ChatTint: ui.RGBA(0, 0, 0, .06), Hair: t.Chrome.Mix(t.Tx1, .12),
+			Hi: ui.RGBA(255, 244, 236, .16)}
 	}
 	return GlassTone{Thin: ui.RGBA(255, 255, 255, .30), Card: ui.RGBA(255, 255, 255, .72), Sel: ui.RGBA(255, 255, 255, .78),
 		Rim: ui.RGBA(255, 255, 255, .85), RimLo: ui.RGBA(255, 255, 255, .38), Sheen: ui.RGBA(255, 255, 255, .55), Mid: ui.RGBA(255, 255, 255, .64),
-		SideTint: ui.RGBA(150, 120, 90, .17), WsTint: ui.RGBA(150, 120, 90, .07), Depth: ui.RGBA(150, 120, 90, .07), ChatTint: ui.RGBA(150, 120, 90, .02), Hair: t.Chrome.Mix(t.Tx1, .10)}
+		SideTint: ui.RGBA(150, 120, 90, .17), WsTint: ui.RGBA(150, 120, 90, .07), Depth: ui.RGBA(150, 120, 90, .07), ChatTint: ui.RGBA(150, 120, 90, .02), Hair: t.Chrome.Mix(t.Tx1, .10),
+		Hi: ui.RGBA(255, 255, 255, .95)}
 }

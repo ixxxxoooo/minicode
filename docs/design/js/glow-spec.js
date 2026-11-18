@@ -6,7 +6,7 @@
   const { ic, btn, ib, tag, kbd, seg, tog, inp, THEMES } = U;
   const { head, sec } = P.h;
   const tbl = (cols, rows) => `<table class="ia-tbl"><thead><tr>${cols.map(([t, w]) => `<th ${w ? `style="width:${w}px"` : ''}>${t}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, k) => `<td ${k ? 'class="t2"' : ''}>${k ? c : `<b>${c}</b>`}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-  const frame = (theme) => `<div class="gl-wide"><div class="fit"><div class="frame" data-scheme="b" data-theme="${theme}">${W.win({ scheme: 'b', mode: 'agent', screen: 'work', theme })}</div></div></div>`;
+  const frame = (theme, scheme = 'b') => `<div class="gl-wide"><div class="fit"><div class="frame" data-scheme="${scheme}" data-theme="${theme}">${W.win({ scheme, mode: 'agent', screen: 'work', theme })}</div></div></div>`;
 
   /* ───────── 样本台:壁纸 + 一组控件;theme 决定浅 / 夜,extra 加 no-glass 演示降级 ───────── */
   const specimens = (theme, extra = '') => `<div class="gl-tile ${extra}" data-theme="${theme}" data-scheme="b">
@@ -35,6 +35,7 @@
   P['glow-spec'] = (st) => `<div class="ds" style="max-width:1240px">${head('流光 · 液态玻璃主题', '第七、八套主题,同一份令牌 + 一层独立的材质样式(css/glass.css),不改动其余六套。配色取 Claude 品牌色:浅色「流光」是象牙白壁纸 + 陶土橙强调色,「流光·夜」是暖石板灰壁纸 + 柔和的陶土橙;壁纸不用任何彩色;推荐配方案 B(浮岛),方案 A / C 也成立。点顶栏最右两枚圆点即可整稿切换。')}
     ${sec('整体 · 浅色「流光」', '壁纸是象牙白纯色,没有渐变;面板是浮在壁纸上的玻璃岛,标题栏与状态栏直接坐在壁纸上,只有控件是玻璃。', frame('glow'))}
     ${sec('整体 · 夜「流光·夜」', '同一套结构。壁纸换成暖石板灰纯色;玻璃变成暖褐色半透明,边缘高光变弱,避免发白。', frame('glow-night'))}
+    ${sec('方案 A(墨线)/ C(轨道):面板相接', '推荐配方案 B,A / C 也成立,但面板紧挨着、没有圆角和间隙,规则不同:① 没有悬浮阴影,只有相接处各一条不透明细线(--glass-hair,≈ 原版主题 --bd-2 的浅线;两侧各一条,所以相接处是两条挨着的细线);② 没有渐变高光边(只给浮岛);③ 面板仍有顶部光泽、纵向深度与侧栏 / 工作区 / 对话栏的明暗层次。Go 版里这条细线还有一个技术原因:玻璃着色器会在形状边缘留下 1px 深色暗边,方案 B 的间隙与阴影盖住了它,A / C 必须用细线盖住,否则交界处是一条深灰竖线。', frame('glow', 'a') + '<div style="height:16px"></div>' + frame('glow-night', 'c'))}
     ${sec('设计原则 · 三层', '玻璃是「导航与控件」的材质,不是内容的材质。这条决定了好不好看,也决定了性能。', `${stack('glow')}<div style="height:16px"></div>${stack('glow-night')}`)}
     ${sec('材质令牌', '所有玻璃都只读这一组变量;组件规则里没有写死的透明度。色块画在壁纸上,能看出透明度。', tbl([['令牌', 230], ['名称', 90], ['浅 / 夜', 110], ['用途']], [
       tokRow('--glass-1', '常规', '侧栏、工作区面板(导航与工作区更透)'), tokRow('--glass-2', '厚', '对话 / 整页面板、浮层、输入框(文字多,更实)'),

@@ -141,6 +141,7 @@ func (a *App) autoWeek(c *ui.Context, items []automation.Automation) {
 				d := mon.AddDate(0, 0, i)
 				today := s.weekOf == 0 && i == (int(now.Weekday()+6)%7)
 				col := ui.Column(c.Key("wk-v-"+itoa(i))).Gap(4).Padding(8, 10).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd1)
+				kit.Lift(col)
 				if today {
 					col.BorderColor(t.Ac).Border(1.5, t.Ac)
 				}
@@ -165,6 +166,7 @@ func (a *App) autoWeek(c *ui.Context, items []automation.Automation) {
 			d := mon.AddDate(0, 0, i)
 			today := s.weekOf == 0 && i == (int(now.Weekday()+6)%7)
 			col := ui.Column(c.Key("wk-"+itoa(i))).Grow(1).Basis(0).MinWidth(0).MinHeight(104).Padding(6, 6).Gap(4).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd1)
+			kit.Lift(col)
 			if today {
 				col.BorderColor(t.Ac).Border(1.5, t.Ac)
 			}

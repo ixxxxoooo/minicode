@@ -24,6 +24,7 @@ func Card(c *ui.Context, o ...CardOpt) ui.Element {
 	for _, sh := range T.Shadow1() {
 		el.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
 	}
+	GlassHi(el)
 	if el.Hovered() && MotionOn() {
 		el.Translate(0, -1)
 		for _, sh := range T.Shadow2() {

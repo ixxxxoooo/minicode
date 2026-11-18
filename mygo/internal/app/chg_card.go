@@ -18,6 +18,7 @@ func (a *App) changesCard(c *ui.Context) {
 		return
 	}
 	box := ui.Column(c).Key("chg-card").Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd2).Padding(3).Margin(2, 0)
+	kit.Lift(box)
 	box.Children(func() {
 		ui.Row(c).Height(theme.Px(28)).PaddingX(8).Gap(2).AlignItems(ui.Center).Children(func() {
 			ui.Text(c, itoa(len(files))+" 个文件已改动").FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx2).SingleLine().Grow(1).MinWidth(0)

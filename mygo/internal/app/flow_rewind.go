@@ -68,6 +68,7 @@ func (a *App) flowRewindCard(c *ui.Context) {
 	}
 	t := a.tk
 	box := ui.Column(c).Key("rewind-card").Background(t.Raised).Radius(t.RMd()).Padding(10, 12).Gap(8).Margin(8, 0).Border(1, t.Bd1)
+	kit.Lift(box)
 	box.Children(func() {
 		switch r.Stage {
 		case core.RewindChecking:

@@ -211,6 +211,7 @@ func Chip(c *ui.Context, text string, o ...ChipOpt) ui.Element {
 			for _, s := range T.Shadow1() {
 				b.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 			}
+			GlassHi(b)
 		}
 	}
 	switch {

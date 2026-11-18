@@ -445,6 +445,7 @@ func (a *App) reviewFile(c *ui.Context, f chFile, first bool) {
 	}
 	closed := !open
 	box := ui.Column(c).Key("rvf-"+f.path).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd1).Clip()
+	kit.Lift(box)
 	box.Children(func() {
 		head := ui.ButtonBase(c).Key("rvh-" + f.path).Height(theme.Px(30)).PaddingX(10).Gap(6).AlignItems(ui.Center).Cursor(ui.CursorDefault).Transition(kit.Fade)
 		if head.Hovered() {

@@ -459,6 +459,9 @@ func (a *App) retheme() {
 	sch.RK *= [3]float32{.55, 1, 1.35}[a.radius]           // 圆角倍率
 	sch.RowH = theme.Px(sch.RowH) + float32(a.density-1)*2 // 行高随界面大小缩放,再按密度 ±2
 	a.tk = theme.Resolve(a.pal, sch, a.accent)
+	// 系统「降低透明度」/「增强对比度」:流光的染色 / 深度 / 高光 / 半透明卡片换成不透明色(见 Tokens.Tone);
+	// 玻璃插件自己会退成不透明表面。取值在换主题时刷新,运行中改系统设置要等下次换主题或重启。
+	a.tk.ReduceTransp = a11yReduceTransparency() || a11yIncreaseContrast()
 	kit.Use(a.tk)
 	a.syncTermColors()
 	a.md = nil
