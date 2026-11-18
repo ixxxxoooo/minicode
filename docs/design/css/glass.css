@@ -48,11 +48,16 @@
 
 /* ───────── 壁纸 + 面板 ───────── */
 [data-theme^="glow"] .win { background: var(--wall); }
+/* 描边更淡 + 面板纵向「深度」(与 Go 版 Bd1/2/3、Tone().Depth / ChatTint 一致):原型里面板从顶到底逐渐变深变暖(对话栏实测 252 → 248 → 243),
+   没有它面板是平的白;描边沿用常规浓度会是一圈灰色硬线,卡片 / 输入框像贴在底上的实色块。frame 自带 data-scheme 会重算 --bd-*,所以两处都写。 */
+[data-theme^="glow"], [data-theme^="glow"] [data-scheme] { --bd-1: color-mix(in srgb, var(--c-ink) 4%, transparent); --bd-2: color-mix(in srgb, var(--c-ink) 7%, transparent); --bd-3: color-mix(in srgb, var(--c-ink) 13%, transparent); }
+[data-theme^="glow"] { --glass-depth: rgb(150 120 90 / .07); --glass-chat-tint: rgb(150 120 90 / .02); }
+[data-theme="glow-night"] { --glass-depth: rgb(0 0 0 / .16); --glass-chat-tint: rgb(0 0 0 / .06); }
 [data-theme^="glow"] .pane, [data-theme^="glow"] .side {
-  background: var(--glass-sheen), var(--glass-2); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)); backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)); }
+  background: var(--glass-sheen), linear-gradient(180deg, transparent 35%, var(--glass-depth)), linear-gradient(var(--glass-chat-tint), var(--glass-chat-tint)), var(--glass-2); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)); backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)); }
 /* 导航与工作区更透,对话 / 整页更实;再叠一层暖色的深浅:侧栏最深、工作区居中、对话栏最亮(纯色壁纸下,面板之间的明暗层次靠这个) */
-[data-theme^="glow"] .side { background: var(--glass-sheen), linear-gradient(var(--glass-side-tint), var(--glass-side-tint)), var(--glass-1); }
-[data-theme^="glow"] .pane.ws { background: var(--glass-sheen), linear-gradient(var(--glass-ws-tint), var(--glass-ws-tint)), var(--glass-1); }
+[data-theme^="glow"] .side { background: var(--glass-sheen), linear-gradient(180deg, transparent 35%, var(--glass-depth)), linear-gradient(var(--glass-side-tint), var(--glass-side-tint)), var(--glass-1); }
+[data-theme^="glow"] .pane.ws { background: var(--glass-sheen), linear-gradient(180deg, transparent 35%, var(--glass-depth)), linear-gradient(var(--glass-ws-tint), var(--glass-ws-tint)), var(--glass-1); }
 [data-theme^="glow"] .side { margin-right: var(--gap-pane); border-radius: var(--r-lg); box-shadow: var(--glass-pane-sh); }
 [data-theme^="glow"] .win[data-side="off"] .side { margin-right: 0; }
 [data-theme^="glow"] .pane { box-shadow: var(--glass-pane-sh, -1px 0 var(--bd-2)); }
@@ -76,7 +81,9 @@
 /* ───────── 控件:按钮 / 输入 / 开关 / 行 ───────── */
 [data-theme^="glow"] .btn { background: var(--glass-sheen), var(--glass-3); -webkit-backdrop-filter: blur(12px) saturate(1.4); backdrop-filter: blur(12px) saturate(1.4);
   box-shadow: inset 0 0 0 1px var(--glass-rim-lo), inset 0 1px 0 var(--glass-hi), var(--glass-sh-s); }
-[data-theme^="glow"] .btn:hover { background: var(--glass-sheen), var(--glass-sel); }
+[data-theme^="glow"] .btn:hover, [data-theme^="glow"] .btn.is-hover { background: var(--glass-sheen), var(--glass-sel); }
+[data-theme^="glow"] .btn.is-active { transform: scale(.96); } [data-theme^="glow"] .btn.is-focus { box-shadow: var(--ring), inset 0 0 0 1px var(--ac-line); }
+[data-theme^="glow"] .btn.is-disabled { opacity: .42; box-shadow: none; }
 [data-theme^="glow"] .btn.pri, [data-theme^="glow"] .ib.send { background: linear-gradient(180deg, color-mix(in srgb, var(--ac) 78%, #fff), var(--ac) 70%);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .55), inset 0 0 0 1px rgb(255 255 255 / .22), var(--ac-glow); backdrop-filter: none; }
 [data-theme^="glow"] .btn.pri:hover, [data-theme^="glow"] .ib.send:hover { filter: brightness(1.06) saturate(1.05); background: linear-gradient(180deg, color-mix(in srgb, var(--ac) 78%, #fff), var(--ac) 70%); }
@@ -120,3 +127,14 @@
 .gl-pair3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; } .gl-pair3 > div { min-width: 0; }
 .gl-stk { position: relative; height: 150px; border-radius: 14px; background: var(--wall); overflow: hidden; box-shadow: var(--sh-1); color: var(--tx-1); font: var(--fs-body)/var(--lh-body) var(--font-ui); }
 .gl-sw { display: inline-block; width: 48px; height: 22px; border-radius: 6px; background: var(--wall); overflow: hidden; margin-right: 4px; box-shadow: inset 0 0 0 1px var(--bd-2); } .gl-sw i { display: block; width: 100%; height: 100%; }
+
+/* 提示条:深色半透明玻璃(原来是不透明的墨色块,在玻璃主题里最突兀) */
+[data-theme^="glow"] [data-tip]:hover::after { background: color-mix(in srgb, var(--c-ink) 84%, transparent); color: var(--c-surface); -webkit-backdrop-filter: blur(10px) saturate(1.4); backdrop-filter: blur(10px) saturate(1.4);
+  box-shadow: var(--glass-sh-s), inset 0 0 0 1px rgb(255 255 255 / .10); }
+
+/* ───────── 组件库页「流光 · 玻璃组件」的版式(只给 js/glow-comps.js 用) ───────── */
+.gc-mx { display: grid; grid-template-columns: 74px repeat(var(--n, 6), minmax(0, 1fr)); gap: 8px 6px; align-items: center; }
+.gc-mx > .h { font-size: var(--fs-micro); color: var(--tx-3); letter-spacing: .04em; text-align: center; } .gc-mx > .r { font-size: var(--fs-cap); color: var(--tx-2); font-weight: var(--fw-medium); }
+.gc-mx > .c { display: flex; justify-content: center; align-items: center; min-width: 0; }
+.gc-sec { display: grid; gap: 14px; } .gc-note { color: var(--tx-3); font-size: var(--fs-cap); line-height: 1.55; margin-top: 8px; }
+.gl-tile .gc-pad { padding: 14px; } .gl-tile .gc-stack { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
