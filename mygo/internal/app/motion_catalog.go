@@ -54,6 +54,7 @@ func (a *App) motionCatalogOverlay(c *ui.Context) {
 		for _, s := range t.Shadow3() {
 			panel.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
+		kit.Float(panel)
 		panel.Border(1, t.Bd1)
 		a.dialogIn(key, backdrop, panel)
 		panel.Children(func() {

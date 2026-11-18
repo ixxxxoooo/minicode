@@ -130,6 +130,9 @@ func Btn(c *ui.Context, text string, o ...BtnOpt) ui.Element {
 			bg = T.Ac.Mix(T.Tx1, .10)
 		}
 		b.Background(bg).FontWeight(500)
+		if T.Glass() {
+			glassPri(b)
+		}
 		col = T.OnAc
 	case BtnSoft:
 		b.Background(T.AcSoft).FontWeight(500)
@@ -149,6 +152,10 @@ func Btn(c *ui.Context, text string, o ...BtnOpt) ui.Element {
 		b.Background(T.Raised).Border(1, T.Bd2)
 		col = T.Err
 	default:
+		if T.Glass() {
+			glassBtn(b, hov)
+			break
+		}
 		bg := T.Raised
 		if hov {
 			bg = T.Raised.Mix(T.Tx1, .04)

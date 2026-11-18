@@ -152,6 +152,7 @@ func (a *App) noticeToasts(c *ui.Context) {
 			for _, s := range t.Shadow2() {
 				card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 			}
+			kit.Float(card)
 			card = kit.ToastSlideKeep(card, it.at, a.frameSoon, len(it.actions) > 0)
 			card.Children(func() {
 				kit.Ic(c, icon, kit.S12).TextColor(col).Margin(2, 0, 0, 0)

@@ -43,6 +43,7 @@ func (a *App) wsOverlay(c *ui.Context) {
 			for _, s := range t.Shadow3() {
 				col.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 			}
+			kit.Float(col)
 			kit.DrawerSlide(col, a.wsOvlAt, true, a.frameSoon)
 			a.zoneMarkEditor(col)
 			col.Children(func() { a.workspace(c) })

@@ -13,7 +13,7 @@ func Card(c *ui.Context, o ...CardOpt) ui.Element {
 	if len(o) > 0 {
 		op = o[0]
 	}
-	el := ui.ButtonBase(c).Padding(12, 14).Radius(T.RMd()).Background(T.Raised).Border(1, T.Bd1).
+	el := ui.ButtonBase(c).Padding(12, 14).Radius(T.RMd()).Background(RaisedBG()).Border(1, T.Bd1).
 		Cursor(ui.CursorPointer).Justify(ui.Start).AlignItems(ui.Stretch).Transition(Fade)
 	switch {
 	case op.On:

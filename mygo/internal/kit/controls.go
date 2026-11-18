@@ -100,7 +100,7 @@ func Seg(c *ui.Context, items []SegItem, on int, o ...SegOpt) int {
 			inner.Grow(1)
 		}
 		inner.Children(func() {
-			th := ui.Box(c).Absolute().ZIndex(0).Top(0).Bottom(0).WidthPercent(100 / n).Radius(T.RMd() - 2).Background(T.Raised)
+			th := ui.Box(c).Absolute().ZIndex(0).Top(0).Bottom(0).WidthPercent(100 / n).Radius(T.RMd() - 2).Background(SelBG())
 			for _, s := range T.Shadow1() {
 				th.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 			}
@@ -196,8 +196,8 @@ func RowEl(c *ui.Context, on bool) ui.Element {
 	col := T.Tx2
 	switch {
 	case on && T.Scheme.ID == "b":
-		// 设计稿方案 B:选中行是白色浮起卡(--bg-raised + --sh-1),没有竖线
-		r.Background(T.Raised).FontWeight(500)
+		// 设计稿方案 B:选中行是白色浮起卡(--bg-raised + --sh-1),没有竖线;玻璃主题是更亮的半透明「选中」色
+		r.Background(SelBG()).FontWeight(500)
 		for _, s := range T.Shadow1() {
 			r.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
@@ -215,7 +215,7 @@ func RowEl(c *ui.Context, on bool) ui.Element {
 // SelStyle 给自绘的列表行套上选中外观(与 RowEl 的选中态一致:方案 B = 白色浮起卡,A / C = 强调色淡染底)。
 func SelStyle(r ui.Element) ui.Element {
 	if T.Scheme.ID == "b" {
-		r.Background(T.Raised)
+		r.Background(SelBG())
 		for _, s := range T.Shadow1() {
 			r.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}

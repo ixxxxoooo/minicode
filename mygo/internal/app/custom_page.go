@@ -578,6 +578,7 @@ func (a *App) cuDialog(c *ui.Context, st *customize.Store) {
 			for _, sh := range t.Shadow3() {
 				panel.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
 			}
+			kit.Float(panel)
 			a.dialogIn("cu-new", backdrop, panel)
 			panel.Children(func() {
 				ui.Text(c, meta.add).FontSize(theme.FsTitle).FontWeight(600)

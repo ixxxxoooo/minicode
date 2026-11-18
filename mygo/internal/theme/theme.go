@@ -302,6 +302,9 @@ func (t *Tokens) ShadowStuck() []ShadowLayer {
 }
 
 func (t *Tokens) Shadow2() []ShadowLayer {
+	if t.Palette.Glass {
+		return t.GlassShadow() // 玻璃主题:浮层统一用玻璃岛的悬浮阴影(夜色下不乘 KShade,免得一圈黑)
+	}
 	return []ShadowLayer{
 		{0, 10, 30, -6, t.shadeColor(.18 * t.kShade)},
 		{0, 2, 6, 0, t.shadeColor(.07 * t.kShade)},
@@ -309,6 +312,9 @@ func (t *Tokens) Shadow2() []ShadowLayer {
 }
 
 func (t *Tokens) Shadow3() []ShadowLayer {
+	if t.Palette.Glass {
+		return t.GlassShadow()
+	}
 	return []ShadowLayer{{0, 28, 70, -12, t.shadeColor(.3 * t.kShade)}}
 }
 

@@ -19,6 +19,49 @@ import (
 // 约 0.35 = 更通透(导航栏、工作区)。系统「降低透明度」时插件自己退成不透明的表面色。
 func GlassMat(clarity float32) ui.Material { return glass.Glass{Clarity: clarity} }
 
+// Float 把浮在最上层的面板(命令面板、对话框、弹层、抽屉)画成玻璃,覆盖它原来的底色;阴影由 Shadow2 / Shadow3 在玻璃主题下自动换成玻璃岛阴影。
+// 非玻璃主题原样返回。调用方在设好圆角、描边、阴影之后调用即可。
+func Float(el ui.Element) ui.Element {
+	if T.Glass() {
+		el.Material(GlassMat(0))
+	}
+	return el
+}
+
+// RaisedBG 是「抬起一层」的表面色:卡片、输入框、默认按钮。玻璃主题下是半透明的卡片色,其余主题就是 T.Raised。
+func RaisedBG() ui.Color {
+	if T.Glass() {
+		return T.Tone().Card
+	}
+	return T.Raised
+}
+
+// SelBG 是选中行 / 分段滑块的底色:玻璃主题下是更亮的半透明「选中」色(不再用强调色淡染),其余主题是 T.Raised。
+func SelBG() ui.Color {
+	if T.Glass() {
+		return T.Tone().Sel
+	}
+	return T.Raised
+}
+
+// glassBtn 是玻璃主题下默认按钮的外观:半透明卡片色 + 暗边;悬停升为「选中」色。
+func glassBtn(b ui.Element, hov bool) {
+	tn := T.Tone()
+	bg := tn.Card
+	if hov {
+		bg = tn.Sel
+	}
+	b.Background(bg).Border(1, tn.RimLo)
+	for _, s := range T.Shadow1() {
+		b.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+	}
+}
+
+// glassPri 给主要按钮加一圈高光描边与强调色光晕(设计稿 --ac-glow:整页唯一「发光」的地方)。
+func glassPri(b ui.Element) {
+	b.Border(1, ui.RGBA(255, 255, 255, .22)).Shadow(0, 6, 14, -6, T.Ac.Alpha(.7))
+}
+
 // GlassTinted 返回带着色的玻璃(主要按钮、发送键):tint 的透明度决定染得多重。
 func GlassTinted(tint ui.Color) ui.Material { return glass.Glass{Tint: tint, Interactive: true} }
 

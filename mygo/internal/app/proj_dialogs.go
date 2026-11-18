@@ -273,6 +273,7 @@ func (a *App) dlgFrame(c *ui.Context, key string, w float32, title string, body 
 			for _, sh := range t.Shadow3() {
 				panel.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
 			}
+			kit.Float(panel)
 			a.dialogIn(key, backdrop, panel)
 			panel.Children(func() {
 				ui.Row(c).AlignItems(ui.Center).Children(func() {
