@@ -246,7 +246,7 @@ func (ds *DiskStore) ApplyMCPConfig(fresh []*Item) {
 		if cur, ok := old[n.Name]; ok {
 			cur.Scope, cur.On = n.Scope, n.On
 			cur.Transport, cur.Cmd = n.Transport, n.Cmd
-			cur.Env, cur.EnvVals, cur.Headers = n.Env, n.EnvVals, n.Headers
+			cur.Env, cur.EnvVals, cur.Headers, cur.Path = n.Env, n.EnvVals, n.Headers, n.Path
 			cur.OnDemand = n.OnDemand
 			out = append(out, cur)
 			continue
@@ -311,7 +311,11 @@ func (ds *DiskStore) readMCP() []*Item {
 			seen[name] = true
 			ent, _ := cfg.(map[string]any)
 			tr, cmd := mcpCmdOf(ent)
-			it := &Item{Name: name, Scope: ly.scope, On: !disabled[name], Status: StNone, Transport: tr, Cmd: cmd, OnDemand: onDemand,
+			srcPath := "~/.claude.json" // 配置所在文件:「打开 JSON」「在访达中显示」用;删除按 Scope 走 RemoveMCP
+			if ly.scope == Project {
+				srcPath = ".mcp.json"
+			}
+			it := &Item{Name: name, Scope: ly.scope, Path: srcPath, On: !disabled[name], Status: StNone, Transport: tr, Cmd: cmd, OnDemand: onDemand,
 				Desc: ly.scope.Label() + " · 未查询连接状态"} // 还没查过就是「未知」,不能先标成失败(红点)
 			if em, ok := ent["env"].(map[string]any); ok {
 				it.Env = envKeysOnly(em)
@@ -590,6 +594,9 @@ func (ds *DiskStore) Persist(c Cat, it *Item, draft Item) error {
 
 // RemoveDisk 从磁盘删除一项。
 func (ds *DiskStore) RemoveDisk(c Cat, it *Item) error {
+	if c == MCP { // MCP 不是一个文件,是对应配置文件 mcpServers 里的一项
+		return ds.RemoveMCP(it)
+	}
 	if it.Path == "" {
 		return fmt.Errorf("没有对应的磁盘路径")
 	}

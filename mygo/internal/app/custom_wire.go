@@ -161,7 +161,7 @@ func (a *App) cuOpenOK(it *customize.Item) bool {
 	if it.Path == "" {
 		return false
 	}
-	if a.cuCat() == customize.Skills || a.cuCat() == customize.Rules {
+	if a.cuCat() == customize.Skills || a.cuCat() == customize.Rules || a.cuCat() == customize.MCP {
 		return true
 	}
 	return a.cuCat() == customize.Commands || a.cuCat() == customize.Agents
@@ -181,7 +181,31 @@ func (a *App) cuOpenPath(p string) {
 	if a.mode != ModeIDE {
 		a.mode = ModeIDE
 	}
-	a.openAnyFile(abs, 0, 0)
+	line := 0
+	if a.cuCat() == customize.MCP && a.cu.sel != nil {
+		line = jsonKeyLine(abs, a.cu.sel.Name) // 直接跳到这个服务器的条目
+	}
+	a.openAnyFile(abs, line, 0)
+}
+
+// jsonKeyLine 在 JSON 配置文件里找 mcpServers 下名为 name 的条目所在行(1 起);找不到返回 0。
+func jsonKeyLine(path, name string) int {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return 0
+	}
+	inMcp := false
+	key := `"` + name + `":`
+	for i, ln := range strings.Split(string(b), "\n") {
+		if strings.Contains(ln, `"mcpServers"`) {
+			inMcp = true
+			continue
+		}
+		if inMcp && strings.HasPrefix(strings.TrimSpace(ln), key) {
+			return i + 1
+		}
+	}
+	return 0
 }
 
 func (a *App) cuAuthReal(it *customize.Item) {

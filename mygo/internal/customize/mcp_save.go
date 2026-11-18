@@ -146,3 +146,39 @@ func ParseHeaderLines(text string) (map[string]string, error) {
 	}
 	return out, nil
 }
+
+// RemoveMCP 从对应层的配置文件里删掉这个 MCP 服务器(用户层 ~/.claude.json、项目层 .mcp.json、本地层 .claude/settings.local.json)。
+// 其余内容原样保留;条目不存在时视为已删除。
+func (ds *DiskStore) RemoveMCP(it *Item) error {
+	name := strings.TrimSpace(it.Name)
+	if name == "" {
+		return fmt.Errorf("名称为空")
+	}
+	var path string
+	switch it.Scope {
+	case Project, Local:
+		if ds.proj == "" {
+			return fmt.Errorf("需要打开项目才能删除项目/本地层 MCP")
+		}
+		path = filepath.Join(ds.proj, ".mcp.json")
+		if it.Scope == Local {
+			path = filepath.Join(ds.proj, ".claude", "settings.local.json")
+		}
+	default:
+		path = ds.claudeJSON
+	}
+	var root map[string]any
+	if !readJSON(path, &root) {
+		return fmt.Errorf("读不到配置文件:%s", path)
+	}
+	mcp, _ := root["mcpServers"].(map[string]any)
+	if _, ok := mcp[name]; !ok {
+		return nil
+	}
+	delete(mcp, name)
+	b, err := json.MarshalIndent(root, "", "  ")
+	if err != nil {
+		return err
+	}
+	return writeAtomic(path, b, 0o600)
+}

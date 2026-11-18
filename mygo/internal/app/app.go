@@ -352,6 +352,7 @@ type App struct {
 	compDoc           *richtext.Document // 输入框的富文本文档(正文里的文件 / 文件夹是行内胶囊原子),见 composer_rich.go
 	compVer           uint64             // compDoc 上次同步回 a.draft 时的版本
 	draftBody         string             // 输入框正文(不含图片附件语法;胶囊以原子标记串出现),由 compDoc 导出;与 a.draft 的同步见 composer_draft.go
+	mcpEnvSrc         map[string]string  // MCP 配置里引用的 ${变量} 能从哪取到:app / shell / none(没有该键 = 还在检测)
 	pillImgPaths      []string           // 非 nil = 建「图片 N」胶囊时按这个列表取序号(编辑卡用),否则按输入框附件
 	pasteTo           string             // 非空 = 粘贴 / 添加的图片送去这张编辑卡(用户消息 id)而不是输入框
 	imgPilled         map[string]bool    // 输入框正文里现有的图片位置胶囊(路径集合):胶囊被删就把对应图片附件一并移除

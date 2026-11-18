@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/claude"
 	"github.com/ixxxxoooo/minicode/internal/customize"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
@@ -344,6 +345,7 @@ func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func
 		where = "地址"
 	}
 	a.cuKV(c, [][2]string{{"传输", it.Transport}, {where, it.Cmd}})
+	a.cuMCPEnvRefs(c, it)
 	ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
 		ui.Text(c, "配置层").TextColor(t.Tx3).Width(72).Shrink(0)
 		on := 0
@@ -395,6 +397,7 @@ func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func
 	})
 	return func() {
 		ui.Spacer(c).Grow(1)
+		kit.Btn(c, "打开 JSON", kit.BtnOpt{Icon: "code", Variant: kit.BtnGhost}).OnClick(func() { a.cuOpenPath(it.Path) })
 		kit.Btn(c, "编辑配置", kit.BtnOpt{Icon: "edit"}).OnClick(func() { a.cuMCPStartEdit(it) })
 	}
 }
@@ -699,4 +702,62 @@ func mcpFailHint(it *customize.Item, reason string) string {
 		return "检查地址与请求头后重试,点「编辑配置」修改。"
 	}
 	return "检查命令与环境变量后重试,点「编辑配置」修改。"
+}
+
+// cuMCPEnvRefs 列出这个 MCP 配置里引用的 ${环境变量},并说明本机能不能取到(只显示来源,不显示值)。
+// 访达启动的应用拿不到 ~/.zshrc 里 export 的变量;启动 claude 时会自动从登录 shell 补上(claude.WithMCPEnv),这里让人看得见。
+func (a *App) cuMCPEnvRefs(c *ui.Context, it *customize.Item) {
+	var parts []string
+	parts = append(parts, it.Cmd)
+	for _, v := range it.Headers {
+		parts = append(parts, v)
+	}
+	for _, v := range it.EnvVals {
+		parts = append(parts, v)
+	}
+	refs := claude.EnvRefNames(strings.Join(parts, "\n"))
+	if len(refs) == 0 || a.cuDemo() {
+		return
+	}
+	if a.mcpEnvSrc == nil {
+		a.mcpEnvSrc = map[string]string{}
+	}
+	for _, n := range refs {
+		if _, ok := a.mcpEnvSrc[n]; ok {
+			continue
+		}
+		a.mcpEnvSrc[n] = "" // 占位:检测中,别重复起任务
+		n := n
+		a.bg("检测环境变量", func() func() {
+			src := claude.EnvRefSource(n)
+			if src == "" {
+				src = "none"
+			}
+			return func() { a.mcpEnvSrc[n] = src }
+		})
+	}
+	t := a.tk
+	a.cuLbl(c, "引用的环境变量(只显示能否取到,不显示值)", func() {
+		a.cuCard(c, func() {
+			for _, n := range refs {
+				ui.Row(c).MinHeight(t.Scheme.RowH).PaddingX(8).Gap(8).AlignItems(ui.Center).Children(func() {
+					kit.Mono(c, n, t.Tx1).Shrink(0)
+					msg, col := "检测中…", t.Tx4
+					switch a.mcpEnvSrc[n] {
+					case "app":
+						msg, col = "✓ 应用环境里有", t.Ok
+					case "shell":
+						msg, col = "✓ 登录 shell 里有,启动 Claude 时自动带上", t.Ok
+					case "none":
+						msg, col = "✗ 没找到:在 ~/.zshrc 里 export 后点「重新检测」,或在编辑配置里直接填值", t.Err
+					}
+					ui.Text(c, msg).FontSize(theme.FsCap).TextColor(col).Grow(1).MinWidth(0)
+				})
+			}
+		})
+		kit.Btn(c, "重新检测", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "refresh"}).OnClick(func() {
+			claude.ForgetShellEnv()
+			a.mcpEnvSrc = nil
+		})
+	})
 }

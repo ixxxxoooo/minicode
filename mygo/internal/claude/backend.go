@@ -322,7 +322,7 @@ func (b *Backend) startProc() error {
 			env = append(env, e)
 		}
 	}
-	cmd.Env = append(env, opts.Env()...)
+	cmd.Env = WithMCPEnv(append(env, opts.Env()...), b.cfg.Cwd) // MCP 配置里的 ${变量} 在访达启动时拿不到 shell 里的值,从登录 shell 补
 	if b.cfg.Cwd != "" {
 		cmd.Dir = b.cfg.Cwd
 	}

@@ -264,7 +264,11 @@ func (a *App) cuMoreMenu(m *ui.Menu, st *customize.Store, it *customize.Item) {
 	if !canEdit {
 		editWhy = "没有可打开的源文件"
 	}
-	if menuItem(m, "用编辑器打开").Disabled(!canEdit).Tooltip(editWhy).Chosen() {
+	openLabel := "用编辑器打开"
+	if a.cuCat() == customize.MCP {
+		openLabel = "打开 JSON 配置(跳到这一项)"
+	}
+	if menuItem(m, openLabel).Disabled(!canEdit).Tooltip(editWhy).Chosen() {
 		a.cuOpenPath(it.Path)
 	}
 	m.Separator()

@@ -31,7 +31,7 @@ func RunMCPList(proj string) ([]mcpLine, error) {
 	if proj != "" {
 		cmd.Dir = proj
 	}
-	cmd.Env = os.Environ()
+	cmd.Env = claude.WithMCPEnv(os.Environ(), proj) // 与会话里的 claude 一致:补上登录 shell 里的 ${变量}
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
