@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
@@ -87,7 +88,7 @@ func (a *App) subResultCard(c *ui.Context, summary string) {
 	ui.Column(c).Gap(6).Margin(8, 0, 0, 0).Children(func() {
 		ui.Text(c, "结果").FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3)
 		ui.Column(c).Padding(10, 12).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd1).Children(func() {
-			ui.Text(c, summary).LineHeight(1.55)
+			markdown.View(c, padCode(summary), a.mdOptions()) // 子 Agent 的结果是 Markdown:按正文同样渲染,不显示源码
 		})
 	})
 }
