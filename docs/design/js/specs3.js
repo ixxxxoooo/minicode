@@ -25,7 +25,7 @@
     <div class="row" style="height:28px;margin-left:18px">完整修复一个 Bug:路由大小写<span class="aux">刚刚</span></div>
     <div class="row" style="height:28px;margin-left:18px">权限请求:修改配置…<span class="aux">5 分钟</span></div>
     <div class="row" style="height:28px">${ic('chevR', 's12')}${ic('folder', 's12')}<span class="grow b">scenario-lab</span><span class="t4 fs-micro">61</span></div>
-    <div class="row" style="height:28px">${ic('chevR', 's12')}${ic('folder', 's12')}<span class="grow b">design-assets</span><span class="nonrepo t4 fs-micro">非仓库</span></div></div>`;
+    <div class="row" style="height:24px">${ic('chevR', 's12')}${ic('folder', 's12')}<span class="grow b">design-assets</span><span class="nonrepo t4 fs-micro">非仓库</span></div></div>`;
   const field = (l, v, ph, extra = '') => `<div class="fc g1" style="margin-bottom:8px"><div class="t3 fs-cap">${l}</div><div class="inp ${v ? '' : 'fill'}" ${extra}>${v ? `<span class="v">${v}</span>` : `<span class="t4">${ph}</span>`}</div></div>`;
   const dlgAddProject = `<div class="pop a-pop-up" style="width:460px;padding:14px 16px;margin:14px auto;display:flex;flex-direction:column;gap:6px">
     <div class="f ai"><b class="fs-head">添加项目</b><span class="grow"></span>${ib('x', 'sm')}</div>
@@ -99,7 +99,7 @@
       ['附加文件夹权限提示卡(授予读写权限 / 只读授权)', 'ws_perm.go+projects.ExtraReadOnly;「只读」仅为启动提示词约束、非系统级隔离。未测试', st('part')]]))}</div>`;
 
   /* ───────── 多仓库 Git ───────── */
-  const repoRow = (n, br, sync, changes, on, extra = '') => `<div class="row ${on ? 'on' : ''}" style="height:32px">${ic('branch', 's12')}<div class="grow" style="min-width:0"><div class="ell"><b>${n}</b> <span class="t3">${br}</span></div></div><span class="t3 fs-cap mono">${sync}</span>${changes ? cnt(changes, on ? 'ac' : '') : '<span class="t4 fs-cap">干净</span>'}${extra}</div>`;
+  const repoRow = (n, br, sync, changes, on, extra = '') => `<div class="row ${on ? 'on' : ''}" style="height:26px">${ic('branch', 's12')}<div class="grow" style="min-width:0"><div class="ell"><b>${n}</b> <span class="t3">${br}</span></div></div><span class="t3 fs-cap mono">${sync}</span>${changes ? cnt(changes, on ? 'ac' : '') : '<span class="t4 fs-cap">干净</span>'}${extra}</div>`;
   const scmMulti = `<div style="padding:8px">${gh('仓库', 4, ib('refresh', 'sm', '全部拉取') + ib('sync', 'sm', '全部同步'))}
     ${repoRow('router-demo', 'main', '↑1', 3, 1)}${repoRow('web-dashboard', 'feat/charts', '↑2', 2, 0)}${repoRow('docs-site', 'main', '↓1', 0, 0)}
     <div class="row" style="height:32px;color:var(--tx-3)">${ic('folder', 's12')}<div class="grow ell">design-assets</div>${btn('初始化仓库', 'sm ghost')}</div>

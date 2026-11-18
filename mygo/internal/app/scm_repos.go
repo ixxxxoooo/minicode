@@ -33,7 +33,7 @@ func (a *App) repoOverview(c *ui.Context) {
 				indent = 16
 			}
 			if e.repo == nil && e.checked {
-				r := kit.RowEl(c, false).Key("repo-"+itoa(i)).Height(theme.Px(30)).Gap(6).TextColor(t.Tx3).Margin(0, 0, 0, indent)
+				r := kit.RowEl(c, false).Key("repo-"+itoa(i)).Height(theme.Px(24)).Gap(6).TextColor(t.Tx3).Margin(0, 0, 0, indent)
 				on := i == a.repoAct
 				if on {
 					r.Background(t.Fill1)
@@ -49,7 +49,7 @@ func (a *App) repoOverview(c *ui.Context) {
 			}
 			br, ah, bh, n := a.repoSummary(i)
 			conf, staged := a.repoFlags(i)
-			r := kit.RowEl(c, i == a.repoAct).Key("repo-"+itoa(i)).Height(theme.Px(32)).Gap(6).Margin(0, 0, 0, indent)
+			r := kit.RowEl(c, i == a.repoAct).Key("repo-"+itoa(i)).Height(theme.Px(26)).Gap(6).Margin(0, 0, 0, indent)
 			hov := r.Hovered()
 			r.OnClick(func() { a.setActiveRepo(i) })
 			r.ContextMenu(func(m *ui.Menu) { a.repoRowMenu(m, i) })
