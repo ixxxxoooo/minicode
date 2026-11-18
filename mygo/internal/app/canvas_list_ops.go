@@ -44,7 +44,8 @@ func (a *App) canvasListRow(c *ui.Context, l *canvas.Library, id string, s *canv
 		})
 		return
 	}
-	row := kit.RowEl(c, on).Key("cv-id-"+id).Padding(6, 8).Justify(ui.Start)
+	// 两行内容(标题 + 日期):RowEl 默认是单行行高(方案 B 为 26),内容会溢出选中底色,所以显式给两行的高度
+	row := kit.RowEl(c, on).Key("cv-id-"+id).Padding(5, 8).Height(theme.Px(42)).Justify(ui.Start)
 	row.OnClick(func() {
 		l.SetActive(id)
 		a.canv = s

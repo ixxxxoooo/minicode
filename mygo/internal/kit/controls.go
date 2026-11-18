@@ -203,8 +203,9 @@ func RowEl(c *ui.Context, on bool) ui.Element {
 	r := ui.ButtonBase(c).Height(T.Scheme.RowH).PaddingX(8).Gap(6).Radius(T.RSm()).AlignItems(ui.Center).Cursor(ui.CursorPointer)
 	col := T.Tx2
 	switch {
-	case on && T.Scheme.ID == "b":
-		// 设计稿方案 B:选中行是白色浮起卡(--bg-raised + --sh-1),没有竖线;玻璃主题是更亮的半透明「选中」色
+	case on && (T.Scheme.ID == "b" || T.Glass()):
+		// 设计稿方案 B:选中行是白色浮起卡(--bg-raised + --sh-1),没有竖线;玻璃主题(任何方案)是更亮的半透明「选中」玻璃,
+		// 不用强调色淡粉底(设计稿 glass.css 的 .row.on 对所有方案都是 --glass-sel)
 		r.Background(SelBG()).FontWeight(500)
 		for _, s := range T.Shadow1() {
 			r.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
@@ -222,7 +223,7 @@ func RowEl(c *ui.Context, on bool) ui.Element {
 
 // SelStyle 给自绘的列表行套上选中外观(与 RowEl 的选中态一致:方案 B = 白色浮起卡,A / C = 强调色淡染底)。
 func SelStyle(r ui.Element) ui.Element {
-	if T.Scheme.ID == "b" {
+	if T.Scheme.ID == "b" || T.Glass() {
 		r.Background(SelBG())
 		for _, s := range T.Shadow1() {
 			r.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
