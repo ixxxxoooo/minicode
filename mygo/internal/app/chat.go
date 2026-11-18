@@ -68,7 +68,7 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		}
 		a.ux.dropOn = hint != "" // 有文件拖过来:输入框变成虚线「拖入框」(composer.go),不再盖整栏提示
 		if a.mode == ModeIDE && !a.chatMax {
-			a.resizeHandle(c, lyDock, "l", a.dockW(), theme.WDock, 300, 560, func(v float32) { a.ly.dock = v })
+			a.resizeHandle(c, lyDock, "l", a.dockW(), theme.WDock, 300, max(300, min(dockMaxW, a.inlineRoom())), func(v float32) { a.ly.dock = v })
 		}
 		switch {
 		case a.showChatWelcome():

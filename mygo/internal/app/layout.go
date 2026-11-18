@@ -98,7 +98,10 @@ func (a *App) wsPref() float32 {
 	return clampF(orDef(a.ly.ws, theme.WWs), 360, max(360, a.winW-a.sideW()-360))
 }
 
-func (a *App) dockPref() float32 { return clampF(orDef(a.ly.dock, theme.WDock), 300, 560) }
+func (a *App) dockPref() float32 { return clampF(orDef(a.ly.dock, theme.WDock), 300, dockMaxW) }
+
+// dockMaxW 是 IDE 对话栏可拖到的最大宽度(实际还受「主区 ≥ centerMin」限制,见 dockW)。
+const dockMaxW = 900
 
 func (a *App) wsRW() float32 {
 	w := a.wsPref()
