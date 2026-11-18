@@ -257,7 +257,7 @@ func (a *App) cuMain(c *ui.Context, st *customize.Store) {
 	t := a.tk
 	s := &a.cu
 	cat := a.cuCat()
-	kit.VScroll(c).Key("cu-main").Grow(1).MinWidth(0).Children(func() {
+	kit.VScroll(c).Key("cu-main").Grow(1).MinWidth(0).Children(func() { // 宽度 = 主区减去右侧详情(cuDrawerWidth 保证至少 cuListMinW)
 		ui.Column(c).Padding(12, 20, 24, 20).Gap(10).Children(func() {
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 				ui.Row(c.Key("cu-qbox")).Grow(1).MinWidth(0).Height(theme.Px(26)).PaddingX(8).Gap(6).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Children(func() {
@@ -300,7 +300,7 @@ func (a *App) cuMain(c *ui.Context, st *customize.Store) {
 				a.cuEmpty(c, st)
 				return
 			}
-			a.box(c).Children(func() {
+			a.box(c).Clip().Children(func() { // 裁剪到卡片圆角:选中 / 悬停行的底色不再盖住四个圆角
 				for i, it := range vis {
 					a.cuRow(c, st, it, it == cur, i < len(vis)-1)
 				}

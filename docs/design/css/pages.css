@@ -78,7 +78,8 @@
 .cu-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .cu-list { padding: 6px; display: flex; flex-direction: column; }
 /* 自定义页:三栏(分类栏 / 列表 / 详情)改成「顶部分类标签 + 列表 + 详情」两栏,给列表与详情更多呼吸空间 */
-.cu .drawer { width: 380px; padding: 16px 18px; } .cu .drawer.wide { width: 460px; }
+/* 详情宽度按主区比例:普通类 52%(380 – 560),表单类 58%(460 – 680);左侧列表至少留 340,列表卡片裁剪到圆角 */
+.cu .drawer { width: clamp(380px, 52%, 560px); padding: 16px 18px; } .cu .drawer.wide { width: clamp(460px, 58%, 680px); }
 .cu-tabs { display: flex; gap: 2px; padding: 0 20px; flex: none; box-shadow: inset 0 -1px var(--bd-1); overflow-x: auto; }
 .cu-tab { height: 36px; padding: 0 12px; display: flex; align-items: center; gap: 6px; color: var(--tx-3); position: relative; white-space: nowrap; cursor: pointer; }
 .cu-tab:hover { color: var(--tx-1); } .cu-tab.on { color: var(--tx-1); font-weight: 500; }

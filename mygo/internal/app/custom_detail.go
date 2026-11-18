@@ -18,18 +18,33 @@ import (
 
 // 自定义页详情宽度(设计稿 .cu .drawer):原来 300 / 360 太紧,表单与列表都挤。
 const (
-	cuDrawerW     = 380
-	cuDrawerWideW = 460
+	cuDrawerW     = 380 // 详情宽度下限(普通类)
+	cuDrawerWideW = 460 // 详情宽度下限(表单类:命令 / 子 Agent / 规则 / 钩子)
+	cuDrawerMaxW  = 560 // 详情宽度上限(普通类)
+	cuDrawerWideM = 680 // 详情宽度上限(表单类)
+	cuListMinW    = 340 // 左侧列表最小宽度:再窄行内的名称 / 标签就挤不下了
 )
+
+// cuDrawerWidth 返回右侧详情的宽度:按页面主区宽度的 52%(表单类 58%)取,夹在上下限之间,
+// 并给左侧列表至少留 cuListMinW。原来是固定 380 / 460,窗口一宽左边列表被撑得过宽、右边详情显得窄。
+// 参数 wide:是否表单类;返回值:像素宽度。
+func (a *App) cuDrawerWidth(wide bool) float32 {
+	lo, hi, frac := float32(cuDrawerW), float32(cuDrawerMaxW), float32(0.52)
+	if wide {
+		lo, hi, frac = cuDrawerWideW, cuDrawerWideM, 0.58
+	}
+	main := a.winW - a.sideOcc() // 主区宽度:窗口减去导航栏
+	if main <= 0 {
+		return lo
+	}
+	return max(min(main*frac, hi, main-cuListMinW), min(lo, main-cuListMinW))
+}
 
 func (a *App) cuDrawer(c *ui.Context, st *customize.Store) {
 	t := a.tk
 	s := &a.cu
 	cat := a.cuCat()
-	w := float32(cuDrawerW)
-	if cat == customize.Commands || cat == customize.Agents || cat == customize.Rules || cat == customize.Hooks {
-		w = cuDrawerWideW
-	}
+	w := a.cuDrawerWidth(cat == customize.Commands || cat == customize.Agents || cat == customize.Rules || cat == customize.Hooks)
 	col := ui.Column(c).Key("cu-drawer").Shrink(0).MinHeight(0).Clip()
 	if a.pageNarrowMid() {
 		col.Grow(1).MinWidth(0)
