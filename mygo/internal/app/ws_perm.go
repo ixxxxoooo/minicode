@@ -23,7 +23,9 @@ func (a *App) maybeWsPermBeforeSession(id string) bool {
 		return false
 	}
 	a.wsPerm = wsPermPending{when: "session", pendingSess: id}
-	a.pd.kind = "ws-perm"
+	// 必须同时 open=true:权限卡只在 kind 匹配且 open 时才画(保存工作区那条路是因为工作区对话框已经开着);
+	// 只设 kind 会让会话被悄悄吞掉、什么提示都没有——表现为「点新建会话没反应」
+	a.pd = projDlg{kind: "ws-perm", open: true}
 	return true
 }
 
@@ -45,7 +47,7 @@ func (a *App) wsPermChoose(readOnly bool) {
 		if nw, err := a.registry().SaveWorkspace(w); err == nil {
 			*a.ws = nw
 		}
-		a.pd.kind = ""
+		a.closeProjDlg()
 		a.wsPerm = wsPermPending{}
 		log.Info("工作区会话启动附加目录授权", "readOnly", readOnly)
 		if sid != "" {
