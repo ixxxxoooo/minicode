@@ -201,10 +201,16 @@ func userDisplayText(s string) string {
 	return strings.TrimSpace(userImgMark.ReplaceAllString(s, ""))
 }
 
+// userTextWithImgMarks 保留图片占位标记、只修剪首尾空白(显示用)。
+func userTextWithImgMarks(s string) string { return strings.TrimSpace(s) }
+
 // userMsgBody 画用户消息正文。folded = true 是折叠态:只排版前缀(见 userFoldPreview),外面的卡片负责裁成 6 行高。
 func (a *App) userMsgBody(c *ui.Context, u *core.User, folded bool) {
 	t := a.tk
 	txt := userDisplayText(u.Text)
+	if txt != "" && len(u.Images) > 0 {
+		txt = userTextWithImgMarks(u.Text) // 有图片时保留 [Image #N]:画成行内「图片 N」胶囊,标出图在文字里的位置
+	}
 	if folded {
 		txt = userFoldPreview(txt)
 	}
@@ -218,6 +224,7 @@ func (a *App) userMsgBody(c *ui.Context, u *core.User, folded bool) {
 	}
 	ui.Row(c).Wrap().Gap(4).AlignItems(ui.Center).Children(func() {
 		last := 0
+		imgK := 0 // 第几个 [Image #N] 占位(按出现顺序对应第几张图)
 		for _, m := range toks {
 			if m[0] > last {
 				ui.Text(c, txt[last:m[0]]).FontSize(a.FlowFontSize()).LineHeight(a.FlowReadLH()).TextColor(t.Tx1)
@@ -227,6 +234,9 @@ func (a *App) userMsgBody(c *ui.Context, u *core.User, folded bool) {
 				fg, bg := a.inlineCodeColors()
 				ui.Text(c, code).Font("monospace").FontSize(a.FlowMonoSize()).LineHeight(a.FlowReadLH()).TextColor(fg).
 					Background(bg).Radius(t.RXs()).PaddingX(5)
+			} else if m[10] >= 0 {
+				imgK++
+				a.userImgChip(c, u, imgK)
 			} else if m[4] >= 0 {
 				a.userRefChip(c, txt[m[4]:m[5]])
 			} else if m[6] >= 0 {

@@ -2,6 +2,7 @@ package app
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/egoist/mygo/ui/richtext"
@@ -24,8 +25,15 @@ const (
 	atomFile  = "file"
 	atomDir   = "dir"
 	atomPaste = "paste"
-	atomImg   = "img" // 图片在正文里的位置标记:只是界面上的行内胶囊,图片本身仍走输入框上方的缩略图附件,发送时不进文字
+	// 图片在正文里的位置标记(行内胶囊),图片本身仍走输入框上方的缩略图附件。
+	// 发送时展开成「[Image #N]」(N = 这张图在附件里的序号,与 Claude Code 自己的占位写法一致),
+	// 会话流 / 历史回放 / 编辑卡据此把它重新画成「图片 N」胶囊。
+	// 输入框里的种类是 "img"(序号按附件行现算);编辑卡里是 "img:N"(序号固定)。
+	atomImg = "img"
 )
+
+// isImgKind 是不是图片位置胶囊("img" 或 "img:N")。
+func isImgKind(kind string) bool { return kind == atomImg || strings.HasPrefix(kind, atomImg+":") }
 
 // atomRE 匹配草稿里的一个原子,捕获「类型\x1f路径」。
 var atomRE = regexp.MustCompile(atomOpen + `([^` + atomClose + `]*)` + atomClose)
@@ -74,6 +82,7 @@ func atomsToSend(s string) string {
 	}
 	var b strings.Builder
 	last := 0
+	imgAtts := parseDraftAttaches(s) // 草稿里的图片附件(按序),图片位置胶囊靠它找序号
 	for _, m := range atomRE.FindAllStringSubmatchIndex(s, -1) {
 		b.WriteString(s[last:m[0]])
 		kind, path, ok := atomParts(s[m[2]:m[3]])
@@ -81,7 +90,26 @@ func atomsToSend(s string) string {
 		if !ok {
 			continue
 		}
-		if kind == atomImg { // 位置标记不发给模型(图片另走附件)
+		if isImgKind(kind) { // 图片位置:写成 [Image #N](N 取附件序号;编辑卡里取固定序号);找不到对应附件就不写
+			n := 0
+			if k, num, ok := strings.Cut(kind, ":"); ok && k == atomImg {
+				n, _ = strconv.Atoi(num)
+			} else {
+				for i, at := range imgAtts {
+					if at.Path == path {
+						n = i + 1
+					}
+				}
+			}
+			if n > 0 {
+				if cur := b.String(); cur != "" && !strings.HasSuffix(cur, " ") && !strings.HasSuffix(cur, "\n") {
+					b.WriteByte(' ')
+				}
+				b.WriteString("[Image #" + strconv.Itoa(n) + "]")
+				if last < len(s) && s[last] != ' ' && s[last] != '\n' {
+					b.WriteByte(' ')
+				}
+			}
 			continue
 		}
 		if kind == atomDir && !strings.HasSuffix(path, "/") {

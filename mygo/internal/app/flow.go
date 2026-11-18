@@ -642,8 +642,8 @@ func (a *App) textCard(c *ui.Context, text string) {
 // ───────── 提示 ─────────
 
 // userTok 用户文字里要特殊渲染的片段:`行内代码`、@{名称}、@"带空格的路径"、@路径(含 / 的无空格路径,即发送时胶囊展开的样子)。
-// 分组:1 代码 2 @{} 3 @"" 4 @路径;@路径 前面必须是空白或行首(见 userTokMatches),免得把邮箱当引用。
-var userTok = regexp.MustCompile("`([^`]+)`|@\\{([^}]+)\\}|@\"([^\"]+)\"|@([^\\s@\"{`][^\\s]*/[^\\s]*)")
+// 分组:1 代码 2 @{} 3 @"" 4 @路径 5 [Image #N] 图片占位;@路径 前面必须是空白或行首(见 userTokMatches),免得把邮箱当引用。
+var userTok = regexp.MustCompile("`([^`]+)`|@\\{([^}]+)\\}|@\"([^\"]+)\"|@([^\\s@\"{`][^\\s]*/[^\\s]*)|\\[Image #(\\d+)\\]")
 
 func (a *App) notice(c *ui.Context, n *core.Notice) {
 	t := a.tk

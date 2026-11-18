@@ -55,7 +55,7 @@ func (a *App) openPinnedUserEdit(u *core.User) {
 			return
 		}
 	}
-	a.userPinned = append(a.userPinned, pinnedUserEdit{id: u.ID, draft: userDisplayText(u.Text), focus: true, at: kit.Now()})
+	a.userPinned = append(a.userPinned, pinnedUserEdit{id: u.ID, draft: pinnedDraftText(u), focus: true, at: kit.Now()})
 }
 
 func (a *App) closePinnedUserEdit(id string) {
@@ -207,7 +207,7 @@ func (a *App) renderPinnedUserEdit(c *ui.Context, u *core.User, id string, cardW
 		}
 		pe := a.pinnedEditByID(id)
 		if pe.doc == nil { // 第一次画:按草稿建文档,@路径 变成胶囊(与输入框同款)
-			pe.doc = richtext.NewDocument(draftToText(userDraftBody(*draft), func(kind, path string) *richtext.Attachment {
+			pe.doc = richtext.NewDocument(draftToText(userDraftBody(*draft, u.Images), func(kind, path string) *richtext.Attachment {
 				return a.pillAttachment(c, kind, path)
 			}))
 			pe.ver = pe.doc.Version()
@@ -337,12 +337,21 @@ func (a *App) pinnedEditEstimateH(u *core.User, draft string, maxBody float32) f
 }
 
 // userDraftBody 把用户消息文字里的 @文件 引用换成输入框草稿里的胶囊原子标记(其余原样),供编辑卡建文档。
-func userDraftBody(txt string) string {
+func userDraftBody(txt string, imgs []string) string {
 	var b strings.Builder
 	last := 0
+	imgK := 0
 	for _, m := range userTokMatches(txt) {
 		var path string
 		switch {
+		case m[10] >= 0: // [Image #N] → 图片位置胶囊(序号固定,路径是消息里第 k 张图)
+			imgK++
+			if imgK-1 < len(imgs) {
+				b.WriteString(txt[last:m[0]])
+				b.WriteString(atomString(atomImg+":"+itoa(imgK), imgs[imgK-1]))
+				last = m[1]
+			}
+			continue
 		case m[6] >= 0:
 			path = txt[m[6]:m[7]]
 		case m[8] >= 0:
@@ -356,4 +365,12 @@ func userDraftBody(txt string) string {
 	}
 	b.WriteString(txt[last:])
 	return b.String()
+}
+
+// pinnedDraftText 编辑卡的初始文字:有图片时保留 [Image #N] 占位(在编辑器里画成胶囊),否则按显示文字。
+func pinnedDraftText(u *core.User) string {
+	if len(u.Images) > 0 {
+		return strings.TrimSpace(u.Text)
+	}
+	return userDisplayText(u.Text)
 }

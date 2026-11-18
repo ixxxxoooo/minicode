@@ -8,6 +8,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/richtext"
+	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 )
 
@@ -126,8 +127,12 @@ func (a *App) pillClickOpen(el ui.Element, doc *richtext.Document) {
 		}
 		kind, path, _ := strings.Cut(k, "\x1f")
 		if strings.Contains(txt, atomString(kind, path)) {
-			if kind == atomImg { // 图片位置胶囊:打开灯箱预览
-				if abs := a.absAttach(path); abs != "" {
+			if isImgKind(kind) { // 图片位置胶囊:打开灯箱预览(输入框里的路径是附件路径,编辑卡里是消息里的图片引用)
+				abs := a.absAttach(path)
+				if kind != atomImg {
+					abs = a.resolveUserImage(path)
+				}
+				if abs != "" {
 					a.openImageLightboxPath(abs)
 				}
 				return
@@ -136,4 +141,19 @@ func (a *App) pillClickOpen(el ui.Element, doc *richtext.Document) {
 			return
 		}
 	}
+}
+
+// userImgChip 用户消息里的图片位置胶囊「图片 k」:样式同文件胶囊,点开该图的灯箱。
+func (a *App) userImgChip(c *ui.Context, u *core.User, k int) {
+	t := a.tk
+	fs := a.FlowFontSize() * 0.92
+	chip := ui.ButtonBase(c).Key("uimgchip-"+u.ID+"-"+itoa(k)).Height(a.FlowFontSize()*1.4).PaddingX(6).Gap(4).Radius(5).Background(t.Fill2).Border(1, t.Bd2).
+		AlignItems(ui.Center).Shrink(0).Cursor(ui.CursorPointer).Tooltip("点击预览").Label("图片 " + itoa(k))
+	if k-1 < len(u.Images) {
+		chip.OnClick(func() { a.openUserImageLightbox(u, k-1) })
+	}
+	chip.Children(func() {
+		kit.Ic(c, "image", kit.S12).TextColor(t.Tx3)
+		ui.Text(c, "图片 "+itoa(k)).FontSize(fs).TextColor(t.Tx1).SingleLine()
+	})
 }
