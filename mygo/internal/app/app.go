@@ -271,6 +271,9 @@ type App struct {
 	todoDockOpen    bool                           // 输入框上方的待办坞是否展开(见 todo_dock.go)
 	sessDelWait     map[string]func()              // 延迟落盘的取消函数
 	redrawPending   bool                           // redrawSoon 已排了定时重画
+	autoLay         int       // 上次自动落盘的各形态开合(变了才写)
+	autoRtAt        time.Time // 上次自动落盘运行状态的时刻
+	autoRtSig       string    // 上次自动落盘时的运行状态签名
 	pickOnReady     bool                           // 新会话握手后应用已记住的模型 / 思考强度
 	cf              map[string]*confState          // 合并冲突标签的状态(按文件)
 	sc              scmState                       // 源代码管理
@@ -793,6 +796,7 @@ func (a *App) View(c *ui.Context) {
 	}()
 	defer diag.SpanSlow("app", "构建界面", 33*time.Millisecond)()
 	kit.SetViewActive(a.win != nil && a.win.IsFocused())
+	a.autoPersist()
 	// 界面构建中 panic:不能吞(控件树做到一半会错乱),但崩溃前必须把调用栈写进日志与 crashes/,
 	// 否则只剩一条「上次运行异常退出」,无从排查(审查页空指针闪退就是这样静默消失的)。
 	defer func() {
