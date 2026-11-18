@@ -387,7 +387,11 @@ func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func
 	if it.Transport == "http" {
 		where = "地址"
 	}
-	a.cuKV(c, [][2]string{{"传输", it.Transport}, {where, it.Cmd}})
+	rows := [][2]string{{"传输", it.Transport}, {where, it.Cmd}}
+	if it.Path != "" {
+		rows = append(rows, [2]string{"配置文件", it.Path}) // 这台服务器写在哪(「打开 JSON」打开的就是它)
+	}
+	a.cuKV(c, rows)
 	a.cuMCPEnvRefs(c, it)
 	ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
 		ui.Text(c, "配置层").TextColor(t.Tx3).Width(72).Shrink(0)
@@ -414,27 +418,7 @@ func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func
 			})
 		})
 	}
-	ui.Row(c).AlignItems(ui.Center).Children(func() {
-		ui.Text(c, "工具("+itoa(len(it.Tools))+")").FontWeight(600).Grow(1)
-		ui.Text(c, "逐项开关 · 写入本地层 deny 规则").FontSize(theme.FsCap).TextColor(t.Tx3)
-	})
-	if len(it.Tools) == 0 {
-		msg := "连接成功后才会列出工具"
-		if it.Status == customize.StOK {
-			msg = "没有工具"
-		}
-		ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Tx4)
-	}
-	ui.Column(c).Children(func() {
-		for i := range it.Tools {
-			ui.Row(c).Height(t.Scheme.RowH).PaddingX(8).Gap(6).AlignItems(ui.Center).Children(func() {
-				kit.Mono(c, it.Tools[i].Name, t.Tx1).Grow(1).SingleLine()
-				if kit.Tog(c, it.Tools[i].On, "cmt-"+it.Name+"-"+it.Tools[i].Name) {
-					a.cuMCPTool(it, i)
-				}
-			})
-		}
-	})
+	a.cuMCPTools(c, it)
 	a.cuCard(c, func() {
 		a.cuToggleRow(c, "cm-ondemand-"+it.Name, "按需加载工具(全部 MCP)", "ENABLE_TOOL_SEARCH · 工具很多时只在需要时加载描述,节省上下文;对所有 MCP 服务器生效,写入 Claude 设置,新会话起效;使用第三方服务商时会被强制关闭", it.OnDemand, func() { a.cuMCPOnDemand(!it.OnDemand) })
 	})
@@ -849,4 +833,114 @@ func isBuiltinTool(name string) bool {
 		}
 	}
 	return false
+}
+
+// cuMCPTools 是 MCP 详情里的工具区(对标 Cursor 的 Tools):列出检测到的全部工具,逐个开关,右上角「批量」一键全部启用 / 禁用。
+// 工具名取运行中会话汇报的(连上了就有),没有会话时取 claude mcp list 读到的;开关写本地层 permissions.deny,
+// 与输入框 MCP 弹层同一套数据(a.mcpDeny)。
+func (a *App) cuMCPTools(c *ui.Context, it *customize.Item) {
+	t := a.tk
+	var names []string
+	if rs, ok := a.runtimeMcp(it.Name); ok && len(rs.Tools) > 0 {
+		names = append(names, rs.Tools...)
+	} else {
+		for _, tl := range it.Tools {
+			names = append(names, tl.Name)
+		}
+	}
+	if a.cuDenyFor != it.Name { // 换了一台:后台重读一次禁用规则
+		a.cuDenyFor = it.Name
+		a.mcpDenyReload()
+	}
+	off := 0
+	for _, n := range names {
+		if !a.mcpToolEnabled(it.Name, n) {
+			off++
+		}
+	}
+	ui.Row(c).AlignItems(ui.Center).Gap(8).Children(func() {
+		title := "工具 (" + itoa(len(names)) + ")"
+		ui.Text(c, title).FontWeight(600)
+		if off > 0 {
+			ui.Text(c, "已禁用 "+itoa(off)).FontSize(theme.FsCap).TextColor(t.Warn)
+		}
+		ui.Spacer(c).Grow(1)
+		if len(names) > 0 {
+			kit.Btn(c, "批量", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "chevD"}).Menu(func(m *ui.Menu) {
+				if menuItem(m, "全部启用").Chosen() {
+					a.setMcpToolsBulk(it.Name, names, true)
+				}
+				if menuItem(m, "全部禁用").Chosen() {
+					a.setMcpToolsBulk(it.Name, names, false)
+				}
+			})
+		}
+	})
+	ui.Text(c, "关掉的工具 Claude 不会调用 · 写入本地层 permissions.deny").FontSize(theme.FsCap).TextColor(t.Tx3)
+	if len(names) == 0 {
+		msg := "连接成功后才会列出工具"
+		if it.Status == customize.StOK {
+			msg = "没有工具"
+		}
+		ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Tx4)
+		return
+	}
+	a.cuCard(c, func() {
+		for _, n := range names {
+			n := n
+			on := a.mcpToolEnabled(it.Name, n)
+			ui.Row(c).Key("cmt-row-" + it.Name + "-" + n).MinHeight(t.Scheme.RowH).PaddingX(8).Gap(6).AlignItems(ui.Center).Children(func() {
+				col := t.Tx1
+				if !on {
+					col = t.Tx4
+				}
+				kit.Mono(c, n, col).Grow(1).MinWidth(0).SingleLine()
+				if kit.Tog(c, on, "cmt-"+it.Name+"-"+n) {
+					a.toggleMcpTool(it.Name, n, !on)
+				}
+			})
+		}
+	})
+}
+
+// setMcpToolsBulk 一次把一台服务器的这些工具全部启用 / 禁用:先本地生效,后台只写一次文件。
+func (a *App) setMcpToolsBulk(server string, tools []string, on bool) {
+	if a.proj == "" {
+		a.toast = "需要打开项目才能写 MCP 工具开关"
+		return
+	}
+	if a.mcpDeny == nil {
+		a.mcpDeny = map[string]bool{}
+	}
+	prev := map[string]bool{}
+	for _, tl := range tools {
+		k := customize.MCPToolKey(server, tl)
+		prev[k] = a.mcpDeny[k]
+		a.mcpDeny[k] = !on
+	}
+	proj := a.proj
+	a.bg("mcp-tools-bulk", func() func() {
+		var werr error
+		if ds, err := customize.OpenDisk(proj); err != nil {
+			werr = err
+		} else {
+			werr = ds.SetMCPToolsBulk(server, tools, on)
+		}
+		return func() {
+			if werr != nil {
+				for k, v := range prev {
+					a.mcpDeny[k] = v
+				}
+				a.toast = "写入失败:" + werr.Error()
+				return
+			}
+			verb := "禁用"
+			if on {
+				verb = "启用"
+			}
+			a.toast = "已" + verb + "「" + server + "」的全部 " + itoa(len(tools)) + " 个工具"
+			log.Info("MCP 工具批量开关", "server", server, "on", on, "n", len(tools))
+			a.mcpManualRefresh(a.mcpRuntimeReady())
+		}
+	})
 }

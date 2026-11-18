@@ -332,3 +332,43 @@ func (ds *DiskStore) MCPDenySet() map[string]bool {
 func MCPToolKey(server, tool string) string {
 	return "mcp__" + strings.ReplaceAll(server, " ", "_") + "__" + tool
 }
+
+// SetMCPToolsBulk 一次改一台服务器的多个工具开关(全部启用 / 全部禁用):只读写一次本地层配置。
+func (ds *DiskStore) SetMCPToolsBulk(server string, tools []string, on bool) error {
+	path := filepath.Join(ds.proj, ".claude", "settings.local.json")
+	var root map[string]any
+	if !readJSON(path, &root) {
+		root = map[string]any{}
+	}
+	perms, _ := root["permissions"].(map[string]any)
+	if perms == nil {
+		perms = map[string]any{}
+		root["permissions"] = perms
+	}
+	deny, _ := perms["deny"].([]any)
+	want := map[string]bool{}
+	for _, tl := range tools {
+		want[MCPToolKey(server, tl)] = true
+	}
+	var out []any
+	for _, x := range deny {
+		if s, ok := x.(string); ok && want[s] {
+			continue // 先去掉这些工具已有的规则,避免重复
+		}
+		out = append(out, x)
+	}
+	if !on {
+		for _, tl := range tools {
+			out = append(out, MCPToolKey(server, tl))
+		}
+	}
+	perms["deny"] = out
+	b, err := json.MarshalIndent(root, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	return writeAtomic(path, b, 0o600)
+}
