@@ -42,7 +42,7 @@
 
   /* ───────── 导航栏 ───────── */
   const sess = (t, time, on, flat) => `<div class="row ${flat ? '' : 'sess'} ${on ? 'on' : ''}"><span class="grow ell">${t}</span><span class="aux swap">${time}</span><span class="acts">${ib('more', 'sm')}</span></div>`;
-  const proj = (name, n, open) => `<div class="row proj ${open ? 'open' : ''}">${ic(open ? 'folderOpen' : 'folder', 's16 t3')}<span class="grow ell">${name}</span><span class="aux swap">${n}</span><span class="acts">${ib('plus', 'sm', '在此项目新建会话')}</span></div>`;
+  const proj = (name, n, open) => `<div class="row proj ${open ? 'open' : ''}">${ic(open ? 'folderOpen' : 'folder', 's16 t3')}<span class="grow ell">${name}</span><span class="aux swap">${n}</span><span class="acts">${ib('chatPlus', 'sm', '在此项目新建会话')}</span></div>`;
   const newChat = `<div class="row new-chat" style="margin:0 0 4px">${ic('chatPlus', 'c-ac')}<span class="grow">新对话</span>${kbd('⌘', 'N')}</div>`;
   /** 会话列表:只有标题与时间,不带任何运行状态。A / C 按项目分组,B 只看当前项目并按时间分段 */
   const sessions = (scheme) => scheme === 'b'
