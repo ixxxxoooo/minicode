@@ -24,6 +24,9 @@ type openBlock struct {
 	id      string
 	parent  string
 	created bool
+	// pend 是还没建条目时收到的纯空白增量:模型在工具调用之间常吐只有 "\n\n" 的文本块,
+	// 不能为它建条目(会成空行、被算进步骤 / 回合统计);等来了真正的文字再连同这些空白一起发出。
+	pend string
 }
 
 type streamedBlock struct {
@@ -396,6 +399,11 @@ func (t *Translator) streamEvent(v obj) []core.Event {
 			return nil
 		}
 		if !b.created {
+			if strings.TrimSpace(text) == "" {
+				b.pend += text
+				return nil
+			}
+			text, b.pend = b.pend+text, ""
 			b.created = true
 			t.streamed[msgID] = append(t.streamed[msgID], &streamedBlock{kind: kind})
 		}
