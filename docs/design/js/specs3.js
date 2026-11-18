@@ -63,7 +63,7 @@
       cell('校验与错误', '', box(`<div style="padding:16px" class="fc g3">${[['路径不存在', '~/Code/api-gatewy', '找不到这个文件夹。要不要看看 ~/Code/api-gateway?', 'err'], ['不是文件夹', '~/Code/readme.md', '这是一个文件。要打开它所在的文件夹吗?', 'warn'], ['已在列表里', '~/Code/router-demo', '这个项目已经添加,直接切换过去?', 'info']].map(([t, p, m, k]) => `<div class="notice ${k === 'info' ? '' : k}">${ic(k === 'err' ? 'errc' : k === 'warn' ? 'alert' : 'info', k === 'err' ? 'c-err' : k === 'warn' ? 'c-warn' : '')}<div class="grow"><b>${t}</b> <span class="mono t3">${p}</span><div class="t2">${m}</div></div></div>`).join('')}</div>`, 300), '每种失败都给「下一步」:纠正路径 / 打开所在文件夹 / 直接切换;不弹模态错误框。')))}
     ${sec('新建 / 编辑工作区', '同一个对话框:新建与「编辑文件夹…」共用。所有文件夹平级,没有「主文件夹」;每行有 ↑ ↓ 调整顺序(顺序即文件树顺序);最多 12 个。', grid(
       cell('新建工作区对话框', '', box(dlgAddWs, 470, 560), '名称默认取第一个文件夹名 + 「工作区」;「让 Claude 同时读取其它文件夹的 CLAUDE.md」对应环境变量 CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD,默认关。'),
-      cell('权限提示', '', box(`<div style="padding:16px" class="fc g3"><div class="notice">${ic('shield')}<div class="grow"><b>Claude 将获得 2 个附加文件夹的读写权限</b><div class="t2">web-dashboard、docs-site。可在 设置 → 权限与信任 → 附加目录 里随时撤销;第一次启动会话时再确认一次。</div><div class="f g2" style="margin-top:7px">${btn('我知道了', 'sm pri')}${btn('只读授权', 'sm')}</div></div></div></div>`, 160), '授权是显式的:创建 / 启动时各提示一次,之后在设置里集中管理。')))}
+      cell('权限提示', '', box(`<div style="padding:16px" class="fc g3"><div class="notice">${ic('shield')}<div class="grow"><b>Claude 将获得 2 个附加文件夹的读写权限</b><div class="t2">web-dashboard、docs-site。可在 设置 → 权限与信任 → 附加目录 里随时撤销;第一次启动会话时再确认一次。</div><div class="f g2" style="margin-top:7px">${btn('授予读写权限', 'sm pri')}${btn('只读授权', 'sm')}</div></div></div></div>`, 160), '授权是显式的:创建 / 启动时各提示一次,之后在设置里集中管理。')))}
     ${sec('右键菜单', '', grid(
       cell('工作区行', '', menu(230, [['plus', '在此工作区新对话', '⌘N'], ['-'], ['edit', '编辑工作区…'], ['folder', '添加文件夹…'], ['chevU', '上移'], ['chevD', '下移'], ['-'], ['folder', '在访达中显示 ›'], ['copy', '复制路径 ›'], ['-'], ['trash', '从列表移除工作区', '', 'danger']]), '在工作区上右键,主要动作就是「编辑工作区…」:名称、文件夹、顺序都在那一个对话框里;「在访达中显示 / 复制路径」多个文件夹时展开成子菜单(平级列出每个文件夹)(原来的「重命名…」「编辑文件夹…」合并进来)。移除只删列表项,确认框写明「不会删除文件」。'),
       cell('项目行', '', menu(230, [['plus', '在此项目新对话'], ['-'], ['edit', '编辑项目…'], ['layers', '加入工作区…', '▸'], ['-'], ['folder', '在访达中显示'], ['copy', '复制路径'], ['-'], ['trash', '从列表移除项目', '', 'danger']]), '在项目上右键,主要动作是「编辑项目…」(见下)。「从列表移除」只对手动添加的项目出现(Claude 会话里的项目随会话存在);项目被某个工作区引用时,移除前提示「它属于 1 个工作区」。'),
@@ -96,7 +96,7 @@
       ['多根文件树 / 多根搜索', '虚拟顶层目录 = 文件夹名(workspace.Multi),路径加文件夹前缀,顶层行带「主 / 改动数 / 非仓库」;搜索按前缀路径工作,搜索条有「范围」chip 与文件夹右键「仅在此文件夹搜索」', st('ok')],
       ['Claude 附加目录', '在任一成员文件夹启动会话时,其余文件夹追加 --add-dir(Workspace.Others),开关打开时设置 CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1', st('ok')],
       ['演示数据', '演示模式内置「全栈工作区」(router-demo / web-dashboard / docs-site 各有自己的分支与改动)+ 一个手动添加的非仓库项目 design-assets', st('ok')],
-      ['附加文件夹权限提示卡(我知道了 / 只读授权)', 'ws_perm.go+projects.ExtraReadOnly;「只读」仅为启动提示词约束、非系统级隔离。未测试', st('part')]]))}</div>`;
+      ['附加文件夹权限提示卡(授予读写权限 / 只读授权)', 'ws_perm.go+projects.ExtraReadOnly;「只读」仅为启动提示词约束、非系统级隔离。未测试', st('part')]]))}</div>`;
 
   /* ───────── 多仓库 Git ───────── */
   const repoRow = (n, br, sync, changes, on, extra = '') => `<div class="row ${on ? 'on' : ''}" style="height:32px">${ic('branch', 's12')}<div class="grow" style="min-width:0"><div class="ell"><b>${n}</b> <span class="t3">${br}</span></div></div><span class="t3 fs-cap mono">${sync}</span>${changes ? cnt(changes, on ? 'ac' : '') : '<span class="t4 fs-cap">干净</span>'}${extra}</div>`;

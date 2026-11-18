@@ -95,7 +95,7 @@ func (a *App) wsPermDialog(c *ui.Context) {
 				ui.Text(c, labels+"。可在 设置 → 权限与信任 → 附加目录 里随时撤销;"+sub).FontSize(theme.FsCap).TextColor(t.Tx2).LineHeight(theme.LhBody)
 				ui.Text(c, "只读授权 = 仍以 --add-dir 加入,并在系统提示里声明不要修改这些目录内的文件。").FontSize(theme.FsMicro).TextColor(t.Tx3)
 				ui.Row(c).Gap(8).Margin(4, 0, 0, 0).Children(func() {
-					kit.Btn(c, "我知道了", kit.BtnOpt{Variant: kit.BtnPri, Small: true}).OnClick(func() { a.wsPermChoose(false) })
+					kit.Btn(c, "授予读写权限", kit.BtnOpt{Variant: kit.BtnPri, Small: true}).OnClick(func() { a.wsPermChoose(false) })
 					kit.Btn(c, "只读授权", kit.BtnOpt{Small: true}).OnClick(func() { a.wsPermChoose(true) })
 				})
 			})
