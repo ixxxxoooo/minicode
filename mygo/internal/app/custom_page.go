@@ -193,14 +193,13 @@ func (a *App) customizePage(c *ui.Context) {
 				a.cuMain(c, st)
 			})
 		default:
-			ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
-				a.cuRail(c, st)
-				ui.Column(c).Grow(1).MinWidth(0).MinHeight(0).Children(func() {
-					head()
-					ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
-						a.cuMain(c, st)
-						a.cuDrawer(c, st)
-					})
+			// 两栏:顶部分类标签 + 列表 + 右侧详情(原来左边还有一条 180 宽的分类栏,加上应用侧栏就是四栏,太挤)
+			ui.Column(c).Grow(1).MinWidth(0).MinHeight(0).Children(func() {
+				head()
+				a.cuTabs(c, st)
+				ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
+					a.cuMain(c, st)
+					a.cuDrawer(c, st)
 				})
 			})
 		}
@@ -259,7 +258,7 @@ func (a *App) cuMain(c *ui.Context, st *customize.Store) {
 	s := &a.cu
 	cat := a.cuCat()
 	kit.VScroll(c).Key("cu-main").Grow(1).MinWidth(0).Children(func() {
-		ui.Column(c).Padding(4, 20, 24, 20).Gap(8).Children(func() {
+		ui.Column(c).Padding(12, 20, 24, 20).Gap(10).Children(func() {
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 				ui.Row(c.Key("cu-qbox")).Grow(1).MinWidth(0).Height(theme.Px(26)).PaddingX(8).Gap(6).AlignItems(ui.Center).Background(t.Fill1).Radius(t.RSm()).Children(func() {
 					kit.Ic(c, "search", kit.S12).TextColor(t.Tx4)
@@ -338,7 +337,7 @@ func (a *App) cuEmpty(c *ui.Context, st *customize.Store) {
 
 func (a *App) cuRow(c *ui.Context, st *customize.Store, it *customize.Item, on, sep bool) {
 	t := a.tk
-	r := ui.ButtonBase(c).Key("cur-" + it.Name).PaddingX(10).Height(42).Gap(10).AlignItems(ui.Center).Justify(ui.Start).Cursor(ui.CursorPointer)
+	r := ui.ButtonBase(c).Key("cur-" + it.Name).PaddingX(12).Height(52).Gap(12).AlignItems(ui.Center).Justify(ui.Start).Cursor(ui.CursorPointer)
 	if on {
 		r.Background(t.Fill2)
 	} else if r.Hovered() {
@@ -629,5 +628,39 @@ func (a *App) cuLbl(c *ui.Context, text string, body func()) {
 	ui.Column(c).Gap(4).Children(func() {
 		ui.Text(c, text).FontSize(theme.FsCap).FontWeight(500).TextColor(a.tk.Tx3)
 		body()
+	})
+}
+
+// cuTabs 是页头下面的分类标签(原左侧分类栏):图标 + 名称 + 数量,当前项底部一条强调色横线。
+func (a *App) cuTabs(c *ui.Context, st *customize.Store) {
+	t := a.tk
+	s := &a.cu
+	ui.Row(c).Key("cu-tabs").Padding(0, 20).Gap(2).Shrink(0).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+		for _, cat := range customize.Cats {
+			cat := cat
+			m := custCats[cat]
+			on := cat == a.cuCat()
+			b := ui.ButtonBase(c).Key("ct-" + string(cat)).Height(36).PaddingX(12).Gap(6).AlignItems(ui.Center).Cursor(ui.CursorPointer).Shrink(0)
+			col := t.Tx3
+			if on {
+				col = t.Tx1
+			} else if b.Hovered() {
+				col = t.Tx1
+			}
+			b.OnClick(func() {
+				if s.cat != cat {
+					s.cat, s.q, s.scope, s.market = cat, "", customize.All, false
+					a.cuResetNav()
+				}
+			})
+			b.Children(func() {
+				kit.Ic(c, m.icon, kit.S12).TextColor(col)
+				ui.Text(c, m.title).TextColor(col).SingleLine()
+				ui.Text(c, itoa(st.Count(cat))).FontSize(theme.FsCap).TextColor(t.Tx4)
+				if on { // 当前项:底部强调线(压在分隔线上)
+					ui.Box(c).Absolute().Left(8).Right(8).Bottom(-1).Height(2).Radius(1).Background(t.Ac)
+				}
+			})
+		}
 	})
 }

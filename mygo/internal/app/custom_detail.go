@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/claude"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/customize"
@@ -15,13 +16,19 @@ import (
 // 自定义页右侧抽屉:各类的专属详情。命令 / 子 Agent / 规则 / 钩子是表单,改的是草稿 `cu.draft`,「保存」才写回;
 // 插件 / MCP / Skills 的动作(启停、工具开关、重连、授权)立即生效。
 
+// 自定义页详情宽度(设计稿 .cu .drawer):原来 300 / 360 太紧,表单与列表都挤。
+const (
+	cuDrawerW     = 380
+	cuDrawerWideW = 460
+)
+
 func (a *App) cuDrawer(c *ui.Context, st *customize.Store) {
 	t := a.tk
 	s := &a.cu
 	cat := a.cuCat()
-	w := float32(drawerW)
+	w := float32(cuDrawerW)
 	if cat == customize.Commands || cat == customize.Agents || cat == customize.Rules || cat == customize.Hooks {
-		w = 360
+		w = cuDrawerWideW
 	}
 	col := ui.Column(c).Key("cu-drawer").Shrink(0).MinHeight(0).Clip()
 	if a.pageNarrowMid() {
@@ -639,22 +646,9 @@ func (a *App) cuRule(c *ui.Context, st *customize.Store, it *customize.Item) fun
 		ui.Text(c, it.Size+" · 约 "+itoa(it.Tokens)+" token · 占上下文 "+pct1(it.RuleTokenPct())+"%").FontSize(theme.FsCap).TextColor(t.Tx3)
 	})
 	if a.cu.rulePV {
-		ui.Column(c).Padding(8, 10).Background(t.Fill1).Radius(t.RSm()).Gap(3).Children(func() {
-			for _, l := range strings.Split(d.Body, "\n") {
-				switch {
-				case strings.HasPrefix(l, "# "):
-					ui.Text(c, l[2:]).FontSize(theme.FsTitle).FontWeight(600).Margin(2, 0, 4, 0)
-				case strings.HasPrefix(l, "- "):
-					ui.Row(c).Gap(7).AlignItems(ui.Start).Children(func() {
-						ui.Box(c).Size(5, 5).Radius(3).Background(t.Ac).Margin(7, 0, 0, 0).Shrink(0)
-						ui.Text(c, l[2:]).Grow(1).MinWidth(0).LineHeight(1.5)
-					})
-				case strings.TrimSpace(l) == "":
-					ui.Box(c).Height(6)
-				default:
-					ui.Text(c, l).LineHeight(1.5)
-				}
-			}
+		// 预览按正文同样的 Markdown 渲染(标题 / 列表 / 代码块 / 表格 / 链接),不再是手写的逐行解析
+		ui.Column(c).Padding(10, 12).Background(t.Fill1).Radius(t.RSm()).Children(func() {
+			markdown.View(c, padCode(d.Body), a.mdOptions())
 		})
 	} else {
 		a.cuArea(c, "cr-b", &d.Body, 150, true)

@@ -171,8 +171,9 @@
   const toolbar = (st, c) => `<div class="f ai g3" style="margin-bottom:8px">${inp('筛选' + CATS[c].t, { id: 'cuq', icon: 'search', cls: 'fill', style: 'flex:1', v: esc(st.cuQ || '') })}
     ${c === 'plugins' ? seg(['已安装', '市场'], st.cuTab === 'market' ? 1 : 0, '', 'cu-tab') : ''}${st.cuTab === 'market' ? '' : seg(['全部', '用户', '项目', '本地'], Math.max(0, SCK.indexOf(st.cuScope || 'all')), '', 'cu-scope')}</div>`;
   W.pages.customize = (st) => { const c = cur(st), C = CATS[c];
-    return `<div class="cu"><nav class="cu-rail"><div class="grp-h">自定义</div>${Object.entries(CATS).map(([id, x]) => `<div class="row ${id === c ? 'on' : ''}" data-act="cust" data-cust="${id}" tabindex="0">${ic(x.i, 's12')}<span class="grow">${x.t}</span><span class="aux" data-cat-n="${id}">${DATA[id].length}</span></div>`).join('')}</nav>
+    return `<div class="cu">
       <div class="cu-main"><div class="pg-h"><div class="grow"><div class="fs-head b">${C.t}</div><div class="t3" style="max-width:560px;line-height:1.5">${C.d}</div></div>${c === 'plugins' ? btn('浏览市场', '', 'search', 'data-act="cu-tab-market"') : ''}${btn(c === 'plugins' ? '从本地目录安装' : C.add, 'pri', 'plus', c === 'plugins' ? 'data-act="toast" data-msg="已打开目录选择器"' : 'data-act="cu-new"')}</div>
+        <nav class="cu-tabs">${Object.entries(CATS).map(([id, x]) => `<div class="cu-tab ${id === c ? 'on' : ''}" data-act="cust" data-cust="${id}" tabindex="0">${ic(x.i, 's12')}<span>${x.t}</span><span class="aux" data-cat-n="${id}">${DATA[id].length}</span></div>`).join('')}</nav>
         <div class="pg-split"><div class="pg-main scroll">${toolbar(st, c)}<div id="cu-list">${list(st)}</div></div>
         <aside class="drawer ${['commands', 'agents', 'rules', 'hooks'].includes(c) ? 'wide' : ''}" id="cu-drawer">${drawer(st)}</aside></div></div></div>`;
   };

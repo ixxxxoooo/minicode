@@ -12,7 +12,7 @@ import (
 // 整页功能(用量 / 自动化 / 画布 / 浏览器 / 自定义)的公共骨架:
 // 它们替换工作台的「编辑区 + 对话栏 + 检查器」,导航栏与标题栏不变,所以三套方案下都成立。
 
-const drawerW = 300 // 右侧抽屉宽度(设计稿 .drawer)
+const drawerW = 300 // 右侧抽屉宽度(设计稿 .drawer);自定义页用更宽的 cuDrawerW / cuDrawerWideW
 
 // page 画当前整页功能;返回 false 表示不是整页。
 func (a *App) page(c *ui.Context) bool {
