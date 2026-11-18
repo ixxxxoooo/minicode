@@ -684,7 +684,18 @@ func (a *App) QueuePrompts(texts ...string) {
 }
 
 // NewSession 开始新会话并回到欢迎页。
-func (a *App) NewSession() { a.OpenSession("") }
+// 在工作区里:新会话落在工作区的成员文件夹(沿用当前所在成员,否则第一个),不能用「上一个会话的目录」——
+// 那个目录可能根本不在工作区里(例如工作区成员是 kb/a、kb/b,而上一个会话在它们的父目录 kb),
+// 落过去后「会话目录不属于工作区」会把人从工作区踢出去,表现为一新建会话就跳到别的项目。
+func (a *App) NewSession() {
+	if a.ws != nil && !a.demoWs() {
+		dir := a.wsStartDir(*a.ws)
+		log.Info("工作区新建会话", "ws", a.ws.ID, "dir", dir)
+		a.OpenSessionChecked("new:" + dir)
+		return
+	}
+	a.OpenSession("")
+}
 
 // SetWindow 记下窗口(用于 Update 与窗口控制)。
 func (a *App) SetWindow(w *mygo.Window) {
