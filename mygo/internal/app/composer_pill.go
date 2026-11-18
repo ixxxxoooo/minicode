@@ -64,6 +64,24 @@ func (a *App) pillAttachment(c *ui.Context, kind, path string) *richtext.Attachm
 	}
 	label = clipMiddle(label, pillMaxText, span)
 	iconSz := fs
+	// 文件类型用语言徽标(YML / PHP / GO…,与会话流里的胶囊、文件树同一套 fileBadge);没有对应徽标或关了「文件图标」时回退成线条图标
+	var badge fileKind
+	hasBadge := false
+	var badgeSz, badgeW float32
+	if icon != "folder" && !strings.HasPrefix(kind, atomPaste) && a.prefs.Bool("appearance.fileIcons", true) {
+		if k, ok := fileKindOf(name); ok {
+			badge, hasBadge = k, true
+			badgeSz = 9.5
+			switch n := len([]rune(k.label)); {
+			case n >= 3:
+				badgeSz = 7.5
+			case k.label == "#":
+				badgeSz = 12
+			}
+			badgeW, _ = c.MeasureText(0, ui.Span{Text: k.label, Size: badgeSz, Weight: 500})
+			iconSz = max(iconSz, 14) // 徽标槽位 14,与 fileBadge 一致
+		}
+	}
 	padL, gap, padR := float32(6), float32(4), float32(7)
 	w := padL + iconSz + gap + span(label) + padR
 	// 附件框的底边落在文字基线上,胶囊要和文字「视觉中心」对齐,就得在基线下面再伸出一截(字的下沿):
@@ -86,7 +104,11 @@ func (a *App) pillAttachment(c *ui.Context, kind, path string) *richtext.Attachm
 			if icon != "folder" {
 				tint = a.fileTint(name, t.Tx3)
 			}
-			p.Icon(svg, ui.Rect{X: box.X + padL, Y: box.Y + (box.H-iconSz)/2, W: iconSz, H: iconSz}, tint)
+			if hasBadge {
+				p.Text(box.X+padL+(iconSz-badgeW)/2, box.Y+(box.H-badgeSz*1.25)/2, badge.label, badgeSz, a.fileKindColor(badge.tone))
+			} else {
+				p.Icon(svg, ui.Rect{X: box.X + padL, Y: box.Y + (box.H-iconSz)/2, W: iconSz, H: iconSz}, tint)
+			}
 			p.Text(box.X+padL+iconSz+gap, box.Y+(box.H-fs*1.25)/2, label, fs, t.Tx1)
 		},
 	}
