@@ -107,7 +107,7 @@ func (a *App) scmGraphList(c *ui.Context, viewH float32) {
 	}
 	list := ui.List(c, &s.sideList, n+1, func(i int) {
 		if i >= len(s.log) || i >= len(s.rows) {
-			a.scmLogFooter(c)
+			a.scmLogFooter(c, "")
 			return
 		}
 		cm := s.log[i]

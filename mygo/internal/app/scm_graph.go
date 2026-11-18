@@ -53,12 +53,35 @@ func (cm graphMatch) hit(c vcs.Commit) bool {
 
 type graphMatch struct{ q string }
 
+// graphFootNote 返回图谱列表读完后的末尾文案:搜索时写明「查完全部 N 个提交,匹配 M 个 / 没有匹配」,
+// 非搜索时返回空串(用默认的「已到最早的提交」)。参数 filtered:是否在搜索;matches:匹配条数。
+func (a *App) graphFootNote(filtered bool, matches int) string {
+	if !filtered {
+		return ""
+	}
+	if matches == 0 {
+		return "没有匹配「" + strings.TrimSpace(a.graphTab.q) + "」的提交 · 已查完全部 " + itoa(len(a.sc.log)) + " 个"
+	}
+	return "已查完全部 " + itoa(len(a.sc.log)) + " 个提交 · 匹配 " + itoa(matches) + " 个"
+}
+
 func (a *App) graphView(c *ui.Context) {
 	t := a.tk
 	s := &a.sc
 	g := &a.graphTab
 	a.scmTickNow()
-	m := graphMatch{g.q}
+	m := graphMatch{strings.TrimSpace(g.q)}
+	// 搜索 = 过滤:只列匹配的提交(不是把其它行变淡)。过滤后相邻两行在历史上并不相邻,
+	// 泳道连线没有意义,统一退化成「只有节点」的单列;清空搜索框即恢复完整图谱。
+	filtered := strings.TrimSpace(g.q) != ""
+	var idx []int // 匹配的提交在 s.log 里的下标(按原顺序)
+	if filtered {
+		for i, cm := range s.log {
+			if m.hit(cm) {
+				idx = append(idx, i)
+			}
+		}
+	}
 	a.wsHead(c, "fork", t.Ac, "Git 图谱", func() {
 		if e := a.activeRepo(); e != nil { // 多根:仓库下拉(切换 = 切换活动仓库)
 			if a.repoCount() > 1 {
@@ -71,7 +94,11 @@ func (a *App) graphView(c *ui.Context) {
 			}
 		}
 		if len(s.log) > 0 {
-			ui.Text(c, a.branch+" · "+a.scmLogCount()).FontSize(theme.FsCap).TextColor(t.Tx3)
+			cnt := a.scmLogCount()
+			if filtered {
+				cnt = "匹配 " + itoa(len(idx)) + " 个(已查 " + itoa(len(s.log)) + ")"
+			}
+			ui.Text(c, a.branch+" · "+cnt).FontSize(theme.FsCap).TextColor(t.Tx3)
 		}
 	}, func() {
 		in := ui.TextInputBase(c.Key("graph-q"), &g.q).Width(200).Height(theme.Px(24)).PaddingX(8).Radius(t.RSm()).Background(t.Fill1).
@@ -97,7 +124,11 @@ func (a *App) graphView(c *ui.Context) {
 		return
 	}
 	a.graphPickBar(c)
-	gw := float32(s.lanes*graphLaneW + 10)
+	lanes := s.lanes
+	if filtered {
+		lanes = 1
+	}
+	gw := float32(lanes*graphLaneW + 10)
 	// 表头
 	ui.Row(c).Height(theme.Px(22)).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 		hd := func(s string, w float32) {
@@ -115,22 +146,38 @@ func (a *App) graphView(c *ui.Context) {
 		hd("哈希", 60)
 	})
 	// 虚拟列表:只构建可见行;滚到离底部不足一屏就预取下一页(见 scm_log_page.go)
-	s.graphList.Key = func(i int) any {
-		if i < len(s.log) {
-			return s.log[i].Hash
+	// 行数 = 过滤后的匹配数(无搜索时 = 全部);row(k) 把第 k 行换算成 s.log 里的下标
+	n := len(s.log)
+	if filtered {
+		n = len(idx)
+	}
+	row := func(k int) int {
+		if filtered {
+			return idx[k]
+		}
+		return k
+	}
+	s.graphList.Key = func(k int) any {
+		if k < n {
+			return s.log[row(k)].Hash
 		}
 		return "scm-log-foot"
 	}
-	list := ui.List(c, &s.graphList, len(s.log)+1, func(i int) {
-		if i >= len(s.log) || i >= len(s.rows) {
-			a.scmLogFooter(c)
+	list := ui.List(c, &s.graphList, n+1, func(k int) {
+		if k >= n || row(k) >= len(s.rows) {
+			a.scmLogFooter(c, a.graphFootNote(filtered, n))
 			return
 		}
-		cm := s.log[i]
-		a.graphBigRow(c, i, cm, s.rows[i], gw, m.hit(cm))
+		i := row(k)
+		gr := s.rows[i]
+		if filtered { // 过滤后只画节点,不画连线
+			gr = vcs.GraphRow{Node: 0, Width: 1}
+		}
+		a.graphBigRow(c, i, s.log[i], gr, gw, true)
 	}).Grow(1).MinHeight(0).TrackScroll(&s.graphSt)
 	kit.ApplyNativeScroll(list, "graph-scroll", &s.graphSt, false, true)
-	a.scmLogWatch(&s.graphList, len(s.log))
+	// 搜索时匹配少、一屏装不下之前就继续往更早的历史里找(与滚动预取同一套逻辑)
+	a.scmLogWatch(&s.graphList, n)
 	a.graphDetail(c)
 }
 

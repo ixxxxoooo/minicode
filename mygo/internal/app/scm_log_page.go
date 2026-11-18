@@ -98,8 +98,9 @@ func (a *App) scmLogCount() string {
 }
 
 // scmLogFooter 画列表末尾的状态行:读取中(转圈)/ 失败(重试)/ 还有更多(加载更多)/ 已到最早的提交。
+// 参数 endText:读完时显示的文案(图谱搜索用来写匹配结果),空串 = 默认「已到最早的提交 · 共 N 个」。
 // 返回值:无;这一行始终是 scmLogFootH 高,不随状态变化,列表因此不会抖动。
-func (a *App) scmLogFooter(c *ui.Context) {
+func (a *App) scmLogFooter(c *ui.Context, endText string) {
 	t := a.tk
 	s := &a.sc
 	ui.Row(c).Key("scm-log-foot").Height(scmLogFootH).Shrink(0).PaddingX(8).Gap(6).AlignItems(ui.Center).Justify(ui.Center).FontSize(theme.FsCap).TextColor(t.Tx4).Children(func() {
@@ -115,6 +116,8 @@ func (a *App) scmLogFooter(c *ui.Context) {
 			kit.Btn(c, "加载更多", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(a.scmLoadMore)
 		case len(s.log) >= scmLogMax:
 			ui.Text(c, "已加载 "+itoa(len(s.log))+" 个提交(上限)")
+		case endText != "":
+			ui.Text(c, endText)
 		default:
 			ui.Text(c, "已到最早的提交 · 共 "+itoa(len(s.log))+" 个")
 		}
