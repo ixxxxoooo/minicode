@@ -334,7 +334,8 @@ func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func
 		})
 	default:
 		reason := strings.TrimPrefix(it.Desc, "连接失败 · ")
-		a.cuBanner(c, kit.KErr, "alert", "连接失败:"+reason+"。检查命令与环境变量后重试。", func() {
+		a.cuBanner(c, kit.KErr, "alert", "连接失败:"+reason+"。"+mcpFailHint(it, reason), func() {
+			kit.Btn(c, "编辑配置", kit.BtnOpt{Small: true, Icon: "edit"}).OnClick(func() { a.cuMCPStartEdit(it) })
 			kit.Btn(c, "重试", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() { a.cuReconnectReal(it) })
 		})
 	}
@@ -687,4 +688,15 @@ func (a *App) cuHook(c *ui.Context, st *customize.Store, it *customize.Item) fun
 		kit.Btn(c, "试运行", kit.BtnOpt{Icon: "play"}).OnClick(func() { a.cuTryHook(d) })
 		kit.Btn(c, "保存", kit.BtnOpt{Variant: kit.BtnPri}).OnClick(func() { a.cuSave(st, it) })
 	}
+}
+
+// mcpFailHint 按失败原因给下一步建议。
+func mcpFailHint(it *customize.Item, reason string) string {
+	if it.Transport == "http" || it.Transport == "sse" {
+		if strings.Contains(reason, "Unrecognized token '<'") || strings.Contains(reason, "<!DOCTYPE") {
+			return "服务器返回的是网页(多半是登录页)而不是 MCP 数据:检查地址是否正确、请求头里的 Cookie / Authorization 是否过期、${环境变量} 是否有值、是否需要连内网。点「编辑配置」修改。"
+		}
+		return "检查地址与请求头后重试,点「编辑配置」修改。"
+	}
+	return "检查命令与环境变量后重试,点「编辑配置」修改。"
 }

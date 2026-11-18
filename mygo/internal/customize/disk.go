@@ -246,7 +246,7 @@ func (ds *DiskStore) ApplyMCPConfig(fresh []*Item) {
 		if cur, ok := old[n.Name]; ok {
 			cur.Scope, cur.On = n.Scope, n.On
 			cur.Transport, cur.Cmd = n.Transport, n.Cmd
-			cur.Env, cur.EnvVals = n.Env, n.EnvVals
+			cur.Env, cur.EnvVals, cur.Headers = n.Env, n.EnvVals, n.Headers
 			cur.OnDemand = n.OnDemand
 			out = append(out, cur)
 			continue
@@ -316,6 +316,9 @@ func (ds *DiskStore) readMCP() []*Item {
 			if em, ok := ent["env"].(map[string]any); ok {
 				it.Env = envKeysOnly(em)
 				it.EnvVals = envValsOf(em)
+			}
+			if hm, ok := ent["headers"].(map[string]any); ok {
+				it.Headers = envValsOf(hm)
 			}
 			result = append(result, it)
 		}

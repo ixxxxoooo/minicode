@@ -111,14 +111,14 @@
     mcp: (st) => { const r = DATA.mcp[st.cuSel] || DATA.mcp[0], k = DATA.mcp.indexOf(r);
       const bn = r.st === 'ok' ? banner('ok', 'okc', `已连接 · ${r.tools.length} 个工具 · 延迟 23 ms`, btn('重新连接', 'sm', 'refresh', `data-act="mcp-reconnect" data-i="${k}"`))
         : r.st === 'warn' ? banner('warn', 'alert', '需要授权后才能使用', btn('授权', 'sm soft', '', `data-act="mcp-auth" data-i="${k}"`))
-        : banner('err', 'errc', `连接失败:${esc(r.d.split(':')[1] || '')}。检查命令与环境变量后重试。`, btn('重试', 'sm', 'refresh', `data-act="mcp-reconnect" data-i="${k}"`));
+        : banner('err', 'errc', `连接失败:${esc(r.d.split(':')[1] || '')}。检查地址 / 请求头 / 命令与环境变量后点「编辑配置」修改(服务器返回网页 = 多半是登录态失效)。`, btn('编辑配置', 'sm', 'edit') + btn('重试', 'sm', 'refresh', `data-act="mcp-reconnect" data-i="${k}"`));
       return `${dhead('server', esc(r.n))}${bn}
         ${kv([['传输', r.tr], [r.tr === 'http' ? '地址' : '命令', esc(r.cmd)], ['配置层', seg(['用户', '项目', '本地'], 'upl'.indexOf(r.sc))], ['工具定义占用', r.tok]])}
         ${r.env.length ? lbl('环境变量(值已遮盖)', `<div class="card" style="padding:2px 4px">${r.env.map(n => `<div class="row"><span class="mono grow">${n}</span><span class="mono t3">••••••••</span></div>`).join('')}</div>`) : ''}
         <div class="f ai"><b class="grow">工具(${r.tools.length})</b><span class="t3 fs-cap">逐项开关 · 写入本地层 deny 规则</span></div>
         ${r.tools.length ? `<div class="fc" style="max-height:132px;overflow:auto">${r.tools.map(([n, on], j) => `<div class="row"><span class="grow ell mono">${n}</span>${tog(on, `data-cu-tool="${k}:${j}"`)}</div>`).join('')}</div>` : `<div class="t4 fs-cap" style="padding:4px 0">${r.st === 'ok' ? '没有工具' : '连接成功后才会列出工具'}</div>`}
         <div class="card" style="padding:2px 4px"><div class="row" style="height:auto;padding:5px 8px"><div class="grow"><div class="m">按需加载工具(全部 MCP)</div><div class="t3 fs-micro">ENABLE_TOOL_SEARCH · 工具很多时只在需要时加载描述,节省上下文;对所有 MCP 服务器生效,写入 Claude 设置(写在它当前生效的那一层:本地 &gt; 项目 &gt; 用户),新会话起效;使用第三方服务商时会被强制关闭</div></div>${tog(1)}</div></div>
-        <div class="cu-foot f g2"><span class="grow"></span>${btn('编辑配置', '', 'edit')}</div>`; },
+        <div class="cu-foot f g2"><span class="grow"></span>${btn('编辑配置', '', 'edit')}</div>`; }, /* 编辑配置对话框:传输 / 地址或命令 / http 的请求头(每行 名称: 值)/ 环境变量 / 配置层;保存只改这些字段,条目里其余字段原样保留。入口:详情页脚、连接失败提示条、列表行(失败时)、详情「···」菜单 */
     skills: (st) => { const r = DATA.skills[st.cuSel] || DATA.skills[0];
       return `${dhead('spark', esc(r.n))}${kv([['范围', SC[r.sc]], ['位置', r.path]])}
         ${lbl('文件', `<div class="card" style="padding:3px 4px">${r.files.map(([n, ind, on, dir]) => `<div class="row ${on ? 'on' : ''}" style="padding-left:${8 + ind * 14}px">${ic(dir ? 'folder' : 'fileText', 's12')}<span class="grow ell mono">${n}</span></div>`).join('')}</div>`)}

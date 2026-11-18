@@ -51,6 +51,7 @@ type custState struct {
 	plug         *pluginInstall
 	mcpEdit      bool
 	mcpEnv       string
+	mcpHdr       string // 编辑 MCP 时的请求头草稿(每行「名称: 值」)
 	skillOf      string // 当前预览文件列表对应的 Skill id
 	skillFile    string
 	skillPrev    string
@@ -387,6 +388,14 @@ func (a *App) cuRow(c *ui.Context, st *customize.Store, it *customize.Item, on, 
 			ui.Text(c, sub).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 		})
 		kit.Tag(c, it.Scope.Label())
+		if a.cuCat() == customize.MCP && !a.cuDemo() {
+			if row, ok := a.mcpLookup(it.Name); ok && row.Conn == core.McpFailed { // 连接失败的直接在行上给「编辑」,不用再去详情里找
+				kit.Btn(c, "编辑", kit.BtnOpt{Small: true, Variant: kit.BtnSoft, Icon: "edit"}).OnClick(func() {
+					a.cuSelect(it)
+					a.cuMCPStartEdit(it)
+				})
+			}
+		}
 		if it.Status == customize.StWarn {
 			kit.Btn(c, "授权", kit.BtnOpt{Small: true, Variant: kit.BtnSoft}).OnClick(func() { a.cuAuth(it) })
 		}

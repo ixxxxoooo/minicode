@@ -240,6 +240,9 @@ func (a *App) cuMoreMenu(m *ui.Menu, st *customize.Store, it *customize.Item) {
 	if menuItem(m, "复制名称").Chosen() {
 		a.copyOut(it.Name, "名称")
 	}
+	if a.cuCat() == customize.MCP && menuItem(m, "编辑配置…").Chosen() {
+		a.cuMCPStartEdit(it)
+	}
 	real := it.Path != "" && !a.cuDemo()
 	why := "这一项没有对应的文件(或在演示数据里)"
 	canEdit := real && a.cuOpenOK(it)

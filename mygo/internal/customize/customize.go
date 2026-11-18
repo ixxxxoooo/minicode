@@ -96,6 +96,7 @@ type Item struct {
 	Cmd       string // 命令或地址
 	Env       []string
 	EnvVals   map[string]string // 键值(读盘时填充;保存 MCP 时用)
+	Headers   map[string]string // http / sse 服务器的请求头(Cookie / Authorization 等,读盘时填充;保存 MCP 时用)
 	Tok       string
 	Tools     []Tool
 	OnDemand  bool

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
@@ -16,7 +17,25 @@ func (a *App) cuMCPStartEdit(it *customize.Item) {
 	s.draft, s.dOf = it.Clone(), it
 	s.mcpEdit = true
 	s.mcpEnv = mcpEnvDraft(it)
+	s.mcpHdr = mcpHdrDraft(it)
 	s.err = ""
+}
+
+// mcpHdrDraft 把请求头排成「名称: 值」每行一条(按名称排序,顺序稳定)。
+func mcpHdrDraft(it *customize.Item) string {
+	keys := make([]string, 0, len(it.Headers))
+	for k := range it.Headers {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	var b strings.Builder
+	for _, k := range keys {
+		if b.Len() > 0 {
+			b.WriteByte('\n')
+		}
+		b.WriteString(k + ": " + it.Headers[k])
+	}
+	return b.String()
 }
 
 func mcpEnvDraft(it *customize.Item) string {
@@ -72,6 +91,11 @@ func (a *App) cuMCPEditDlg(c *ui.Context, st *customize.Store) {
 			a.cuLbl(c, "命令", func() { a.cuField(c, "mcp-cmd", &d.Cmd, true, "npx -y @scope/mcp-server") })
 			a.cuLbl(c, "额外参数(空格分隔,接在命令后)", func() { a.cuField(c, "mcp-args", &d.Note, true, "无") })
 		}
+		if d.Transport == "http" || d.Transport == "sse" {
+			a.cuLbl(c, "请求头(每行 名称: 值,如 Cookie / Authorization;值里可写 ${环境变量})", func() {
+				ui.TextArea(c.Key("mcp-hdr"), &s.mcpHdr).Lines(3, 6).Font("monospace").FontSize(theme.Px(11.5))
+			})
+		}
 		a.cuLbl(c, "环境变量(每行 KEY=VALUE)", func() {
 			ui.TextArea(c.Key("mcp-env"), &s.mcpEnv).Lines(3, 6).Font("monospace").FontSize(theme.Px(11.5))
 		})
@@ -115,6 +139,14 @@ func (a *App) cuMCPSaveEdit(st *customize.Store, it *customize.Item) {
 		return
 	}
 	d.Env = envKeys(env)
+	if d.Transport == "http" || d.Transport == "sse" {
+		hdr, err := customize.ParseHeaderLines(s.mcpHdr)
+		if err != nil {
+			s.err = err.Error()
+			return
+		}
+		d.Headers = hdr
+	}
 	if err := st.Save(customize.MCP, it, d); err != nil {
 		s.err = err.Error()
 		return
