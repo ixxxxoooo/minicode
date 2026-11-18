@@ -446,7 +446,7 @@ func (a *App) cuSkill(c *ui.Context, it *customize.Item) func() {
 	t := a.tk
 	st := a.cuStore()
 	d := &a.cu.draft
-	a.cuHead(c, st, it, "spark", it.Name, a.cuHeadDel(c, st, it, "删除"))
+	a.cuHead(c, st, it, "wand", it.Name, a.cuHeadDel(c, st, it, "删除"))
 	a.cuLbl(c, "名称(重命名目录)", func() { a.cuField(c, "sk-n", &d.Name, false, "skill-name") })
 	a.cuKV(c, [][2]string{{"范围", it.Scope.Label()}, {"位置", it.Path}})
 	a.cuLbl(c, "文件", func() {

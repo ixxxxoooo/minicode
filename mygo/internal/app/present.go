@@ -242,7 +242,7 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 		// 其余工具统一扳手图标(不是文档图标);技能直接写「技能 名称」,不再多一层「工具」
 		s.icon, s.verb, s.obj = "wrench", "工具", tc.Title
 		if tc.Name == "Skill" {
-			s.icon, s.verb, s.obj = "book", "技能", strings.TrimPrefix(tc.Title, "技能 · ")
+			s.icon, s.verb, s.obj = "wand", "技能", strings.TrimPrefix(tc.Title, "技能 · ")
 		}
 	}
 	switch s.state {

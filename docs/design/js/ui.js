@@ -108,7 +108,7 @@
     fetch: { icon: 'globe', verb: '抓取', fam: 'web', cn: 'WebFetch' },
     search: { icon: 'globe', verb: '联网搜索', fam: 'web', cn: 'WebSearch' },
     mcp: { icon: 'plug', verb: '调用', fam: 'mcp', cn: 'MCP' },
-    skill: { icon: 'book', verb: '技能', fam: 'mcp', cn: 'Skill(只写「技能 名称」,不带「工具」二字)' },
+    skill: { icon: 'wand', verb: '技能', fam: 'mcp', cn: 'Skill(只写「技能 名称」,不带「工具」二字)' },
     other: { icon: 'wrench', verb: '工具', fam: 'mcp', cn: '其余未归类工具(通用扳手兜底)' },
     agent: { icon: 'bot', verb: '子 Agent', fam: 'agent', cn: 'Agent' },
     todo: { icon: 'todo', verb: '待办', fam: 'plan', cn: 'TodoWrite' },

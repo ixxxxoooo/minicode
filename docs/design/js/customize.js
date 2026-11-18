@@ -65,7 +65,7 @@
   const CATS = {
     plugins: { i: 'plug', t: '插件', d: '插件把 Skills、命令、子 Agent 与钩子打包在一起,可在市场里浏览、安装与启停。', add: '从市场安装', noun: '插件' },
     mcp: { i: 'server', t: 'MCP 服务器', d: '给 Claude 接入外部工具与数据。列表顶「刷新状态」= 重读配置 + 已启动会话时 mcp_status;未启动时显示配置层并提示。与输入框 MCP 弹层同源视图。', add: '添加服务器', noun: '服务器' },
-    skills: { i: 'spark', t: 'Skills', d: 'Claude 按场景自动调用的能力包:一个目录加一份 SKILL.md。', add: '新建 Skill', noun: 'Skill' },
+    skills: { i: 'wand', t: 'Skills', d: 'Claude 按场景自动调用的能力包:一个目录加一份 SKILL.md。', add: '新建 Skill', noun: 'Skill' },
     commands: { i: 'slash', t: '斜杠命令', d: '在输入框里用 / 调用的提示词模板,支持 $ARGUMENTS 参数。', add: '新建命令', noun: '命令' },
     agents: { i: 'bot', t: '子 Agent', d: '带独立上下文与工具权限的专用助手,由主 Agent 委派任务。', add: '新建子 Agent', noun: '子 Agent' },
     rules: { i: 'book', t: '规则与记忆', d: 'CLAUDE.md 与 .claude/rules 里的长期约定,新会话自动加载;层级越靠后优先级越高。', add: '新建规则', noun: '规则文件' },
