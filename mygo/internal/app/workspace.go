@@ -80,7 +80,7 @@ func (a *App) wsPane(c *ui.Context, gap float32) {
 	// 宽度 / 间距 = 开合因子(stageFactors)× 满开值,不用元素过渡(见 paneOpen 的说明)
 	p := a.pane(c).Key("ws").ClipX().Transition(noMotion)
 	if a.tk.Glass() {
-		p.Material(kit.GlassMat(.35)) // 工作区比对话更通透:壁纸的色晕能透出一点
+		p.Material(kit.GlassMat(kit.ClaritySidebar)) // 工作区比对话更通透:壁纸的色晕能透出一点
 	}
 	switch {
 	case a.belt.on:

@@ -188,6 +188,9 @@ func (a *App) cmdk(c *ui.Context) {
 	default:
 		b.Background(t.Fill1)
 	}
+	if t.Glass() {
+		b.Material(kit.GlassControl()) // 流光:搜索胶囊是一小块可交互的真玻璃
+	}
 	b.Transition(kit.Fade).OnClick(a.openPalette)
 	b.Children(func() {
 		kit.Ic(c, "search", kit.S12)

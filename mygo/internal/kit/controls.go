@@ -87,6 +87,9 @@ func Seg(c *ui.Context, items []SegItem, on int, o ...SegOpt) int {
 	n := float32(len(items))
 	clicked := -1
 	root := ui.Row(c).Radius(T.RMd()).Background(T.Fill2).Padding(2).Shrink(0)
+	if T.Glass() {
+		root.Material(GlassMat(0)) // 流光:分段槽是一小块真玻璃
+	}
 	if op.Fill {
 		root.Grow(1)
 	}

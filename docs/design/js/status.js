@@ -356,9 +356,9 @@
     'glow-spec': [
       R('设计稿:流光 / 流光·夜两套色板 + css/glass.css 材质层 + 主题卡 / 顶栏圆点 / 品牌图标配色', '已补稿;仅用无头 Chrome 截图自查过规格页与工作台,未逐页核对其余页面', 'ok'),
       R('theme.Palettes 增加 glow / glow-night', 'theme/glass.go 追加两套(Palette.Glass=true)+ Tokens.Wall / Tone;主题卡 / 命令面板 / 跟随系统深浅 / 应用图标配色(沿用 mist / graphite 素材)已接;未测试', 'ok'),
-      R('壁纸层(静态渐变)', 'app/glass_wall.go:根元素 Draw 两色底 + 四团径向色晕,不做漂移动画;未画成缓存位图(每次重绘画 5 笔);未测试', 'ok'),
-      R('面板玻璃:侧栏 / 对话 / 工作区 / 整页', 'kit.GlassMat(clarity) = glass.Glass;对话 / 整页 0、导航栏 / 工作区 .35;方案 B 圆角 + 玻璃阴影,A / C 细线;设置页(自带底色)与面板内的卡片 / 浮层还没接;未测试', 'part', 'B9'),
-      R('控件玻璃:按钮 / 输入框 / 分段 / 选中行 / 卡片', '小控件不走着色器(每块真玻璃都要抓一次背后画面),用 Tone() 半透明色 + 暗边:kit.RaisedBG / SelBG / glassBtn;主要按钮是实色 + 描边高光 + 强调色光晕;开关、标题栏搜索胶囊、各页散落的 Background(t.Raised) 还没接;未测试', 'part', 'B9'),
+      R('壁纸层(静态渐变)', 'app/glass_wall.go:根元素 Draw 两色底 + 低饱和径向色晕 + 一道斜向高光带(给折射明暗边缘),不做漂移动画;未画成缓存位图(每次重绘画 6 笔);强调色已压低饱和(浅 #4A6FD3 / 夜 #9DB8F2);未测试', 'ok'),
+      R('面板玻璃:侧栏 / 对话 / 工作区 / 整页', 'kit.GlassMat = glass.Glass,透明度取 macOS 实测的标准材质不自己调:对话 / 整页 ClarityContent=0、导航栏 / 工作区 ClaritySidebar=.5(macOS 浮动侧栏那档);方案 B 圆角 + 渐变高光边(kit.GlassRim)+ 玻璃阴影,A / C 细线;设置页(自带底色)与面板内的卡片还没接;未测试', 'part', 'B9'),
+      R('控件玻璃:按钮 / 输入框 / 分段 / 选中行 / 卡片', '默认按钮 / 分段槽 / 标题栏搜索胶囊是真玻璃(可交互:悬停亮边、按下微胀),主要按钮是着色玻璃 + 强调色光晕;卡片 / 输入框 / 选中行 / 分段滑块仍用 Tone() 半透明色(数量多,不走着色器);开关、各页散落的 Background(t.Raised) 还没接;每块真玻璃要抓一次背后画面,同屏数量与帧耗时待实测;未测试', 'part', 'B9'),
       R('浮层玻璃:命令面板 / 对话框 / 快速选择 / 抽屉 / 提示条 / 输入框', 'kit.Float(el) = glass.Glass{Clarity: 0};Shadow2 / Shadow3 在玻璃主题下换成玻璃岛阴影;右键菜单、状态栏弹层、悬浮卡等其余浮层未接;未测试', 'part', 'B9'),
       R('降低透明度兜底', 'Preferences().ReduceTransparency → 不透明色板', 'todo', 'B9'),
       R('性能实测与预算数字', '流式输出 + 终端刷新同时进行时测帧耗时(diag.SpanSlow);决定面积上限与是否要「简化玻璃」开关', 'todo', 'B9')],

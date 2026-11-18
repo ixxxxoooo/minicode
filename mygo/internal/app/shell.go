@@ -77,7 +77,8 @@ func (a *App) pane(c *ui.Context) ui.Element {
 	t := a.tk
 	p := ui.Column(c).MinWidth(0).Clip()
 	if t.Glass() {
-		p.Material(kit.GlassMat(0)) // 流光:玻璃面板(对话 / 整页最磨砂,工作区另设更通透)
+		p.Material(kit.GlassMat(kit.ClarityContent)) // 流光:玻璃面板,取 macOS 的标准材质(对话 / 整页);导航与工作区另用 ClaritySidebar
+		kit.GlassRim(p)
 	} else {
 		p.Background(t.BG)
 	}

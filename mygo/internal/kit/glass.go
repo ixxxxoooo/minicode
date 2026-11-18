@@ -15,6 +15,14 @@ import (
 //
 // @author ixxxxoooo
 
+// 面板通透度(glass.Glass.Clarity):取插件按 macOS 实测的材质,不自己调。
+//   - ClarityContent = 0:macOS 的标准材质(最磨砂),对话栏 / 整页 / 浮层这类文字多的面板;
+//   - ClaritySidebar = 0.5:插件的「中档」,模糊减半、提亮减弱,即 macOS 26 浮动侧栏那种能透出壁纸的通透度。
+const (
+	ClarityContent float32 = 0
+	ClaritySidebar float32 = 0.5
+)
+
 // GlassMat 返回面板用的玻璃材质。clarity:0 = 最磨砂(对话 / 整页 / 浮层,文字多),
 // 约 0.35 = 更通透(导航栏、工作区)。系统「降低透明度」时插件自己退成不透明的表面色。
 func GlassMat(clarity float32) ui.Material { return glass.Glass{Clarity: clarity} }
@@ -44,22 +52,30 @@ func SelBG() ui.Color {
 	return T.Raised
 }
 
-// glassBtn 是玻璃主题下默认按钮的外观:半透明卡片色 + 暗边;悬停升为「选中」色。
-func glassBtn(b ui.Element, hov bool) {
-	tn := T.Tone()
-	bg := tn.Card
-	if hov {
-		bg = tn.Sel
-	}
-	b.Background(bg).Border(1, tn.RimLo)
+// glassBtn 是玻璃主题下默认按钮:真玻璃(可交互:悬停亮边、按下微胀)。
+// 同屏文字按钮只有几个到十几个、面积很小,每块只抓自己周围一小块背后画面,代价可以接受;性能实测见设计稿 B9。
+func glassBtn(b ui.Element, _ bool) {
+	b.Material(GlassControl())
 	for _, s := range T.Shadow1() {
 		b.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
 }
 
-// glassPri 给主要按钮加一圈高光描边与强调色光晕(设计稿 --ac-glow:整页唯一「发光」的地方)。
+// glassPri 是主要按钮:着色玻璃(强调色几乎不透明,只透出一点)+ 强调色光晕(设计稿 --ac-glow:整页唯一「发光」的地方)。
 func glassPri(b ui.Element) {
-	b.Border(1, ui.RGBA(255, 255, 255, .22)).Shadow(0, 6, 14, -6, T.Ac.Alpha(.7))
+	b.Material(GlassTinted(T.Ac.Alpha(.92))).Shadow(0, 6, 14, -6, T.Ac.Alpha(.55))
+}
+
+// GlassRim 给玻璃面板画一圈渐变高光边:左上亮、右下暗,像光沿着玻璃边缘走(设计稿 .pane::after)。
+// 插件自带的边缘高光只有 1px 且很弱,在淡雅的壁纸上几乎看不见,这里补一圈。
+func GlassRim(el ui.Element) ui.Element {
+	if !T.Glass() {
+		return el
+	}
+	tn := T.Tone()
+	return el.Border(1, tn.RimLo).BorderLinearGradient(ui.LinearGradient{Angle: 145, Stops: []ui.GradientStop{
+		{Color: tn.Rim, At: 0}, {Color: tn.RimLo, At: .36}, {Color: tn.RimLo.Alpha(0), At: .6}, {Color: tn.RimLo, At: 1},
+	}})
 }
 
 // GlassTinted 返回带着色的玻璃(主要按钮、发送键):tint 的透明度决定染得多重。

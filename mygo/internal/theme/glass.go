@@ -11,10 +11,10 @@ import "github.com/egoist/mygo/ui"
 // glassPalettes 是追加在 Palettes 末尾的两套玻璃主题(追加而不是插入,偏好里按序号存的「应用图标配色」不会错位)。
 var glassPalettes = []Palette{
 	{ID: "glow", Name: "流光", Glass: true, Base: "#E9EEF8", Surface: "#F7F9FE", Raised: "#FFFFFF", Sunken: "#EDF1F9", Ink: "#16192B",
-		Accent: "#2F6BFF", OnAccent: "#FFFFFF", Ok: "#1F9D62", Err: "#D8434B", Warn: "#B47A14", Info: "#2F7DD8", Vio: "#7B58E0", Cyan: "#0B8FA0", Pink: "#C2418F",
+		Accent: "#4A6FD3", OnAccent: "#FFFFFF", Ok: "#1F9D62", Err: "#D8434B", Warn: "#B47A14", Info: "#2F7DD8", Vio: "#7B58E0", Cyan: "#0B8FA0", Pink: "#C2418F",
 		Shade: [3]uint8{30, 40, 90}, KShade: 1},
 	{ID: "glow-night", Name: "流光·夜", Dark: true, Glass: true, Base: "#0B0E1C", Surface: "#12162B", Raised: "#1B2040", Sunken: "#0D1022", Ink: "#EAEEFF",
-		Accent: "#6FA2FF", OnAccent: "#07142E", Ok: "#5AD1A0", Err: "#FF6F8B", Warn: "#F0B657", Info: "#62B4FF", Vio: "#B79BFF", Cyan: "#5CD6E6", Pink: "#FF86C8",
+		Accent: "#9DB8F2", OnAccent: "#0A1430", Ok: "#5AD1A0", Err: "#FF6F8B", Warn: "#F0B657", Info: "#62B4FF", Vio: "#B79BFF", Cyan: "#5CD6E6", Pink: "#FF86C8",
 		Shade: [3]uint8{2, 3, 14}, KShade: 3.6},
 }
 
@@ -29,19 +29,28 @@ type WallBlob struct {
 	Color   ui.Color
 }
 
-// Wall 返回壁纸:纵向两色底(上、下)与四团色晕。静态,整窗只画一次(设计稿 --wall)。
-func (t *Tokens) Wall() (top, bottom ui.Color, blobs []WallBlob) {
+// WallSpec 是壁纸:纵向两色底、几团低饱和色晕、一道斜向高光带(Streak)。
+// 高光带给玻璃的折射一条明暗边缘——背后全是柔和渐变时,透镜效果看起来就和一层白膜没区别。
+type WallSpec struct {
+	Top, Bottom ui.Color
+	Blobs       []WallBlob
+	Streak      ui.Color // 高光带中心色(两侧渐隐到同色全透明)
+}
+
+// Wall 返回壁纸。静态,整窗只画一次(设计稿 --wall:低饱和,淡雅)。
+func (t *Tokens) Wall() WallSpec {
 	h := ui.Hex
 	if t.Palette.Dark {
-		return h("#0D1124"), h("#080B18"), []WallBlob{
-			{.10, .06, .34, ui.RGBA(88, 70, 235, .62)}, {.94, .10, .30, ui.RGBA(200, 54, 160, .42)},
-			{.76, 1.02, .38, ui.RGBA(18, 150, 176, .50)}, {.02, .98, .29, ui.RGBA(56, 74, 220, .45)},
-		}
+		return WallSpec{Top: h("#0E1226"), Bottom: h("#090C1A"), Streak: ui.RGBA(190, 200, 255, .08), Blobs: []WallBlob{
+			{.10, .08, .34, ui.RGBA(78, 86, 190, .42)}, {.94, .10, .30, ui.RGBA(150, 80, 150, .26)},
+			{.80, 1.00, .38, ui.RGBA(40, 120, 140, .32)}, {.04, .96, .29, ui.RGBA(70, 90, 170, .30)},
+		}}
 	}
-	return h("#EEF2FB"), h("#E6ECF8"), []WallBlob{
-		{.08, .06, .34, h("#AFC4FF")}, {.94, .08, .30, h("#F2B8DC")},
-		{.78, 1.00, .38, h("#9ADDEB")}, {.04, .96, .29, h("#CDB6FF")},
-	}
+	return WallSpec{Top: h("#F1F3F8"), Bottom: h("#E6EAF3"), Streak: ui.RGBA(255, 255, 255, .55), Blobs: []WallBlob{
+		{.10, .08, .34, h("#C2D2F2")}, {.94, .10, .30, h("#EBCFE0")},
+		{.80, 1.00, .38, h("#C5E3E8")}, {.04, .96, .29, h("#D6CCEE")},
+		{.52, .52, .20, h("#F3E4CF")},
+	}}
 }
 
 // GlassShadow 是玻璃岛的悬浮阴影(设计稿 --glass-sh):不乘 KShade,夜色下也只是一圈很淡的深蓝黑。
