@@ -848,6 +848,22 @@ func (a *App) cuMCPTools(c *ui.Context, it *customize.Item) {
 			names = append(names, tl.Name)
 		}
 	}
+	netErr, netBusy := "", false
+	if len(names) == 0 && (it.Transport == "http" || it.Transport == "sse") && it.On && !a.cuDemo() {
+		// 没有会话时 claude mcp list 不给工具名:http 服务器直接问它(initialize + tools/list),后台跑,结果缓存
+		if got, ok := a.mcpToolsNet[it.Name]; ok {
+			names = got
+		}
+		if e, ok := a.mcpToolsNetErr[it.Name]; ok {
+			netErr, netBusy = e, e == ""
+		}
+		if _, tried := a.mcpToolsNet[it.Name]; !tried {
+			if _, running := a.mcpToolsNetErr[it.Name]; !running {
+				a.cuFetchMCPToolsNet(it)
+				netBusy = true
+			}
+		}
+	}
 	if a.cuDenyFor != it.Name { // 换了一台:后台重读一次禁用规则
 		a.cuDenyFor = it.Name
 		a.mcpDenyReload()
@@ -879,10 +895,19 @@ func (a *App) cuMCPTools(c *ui.Context, it *customize.Item) {
 	ui.Text(c, "关掉的工具 Claude 不会调用 · 写入本地层 permissions.deny").FontSize(theme.FsCap).TextColor(t.Tx3)
 	if len(names) == 0 {
 		msg := "连接成功后才会列出工具"
-		if it.Status == customize.StOK {
+		switch {
+		case netBusy:
+			msg = "正在读取工具…"
+		case netErr != "":
+			msg = "无法读取工具:" + netErr
+		case it.Status == customize.StOK:
 			msg = "没有工具"
 		}
-		ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Tx4)
+		ui.Text(c, msg).FontSize(theme.FsCap).TextColor(t.Tx4).LineHeight(1.5)
+		if !a.mcpRuntimeReady() { // 没有运行中的会话(stdio 服务器只能这样查,http 直连失败时也可以):启动会话后由会话汇报
+			kit.Btn(c, "启动会话检测工具", kit.BtnOpt{Small: true, Variant: kit.BtnSoft, Icon: "refresh", Loading: a.mcpRefreshing}).
+				Tooltip("启动 Claude 连接这些 MCP 服务器并读取它们的工具").OnClick(func() { a.mcpManualRefresh(true) })
+		}
 		return
 	}
 	a.cuCard(c, func() {
@@ -941,6 +966,34 @@ func (a *App) setMcpToolsBulk(server string, tools []string, on bool) {
 			a.toast = "已" + verb + "「" + server + "」的全部 " + itoa(len(tools)) + " 个工具"
 			log.Info("MCP 工具批量开关", "server", server, "on", on, "n", len(tools))
 			a.mcpManualRefresh(a.mcpRuntimeReady())
+		}
+	})
+}
+
+// cuFetchMCPToolsNet 后台直连一台 http MCP 服务器读工具名;结果存 mcpToolsNet / mcpToolsNetErr。
+func (a *App) cuFetchMCPToolsNet(it *customize.Item) {
+	if a.mcpToolsNet == nil {
+		a.mcpToolsNet, a.mcpToolsNetErr = map[string][]string{}, map[string]string{}
+	}
+	name, url, hdr := it.Name, it.Cmd, it.Headers
+	a.mcpToolsNetErr[name] = "" // 读取中
+	a.bg("直连MCP读工具", func() func() {
+		names, err := customize.FetchHTTPMCPTools(url, hdr, func(n string) string {
+			if v := os.Getenv(n); v != "" {
+				return v
+			}
+			v, _ := claude.ShellEnv(n)
+			return v
+		})
+		return func() {
+			if err != nil && len(names) == 0 {
+				a.mcpToolsNetErr[name] = err.Error()
+				a.mcpToolsNet[name] = nil
+				return
+			}
+			delete(a.mcpToolsNetErr, name)
+			a.mcpToolsNet[name] = names
+			log.Info("直连读到 MCP 工具", "server", name, "n", len(names))
 		}
 	})
 }

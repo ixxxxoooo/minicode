@@ -101,6 +101,7 @@ func (a *App) mcpOnOpenManage() {
 }
 
 func (a *App) mcpManualRefresh(startProc bool) {
+	a.mcpToolsNet, a.mcpToolsNetErr = nil, nil // 手动刷新:直连读到的工具也重读
 	a.mcpRefresh(mcpRefreshOpts{Force: true, ReloadDisk: true, Runtime: true, StartProc: startProc})
 	if !startProc && !a.mcpRuntimeReady() {
 		a.mcpFetchListBG(true)
