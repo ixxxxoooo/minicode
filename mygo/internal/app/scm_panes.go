@@ -14,38 +14,38 @@ import (
 //
 // @author ixxxxoooo
 const (
-	scmGraphDef     float32 = 200 // 图形分区默认高度
-	scmRepoRowH             = 26  // 仓库行高(与文件行 22 / 图形行 24 同一量级)
-	scmRepoMaxRows          = 5   // 仓库块最多显示的行数,超出在块内滚动
-	scmGraphMaxFrac         = 0.6 // 图形分区最高占源代码管理区高度的比例
+	scmGraphDef    float32 = 200 // 图形分区默认高度
+	scmRepoRowH            = 26  // 仓库行高(与文件行 22 / 图形行 24 同一量级)
+	scmRepoMaxRows         = 5   // 仓库块最多显示的行数,超出在块内滚动
+	scmGraphHead           = 27  // 图形标题行 26 + 上边线 1
 )
 
-// scmGraphHeight 返回图形分区当前高度(已夹在范围内)。
-// 返回值:像素高度;窗口很矮时上限随之缩小,但不小于 sideSecMin。
-func (a *App) scmGraphHeight() float32 {
-	return clampF(orDef(a.ly.scmGraph, scmGraphDef), sideSecMin, a.scmGraphMax())
-}
-
 // scmGraphBodyHeight 返回图形列表区(不含标题)的实际高度:
-// 取「用户拖出的高度 / 默认高度」与「更改列表下方的剩余空间」中较大的一个——
-// 更改少或为空时图形自动上移、占满剩余空间;更改多时保持设定高度,更改列表自己滚动。
-// 上一帧尚未量到区域高度时只用设定高度。
+//   - 用户拖过(a.ly.scmGraph > 0):严格按拖出的高度,夹在 [sideSecMin, 上限];
+//   - 没拖过:自动占满更改列表下方的剩余空间(更改少或为空时图形自动上移),但不小于默认 200;
+//     更改多放不下时保持 200,更改列表自己滚动。
+//
+// 上一帧尚未量到区域高度时只用默认值。
 func (a *App) scmGraphBodyHeight() float32 {
 	s := &a.sc
-	h := a.scmGraphHeight()
-	if s.splitH > 0 && s.contentH >= 0 {
-		const headBorder = 27 // 标题行 26 + 上边线 1
-		h = max(h, s.splitH-s.contentH-headBorder)
+	hi := a.scmGraphMax()
+	if a.ly.scmGraph > 0 {
+		return clampF(a.ly.scmGraph, sideSecMin, hi)
 	}
-	return h
+	h := scmGraphDef
+	if s.splitH > 0 {
+		h = max(h, s.splitH-s.contentH-scmGraphHead)
+	}
+	return clampF(h, sideSecMin, hi)
 }
 
-// scmGraphMax 返回图形分区的高度上限:源代码管理区高度的 60%(上一帧取到的高度,尚未取到时给 400)。
+// scmGraphMax 返回图形列表区的高度上限:「更改列表 + 图形」区域高度减去标题行,再给更改列表留 48px。
+// 上一帧尚未量到时给 400。
 func (a *App) scmGraphMax() float32 {
-	if a.sc.bodyH <= 0 {
+	if a.sc.splitH <= 0 {
 		return 400
 	}
-	return max(sideSecMin, a.sc.bodyH*scmGraphMaxFrac)
+	return max(sideSecMin, a.sc.splitH-scmGraphHead-48)
 }
 
 // scmGraph 画固定在底部的「图形」分区:上沿拖拽把手 + 可点击收起的标题行 + 块内滚动的提交列表。
@@ -58,7 +58,7 @@ func (a *App) scmGraph(c *ui.Context) {
 	h := a.scmGraphBodyHeight()
 	ui.Column(c).Key("scm-graph-pane").Shrink(0).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
 		if open && has { // 把手只在有内容、展开时出现
-			a.resizeHandle(c, lyScmGraph, "t", h, scmGraphDef, sideSecMin, a.scmGraphMax(), func(v float32) { a.ly.scmGraph = v })
+			a.resizeHandle(c, lyScmGraph, "t", h, 0, sideSecMin, a.scmGraphMax(), func(v float32) { a.ly.scmGraph = v })
 		}
 		hd := a.navDrop(ui.ButtonBase(c).Key("scm-h-graph")).Height(theme.Px(26)).PaddingX(4).Gap(4).AlignItems(ui.Center).Cursor(ui.CursorPointer).TextColor(t.Tx3) // 标题行悬停不加底色,直接点
 		hd.OnClick(func() { s.folded["graph"] = !s.folded["graph"] })

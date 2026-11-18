@@ -66,9 +66,7 @@ func (a *App) scmBody(c *ui.Context) {
 		}
 		i++
 	}
-	body := ui.Column(c).Key("scm-body").Grow(1).MinHeight(0)
-	defer func() { s.bodyH = body.Bounds().H }() // 上一帧高度:图形分区的高度上限据此算
-	body.Children(func() {
+	ui.Column(c).Key("scm-body").Grow(1).MinHeight(0).Children(func() {
 		a.scmHead(c)
 		a.scmPushGuide(c)
 		if e := a.activeRepo(); e != nil { // 多仓库:提交前再确认一眼作用在哪个仓库

@@ -46,7 +46,6 @@ type scmState struct {
 	stashFiles    map[int][]vcs.Change
 	stashBusy     map[int]bool // 正在读取储藏文件列表
 	stashFilesAll map[int]bool // true = 展开全部文件(默认只显示前几条)
-	bodyH         float32      // 源代码管理主体上一帧高度(图形分区高度上限 = 它的 60%)
 	splitH        float32      // 「更改列表 + 图形」区域上一帧高度
 	contentH      float32      // 更改列表内容的自然高度(上一帧)
 }
