@@ -136,10 +136,17 @@ func (t *BackgroundTask) PushOutput(now int64, text string) {
 }
 
 // ElapsedMs 已运行时长:结束的用结束时间,运行中的用 now。
+// 没有开始时间,或「已结束但没有结束时间」(历史回放里常见)时返回 0 = 未知:
+// 之前这两种都会拿 now 去减 0,算出「498615 小时」这样从 1970 年起算的荒唐值。
 func (t *BackgroundTask) ElapsedMs(now int64) int64 {
+	if t.StartedMs == 0 {
+		return 0
+	}
 	end := now
 	if t.EndedMs != 0 {
 		end = t.EndedMs
+	} else if t.Status.Finished() {
+		return 0
 	}
 	return max(0, end-t.StartedMs)
 }

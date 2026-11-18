@@ -57,26 +57,35 @@ func (a *App) taskDockPopup(c *ui.Context, key string, anchor ui.Element, groups
 	a.popOpen("tpop:"+key, func(open *bool) {
 		ui.PopoverBase(c, anchor, open, func(panel ui.Element) {
 			a.popPanel(panel, 320).AttachTo(anchor, ui.AnchorTopLeft, ui.AnchorBottomLeft).Margin(0, 0, 6, 0)
+			// 每组最多画 maxRows 条(排序是运行中在前、再按开始时间倒序,所以是最新的),其余折成一行提示:
+			// 历史会话里常有几十上百条已结束的后台任务,全展开会撑出一整屏、盖住输入框(此前没有高度上限也不滚动)。
+			const maxRows = 8
 			draw := func(cap string, list []*core.BackgroundTask) {
 				if len(list) == 0 {
 					return
 				}
 				kit.Cap(c, cap)
-				for _, tk := range list {
+				for i, tk := range list {
+					if i >= maxRows {
+						ui.Text(c, "还有 "+itoa(len(list)-maxRows)+" 条较早的,未列出").FontSize(theme.FsCap).TextColor(t.Tx4).Margin(2, 8, 4, 8)
+						break
+					}
 					a.taskDockRow(c, tk)
 				}
 			}
-			if key == "all" {
-				for _, g := range []core.TaskDockGroup{core.DockAgent, core.DockShell, core.DockMonitor, core.DockWorkflow, core.DockOther} {
-					draw(g.Label(), groups[g])
+			// 内容放进有高度上限的滚动区:最高 420,窗口矮时再收
+			kit.VScroll(c).Key("tpop-scroll-" + key).MaxHeight(min(420, a.winH-180)).Children(func() {
+				if key == "all" {
+					for _, g := range []core.TaskDockGroup{core.DockAgent, core.DockShell, core.DockMonitor, core.DockWorkflow, core.DockOther} {
+						draw(g.Label(), groups[g])
+					}
+					draw("已结束", groups[core.DockFinished])
+					return
 				}
-				draw("已结束", groups[core.DockFinished])
-				return
-			}
-			for g, list := range groups {
-				draw(g.Label(), list)
-			}
-			_ = t
+				for g, list := range groups {
+					draw(g.Label(), list)
+				}
+			})
 		})
 	})
 }
@@ -131,7 +140,9 @@ func (a *App) taskDockRow(c *ui.Context, tk *core.BackgroundTask) {
 				ui.Text(c, meta).FontSize(theme.FsMicro).TextColor(t.Tx4)
 			}
 		})
-		ui.Text(c, core.FormatElapsed(tk.ElapsedMs(a.st.Now()))).FontSize(theme.FsMicro).TextColor(t.Tx4).FontFeatures("tnum")
+		if el := tk.ElapsedMs(a.st.Now()); el > 0 { // 0 = 时长未知(没有开始 / 结束时间),不显示
+			ui.Text(c, core.FormatElapsed(el)).FontSize(theme.FsMicro).TextColor(t.Tx4).FontFeatures("tnum")
+		}
 		if tk.Status == core.TaskRunning {
 			kit.Ib(c, "stop", kit.IbOpt{Small: true, Tip: "停止"}).OnClick(func() {
 				a.send(core.CmdStopTask{TaskID: tk.TaskID})

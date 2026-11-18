@@ -47,6 +47,7 @@ func (a *App) popPanel(panel ui.Element, w float32) ui.Element {
 	for _, s := range t.Shadow2() {
 		panel.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
+	kit.Float(panel) // 流光:所有弹出菜单 / 弹层统一是玻璃
 	return a.popIn(panel)
 }
 
