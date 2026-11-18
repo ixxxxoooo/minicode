@@ -27,6 +27,12 @@ const (
 // 约 0.35 = 更通透(导航栏、工作区)。系统「降低透明度」时插件自己退成不透明的表面色。
 func GlassMat(clarity float32) ui.Material { return glass.Glass{Clarity: clarity} }
 
+// GlassPane 是带暖色深浅的面板玻璃:tint 取自 Tokens.Tone() 的 SideTint / WsTint。
+// 壁纸是纯色,面板背后没有内容可透,层次只能靠这层染色(侧栏最深、工作区居中、对话栏最亮)。
+func GlassPane(clarity float32, tint ui.Color) ui.Material {
+	return glass.Glass{Clarity: clarity, Tint: tint}
+}
+
 // Float 把浮在最上层的面板(命令面板、对话框、弹层、抽屉)画成玻璃,覆盖它原来的底色;阴影由 Shadow2 / Shadow3 在玻璃主题下自动换成玻璃岛阴影。
 // 非玻璃主题原样返回。调用方在设好圆角、描边、阴影之后调用即可。
 func Float(el ui.Element) ui.Element {

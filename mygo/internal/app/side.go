@@ -86,7 +86,7 @@ func (a *App) side(c *ui.Context) {
 		if t.Glass() {
 			// 流光:导航栏是一块玻璃(方案 B 是带阴影的圆角岛,右侧留出面板间隙;A / C 与舞台相接,只留细线)
 			gap := t.Scheme.GapPane
-			inner.Material(kit.GlassMat(kit.ClaritySidebar)).Width(max(0, w-gap))
+			inner.Material(kit.GlassPane(kit.ClaritySidebar, t.Tone().SideTint)).Width(max(0, w-gap))
 			if t.Scheme.ID == "b" {
 				inner.Radius(t.RLg())
 				kit.GlassRim(inner)

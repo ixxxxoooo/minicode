@@ -87,9 +87,6 @@ func Seg(c *ui.Context, items []SegItem, on int, o ...SegOpt) int {
 	n := float32(len(items))
 	clicked := -1
 	root := ui.Row(c).Radius(T.RMd()).Background(T.Fill2).Padding(2).Shrink(0)
-	if T.Glass() {
-		root.Material(GlassMat(0)) // 流光:分段槽是一小块真玻璃
-	}
 	if op.Fill {
 		root.Grow(1)
 	}
@@ -103,7 +100,7 @@ func Seg(c *ui.Context, items []SegItem, on int, o ...SegOpt) int {
 			inner.Grow(1)
 		}
 		inner.Children(func() {
-			th := ui.Box(c).Absolute().ZIndex(0).Top(0).Bottom(0).WidthPercent(100 / n).Radius(T.RMd() - 2).Background(SelBG())
+			th := ui.Box(c).Absolute().ZIndex(0).Top(0).Bottom(0).WidthPercent(100 / n).Radius(T.RMd() - 2).Background(T.Raised) // 实色抬起的白块(玻璃主题也一样):槽和滑块都半透明发白会分不出选中项
 			for _, s := range T.Shadow1() {
 				th.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 			}
