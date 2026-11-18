@@ -11,7 +11,7 @@
     ['工作区标签', [['ide-review', 'eye', '审查 · Claude 本轮改动'], ['ws-plan', 'list', '计划'], ['ws-sub', 'bot', '子 Agent 记录'], ['ws-task', 'activity', '任务输出']]],
     ['IDE 细节', [['ide-editor', 'code', '编辑器 · 迷你地图与标尺'], ['ide-nav', 'arrow', '编辑器能力 · 跳转与浮层'], ['ide-search', 'search', '搜索与替换'], ['ide-scm', 'branch', '源代码管理 · 图谱'], ['ide-diff', 'diff', '差异标签 · 块级暂存'], ['ide-merge', 'swap', '合并冲突(三方)'], ['ide-md', 'fileText', 'Markdown · 预览与格式化'], ['ide-git', 'fork', 'Git 工作流清单'], ['ide-problems', 'alert', '问题面板']]],
     ['架构', [['forms', 'swap', '窗口形态(单窗口)'], ['flows', 'link', '交互串联 · 入口矩阵'], ['resp', 'cols', '响应式 · 三档对话栏'], ['ia', 'list', '信息架构 · 功能归位'], ['layout-dock', 'cols', '布局 · 拖拽与面板停靠'], ['scroll-spec', 'scroll', '滚动 · Shift 滚轮与滚动条'], ['term-spec', 'terminal', '终端 · 能力与主题'], ['lsp-spec', 'code', '语言服务 · 识别与安装'], ['artifact-spec', 'canvas', '画布 / 浏览器 / 自定义 · 业界做法'], ['task-spec', 'activity', '会话流 · 待办 / 审批 / 后台任务'], ['proj-ws', 'layers', '项目与工作区 · 添加与组织'], ['multi-git', 'branch', '多仓库 Git'], ['menus', 'cmd', '右键菜单与动作矩阵'], ['drag-more', 'link', '拖拽引用与「···」菜单盘点'], ['gaps', 'alert', '缺口总表']]],
-    ['规范', [['brand-spec', 'palette', '图标与品牌 · 应用 / 托盘'], ['typo-width', 'cols', '排版与宽度 · 字号 / 行距 / 内容宽度'], ['flow', 'chat', '会话流与工具'], ['flow-detail', 'layers', '会话流 · 工具分组与详细程度'], ['flow-queue', 'chat', '会话流 · 排队引导 / 问答卡 / 回到最新'], ['resp-time', 'clock', '会话流 · 响应耗时与等待'], ['flow-compact', 'archive', '会话流 · 压缩上下文卡'], ['sess-live', 'activity', '会话列表 · 运行中与后台保活'], ['overlays', 'layers', '浮层与面板'], ['comps', 'cube', '组件'], ['states', 'hand', '交互状态'], ['tokens', 'palette', '设计令牌'], ['motion', 'activity', '动效'], ['motions-overview', 'spark', '动效总览 · 集中演示']]],
+    ['规范', [['brand-spec', 'palette', '图标与品牌 · 应用 / 托盘'], ['typo-width', 'cols', '排版与宽度 · 字号 / 行距 / 内容宽度'], ['flow', 'chat', '会话流与工具'], ['flow-detail', 'layers', '会话流 · 工具分组与详细程度'], ['flow-queue', 'chat', '会话流 · 排队引导 / 问答卡 / 回到最新'], ['resp-time', 'clock', '会话流 · 响应耗时与等待'], ['flow-compact', 'archive', '会话流 · 压缩上下文卡'], ['sess-live', 'activity', '会话列表 · 运行中与后台保活'], ['overlays', 'layers', '浮层与面板'], ['comps', 'cube', '组件'], ['states', 'hand', '交互状态'], ['tokens', 'palette', '设计令牌'], ['glow-spec', 'spark', '流光主题 · 液态玻璃'],['motion', 'activity', '动效'], ['motions-overview', 'spark', '动效总览 · 集中演示']]],
   ];
   const HINTS = {
     work: ['⌘E 或点标题栏 Agent / IDE:对话栏与工作区交换主位', '会话流里点「审查 / 计划 / 子代理卡 / 文件」:都在工作区开标签', '⌘J 底部面板,⌥⌘B 右侧栏(Agent = 工作区,IDE = 对话)', '点步骤行:展开 / 收起', '点「逐项确认 · Sonnet」:运行配置', '点导航图标:会话 / 文件 / 搜索 / 源代码管理', '点左下齿轮:账号菜单', '右上角「重播回合」:看工具调用的全过程'],
@@ -64,7 +64,7 @@
   };
   /** 按主区可用空间给每个画框算缩放比 */
   const fit = () => { const m = $('#vmain'), w = m.clientWidth, h = m.clientHeight;
-    $$('.fit', m).forEach(f => f.style.setProperty('--s', +st.bare === 1 ? 1 : Math.max(.3, f.closest('.ov-row') ? Math.min(.68, (w - 64 - 328) / 1280) : Math.min(1, (w - 48) / 1280, (h - 96) / 800)))); };
+    $$('.fit', m).forEach(f => f.style.setProperty('--s', +st.bare === 1 ? 1 : Math.max(.3, f.closest('.ov-row') ? Math.min(.68, (w - 64 - 328) / 1280) : f.closest('.gl-wide') ? Math.min(1, f.parentElement.clientWidth / 1280) : Math.min(1, (w - 48) / 1280, (h - 96) / 800)))); };
   const apply = () => { document.body.dataset.theme = st.theme; document.body.dataset.scheme = st.scheme; document.body.classList.toggle('bare', +st.bare === 1); };
   const renderAll = () => { apply(); renderBar(); renderNav(); renderMain(); save(); };
   const go = (page) => { st.page = page; renderNav(); renderMain(); save(); };

@@ -88,6 +88,22 @@
   --c-ok: #5AD1A0; --c-err: #FF6F8B; --c-warn: #F0B657; --c-info: #62B4FF; --c-vio: #C29BFF; --c-cyan: #5CD6E6; --c-pink: #FF86C8;
   --c-shade: 2 3 14; --k-shade: 3.6;
 }
+/* 流光 · 液态玻璃(浅 / 夜):表面色是「玻璃后面的壁纸」的基调,面板本身由 css/glass.css 画成半透明玻璃;
+   --c-base / --c-surface 仍是不透明色,代码块、吸顶卡、降低透明度时都用它们兜底 */
+[data-theme="glow"] {    /* 流光 · 珍珠白 */
+  color-scheme: light;
+  --c-base: #E9EEF8; --c-surface: #F7F9FE; --c-raised: #FFFFFF; --c-sunken: #EDF1F9; --c-ink: #16192B;
+  --c-accent: #2F6BFF; --c-on-accent: #FFFFFF;
+  --c-ok: #1F9D62; --c-err: #D8434B; --c-warn: #B47A14; --c-info: #2F7DD8; --c-vio: #7B58E0; --c-cyan: #0B8FA0; --c-pink: #C2418F;
+  --c-shade: 30 40 90; --k-shade: 1;
+}
+[data-theme="glow-night"] { /* 流光 · 夜 · 靛蓝黑 */
+  color-scheme: dark;
+  --c-base: #0B0E1C; --c-surface: #12162B; --c-raised: #1B2040; --c-sunken: #0D1022; --c-ink: #EAEEFF;
+  --c-accent: #6FA2FF; --c-on-accent: #07142E;
+  --c-ok: #5AD1A0; --c-err: #FF6F8B; --c-warn: #F0B657; --c-info: #62B4FF; --c-vio: #B79BFF; --c-cyan: #5CD6E6; --c-pink: #FF86C8;
+  --c-shade: 2 3 14; --k-shade: 3.6;
+}
 
 /* ───────── ③ 方案令牌:只调倍率,不碰颜色 ───────── */
 [data-scheme="a"] { --r-k: .8; --gap-pane: 0px; --h-row: 24px; }   /* 墨线:细线分隔,最平、最克制 */

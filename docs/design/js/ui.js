@@ -81,6 +81,8 @@
     { id: 'ink', name: '墨夜', sub: '暖黑 · 橙', dark: true },
     { id: 'graphite', name: '石墨', sub: '中性黑 · 钴蓝', dark: true },
     { id: 'aurora', name: '极光', sub: '深蓝 · 堇紫', dark: true },
+    { id: 'glow', name: '流光', sub: '液态玻璃 · 珍珠白 · 蔚蓝', dark: false, glass: true },
+    { id: 'glow-night', name: '流光·夜', sub: '液态玻璃 · 靛蓝黑 · 天青', dark: true, glass: true },
   ];
 
   /* 方案注册表 */
