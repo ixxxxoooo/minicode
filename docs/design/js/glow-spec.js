@@ -23,7 +23,7 @@
 
   /** 三层结构示意:壁纸 → 内容层 → 控件层,逐层叠上去 */
   const stack = (theme) => `<div class="gl-pair3">
-    ${[['① 壁纸层', '静态渐变,整窗只画一次。玻璃的「颜色」都来自它。', ''],
+    ${[['① 壁纸层', '纯色,没有渐变。玻璃的「颜色」都来自它,层次来自面板自己的高光边、阴影和后面滚动的内容。', ''],
       ['② 内容层', '导航、对话、工作区是大块玻璃:更实(厚),文字与代码画在它上面,背后只有壁纸。', '<div class="pane chat" style="position:absolute;inset:18px 18px 18px 18px;border-radius:var(--r-lg);box-shadow:var(--glass-sh)"><div style="padding:14px"><b>会话内容</b><div class="t3 fs-cap" style="margin-top:3px">文字在玻璃之上,不参与模糊</div></div></div>'],
       ['③ 控件层', '输入框、按钮、弹层是小块、更透的玻璃,浮在内容之上;滚动内容会从它们下面穿过。', '<div class="pane chat" style="position:absolute;inset:18px;border-radius:var(--r-lg);box-shadow:var(--glass-sh)"><div style="padding:14px"><b>会话内容</b></div></div><div class="cmp" style="position:absolute;left:34px;right:34px;bottom:30px"><div class="cmp-in" style="min-height:0;padding:7px 12px 0">给 Claude 发消息…</div><div class="cmp-bar"><span class="grow"></span>' + ib('arrow', 'send', '发送') + '</div></div>']]
       .map(([t, d, inner]) => `<div><div class="gl-stk" data-theme="${theme}" data-scheme="b">${inner}</div><div style="padding:8px 2px 0"><b>${t}</b><div class="t3 fs-cap" style="line-height:1.55;margin-top:2px">${d}</div></div></div>`).join('')}</div>`;
@@ -33,8 +33,8 @@
   const tokRow = (v, name, use) => [`<code>${v}</code>`, name, sw(v), use];
 
   P['glow-spec'] = (st) => `<div class="ds" style="max-width:1240px">${head('流光 · 液态玻璃主题', '第七、八套主题,同一份令牌 + 一层独立的材质样式(css/glass.css),不改动其余六套。配色取 Claude 品牌色:浅色「流光」是象牙白壁纸 + 陶土橙强调色,「流光·夜」是暖石板灰壁纸 + 柔和的陶土橙;壁纸不用任何彩色;推荐配方案 B(浮岛),方案 A / C 也成立。点顶栏最右两枚圆点即可整稿切换。')}
-    ${sec('整体 · 浅色「流光」', '壁纸是象牙白底,只在明度上做一点暖沙 / 牛皮纸色的深浅变化,外加一道斜向的高光带(给折射一条明暗边缘),整体淡雅、没有别的色相;面板是浮在壁纸上的玻璃岛,标题栏与状态栏直接坐在壁纸上,只有控件是玻璃。', frame('glow'))}
-    ${sec('整体 · 夜「流光·夜」', '同一套结构。壁纸换成暖石板灰底,只带一点极淡的陶土橙微光;玻璃变成暖褐色半透明,边缘高光变弱,避免发白。', frame('glow-night'))}
+    ${sec('整体 · 浅色「流光」', '壁纸是象牙白纯色,没有渐变;面板是浮在壁纸上的玻璃岛,标题栏与状态栏直接坐在壁纸上,只有控件是玻璃。', frame('glow'))}
+    ${sec('整体 · 夜「流光·夜」', '同一套结构。壁纸换成暖石板灰纯色;玻璃变成暖褐色半透明,边缘高光变弱,避免发白。', frame('glow-night'))}
     ${sec('设计原则 · 三层', '玻璃是「导航与控件」的材质,不是内容的材质。这条决定了好不好看,也决定了性能。', `${stack('glow')}<div style="height:16px"></div>${stack('glow-night')}`)}
     ${sec('材质令牌', '所有玻璃都只读这一组变量;组件规则里没有写死的透明度。色块画在壁纸上,能看出透明度。', tbl([['令牌', 230], ['名称', 90], ['浅 / 夜', 110], ['用途']], [
       tokRow('--glass-1', '常规', '侧栏、工作区面板(导航与工作区更透)'), tokRow('--glass-2', '厚', '对话 / 整页面板、浮层、输入框(文字多,更实)'),
@@ -44,7 +44,7 @@
       ['<code>--glass-sheen</code>', '顶部光泽', '26% 高度的白色渐变', '让玻璃有「厚度」,不是平的半透明'],
       ['<code>--glass-sh / --glass-sh-s</code>', '悬浮阴影', '大 / 小两档', '只在方案 B 的面板上出现;A / C 面板相接,只留细线'],
       ['<code>--ac-glow</code>', '强调光晕', '强调色 70% / 55%', '主要按钮与发送键下方的一圈光,是页面里唯一的「发光」'],
-      ['<code>--wall</code>', '壁纸', '5 团径向色晕 + 斜向高光带 + 底色', '低饱和、静态;不做漂移动画(见性能)']]))}
+      ['<code>--wall</code>', '壁纸', '纯色(= --c-base)', '没有渐变、没有色晕;静态']]))}
     ${sec('材质样本', '同一组控件分别落在浅色与夜色壁纸上。注意:主要按钮是着色玻璃(强调色几乎不透明,只透出一点);强调色用 Claude 的陶土橙(浅 #BD5A36,由品牌色 #D97757 压深一档让白字够对比;夜 #E8967A),整套保持淡雅。', `<div class="gl-pair">${specimens('glow')}${specimens('glow-night')}</div>`)}
     ${sec('交互状态', '沿用现有时长与曲线,只加了玻璃自己的反馈。', tbl([['状态', 90], ['表现'], ['时长', 110]], [
       ['悬停', '薄玻璃升为「选中」玻璃(更亮);主要按钮亮度 +6%', '120 ms'], ['按下', '整体缩到 0.96;Go 版交互玻璃按 AppKit 的做法左右各胀约 1.1 DIP', '80 ms'],
@@ -52,7 +52,7 @@
       ['禁用', '整体 45% 不透明度,高光与光晕一并去掉', '—'], ['出现 / 退场', '弹层从触发点轻微放大淡入;模糊在动画结束后才完全到位,避免第一帧发白', '180 / 120 ms']]))}
     ${sec('降低透明度(系统辅助功能)', '系统开了「降低透明度」或「增强对比度」,整套玻璃令牌换成不透明兜底:同一组变量,组件规则一行不改。左:正常;右:降级后。', `<div class="gl-pair">${specimens('glow')}${specimens('glow', 'no-glass')}</div>`)}
     ${sec('性能预算(按源码推断,待实测)', 'MyGo 的玻璃在 Metal 着色器里画:抓取背后画面 → 高斯模糊 → 折射着色。成本跟「玻璃面积」成正比,而且玻璃背后只要有东西在变,它就要重算(damage.go 会把玻璃背后的采样区并进重绘范围)。', tbl([['区域', 150], ['材质', 90], ['背后会变吗', 150], ['成本', 70], ['策略']], [
-      ['壁纸', '静态渐变', '不会', '低', '不做漂移动画;Go 版画成一张缓存位图'],
+      ['壁纸', '纯色', '不会', '无', '就是窗口底色,不需要额外绘制'],
       ['侧栏 / 对话 / 工作区', '常规 · 厚', '不会:文字画在玻璃之上,背后只有壁纸', '中', '面板互不重叠、背后只放壁纸 → 流式输出和终端刷新不会触发它们重新模糊'],
       ['输入框(浮在会话流上)', '厚', '会:会话流滚到它下面', '中', '面积小(约 700×110),可接受;滚动时不降级'],
       ['标题栏 / 按钮 / 分段', '薄', '不会', '低', '模糊半径固定 12–16px'],
@@ -62,7 +62,7 @@
       ['面板 · 厚 / 常规', '<code>.Material(glass.Glass{Style: glass.Regular, Clarity: 0 … 0.3})</code>', '大面板自带更强的磨砂;导航与工作区用较大的 Clarity,更通透'],
       ['按钮 / 控件 · 薄', '<code>glass.Glass{Interactive: true}</code>', '按下微胀、悬停亮边,与设计稿交互一致'],
       ['主要按钮', '<code>glass.Glass{Tint: accent}</code> 或实色渐变', '先试 Tint;不够压得住就用实色渐变 + 高光'],
-      ['壁纸', '<code>ui.Canvas</code> 画一次缓存,或 <code>shader</code> 径向渐变', '玻璃采样的就是它'],
+      ['壁纸', '根元素 <code>Background(t.Chrome)</code>', '纯色,玻璃采样的就是它'],
       ['降低透明度', '<code>p.Preferences().ReduceTransparency</code>', '插件自己会降级;令牌层同时换成不透明色板'],
       ['色板', '<code>theme.Palettes</code> 增加 glow / glow-night', 'Palette 只有 13 个颜色;玻璃的透明度由插件决定,所以设计稿的 --glass-* 数值只作视觉参照,落地时对着实测截图微调']]))}
     <p class="t3">CSS 的 backdrop-filter 做不出边缘透镜折射,所以设计稿里的玻璃比 Go 版少一层「弯曲」;其余(磨砂、饱和、高光边、顶部光泽、悬浮阴影)是同一套。</p></div>`;

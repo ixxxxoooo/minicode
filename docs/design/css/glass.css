@@ -19,11 +19,8 @@
   --glass-sh: 0 14px 36px -12px rgb(var(--c-shade) / .24), 0 2px 8px rgb(var(--c-shade) / .07);
   --glass-sh-s: 0 6px 16px -8px rgb(var(--c-shade) / .22), 0 1px 3px rgb(var(--c-shade) / .08);
   --ac-glow: 0 8px 18px -6px color-mix(in srgb, var(--c-accent) 70%, transparent);
-  /* 壁纸:Claude 的象牙白底,只在明度上做一点暖沙 / 牛皮纸色的深浅变化(没有别的色相),再压一道斜向高光带——折射要有明暗边缘才看得出来 */
-  --wall: linear-gradient(118deg, transparent 34%, rgb(255 255 255 / .6) 50%, transparent 66%),
-    radial-gradient(52% 58% at 10% 8%, #F1E3D6 0%, transparent 64%), radial-gradient(46% 52% at 94% 10%, #EFE6DA 0%, transparent 64%),
-    radial-gradient(60% 62% at 80% 100%, #EBDDCF 0%, transparent 62%), radial-gradient(44% 50% at 4% 96%, #F3E7DC 0%, transparent 64%),
-    linear-gradient(180deg, #FAF9F5, #EFEBE3);
+  /* 壁纸:纯色,没有任何渐变(象牙底色 = --c-base);玻璃的层次来自面板自己的高光边、阴影和下面滚动的内容 */
+  --wall: var(--c-base);
 }
 /* ───────── 令牌:夜 ───────── */
 [data-theme="glow-night"] {
@@ -33,10 +30,7 @@
   --glass-sheen: linear-gradient(180deg, rgb(255 236 222 / .14), rgb(255 236 222 / 0) 26%);
   --glass-rim: rgb(255 240 230 / .30); --glass-rim-lo: rgb(255 240 230 / .09); --glass-hi: rgb(255 244 236 / .34);
   --ac-glow: 0 8px 20px -6px color-mix(in srgb, var(--c-accent) 55%, transparent);
-  --wall: linear-gradient(118deg, transparent 36%, rgb(255 236 222 / .06) 50%, transparent 64%),
-    radial-gradient(52% 58% at 10% 8%, rgb(217 119 87 / .16) 0%, transparent 64%), radial-gradient(46% 52% at 94% 10%, rgb(150 120 100 / .14) 0%, transparent 64%),
-    radial-gradient(60% 62% at 80% 100%, rgb(217 119 87 / .10) 0%, transparent 62%), radial-gradient(44% 50% at 4% 96%, rgb(120 100 88 / .16) 0%, transparent 64%),
-    linear-gradient(180deg, #1B1917, #11100F);
+  --wall: var(--c-base);   /* 纯色,同浅色 */
 }
 /* ───────── 降低透明度:同一组令牌换成不透明兜底(系统「降低透明度」或 .no-glass 手动演示) ───────── */
 [data-theme^="glow"].no-glass, [data-theme^="glow"] .no-glass { --glass-blur: 0px; --glass-sat: 1; --glass-1: var(--c-surface); --glass-2: var(--c-surface); --glass-3: var(--c-sunken);

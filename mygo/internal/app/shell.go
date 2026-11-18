@@ -13,10 +13,7 @@ func (a *App) t() *theme.Tokens { return a.tk }
 func (a *App) root(c *ui.Context) {
 	t := a.tk
 	root := ui.Column(c).Fill().FontSize(theme.FsBody).TextColor(t.Tx1)
-	if t.Glass() {
-		// 流光:壁纸(静态渐变),面板玻璃抓取的就是它
-		a.glassWall(root)
-	} else if t.Scheme.ID == "b" {
+	if t.Scheme.ID == "b" && !t.Glass() { // 流光的壁纸是纯色(底色 t.Chrome),不要光晕
 		// 方案 B:底色带一抹强调色光晕(径向渐变)
 		root.Background(t.Chrome)
 		root.RadialGradient(ui.RadialGradient{
