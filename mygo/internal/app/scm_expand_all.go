@@ -47,11 +47,22 @@ func (a *App) scmExpandAllView(c *ui.Context) {
 		a.sc.folded = map[string]bool{}
 	}
 	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
+		open := !a.sc.folded["repos"]
 		ui.Row(c).Height(theme.Px(24)).PaddingX(4).Gap(2).AlignItems(ui.Center).Shrink(0).Children(func() {
-			ui.Text(c, "仓库").Grow(1).FontSize(theme.FsMicro).FontWeight(500).TextColor(t.Tx3)
-			ui.Text(c, "全部展开").FontSize(theme.FsMicro).TextColor(t.Ac).Shrink(0)
+			tog := ui.ButtonBase(c).Key("scm-h-repos").Grow(1).Height(theme.Px(24)).Justify(ui.Start).Gap(4).AlignItems(ui.Center).
+				TextColor(t.Tx3).Cursor(ui.CursorPointer).Tooltip(map[bool]string{true: "收起仓库", false: "展开仓库"}[open])
+			tog.OnClick(func() { a.sc.folded["repos"] = !open })
+			tog.Children(func() { // 与普通模式的「仓库」标题同款
+				kit.Ic(c, map[bool]string{true: "chevD", false: "chevR"}[open], kit.S12)
+				ui.Text(c, "仓库").FontSize(theme.Px(10.5)).FontWeight(500).LetterSpacing(.3)
+				kit.Cnt(c, itoa(len(a.repos)), false)
+			})
+			kit.Tag(c, "全部展开", kit.KAc)
 			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多"}).Menu(a.repoOverviewMenu)
 		})
+		if !open {
+			return
+		}
 		kit.VScroll(c).Key("scm-expand").Grow(1).MinHeight(0).Children(func() {
 			ui.Column(c).Padding(0, 0, 8, 0).Gap(10).Children(func() {
 				for _, i := range a.repoOrder() {

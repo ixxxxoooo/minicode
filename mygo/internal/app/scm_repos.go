@@ -22,13 +22,13 @@ func (a *App) repoOverview(c *ui.Context) {
 	ui.Column(c).Shrink(0).Padding(0, 0, 4, 0).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Margin(0, 0, 6, 0).Children(func() {
 		ui.Row(c).Height(theme.Px(24)).PaddingX(4).Gap(2).AlignItems(ui.Center).Children(func() {
 			tog := ui.ButtonBase(c).Key("scm-h-repos").Grow(1).Height(theme.Px(24)).Justify(ui.Start).Gap(4).AlignItems(ui.Center).
-				TextColor(t.Tx3).FontSize(theme.FsMicro).FontWeight(500).Cursor(ui.CursorPointer).Tooltip(map[bool]string{true: "收起仓库", false: "展开仓库"}[open])
+				TextColor(t.Tx3).Cursor(ui.CursorPointer).Tooltip(map[bool]string{true: "收起仓库", false: "展开仓库"}[open])
 			tog.OnClick(func() { a.sc.folded["repos"] = !open })
-			tog.Children(func() {
+			tog.Children(func() { // 与「暂存的更改」等分组标题同款:箭头 + 10.5 号字 + 计数徽标
 				kit.Ic(c, map[bool]string{true: "chevD", false: "chevR"}[open], kit.S12)
-				ui.Text(c, "仓库")
+				ui.Text(c, "仓库").FontSize(theme.Px(10.5)).FontWeight(500).LetterSpacing(.3)
+				kit.Cnt(c, itoa(len(a.repos)), false)
 			})
-			ui.Text(c, itoa(len(a.repos))).FontSize(theme.FsMicro).TextColor(t.Tx4).Margin(0, 4, 0, 0)
 			if a.scmExpandAll() {
 				kit.Tag(c, "全部展开", kit.KAc)
 			}
@@ -46,6 +46,20 @@ func (a *App) repoOverview(c *ui.Context) {
 	})
 }
 
+// repoLink 是仓库行右侧的轻量文字动作(初始化仓库 / 重试):与行内文字同一字号、固定 20px 高,
+// 不像小号按钮那样比行还高;悬停只加浅底。
+// 参数 key:控件标识;text:文字;fn:点击回调。
+func (a *App) repoLink(c *ui.Context, key, text string, fn func()) {
+	t := a.tk
+	b := ui.ButtonBase(c).Key(key).Height(20).PaddingX(6).Radius(t.RSm()).AlignItems(ui.Center).Cursor(ui.CursorPointer).
+		FontSize(theme.FsCap).TextColor(t.AcTx).Shrink(0)
+	if b.Hovered() {
+		b.Background(t.Fill2)
+	}
+	b.OnClick(fn)
+	b.Children(func() { ui.Text(c, text).SingleLine() })
+}
+
 // repoRows 画仓库总览里的各仓库行(嵌套仓库紧跟在父文件夹后面,缩进显示)。
 func (a *App) repoRows(c *ui.Context) {
 	t := a.tk
@@ -57,7 +71,7 @@ func (a *App) repoRows(c *ui.Context) {
 				indent = 16
 			}
 			if e.repo == nil && e.checked {
-				r := kit.RowEl(c, false).Key("repo-"+itoa(i)).Height(theme.Px(24)).Gap(6).TextColor(t.Tx3).Margin(0, 0, 0, indent)
+				r := kit.RowEl(c, false).Key("repo-"+itoa(i)).Height(theme.Px(scmRepoRowH)).PaddingX(4).Gap(6).TextColor(t.Tx3).Margin(0, 0, 0, indent)
 				on := i == a.repoAct
 				if on {
 					r.Background(t.Fill1)
@@ -67,20 +81,20 @@ func (a *App) repoRows(c *ui.Context) {
 				r.Children(func() {
 					kit.Ic(c, "folder", kit.S12)
 					ui.Text(c, e.name).Grow(1).SingleLine()
-					kit.Btn(c, "初始化仓库", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() { a.initRepo(i) })
+					a.repoLink(c, "repo-init-"+itoa(i), "初始化仓库", func() { a.initRepo(i) })
 				})
 				continue
 			}
 			br, ah, bh, n := a.repoSummary(i)
 			conf, staged := a.repoFlags(i)
-			r := kit.RowEl(c, i == a.repoAct).Key("repo-"+itoa(i)).Height(theme.Px(scmRepoRowH)).Gap(6).Margin(0, 0, 0, indent)
+			r := kit.RowEl(c, i == a.repoAct).Key("repo-"+itoa(i)).Height(theme.Px(scmRepoRowH)).PaddingX(4).Gap(6).Margin(0, 0, 0, indent)
 			hov := r.Hovered()
 			r.OnClick(func() { a.setActiveRepo(i) })
 			r.ContextMenu(func(m *ui.Menu) { a.repoRowMenu(m, i) })
 			r.Children(func() {
 				kit.Ic(c, "branch", kit.S12).TextColor(t.Tx3)
 				ui.Row(c).Grow(1).MinWidth(0).Gap(6).AlignItems(ui.Center).Children(func() {
-					ui.Text(c, e.name).FontWeight(500).SingleLine().Shrink(0)
+					ui.Text(c, e.name).SingleLine().Shrink(0) // 字重由行决定:活动仓库加粗,其余常规
 					ui.Text(c, br).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Shrink(1).MinWidth(0)
 					if e.kind != "" {
 						kit.Tag(c, e.kind)
@@ -91,7 +105,7 @@ func (a *App) repoRows(c *ui.Context) {
 					kit.Spin(c, t.Ac)
 				case e.opErr != "": // 失败:一键重试,不影响其它仓库
 					ui.Text(c, "失败").FontSize(theme.FsMicro).TextColor(t.Err).Shrink(0).Tooltip(e.opErr)
-					kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() { a.repoRetry(i) })
+					a.repoLink(c, "repo-retry-"+itoa(i), "重试", func() { a.repoRetry(i) })
 				case hov: // 悬停:这一行仓库自己的动作(与是否活动仓库无关)
 					kit.Ib(c, "download", kit.IbOpt{Small: true, Tip: "拉取 " + e.name}).OnClick(func() { a.repoSync(i, true, false) })
 					kit.Ib(c, "sync", kit.IbOpt{Small: true, Tip: "同步 " + e.name}).OnClick(func() { a.repoSync(i, true, true) })

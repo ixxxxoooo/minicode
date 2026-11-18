@@ -374,8 +374,9 @@ func (a *App) scmCommitRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow,
 	if !open {
 		return
 	}
-	ui.Row(c).Children(func() {
-		a.graphGapCell(c, gr, gw+6, t) // 展开的详情夹在两行提交之间:泳道用虚线接上,不断开
+	// 内边距 2、间距 4 与上面提交行(PaddingX(2).Gap(4))完全一致,虚线格与泳道格才横向严格对齐
+	ui.Row(c).PaddingX(2).Gap(4).Children(func() {
+		a.graphGapCell(c, gr, gw, t) // 展开的详情夹在两行提交之间:泳道用虚线接上,不断开
 		ui.Column(c).Grow(1).MinWidth(0).Gap(0).Children(func() {
 			a.scmCommitDetail(c, cm)
 		})
