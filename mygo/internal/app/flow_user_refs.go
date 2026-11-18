@@ -7,15 +7,30 @@ import (
 	"unicode"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/kit"
 )
 
-// userRefChip 用户消息里的 @ 文件引用胶囊(设计稿 flow.css .ref)。
+// userRefChip 用户消息里的 @ 文件引用胶囊:和输入框里的胶囊(composer_pill.go)同一个样子——
+// Fill2 底 + Bd2 描边 + 5 圆角 + 类型图标 + 名称(Tx1),跟着当前主题配色走;文件夹用文件夹图标。
 func (a *App) userRefChip(c *ui.Context, path string) {
 	t := a.tk
-	name := baseName(path)
-	ui.Row(c).Height(19).PaddingX(6).Gap(4).Radius(t.RXs()).Background(t.InfoSoft).AlignItems(ui.Center).Shrink(0).Children(func() {
-		a.fileIc(c, name)
-		ui.Text(c, name).FontSize(a.FlowCapFont()).TextColor(t.Info).SingleLine()
+	kind := atomFile
+	if strings.HasSuffix(path, "/") {
+		kind = atomDir
+	}
+	label, icon, name := pillLabel(kind, path)
+	fs := a.FlowFontSize() * 0.92
+	label = clipMiddle(label, pillMaxText, func(s string) float32 {
+		w, _ := c.MeasureText(0, ui.Span{Text: s, Size: fs})
+		return w
+	})
+	ui.Row(c).Height(a.FlowFontSize()*1.4).PaddingX(6).Gap(4).Radius(5).Background(t.Fill2).Border(1, t.Bd2).AlignItems(ui.Center).Shrink(0).Children(func() {
+		if icon == "folder" {
+			kit.Ic(c, "folder", kit.S12).TextColor(t.Tx3)
+		} else {
+			a.fileIc(c, name)
+		}
+		ui.Text(c, label).FontSize(fs).TextColor(t.Tx1).SingleLine()
 	})
 }
 

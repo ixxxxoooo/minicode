@@ -6,7 +6,7 @@
 
 /* 用户消息 */
 .msg-u { background: var(--bg-raised); box-shadow: var(--sh-1); border-radius: var(--r-md); padding: 8px 12px; font-size: var(--fs-read); line-height: var(--lh-read); }
-.ref { display: inline-flex; align-items: center; gap: 4px; height: 19px; padding: 0 6px; margin: 0 1px; border-radius: var(--r-xs); background: var(--info-soft); color: var(--info); font-size: var(--fs-ctl); vertical-align: 1px; }
+.ref { display: inline-flex; align-items: center; gap: 4px; height: 19px; padding: 0 6px; margin: 0 1px; border-radius: 5px; background: var(--fill-2); border: 1px solid var(--bd-2); color: var(--tx-1); font-size: var(--fs-ctl); vertical-align: 1px; } /* 与输入框里的文件胶囊同一个样子,跟随主题配色 */
 
 /* 步骤行:图标 + 动词 + 对象 + 附注 ……右侧结果 */
 .acts-g { display: flex; flex-direction: column; gap: 1px; position: relative; }
