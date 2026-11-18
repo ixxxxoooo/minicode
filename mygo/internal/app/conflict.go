@@ -306,7 +306,7 @@ func (a *App) conflictView(c *ui.Context, tb *ideTab) {
 func (a *App) conflictCard(c *ui.Context, s *confState, g confSeg, k int, narrow bool) {
 	t := a.tk
 	ch := s.choice[k]
-	ui.Column(c).Key("cf-"+itoa(k)).Radius(t.RMd()).Border(1, t.Bd2).Background(t.Raised).Children(func() {
+	ui.Column(c).Key("cf-"+itoa(k)).Radius(t.RMd()).Border(1, t.Bd2).Background(t.Raised).Clip().Children(func() {
 		ui.Row(c).Height(theme.Px(30)).PaddingX(10).Gap(8).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
 			ui.Text(c, "冲突 "+itoa(k+1)).FontWeight(600)
 			ui.Text(c, "第 "+itoa(g.line)+" 行").FontSize(theme.FsCap).TextColor(t.Tx4)

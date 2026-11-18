@@ -121,7 +121,10 @@ func (a *App) wsEmpty(c *ui.Context) {
 	group := func(title string, rows []wsRow, none string) {
 		ui.Column(c).Gap(5).AlignItems(ui.Stretch).Children(func() {
 			ui.Text(c, title).FontSize(theme.Px(10.5)).FontWeight(500).LetterSpacing(.3).TextColor(t.Tx3).Margin(0, 0, 0, 4)
-			ui.Column(c).Radius(t.RMd()).Background(t.Raised).Border(1, t.Bd1).AlignItems(ui.Stretch).Children(func() {
+			// Clip:行悬停时的底色贴着卡片边缘,不裁剪就会盖到圆角外面;Lift:流光下卡片是浮起的(软阴影 + 内高光)
+			card := ui.Column(c).Radius(t.RMd()).Background(t.Raised).Border(1, t.Bd1).AlignItems(ui.Stretch).Clip()
+			kit.Lift(card)
+			card.Children(func() {
 				if len(rows) == 0 {
 					ui.Text(c, none).FontSize(theme.FsCap).TextColor(t.Tx3).Padding(10, 12)
 					return

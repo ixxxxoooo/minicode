@@ -425,10 +425,11 @@ func (a *App) settingsGroup(c *ui.Context, g setGroup, index int) {
 		if g.title != "" {
 			ui.Text(c, g.title).FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3).LetterSpacing(.2).Padding(0, 4)
 		}
-		card := ui.Column(c).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd1)
+		card := ui.Column(c).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd1).Clip() // Clip:分组里的预览 / 自定义块会贴边,不裁剪会盖到圆角外
 		for _, s := range t.Shadow1() {
 			card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
+		kit.GlassHi(card)
 		card.Children(func() {
 			// 同一分组既有行又有自定义块时,先画行再画块(原先有块就丢掉了行)。
 			first := true
@@ -670,7 +671,7 @@ func (a *App) settingsSearchView(c *ui.Context, q string) {
 				kit.Ic(c, tab.icon, kit.S12)
 				ui.Text(c, tab.title).FontSize(theme.FsCap).FontWeight(500)
 			})
-			ui.Column(c).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd1).Children(func() {
+			ui.Column(c).Background(t.Raised).Radius(t.RMd()).Border(1, t.Bd1).Clip().Children(func() {
 				for i, h := range by[id] {
 					h := h
 					r := ui.ButtonBase(c).Key("hit-"+id+itoa(i)).MinHeight(38).Padding(6, 12).Gap(12).AlignItems(ui.Center).Cursor(ui.CursorPointer).Transition(kit.Fade)
