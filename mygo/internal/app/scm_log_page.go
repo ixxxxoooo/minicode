@@ -71,19 +71,17 @@ func (a *App) scmLoadMore() {
 	a.scmRefresh()
 }
 
-// scmLogWatch 在列表建好后调用:可见区末尾离列表末尾(含状态行)不足 scmLogPrefetch 行就预取下一页。
-// 参数 st:图谱列表的状态;n:提交条数(不含状态行)。
-// 还没布局(Visible 给出 last<first)、上一次失败(等用户点重试,避免失败后每帧重试)时不触发。
-func (a *App) scmLogWatch(st *ui.ListState, n int) {
+// scmLogBind 给图谱列表接上懒加载,在每次构建列表前调用。参数 st:图谱列表的状态。
+//   - 用户滚动使可见行进入末尾 scmLogPrefetch 行内:mygo 的 ListState.EndReached 回调一次(v0.10 起),
+//     在回调里读下一页;不再每帧自己读 Visible() 判断。
+//   - 兜底:列表整体装得下(搜索时匹配很少、一屏都填不满)用户滚不动,EndReached 不会触发,
+//     此时列表已显示到末尾(AtEnd),就继续往更早的历史里找,直到填满一屏或读完。
+//     上一次失败时不兜底(等用户点「重试」,避免失败后每帧重试)。
+func (a *App) scmLogBind(st *ui.ListState) {
+	st.NearEnd = scmLogPrefetch
+	st.EndReached = func(int) { a.scmLoadMore() }
 	s := &a.sc
-	if !s.logMore || s.logPaging || s.logErr != "" {
-		return
-	}
-	first, last := st.Visible()
-	if last < first {
-		return
-	}
-	if last >= n-scmLogPrefetch {
+	if s.logMore && !s.logPaging && s.logErr == "" && st.AtEnd() {
 		a.scmLoadMore()
 	}
 }

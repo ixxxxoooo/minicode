@@ -105,6 +105,7 @@ func (a *App) scmGraphList(c *ui.Context, viewH float32) {
 		}
 		return "scm-log-foot"
 	}
+	a.scmLogBind(&s.sideList) // 滚到末尾附近预取下一页
 	list := ui.List(c, &s.sideList, n+1, func(i int) {
 		if i >= len(s.log) || i >= len(s.rows) {
 			a.scmLogFooter(c, "")
@@ -120,5 +121,4 @@ func (a *App) scmGraphList(c *ui.Context, viewH float32) {
 		a.navDropAt = saveAt
 	}).Grow(1).MinHeight(0).TrackScroll(&s.sideSt)
 	kit.ApplyNativeScroll(list, "scm-graph", &s.sideSt, false, true)
-	a.scmLogWatch(&s.sideList, n)
 }

@@ -11,38 +11,48 @@ import (
 var eolLog = diag.L("ide-eol")
 
 // 行尾序列(设计稿 ide-nav 三区清单「状态栏 · 编码 / 行尾」)。
-// 编辑器缓冲区一律把 \r\n 归一成 \n;文件原来是 CRLF 的,保存时要还原,
-// 否则「打开 → 保存」会悄悄把整个文件改成 LF(Git 里表现为每一行都变了)。
+// 编辑器缓冲区一律把 \r\n 和孤立的 \r 归一成 \n(mygo v0.10 起,v0.9 只处理 \r\n);
+// 文件原来是 CRLF / CR 的,保存时要还原,否则「打开 → 保存」会悄悄把整个文件改成 LF
+// (Git 里表现为每一行都变了)。
 const (
 	eolLF   = "\n"
 	eolCRLF = "\r\n"
+	eolCR   = "\r" // 经典 Mac 行尾,很少见
 )
 
-// detectEOL 取文件里占多数的行尾;没有换行 = LF。
+// detectEOL 取文件里占多数的行尾(CRLF 与 LF 数量相同时算 CRLF,与之前一致);没有换行 = LF。
 func detectEOL(src string) string {
 	crlf := strings.Count(src, "\r\n")
-	if crlf > 0 && crlf*2 >= strings.Count(src, "\n") {
+	lf := strings.Count(src, "\n") - crlf // 单独的 \n
+	cr := strings.Count(src, "\r") - crlf // 单独的 \r
+	switch {
+	case crlf > 0 && crlf >= lf && crlf >= cr:
 		return eolCRLF
+	case cr > lf && cr > crlf:
+		return eolCR
 	}
 	return eolLF
 }
 
-// normEOL 与缓冲区一致:只有 \r\n 变成 \n(库不处理孤立的 \r,这里也不动)。
+// normEOL 与缓冲区一致:\r\n 与孤立的 \r 都变成 \n。
 func normEOL(s string) string {
-	return strings.ReplaceAll(s, "\r\n", "\n")
+	return strings.ReplaceAll(strings.ReplaceAll(s, "\r\n", "\n"), "\r", "\n")
 }
 
 // withEOL 把已归一的文本写成目标行尾。
 func withEOL(s, eol string) string {
-	if eol != eolCRLF {
+	if eol != eolCRLF && eol != eolCR {
 		return s
 	}
-	return strings.ReplaceAll(s, "\n", eolCRLF)
+	return strings.ReplaceAll(s, "\n", eol)
 }
 
 func eolLabel(eol string) string {
-	if eol == eolCRLF {
+	switch eol {
+	case eolCRLF:
 		return "CRLF"
+	case eolCR:
+		return "CR"
 	}
 	return "LF"
 }
@@ -55,7 +65,7 @@ func (a *App) eolMenu(m *ui.Menu) {
 		return
 	}
 	ro := tb.st != nil && tb.st.ReadOnly
-	for _, o := range []struct{ label, eol string }{{"LF(\\n,macOS / Linux)", eolLF}, {"CRLF(\\r\\n,Windows)", eolCRLF}} {
+	for _, o := range []struct{ label, eol string }{{"LF(\\n,macOS / Linux)", eolLF}, {"CRLF(\\r\\n,Windows)", eolCRLF}, {"CR(\\r,经典 Mac)", eolCR}} {
 		it := menuItem(m, o.label).Radio(tb.eolNow() == o.eol)
 		if ro {
 			it.Disabled(true).Tooltip("只读文件不能改行尾")

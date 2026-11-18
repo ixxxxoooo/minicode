@@ -17,8 +17,11 @@ func TestDetectAndApplyEOL(t *testing.T) {
 	if withEOL("a\nb\n", eolCRLF) != "a\r\nb\r\n" || withEOL("a\nb\n", eolLF) != "a\nb\n" {
 		t.Fatal("withEOL 转换错误")
 	}
-	if normEOL("a\r\nb\rc\n") != "a\nb\rc\n" {
-		t.Fatal("normEOL 只应处理 \\r\\n")
+	if normEOL("a\r\nb\rc\n") != "a\nb\nc\n" {
+		t.Fatal("normEOL 应把 \\r\\n 和孤立的 \\r 都归一成 \\n(mygo v0.10 起编辑器缓冲区如此)")
+	}
+	if detectEOL("a\rb\rc\r") != eolCR || withEOL("a\nb\n", eolCR) != "a\rb\r" || eolLabel(eolCR) != "CR" {
+		t.Fatal("纯 \\r 换行的文件应识别为 CR,保存时还原成 \\r")
 	}
 	// 与编辑器缓冲区的归一口径一致,否则 dirty 判断会错
 	for _, s := range []string{"a\r\nb\r\n", "a\rb", "x\n"} {

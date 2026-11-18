@@ -163,6 +163,7 @@ func (a *App) graphView(c *ui.Context) {
 		}
 		return "scm-log-foot"
 	}
+	a.scmLogBind(&s.graphList) // 滚到末尾附近预取下一页;搜索时匹配少、一屏填不满也会继续往更早的历史里找
 	list := ui.List(c, &s.graphList, n+1, func(k int) {
 		if k >= n || row(k) >= len(s.rows) {
 			a.scmLogFooter(c, a.graphFootNote(filtered, n))
@@ -176,8 +177,6 @@ func (a *App) graphView(c *ui.Context) {
 		a.graphBigRow(c, i, s.log[i], gr, gw, true)
 	}).Grow(1).MinHeight(0).TrackScroll(&s.graphSt)
 	kit.ApplyNativeScroll(list, "graph-scroll", &s.graphSt, false, true)
-	// 搜索时匹配少、一屏装不下之前就继续往更早的历史里找(与滚动预取同一套逻辑)
-	a.scmLogWatch(&s.graphList, n)
 	a.graphDetail(c)
 }
 
