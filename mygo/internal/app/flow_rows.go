@@ -1,6 +1,7 @@
 package app
 
 import (
+	"strings"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -162,7 +163,11 @@ func (a *App) addItemRows(add func(flowRow), it core.Item) {
 // flowTailVisible 这类条目在会话流里会画出东西(其余类型 tailItem 什么都不画,不要留空行)。
 func flowTailVisible(it core.Item) bool {
 	switch v := it.(type) {
-	case *core.Assistant, *core.Notice, *core.TaskNote, *core.PlanApproval, *core.Compaction:
+	case *core.Assistant:
+		// 模型在工具调用之间常吐出只有空白的文本块(「\n\n」):不画,否则每个都留一段空行,
+		// 折叠成「已处理 N 步」后它们堆在一起就是一大块空白。
+		return strings.TrimSpace(v.Text) != ""
+	case *core.Notice, *core.TaskNote, *core.PlanApproval, *core.Compaction:
 		return true
 	case *core.QuestionRequest:
 		return v.Answered
