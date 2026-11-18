@@ -7,6 +7,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/diff"
+	"github.com/ixxxxoooo/minicode/internal/kit"
 )
 
 // 迷你地图 = 缩略的「语法色块」+ 视口滑块;右侧另有一条概览标尺(整篇缩放到面板高度)。
@@ -244,7 +245,12 @@ func (a *App) minimap(c *ui.Context, tb *ideTab) {
 		last := min(int((g.off+g.visH)/mmRowH)+2, n) // 只画框里看得见的行
 		showThumb := a.prefs.Int(pMmSlider, 0) == 1 || box.Hovered() || box.Dragging() || scrolling
 		if showThumb && total > 0 && view > 0 {
-			p.Fill(ui.Rect{X: r.X, Y: r.Y + mmPad + g.top, W: mmW, H: g.h}, t.Fill2, 0)
+			if t.Glass() {
+				// 流光:视口滑块是一块清透玻璃(左右各缩 2 带圆角,像浮在地图上),底下的缩略色块仍可读
+				kit.GlassPaintClear(p, ui.Rect{X: r.X + 2, Y: r.Y + mmPad + g.top, W: mmW - 4, H: g.h}, 4)
+			} else {
+				p.Fill(ui.Rect{X: r.X, Y: r.Y + mmPad + g.top, W: mmW, H: g.h}, t.Fill2, 0)
+			}
 		}
 		if hoverLine >= 0 && hoverLine < n {
 			p.Fill(ui.Rect{X: r.X, Y: y0 + float32(hoverLine)*mmRowH - .5, W: mmW, H: mmRowH + 1}, t.Info.Alpha(.25), 0)

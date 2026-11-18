@@ -98,6 +98,16 @@ func FloatLift(el ui.Element) ui.Element {
 	return GlassHi(el)
 }
 
+// GlassPaintClear 在 Draw 回调里画一块清透玻璃(插件的 Clear 样式:几乎不模糊、只有边缘折射与高光),
+// 带抬起的软阴影:给迷你地图的视口滑块这类「要透出底下内容、又要有立体感」的小块用。
+// 参数 p / r:Draw 给的画笔与盒子;radius:圆角。降低透明度时插件自己退成不透明表面。
+func GlassPaintClear(p *ui.Painter, r ui.Rect, radius float32) {
+	for _, s := range T.GlassShadowS() {
+		p.Shadow(r, radius, s.X, s.Y, s.Blur, s.Spread, s.Color)
+	}
+	glass.Paint(p, r, radius, glass.Glass{Style: glass.Clear})
+}
+
 // GlassHi 给元素顶部加 1px 的内高光(设计稿 inset 0 1px 0 --glass-hi):按钮、卡片、输入框的「厚度」感。
 // 非玻璃主题 / 降低透明度时 Tone().Hi 是透明的,等于什么都不画。
 func GlassHi(el ui.Element) ui.Element {
