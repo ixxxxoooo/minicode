@@ -84,8 +84,14 @@ func (a *App) DefaultPermMode() core.PermissionMode {
 	if a == nil || a.prefs == nil {
 		return core.ModeDefault
 	}
+	if m, ok := core.ParseMode(a.prefs.Str(pPermLast, "")); ok && !(m == core.ModeBypassPermissions && a.NoBypassPermissions()) {
+		return m // 最后一次在会话里选的模式(见 rememberPermMode)
+	}
 	return permModeFromIndex(a.prefs.Int(pPermMode, 0))
 }
+
+// pPermLast 记最后一次在会话里选的权限模式(CLI 名),新会话沿用。
+const pPermLast = "chat.lastPermMode"
 
 // NoBypassPermissions 为真时禁止切换到「跳过权限确认」。
 func (a *App) NoBypassPermissions() bool {
