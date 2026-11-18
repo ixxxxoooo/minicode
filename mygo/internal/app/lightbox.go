@@ -311,10 +311,16 @@ func lbPanZoomInput(lb *lightboxState) func(ev ui.InputEvent) bool {
 			lb.zoomAt(ev.Scale, ev.X, ev.Y) // 触控板捏合:以手指位置为中心
 			return true
 		case ui.InputScroll:
+			if ev.Precise && ev.Mods&(ui.Ctrl|ui.Cmd) == 0 {
+				// 触控板两指滑动 = 平移(与 Mermaid / 画布全屏同一套);鼠标滚轮才缩放
+				lb.offX -= ev.DX
+				lb.offY -= ev.DY
+				return true
+			}
 			if ev.DY == 0 {
 				return false
 			}
-			lb.zoomAt(lightboxWheelFactor(ev.DY), ev.X, ev.Y) // 滚轮:以光标为中心
+			lb.zoomAt(lightboxWheelFactor(ev.DY), ev.X, ev.Y) // 鼠标滚轮(或 ⌘ + 滑动):以光标为中心
 			return true
 		}
 		return false

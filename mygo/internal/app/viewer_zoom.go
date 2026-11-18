@@ -27,12 +27,11 @@ func wheelFactor(dy float32) float32 {
 	return float32(math.Min(2, math.Max(0.5, f)))
 }
 
-// viewerInput 返回全屏查看器(Mermaid / 画布图表)画布的输入处理,与图片灯箱同一套手感:
-//   - 滚轮(含触控板两指上下滑动):以光标为中心缩放;
-//   - 触控板捏合:以手指位置为中心缩放;
-//   - 平移靠按住拖动与方向键。
+// viewerInput 返回全屏查看器(Mermaid / 画布图表)画布的输入处理:
+//   - 鼠标滚轮刻度:以光标为中心缩放;
+//   - 触控板两指滑动:平移;按住 Ctrl / ⌘ 滚动或触控板捏合:缩放;
 //
-// 任何一种缩放都会退出「适应」模式。没处理的事件返回 false,交还给拖拽平移与快捷键。
+// 任何一种都会退出「适应」模式。没处理的事件返回 false,交还给拖拽平移与快捷键。
 func viewerInput(fit *bool, scale, panX, panY *float32, lo, hi float32) func(ev ui.InputEvent) bool {
 	return func(ev ui.InputEvent) bool {
 		switch ev.Kind {
@@ -44,6 +43,13 @@ func viewerInput(fit *bool, scale, panX, panY *float32, lo, hi float32) func(ev 
 			*scale, *panX, *panY = zoomAt(*scale, *panX, *panY, ev.X, ev.Y, ev.Scale, lo, hi)
 			return true
 		case ui.InputScroll:
+			if ev.Precise && ev.Mods&(ui.Ctrl|ui.Cmd) == 0 {
+				// 触控板两指滑动 = 平移(DY>0 内容上移,与滚动方向一致)
+				*fit = false
+				*panX -= ev.DX
+				*panY -= ev.DY
+				return true
+			}
 			if ev.DY == 0 {
 				return false
 			}
