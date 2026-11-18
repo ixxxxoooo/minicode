@@ -242,6 +242,20 @@ func (d *ide) listing(dir string) []workspace.Entry {
 	if es, ok := d.listCache[dir]; ok {
 		return es
 	}
+	if d.listAsync != nil {
+		// 缓存没有:界面线程不读盘,交给后台读;读完回主线程写入缓存并重绘。这期间先返回上一次读到的列表(没有则为空)
+		if !d.listPend[dir] {
+			if d.listPend == nil {
+				d.listPend = map[string]bool{}
+			}
+			d.listPend[dir] = true
+			d.listAsync(dir)
+			if es, ok := d.listCache[dir]; ok { // 无窗口时 a.bg 同步执行,这里已经有结果
+				return es
+			}
+		}
+		return d.listLast[dir]
+	}
 	es, err := d.fs.List(dir)
 	if err != nil {
 		diag.L("ide").Warn("列目录失败", "dir", dir, "err", err)

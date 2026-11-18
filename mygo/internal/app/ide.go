@@ -234,6 +234,11 @@ type ide struct {
 
 	filesCache []string                     // allFiles 的缓存
 	listCache  map[string][]workspace.Entry // 目录列表缓存
+	// 目录列表的后台读取(见 ide_tree_async.go):缓存失效后不在界面线程同步读盘,否则磁盘慢 / 系统弹权限提示时整个界面冻住,
+	// 正在播放的 Agent ⇄ IDE 切换动画会停在半路一帧(实测主线程停滞过 9 秒,栈在 os.ReadDir)。
+	listLast  map[string][]workspace.Entry // 每个目录最近一次读到的列表:重读期间继续显示它,树不闪空
+	listPend  map[string]bool              // 正在后台读的目录
+	listAsync func(dir string)             // 由 App 接上;为 nil(测试 / 无窗口)时同步读
 
 	diskSnaps   map[string]diskSnap // 已打开文件的磁盘快照(外部修改检测)
 	extmodLast  time.Time
@@ -267,6 +272,7 @@ func (d *ide) useFS(fs workspace.FS, git map[string]string, head func(string) (s
 	d.fs, d.git, d.headOf = fs, git, head
 	d.tabs, d.active, d.sel = nil, "", ""
 	d.filesCache, d.listCache = nil, nil
+	d.listLast, d.listPend = nil, nil // 换了文件系统:上一个项目的目录列表不能当占位显示
 	d.nav, d.ni, d.refs, d.ov = nil, 0, nil, ideOv{}
 	d.invalidate()
 }

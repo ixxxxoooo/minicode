@@ -450,6 +450,7 @@ func New(o Options) *App {
 	a.ide.onSaved = a.lspSaved
 	a.ide.beforeSave = a.beforeSave
 	a.ide.onDiskSnap = func(t *ideTab) { a.recordDiskSnap(t) }
+	a.ide.listAsync = a.listDirAsync // 目录列表缓存失效后在后台读,不在界面线程同步读盘(见 ide_tree_async.go)
 	return a
 }
 
