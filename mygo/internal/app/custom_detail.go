@@ -1,6 +1,7 @@
 package app
 
 import (
+	"os"
 	"strings"
 
 	"github.com/egoist/mygo/ui"
@@ -362,9 +363,18 @@ func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func
 	default:
 		reason := strings.TrimPrefix(it.Desc, "连接失败 · ")
 		a.cuBanner(c, kit.KErr, "alert", "连接失败:"+reason+"。"+mcpFailHint(it, reason), func() {
+			if it.Transport == "http" || it.Transport == "sse" {
+				kit.Btn(c, "诊断", kit.BtnOpt{Small: true, Icon: "search"}).OnClick(func() { a.cuMCPProbe(it) })
+			}
 			kit.Btn(c, "编辑配置", kit.BtnOpt{Small: true, Icon: "edit"}).OnClick(func() { a.cuMCPStartEdit(it) })
 			kit.Btn(c, "重试", kit.BtnOpt{Small: true, Icon: "refresh"}).OnClick(func() { a.cuReconnectReal(it) })
 		})
+		if msg, ok := a.mcpProbe[it.Name]; ok {
+			if msg == "" {
+				msg = "诊断中…"
+			}
+			ui.Text(c, "服务器回复:"+msg).FontSize(theme.FsCap).TextColor(t.Tx2).LineHeight(1.5)
+		}
 	}
 	where := "命令"
 	if it.Transport == "http" {
@@ -722,6 +732,9 @@ func (a *App) cuHook(c *ui.Context, st *customize.Store, it *customize.Item) fun
 // mcpFailHint 按失败原因给下一步建议。
 func mcpFailHint(it *customize.Item, reason string) string {
 	if it.Transport == "http" || it.Transport == "sse" {
+		if strings.Contains(reason, "UNEXPECTED_CONTENT_TYPE") || strings.Contains(reason, "Unexpected content type") {
+			return "服务器回的不是 MCP 数据(常见是登录失效时回了一段网页 / 错误 JSON)。点「诊断」看服务器原话,多半要更新请求头里的 Cookie / Authorization。"
+		}
 		if strings.Contains(reason, "Unrecognized token '<'") || strings.Contains(reason, "<!DOCTYPE") {
 			return "服务器返回的是网页(多半是登录页)而不是 MCP 数据:检查地址是否正确、请求头里的 Cookie / Authorization 是否过期、${环境变量} 是否有值、是否需要连内网。点「编辑配置」修改。"
 		}
@@ -799,4 +812,23 @@ func (a *App) runtimeMcp(name string) (core.McpServerStatus, bool) {
 		}
 	}
 	return core.McpServerStatus{}, false
+}
+
+// cuMCPProbe 对这个 http MCP 服务器发一次 initialize,把服务器的原话显示在失败提示下面(后台跑,网络请求不能卡界面)。
+func (a *App) cuMCPProbe(it *customize.Item) {
+	if a.mcpProbe == nil {
+		a.mcpProbe = map[string]string{}
+	}
+	name, url, hdr := it.Name, it.Cmd, it.Headers
+	a.mcpProbe[name] = ""
+	a.bg("MCP诊断", func() func() {
+		res := customize.ProbeHTTPMCP(url, hdr, func(n string) string {
+			if v := os.Getenv(n); v != "" {
+				return v
+			}
+			v, _ := claude.ShellEnv(n)
+			return v
+		})
+		return func() { a.mcpProbe[name] = res }
+	})
 }
