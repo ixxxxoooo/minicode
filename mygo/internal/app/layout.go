@@ -23,6 +23,7 @@ const (
 	lyTermList     = "termList"
 	lySideOutline  = "sideOutline"
 	lySideTimeline = "sideTimeline"
+	lyScmGraph     = "scmGraph" // 源代码管理底部「图形」分区高度
 )
 
 const (
@@ -38,6 +39,7 @@ type layoutSizes struct {
 	termList              float32   // 竖向终端列表宽(term.listWidth)
 	sideOutline           float32   // 左栏「大纲」展开高度
 	sideTimeline          float32   // 左栏「时间线」展开高度
+	scmGraph              float32   // 源代码管理「图形」分区高度(0 = 默认)
 	resizing              string    // 正在拖的把手(拖动期间面板的宽度过渡关闭,否则会跟不上鼠标)
 	lastDrag              time.Time // 最近一次拖动(松手后几帧内仍不开过渡)
 	panelMax              bool      // 底部面板最大化(占满工作区)
@@ -53,6 +55,9 @@ func (a *App) loadLayout() {
 	a.ly.termList = clampF(w, termListMinW, termListMaxW)
 	a.ly.sideOutline = clampF(get(lySideOutline), sideSecMin, sideSecMax)
 	a.ly.sideTimeline = clampF(get(lySideTimeline), sideSecMin, sideSecMax)
+	if v := get(lyScmGraph); v > 0 {
+		a.ly.scmGraph = clampF(v, sideSecMin, 2000)
+	}
 }
 
 func orDef(v, def float32) float32 {
@@ -266,6 +271,8 @@ func (a *App) saveLayout(key string) {
 		v = a.ly.sideOutline
 	case lySideTimeline:
 		v = a.ly.sideTimeline
+	case lyScmGraph:
+		v = a.ly.scmGraph
 	}
 	if v > 0 {
 		a.prefs.Set("layout."+key, int(v))

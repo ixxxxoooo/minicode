@@ -15,9 +15,19 @@ import (
 // 每个文件夹一行(分支 · 领先落后 · 改动数),点一行切换活动仓库;非仓库的文件夹带「初始化仓库」。
 func (a *App) repoOverview(c *ui.Context) {
 	t := a.tk
+	if a.sc.folded == nil {
+		a.sc.folded = map[string]bool{}
+	}
+	open := !a.sc.folded["repos"]
 	ui.Column(c).Shrink(0).Padding(0, 0, 4, 0).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Margin(0, 0, 6, 0).Children(func() {
 		ui.Row(c).Height(theme.Px(24)).PaddingX(4).Gap(2).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, "仓库").Grow(1).FontSize(theme.FsMicro).FontWeight(500).TextColor(t.Tx3)
+			tog := ui.ButtonBase(c).Key("scm-h-repos").Grow(1).Height(theme.Px(24)).Justify(ui.Start).Gap(4).AlignItems(ui.Center).
+				TextColor(t.Tx3).FontSize(theme.FsMicro).FontWeight(500).Cursor(ui.CursorPointer).Tooltip(map[bool]string{true: "收起仓库", false: "展开仓库"}[open])
+			tog.OnClick(func() { a.sc.folded["repos"] = !open })
+			tog.Children(func() {
+				kit.Ic(c, map[bool]string{true: "chevD", false: "chevR"}[open], kit.S12)
+				ui.Text(c, "仓库")
+			})
 			ui.Text(c, itoa(len(a.repos))).FontSize(theme.FsMicro).TextColor(t.Tx4).Margin(0, 4, 0, 0)
 			if a.scmExpandAll() {
 				kit.Tag(c, "全部展开", kit.KAc)
@@ -26,14 +36,28 @@ func (a *App) repoOverview(c *ui.Context) {
 			kit.Ib(c, "sync", kit.IbOpt{Small: true, Tip: "全部同步(先拉取再推送)"}).OnClick(func() { a.syncAllRepos(false) })
 			kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "仓库视图与批量操作"}).Menu(a.repoOverviewMenu)
 		})
-		for _, i := range a.repoOrder() { // 嵌套仓库紧跟在父文件夹后面,缩进显示
+		if !open {
+			return
+		}
+		// 仓库块固定在顶部:最多显示 scmRepoMaxRows 行,超出在块内滚动,不把下面的提交框挤出去
+		kit.VScroll(c).Key("scm-repos").MaxHeight(scmRepoMaxRows*scmRepoRowH + 4).Children(func() {
+			ui.Column(c).Children(func() { a.repoRows(c) })
+		})
+	})
+}
+
+// repoRows 画仓库总览里的各仓库行(嵌套仓库紧跟在父文件夹后面,缩进显示)。
+func (a *App) repoRows(c *ui.Context) {
+	t := a.tk
+	{
+		for _, i := range a.repoOrder() {
 			i, e := i, a.repos[i]
 			var indent float32
 			if e.kind != "" {
 				indent = 16
 			}
 			if e.repo == nil && e.checked {
-				r := kit.RowEl(c, false).Key("repo-"+itoa(i)).Height(theme.Px(30)).Gap(6).TextColor(t.Tx3).Margin(0, 0, 0, indent)
+				r := kit.RowEl(c, false).Key("repo-"+itoa(i)).Height(theme.Px(scmRepoRowH)).Gap(6).TextColor(t.Tx3).Margin(0, 0, 0, indent)
 				on := i == a.repoAct
 				if on {
 					r.Background(t.Fill1)
@@ -49,7 +73,7 @@ func (a *App) repoOverview(c *ui.Context) {
 			}
 			br, ah, bh, n := a.repoSummary(i)
 			conf, staged := a.repoFlags(i)
-			r := kit.RowEl(c, i == a.repoAct).Key("repo-"+itoa(i)).Height(theme.Px(32)).Gap(6).Margin(0, 0, 0, indent)
+			r := kit.RowEl(c, i == a.repoAct).Key("repo-"+itoa(i)).Height(theme.Px(scmRepoRowH)).Gap(6).Margin(0, 0, 0, indent)
 			hov := r.Hovered()
 			r.OnClick(func() { a.setActiveRepo(i) })
 			r.ContextMenu(func(m *ui.Menu) { a.repoRowMenu(m, i) })
@@ -91,7 +115,7 @@ func (a *App) repoOverview(c *ui.Context) {
 				}
 			})
 		}
-	})
+	}
 }
 
 // repoFlags 总览行用:冲突文件数、是否有已暂存的改动(活动仓库取实时状态)。
