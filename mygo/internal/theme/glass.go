@@ -10,12 +10,13 @@ import "github.com/egoist/mygo/ui"
 
 // glassPalettes 是追加在 Palettes 末尾的两套玻璃主题(追加而不是插入,偏好里按序号存的「应用图标配色」不会错位)。
 var glassPalettes = []Palette{
-	{ID: "glow", Name: "流光", Glass: true, Base: "#E9EEF8", Surface: "#F7F9FE", Raised: "#FFFFFF", Sunken: "#EDF1F9", Ink: "#16192B",
-		Accent: "#4A6FD3", OnAccent: "#FFFFFF", Ok: "#1F9D62", Err: "#D8434B", Warn: "#B47A14", Info: "#2F7DD8", Vio: "#7B58E0", Cyan: "#0B8FA0", Pink: "#C2418F",
-		Shade: [3]uint8{30, 40, 90}, KShade: 1},
-	{ID: "glow-night", Name: "流光·夜", Dark: true, Glass: true, Base: "#0B0E1C", Surface: "#12162B", Raised: "#1B2040", Sunken: "#0D1022", Ink: "#EAEEFF",
-		Accent: "#9DB8F2", OnAccent: "#0A1430", Ok: "#5AD1A0", Err: "#FF6F8B", Warn: "#F0B657", Info: "#62B4FF", Vio: "#B79BFF", Cyan: "#5CD6E6", Pink: "#FF86C8",
-		Shade: [3]uint8{2, 3, 14}, KShade: 3.6},
+	// 配色取 Claude 品牌色:Ivory #FAF9F5 / Slate #141413 / Clay 陶土橙(#D97757,浅色下压深一档,白字对比 4.5:1)。壁纸不用任何彩色。
+	{ID: "glow", Name: "流光", Glass: true, Base: "#F0EEE6", Surface: "#FAF9F5", Raised: "#FFFFFF", Sunken: "#F3F1EA", Ink: "#141413",
+		Accent: "#BD5A36", OnAccent: "#FFFFFF", Ok: "#2E9A5A", Err: "#D2453D", Warn: "#B5781C", Info: "#3A6DD6", Vio: "#7656DC", Cyan: "#0E8C99", Pink: "#C13F8E",
+		Shade: [3]uint8{40, 28, 10}, KShade: 1},
+	{ID: "glow-night", Name: "流光·夜", Dark: true, Glass: true, Base: "#131211", Surface: "#1A1917", Raised: "#262320", Sunken: "#151413", Ink: "#F0EEE6",
+		Accent: "#E8967A", OnAccent: "#2A1208", Ok: "#4FC283", Err: "#F0665D", Warn: "#E2A942", Info: "#709AF5", Vio: "#A590F7", Cyan: "#4CC3CF", Pink: "#EE7FBF",
+		Shade: [3]uint8{0, 0, 0}, KShade: 3.2},
 }
 
 func init() { Palettes = append(Palettes, glassPalettes...) }
@@ -41,19 +42,20 @@ type WallSpec struct {
 func (t *Tokens) Wall() WallSpec {
 	h := ui.Hex
 	if t.Palette.Dark {
-		return WallSpec{Top: h("#0E1226"), Bottom: h("#090C1A"), Streak: ui.RGBA(190, 200, 255, .08), Blobs: []WallBlob{
-			{.10, .08, .34, ui.RGBA(78, 86, 190, .42)}, {.94, .10, .30, ui.RGBA(150, 80, 150, .26)},
-			{.80, 1.00, .38, ui.RGBA(40, 120, 140, .32)}, {.04, .96, .29, ui.RGBA(70, 90, 170, .30)},
+		// 暖石板灰底,只带两处极淡的陶土橙微光与两处暖灰
+		return WallSpec{Top: h("#1B1917"), Bottom: h("#11100F"), Streak: ui.RGBA(255, 236, 222, .06), Blobs: []WallBlob{
+			{.10, .08, .34, ui.RGBA(217, 119, 87, .16)}, {.94, .10, .30, ui.RGBA(150, 120, 100, .14)},
+			{.80, 1.00, .38, ui.RGBA(217, 119, 87, .10)}, {.04, .96, .29, ui.RGBA(120, 100, 88, .16)},
 		}}
 	}
-	return WallSpec{Top: h("#F1F3F8"), Bottom: h("#E6EAF3"), Streak: ui.RGBA(255, 255, 255, .55), Blobs: []WallBlob{
-		{.10, .08, .34, h("#C2D2F2")}, {.94, .10, .30, h("#EBCFE0")},
-		{.80, 1.00, .38, h("#C5E3E8")}, {.04, .96, .29, h("#D6CCEE")},
-		{.52, .52, .20, h("#F3E4CF")},
+	// 象牙白底,只在明度上做暖沙 / 牛皮纸色的深浅变化,没有别的色相
+	return WallSpec{Top: h("#FAF9F5"), Bottom: h("#EFEBE3"), Streak: ui.RGBA(255, 255, 255, .60), Blobs: []WallBlob{
+		{.10, .08, .34, h("#F1E3D6")}, {.94, .10, .30, h("#EFE6DA")},
+		{.80, 1.00, .38, h("#EBDDCF")}, {.04, .96, .29, h("#F3E7DC")},
 	}}
 }
 
-// GlassShadow 是玻璃岛的悬浮阴影(设计稿 --glass-sh):不乘 KShade,夜色下也只是一圈很淡的深蓝黑。
+// GlassShadow 是玻璃岛的悬浮阴影(设计稿 --glass-sh):不乘 KShade,夜色下也只是一圈很淡的暗影。
 func (t *Tokens) GlassShadow() []ShadowLayer {
 	return []ShadowLayer{{0, 14, 36, -12, t.shadeColor(.24)}, {0, 2, 8, 0, t.shadeColor(.07)}}
 }
@@ -75,8 +77,8 @@ func (t *Tokens) Tone() GlassTone {
 		return GlassTone{Thin: t.Fill1, Card: t.Raised, Sel: t.Raised, Rim: t.Bd1, RimLo: t.Bd1, Sheen: ui.Transparent, Mid: t.BG}
 	}
 	if t.Palette.Dark {
-		return GlassTone{Thin: ui.RGBA(150, 168, 255, .10), Card: ui.RGBA(40, 50, 108, .46), Sel: ui.RGBA(150, 168, 255, .20),
-			Rim: ui.RGBA(200, 214, 255, .34), RimLo: ui.RGBA(200, 214, 255, .10), Sheen: ui.RGBA(190, 205, 255, .16), Mid: ui.RGBA(22, 28, 66, .60)}
+		return GlassTone{Thin: ui.RGBA(255, 235, 220, .08), Card: ui.RGBA(58, 50, 44, .46), Sel: ui.RGBA(255, 235, 220, .16),
+			Rim: ui.RGBA(255, 240, 230, .30), RimLo: ui.RGBA(255, 240, 230, .09), Sheen: ui.RGBA(255, 236, 222, .14), Mid: ui.RGBA(38, 34, 30, .60)}
 	}
 	return GlassTone{Thin: ui.RGBA(255, 255, 255, .30), Card: ui.RGBA(255, 255, 255, .72), Sel: ui.RGBA(255, 255, 255, .78),
 		Rim: ui.RGBA(255, 255, 255, .85), RimLo: ui.RGBA(255, 255, 255, .38), Sheen: ui.RGBA(255, 255, 255, .55), Mid: ui.RGBA(255, 255, 255, .64)}

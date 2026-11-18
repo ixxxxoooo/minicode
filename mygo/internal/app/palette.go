@@ -51,7 +51,7 @@ type palItem struct {
 var themeSub = map[string]string{
 	"paper": "暖白 · 橙", "mist": "冷灰 · 靛蓝", "celadon": "灰绿 · 松石",
 	"ink": "暖黑 · 橙", "graphite": "中性黑 · 钴蓝", "aurora": "深蓝 · 堇紫",
-	"glow": "液态玻璃 · 珍珠白 · 蔚蓝", "glow-night": "液态玻璃 · 靛蓝黑 · 天青",
+	"glow": "液态玻璃 · 象牙白 · 陶土橙", "glow-night": "液态玻璃 · 暖石板 · 陶土橙",
 }
 
 const (

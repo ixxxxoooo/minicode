@@ -53,8 +53,7 @@
     celadon: { ac: ['#2DBBA0', '#0B7765'], acd: ['#4ED6BA', '#16A58E'], L: ['#FDFFFD', '#DFE9E2', '#18201C'], D: ['#262F2B', '#111513', '#E4EEE9'] },
     graphite: { ac: ['#8EA4FF', '#4C69F0'], acd: ['#A3B6FF', '#5F7CFF'], L: ['#FDFDFE', '#E4E5EA', '#1B1C20'], D: ['#2B2D33', '#121316', '#E8EAEE'] },
     aurora: { ac: ['#B9A2FF', '#7A58F0'], acd: ['#CBB8FF', '#8F6DFA'], L: ['#FEFDFF', '#E7E4F4', '#1E1B33'], D: ['#232749', '#0A0C1B', '#E6E8F7'] },
-    glow: { ac: ['#7FA6FF', '#2F5FF0'], acd: ['#9BB9FF', '#4A78FF'], L: ['#FFFFFF', '#E4EAF8', '#16192B'], D: ['#222850', '#0A0D1E', '#EAEEFF'] },
-    'glow-night': { ac: ['#8DB6FF', '#3F74F0'], acd: ['#A6C8FF', '#5C8DFF'], L: ['#FDFEFF', '#E3E9F7', '#16192B'], D: ['#252C57', '#080B1A', '#EAEEFF'] },
+    glow: PAPER, 'glow-night': PAPER, // 流光用 Claude 的陶土橙,图标与宣纸 / 墨夜同一套橙色素材
   };
 
   /** 解析一枚图标的配色。o.t 固定主题(缺省 = 「配色」设置:跟随当前主题或固定某一套)、o.m 固定外观(缺省 = 设置里的外观) */

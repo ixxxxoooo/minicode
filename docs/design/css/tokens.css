@@ -90,19 +90,19 @@
 }
 /* 流光 · 液态玻璃(浅 / 夜):表面色是「玻璃后面的壁纸」的基调,面板本身由 css/glass.css 画成半透明玻璃;
    --c-base / --c-surface 仍是不透明色,代码块、吸顶卡、降低透明度时都用它们兜底 */
-[data-theme="glow"] {    /* 流光 · 珍珠白 */
+[data-theme="glow"] {    /* 流光 · 象牙白(Claude 品牌色:Ivory #FAF9F5 / Slate #141413 / Clay 陶土橙) */
   color-scheme: light;
-  --c-base: #E9EEF8; --c-surface: #F7F9FE; --c-raised: #FFFFFF; --c-sunken: #EDF1F9; --c-ink: #16192B;
-  --c-accent: #4A6FD3; --c-on-accent: #FFFFFF;
-  --c-ok: #1F9D62; --c-err: #D8434B; --c-warn: #B47A14; --c-info: #2F7DD8; --c-vio: #7B58E0; --c-cyan: #0B8FA0; --c-pink: #C2418F;
-  --c-shade: 30 40 90; --k-shade: 1;
+  --c-base: #F0EEE6; --c-surface: #FAF9F5; --c-raised: #FFFFFF; --c-sunken: #F3F1EA; --c-ink: #141413;
+  --c-accent: #BD5A36; --c-on-accent: #FFFFFF;   /* Clay #D97757 压深一档,白字对比 4.5:1 */
+  --c-ok: #2E9A5A; --c-err: #D2453D; --c-warn: #B5781C; --c-info: #3A6DD6; --c-vio: #7656DC; --c-cyan: #0E8C99; --c-pink: #C13F8E;
+  --c-shade: 40 28 10; --k-shade: 1;
 }
-[data-theme="glow-night"] { /* 流光 · 夜 · 靛蓝黑 */
+[data-theme="glow-night"] { /* 流光 · 夜 · 暖石板灰 */
   color-scheme: dark;
-  --c-base: #0B0E1C; --c-surface: #12162B; --c-raised: #1B2040; --c-sunken: #0D1022; --c-ink: #EAEEFF;
-  --c-accent: #9DB8F2; --c-on-accent: #0A1430;
-  --c-ok: #5AD1A0; --c-err: #FF6F8B; --c-warn: #F0B657; --c-info: #62B4FF; --c-vio: #B79BFF; --c-cyan: #5CD6E6; --c-pink: #FF86C8;
-  --c-shade: 2 3 14; --k-shade: 3.6;
+  --c-base: #131211; --c-surface: #1A1917; --c-raised: #262320; --c-sunken: #151413; --c-ink: #F0EEE6;
+  --c-accent: #E8967A; --c-on-accent: #2A1208;   /* 柔和的陶土橙 */
+  --c-ok: #4FC283; --c-err: #F0665D; --c-warn: #E2A942; --c-info: #709AF5; --c-vio: #A590F7; --c-cyan: #4CC3CF; --c-pink: #EE7FBF;
+  --c-shade: 0 0 0; --k-shade: 3.2;
 }
 
 /* ───────── ③ 方案令牌:只调倍率,不碰颜色 ───────── */
