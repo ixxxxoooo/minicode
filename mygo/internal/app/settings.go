@@ -285,7 +285,14 @@ func (a *App) settingsPage(c *ui.Context) {
 	t := a.tk
 	a.initSettingsConfig()
 	a.shortcutRecordCapture(c)
-	ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Background(t.BG).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2).Children(func() {
+	row := ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch)
+	if t.Glass() {
+		// 流光:设置页也是两块玻璃岛(导航岛 + 内容岛)浮在底色上,与主界面一致;不再整窗实色铺满
+		row.PaddingX(t.Scheme.GapPane).Gap(t.Scheme.GapPane)
+	} else {
+		row.Background(t.BG).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd2)
+	}
+	row.Children(func() {
 		if !a.settingsNarrow() {
 			a.settingsNav(c)
 		}
@@ -302,7 +309,9 @@ func (a *App) settingsNav(c *ui.Context) {
 			counts[h.tab]++
 		}
 	}
-	ui.Column(c).Width(196).Shrink(0).Padding(10, 8).Gap(1).Background(t.Chrome).BorderWidth(0, 1, 0, 0).BorderColor(t.Bd2).Children(func() {
+	nav := ui.Column(c).Width(196).Shrink(0).Padding(10, 8).Gap(1).Background(t.Chrome).BorderWidth(0, 1, 0, 0).BorderColor(t.Bd2)
+	a.glassIsland(nav, kit.ClaritySidebar, t.Tone().SideTint) // 流光:导航岛(与主界面侧栏同一档深浅)
+	nav.Children(func() {
 		// 顶部「返回应用」:离开设置的出口放在最显眼的位置(与红绿灯同一视线),Esc 同效
 		back := kit.RowEl(c, false).Key("set-back").Gap(6).Margin(0, 0, 6, 0).TextColor(t.Tx2)
 		back.OnClick(a.closeSettings)
@@ -362,7 +371,9 @@ func (a *App) settingsMain(c *ui.Context) {
 		a.set.lastTab = a.setTab + "|" + q
 		a.set.enterAt = time.Now()
 	}
-	ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+	main := ui.Column(c).Grow(1).MinWidth(0)
+	a.glassIsland(main, kit.ClarityContent, ui.Transparent) // 流光:内容岛(与主界面对话栏同一档,最亮)
+	main.Children(func() {
 		kit.VScroll(c).Key("set-main").TrackScroll(&a.set.mainSt).Grow(1).MinHeight(0).Children(func() {
 			// 左右各留 16 的边距:窄窗口(内容列撑满整宽)时不贴边;宽窗口里内容列定宽居中,不受影响
 			ui.Row(c).Justify(ui.Center).Padding(18, 16, 28, 16).Children(func() {
