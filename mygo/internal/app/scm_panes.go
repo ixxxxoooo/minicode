@@ -15,7 +15,7 @@ import (
 // @author ixxxxoooo
 const (
 	scmGraphDef    float32 = 200 // 图形分区默认高度
-	scmRepoRowH            = 26  // 仓库行高(与文件行 22 / 图形行 24 同一量级)
+	scmRepoRowH            = 24  // 仓库行高(与图形行 24、文件行 22 一致)
 	scmRepoMaxRows         = 5   // 仓库块最多显示的行数,超出在块内滚动
 	scmGraphHead           = 27  // 图形标题行 26 + 上边线 1
 )
