@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -87,6 +88,52 @@ func flushStats(uid *string, acc *[]usageRec, out *[]core.Event) {
 // ReplayLines 回放若干行 jsonl,得到可直接喂给 State.Apply 的事件序列。
 // 除条目事件,还用每条记录的 timestamp 算出思考与整个回合的用时,作为 EvDuration 附在末尾。
 func ReplayLines(lines []string, cwd string) []core.Event {
+	return ReplayLinesWith(lines, cwd, "")
+}
+
+// replaySidechain 读子 Agent 自己的对话记录(<会话>/subagents/agent-<id>.jsonl)并翻译成挂在该子 Agent 卡下的条目。
+// 主会话文件里只有「启动」与「完成通知」两条,过程(思考 / 工具 / 中间文字)只存在这个单独文件里。
+func replaySidechain(tr *Translator, dir, agentID, toolUseID string) []core.Event {
+	data, err := os.ReadFile(filepath.Join(dir, "agent-"+agentID+".jsonl"))
+	if err != nil {
+		return nil
+	}
+	var out []core.Event
+	var first, last int64
+	tools := 0
+	for _, line := range strings.Split(string(data), "\n") {
+		v := parseLine(strings.TrimSpace(line))
+		if v == nil {
+			continue
+		}
+		typ := str(v, "type")
+		if typ != "user" && typ != "assistant" {
+			continue
+		}
+		if ts, ok := parseISOMs(str(v, "timestamp")); ok {
+			if first == 0 {
+				first = ts
+			}
+			last = ts
+		}
+		if typ == "assistant" {
+			for _, b := range arr(sub(v, "message"), "content") {
+				if str(asObj(b), "type") == "tool_use" {
+					tools++
+				}
+			}
+		}
+		v["parent_tool_use_id"] = toolUseID
+		out = append(out, tr.Handle(v)...)
+	}
+	if tools > 0 || last > first { // 补上用时与工具数(卡片头部「x 分 x 秒 · n 个工具」);终态由随后的完成通知给出
+		out = append(out, core.EvSubagentFinished{ID: toolUseID, Status: core.SubBackground, ToolCount: tools, DurationMs: last - first})
+	}
+	return out
+}
+
+// ReplayLinesWith 同 ReplayLines;subDir 非空时,为会话里启动过的后台子 Agent 还原它们的执行过程。
+func ReplayLinesWith(lines []string, cwd, subDir string) []core.Event {
 	tr := NewReplayTranslator(cwd)
 	var events, durations []core.Event
 	title := ""
@@ -119,6 +166,13 @@ func ReplayLines(lines []string, cwd string) []core.Event {
 				recordUsage(v, &turnUsage)
 			}
 			evs := tr.Handle(v)
+			if subDir != "" {
+				for _, e := range evs {
+					if st, ok := e.(core.EvTaskStarted); ok && st.Task != nil && st.Task.Kind == core.TaskAgent && st.Task.ToolUseID != "" {
+						evs = append(evs, replaySidechain(tr, subDir, st.Task.TaskID, st.Task.ToolUseID)...)
+					}
+				}
+			}
 			for _, e := range evs {
 				a, ok := e.(core.EvAppend)
 				if !ok || a.Parent != "" {
@@ -182,7 +236,7 @@ func LoadSession(path, cwd string) ([]core.Event, error) {
 			return nil, err
 		}
 	}
-	return ReplayLines(lines, cwd), nil
+	return ReplayLinesWith(lines, cwd, strings.TrimSuffix(path, ".jsonl")+"/subagents"), nil
 }
 
 const defaultContextWindow = 200_000

@@ -578,10 +578,23 @@ func (t *Translator) replayTaskNotification(text string) []core.Event {
 	if id == "" {
 		return nil
 	}
-	return []core.Event{core.EvTaskNotification{
-		TaskID: id, Status: core.TaskStatusFromCLI(tagText(text, "status")),
+	status := core.TaskStatusFromCLI(tagText(text, "status"))
+	out := []core.Event{core.EvTaskNotification{
+		TaskID: id, Status: status,
 		Summary: tagText(text, "summary"), OutputFile: tagText(text, "output-file"),
 	}}
+	// 通知里的 <result> 才是子 Agent 的完整结论(summary 只有一句「Agent … finished」):写到子 Agent 卡的「结果」
+	if res, tu := tagText(text, "result"), tagText(text, "tool-use-id"); res != "" && tu != "" {
+		st := core.SubStopped
+		switch status {
+		case core.TaskCompleted:
+			st = core.SubCompleted
+		case core.TaskFailed:
+			st = core.SubFailed
+		}
+		out = append(out, core.EvSubagentFinished{ID: tu, Status: st, Summary: res})
+	}
+	return out
 }
 
 func (t *Translator) subagentResult(id string, block, tur obj, isErr bool, info *toolInfo) []core.Event {
