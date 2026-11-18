@@ -374,7 +374,19 @@ func (a *App) scmCommitRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow,
 	if !open {
 		return
 	}
-	ui.Column(c).PaddingStart(gw + 6).Gap(0).Children(func() {
+	ui.Row(c).Children(func() {
+		a.graphGapCell(c, gr, gw+6, t) // 展开的详情夹在两行提交之间:泳道用虚线接上,不断开
+		ui.Column(c).Grow(1).MinWidth(0).Gap(0).Children(func() {
+			a.scmCommitDetail(c, cm)
+		})
+	})
+}
+
+// scmCommitDetail 画展开提交的详情:哈希 · 作者 · 时间 + 改动文件列表。
+func (a *App) scmCommitDetail(c *ui.Context, cm vcs.Commit) {
+	t := a.tk
+	s := &a.sc
+	{
 		ui.Text(c, cm.Short()+" · "+cm.Author+" · "+cm.When).FontSize(theme.FsMicro).TextColor(t.Tx4).Font("monospace").Padding(2, 4)
 		files, ok := s.files[cm.Hash]
 		if !ok {
@@ -405,6 +417,22 @@ func (a *App) scmCommitRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow,
 				ui.Spacer(c).Grow(1)
 				a.scmStat(c, ch)
 			})
+		}
+	}
+}
+
+// graphGapCell 画展开提交的详情左侧的泳道延续:本行向下走的每条泳道画一条同色虚线,
+// 穿过整段详情,与下一行提交的泳道接上(否则详情把图谱切成两截,线像断了)。
+// 参数 gr:本提交行的泳道画法(取 Bottom);w:占宽,与泳道格同宽。
+func (a *App) graphGapCell(c *ui.Context, gr vcs.GraphRow, w float32, t *theme.Tokens) {
+	e := ui.Box(c).Width(w).FillHeight().Shrink(0)
+	e.Draw(func(p *ui.Painter, r ui.Rect) {
+		const dash, gap = 3, 3
+		for _, l := range gr.Bottom {
+			x, col := r.X+5+float32(l*graphLaneW), laneColor(t, l)
+			for y := r.Y; y < r.Y+r.H; y += dash + gap {
+				p.Line(x, y, x, min(y+dash, r.Y+r.H), 1.5, col)
+			}
 		}
 	})
 }
