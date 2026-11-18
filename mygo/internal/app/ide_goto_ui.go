@@ -118,6 +118,7 @@ func (a *App) gotoLineStrip(c *ui.Context, tb *ideTab) {
 		for _, s := range t.Shadow2() {
 			card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
+		kit.Float(card) // 流光:跳转卡是玻璃
 		card.Children(func() {
 			ui.Row(c).Height(theme.Px(36)).PaddingX(12).Gap(8).AlignItems(ui.Center).Children(func() {
 				kit.Ic(c, "list", kit.S12).TextColor(t.Tx3)

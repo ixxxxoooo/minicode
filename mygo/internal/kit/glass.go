@@ -68,6 +68,14 @@ func glassBtn(b ui.Element, _ bool) {
 	GlassHi(b)
 }
 
+// glassSoft 是柔和按钮:强调色 16% 的玻璃(设计稿 .btn.soft):薄薄一层强调色,底下的内容仍透出一点。
+func glassSoft(b ui.Element) {
+	b.Material(GlassTinted(T.Ac.Alpha(.16)))
+	for _, s := range T.Shadow1() {
+		b.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
+	}
+}
+
 // glassPri 是主要按钮:着色玻璃(强调色几乎不透明,只透出一点)+ 强调色光晕(设计稿 --ac-glow:整页唯一「发光」的地方)。
 func glassPri(b ui.Element) {
 	// 着色取满(不透明):插件会把着色按 88% 叠上并提亮底下的内容,取 .92 时陶土橙发粉、白色箭头对比不够;取满后颜色饱满,仍保留玻璃的边缘高光与按压反馈

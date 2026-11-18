@@ -164,6 +164,7 @@ func (a *App) drawCommitCard(c *ui.Context, tb *ideTab, bl vcs.BlameLine, right,
 	for _, s := range t.Shadow2() {
 		card.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 	}
+	kit.Float(card) // 流光:提交追溯卡是玻璃
 	when := bl.When
 	if bl.Uncommitted {
 		when = when + "(未提交)"

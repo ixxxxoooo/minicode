@@ -136,6 +136,9 @@ func Btn(c *ui.Context, text string, o ...BtnOpt) ui.Element {
 		col = T.OnAc
 	case BtnSoft:
 		b.Background(T.AcSoft).FontWeight(500)
+		if T.Glass() {
+			glassSoft(b)
+		}
 		col = T.AcTx
 	case BtnGhost:
 		col = T.Tx2
@@ -149,7 +152,11 @@ func Btn(c *ui.Context, text string, o ...BtnOpt) ui.Element {
 			b.Background(T.ErrSoft)
 		}
 	case BtnDanger:
-		b.Background(T.Raised).Border(1, T.Bd2)
+		if T.Glass() {
+			glassBtn(b, hov) // 流光:玻璃按钮 + 红字(设计稿 .btn.danger)
+		} else {
+			b.Background(T.Raised).Border(1, T.Bd2)
+		}
 		col = T.Err
 	default:
 		if T.Glass() {

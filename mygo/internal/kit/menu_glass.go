@@ -17,13 +17,25 @@ func glassMenuPanel(panel ui.Element) {
 	GlassSheen(panel, T.RSm()+2) // 框架里菜单面板的圆角 = Theme.Radius + 2,Theme.Radius 取的是 RSm
 }
 
+// glassMenuItem 给菜单项的悬停态套上「更亮的选中玻璃」。框架画的菜单把悬停 / 键盘高亮的项涂成实色强调色底(陶土橙块 + 浅色字),
+// 在玻璃面板上很突兀;这里在框架的样式之后覆盖:悬停时换成选中玻璃色 + 顶部内高光 + 正文色。
+// 局限:Item 回调拿不到「键盘高亮」状态,只能处理鼠标悬停;键盘上下选中的项仍是框架的强调色底;
+// 悬停到危险项时文字也会变回正文色(框架在高亮时才改色,这里无法分辨危险项)。
+func glassMenuItem(item ui.Element) {
+	if !item.Hovered() {
+		return
+	}
+	item.Background(T.Tone().Sel).TextColor(T.Tx1)
+	GlassHi(item)
+}
+
 // CtxMenu 给元素挂右键菜单(等价于 el.ContextMenu(build)):玻璃主题下面板是玻璃。
 // 参数 el:挂菜单的元素;build:构建菜单项的函数。返回 el。
 func CtxMenu(el ui.Element, build func(m *ui.Menu)) ui.Element {
 	if !T.Glass() {
 		return el.ContextMenu(build)
 	}
-	return el.PopoverMenu(build, ui.PopoverMenuOptions{Panel: glassMenuPanel})
+	return el.PopoverMenu(build, ui.PopoverMenuOptions{Panel: glassMenuPanel, Item: glassMenuItem})
 }
 
 // MenuBtn 把元素变成菜单按钮(等价于 el.Menu(build)):玻璃主题下菜单面板是玻璃。
@@ -32,5 +44,5 @@ func MenuBtn(el ui.Element, build func(m *ui.Menu)) ui.Element {
 	if !T.Glass() {
 		return el.Menu(build)
 	}
-	return el.PopoverMenuButton(build, ui.PopoverMenuButtonOptions{Panel: glassMenuPanel})
+	return el.PopoverMenuButton(build, ui.PopoverMenuButtonOptions{Panel: glassMenuPanel, Item: glassMenuItem})
 }

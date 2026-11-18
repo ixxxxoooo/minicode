@@ -361,5 +361,11 @@ func (t *Tokens) UITheme() *ui.Theme {
 	th.Scrollbar = t.Bd3
 	th.ScrollbarWidth = 6
 	th.Inverse, th.InverseText = t.Tx1, t.BG
+	if t.Palette.Glass {
+		th.Inverse = t.Tx1.Alpha(.86) // 提示条:深色半透明(设计稿 [data-tip]:ink 84%);框架只给 Inverse 一个颜色,没有材质入口,所以做不到磨砂
+		// 框架把菜单项的图标涂成 AccentText(「强调色底上的文字色」,浅色下是白);玻璃主题的悬停项是亮玻璃而不是强调色块(见 kit.glassMenuItem),
+		// 白图标落在亮底上看不见,所以 AccentText 取正文色(浅色深、夜色浅)。只影响框架自带控件画在强调色底上的文字,kit 自己的按钮读的是 OnAc,不受影响
+		th.AccentText = t.Tx1
+	}
 	return &th
 }

@@ -597,6 +597,7 @@ func (a *App) restartBar(c *ui.Context) {
 		for _, s := range t.Shadow3() {
 			bar.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
+		kit.Float(bar) // 流光:横幅是玻璃条(保留警告色描边)
 		bar.Children(func() {
 			kit.Ic(c, "refresh", kit.S12).TextColor(t.Warn)
 			ui.Text(c, itoa(n)+" 项更改需要重启后生效")

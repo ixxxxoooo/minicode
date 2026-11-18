@@ -276,6 +276,7 @@ func (a *App) askBar(c *ui.Context, tb *ideTab) {
 	for _, sh := range t.Shadow2() {
 		bar.Shadow(sh.X, sh.Y, sh.Blur, sh.Spread, sh.Color)
 	}
+	kit.Float(bar) // 流光:选中文字旁的「问 Claude」浮条是玻璃
 	bar.Children(func() {
 		btn := func(icon, text, key string, run func()) {
 			b := ui.ButtonBase(c).Key("ab-" + key).Height(theme.Px(24)).PaddingX(7).Gap(4).Radius(t.RSm()).AlignItems(ui.Center).Cursor(ui.CursorPointer).TextColor(t.Tx2).FontSize(theme.FsCap)
@@ -431,6 +432,7 @@ func (a *App) ovPanel(c *ui.Context, tb *ideTab) {
 		for _, s := range t.Shadow2() {
 			el.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
+		kit.Float(el) // 流光:重命名 / 代码操作等编辑器浮层是玻璃
 		return el
 	}
 	esc := func(in ui.Element) { in.OnShortcut(0, ui.KeyEscape, a.closeOv) }
