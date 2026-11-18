@@ -224,6 +224,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 		open = sp.open
 	}
 	row := ui.ButtonBase(c).Key("step-"+sp.id).MinHeight(24).Margin(0, -8).PaddingX(8).Gap(6).Radius(t.RSm()).AlignItems(ui.Center).
+		Justify(ui.Start). // ButtonBase 默认居中:思考行有跑马灯时不放撑开的 Spacer,内容不满一行就会整体居中,图标前面空出一大块
 		TextColor(t.Tx2).Cursor(ui.CursorDefault).Transition(kit.Fade)
 	hov := row.Hovered()
 	if hov {
