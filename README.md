@@ -14,9 +14,10 @@ Go 原生界面,无 WebView、不依赖 Node,直连本机 `claude` 的 stream-js
 [设计稿](docs/design) ·
 [开发笔记](docs/dev-notes.md)
 
+[![版本](https://img.shields.io/github/v/release/ixxxxoooo/minicode?label=版本&color=blue)](https://github.com/ixxxxoooo/minicode/releases/latest)
 ![平台](https://img.shields.io/badge/macOS-13%2B-black?logo=apple)
 ![Go](https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white)
-![UI](https://img.shields.io/badge/UI-MyGo%20原生-orange)
+[![UI](https://img.shields.io/badge/UI-MyGo%20原生-orange)](https://mygo.run/zh)
 
 <img src="docs/assets/shot-agent.png" alt="Agent 形态:会话流 + 审查本轮改动" width="880">
 
