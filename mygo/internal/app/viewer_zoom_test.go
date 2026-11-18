@@ -53,7 +53,7 @@ func TestWheelFactorDirectionAndCap(t *testing.T) {
 	}
 }
 
-// 输入处理:鼠标滚轮缩放并退出适应模式,触控板两指滑动平移,捏合缩放,无关事件不处理。
+// 输入处理:鼠标滚轮缩放并退出适应模式,触控板上下滑动与捏合都以光标为中心缩放,无关事件不处理。
 func TestViewerInputKinds(t *testing.T) {
 	fit, scale, px, py := true, float32(1), float32(0), float32(0)
 	h := viewerInput(&fit, &scale, &px, &py, 0.2, 6)
@@ -67,15 +67,9 @@ func TestViewerInputKinds(t *testing.T) {
 	if !h(ui.InputEvent{Kind: ui.InputScroll, DY: -40, X: 100, Y: 100}) || fit || scale <= 1 {
 		t.Fatalf("滚轮向上应放大并退出适应:fit=%v scale=%v", fit, scale)
 	}
-	s0, px0, py0 := scale, px, py
-	if !h(ui.InputEvent{Kind: ui.InputScroll, DX: 10, DY: 20, Precise: true}) {
-		t.Fatal("触控板滑动应被处理")
-	}
-	if scale != s0 || !approx(px, px0-10) || !approx(py, py0-20) {
-		t.Fatalf("触控板滑动应只平移:scale=%v pan=(%v,%v)", scale, px, py)
-	}
-	if !h(ui.InputEvent{Kind: ui.InputScroll, DY: -40, Precise: true, Mods: ui.Cmd}) || scale <= s0 {
-		t.Fatal("触控板 + ⌘ 滚动应缩放")
+	s0 := scale
+	if !h(ui.InputEvent{Kind: ui.InputScroll, DY: -40, Precise: true, X: 50, Y: 50}) || scale <= s0 {
+		t.Fatal("触控板上下滑动与滚轮一样,以光标为中心缩放(与图片灯箱一致)")
 	}
 	s1 := scale
 	if !h(ui.InputEvent{Kind: ui.InputZoom, Scale: 0.5}) || !approx(scale, s1*0.5) {

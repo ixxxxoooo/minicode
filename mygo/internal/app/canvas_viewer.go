@@ -19,6 +19,7 @@ type cvViewer struct {
 	returnBlk string
 	lastX     float32
 	lastY     float32
+	aw, ah    float32 // 画布区域上一帧的宽高:按钮缩放以区域中心为中心
 }
 
 func (a *App) openCvViewer(blockID string) {
@@ -63,8 +64,14 @@ func (a *App) canvasViewerOverlay(c *ui.Context) {
 				ui.Text(c, dg.Caption).FontWeight(500).Grow(1).SingleLine()
 				kit.Btn(c, "适应", kit.BtnOpt{Small: true}).OnClick(func() { v.fit = true })
 				kit.Btn(c, "100%", kit.BtnOpt{Small: true}).OnClick(func() { v.fit = false; v.scale = 1 })
-				kit.Btn(c, "＋", kit.BtnOpt{Small: true}).OnClick(func() { v.fit = false; v.scale = clamp(v.scale*1.15, 0.25, 4) })
-				kit.Btn(c, "－", kit.BtnOpt{Small: true}).OnClick(func() { v.fit = false; v.scale = clamp(v.scale/1.15, 0.25, 4) })
+				kit.Btn(c, "＋", kit.BtnOpt{Small: true}).OnClick(func() {
+					v.fit = false
+					v.scale, v.panX, v.panY = zoomAt(v.scale, v.panX, v.panY, v.aw/2, v.ah/2, 1.15, 0.2, 6)
+				})
+				kit.Btn(c, "－", kit.BtnOpt{Small: true}).OnClick(func() {
+					v.fit = false
+					v.scale, v.panX, v.panY = zoomAt(v.scale, v.panX, v.panY, v.aw/2, v.ah/2, 1/1.15, 0.2, 6)
+				})
 				kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "关闭 Esc"}).OnClick(closeFn)
 			})
 			panel.OnShortcut(0, ui.KeyEscape, closeFn)
@@ -88,6 +95,9 @@ func (a *App) canvasViewerOverlay(c *ui.Context) {
 				})
 			}
 			cv := ui.Box(c).Grow(1).Cursor(ui.CursorGrab)
+			if b := cv.Bounds(); b.W > 0 && b.H > 0 {
+				v.aw, v.ah = b.W, b.H
+			}
 			cv.HandleInput(viewerInput(&v.fit, &v.scale, &v.panX, &v.panY, 0.2, 6))
 			const designW = float32(520)
 			const designH = float32(150)
