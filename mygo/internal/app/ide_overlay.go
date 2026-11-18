@@ -81,7 +81,7 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 	if st.RenderFindBar == nil { // 记下查找词,迷你地图 / 标尺据此画命中刻度
 		st.RenderFindBar = func(c *ui.Context, bar ui.Element, f *editor.FindBar) {
 			tb.fq, tb.fcs = f.Query(), f.CaseSensitive()
-			editor.DefaultFindBar(c, bar, f)
+			a.findBar(c, tb, bar, f)
 		}
 	}
 	if r := tb.reveal; r != nil { // 搜索结果 / 跳转:先展开折叠再选中命中处

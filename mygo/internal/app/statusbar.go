@@ -123,7 +123,7 @@ func (a *App) statusbar(c *ui.Context) {
 					a.mcStatusChip(c, tab)
 				}
 				if tab.diskRO {
-					a.sbItem(c, "ro", func() { ui.Text(c, "只读") })
+					a.sbItem(c, "ro", func() { ui.Text(c, "只读") }).Tooltip("点击解除只读,开始编辑").OnClick(func() { a.unlockReadOnly(tab) })
 				}
 				if tier < 1 {
 					a.sbItem(c, "enc", func() { ui.Text(c, "UTF-8") }).Tooltip("文件编码(目前只支持 UTF-8)").Menu(a.encMenu)
