@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
@@ -103,6 +104,30 @@ func (a *App) detailSection(c *ui.Context, title string, body func()) {
 	})
 }
 
+// toolResultIsMarkdown 这个工具的结果文本是 Markdown(MCP 工具、联网抓取 / 搜索、技能、子 Agent 消息),按 Markdown 渲染;
+// Bash / Read / Grep 等的输出是原样文本,仍走等宽折叠块。
+func toolResultIsMarkdown(tc *core.ToolCall) bool {
+	if strings.HasPrefix(tc.Name, "mcp__") {
+		return true
+	}
+	switch tc.Name {
+	case "WebFetch", "WebSearch", "Skill", "SendMessage", "Agent", "Task":
+		return true
+	}
+	return false
+}
+
+// mdResultCard 把 Markdown 结果画进一张卡:最高 foldExpandMax,超出在卡内滚动。
+func (a *App) mdResultCard(c *ui.Context, key, text string, live bool) {
+	a.card(c, nil, func() {
+		kit.XYScroll(c).TrackScroll(a.foldScroll(key, live)).MaxHeight(float32(foldExpandMax)).Key("mdout-" + key).Children(func() {
+			ui.Column(c).Padding(8, 10).Children(func() {
+				markdown.View(c, padCode(strings.TrimSpace(text)), a.planMdOptions())
+			})
+		})
+	})
+}
+
 // toolResult 结果区:文本块逐段成卡,图片块给一行说明,没有内容时按状态说明原因。
 func (a *App) toolResult(c *ui.Context, tc *core.ToolCall) {
 	t := a.tk
@@ -115,6 +140,10 @@ func (a *App) toolResult(c *ui.Context, tc *core.ToolCall) {
 			}
 			shown++
 			text := v.Text
+			if toolResultIsMarkdown(tc) {
+				a.mdResultCard(c, foldKey("tmd", tc.ID+":"+itoa(i)), text, !tc.Status.Finished())
+				continue
+			}
 			a.card(c, nil, func() {
 				a.foldBody(c, foldKey("tout", tc.ID+":"+itoa(i)), text, !tc.Status.Finished(), true, func() { a.copyOut(text, "结果") })
 			})

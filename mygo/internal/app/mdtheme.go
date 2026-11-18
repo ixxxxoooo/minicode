@@ -78,4 +78,21 @@ func (a *App) planMdOptions() *markdown.Options {
 	return a.planMd
 }
 
+// thinkMdOptions 思考正文的 Markdown 选项:说明字号、三级灰(思考是过程,不抢正文),行距收紧。
+func (a *App) thinkMdOptions() *markdown.Options {
+	key := a.mdThemeKey + "|think|" + fmt.Sprint(a.FlowCapFont())
+	if a.thinkMd == nil || a.thinkMdKey != key || a.md == nil {
+		base := a.mdOptions()
+		th := a.mdTheme()
+		th.FontSize = a.FlowCapFont()
+		th.LineHeight = 1.6
+		th.Text = a.tk.Tx3
+		th.BlockSpacing = .4
+		th.CodeSize = 11 / theme.FsCap
+		a.thinkMd = &markdown.Options{Theme: th, OnLink: base.OnLink, LinkMenu: base.LinkMenu, LoadImage: base.LoadImage}
+		a.thinkMdKey = key
+	}
+	return a.thinkMd
+}
+
 var _ = ui.Transparent

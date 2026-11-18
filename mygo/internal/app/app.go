@@ -224,6 +224,8 @@ type App struct {
 	mdThemeKey string
 	planMd     *markdown.Options // 计划小卡概要用的小号 Markdown 选项
 	planMdKey  string
+	thinkMd    *markdown.Options // 思考正文用的 Markdown 选项(说明字号、次要灰)
+	thinkMdKey string
 
 	// 会话切换:由入口注入,按 id 造后端(空串 = 新会话)
 	opener func(id string) backend.Backend

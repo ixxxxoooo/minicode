@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/diff"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -390,7 +391,9 @@ func (a *App) thinkBody(c *ui.Context, text string) {
 	t := a.tk
 	ui.Row(c).MinWidth(0).AlignItems(ui.Stretch).Children(func() {
 		ui.Box(c).Width(2).Background(t.Bd2).Margin(0, 8, 0, 0).Shrink(0)
-		ui.Text(c, strings.TrimSpace(text)).FontSize(a.FlowCapFont()).LineHeight(1.6).TextColor(t.Tx3).Grow(1)
+		ui.Column(c).Grow(1).MinWidth(0).Children(func() { // 思考正文按 Markdown 渲染(加粗 / 列表 / 行内代码 / 代码块)
+			markdown.View(c, padCode(strings.TrimSpace(text)), a.thinkMdOptions())
+		})
 	})
 }
 
