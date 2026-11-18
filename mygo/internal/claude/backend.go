@@ -537,7 +537,13 @@ func (b *Backend) onCommand(c core.Command) {
 		if c.Model == "default" {
 			b.cfg.Model = ""
 		}
-		if b.p != nil {
+		if b.p != nil && b.thirdParty() {
+			// 第三方服务商:set_model 会让 claude 先向服务商发一次验证请求,额度用尽 / 网关不认时会 429 且「模型没变」;
+			// 不发请求,改为下一条消息前重启进程,用 --model 启动参数带上新模型(--resume 接着聊)。
+			log.Info("第三方服务商切换模型:不发验证请求,下一条消息前重启进程", "model", c.Model)
+			b.envStale = true
+			b.emit(core.EvModelChanged{Model: c.Model})
+		} else if b.p != nil {
 			b.request(req{kind: rkSetModel, model: c.Model}, func(id string) obj { return SetModel(id, c.Model) })
 		} else {
 			b.emit(core.EvModelChanged{Model: c.Model})
@@ -1208,6 +1214,15 @@ func (b *Backend) onSetEnv(c core.CmdSetEnv) {
 		if target == "" {
 			target = "default"
 		}
+		if b.thirdParty() { // 同上:第三方服务商不发 set_model 验证请求,改为下一条消息前重启进程
+			b.envStale = true
+			return
+		}
 		b.request(req{kind: rkEnvModel, what: "同步模型"}, func(id string) obj { return SetModel(id, target) })
 	}
+}
+
+// thirdParty 当前是否走第三方模型服务商(受管环境里设了 ANTHROPIC_BASE_URL;空 = 官方)。
+func (b *Backend) thirdParty() bool {
+	return managedEnvMap(b.cfg.Env)["ANTHROPIC_BASE_URL"] != ""
 }
