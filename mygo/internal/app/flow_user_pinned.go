@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/egoist/mygo/ui/richtext"
 	"strings"
 	"time"
 
@@ -16,6 +17,9 @@ type pinnedUserEdit struct {
 	draft string
 	focus bool      // 刚打开:本帧自动聚焦
 	at    time.Time // 打开的时刻:卡片从原来那张的大小「浮起并展开」的动画起点
+	// doc 是编辑卡的富文本文档:正文里的 @文件 引用与输入框一样是行内胶囊;draft 始终是它展开后的发送文本。
+	doc *richtext.Document
+	ver uint64 // doc 上次同步回 draft 时的版本
 }
 
 // userMsgAnchor 记录用户消息卡上一帧的位置(供悬浮编辑卡定位)。
@@ -201,16 +205,52 @@ func (a *App) renderPinnedUserEdit(c *ui.Context, u *core.User, id string, cardW
 		if maxLines > 32 {
 			maxLines = 32
 		}
-		edKey := "upin-ed-" + id
+		pe := a.pinnedEditByID(id)
+		if pe.doc == nil { // 第一次画:按草稿建文档,@路径 变成胶囊(与输入框同款)
+			pe.doc = richtext.NewDocument(draftToText(userDraftBody(*draft), func(kind, path string) *richtext.Attachment {
+				return a.pillAttachment(c, kind, path)
+			}))
+			pe.ver = pe.doc.Version()
+		}
+		doc := pe.doc
+		if v := doc.Version(); v != pe.ver { // 用户改了:展开成发送文本,提交 / 复制 / 估高都用 *draft
+			*draft = atomsToSend(textToDraft(doc.Text()))
+			pe.ver = v
+		}
+		h := min(lineH*3, lineH*float32(maxLines))
+		if boxes := doc.VisibleParagraphs(); len(boxes) > 0 {
+			first, last := boxes[0], boxes[len(boxes)-1]
+			h = min(max(h, last.Top+last.Height-first.Top), lineH*float32(maxLines))
+		}
+		th := &richtext.Theme{Text: t.Tx1, Muted: t.Tx3, Link: t.AcTx, Caret: t.Ac, Selection: t.Ac.Alpha(.22)}
+		wrap := ui.Column(c.Key("upin-wrap-" + id)).Cursor(ui.CursorText)
+		wrap.OnClick(func() { a.pillClickOpen(wrap, doc) }) // 点胶囊 = 打开它
 		kit.VScroll(c).Key("upin-scroll-" + id).MaxHeight(maxBody).Children(func() {
-			ed := ui.TextArea(c.Key(edKey), draft).Lines(3, maxLines).FontSize(fs).LineHeight(lh).
-				Background(ui.Transparent).BorderWidth(0).Padding(0).FocusRing(false).TextColor(t.Tx1)
-			if pe := a.pinnedEditByID(id); pe != nil && pe.focus {
-				ed.AutoFocus()
-				pe.focus = false
-			}
-			ed.OnShortcut(0, ui.KeyEscape, func() { a.closePinnedUserEdit(id) })
-			ed.OnShortcut(0, ui.KeyEnter, func() { a.submitPinnedUserEdit(id) })
+			wrap.Children(func() {
+				ed := richtext.EditorBase(c.Key("upin-ed-"+id), doc, richtext.EditorOptions{
+					Label:      "编辑消息",
+					Font:       ui.Font{Size: fs, LineHeight: lh},
+					NoMarkdown: true,
+					Theme:      th,
+					Menu:       func(m *ui.Menu) {},
+					OnKey: func(key ui.Key, mods ui.Modifiers) bool {
+						switch {
+						case key == ui.KeyEscape && mods == 0:
+							a.closePinnedUserEdit(id)
+							return true
+						case key == ui.KeyEnter && mods == 0:
+							*draft = atomsToSend(textToDraft(doc.Text()))
+							a.submitPinnedUserEdit(id)
+							return true
+						}
+						return false
+					},
+				}).Height(h)
+				if pe.focus {
+					ed.AutoFocus()
+					pe.focus = false
+				}
+			})
 		})
 		ui.Box(c).Height(1).Background(t.Bd1)
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
@@ -294,4 +334,26 @@ func (a *App) pinnedEditEstimateH(u *core.User, draft string, maxBody float32) f
 		thumbs = float32(userThumbH) + 6
 	}
 	return body + thumbs + 62
+}
+
+// userDraftBody 把用户消息文字里的 @文件 引用换成输入框草稿里的胶囊原子标记(其余原样),供编辑卡建文档。
+func userDraftBody(txt string) string {
+	var b strings.Builder
+	last := 0
+	for _, m := range userTokMatches(txt) {
+		var path string
+		switch {
+		case m[6] >= 0:
+			path = txt[m[6]:m[7]]
+		case m[8] >= 0:
+			path = txt[m[8]:m[9]]
+		default:
+			continue
+		}
+		b.WriteString(txt[last:m[0]])
+		b.WriteString(refAtom("@" + path))
+		last = m[1]
+	}
+	b.WriteString(txt[last:])
+	return b.String()
 }

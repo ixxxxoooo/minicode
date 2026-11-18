@@ -79,6 +79,7 @@ func (a *App) pillAttachment(c *ui.Context, kind, path string) *richtext.Attachm
 		Draw: func(p *ui.Painter, r ui.Rect) {
 			t := a.tk
 			box := ui.Rect{X: r.X + pillMargin, Y: r.Y, W: r.W - 2*pillMargin, H: pillH}
+			pillRects[kind+"\x1f"+path] = box // 登记位置:编辑器没有「点附件」的回调,点击时靠它命中(见 pillClickOpen)
 			p.Fill(box, t.Fill2, 5)
 			p.Stroke(box, t.Bd2, 5, 1)
 			tint := t.Tx3

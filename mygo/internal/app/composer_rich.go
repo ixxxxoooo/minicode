@@ -70,6 +70,7 @@ func (a *App) composerEditor(c *ui.Context, svc ui.Services) ui.Element {
 	if wrap.Clicked() {
 		a.ux.focusDraft = true
 	}
+	wrap.OnClick(func() { a.pillClickOpen(wrap, doc) }) // 点胶囊 = 打开它
 	a.flushPendingPills(c)
 	return ed
 }

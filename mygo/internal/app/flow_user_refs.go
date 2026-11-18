@@ -7,6 +7,7 @@ import (
 	"unicode"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/richtext"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 )
 
@@ -24,7 +25,10 @@ func (a *App) userRefChip(c *ui.Context, path string) {
 		w, _ := c.MeasureText(0, ui.Span{Text: s, Size: fs})
 		return w
 	})
-	ui.Row(c).Height(a.FlowFontSize()*1.4).PaddingX(6).Gap(4).Radius(5).Background(t.Fill2).Border(1, t.Bd2).AlignItems(ui.Center).Shrink(0).Children(func() {
+	chip := ui.ButtonBase(c).Key("uref-"+path).Height(a.FlowFontSize()*1.4).PaddingX(6).Gap(4).Radius(5).Background(t.Fill2).Border(1, t.Bd2).
+		AlignItems(ui.Center).Shrink(0).Cursor(ui.CursorPointer).Tooltip(path).Label(label)
+	chip.OnClick(func() { a.openRefPath(path, kind == atomDir) })
+	chip.Children(func() {
 		if icon == "folder" {
 			kit.Ic(c, "folder", kit.S12).TextColor(t.Tx3)
 		} else {
@@ -86,4 +90,44 @@ func userTokMatches(txt string) [][]int {
 		out = append(out, m)
 	}
 	return out
+}
+
+// pillRects 各胶囊上一次绘制的矩形(键「类型\x1f路径」)。编辑器(richtext)没有「点了某个附件」的回调,
+// 所以绘制时把位置记下来,点击时用指针位置去命中。只在界面线程读写。
+var pillRects = map[string]ui.Rect{}
+
+// openRefPath 点胶囊:文件在工作区里打开(行号后缀照常解析),文件夹在访达里显示。
+func (a *App) openRefPath(path string, dir bool) {
+	if dir {
+		if abs, ok := a.resolveUserPath(strings.TrimSuffix(path, "/")); ok {
+			a.revealInFinder(abs)
+			return
+		}
+		a.toast = "找不到文件夹:" + baseName(path)
+		return
+	}
+	if !a.openPathRef(path) && a.toast == "" {
+		a.toast = "无法打开:" + baseName(path)
+	}
+}
+
+// pillClickOpen 编辑器里点了胶囊就打开它(与会话流里的胶囊一致)。el 是包着编辑器的容器,doc 是它的文档。
+func (a *App) pillClickOpen(el ui.Element, doc *richtext.Document) {
+	x, y, ok := el.PointerPosition()
+	if !ok || doc == nil {
+		return
+	}
+	b := el.Bounds()
+	px, py := b.X+x, b.Y+y
+	txt := textToDraft(doc.Text())
+	for k, r := range pillRects {
+		if px < r.X || px > r.X+r.W || py < r.Y || py > r.Y+r.H {
+			continue
+		}
+		kind, path, _ := strings.Cut(k, "\x1f")
+		if strings.Contains(txt, atomString(kind, path)) {
+			a.openRefPath(path, kind == atomDir)
+			return
+		}
+	}
 }
