@@ -11,7 +11,7 @@ const longBlameMsg = "feat: AI 历史会话改为按钮下弹出面板、输入�
 func TestBlameInlayFitAdaptsToRoom(t *testing.T) {
 	prev := 0
 	for _, room := range []int{30, 50, 80, 120, 200} {
-		got := blameInlayFit("demo", "4 天前", longBlameMsg, room)
+		got := blameInlayFit("developer", "4 天前", longBlameMsg, room)
 		if textCells(got) > float32(room) {
 			t.Fatalf("room=%d 时不应超出:%q(%.1f 格)", room, got, textCells(got))
 		}
@@ -31,14 +31,14 @@ func TestBlameInlayFitAdaptsToRoom(t *testing.T) {
 		t.Fatalf("放得下应完整显示:%q", got)
 	}
 	// 窄到放不下:不显示 / 只显示作者与时间
-	if got := blameInlayFit("demo", "4 天前", longBlameMsg, 8); got != "" {
+	if got := blameInlayFit("developer", "4 天前", longBlameMsg, 8); got != "" {
 		t.Fatalf("room 太小应不显示:%q", got)
 	}
-	if got := blameInlayFit("demo", "4 天前", longBlameMsg, 24); strings.Contains(got, "feat") || textCells(got) > 24 {
+	if got := blameInlayFit("developer", "4 天前", longBlameMsg, 24); strings.Contains(got, "feat") || textCells(got) > 24 {
 		t.Fatalf("只够放作者与时间:%q", got)
 	}
 	// 量不出宽度(首帧):退回固定上限
-	if got := blameInlayFit("demo", "4 天前", longBlameMsg, 0); textCells(got) > float32(4+blameAuthorCells+3+8+3+blameMsgFallback) {
+	if got := blameInlayFit("developer", "4 天前", longBlameMsg, 0); textCells(got) > float32(4+blameAuthorCells+3+8+3+blameMsgFallback) {
 		t.Fatalf("量不出宽度时应有上限:%q", got)
 	}
 }

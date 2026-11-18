@@ -284,7 +284,7 @@ func (a *App) lightboxOverlay(c *ui.Context) {
 					a.lbBarBtn(c, "lb-out", "minus", "缩小 (-)", func() { a.lbZoomBy(1 / 1.25) })
 					ui.Text(c, itoa(pct)+"%").Width(52).TextAlign(ui.Center).FontSize(theme.FsCap).TextColor(lbInkA(.85))
 					a.lbBarBtn(c, "lb-in", "plus", "放大 (+)", func() { a.lbZoomBy(1.25) })
-					a.lbBarBtn(c, "lb-fit", "maximize", "适应窗口 (0)", func() { lb.zoom, lb.offX, lb.offY = 1, 0, 0 })
+					a.lbBarBtn(c, "lb-fit", "max", "适应窗口 (0)", func() { lb.zoom, lb.offX, lb.offY = 1, 0, 0 })
 					ui.Box(c).Width(1).Height(20).Background(lbInkA(.15)).Margin(0, 4)
 					a.lbBarBtn(c, "lb-open", "ext", "在预览中打开", func() {
 						_ = exec.Command("open", lb.paths[lb.idx]).Start()

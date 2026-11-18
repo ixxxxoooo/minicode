@@ -22,8 +22,8 @@ func AcctMenuDemo() AcctMenu {
 		pct = u.Limits[0].Percent
 	}
 	return AcctMenu{
-		Initial:   "L",
-		Name:      "demo",
+		Initial:   "D",
+		Name:      "demo-user",
 		Subtitle:  "Claude Max · 官方账号",
 		MonthCost: core.FormatMoney(u.Total),
 		FiveLabel: "5 小时",

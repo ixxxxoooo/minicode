@@ -23,7 +23,8 @@ func TestFileKindOf(t *testing.T) {
 	}
 }
 
-// 在输入框里选的权限模式要记住;「跳过权限确认」不记;设置里的默认模式随之变化。
+// 在输入框里选的权限模式要记住,新会话沿用最后一次选的(六种模式都记,含「跳过权限确认」);
+// 设置里的「默认权限模式」下拉只有三档,绕过 / 自动 / 不再询问不写它;禁止绕过时 DefaultPermMode 回退,不会带出绕过。
 func TestRememberPermMode(t *testing.T) {
 	a, _ := newTestApp(t)
 	a.rememberPermMode(core.ModePlan)
@@ -31,9 +32,17 @@ func TestRememberPermMode(t *testing.T) {
 		t.Fatalf("应记住计划模式,得 %v", a.DefaultPermMode())
 	}
 	a.rememberPermMode(core.ModeBypassPermissions)
-	if a.DefaultPermMode() != core.ModePlan {
-		t.Fatalf("跳过权限确认不该被记住,得 %v", a.DefaultPermMode())
+	if a.DefaultPermMode() != core.ModeBypassPermissions {
+		t.Fatalf("跳过权限确认也应被记住,得 %v", a.DefaultPermMode())
 	}
+	if got := permModeFromIndex(a.prefs.Int(pPermMode, 0)); got != core.ModePlan {
+		t.Fatalf("设置里的默认模式不该被绕过改掉,得 %v", got)
+	}
+	a.prefs.Set(pPermNoByp, true)
+	if a.DefaultPermMode() == core.ModeBypassPermissions {
+		t.Fatal("禁止绕过权限时不该带出绕过")
+	}
+	a.prefs.Set(pPermNoByp, false)
 	a.rememberPermMode(core.ModeAcceptEdits)
 	if a.DefaultPermMode() != core.ModeAcceptEdits {
 		t.Fatalf("应记住自动接受编辑,得 %v", a.DefaultPermMode())

@@ -125,7 +125,7 @@
       ? `<div class="who"><span class="avatar skel" style="opacity:.5"></span><div class="grow"><div class="skel" style="height:12px;width:55%;margin-bottom:6px"></div><div class="skel" style="height:10px;width:80%"></div></div></div>`
       : o.empty
         ? `<div class="who"><span class="avatar">?</span><div class="grow"><div class="m">未登录</div><div class="t3 fs-cap">未找到 OAuth 账户</div></div></div>`
-        : `<div class="who"><span class="avatar">${o.init || 'L'}</span><div class="grow"><div class="m">${o.name || 'demo'}</div><div class="t3 fs-cap">${o.sub || 'Claude Max · 官方账号'}</div></div></div>`;
+        : `<div class="who"><span class="avatar">${o.init || 'D'}</span><div class="grow"><div class="m">${o.name || 'demo-user'}</div><div class="t3 fs-cap">${o.sub || 'Claude Max · 官方账号'}</div></div></div>`;
     const cost = o.noCost ? '<span class="t3 grow">暂无数据</span>' : `<b class="num grow">${o.cost || '$12.40'}</b>`;
     const lim = o.noLim
       ? `<div class="q"><span style="width:62px" class="t3">账户限额</span><span class="t3 grow">暂无数据</span></div>`

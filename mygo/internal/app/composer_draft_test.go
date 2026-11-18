@@ -82,8 +82,13 @@ func TestDraftImagePathWithParens(t *testing.T) {
 			t.Fatalf("应能加入:%q", p)
 		}
 		tt.Frame()
-		if a.draftBody != "" {
-			t.Fatalf("路径不应漏进输入框正文:%q(%q)", a.draftBody, p)
+		// 图片会在光标处插入一枚位置胶囊(正文里是原子标记串,见 addDraftImage),这是正常的;
+		// 要保护的是:路径不能以明文漏进正文,胶囊必须恰好一枚且指向原路径。
+		if rest := atomRE.ReplaceAllString(a.draftBody, ""); rest != "" {
+			t.Fatalf("路径不应以明文漏进输入框正文:%q(%q)", a.draftBody, p)
+		}
+		if pills := imgAtomPaths(a.draftBody); len(pills) != 1 || !pills[p] {
+			t.Fatalf("正文里应恰有一枚指向原路径的图片胶囊:%v(%q)", pills, p)
 		}
 		atts := parseDraftAttaches(a.draftNow())
 		if len(atts) != 1 || atts[0].Path != p {

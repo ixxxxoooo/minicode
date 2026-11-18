@@ -64,6 +64,11 @@ func TestReleaseThenReconnectOnSend(t *testing.T) {
 	r := newRig(t, Config{})
 	r.b.Send(core.CmdWarmup{})
 	r.wait("握手完成", func() bool { return r.st.Conn == core.ConnReady })
+	// 握手一完成后端会自己发一次「上下文用量」请求;还有未完成的请求时回收会被拒绝(不能打断它们),
+	// 所以先等这个请求答完(出现 EvUsage),再回收,避免和它抢时序。
+	r.wait("握手后的用量请求完成", func() bool {
+		return r.hasEventLocked(func(e core.Event) bool { _, ok := e.(core.EvUsage); return ok })
+	})
 	r.b.Send(core.CmdRelease{Why: "测试"})
 	r.wait("回收后未连接", func() bool { return r.st.Conn == core.ConnNone })
 

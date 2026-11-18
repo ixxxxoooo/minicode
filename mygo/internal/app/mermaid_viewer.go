@@ -175,7 +175,7 @@ func (a *App) mermaidViewerOverlay(c *ui.Context) {
 					a.lbBarBtn(c, "mm-out", "minus", "缩小 (-)", func() { a.mmZoomBy(1 / 1.25) })
 					ui.Text(c, fmtMmPct(v.scale)).Width(52).TextAlign(ui.Center).FontSize(theme.FsCap).TextColor(lbInkA(.85))
 					a.lbBarBtn(c, "mm-in", "plus", "放大 (+)", func() { a.mmZoomBy(1.25) })
-					a.lbBarBtn(c, "mm-fit", "maximize", "适应窗口 (0)", func() { v.fit = true })
+					a.lbBarBtn(c, "mm-fit", "max", "适应窗口 (0)", func() { v.fit = true })
 					ui.Box(c).Width(1).Height(20).Background(lbInkA(.15)).Margin(0, 4)
 					a.lbBarBtn(c, "mm-copy", "copy", "复制源码", func() { a.copyOut(v.src, "Mermaid 源码") })
 				})

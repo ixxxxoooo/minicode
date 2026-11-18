@@ -8,7 +8,8 @@ import (
 	"github.com/egoist/mygo/ui/editor"
 )
 
-const localeJSON = "/Users/demo/Projects/MiniDB/locales/zh-Hans.json"
+// localeJSON 是性能测试用的大 JSON 文件。本机路径不写进仓库:由环境变量 MINI_LOCALE_JSON 指定,没设置就跳过。
+var localeJSON = os.Getenv("MINI_LOCALE_JSON")
 
 func openLocaleBracketHL(t *testing.T) (*editor.Buffer, *bracketHL) {
 	t.Helper()

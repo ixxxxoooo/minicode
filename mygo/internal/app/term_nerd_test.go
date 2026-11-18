@@ -11,6 +11,8 @@ import (
 // 用假的字体清单驱动 Nerd Font 判断(不碰真实字体目录)。
 func setFakeFonts(t *testing.T, raw ...string) {
 	t.Helper()
+	oldHas := fontHasFn // 不问真实的 CoreText:只认下面的假清单
+	fontHasFn = func(string, glyphCat) ([]bool, bool, bool) { return nil, false, false }
 	oldF, oldR, oldD := fontScan.files, fontScan.raw, fontScan.done.Load()
 	fontScan.files, fontScan.raw = nil, nil
 	for _, r := range raw {
@@ -23,6 +25,7 @@ func setFakeFonts(t *testing.T, raw ...string) {
 	systemFontScan.fams, systemFontScan.byLower = nil, map[string]ui.FontFamily{}
 	systemFontScan.done.Store(true)
 	t.Cleanup(func() {
+		fontHasFn = oldHas
 		fontScan.files, fontScan.raw = oldF, oldR
 		fontScan.done.Store(oldD)
 		systemFontScan.fams, systemFontScan.byLower = oldFams, oldBy
