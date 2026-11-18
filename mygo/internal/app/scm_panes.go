@@ -67,7 +67,7 @@ func (a *App) scmGraph(c *ui.Context) {
 			ui.Text(c, "图形").FontSize(theme.Px(10.5)).FontWeight(500).LetterSpacing(.3)
 			ui.Spacer(c).Grow(1)
 			if has {
-				ui.Text(c, itoa(len(s.log))+" 个提交").FontSize(theme.FsMicro).TextColor(t.Tx4)
+				ui.Text(c, a.scmLogCount()).FontSize(theme.FsMicro).TextColor(t.Tx4)
 				kit.Ib(c, "max", kit.IbOpt{Small: true, Tip: "在工作区打开完整图谱"}).OnClick(a.openGraph)
 			}
 		})
@@ -82,28 +82,43 @@ func (a *App) scmGraph(c *ui.Context) {
 			return
 		}
 		ui.Column(c).Key("scm-graph-body").Height(h).Shrink(0).Children(func() {
-			kit.VScroll(c).Key("scm-graph").Grow(1).MinHeight(0).Children(func() {
-				ui.Column(c).Padding(0, 0, 4, 0).Children(func() { a.scmGraphRows(c) })
-			})
+			a.scmGraphList(c, h)
 		})
 	})
 }
 
-// scmGraphRows 画提交行(逐行落下动画见下)。
-func (a *App) scmGraphRows(c *ui.Context) {
+// scmGraphList 画图形分区里的提交列表:虚拟列表(只构建可见行)+ 末尾状态行,滚到离底部不足一屏就预取下一页。
+// 参数 viewH:列表可视高度(落下动画估算可见行用)。
+func (a *App) scmGraphList(c *ui.Context, viewH float32) {
 	s := &a.sc
+	n := len(s.log)
 	// 提交记录常常比「切到 Git」晚几百毫秒才读完:这时导航栏的逐行落下早已播完,
 	// 数据一到整片图谱就会一下子蹦出来。数据晚到(距导航落下起点 > 400 ms)时,图谱自己从头逐行落一遍。
 	if !s.graphShown {
 		s.graphShown, s.graphAt = true, kit.Now()
 	}
-	saveAt, saveIdx := a.navDropAt, a.navDropIdx
-	if s.graphAt.Sub(a.navDropAt) > 400*time.Millisecond && kit.Since(s.graphAt) < 2*time.Second {
-		a.navDropAt, a.navDropIdx = s.graphAt, 1
-	}
+	late := s.graphAt.Sub(a.navDropAt) > 400*time.Millisecond && kit.Since(s.graphAt) < 2*time.Second
 	gw := float32(s.lanes*graphLaneW + 6)
-	for i, cm := range s.log {
-		a.scmCommitRow(c, i, cm, s.rows[i], gw)
+	s.sideList.Key = func(i int) any { // 行跟着提交走:追加新行、刷新时滚动位置与展开状态都不乱
+		if i < len(s.log) {
+			return s.log[i].Hash
+		}
+		return "scm-log-foot"
 	}
-	a.navDropAt, a.navDropIdx = saveAt, max(saveIdx, a.navDropIdx)
+	list := ui.List(c, &s.sideList, n+1, func(i int) {
+		if i >= len(s.log) || i >= len(s.rows) {
+			a.scmLogFooter(c)
+			return
+		}
+		cm := s.log[i]
+		saveAt := a.navDropAt
+		if late {
+			a.navDropAt = s.graphAt
+		}
+		drop := func(el ui.Element) ui.Element { return a.listNavDrop(el, i, n, &s.sideList, s.sideSt.Y, viewH) }
+		ui.Column(c).Key("scm-cr-" + cm.Hash).Children(func() { a.scmCommitRow(c, i, cm, s.rows[i], gw, drop) })
+		a.navDropAt = saveAt
+	}).Grow(1).MinHeight(0).TrackScroll(&s.sideSt)
+	kit.ApplyNativeScroll(list, "scm-graph", &s.sideSt, false, true)
+	a.scmLogWatch(&s.sideList, n)
 }

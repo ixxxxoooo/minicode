@@ -327,11 +327,13 @@ func laneColor(t *theme.Tokens, lane int) ui.Color {
 	return cols[lane%len(cols)]
 }
 
-func (a *App) scmCommitRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow, gw float32) {
+// scmCommitRow 画一条提交(展开时下面跟文件列表)。
+// 参数 drop:给这一行套落下入场动画的函数(虚拟列表里按可见范围算,见 scm_panes.go)。
+func (a *App) scmCommitRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow, gw float32, drop func(ui.Element) ui.Element) {
 	t := a.tk
 	s := &a.sc
 	open := s.expanded == cm.Hash
-	r := a.navDrop(ui.ButtonBase(c).Key("scm-c-" + cm.Hash)).Height(graphRowH).PaddingX(2).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx2)
+	r := drop(ui.ButtonBase(c).Key("scm-c-" + cm.Hash)).Height(graphRowH).PaddingX(2).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx2)
 	if open && t.Scheme.ID == "b" {
 		r.Background(t.Raised)
 		for _, sh := range t.Shadow1() {

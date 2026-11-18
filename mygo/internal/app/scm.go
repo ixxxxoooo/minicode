@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
@@ -48,6 +49,14 @@ type scmState struct {
 	stashFilesAll map[int]bool // true = 展开全部文件(默认只显示前几条)
 	splitH        float32      // 「更改列表 + 图形」区域上一帧高度
 	contentH      float32      // 更改列表内容的自然高度(上一帧)
+	logLimit      int          // 提交图谱已请求的条数上限(0 = 首批 scmLogFirst);翻页 = 加大它后整体重读,见 scm_log_page.go
+	logMore       bool         // 还有更早的提交没读(读回条数 ≥ 请求条数)
+	logPaging     bool         // 正在读取更早的提交
+	logErr        string       // 读取更早提交失败的原因(空 = 没有失败)
+	sideList      ui.ListState // 左栏「图形」分区的虚拟列表
+	sideSt        ui.ScrollState
+	graphList     ui.ListState // 工作区「Git 图谱」整页的虚拟列表
+	graphSt       ui.ScrollState
 }
 
 // scmRefreshEvery 是面板可见时自动重读状态的间隔(git status 很轻,另外文件监视接上后可去掉)。
@@ -93,12 +102,14 @@ func (a *App) scmRefresh() {
 	s.gen++
 	gen := s.gen
 	s.loading, s.last = true, time.Now()
+	limit := a.scmLogLimit() // 在界面线程取:后台只读这个快照
 	a.bg("scm", func() func() {
 		end := diag.SpanSlow("scm", "读取仓库状态", 300*time.Millisecond)
 		cs, err := repo.Status()
 		var lg []vcs.Commit
+		var lerr error
 		if err == nil {
-			lg, _ = repo.Log(60)
+			lg, lerr = repo.Log(limit)
 		}
 		ah, bh := repo.AheadBehind()
 		ss, _ := repo.Stashes()
@@ -117,13 +128,9 @@ func (a *App) scmRefresh() {
 			}
 			s.err = ""
 			sortChanges(cs)
-			s.changes, s.log, s.ahead, s.behind, s.stashes = cs, lg, ah, bh, ss
+			s.changes, s.ahead, s.behind, s.stashes = cs, ah, bh, ss
 			s.rebase, s.merging = op == "rebase", op == "merge"
-			s.rows = vcs.Layout(lg)
-			s.lanes = 1
-			for _, r := range s.rows {
-				s.lanes = max(s.lanes, r.Width)
-			}
+			a.scmApplyLog(lg, lerr, limit)
 			a.syncTreeGit()
 			a.refreshDiffTabs()
 		}

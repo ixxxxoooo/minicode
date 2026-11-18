@@ -71,7 +71,7 @@ func (a *App) graphView(c *ui.Context) {
 			}
 		}
 		if len(s.log) > 0 {
-			ui.Text(c, a.branch+" · "+itoa(len(s.log))+" 个提交").FontSize(theme.FsCap).TextColor(t.Tx3)
+			ui.Text(c, a.branch+" · "+a.scmLogCount()).FontSize(theme.FsCap).TextColor(t.Tx3)
 		}
 	}, func() {
 		in := ui.TextInputBase(c.Key("graph-q"), &g.q).Width(200).Height(theme.Px(24)).PaddingX(8).Radius(t.RSm()).Background(t.Fill1).
@@ -114,11 +114,23 @@ func (a *App) graphView(c *ui.Context) {
 		hd("日期", 84)
 		hd("哈希", 60)
 	})
-	kit.VScroll(c).Key("graph-scroll").Grow(1).MinHeight(0).Children(func() {
-		for i, cm := range s.log {
-			a.graphBigRow(c, i, cm, s.rows[i], gw, m.hit(cm))
+	// 虚拟列表:只构建可见行;滚到离底部不足一屏就预取下一页(见 scm_log_page.go)
+	s.graphList.Key = func(i int) any {
+		if i < len(s.log) {
+			return s.log[i].Hash
 		}
-	})
+		return "scm-log-foot"
+	}
+	list := ui.List(c, &s.graphList, len(s.log)+1, func(i int) {
+		if i >= len(s.log) || i >= len(s.rows) {
+			a.scmLogFooter(c)
+			return
+		}
+		cm := s.log[i]
+		a.graphBigRow(c, i, cm, s.rows[i], gw, m.hit(cm))
+	}).Grow(1).MinHeight(0).TrackScroll(&s.graphSt)
+	kit.ApplyNativeScroll(list, "graph-scroll", &s.graphSt, false, true)
+	a.scmLogWatch(&s.graphList, len(s.log))
 	a.graphDetail(c)
 }
 
