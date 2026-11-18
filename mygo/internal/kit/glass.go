@@ -99,14 +99,19 @@ func FloatLift(el ui.Element) ui.Element {
 
 // GlassSheen 给玻璃面板顶部叠一层渐隐的白色高光(设计稿 --glass-sheen:顶部 26% 高度的白色渐变),
 // 让玻璃有「厚度」而不是平的半透明。画在面板底(材质)之后、内容之前;高度取面板的 26%,最高 220。
-func GlassSheen(el ui.Element) ui.Element {
+//
+// 参数 radius 必须是该元素的圆角:Draw 里的绘制不会自动按元素圆角裁剪,不裁就会在四角外面露出方角的亮块
+// (方案 B 的圆角岛上最明显),所以整段高光放进 p.Clip(盒子, radius) 里画。
+func GlassSheen(el ui.Element, radius float32) ui.Element {
 	if !T.Glass() {
 		return el
 	}
 	c := T.Tone().Sheen
 	return el.Draw(func(p *ui.Painter, r ui.Rect) {
-		h := min(r.H*.26, 220)
-		p.FillGradient(ui.Rect{X: r.X, Y: r.Y, W: r.W, H: h}, ui.LinearGradient{Angle: 180, From: c, To: c.Alpha(0)}, 0)
+		p.Clip(r, radius, func() {
+			h := min(r.H*.26, 220)
+			p.FillGradient(ui.Rect{X: r.X, Y: r.Y, W: r.W, H: h}, ui.LinearGradient{Angle: 180, From: c, To: c.Alpha(0)}, 0)
+		})
 	})
 }
 

@@ -14,7 +14,7 @@ import "github.com/egoist/mygo/ui"
 // glassMenuPanel 给弹出菜单的面板(含子菜单)套上玻璃:磨砂材质 + 浅色高光边,阴影沿用框架自带的。
 func glassMenuPanel(panel ui.Element) {
 	panel.Material(GlassMat(0)).BorderColor(T.Tone().RimLo)
-	GlassSheen(panel)
+	GlassSheen(panel, T.RSm()+2) // 框架里菜单面板的圆角 = Theme.Radius + 2,Theme.Radius 取的是 RSm
 }
 
 // CtxMenu 给元素挂右键菜单(等价于 el.ContextMenu(build)):玻璃主题下面板是玻璃。
