@@ -59,7 +59,7 @@
     const nav = W.navOf(st), k = NAVS.findIndex(n => n[0] === nav);
     return `<aside class="side"><div class="side-in">
       <div class="side-top"><div class="navseg grow">${seg(NAVS.map(n => ic(n[1]) + (n[0] === 'scm' ? '<i class="nav-dot" title="有未提交的改动"></i>' : '')), k, 'icons', 'nav')}</div>
-        <span class="side-title grow">${NAVS[k][2]}</span><span class="only-c">${ib('plus', 'sm', '新建')}</span></div>
+        <span class="side-title grow">${NAVS[k][2]}</span><span class="only-c">${ib('folderPlus', 'sm', '添加项目或工作区')}</span></div>
       <div class="side-body">${W.panel(nav, st.scheme, st.io)}</div>
       <div class="side-foot">${PAGES.map(([n, t, id]) => ib(n, 'tip-u ' + (st.screen === id ? 'on' : ''), t, `data-act="screen" data-screen="${id}"`)).join('')}<span class="grow"></span>${ib('gear', 'tip-u acct-btn', '账号与设置', 'data-act="acct"')}</div>
     </div></aside>`;
@@ -73,7 +73,7 @@
     <div class="fc g2 recent" style="width:600px;max-width:92%;margin-top:10px"><div class="t3 fs-cap b" style="color:var(--tx-3)">最近会话</div>${[['完整修复路径匹配', '5 分钟前'], ['梳理路由层结构', '昨天']].map(([t, w]) => `<div class="row" style="height:28px;padding:0 8px"><span class="ell grow">${t}</span><span class="t4 aux">${w}</span></div>`).join('')}</div></div>`;
   /** 对话栏头部。宽 / 中:标题 + 分支 + 历史 + 更多;窄(IDE 右侧停靠):标题变下拉,补上「新会话」「占满」 */
   const chatHead = (title, o = {}) => `<div class="chat-head"><div class="ttl" data-act="hist">${o.run ? '<span class="dot ac only-narrow"></span>' : ''}<b class="ell">${title}</b>${ic('chevD', 's12 t3 only-narrow')}</div>${o.branch ? chip('main', 'branch', 'not-narrow') : ''}<span class="grow"></span>
-    <span class="only-narrow f ai">${ib('plus', 'sm', '新会话 ⌘N', 'data-act="newchat"')}</span>${ib('history', 'sm', '历史会话 ⌘⇧H', 'data-act="hist"')}<span class="only-narrow f ai">${ib('max', 'sm', '对话占满 ⌘⇧M', 'data-act="chatmax"')}</span>${ib('more', 'sm', '更多:重命名、分叉、归档、复制链接')}</div>`;
+    <span class="only-narrow f ai">${ib('chatPlus', 'sm', '新会话 ⌘N', 'data-act="newchat"')}</span>${ib('history', 'sm', '历史会话 ⌘⇧H', 'data-act="hist"')}<span class="only-narrow f ai">${ib('max', 'sm', '对话占满 ⌘⇧M', 'data-act="chatmax"')}</span>${ib('more', 'sm', '更多:重命名、分叉、归档、复制链接')}</div>`;
   /** 历史会话弹层(本项目最近的会话 + 搜索 + 全部历史)。是「跳转」不是第二份列表:家仍是左栏「会话」 */
   F.hist = () => { const r = (t, time, dot, on) => `<div class="row ${on ? 'on' : ''}">${dot ? `<span class="dot ${dot}"></span>` : '<span style="width:6px"></span>'}<span class="grow ell">${t}</span><span class="aux">${time}</span></div>`;
     return `<div class="hist-pop pop a-pop-up"><label class="inp fill">${ic('search', 's12')}<input placeholder="搜索 router-demo 的会话" spellcheck="false" style="all:unset;flex:1;min-width:0"></label>
