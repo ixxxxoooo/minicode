@@ -1,6 +1,6 @@
 /* 设计稿 v3 · 自定义页:左分类栏 + 列表 + 专属详情
    插件(已安装 / 市场 / 安装进度)、MCP(状态与动作 / 工具开关 / 运行参数)、Skills(文件树 + 预览)、斜杠命令(编辑器)、
-   子 Agent(工具权限表单)、规则与记忆(编辑 / 预览 + 加载顺序)、钩子(事件 / 匹配 / 命令 / 试运行)。
+   子 Agent(工具权限表单)、规则与记忆(默认预览,可切到编辑 + 加载顺序)、钩子(事件 / 匹配 / 命令 / 试运行)。
    数据放在本文件里并随交互真的改动(开关、新建、删除、安装),由 behave.js 驱动局部刷新。
    删除:详情标题行垃圾桶 → 居中确认框「删除 xxx? / 此操作不可撤销 / 取消·删除」→ 选中项落到相邻行,列表空时左侧空态。
    @author ixxxxoooo */
@@ -149,8 +149,8 @@
     rules: (st) => { const r = DATA.rules[st.cuSel] || DATA.rules[0];
       const md = r.body.split('\n').map(l => l.startsWith('# ') ? `<div class="b fs-title" style="margin:2px 0 4px">${esc(l.slice(2))}</div>` : l.startsWith('- ') ? `<div class="f g3"><span class="dot ac" style="margin-top:7px"></span><span>${esc(l.slice(2))}</span></div>` : l ? `<div>${esc(l)}</div>` : '<div style="height:6px"></div>').join('');
       return `${dhead('fileText', esc(r.n))}
-        <div class="f ai">${seg(['编辑', '预览'], 0, '', 'rule-mode')}<span class="grow"></span><span class="t3 fs-cap num">${r.size} · 约 ${r.tok} token · 占上下文 ${(r.tok / 2000).toFixed(1)}%</span></div>
-        <div id="rule-ed">${area(r.body, { mono: 1, id: 'rule-b', rows: 8 })}</div><div id="rule-pv" class="mdprev" hidden>${md}</div>
+        <div class="f ai">${seg(['编辑', '预览'], 1, '', 'rule-mode')}<span class="grow"></span><span class="t3 fs-cap num">${r.size} · 约 ${r.tok} token · 占上下文 ${(r.tok / 2000).toFixed(1)}%</span></div>
+        <div id="rule-ed" hidden>${area(r.body, { mono: 1, id: 'rule-b', rows: 8 })}</div><div id="rule-pv" class="mdprev">${md}</div>
         ${lbl('加载顺序(后加载的优先)', `<div class="f ai g2 fs-cap">${['用户', '项目', '本地'].map((n, j) => `<span class="chip ${'upl'[j] === r.sc ? 'on' : 'line'}">${n}</span>${j < 2 ? ic('chevR', 's12 t4') : ''}`).join('')}</div>`)}
         <div class="card" style="padding:2px 4px"><div class="row" style="height:auto;padding:5px 8px"><div class="grow"><div class="m">加载 CLAUDE.md 记忆文件</div><div class="t3 fs-micro">关闭后新会话不读任何记忆文件(CLAUDE_CODE_DISABLE_CLAUDE_MDS=1)</div></div>${tog(1)}</div></div>
         <div class="cu-foot f g2"><span class="grow"></span>${btn('在 IDE 中打开', '', 'code', `data-act="open-ide" data-file="${esc(r.n)}"`)}${btn('保存', 'pri', '', 'data-act="cu-save"')}</div>`; },

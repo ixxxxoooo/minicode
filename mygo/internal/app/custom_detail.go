@@ -634,17 +634,17 @@ func (a *App) cuRule(c *ui.Context, st *customize.Store, it *customize.Item) fun
 	d := &a.cu.draft
 	a.cuHead(c, st, it, "fileText", it.Name, a.cuHeadDel(c, st, it, "删除"))
 	ui.Row(c).AlignItems(ui.Center).Children(func() {
-		on := 0
-		if a.cu.rulePV {
-			on = 1
+		on := 1 // 默认预览;点「编辑」才进入编辑
+		if a.cu.ruleEdit {
+			on = 0
 		}
 		if i := kit.Seg(c, []kit.SegItem{{Text: "编辑"}, {Text: "预览"}}, on, kit.SegOpt{Key: "cr-mode"}); i >= 0 {
-			a.cu.rulePV = i == 1
+			a.cu.ruleEdit = i == 0
 		}
 		ui.Spacer(c).Grow(1)
 		ui.Text(c, it.Size+" · 约 "+itoa(it.Tokens)+" token · 占上下文 "+pct1(it.RuleTokenPct())+"%").FontSize(theme.FsCap).TextColor(t.Tx3)
 	})
-	if a.cu.rulePV {
+	if !a.cu.ruleEdit {
 		// 预览按正文同样的 Markdown 渲染(标题 / 列表 / 代码块 / 表格 / 链接),不再是手写的逐行解析
 		ui.Column(c).Padding(10, 12).Background(t.Fill1).Radius(t.RSm()).Children(func() {
 			markdown.View(c, padCode(d.Body), a.mdOptions())

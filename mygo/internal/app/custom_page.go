@@ -40,7 +40,7 @@ type custState struct {
 	mkMore       int               // 市场里「显示更多」点过几次(每次多一页)
 	draft        customize.Item    // 选中项的草稿副本(文本框绑它,保存才写回)
 	dOf          *customize.Item   // 草稿对应哪一项
-	rulePV       bool              // 规则:预览
+	ruleEdit     bool              // 规则:编辑模式(默认 false = 预览;切换条目 / 分类时回到预览)
 	hookOut      string
 	runOut       string
 	err          string
@@ -110,7 +110,7 @@ func (a *App) cuSelect(it *customize.Item) {
 	a.cu.sel = it
 	a.cu.dOf = nil
 	a.cu.delArm, a.cu.err, a.cu.hookOut, a.cu.runOut = nil, "", "", ""
-	a.cu.rulePV = false
+	a.cu.ruleEdit = false
 	a.cu.skillOf, a.cu.skillFile, a.cu.skillPrev, a.cu.skillPrevErr = "", "", "", ""
 }
 
@@ -120,7 +120,7 @@ func (a *App) cuResetNav() {
 	s.sel, s.mk, s.dOf, s.delArm = nil, nil, nil, nil
 	s.draft = customize.Item{}
 	s.err, s.hookOut, s.runOut, s.detail = "", "", "", false
-	s.rulePV = false
+	s.ruleEdit = false
 	s.skillOf, s.skillFile, s.skillPrev, s.skillPrevErr = "", "", "", ""
 }
 
