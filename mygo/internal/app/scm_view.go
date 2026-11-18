@@ -3,7 +3,6 @@ package app
 import (
 	"math"
 	"path"
-	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -67,7 +66,7 @@ func (a *App) scmBody(c *ui.Context) {
 		}
 		i++
 	}
-	ui.Column(c).Grow(1).MinHeight(0).Children(func() {
+	ui.Column(c).Key("scm-body").Grow(1).MinHeight(0).Children(func() {
 		a.scmHead(c)
 		a.scmPushGuide(c)
 		if e := a.activeRepo(); e != nil { // 多仓库:提交前再确认一眼作用在哪个仓库
@@ -80,8 +79,27 @@ func (a *App) scmBody(c *ui.Context) {
 		a.wizardBar(c)
 		a.scmCommitBox(c, len(staged))
 		a.scmReviewRow(c)
+		// 更改列表 + 图形:图形默认占满更改列表下方的剩余空间(更改少 / 为空时图形自动上移),
+		// 更改多时图形保持用户拖出的高度,更改列表自己滚动。两个高度都取上一帧的实测值。
+		split := ui.Column(c).Key("scm-split").Grow(1).MinHeight(0)
+		defer func() { s.splitH = split.Bounds().H }()
+		split.Children(func() {
+			a.scmChanges(c, staged, work, conf)
+			a.scmGraph(c) // 固定在底部,不随更改列表滚走
+		})
+	})
+}
+
+// scmChanges 画中间可滚动的更改区(冲突 / 暂存 / 更改 / 储藏),并记下内容的自然高度供图形分区上移用。
+// 参数 staged / work / conf:已拆好的暂存、工作区、冲突三组改动。
+func (a *App) scmChanges(c *ui.Context, staged, work, conf []vcs.Change) {
+	t := a.tk
+	s := &a.sc
+	{
 		kit.VScroll(c).Key("scm").Grow(1).MinHeight(0).Children(func() {
-			ui.Column(c).Padding(0, 0, 8, 0).Children(func() {
+			content := ui.Column(c).Padding(0, 0, 8, 0)
+			defer func() { s.contentH = content.Bounds().H }()
+			content.Children(func() {
 				a.scmNestedHints(c)
 				if len(conf) > 0 {
 					a.scmGroup(c, "merge", "合并冲突", conf, "", "")
@@ -94,10 +112,9 @@ func (a *App) scmBody(c *ui.Context) {
 					ui.Text(c, "没有未提交的更改").FontSize(theme.FsCap).TextColor(t.Tx4).Padding(6, 8)
 				}
 				a.scmStashes(c)
-				a.scmGraph(c)
 			})
 		})
-	})
+	}
 }
 
 // scmHead 是分支行:分支按钮 + 刷新 / 拉取 / 推送。
@@ -303,48 +320,7 @@ func (a *App) scmStat(c *ui.Context, ch vcs.Change) {
 
 // ───────── 图形 ─────────
 
-func (a *App) scmGraph(c *ui.Context) {
-	t := a.tk
-	s := &a.sc
-	h := a.navDrop(ui.ButtonBase(c).Key("scm-h-graph")).Height(theme.Px(24)).PaddingX(4).Gap(4).AlignItems(ui.Center).Radius(t.RSm()).Cursor(ui.CursorPointer).TextColor(t.Tx3).Margin(8, 0, 0, 0)
-	if h.Hovered() {
-		h.Background(t.Fill1)
-	}
-	h.OnClick(func() { s.folded["graph"] = !s.folded["graph"] })
-	h.Children(func() {
-		kit.Ic(c, map[bool]string{true: "chevR", false: "chevD"}[s.folded["graph"]], kit.S12)
-		ui.Text(c, "图形").FontSize(theme.Px(10.5)).FontWeight(500).LetterSpacing(.3)
-		ui.Spacer(c).Grow(1)
-		if len(s.log) > 0 {
-			ui.Text(c, itoa(len(s.log))+" 个提交").FontSize(theme.FsMicro).TextColor(t.Tx4)
-			kit.Ib(c, "max", kit.IbOpt{Small: true, Tip: "在工作区打开完整图谱"}).OnClick(a.openGraph)
-		}
-	})
-	if s.folded["graph"] {
-		return
-	}
-	if len(s.log) == 0 {
-		s.graphShown = false
-		if s.loaded {
-			ui.Text(c, "还没有提交").FontSize(theme.FsCap).TextColor(t.Tx4).Padding(6, 8)
-		}
-		return
-	}
-	// 提交记录常常比「切到 Git」晚几百毫秒才读完:这时导航栏的逐行落下早已播完,
-	// 数据一到整片图谱就会一下子蹦出来。数据晚到(距导航落下起点 > 400 ms)时,图谱自己从头逐行落一遍。
-	if !s.graphShown {
-		s.graphShown, s.graphAt = true, kit.Now()
-	}
-	saveAt, saveIdx := a.navDropAt, a.navDropIdx
-	if s.graphAt.Sub(a.navDropAt) > 400*time.Millisecond && kit.Since(s.graphAt) < 2*time.Second {
-		a.navDropAt, a.navDropIdx = s.graphAt, 1
-	}
-	gw := float32(s.lanes*graphLaneW + 6)
-	for i, cm := range s.log {
-		a.scmCommitRow(c, i, cm, s.rows[i], gw)
-	}
-	a.navDropAt, a.navDropIdx = saveAt, max(saveIdx, a.navDropIdx)
-}
+// scmGraph 的实现见 scm_panes.go(固定在底部的「图形」分区)。
 
 func laneColor(t *theme.Tokens, lane int) ui.Color {
 	cols := []ui.Color{t.Ac, t.Info, t.Ok, t.Warn, t.Err}

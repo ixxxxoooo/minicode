@@ -46,6 +46,8 @@ type scmState struct {
 	stashFiles    map[int][]vcs.Change
 	stashBusy     map[int]bool // 正在读取储藏文件列表
 	stashFilesAll map[int]bool // true = 展开全部文件(默认只显示前几条)
+	splitH        float32      // 「更改列表 + 图形」区域上一帧高度
+	contentH      float32      // 更改列表内容的自然高度(上一帧)
 }
 
 // scmRefreshEvery 是面板可见时自动重读状态的间隔(git status 很轻,另外文件监视接上后可去掉)。
