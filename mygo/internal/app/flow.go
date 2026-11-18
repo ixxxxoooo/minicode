@@ -19,6 +19,11 @@ func (a *App) flowCol(c *ui.Context, inner func()) {
 	ui.Column(c).MaxWidth(a.flowMaxWidth()).PaddingX(a.flowPad()).WidthPercent(100).Children(inner)
 }
 
+// flowColGap 同 flowCol,但行与行之间留 gap(会话流本身是 Gap(8) 的列表;子 Agent 标签页这种直接排的列要自己留)。
+func (a *App) flowColGap(c *ui.Context, gap float32, inner func()) {
+	ui.Column(c).MaxWidth(a.flowMaxWidth()).PaddingX(a.flowPad()).WidthPercent(100).Gap(gap).Children(inner)
+}
+
 // flowPad 是会话流内容列的左右内边距,按对话栏自己的宽度三档(设计稿 ws.css:宽 20 / 中 14 / 窄 10)。
 func (a *App) flowPad() float32 {
 	switch a.chatTier() {
