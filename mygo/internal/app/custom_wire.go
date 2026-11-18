@@ -246,6 +246,12 @@ func (a *App) cuReconnectReal(it *customize.Item) {
 			}
 			ok := it.Status == customize.StOK
 			name, desc := it.Name, it.Desc
+			if rs, found := a.runtimeMcp(name); found { // 以会话里的状态为准,与列表一致
+				ok = rs.Conn == core.McpConnected
+				if rs.Error != "" {
+					desc = customize.ShortMCPErr(rs.Error)
+				}
+			}
 			a.mcpManualRefresh(a.mcpRuntimeReady())
 			if ok {
 				a.toast = "已连接「" + name + "」"

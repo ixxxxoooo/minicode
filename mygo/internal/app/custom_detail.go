@@ -5,6 +5,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/claude"
+	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/customize"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
@@ -97,11 +98,14 @@ func (a *App) cuBanner(c *ui.Context, kind kit.TagKind, icon, text string, acts 
 	case kit.KInfo:
 		bg, fg = t.Fill1, t.Info
 	}
-	ui.Row(c).Padding(8, 10).Gap(8).AlignItems(ui.Center).Background(bg).Radius(t.RMd()).Children(func() {
-		kit.Ic(c, icon, kit.S12).TextColor(fg)
-		ui.Text(c, text).Grow(1).MinWidth(0).LineHeight(1.5)
+	// 文字占满一行,按钮另起一行靠右:右侧抽屉很窄,按钮和文字挤在同一行会把文字挤成一列窄条
+	ui.Column(c).Padding(8, 10).Gap(8).Background(bg).Radius(t.RMd()).Children(func() {
+		ui.Row(c).Gap(8).AlignItems(ui.Start).Children(func() {
+			kit.Ic(c, icon, kit.S12).TextColor(fg).Margin(3, 0, 0, 0).Shrink(0)
+			ui.Text(c, text).Grow(1).MinWidth(0).LineHeight(1.5)
+		})
 		if acts != nil {
-			acts()
+			ui.Row(c).Gap(8).Justify(ui.End).AlignItems(ui.Center).Children(acts)
 		}
 	})
 }
@@ -307,6 +311,28 @@ func (a *App) cuMCP(c *ui.Context, st *customize.Store, it *customize.Item) func
 	t := a.tk
 	a.cuHead(c, st, it, "server", it.Name, a.cuHeadDel(c, st, it, "删除"))
 	status := it.Status
+	// 状态以运行时会话报告的为准(列表就是读它):`claude mcp list` 是另起的子进程,环境 / 登录态与会话里的不一样,
+	// 可能报失败而会话里其实已连上(列表绿点「已连接 · 83 个工具」、详情红条「连接失败」就是这样对不上)
+	if rs, ok := a.runtimeMcp(it.Name); ok {
+		switch rs.Conn {
+		case core.McpConnected:
+			status = customize.StOK
+		case core.McpNeedsAuth:
+			status = customize.StWarn
+		case core.McpFailed:
+			status = customize.StErr
+			if rs.Error != "" {
+				it.Desc = "连接失败 · " + customize.ShortMCPErr(rs.Error)
+			}
+		case core.McpPending:
+			status = customize.StNone
+		}
+		if len(it.Tools) == 0 && len(rs.Tools) > 0 { // 运行时才有工具名:补上,详情里才能列出与开关
+			for _, n := range rs.Tools {
+				it.Tools = append(it.Tools, customize.Tool{Name: n, On: true})
+			}
+		}
+	}
 	if !it.On { // 开关关着就是停用,不管上次探活是什么结果
 		status = customize.StOff
 	}
@@ -760,4 +786,17 @@ func (a *App) cuMCPEnvRefs(c *ui.Context, it *customize.Item) {
 			a.mcpEnvSrc = nil
 		})
 	})
+}
+
+// runtimeMcp 取运行时会话(mcp_status)里这个服务器的状态;会话没起或没报告返回 false。
+func (a *App) runtimeMcp(name string) (core.McpServerStatus, bool) {
+	if a.st == nil {
+		return core.McpServerStatus{}, false
+	}
+	for _, s := range a.st.Mcp {
+		if s.Name == name {
+			return s, true
+		}
+	}
+	return core.McpServerStatus{}, false
 }
