@@ -75,9 +75,8 @@ func (a *App) chatHead(c *ui.Context, title string) {
 			kit.Chip(c, a.branch, kit.ChipOpt{Icon: "branch", Tip: "切换分支"}).OnClick(func() { a.OpenQuick("branch", "") })
 		}
 		ui.Spacer(c).Grow(1)
-		if narrow {
-			kit.Ib(c, "chatPlus", kit.IbOpt{Small: true, Tip: "新会话 ⌘N"}).OnClick(a.NewSession)
-		}
+		// 历史按钮左边:快速在当前项目 / 工作区新建会话(各档都显示;工作区里落在成员文件夹,见 NewSession)
+		kit.Ib(c, "chatPlus", kit.IbOpt{Small: true, Tip: "在当前项目 / 工作区新建会话 ⌘N"}).OnClick(a.NewSession)
 		histBtn := kit.Ib(c, "history", kit.IbOpt{Small: true, Tip: "历史会话 ⌘⇧H", On: a.popup == "hist"}).OnClick(func() { a.togglePop("hist") })
 		if !narrow {
 			a.histPopup(c, histBtn, true) // 宽 / 中档:弹层从历史按钮正下方展开、右缘对齐按钮,不再跑到标题下面
