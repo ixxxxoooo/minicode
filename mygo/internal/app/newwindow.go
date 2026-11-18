@@ -93,6 +93,21 @@ func (a *App) noteRecentProject(dir string) {
 	a.prefs.Set(kRecentProjects, strings.Join(list, "\n"))
 }
 
+// LastProject 启动时恢复「上次选中的项目」:最近项目列表(每次切换项目都会把它挪到最前)里第一个仍存在的目录;没有返回空串。
+// 此前启动总落在「会话最近有活动」的项目上,和用户上次手动选的不是一回事。
+func LastProject(get func(key, def string) string) string {
+	for _, p := range strings.Split(get(kRecentProjects, ""), "\n") {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		if st, err := os.Stat(p); err == nil && st.IsDir() {
+			return p
+		}
+	}
+	return ""
+}
+
 func (a *App) recentProjects() []string {
 	if a.prefs == nil {
 		return nil

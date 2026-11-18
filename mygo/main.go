@@ -190,10 +190,13 @@ func startUsage(rs *realSetup, win *mygo.Window) func(rng int) core.UsageReport 
 	}
 }
 
-// initialCwd 新会话默认目录:MINI_PROJECT > 最近有活动的项目 > 当前目录(从访达启动时是 /,退回用户主目录)。
-func initialCwd(ix *claude.Index) string {
+// initialCwd 新会话默认目录:MINI_PROJECT > 上次选中的项目 > 最近有活动的项目 > 当前目录(从访达启动时是 /,退回用户主目录)。
+func initialCwd(ix *claude.Index, lastProject string) string {
 	if p := os.Getenv("MINI_PROJECT"); p != "" {
 		return p
+	}
+	if lastProject != "" { // 上次选中的项目优先于「最近有活动」
+		return lastProject
 	}
 	// 跳过已不存在的目录(例如测试 / 临时目录留下的会话),否则新会话会落在一个打不开的路径。
 	for _, p := range ix.Projects {
@@ -288,7 +291,7 @@ func main() {
 		if nwProject != "" {
 			rs.curCwd = nwProject
 		} else {
-			rs.curCwd = initialCwd(ix)
+			rs.curCwd = initialCwd(ix, app.LastProject(prefStore.Str))
 		}
 		log.Info("真实模式", "projects", len(ix.Projects), "cwd", rs.curCwd, "secondary", secondary)
 		a.SetProjects(ix.Projects, "")
