@@ -25,7 +25,7 @@ func (a *App) projectsHeader(c *ui.Context, withAdd bool) {
 
 // addMenuButton 是「+」按钮与它的弹层(方案 C 的侧栏标题行也用它)。
 func (a *App) addMenuButton(c *ui.Context) {
-	b := kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "添加项目或工作区", On: a.popup == "addmenu"})
+	b := kit.Ib(c, "folderPlus", kit.IbOpt{Small: true, Tip: "添加项目或工作区", On: a.popup == "addmenu"})
 	b.OnClick(func() { a.togglePop("addmenu") })
 	a.popOpen("addmenu", func(open *bool) {
 		ui.PopoverBase(c, b, open, func(panel ui.Element) {
@@ -36,7 +36,7 @@ func (a *App) addMenuButton(c *ui.Context) {
 					fn()
 				}
 			}
-			item("proj", "folder", "添加项目…", "⌘ O", a.openAddProject)
+			item("proj", "folderPlus", "添加项目…", "⌘ O", a.openAddProject)
 			item("ws", "layers", "新建工作区…", "", func() { a.openWsDialog("", "") })
 			if len(a.sideProjects()) > 0 {
 				kit.Sep(c)
@@ -111,7 +111,7 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 		}
 		ui.Text(c, w.Name).Grow(1).SingleLine()
 		if hov {
-			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "在此工作区新建会话"}).Margin(0, -4, 0, 0).OnClick(func() { a.NewSessionIn(a.startProject(w)) })
+			kit.Ib(c, "chatPlus", kit.IbOpt{Small: true, Tip: "在此工作区新建会话"}).Margin(0, -4, 0, 0).OnClick(func() { a.NewSessionIn(a.startProject(w)) })
 		}
 		// 工作区行末尾不再显示「N 个文件夹」:成员文件夹在「编辑工作区」里管理
 	})
@@ -148,7 +148,7 @@ func mItem(m *ui.Menu, icon, label string) *ui.MenuItem {
 
 // wsMenu 是工作区行的右键菜单:主要动作是「编辑工作区…」(名称 / 文件夹 / 顺序都在那一个对话框里)。
 func (a *App) wsMenu(m *ui.Menu, w projects.Workspace) {
-	if mItem(m, "plus", "在此工作区新对话").Chosen() {
+	if mItem(m, "chatPlus", "在此工作区新对话").Chosen() {
 		a.NewSessionIn(a.startProject(w))
 	}
 	m.Separator()
@@ -209,7 +209,7 @@ func (a *App) removeWorkspace(id string) {
 
 // projMenu 是项目行的右键菜单:主要动作是「编辑项目…」。
 func (a *App) projMenu(m *ui.Menu, p core.ProjectInfo) {
-	if mItem(m, "plus", "在此项目新对话").Chosen() {
+	if mItem(m, "chatPlus", "在此项目新对话").Chosen() {
 		a.NewSessionIn(p)
 	}
 	m.Separator()

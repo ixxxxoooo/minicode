@@ -19,7 +19,7 @@
 
   /* ───────── 项目与工作区 ───────── */
   const side = `<div style="padding:8px">
-    <div class="row on" style="height:28px">${ic('plus', 's12', 'c-ac')}<span class="grow b">新对话</span>${kbd('⌘', 'N')}</div>
+    <div class="row on" style="height:28px">${ic('chatPlus', 's12', 'c-ac')}<span class="grow b">新对话</span>${kbd('⌘', 'N')}</div>
     <div class="grp-h" style="margin-top:6px"><span class="grow">项目与工作区</span>${ib('plus', 'sm', '添加项目或工作区')}</div>
     <div class="row" style="height:28px">${ic('layersOpen', 's16', 'c-ac')}<span class="grow b">全栈工作区</span><span class="t4 fs-micro">3 个文件夹</span></div>
     <div class="row" style="height:28px;margin-left:18px">完整修复一个 Bug:路由大小写<span class="aux">刚刚</span></div>

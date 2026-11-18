@@ -24,6 +24,7 @@ var iconPaths = map[string]string{
 	"canvas":      "<rect x=\"3.5\" y=\"3.5\" width=\"7\" height=\"9\" rx=\"1.5\"/><rect x=\"13.5\" y=\"3.5\" width=\"7\" height=\"5\" rx=\"1.5\"/><rect x=\"13.5\" y=\"11.5\" width=\"7\" height=\"9\" rx=\"1.5\"/><rect x=\"3.5\" y=\"15.5\" width=\"7\" height=\"5\" rx=\"1.5\"/>",
 	"chart":       "<path d=\"M4 20V4M4 20h16M8 16v-5M12.5 16V8M17 16v-3\"/>",
 	"chat":        "<path d=\"M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4.5 3.5V16H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z\"/>",
+	"chatPlus":    "<path d=\"M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4.5 3.5V16H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z\"/><path d=\"M12 8v5M9.5 10.5h5\"/>",
 	"check":       "<path d=\"m5 12.5 4.5 4.5L19 7.5\"/>",
 	"chevD":       "<path d=\"m6 9 6 6 6-6\"/>",
 	"chevL":       "<path d=\"m15 6-6 6 6 6\"/>",

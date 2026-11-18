@@ -188,7 +188,7 @@ func (a *App) sessions(c *ui.Context) {
 			r := kit.RowEl(c, false).Margin(0, 0, 4, 0).Gap(6).Shrink(0)
 			r.OnClick(a.NewSession)
 			r.Children(func() {
-				kit.Ic(c, "plus", kit.S14).TextColor(t.Ac)
+				kit.Ic(c, "chatPlus", kit.S14).TextColor(t.Ac)
 				ui.Text(c, "新对话").Grow(1).FontWeight(500).TextColor(t.Tx1)
 				kit.Kbd(c, "⌘", "N")
 			})
@@ -238,7 +238,7 @@ func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 		}
 		ui.Spacer(c).Grow(1)
 		if hov {
-			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "在此项目新建会话"}).Margin(0, -4, 0, 0).OnClick(func() { a.NewSessionIn(p) })
+			kit.Ib(c, "chatPlus", kit.IbOpt{Small: true, Tip: "在此项目新建会话"}).Margin(0, -4, 0, 0).OnClick(func() { a.NewSessionIn(p) })
 		} else if a.registry().HasProject(p.Path) && !a.isRepoDir(p.Path) {
 			nonRepoMark(c, t)
 		}
@@ -316,7 +316,7 @@ func (a *App) sessionsB(c *ui.Context) {
 			chip := kit.Chip(c, name, kit.ChipOpt{Icon: icon, Line: true, Car: true, On: a.popup == "projpick"}).Height(theme.Px(26)).Grow(1).MinWidth(0)
 			chip.OnClick(func() { a.togglePop("projpick") })
 			a.projPickPopup(c, chip)
-			kit.Ib(c, "edit", kit.IbOpt{Tip: "新对话 ⌘N"}).Size(26, 26).OnClick(a.NewSession)
+			kit.Ib(c, "chatPlus", kit.IbOpt{Tip: "新对话 ⌘N"}).Size(26, 26).OnClick(a.NewSession)
 			a.addMenuButton(c)
 		})
 		kit.VScroll(c).Key("sessb").Grow(1).MinHeight(0).Children(func() {

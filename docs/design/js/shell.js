@@ -43,7 +43,7 @@
   /* ───────── 导航栏 ───────── */
   const sess = (t, time, on, flat) => `<div class="row ${flat ? '' : 'sess'} ${on ? 'on' : ''}"><span class="grow ell">${t}</span><span class="aux swap">${time}</span><span class="acts">${ib('more', 'sm')}</span></div>`;
   const proj = (name, n, open) => `<div class="row proj ${open ? 'open' : ''}">${ic(open ? 'folderOpen' : 'folder', 's16 t3')}<span class="grow ell">${name}</span><span class="aux swap">${n}</span><span class="acts">${ib('plus', 'sm', '在此项目新建会话')}</span></div>`;
-  const newChat = `<div class="row new-chat" style="margin:0 0 4px">${ic('plus', 'c-ac')}<span class="grow">新对话</span>${kbd('⌘', 'N')}</div>`;
+  const newChat = `<div class="row new-chat" style="margin:0 0 4px">${ic('chatPlus', 'c-ac')}<span class="grow">新对话</span>${kbd('⌘', 'N')}</div>`;
   /** 会话列表:只有标题与时间,不带任何运行状态。A / C 按项目分组,B 只看当前项目并按时间分段 */
   const sessions = (scheme) => scheme === 'b'
     ? `<div class="f g2" style="padding:0 0 6px">${chip(`${ic('folder', 's12')}<b class="grow">router-demo</b>${ic('chevUD', 's12 car')}`, '', 'line grow', 'style="height:26px;flex:1"')}${ib('edit', '', '新对话 ⌘N', 'style="width:26px;height:26px"')}</div>
@@ -78,7 +78,7 @@
   F.hist = () => { const r = (t, time, dot, on) => `<div class="row ${on ? 'on' : ''}">${dot ? `<span class="dot ${dot}"></span>` : '<span style="width:6px"></span>'}<span class="grow ell">${t}</span><span class="aux">${time}</span></div>`;
     return `<div class="hist-pop pop a-pop-up"><label class="inp fill">${ic('search', 's12')}<input placeholder="搜索 router-demo 的会话" spellcheck="false" style="all:unset;flex:1;min-width:0"></label>
       <div class="cap">本项目</div>${r('完整修复一个 Bug:路由大小写匹配', '刚刚', 'ac', 1)}${r('权限请求:修改配置与执行命令', '5 分钟', 'warn')}${r('文件读写:梳理并整理路由层', '1 小时')}${r('Markdown 与代码高亮:发布说明', '昨天')}
-      <div class="ft">${ic('history', 's12')}<span class="grow">全部历史…</span>${kbd('⌘', '⇧', 'H')}</div><div class="ft" style="box-shadow:none;padding-top:0">${ic('plus', 's12')}<span class="grow">新会话</span>${kbd('⌘', 'N')}</div></div>`; };
+      <div class="ft">${ic('history', 's12')}<span class="grow">全部历史…</span>${kbd('⌘', '⇧', 'H')}</div><div class="ft" style="box-shadow:none;padding-top:0">${ic('chatPlus', 's12')}<span class="grow">新会话</span>${kbd('⌘', 'N')}</div></div>`; };
   const chat = (st) => st.screen === 'welcome'
     ? `${chatHead('新对话')}${welcome()}`
     : `${chatHead('完整修复一个 Bug:路由大小写匹配', { branch: 1, run: 1 })}

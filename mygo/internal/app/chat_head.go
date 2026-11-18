@@ -76,7 +76,7 @@ func (a *App) chatHead(c *ui.Context, title string) {
 		}
 		ui.Spacer(c).Grow(1)
 		if narrow {
-			kit.Ib(c, "plus", kit.IbOpt{Small: true, Tip: "新会话 ⌘N"}).OnClick(a.NewSession)
+			kit.Ib(c, "chatPlus", kit.IbOpt{Small: true, Tip: "新会话 ⌘N"}).OnClick(a.NewSession)
 		}
 		histBtn := kit.Ib(c, "history", kit.IbOpt{Small: true, Tip: "历史会话 ⌘⇧H", On: a.popup == "hist"}).OnClick(func() { a.togglePop("hist") })
 		if !narrow {
@@ -166,7 +166,7 @@ func (a *App) histPopup(c *ui.Context, anchor ui.Element, alignRight bool) {
 				a.popup = ""
 				a.OpenQuick("history", "")
 			}
-			if a.mi(c, "hist-new", "plus", "新会话", "⌘N", false).Clicked() {
+			if a.mi(c, "hist-new", "chatPlus", "新会话", "⌘N", false).Clicked() {
 				a.popup = ""
 				a.NewSession()
 			}
