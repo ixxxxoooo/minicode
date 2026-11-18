@@ -124,6 +124,7 @@ func (a *App) miniComposer(c *ui.Context, key, ph string, buf *string, chip stri
 			}
 			ui.Spacer(c).Grow(1)
 			b := kit.Ib(c, "send", kit.IbOpt{Small: true, Tip: "发送 ⏎", NoHover: true}).Background(t.Ac).Radius(t.RSm()).TextColor(t.OnAc)
+			kit.GlassAccent(b) // 流光:着色玻璃 + 强调色光晕
 			b.OnClick(func() { send(*buf); *buf = "" })
 		})
 	})

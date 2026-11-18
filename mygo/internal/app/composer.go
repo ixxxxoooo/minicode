@@ -122,6 +122,7 @@ func (a *App) composerBar(c *ui.Context) {
 			if b.Hovered() {
 				b.Background(t.Ac.Mix(t.Tx1, .10))
 			}
+			kit.GlassAccent(b) // 流光:发送键是着色玻璃 + 强调色光晕(与主要按钮同一套)
 			b.OnClick(func() {
 				a.submitKey(a.draftNow(), false)
 			})

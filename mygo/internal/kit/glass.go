@@ -70,7 +70,18 @@ func glassBtn(b ui.Element, _ bool) {
 
 // glassPri 是主要按钮:着色玻璃(强调色几乎不透明,只透出一点)+ 强调色光晕(设计稿 --ac-glow:整页唯一「发光」的地方)。
 func glassPri(b ui.Element) {
-	b.Material(GlassTinted(T.Ac.Alpha(.92))).Shadow(0, 6, 14, -6, T.Ac.Alpha(.55))
+	// 着色取满(不透明):插件会把着色按 88% 叠上并提亮底下的内容,取 .92 时陶土橙发粉、白色箭头对比不够;取满后颜色饱满,仍保留玻璃的边缘高光与按压反馈
+	b.Material(GlassTinted(T.Ac)).Shadow(0, 6, 14, -6, T.Ac.Alpha(.55))
+}
+
+// GlassAccent 把一个强调色实心的按钮(发送键)改成着色玻璃 + 强调色光晕,与主要按钮同一套(设计稿 .ib.send / .btn.pri)。
+// 调用方先照常设好 Background / 圆角 / 文字色;玻璃主题下这里用 Material 盖掉底色,悬停亮边、按下微胀由插件的 Interactive 负责。
+// 非玻璃主题原样返回。参数 b:按钮元素。返回 b。
+func GlassAccent(b ui.Element) ui.Element {
+	if T.Glass() {
+		glassPri(b)
+	}
+	return b
 }
 
 // GlassRim 给玻璃面板画一圈渐变高光边:左上亮、右下暗,像光沿着玻璃边缘走(设计稿 .pane::after)。
