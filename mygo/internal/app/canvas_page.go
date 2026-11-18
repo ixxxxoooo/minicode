@@ -422,7 +422,8 @@ func (a *App) canvasDrawer(c *ui.Context, s *canvas.Store) {
 			}
 		}
 	}
-	ui.TextArea(c.Key("cv-apply"), &v.apply).Lines(2, 4).Placeholder("将 Claude 的 JSON 回复粘贴到这里,点上方按钮写回…").FontSize(theme.FsCap)
+	ta := ui.TextArea(c.Key("cv-apply"), &v.apply).Lines(2, 4).Placeholder("将 Claude 的 JSON 回复粘贴到这里,点上方按钮写回…").FontSize(theme.FsCap)
+	kit.Lift(ta.Radius(t.RMd())) // 流光:与下面的输入框一样是浮起的玻璃卡片(软描边 + 软阴影),不是框架默认的灰色描边框
 	a.miniComposer(c, "cv-ask", "描述要怎么改,例如「把里程碑改成表格」", &v.ask, chip, func(text string) {
 		if text != "" {
 			a.AskClaude("请修改画布「" + s.Doc.Title + "」(引用块 " + chip + "):" + text)
