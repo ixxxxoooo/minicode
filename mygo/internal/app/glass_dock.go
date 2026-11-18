@@ -27,6 +27,7 @@ func (a *App) glassIsland(el ui.Element, clarity float32, tint ui.Color) {
 	}
 	el.Material(kit.GlassPane(clarity, tint)).Clip()
 	if t.Scheme.ID != "b" {
+		el.BorderWidth(0, 1, 0, 1).BorderColor(t.Tone().Hair) // A / C:两侧细线盖住玻璃边缘暗边
 		return
 	}
 	el.Radius(t.RLg())

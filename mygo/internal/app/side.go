@@ -94,7 +94,7 @@ func (a *App) side(c *ui.Context) {
 					inner.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 				}
 			} else {
-				inner.BorderWidth(0, 0, 0, 1).BorderColor(t.Tone().RimLo)
+				inner.BorderWidth(0, 1, 0, 1).BorderColor(t.Tone().Hair) // 同 pane():两侧细线盖住玻璃边缘暗边
 			}
 		}
 		inner.Children(func() {

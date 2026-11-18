@@ -42,19 +42,21 @@ type GlassTone struct {
 	Mid   ui.Color // 玻璃面板之上的轻染色(弹层底衬,保证文字对比)
 	// 面板的暖色深浅(玻璃的 Tint):壁纸是纯色,面板之间的明暗层次靠它——侧栏最深、工作区居中、对话栏最亮(不染)
 	SideTint, WsTint ui.Color
+	// Hair 是不透明的细线色(≈ 原版主题里 --bd-2 画出的浅线):方案 A / C 面板相接处用它盖住玻璃着色器在形状边缘留下的 1px 暗边
+	Hair ui.Color
 }
 
 // Tone 返回当前主题的玻璃半透明色;非玻璃主题返回由常规令牌推出的不透明近似,调用方可以直接用。
 func (t *Tokens) Tone() GlassTone {
 	if !t.Palette.Glass {
-		return GlassTone{Thin: t.Fill1, Card: t.Raised, Sel: t.Raised, Rim: t.Bd1, RimLo: t.Bd1, Sheen: ui.Transparent, Mid: t.BG, SideTint: ui.Transparent, WsTint: ui.Transparent}
+		return GlassTone{Thin: t.Fill1, Card: t.Raised, Sel: t.Raised, Rim: t.Bd1, RimLo: t.Bd1, Sheen: ui.Transparent, Mid: t.BG, SideTint: ui.Transparent, WsTint: ui.Transparent, Hair: t.Bd2}
 	}
 	if t.Palette.Dark {
 		return GlassTone{Thin: ui.RGBA(255, 235, 220, .08), Card: ui.RGBA(58, 50, 44, .46), Sel: ui.RGBA(255, 235, 220, .16),
 			Rim: ui.RGBA(255, 240, 230, .30), RimLo: ui.RGBA(255, 240, 230, .09), Sheen: ui.RGBA(255, 236, 222, .14), Mid: ui.RGBA(38, 34, 30, .60),
-			SideTint: ui.RGBA(0, 0, 0, .36), WsTint: ui.RGBA(0, 0, 0, .20)}
+			SideTint: ui.RGBA(0, 0, 0, .36), WsTint: ui.RGBA(0, 0, 0, .20), Hair: t.Chrome.Mix(t.Tx1, .12)}
 	}
 	return GlassTone{Thin: ui.RGBA(255, 255, 255, .30), Card: ui.RGBA(255, 255, 255, .72), Sel: ui.RGBA(255, 255, 255, .78),
 		Rim: ui.RGBA(255, 255, 255, .85), RimLo: ui.RGBA(255, 255, 255, .38), Sheen: ui.RGBA(255, 255, 255, .55), Mid: ui.RGBA(255, 255, 255, .64),
-		SideTint: ui.RGBA(150, 120, 90, .17), WsTint: ui.RGBA(150, 120, 90, .07)}
+		SideTint: ui.RGBA(150, 120, 90, .17), WsTint: ui.RGBA(150, 120, 90, .07), Hair: t.Chrome.Mix(t.Tx1, .10)}
 }

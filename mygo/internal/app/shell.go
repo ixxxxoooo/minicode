@@ -75,13 +75,13 @@ func (a *App) pane(c *ui.Context) ui.Element {
 	p := ui.Column(c).MinWidth(0).Clip()
 	if t.Glass() {
 		p.Material(kit.GlassMat(kit.ClarityContent)) // 流光:玻璃面板,取 macOS 的标准材质(对话 / 整页);导航与工作区另用 ClaritySidebar
-		kit.GlassRim(p)
 	} else {
 		p.Background(t.BG)
 	}
 	switch t.Scheme.ID {
 	case "b":
 		p.Radius(t.RLg())
+		kit.GlassRim(p) // 渐变高光边只给方案 B 的浮岛:A / C 面板相接,只要一条左侧细线(此前不分方案都加,A / C 的交界上多出一条深色竖线)
 		shadow := t.Shadow1()
 		if t.Glass() {
 			shadow = t.GlassShadow()
@@ -90,11 +90,12 @@ func (a *App) pane(c *ui.Context) ui.Element {
 			p.Shadow(s.X, s.Y, s.Blur, s.Spread, s.Color)
 		}
 	default:
-		bd := t.Bd2
 		if t.Glass() {
-			bd = t.Tone().RimLo
+			// 流光 A / C:两侧各一条不透明细线,盖住玻璃着色器在面板边缘留下的 1px 深色暗边(相接处会是两条细线)
+			p.BorderWidth(0, 1, 0, 1).BorderColor(t.Tone().Hair)
+		} else {
+			p.BorderWidth(0, 0, 0, 1).BorderColor(t.Bd2)
 		}
-		p.BorderWidth(0, 0, 0, 1).BorderColor(bd)
 	}
 	return p
 }
