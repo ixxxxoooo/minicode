@@ -236,6 +236,7 @@ func themePairFor(base string, sysDark bool) string {
 	lightDark := map[string]string{
 		"paper": "ink", "mist": "graphite", "celadon": "aurora",
 		"ink": "paper", "graphite": "mist", "aurora": "celadon",
+		"glow": "glow-night", "glow-night": "glow",
 	}
 	p := theme.Find(base)
 	if p.Dark == sysDark {

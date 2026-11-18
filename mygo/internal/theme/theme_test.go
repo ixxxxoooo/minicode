@@ -12,8 +12,8 @@ func near(a, b uint8) bool {
 }
 
 func TestSixThemesThreeSchemes(t *testing.T) {
-	if len(Palettes) != 6 || len(Schemes) != 3 {
-		t.Fatal("应有 6 套主题、3 套方案")
+	if len(Palettes) != 8 || len(Schemes) != 3 {
+		t.Fatal("应有 8 套主题(含流光两套)、3 套方案")
 	}
 	var dark int
 	for _, p := range Palettes {
@@ -25,8 +25,8 @@ func TestSixThemesThreeSchemes(t *testing.T) {
 			t.Fatalf("%s 令牌不对", p.ID)
 		}
 	}
-	if dark != 3 {
-		t.Fatalf("深色主题应有 3 套,实际 %d", dark)
+	if dark != 4 {
+		t.Fatalf("深色主题应有 4 套,实际 %d", dark)
 	}
 }
 

@@ -15,6 +15,8 @@ import (
 type Palette struct {
 	ID, Name string
 	Dark     bool
+	// Glass 是液态玻璃主题(流光):面板与浮层画成半透明玻璃,壁纸由 Tokens.Wall 给出(见 glass.go)
+	Glass bool
 	// 表面与文字
 	Base, Surface, Raised, Sunken, Ink string
 	// 强调色

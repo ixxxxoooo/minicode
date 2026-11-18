@@ -37,6 +37,10 @@ func iconPalOf(themeID string) string {
 	switch themeID {
 	case "mist", "celadon", "graphite", "aurora":
 		return themeID
+	case "glow": // 流光沿用雾霭 / 石墨的蓝色图标素材(没有单独的素材;设计稿 brand.js 的 glow 配色是同一族蓝)
+		return "mist"
+	case "glow-night":
+		return "graphite"
 	}
 	return ""
 }

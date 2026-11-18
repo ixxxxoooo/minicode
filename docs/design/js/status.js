@@ -355,7 +355,7 @@
       R('行高令牌 --lh-*', 'theme.LhTight~LhRead;设置/通知/对话框已用,flow/composer/浏览器等仍字面量;未测试', 'part', 'B8')],
     'glow-spec': [
       R('设计稿:流光 / 流光·夜两套色板 + css/glass.css 材质层 + 主题卡 / 顶栏圆点 / 品牌图标配色', '已补稿;仅用无头 Chrome 截图自查过规格页与工作台,未逐页核对其余页面', 'ok'),
-      R('theme.Palettes 增加 glow / glow-night', 'Go 端尚未加色板;Palette 只有 13 色,玻璃透明度由 glass 插件决定', 'todo', 'B9'),
+      R('theme.Palettes 增加 glow / glow-night', 'theme/glass.go 追加两套(Palette.Glass=true)+ Tokens.Wall / Tone;主题卡 / 命令面板 / 跟随系统深浅 / 应用图标配色(沿用 mist / graphite 素材)已接;未测试', 'ok'),
       R('壁纸层(静态渐变,画一次缓存)', '玻璃采样的底;不做漂移动画', 'todo', 'B9'),
       R('面板玻璃:侧栏 / 对话 / 工作区 / 整页', 'glass.Glass{Style: Regular, Clarity};方案 B 才有悬浮阴影', 'todo', 'B9'),
       R('控件玻璃:按钮 / 输入框 / 分段 / 开关 / 选中行 / 标题栏搜索胶囊', 'glass.Glass{Interactive: true};主要按钮用 Tint 或实色渐变 + 高光', 'todo', 'B9'),
