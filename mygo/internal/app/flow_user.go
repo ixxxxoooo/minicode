@@ -211,13 +211,14 @@ func (a *App) userMsgBody(c *ui.Context, u *core.User, folded bool) {
 	if txt == "" && len(u.Images) > 0 {
 		return // 只有图片:不留空文字行
 	}
-	if !userTok.MatchString(txt) {
+	toks := userTokMatches(txt)
+	if len(toks) == 0 {
 		ui.RichText(c, ui.Span{Text: txt}).FontSize(a.FlowFontSize()).LineHeight(a.FlowReadLH()).TextColor(t.Tx1)
 		return
 	}
 	ui.Row(c).Wrap().Gap(4).AlignItems(ui.Center).Children(func() {
 		last := 0
-		for _, m := range userTok.FindAllStringSubmatchIndex(txt, -1) {
+		for _, m := range toks {
 			if m[0] > last {
 				ui.Text(c, txt[last:m[0]]).FontSize(a.FlowFontSize()).LineHeight(a.FlowReadLH()).TextColor(t.Tx1)
 			}
@@ -226,8 +227,12 @@ func (a *App) userMsgBody(c *ui.Context, u *core.User, folded bool) {
 				fg, bg := a.inlineCodeColors()
 				ui.Text(c, code).Font("monospace").FontSize(a.FlowMonoSize()).LineHeight(a.FlowReadLH()).TextColor(fg).
 					Background(bg).Radius(t.RXs()).PaddingX(5)
-			} else {
+			} else if m[4] >= 0 {
 				a.userRefChip(c, txt[m[4]:m[5]])
+			} else if m[6] >= 0 {
+				a.userRefChip(c, txt[m[6]:m[7]])
+			} else {
+				a.userRefChip(c, txt[m[8]:m[9]])
 			}
 			last = m[1]
 		}

@@ -86,7 +86,11 @@ func atomsToSend(s string) string {
 		if cur := b.String(); cur != "" && !strings.HasSuffix(cur, " ") && !strings.HasSuffix(cur, "\n") {
 			b.WriteByte(' ')
 		}
-		b.WriteString("@" + path)
+		if strings.ContainsAny(path, " \t") { // 路径带空格:用 @"…" 引起来(Claude Code 认这种写法),否则会在空格处被截断
+			b.WriteString("@\"" + path + "\"")
+		} else {
+			b.WriteString("@" + path)
+		}
 		if last < len(s) && s[last] != ' ' && s[last] != '\n' {
 			b.WriteByte(' ')
 		}
