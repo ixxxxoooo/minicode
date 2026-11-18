@@ -101,7 +101,13 @@ func (a *App) thinkMarqueeRow(c *ui.Context, sp step, tone ui.Color, open bool, 
 		st.Show = target
 	}
 	box.Children(func() {
-		inner := ui.Row(c).Height(20).Grow(1).MinWidth(0).Justify(ui.End).AlignItems(ui.Center)
+		// 文字还没超出框时靠左排(紧挨标题);超出后才靠右并向左平移跑马。
+		// 一直靠右的话,刚开始思考、文字很短时,标题与文字之间会空出一大截。
+		just := ui.Start
+		if target > 0 {
+			just = ui.End
+		}
+		inner := ui.Row(c).Height(20).Grow(1).MinWidth(0).Justify(just).AlignItems(ui.Center)
 		if st.Show > 0 {
 			inner.Translate(-st.Show, 0)
 		}
