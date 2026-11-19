@@ -237,12 +237,12 @@ func (a *App) lspCard(c *ui.Context, s *lspSess) {
 				ui.Text(c, "未安装 "+s.spec.Name+"("+s.spec.Lang+" 语言服务)").FontWeight(500)
 				ui.Text(c, s.spec.Install+" · "+s.spec.Hint).Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 			})
-			if s.spec.Managed() { // 依赖 Node 的服务器:主按钮是下载安装(托管 Node + 固定版本的包),终端安装留作备选
-				kit.Btn(c, "下载安装", kit.BtnOpt{Small: true, Variant: kit.BtnPri, Icon: "download"}).
-					Tooltip("用" + a.lspMirror().Label() + "下载固定版本的语言包;本机没有合适的 Node 时先下载一份(点了才联网)").OnClick(func() { a.lspInstallManaged(s.spec) })
-				kit.Btn(c, "在终端安装", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "terminal"}).OnClick(func() { a.lspInstall(s) })
-			} else {
-				kit.Btn(c, "安装", kit.BtnOpt{Small: true, Variant: kit.BtnPri, Icon: "terminal"}).OnClick(func() { a.lspInstall(s) })
+			if s.spec.Installable() { // 应用自己装,不开终端:依赖 Node 的下载 Node + 固定版本的包,其余后台执行安装命令
+				tip := "在后台执行 " + s.spec.Install + ";需要本机已有对应的工具链(点了才执行)"
+				if s.spec.Managed() {
+					tip = "用" + a.lspMirror().Label() + "下载固定版本的语言包;本机没有合适的 Node 时先下载一份(点了才联网)"
+				}
+				kit.Btn(c, "下载安装", kit.BtnOpt{Small: true, Variant: kit.BtnPri, Icon: "download"}).Tooltip(tip).OnClick(func() { a.lspInstallManaged(s.spec) })
 			}
 			if kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制安装命令"}).Clicked() {
 				a.copyText = s.spec.Install

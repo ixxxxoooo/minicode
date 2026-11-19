@@ -110,12 +110,14 @@ func TestLSPMissingServerShowsInstall(t *testing.T) {
 	a.ide.bottomOpen, a.ide.bottomTab = true, "problems"
 	b.frames(2)
 	tt := b.tt.(interface{ HasText(string) bool })
-	if !tt.HasText("未安装 gopls") || !tt.HasText("安装") {
-		t.Fatal("问题面板应给出安装入口")
+	if !tt.HasText("未安装 gopls") || !tt.HasText("下载安装") {
+		t.Fatal("问题面板应给出「下载安装」入口")
 	}
-	a.lspInstall(s)
-	if tp := a.ide.tpc(); tp.initCmd != s.spec.Install || a.ide.bottomTab != "term" {
-		t.Fatalf("安装应在新终端里排上命令:%q tab=%s", a.ide.tpc().initCmd, a.ide.bottomTab)
+	if tt.HasText("在终端安装") {
+		t.Fatal("不再提供「在终端安装」")
+	}
+	if !s.spec.Installable() {
+		t.Fatal("gopls 应能由应用后台执行安装命令")
 	}
 	// 重新检测:丢掉会话,下一次取用重建
 	a.lspRetry(s)

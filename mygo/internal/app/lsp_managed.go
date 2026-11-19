@@ -70,7 +70,7 @@ func (a *App) lspJobOf(sp *lsp.Spec) *lspJob { return a.lspJobs[lspJobKey(sp)] }
 
 // lspInstallManaged 开始(或排队)下载安装;已在装 / 排队中的忽略,失败的重来一遍。
 func (a *App) lspInstallManaged(sp *lsp.Spec) {
-	if sp == nil || !sp.Managed() {
+	if sp == nil || !sp.Installable() {
 		return
 	}
 	key := lspJobKey(sp)
@@ -134,7 +134,12 @@ func (a *App) lspJobRun(j *lspJob) {
 			})
 		}
 		logf := func(line string) { a.onUI(func() { a.outAppend(outLSP, sp.Name+": "+line) }) }
-		err := sp.InstallManaged(ctx, mirror, prog, logf)
+		var err error
+		if sp.Managed() { // 依赖 Node:托管 Node + 固定版本的 npm 包
+			err = sp.InstallManaged(ctx, mirror, prog, logf)
+		} else { // 其余:应用在后台替用户执行清单里的安装命令(不开终端)
+			err = sp.InstallByCommand(ctx, mirror, prog, logf)
+		}
 		return func() { a.lspJobDone(j, err, ctx.Err() != nil) }
 	})
 }
@@ -248,6 +253,19 @@ func (a *App) lspJobDemo(j *lspJob) {
 				}
 			})
 		})
+	}
+	if !j.sp.Managed() { // 执行安装命令的:没有可量的进度,只有「执行 …」一个阶段
+		j.stage, j.done, j.total = "执行 "+j.sp.Install, 0, 0
+		tick(2200*time.Millisecond, func() {
+			for i := range a.set.lspRows {
+				r := &a.set.lspRows[i]
+				if sp := lspSpecByID(r.ID); sp != nil && lspJobKey(sp) == key {
+					r.OK, r.MgrPath, r.Path = true, false, "/opt/homebrew/bin/"+sp.Bins[0]
+				}
+			}
+			a.lspJobDone(j, nil, false)
+		})
+		return
 	}
 	const totalMB = 49 << 20
 	j.stage, j.done, j.total = "下载 Node "+lsp.ManagedNodeVersion, 0, totalMB

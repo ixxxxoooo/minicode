@@ -22,7 +22,8 @@ type lspSettingRow struct {
 	OK      bool
 	Enabled bool
 
-	Managed bool   // 支持下载安装(清单里固定了 npm 包)
+	Managed bool   // 依赖 Node(清单里固定了 npm 包):托管 Node + 语言包
+	CanInst bool   // 应用能「下载安装」:Managed,或后台执行清单里的安装命令(gopls / clangd / zls …)
 	MgrPath bool   // 找到的是应用下载安装的那份(~/.minicode/lsp/…),可以卸载
 	Stale   bool   // 托管目录里的版本与清单固定的不一致:有新版本可更新
 	Node    string // 托管的服务器用的是哪个 Node,如「本机 v24.11.1」「托管 v24.11.1」
@@ -39,7 +40,7 @@ func (a *App) scanLspSettings() {
 				Install: r.Install, OK: r.OK, Enabled: r.Enabled,
 			}
 			if sp := lspSpecByID(r.ID); sp != nil {
-				row.Managed = sp.Managed()
+				row.Managed, row.CanInst = sp.Managed(), sp.Installable()
 				row.MgrPath = r.OK && strings.Contains(r.Path, ".minicode/lsp/")
 				if row.MgrPath {
 					row.Node = "本机 " + lsp.ManagedNodeVersion
@@ -84,7 +85,7 @@ func (a *App) scanLspSettings() {
 				ID: sp.ID, Name: sp.Name, Lang: sp.Lang, Exts: exts,
 				Path: path, Install: sp.Install, OK: ok,
 				Enabled: a.prefs.Bool(a.lspServerPrefKey(sp.ID), true),
-				Managed: sp.Managed(), MgrPath: mgr, Stale: mgr && sp.ManagedStale(), Node: node,
+				Managed: sp.Managed(), CanInst: sp.Installable(), MgrPath: mgr, Stale: mgr && sp.ManagedStale(), Node: node,
 			})
 		}
 		return func() {
@@ -109,19 +110,6 @@ func (a *App) lspSeedDemoJobs() {
 		a.lspJobs["php"] = &lspJob{sp: sp, running: true, stage: "下载 Node " + lsp.ManagedNodeVersion, done: 21 << 20, total: 49 << 20}
 		a.lspJobOrder = append(a.lspJobOrder, "php")
 	}
-}
-
-func (a *App) lspInstallCmd(install string) {
-	if a.proj == "" {
-		a.toast = "请先打开一个项目"
-		return
-	}
-	a.newTerm()
-	a.ide.tpc().initCmd = install
-	a.ide.bottomOpen, a.ide.bottomTab = true, "term"
-	a.ide.termSel = ""
-	a.outAppend(outLSP, "在终端安装:"+install)
-	setLog.Info("语言服务器:在终端安装", "cmd", install)
 }
 
 func (a *App) lspBody(a2 *App, c *ui.Context) {
@@ -234,18 +222,18 @@ func (a *App) lspBody(a2 *App, c *ui.Context) {
 					a2.lspUninstallManaged(sp)
 				}
 			case !row.OK && row.Install != "":
-				if row.Managed {
-					if kit.Btn(c, "下载安装", kit.BtnOpt{Small: true, Variant: kit.BtnSoft, Icon: "download"}).
-						Tooltip("用 " + a2.lspMirror().Label() + " 下载固定版本的语言包;本机没有合适的 Node 时会先下载一份(点了才联网)").Clicked() {
+				if row.CanInst { // 应用自己装,不开终端:依赖 Node 的下载 Node + 语言包,其余后台执行安装命令
+					tip := "在后台执行 " + row.Install + ";需要本机已有对应的工具链(点了才执行)"
+					if row.Managed {
+						tip = "用 " + a2.lspMirror().Label() + " 下载固定版本的语言包;本机没有合适的 Node 时会先下载一份(点了才联网)"
+					}
+					if kit.Btn(c, "下载安装", kit.BtnOpt{Small: true, Variant: kit.BtnSoft, Icon: "download"}).Tooltip(tip).Clicked() {
 						a2.lspInstallManaged(sp)
 					}
 				}
-				if kit.Btn(c, "复制", kit.BtnOpt{Small: true, Icon: "copy"}).Clicked() {
+				if kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制安装命令(想自己装时用)"}).Clicked() {
 					c.WriteClipboard(row.Install)
 					a2.flash("已复制安装命令")
-				}
-				if kit.Btn(c, "在终端安装", kit.BtnOpt{Small: true, Icon: "terminal"}).Clicked() {
-					a2.lspInstallCmd(row.Install)
 				}
 			}
 		})

@@ -252,18 +252,6 @@ func (a *App) lspRetry(s *lspSess) {
 	a.redraw()
 }
 
-// lspInstall 在终端面板新开一个标签并运行安装命令(用户能看到进度与错误)。
-func (a *App) lspInstall(s *lspSess) {
-	if a.proj == "" {
-		return
-	}
-	a.newTerm()
-	a.ide.tpc().initCmd = s.spec.Install
-	a.ide.bottomOpen, a.ide.bottomTab = true, "term"
-	a.ide.termSel = ""
-	a.outAppend(outLSP, "在终端安装 "+s.spec.Name+":"+s.spec.Install)
-}
-
 // ───────── 文本同步 ─────────
 
 // lspTick 每帧对当前文件标签调用:首次 didOpen,编辑停顿 250 ms 后 didChange,并把诊断铺到编辑器上。
