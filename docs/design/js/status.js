@@ -254,6 +254,7 @@
       R('高亮当前所在范围', 'ide_scope*.go:行号槽竖条 + 首尾横杆、活动缩进线(库 bracketGuide)、可选块内淡底色、面包屑末级强调 + tooltip、粘性头 / 迷你地图刻度;LSP documentSymbol 优先否则本地索引;偏好 editor.scopeHighlight / editor.scopeStyle;命令面板切换;-ed scope:<行> / scope:hover;go test ide_scope_logic_test(本阶段未跑);未测试', 'part', 'B5'),
       R('粘性滚动、查找替换、悬停、预览定义、跳转定义 / 引用 / 类型 / 实现、补全、重命名、格式化、跳转历史', '', 'ok'),
       R('代码操作 ⌘.', 'LSP codeAction + 本地兜底;无服务器时仍为本地菜单', 'ok', 'B5'),
+      R('语言服务:托管 Node + 语言包按需下载(官方源 / 国内镜像,优先本机 Node)', '设计稿 lsp-spec「托管 Node 与语言包」已补:未安装 / 下载中 / 失败 / 已安装(托管)四态、下载源分段、托管规则表(本机 Node 按各服务器最低版本判断、固定版本清单、sha256 校验、目录布局);代码分三步:① lsp 包(Node 解析 / 下载校验解压 / npm 安装 / 镜像)② 设置页行状态与按钮、问题面板一键安装 ③ 演示数据与调试入口;当前进度见下方各行', 'todo'),
       R('语言服务器启动环境(访达启动也能用 npm 装的服务器)', 'lsp/servers.go toolEnv:启动服务器时 PATH 前置它自己所在的目录(npm 全局安装时 node 与服务器同目录)再接 searchDirs;此前从访达 / Dock 启动只继承 launchd 的 PATH,intelephense 等 `#!/usr/bin/env node` 脚本找不到 node,以 127 退出,界面只有「语言服务器已退出」。握手失败时把服务器 stderr 最后几行拼进错误,并写 lsp 日志;用最小 PATH 手动复现并验证过机制,应用内未测试(未用 Computer Use 实测)', 'part'),
       R('选中工具条 / ⌘I 行内编辑', '真实模式 claude -p Haiku 生成替换预览,Esc/取消可中断;演示仍走占位', 'ok', 'B5'),
       R('行内审查(悬停接受 / 撤销)', '改动行悬停接受写入审查状态 ok、撤销走 revertHunk', 'ok', 'B5'),

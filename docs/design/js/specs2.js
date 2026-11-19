@@ -84,7 +84,7 @@
 
   /* ───────── 语言服务 ───────── */
   const langRow = (n, srv, state, act) => `<div class="set-row"><span class="si-box">${ic('code')}</span><div class="grow"><div class="m">${n}</div><div class="d mono">${srv}</div></div>${state}${act}</div>`;
-  P['lsp-spec'] = () => `<div class="ds" style="max-width:1240px">${head('语言服务(LSP)· 识别、安装、状态', '原则:打开文件才启动(不预热);找不到就说清楚并给一条能复制 / 一键运行的安装命令;失败不阻塞编辑,自动退回「本地符号索引」(正则级,不懂语义)。')}
+  P['lsp-spec'] = () => `<div class="ds" style="max-width:1240px">${head('语言服务(LSP)· 识别、安装、状态', '原则:打开文件才启动(不预热);找不到就说清楚并给一条能复制 / 一键运行的安装命令,依赖 Node 的服务器另有「下载安装」(托管 Node + 固定版本的语言包,点了才下载);失败不阻塞编辑,自动退回「本地符号索引」(正则级,不懂语义)。')}
     ${sec('从打开文件到可用:状态机', '', tbl([['阶段', 120], ['界面', 300], ['说明']], [
       ['识别', '无', '按扩展名选服务器:rs → rust-analyzer、go → gopls、py → pyright / pylsp、lua → lua-language-server、ts/js → typescript-language-server、c/cpp → clangd、swift → sourcekit-lsp,另有 Java / Kotlin / C# / PHP / Ruby / HTML / CSS / JSON / YAML / TOML / SQL(sqls)/ Shell / Dockerfile(按文件名)/ Terraform / Svelte / Dart / Zig / Elixir / Haskell / LaTeX(见下表);Vue 暂未接(需要与 tsserver 配合,单独做)'],
       ['查找', '无', 'PATH + 常见目录(~/go/bin、~/.cargo/bin、Homebrew、npm 全局);rust-analyzer 跳过 rustup 代理(工具链没装该组件时它一启动就退出)'],
@@ -92,7 +92,21 @@
       ['启动中', '状态栏转圈「rust-analyzer 索引中 42%」(来自 $/progress)', '期间悬停 / 跳转可用但可能不全,用本地索引兜底'],
       ['就绪', '状态栏「rust-analyzer ✓」;诊断波浪线、悬停、补全、跳转、引用、重命名、格式化可用', '编辑后 250ms 去抖发 didChange(整篇文本);请求前先补同步'],
       ['崩溃', '状态栏「… 已停止 · 正在重启」;退避自动重启最多 3 次,仍失败则停并提示看日志', '日志在「输出 → 语言服务」通道']]))}
-    ${sec('设置 → 编辑器与语言服务', '每种语言一行:服务器名、路径(可覆盖)、状态、操作。自动安装不静默执行,所有安装都经由可见终端。Go: settings_lsp.go 后台扫 lsp.Specs + 偏好 lsp.server.* / editor.lsp,未测试。', `<div class="spec" style="padding:4px 10px">${langRow('Rust', 'rust-analyzer · ~/.rustup/…/bin/rust-analyzer', tag('就绪', 'ok'), btn('重启', 'sm ghost'))}${langRow('Go', 'gopls · ~/go/bin/gopls', tag('就绪', 'ok'), btn('重启', 'sm ghost'))}${langRow('Python', 'pyright-langserver', tag('未安装', 'warn'), btn('安装…', 'sm soft'))}${langRow('Lua', 'lua-language-server', tag('未安装', 'warn'), btn('安装…', 'sm soft'))}${langRow('TypeScript', 'typescript-language-server', tag('就绪', 'ok'), btn('重启', 'sm ghost'))}</div>`)}
+    ${sec('设置 → 编辑器与语言服务', '每种语言一行:服务器名、路径(可覆盖)、状态、操作。不静默安装:终端安装经由可见终端;「下载安装」只在点击后开始,进度与失败都看得见(见下一节)。Go: settings_lsp.go 后台扫 lsp.Specs + 偏好 lsp.server.* / editor.lsp,未测试。', `<div class="spec" style="padding:4px 10px">${langRow('Rust', 'rust-analyzer · ~/.rustup/…/bin/rust-analyzer', tag('就绪', 'ok'), btn('重启', 'sm ghost'))}${langRow('Go', 'gopls · ~/go/bin/gopls', tag('就绪', 'ok'), btn('重启', 'sm ghost'))}${langRow('Python', 'pyright-langserver', tag('未安装', 'warn'), btn('安装…', 'sm soft'))}${langRow('Lua', 'lua-language-server', tag('未安装', 'warn'), btn('安装…', 'sm soft'))}${langRow('TypeScript', 'typescript-language-server', tag('就绪', 'ok'), btn('重启', 'sm ghost'))}</div>`)}
+    ${sec('托管 Node 与语言包(按需下载)', '背景:从访达 / Dock 启动的应用看不到你 shell 里的 Node,没装 Node 的人更是装不了 npm 系的服务器。做法:应用本身不内置 Node(否则安装包翻倍),需要时才下载一份到 <span class="mono">~/.minicode/runtime/</span>,再用它的 npm 把固定版本的语言包装到 <span class="mono">~/.minicode/lsp/&lt;服务器&gt;/</span>。只覆盖依赖 Node 的服务器(Python / TypeScript / PHP / HTML·CSS·JSON / YAML / Shell / Dockerfile / Svelte);gopls、rust-analyzer、Homebrew 系的不变。', grid(
+      cell('未安装', [], `<div class="spec" style="padding:4px 10px">${langRow('Python', 'Pyright · 需要 Node.js ≥ 14', tag('未安装', 'warn'), btn('下载安装', 'sm soft', 'download') + btn('在终端安装', 'sm ghost', 'terminal'))}</div>`, '主按钮「下载安装」;原来的「复制 / 在终端安装」收成次要按钮,依然可用(给想自己控制的人)。点之前不下载、不联网。'),
+      cell('下载中', [], `<div class="spec" style="padding:4px 10px">${langRow('Python', '正在下载 Node v24.11.1 · 42%(21 / 49 MB)', tag('下载中', 'ac'), btn('取消', 'sm ghost'))}${langRow('PHP', '正在安装 intelephense@1.18.5…', tag('安装中', 'ac'), btn('取消', 'sm ghost'))}</div>`, '两个阶段:先 Node(本机没有合适的才需要,有进度百分比),再语言包(npm 不报百分比,只显示「正在安装 …」)。同一时刻一个安装任务,其余排队;可取消,取消后清掉半成品。'),
+      cell('失败', [], `<div class="spec" style="padding:4px 10px">${langRow('Python', '下载 Node 失败:连接超时(nodejs.org)· 可改用国内镜像', tag('失败', 'err'), btn('重试', 'sm soft', 'refresh') + btn('查看日志', 'sm ghost'))}</div>`, '失败行写明原因和下一步(网络问题提示切换下载源);「查看日志」打开底部「输出 → 语言服务」,里面有 npm 的完整输出;日志同时写 ~/.minicode/logs。'),
+      cell('已安装(托管)', [], `<div class="spec" style="padding:4px 10px">${langRow('Python', 'pyright@1.1.414 · ~/.minicode/lsp/python · Node:本机 v24.11.1', tag('就绪', 'ok'), btn('卸载', 'sm ghost', 'trash'))}</div>`, '路径旁写清用的是哪个 Node(本机 / 托管)。卸载 = 删这个服务器的目录(Node 运行时保留,其他服务器还要用)。用户自己装的(PATH 里找到的)不显示卸载。'),
+      cell('下载源', [], `<div class="spec" style="padding:8px 10px"><div class="set-row"><div class="grow"><div class="m">下载源</div><div class="d">Node 运行时与 npm 包从哪里下载</div></div>${seg(['官方源', '国内镜像'], 0, 'sm')}</div><div class="t3 fs-cap" style="padding:2px 0 4px;line-height:1.6">官方源:nodejs.org / registry.npmjs.org。国内镜像:npmmirror.com(Node 与 npm 包都走它)。偏好 lsp.mirror,默认官方源;在设置 → 编辑器与语言服务页底部,切换只影响之后的下载。</div></div>`, '不自动测速、不自动切换:该用哪个由用户选,失败时只提示。'))) }
+    ${sec('托管规则', '', tbl([['项', 160], ['规则', 560]], [
+      ['选哪个 Node', '<b>优先本机</b>:在 PATH 与常见目录(Homebrew、nvm 各版本取最新、~/.bun 等)里找 node,取版本 ≥ 该服务器要求的最低版本的;都不满足才用托管的。例:typescript-language-server 6.x 要求 Node ≥ 22.22.2,本机是 v20 就用托管的 v24。'],
+      ['托管 Node', '固定一个 LTS(当前 v24.11.1),随应用版本更新;从 <span class="mono">nodejs.org/dist</span>(或镜像)下载 tar.gz,<b>必须</b>用同源的 SHASUMS256.txt 校验 sha256,不一致就丢弃并报错;解压到临时目录后原子改名;只保留 bin / lib(含自带 npm),不要 include / share。'],
+      ['语言包版本', '每个服务器在清单里<b>固定版本</b>(例 pyright@1.1.414),不跟 latest,避免某天上游发版把用户的编辑器弄坏;升级随应用发版更新清单,设置页显示「可更新」。'],
+      ['安装位置', '<span class="mono">~/.minicode/lsp/&lt;服务器&gt;/node_modules/.bin/…</span>,npm 缓存在 <span class="mono">~/.minicode/cache/npm</span>;同一个包提供多个服务器的(vscode-langservers-extracted:HTML / CSS / JSON)共用一个目录。'],
+      ['查找顺序', '用户自己装的(PATH / 常见目录)优先,找不到才用托管的;不覆盖用户的选择。'],
+      ['运行时的 PATH', '启动托管的服务器时,PATH 前置所用 Node 的目录,所以 <span class="mono">#!/usr/bin/env node</span> 的脚本能找到 node(访达启动的应用只有 launchd 的 PATH)。'],
+      ['不做的', '不内置 Node、不自己重新托管语言包(Intelephense 是专有许可,不能再分发,一律从 npm 装);不静默安装(只在点击后下载);不为 gopls / rust-analyzer / Homebrew 系做托管。']]))}
     ${sec('安装命令', '只给官方推荐的一条,不替用户选包管理器之外的方案。', tbl([['语言', 100], ['命令', 380], ['备注']], [
       ['Rust', '<span class="mono">rustup component add rust-analyzer</span>', '随工具链,版本与 rustc 匹配'],
       ['Go', '<span class="mono">go install golang.org/x/tools/gopls@latest</span>', '需要 GOBIN 在 PATH'],
