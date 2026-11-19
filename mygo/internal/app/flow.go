@@ -337,9 +337,37 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			obj.Strikethrough().TextColor(t.Tx3)
 		}
 		if obj.Valid() { // 路径不在行上写了,悬停文件名看完整路径;Bash 用描述作标题时,悬停看完整命令
-			if sp.path != "" {
+			switch {
+			case sp.path != "" && sp.imgAbs == "" && sp.state != "run":
+				// 编辑 / 写入 / 读取的文件名可以直接点开:文件还在 = 在工作区打开(带行号就跳到那一行;网页 / PDF 等交给系统);
+				// 文件已不存在(如临时目录被清)= 点它展开 / 收起写入的内容,不弹「不存在」
+				exists := a.stepFileExists(sp.path)
+				obj.Cursor(ui.CursorPointer)
+				if exists {
+					obj.Tooltip("点击打开 · " + sp.path)
+					if obj.Hovered() {
+						obj.TextColor(t.Ac)
+					}
+				} else {
+					obj.Tooltip(sp.path + "(文件已不存在)")
+				}
+				obj.OnClick(func() {
+					switch {
+					case exists:
+						if !a.openPathSmart(joinRef(sp.path, sp.line)) {
+							a.toast = "文件已不存在:" + baseName(sp.path)
+						}
+					case body != nil && sp.hasBody:
+						a.flowList.HoldPlace()
+						a.folds[sp.id] = !open
+						a.foldAt[sp.id] = time.Now()
+					default:
+						a.toast = "文件已不存在:" + baseName(sp.path)
+					}
+				})
+			case sp.path != "":
 				obj.Tooltip(sp.path)
-			} else if sp.tip != "" {
+			case sp.tip != "":
 				obj.Tooltip(sp.tip)
 			}
 		}
