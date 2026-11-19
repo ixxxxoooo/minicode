@@ -389,7 +389,7 @@ func (d *ide) loadText(t *ideTab) {
 		if t.langPick != "" {
 			t.buf.SetLanguage(editor.LanguageFor(t.langPick))
 		} else {
-			t.buf.SetLanguage(editor.LanguageFor(path.Base(p)))
+			t.buf.SetLanguage(langForFile(p, src))
 		}
 		t.saved = t.buf.String() // 缓冲区已把 \r\n 归一;用原文比较会让 CRLF 文件一打开就显示未保存
 		t.eol = detectEOL(src)

@@ -43,7 +43,7 @@ const bracketMaxLines = 30000
 
 // bracketSkipLang 不包装的语言:标记语言的尖括号不算括号,Markdown / Diff 自己用了借来的种类。
 var bracketSkipLang = map[string]bool{
-	"Markdown": true, "Diff": true, "HTML": true, "XML": true, "ERB": true, "Svelte": true, "Jinja": true,
+	"Markdown": true, "Diff": true, "CSV": true, "HTML": true, "XML": true, "ERB": true, "Svelte": true, "Jinja": true,
 }
 
 // bracketLangs 缓存包装后的语言(每种基础语言一个,换标签 / 重开文件复用同一个指针)。
@@ -113,6 +113,8 @@ func (a *App) syncBracketLang(tb *ideTab) {
 	}
 	if isBracketLang(want) {
 		tb.st.Theme = a.bracketTheme()
+	} else if isCSVLang(want) {
+		tb.st.Theme = a.csvTheme()
 	}
 }
 

@@ -74,6 +74,8 @@ type App struct {
 	edThemeKey string
 	brTheme    *editor.Theme // 带括号深度色的编辑器配色(ide_brackets.go)
 	brThemeKey string
+	csvTh      *editor.Theme // csv / tsv 彩虹列配色(ide_csv_color.go)
+	csvThKey   string
 	flowSt     ui.ScrollState // 会话流滚动状态(与虚拟列表同步,供「回到最新」等读取)
 	flowList   ui.ListState   // 会话流虚拟列表(只构建视口内的行,见 flow_rows.go)
 	flowBox    ui.Rect        // 会话流列表上一帧的矩形(吸顶判断用)
