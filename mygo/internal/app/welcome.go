@@ -100,10 +100,15 @@ const (
 // 四张一排放得下就一排;放不下就 2×2 两列(卡片等分宽度);再窄就单列只留图标与标题。
 func (a *App) welcomeStarters(c *ui.Context) {
 	list := a.starterList()
-	box := ui.Column(c).Key("starters").WidthPercent(100).MaxWidth(starterMaxW).AlignItems(ui.Center).Gap(starterGap)
+	// 放进和输入框同一个内容列(flowCol),左右边缘与输入框对齐,不会比输入框更宽
+	a.flowCol(c, func() { a.welcomeStarterGrid(c, list) })
+}
+
+func (a *App) welcomeStarterGrid(c *ui.Context, list []starter) {
+	box := ui.Column(c).Key("starters").WidthPercent(100).AlignItems(ui.Center).Gap(starterGap)
 	w := box.Bounds().W // 上一帧量到的宽度;第一帧还没有,按对话栏宽度估
 	if w <= 0 {
-		w = min(a.chatW-40, starterMaxW)
+		w = min(a.chatW-2*a.flowPad(), starterMaxW)
 	}
 	cols := 1
 	switch {
@@ -152,7 +157,11 @@ func (a *App) welcomeRecentBlock(c *ui.Context, t *theme.Tokens) {
 	if len(rows) == 0 {
 		return
 	}
-	ui.Column(c).Gap(4).WidthPercent(100).MaxWidth(600).PaddingX(20).Margin(10, 0, 0, 0).Children(func() {
+	a.flowCol(c, func() { a.welcomeRecentList(c, t, rows) })
+}
+
+func (a *App) welcomeRecentList(c *ui.Context, t *theme.Tokens, rows []welcomeRecent) {
+	ui.Column(c).Gap(4).WidthPercent(100).PaddingX(6).Margin(10, 0, 0, 0).Children(func() {
 		ui.Text(c, "最近会话").FontSize(theme.FsCap).FontWeight(500).TextColor(t.Tx3)
 		for _, r := range rows {
 			r := r
@@ -201,7 +210,7 @@ func (a *App) starterCard(c *ui.Context, s starter, mode starterMode) {
 	if narrow {
 		b.WidthPercent(100).Height(theme.Px(32)).PaddingX(10).Gap(8).AlignItems(ui.Center).Justify(ui.Start)
 	} else if mode == starterFlex {
-		b.Grow(1).Basis(0).MinWidth(0).Padding(9, 10).Gap(3).AlignItems(ui.Start)
+		b.Grow(1).Basis(0).MinWidth(0).Padding(10, 12).AlignItems(ui.Center)
 	} else {
 		b.Width(starterCardW).Padding(9, 10).Gap(3).AlignItems(ui.Start)
 	}
@@ -220,6 +229,16 @@ func (a *App) starterCard(c *ui.Context, s starter, mode starterMode) {
 		if narrow {
 			kit.Ic(c, s.icon, kit.S12).TextColor(t.AcTx)
 			ui.Text(c, s.title).FontWeight(500)
+			return
+		}
+		if mode == starterFlex { // 两列:图标在左,标题与说明在右,卡片更矮,和输入框的宽度对齐
+			ui.Row(c).Gap(10).AlignItems(ui.Center).Grow(1).MinWidth(0).Children(func() {
+				kit.Ic(c, s.icon, 14).TextColor(t.AcTx)
+				ui.Column(c).Gap(2).Grow(1).MinWidth(0).Children(func() {
+					ui.Text(c, s.title).FontWeight(500).SingleLine()
+					ui.Text(c, s.desc).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
+				})
+			})
 			return
 		}
 		ui.Column(c).Gap(3).Grow(1).MinWidth(0).Children(func() {
