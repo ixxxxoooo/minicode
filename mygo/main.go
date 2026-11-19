@@ -450,7 +450,7 @@ func main() {
 				win.Update(func() { a.ScmFetchTick() })
 			}
 		}()
-		// 后台检查更新:正式版(.app 包内、非演示)启动 25 秒后检查一次,之后每 6 小时一次;
+		// 后台检查更新:正式版(.app 包内、非演示)启动 25 秒后检查一次,之后每 1 小时一次;
 		// 是否自动下载由偏好 about.autoUpdate 决定(AutoUpdateTick 内判断)
 		go func() {
 			defer diag.Recover("更新检查")

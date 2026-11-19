@@ -21,7 +21,7 @@
   const generalRows = {
     window: set('右侧面板默认打开', '启动时是否显示改动 / 文件 / 终端面板', tg(1)) + set('融合模式', '关闭时 IDE 是独立窗口(⇧⌘E 打开 / 回到 Agent);开启后在同一窗口原地切换', tg(0)) + set('关闭窗口时', '红色按钮的行为', seg(['隐藏', '退出'], 0)),
     input: set('发送键', '另一个键用于换行(Shift+Enter 始终换行)', seg(['Enter 发送', '⌘Enter 发送'], 0)) + set('排队与引导', '回合进行中发送新消息的默认行为', seg(['排队', '立即引导'], 0)),
-    notice: set('任务完成时通知', '回合结束且 MiniCode 不在前台时发送系统通知', tg(1)) + set('菜单栏图标', '在系统菜单栏显示 MiniCode 图标', tg(1)) + set('自动检查更新', '启动时与每 6 小时检查一次', tg(1), 1),
+    notice: set('任务完成时通知', '回合结束且 MiniCode 不在前台时发送系统通知', tg(1)) + set('菜单栏图标', '在系统菜单栏显示 MiniCode 图标', tg(1)) + set('自动检查更新', '启动时与每 1 小时检查一次', tg(1), 1),
     lang: set('界面语言', '目前仅提供简体中文', `<span class="sel">简体中文${i('chevUD', 's12 tx3')}</span>`),
   };
   const heading = (t, d) => `<div style="margin-bottom:12px"><div class="s16 b">${t}</div><div class="tx3">${d}</div></div>`;

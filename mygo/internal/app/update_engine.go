@@ -172,7 +172,7 @@ func (a *App) startUpdateDownload() {
 }
 
 // UpdateAutoCheckEvery 是后台检查更新的间隔。
-const UpdateAutoCheckEvery = 6 * time.Hour
+const UpdateAutoCheckEvery = time.Hour
 
 // AutoUpdateTick 由 main 的定时器调用:真实、从 .app 包里运行的正式版才会在后台检查更新
 // (开发版、演示、go run 都跳过,它们既不能被替换也不该打扰)。
