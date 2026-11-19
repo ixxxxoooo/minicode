@@ -135,14 +135,14 @@ func (a *App) linkIcon(dest string, size float32) (markdown.InlineObject, bool) 
 	if svg == nil {
 		return markdown.InlineObject{}, false
 	}
-	cs := size * 11.5 / theme.FsRead // 行内代码的字号(mdTheme 的 CodeSize 是它与正文的比):底色高度按它算
+	cs := size * 11.5 / theme.FsRead // 行内代码的字号(mdTheme 的 CodeSize 是它与正文的比)
 	ic := cs * 1.15
-	_, bg := a.inlineCodeColors() // 与行内代码底色同色
+	// 底色由补丁里的图标 span 自带(与后面的行内代码底色在框架里连成一整条胶囊),这里只画图标;
+	// 没打补丁时图标没有底色,仍能正常显示。
 	return markdown.InlineObject{
-		Width: ic + 7, Height: cs * .98, Depth: cs * .34, // 与框架画行内代码底色的范围一致:基线上 0.98 倍、共 1.32 倍字号高
+		Width: ic + 4, Height: cs * .98, Depth: cs * .34,
 		Draw: func(pt *ui.Painter, r ui.Rect) {
-			pt.FillRadii(r, [4]float32{3, 0, 0, 3}, bg) // 只圆左边两个角,右边与后面的行内代码底色连起来
-			pt.Image(svg, ui.Rect{X: r.X + 3.5, Y: r.Y + (r.H-ic)/2, W: ic, H: ic}, ui.Contain)
+			pt.Image(svg, ui.Rect{X: r.X + 2, Y: r.Y + (r.H-ic)/2, W: ic, H: ic}, ui.Contain)
 		},
 	}, true
 }
