@@ -225,7 +225,8 @@ func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 	t := a.tk
 	open := a.projOpen[p.ID]
 	on := a.ctxIsProject(p)
-	r := a.navDrop(kit.RowEl(c, false).Key("proj-" + p.ID)).Gap(5).FontWeight(500)
+	r := a.navDrop(kit.RowEl(c, false).Key("proj-"+p.ID)).Gap(5).FontWeight(500).Height(t.Scheme.RowH+projRowExtra).Margin(projRowGap, 0, 0, 0)
+	mo := a.sessMenuOpenFor("proj:" + p.ID) // 「···」菜单打开期间按钮必须留着(菜单一弹出行就不再被悬停)
 	hov := r.Hovered()
 	// 配色层次:当前项目 = 强调色图标 + 正文色名字;其余项目 = 灰图标 + 次级色名字(悬停变正文色),
 	// 不再一长排全是黑色粗体、压过下面的会话标题
@@ -251,14 +252,21 @@ func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 			ui.Text(c, hint).FontSize(theme.FsCap).FontWeight(400).TextColor(t.Tx4).SingleLine().Shrink(2).MinWidth(0)
 		}
 		ui.Spacer(c).Grow(1)
-		if hov {
-			kit.Ib(c, "chatPlus", kit.IbOpt{Small: true, Tip: "在此项目新建会话"}).Margin(0, -4, 0, 0).OnClick(func() { a.NewSessionIn(p) })
+		if hov || *mo {
+			kit.Ib(c, "chatPlus", kit.IbOpt{Small: true, Tip: "在此项目新建会话"}).OnClick(func() { a.NewSessionIn(p) })
+			kit.MenuBtnOpen(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作", On: *mo}).Margin(0, -4, 0, 0), mo, func(m *ui.Menu) { a.projMenu(m, p) })
 		} else if a.registry().HasProject(p.Path) && !a.isRepoDir(p.Path) {
 			nonRepoMark(c, t)
 		}
 		// 项目行末尾不再显示会话数量:数字对找会话没有帮助,还让每行右侧参差不齐
 	})
 }
+
+// 项目 / 工作区行比会话行高一截并在上方留一点空隙,各项目之间不再挤在一起。
+const (
+	projRowExtra = 6 // 比列表行高多出的像素
+	projRowGap   = 2 // 与上一行的间距
+)
 
 func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 	t := a.tk

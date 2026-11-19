@@ -21,10 +21,10 @@
   const side = `<div style="padding:8px">
     <div class="row on" style="height:28px">${ic('chatPlus', 's12', 'c-ac')}<span class="grow b">新对话</span>${kbd('⌘', 'N')}</div>
     <div class="grp-h" style="margin-top:6px"><span class="grow">项目与工作区</span>${ib('folderPlus', 'sm', '添加项目或工作区')}</div>
-    <div class="row" style="height:28px">${ic('layersOpen', 's16', 'c-ac')}<span class="grow b">全栈工作区</span><span class="t4 fs-micro">3 个文件夹</span></div>
+    <div class="row" style="height:30px;margin-top:2px">${ic('layersOpen', 's16', 'c-ac')}<span class="grow b">全栈工作区</span>${ib('chatPlus', 'sm')}${ib('more', 'sm')}</div>
     <div class="row" style="height:28px;margin-left:18px">完整修复一个 Bug:路由大小写<span class="aux">刚刚</span></div>
     <div class="row" style="height:28px;margin-left:18px">权限请求:修改配置…<span class="aux">5 分钟</span></div>
-    <div class="row" style="height:28px">${ic('chevR', 's12')}${ic('folder', 's12')}<span class="grow b">scenario-lab</span><span class="t4 fs-micro">61</span></div>
+    <div class="row" style="height:30px;margin-top:2px">${ic('folder', 's16')}<span class="grow b">scenario-lab</span></div>
     <div class="row" style="height:24px">${ic('chevR', 's12')}${ic('folder', 's12')}<span class="grow b">design-assets</span><span class="nonrepo t4 fs-micro">非仓库</span></div></div>`;
   const field = (l, v, ph, extra = '') => `<div class="fc g1" style="margin-bottom:8px"><div class="t3 fs-cap">${l}</div><div class="inp ${v ? '' : 'fill'}" ${extra}>${v ? `<span class="v">${v}</span>` : `<span class="t4">${ph}</span>`}</div></div>`;
   const dlgAddProject = `<div class="pop a-pop-up" style="width:460px;padding:14px 16px;margin:14px auto;display:flex;flex-direction:column;gap:6px">
@@ -54,7 +54,7 @@
     <div class="row" style="height:24px;font-weight:600">${ic('chevR', 's12')}${ic('folder', 's12')}<span class="grow">docs-site</span></div>
     </div>`;
   P['proj-ws'] = () => `<div class="ds" style="max-width:1240px">${head('项目与工作区 · 添加、组织、使用', '先分清三个词:<b>项目</b> = 一个文件夹(Claude 会话的工作目录);<b>工作区</b> = 一组平级的命名文件夹(没有「主文件夹」),对标 VS Code / Cursor 的多根工作区;<b>仓库</b> = 文件夹里的 Git 仓库(一个文件夹至多一个,也可以没有)。会话在工作区的某个文件夹里启动(默认沿用当前所在的文件夹,没有则取列表里第一个),其余文件夹通过 Claude 的 <span class="mono">--add-dir</span> 授权,不是把它们拷进来。')}
-    ${sec('侧栏怎么呈现', '项目与工作区在同一列表里,标题行「+」是唯一入口(菜单:添加项目… / 新建工作区… / 打开最近)。工作区行用叠层图标与「N 个文件夹」,展开后列出<b>所有成员文件夹的会话</b>(合在一起按最近更新排序),不再列出成员文件夹本身(里面有哪些文件夹在右键「编辑工作区…」里看与改)。<b>点行 = 只展开 / 收起</b>(手风琴),不切换聊天栏与 IDE、不自动打开任何会话;点里面的某个会话才进入对应项目 / 工作区,或点悬停出现的「+」在其中新建会话。头部(新对话、标题行与「+」)固定不动,只有列表滚动;三种布局都能在原地添加项目 / 工作区(方案 B 在项目条旁的「+」和下拉底部)。', grid(
+    ${sec('侧栏怎么呈现', '项目与工作区在同一列表里,标题行「+」是唯一入口(菜单:添加项目… / 新建工作区… / 打开最近)。工作区行用叠层图标与「N 个文件夹」,展开后列出<b>所有成员文件夹的会话</b>(合在一起按最近更新排序),不再列出成员文件夹本身(里面有哪些文件夹在右键「编辑工作区…」里看与改)。<b>点行 = 只展开 / 收起</b>(手风琴),不切换聊天栏与 IDE、不自动打开任何会话;点里面的某个会话才进入对应项目 / 工作区,或点悬停出现的「+」在其中新建会话。项目 / 工作区行比会话行高 6px、上方留 2px,各项目之间不挤;悬停(或菜单打开期间)行最右侧出现「+」与「···」,「···」菜单与右键菜单同一份(项目:在此项目新对话 / 编辑项目… / 加入工作区… / 在访达中显示 / 复制路径 / 从列表移除项目;工作区:在此工作区新对话 / 编辑工作区… / 添加文件夹… / 在访达中显示 / 复制路径 / 导出为工作区文件… / 从列表移除工作区)。头部(新对话、标题行与「+」)固定不动,只有列表滚动;三种布局都能在原地添加项目 / 工作区(方案 B 在项目条旁的「+」和下拉底部)。', grid(
       cell('侧栏(会话分栏)', '', box(side, 330, 300), '项目按最近活动排序;工作区置顶。工作区展开 = 会话列表,成员文件夹不占行;非仓库的文件夹在「编辑工作区」与文件树里标灰色「非仓库」,不隐藏。'),
       cell('文件树(多根)', '', box(tree, 330, 300), '一个工作区有 ≥ 2 个文件夹时,文件树每个文件夹一个加粗顶层节点(默认展开,右侧显示该仓库的改动数);标题写「<工作区名>(工作区)」,单项目时与现在一致。'),
       cell('搜索(多根)', '', box(`<div style="padding:10px 12px" class="fc g3"><div class="inp"><span class="v">normalize</span></div><div class="f g2">${chip('全部文件夹', 'folder', 'on')}${chip('仅 router-demo', 'folder', 'line')}</div>${gh('router-demo/src/router.rs', 3)}${gh('web-dashboard/src/api.ts', 1)}</div>`, 220, 300), '搜索默认覆盖所有文件夹,结果路径带文件夹名前缀;chip 可限定到某个文件夹。')))}
@@ -80,7 +80,7 @@
         <div class="f g2"><div class="row" style="height:24px;background:var(--fill-1);border-radius:var(--r-sm)">${ic('layers', 's12')}<span>全栈工作区</span></div></div>
         <div class="f g2" style="margin-top:8px">${btn('从列表移除', 'sm ghost', 'trash')}<span class="grow"></span>${btn('取消', 'ghost')}${btn('保存', 'pri')}</div></div>`, 480, 400), '显示名只存在 ~/.minicode/workspaces.json 的 names 里,不改文件夹、不动 Claude 的会话文件;与文件夹名相同或留空 = 恢复文件夹名。点所属工作区名直接进入「编辑工作区」。来自 Claude 会话记录的项目没有「从列表移除」,底部改成一行说明。')))}
     ${sec('拖拽排序', '工作区行可以拖着换位置(顺序写进 ' + mono('~/.minicode/workspaces.json') + ');工作区内的文件夹顺序在「编辑工作区」对话框里用上移 / 下移调整(文件树顺序跟着变)。侧栏不再列成员文件夹,所以成员行的拖拽取消。项目行按最近活动排序,不手动排。', grid(
-      cell('拖动中', '', box(`<div style="padding:8px"><div class="row" style="height:28px">${ic('layersOpen', 's16', 'c-ac')}<span class="grow b">全栈工作区</span><span class="t4 fs-micro">3 个文件夹</span></div>
+      cell('拖动中', '', box(`<div style="padding:8px"><div class="row" style="height:30px;margin-top:2px">${ic('layersOpen', 's16', 'c-ac')}<span class="grow b">全栈工作区</span>${ib('chatPlus', 'sm')}${ib('more', 'sm')}</div>
         <div class="row" style="height:28px;box-shadow:inset 0 2px 0 var(--ac)">${ic('chevR', 's12')}${ic('layers', 's12')}<span class="grow b">文档与素材</span><span class="t4 fs-micro">2 个文件夹</span></div>
         <div class="row" style="height:28px;opacity:.5">${ic('chevR', 's12')}${ic('layers', 's12')}<span class="grow b">运维脚本</span><span class="t4 fs-micro">2 个文件夹</span></div>
         <div class="pop" style="position:relative;width:170px;padding:4px 10px;margin:-30px 0 0 120px;opacity:.92">${ic('layers', 's12')} 运维脚本</div></div>`, 170, 330), '拖起的行变淡、指针旁跟一份副本;经过的行顶部出现 2px 强调色插入线,松手 = 放到那一行之前。'),

@@ -39,6 +39,7 @@
 .side-foot { display: flex; align-items: center; gap: 2px; padding: 6px 8px; flex: none; }
 /* 项目行配色层次:当前项目 = 强调色图标 + 正文色名字;其余 = 灰图标 + 次级色名字(悬停变正文色);「非仓库」是微型灰字,不用实心胶囊 */
 .proj { font-weight: var(--fw-medium); color: var(--tx-2); gap: 5px; } .proj:hover, .proj.open { color: var(--tx-1); } .proj.open > svg:first-child { color: var(--ac); }
+.proj { height: calc(var(--h-row) + 6px); margin-top: 2px; } /* 项目 / 工作区行比会话行高一截、上方留 2px,各项目之间不挤 */
 .proj .nonrepo { font-size: var(--fs-micro); font-weight: 400; color: var(--tx-4); flex: none; }
 /* 项目 / 工作区行不再有行首展开箭头:图标本身表达展开(folder ⇄ folderOpen,layers ⇄ layersOpen),图标 16px */
 .sess { margin-left: 18px; } /* 会话整行(含选中高亮 / 竖条)用外边距缩进,标题落在项目名右侧约 14px;不要在行内左边留空白 */

@@ -76,7 +76,8 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 	if a.ws != nil && a.ws.ID == w.ID {
 		nameCol = t.Tx1
 	}
-	r := a.navDrop(kit.RowEl(c, false).Key("ws-" + w.ID)).Gap(5).FontWeight(500)
+	r := a.navDrop(kit.RowEl(c, false).Key("ws-"+w.ID)).Gap(5).FontWeight(500).Height(t.Scheme.RowH+projRowExtra).Margin(projRowGap, 0, 0, 0)
+	mo := a.sessMenuOpenFor("ws:" + w.ID)
 	r.Drag(wsDrag{ID: w.ID}) // 拖动换位
 	if d, ok := ui.Drop[wsDrag](r); ok {
 		a.moveWorkspace(d.ID, w.ID)
@@ -104,8 +105,9 @@ func (a *App) wsRow(c *ui.Context, w projects.Workspace) {
 			ic.TextColor(t.Ac)
 		}
 		ui.Text(c, w.Name).Grow(1).SingleLine()
-		if hov {
-			kit.Ib(c, "chatPlus", kit.IbOpt{Small: true, Tip: "在此工作区新建会话"}).Margin(0, -4, 0, 0).OnClick(func() { a.NewSessionIn(a.startProject(w)) })
+		if hov || *mo {
+			kit.Ib(c, "chatPlus", kit.IbOpt{Small: true, Tip: "在此工作区新建会话"}).OnClick(func() { a.NewSessionIn(a.startProject(w)) })
+			kit.MenuBtnOpen(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作", On: *mo}).Margin(0, -4, 0, 0), mo, func(m *ui.Menu) { a.wsMenu(m, w) })
 		}
 		// 工作区行末尾不再显示「N 个文件夹」:成员文件夹在「编辑工作区」里管理
 	})
