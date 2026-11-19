@@ -74,7 +74,7 @@ func (a *App) codeView(c *ui.Context, tb *ideTab) {
 	st := tb.st
 	st.Theme = a.editorTheme()
 	a.syncBracketLang(tb) // 括号按深度染字色;适用时把 st.Theme 换成带括号色的那份
-	st.Font = ui.Font{Family: "monospace", Size: 12}
+	st.Font = codeUIFont(12)
 	st.LineHeight = 20.0 / 12.0
 	st.NoScrollbars = false // 滚动条恢复:轨道在文字与迷你地图之间,滑块显隐按「滚动条」设置(始终显示 = KeepScrollbars)
 	a.attachEditor(tb)
@@ -501,7 +501,7 @@ func (a *App) peekPanel(c *ui.Context, tb *ideTab, y float32) {
 		c.Invalidate()
 	}
 	ov.peekSt.Theme = a.editorTheme()
-	ov.peekSt.Font = ui.Font{Family: "monospace", Size: 12}
+	ov.peekSt.Font = codeUIFont(12)
 	ov.peekSt.LineHeight = 20.0 / 12.0
 	el := ui.Column(c).Key("ov-peek").Absolute().Left(16).Right(a.mmWidth()+mmRulW+edTrackW+14).Top(y+4).Height(180).Background(t.BG).Radius(t.RLg()).Border(1, t.Ac).Clip()
 	for _, s := range t.Shadow2() {

@@ -439,8 +439,12 @@ var settingsTabs = []setTabDef{
 			rTog("explorer.autoRevealWhenVisible", "仅在文件树可见时自动定位", "左侧导航停在「源代码管理」等其它分段时,先不切树;回到「文件」后再定位", false),
 			rTog("explorer.autoRevealScroll", "定位后滚动到可见", "选中后若该行不在文件树视口内则自动滚动(已可见则不滚)", true),
 		}},
-		{title: "字体与缩进", rows: []setRow{
-			rStp("editor.fontSize", "字号", "", 12, 9, 24, 1, "px"),
+		{title: "字体", rows: []setRow{
+			{key: pEdFamily, title: "代码字体", desc: "常见等宽、系统字体与逗号分隔回退链", kind: kNone},
+		}, body: func(a *App, c *ui.Context) { a.codeFontPickerBody(c) }},
+		{title: "字号与缩进", rows: []setRow{
+			rStp("editor.fontSize", "字号", "代码文字大小,默认 13(⌘+ / ⌘- / ⌘0 随时调)", 13, 9, 24, 1, "px"),
+			rTog(pEdLig, "字体连字", "=> != -> 画成一个字形;仅对支持连字的字体生效(JetBrains Mono / Fira Code);终端另有自己的开关", true),
 			rSeg("editor.indent", "缩进", "", 1, "2 空格", "4 空格", "Tab"),
 			rSeg("editor.autosave", "自动保存", "", 1, "关", "延时", "失焦"),
 		}},

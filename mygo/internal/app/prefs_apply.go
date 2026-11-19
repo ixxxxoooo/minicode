@@ -109,7 +109,8 @@ func (a *App) applyBehavior() {
 			tp.cellW = 0
 		}
 	}
-	edScale = float32(a.prefs.Int(pEdFont, 12)) / 12
+	a.applyCodeFont()
+	edScale = float32(a.prefs.Int(pEdFont, edFontDefault)) / 12 // 排版常量按 12px 算,edScale 是相对它的倍数
 	// 设置里改了 Diff 默认视图:已开的差异标签放弃各自的选择,统一跟随新默认
 	if v := a.prefs.Int("scm.diff", 0); v != a.diffPref {
 		a.diffPref = v
@@ -126,9 +127,9 @@ func (a *App) applyEditorPrefs(tb *ideTab) {
 	if st == nil {
 		return
 	}
-	size := a.prefs.Int(pEdFont, 12)
-	// 没改过字号时也要显式写成默认 12:库自带的默认是 13,和行高 / 浮层定位按 12 算的常量对不上
-	st.Font = ui.Font{Family: "monospace", Size: float32(size)}
+	size := a.prefs.Int(pEdFont, edFontDefault)
+	// 没改过字号时也要显式写成默认值,不依赖库自带的默认
+	st.Font = codeUIFont(float32(size))
 	switch a.prefs.Int(pEdIndent, 1) {
 	case 0:
 		st.TabSize, st.Indent = 2, editor.IndentSpaces
@@ -234,7 +235,7 @@ func d2active(d *ide, t *ideTab) func() {
 }
 
 // edFontDefault 是编辑器字号的默认值(与设置页「字号」一致)。
-const edFontDefault = 12
+const edFontDefault = theme.DefaultCodeSize
 
 // setEditorFont 改编辑器字号(9–24):⌘+ / ⌘- / 状态栏芯片 / 命令面板共用;等于默认值时删键,设置页的「已修改」点随之消失。
 func (a *App) setEditorFont(n int) {

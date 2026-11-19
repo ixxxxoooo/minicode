@@ -6,6 +6,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
+	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 // Markdown 围栏代码块的语法着色(设计稿 flow.css .md pre):
@@ -52,11 +53,11 @@ func (a *App) mdCodeLines(lang *editor.Language, code string, size float32, live
 	state := uint64(0)
 	for i, ln := range lines {
 		if ln == "" {
-			out[i] = []ui.Span{{Text: " ", Font: "monospace", Size: size, Color: th.Text}}
+			out[i] = []ui.Span{{Text: " ", Font: theme.CodeFont(), Size: size, Color: th.Text}}
 			continue
 		}
 		if len(ln) > 2000 { // 压缩过的超长行不跑词法,免得每帧白耗时
-			out[i] = []ui.Span{{Text: ln, Font: "monospace", Size: size, Color: th.Text}}
+			out[i] = []ui.Span{{Text: ln, Font: theme.CodeFont(), Size: size, Color: th.Text}}
 			continue
 		}
 		var toks []editor.Token

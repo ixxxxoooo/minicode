@@ -166,7 +166,7 @@ func (a *App) palCommands() (cmds []palItem, common map[int]bool) {
 		add("code", "切换高亮当前所在范围", "", "行号槽竖条标出光标所在的函数 / 方法块;再按一次关闭。", a.toggleScopeHighlight)
 		add("search", "编辑器:放大字号", "⌘+", "编辑器字号 +1(最大 24 px)。", func() { a.setEditorFont(a.prefs.Int(pEdFont, edFontDefault) + 1) })
 		add("search", "编辑器:缩小字号", "⌘-", "编辑器字号 −1(最小 9 px)。", func() { a.setEditorFont(a.prefs.Int(pEdFont, edFontDefault) - 1) })
-		add("refresh", "编辑器:重置字号", "⌘0", "把编辑器字号恢复为默认的 12 px。", a.resetEditorFont)
+		add("refresh", "编辑器:重置字号", "⌘0", "把编辑器字号恢复为默认的 13 px。", a.resetEditorFont)
 		add("list", "转到行…", a.shortcutLabel("gotoLine"), "在当前文件跳到指定行,支持 行:列。", a.openGotoLine)
 		if a.foldWhy(tb) == "" {
 			add("chevD", "折叠当前块", "⌘⌥[", "折叠光标所在的代码块(函数、类型、括号块、缩进块)。", func() { a.foldRun(tb, editor.Fold, "折叠") })

@@ -146,11 +146,11 @@ func (a *App) permCard(c *ui.Context, r *core.PermissionRequest) {
 			if filePath != "" {
 				ui.Row(c).Gap(6).Padding(6, 8).AlignItems(ui.Center).Background(t.Sunken).Radius(t.RSm()).Border(1, t.Bd1).Children(func() {
 					a.fileIc(c, baseName(filePath))
-					ui.Text(c, d).Font("monospace").FontSize(theme.Px(11.5)).LineHeight(1.5).TextColor(t.Tx1).Grow(1).SingleLine()
+					ui.Text(c, d).Font(theme.CodeFont()).FontSize(theme.Px(11.5)).LineHeight(1.5).TextColor(t.Tx1).Grow(1).SingleLine()
 				})
 			} else {
 				ui.Column(c).Background(t.Sunken).Radius(t.RSm()).Border(1, t.Bd1).Padding(6, 9).Children(func() {
-					ui.Text(c, d).Font("monospace").FontSize(theme.Px(11.5)).LineHeight(1.5).TextColor(t.Tx1)
+					ui.Text(c, d).Font(theme.CodeFont()).FontSize(theme.Px(11.5)).LineHeight(1.5).TextColor(t.Tx1)
 				})
 			}
 		}
@@ -559,8 +559,8 @@ func (a *App) permDiffPreview(c *ui.Context, r *core.PermissionRequest) {
 	if hidden > 0 {
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 			ui.Text(c, "另有 "+itoa(hidden)+" 处较大改动未展开").FontSize(theme.FsCap).TextColor(t.Tx3)
-			ui.Text(c, "+"+itoa(hAdd)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Ok)
-			ui.Text(c, "−"+itoa(hDel)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Err)
+			ui.Text(c, "+"+itoa(hAdd)).Font(theme.CodeFont()).FontSize(theme.FsCap).TextColor(t.Ok)
+			ui.Text(c, "−"+itoa(hDel)).Font(theme.CodeFont()).FontSize(theme.FsCap).TextColor(t.Err)
 		})
 	}
 }

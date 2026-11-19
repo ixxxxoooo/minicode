@@ -422,7 +422,7 @@ func (a *App) toggleBtn(c *ui.Context, label string, on *bool, tip string) {
 		b.TextColor(t.Tx3)
 	}
 	b.OnClick(func() { *on = !*on })
-	b.Children(func() { ui.Text(c, label).Font("monospace") })
+	b.Children(func() { ui.Text(c, label).Font(theme.CodeFont()) })
 }
 
 func (a *App) searchRow(c *ui.Context, r srow, i int) {
@@ -493,7 +493,7 @@ func (a *App) searchRow(c *ui.Context, r srow, i int) {
 		// 外层容器负责限宽 + 裁剪:RichText 自身的 Shrink 对超长单行不生效,
 		// 会把行号挤出面板。
 		ui.Box(c).Grow(1).Shrink(1).MinWidth(0).Clip().Children(func() {
-			ui.RichText(c, sp...).Font("monospace").FontSize(theme.Px(11.5)).NoWrap()
+			ui.RichText(c, sp...).Font(theme.CodeFont()).FontSize(theme.Px(11.5)).NoWrap()
 		})
 		if !row.Hovered() {
 			ui.Text(c, itoa(m.Line+1)).FontSize(theme.FsMicro).TextColor(t.Tx4).FontFeatures("tnum").Shrink(0)

@@ -182,7 +182,18 @@
       ${G('新增或覆盖', `<div class="set-row"><label class="inp grow"><input data-in="env-k" placeholder="变量名,如 HTTPS_PROXY" spellcheck="false"></label><label class="inp grow"><input data-in="env-v" placeholder="值" spellcheck="false"></label>${seg(['用户', '项目', '本地'], 0)}${btn('添加', 'sm pri', '', 'data-act="env-add"')}</div>`)}`; } },
 
     editor: { t: '编辑器', d: '代码编辑器的字体、显示、格式化与 Git 追溯。', body: () => {
-      return `${G('字体与缩进', R('字号', '', stp(12, 'px', { min: 9, max: 24 })), R('缩进', '', seg(['2 空格', '4 空格', 'Tab'], 1)), R('自动保存', '', seg(['关', '延时', '失焦'], 1)))}
+      const fam = (n, sub, on, miss) => `<div class="f ai g2" style="height:40px;padding:0 8px;border-radius:var(--r-sm);${on ? 'background:var(--sel)' : ''}">${on ? ic('check', 's14 c-ac') : '<span style="width:14px"></span>'}<div class="grow"><div style="font-weight:500;font-family:'${n}',var(--mono)">${n}</div><div class="t3 fs-cap"${miss ? ' style="color:var(--warn)"' : ''}>${sub}</div></div>${miss ? btn('安装', 'sm', 'download') : ''}</div>`;
+      return `${G('字体', `<div style="padding:8px 12px 10px;display:flex;flex-direction:column;gap:8px">
+        <div class="f ai g2"><span class="t3 fs-cap">当前字体链</span><span class="mono fs-cap grow">JetBrains Mono, Fira Code, Menlo, Consolas, Cascadia Mono</span>${tag('默认', 'ac')}</div>
+        ${seg(['常见等宽', '全部字体'], 0)}
+        ${fam('JetBrains Mono', '已安装 · 当前使用', 1)}${fam('Fira Code', '已安装', 0)}${fam('Menlo', '已安装 · 系统自带', 0)}${fam('Cascadia Code', '未安装', 0, 1)}
+        <div class="t3 fs-cap">手动输入(支持逗号分隔回退链)</div>
+        <label class="inp"><input class="mono" value="JetBrains Mono, Fira Code, Menlo, Consolas, Cascadia Mono" spellcheck="false"></label>
+        <div class="f g2">${btn('应用字体', 'sm', 'check')}${btn('恢复默认', 'sm ghost')}</div>
+        <div class="t3 fs-cap">预览 · JetBrains Mono</div>
+        <div class="mono" style="padding:8px 10px;border:1px solid var(--bd-1);border-radius:var(--r-sm);font-size:13px;line-height:1.6">func main() { fmt.Println("你好, 世界") }<br>if a != b &amp;&amp; c &gt;= 0 =&gt; x -&gt; y === z</div>
+        <div class="t3 fs-cap">规则:默认字体链与 BaoCode 一致,取第一个已安装的字体,其余依次兜底(没装的跳过,系统等宽收尾);整行可点,已安装的点一下立刻应用,鼠标悬停 / 手动输入实时预览;未安装的行给「安装」(后台 brew install --cask)。这一条字体链管所有「代码文字」:编辑器、差异、会话里的代码块与命令输出、搜索结果、问题面板;终端没单独选字体时也跟随它。界面正文仍用系统字体。</div></div>`)}
+      ${G('字号与缩进', R('字号', '代码文字大小,默认 13(⌘+ / ⌘- / ⌘0 随时调)', stp(13, 'px', { min: 9, max: 24 })), R('字体连字', '=> != -> 画成一个字形;仅对支持连字的字体生效(JetBrains Mono / Fira Code)。终端另有自己的开关', tog(1)), R('缩进', '', seg(['2 空格', '4 空格', 'Tab'], 1)), R('自动保存', '', seg(['关', '延时', '失焦'], 1)))}
       ${G('迷你地图', R('显示迷你地图', '', tog(1)), R('滑块', '视口滑块何时显示', seg(['悬停', '常驻'], 0)), R('宽度', '宽一点能看清更多列', seg(['窄', '中', '宽'], 1)), R('Git 改动刻度', '', tog(1)))}
       ${G('显示', R('行号', '', tog(1)), R('代码折叠', '', tog(1)), R('自动换行', '', tog(0)), R('括号配对高亮', '', tog(1)), R('括号配对着色', '', tog(1)), R('括号配对竖线', '', tog(1)), R('语法高亮', '', tog(1)), R('高亮当前所在范围', '行号槽竖条 + 活动缩进线 + 面包屑 / 迷你地图联动;范围外不变暗', tog(1)), R('范围样式', '默认仅竖条,避免与同词 / 搜索 / Claude 紫底叠层冲突', seg(['仅竖条', '竖条 + 淡底色'], 0)))}
       ${G('Markdown 与格式化', R('Markdown 默认视图', '打开 .md / .markdown / .mdc 时的样子;标签右上角可随时切换,每个文件记住自己的选择', seg(['预览', '源码'], 0)), R('保存时格式化', '语言服务器或内置格式化器能处理的文件,保存前先整理一遍', tog(0)), R('保存时去掉行尾空白', '没有格式化器的文件也生效', tog(0)))}
@@ -199,6 +210,7 @@
       ${G('字体', `<div style="padding:8px 12px 10px;display:flex;flex-direction:column;gap:8px">${seg(['常见等宽', '全部字体'], 0)}
         <div class="f ai g2" style="height:40px;padding:0 8px;border-radius:var(--r-sm);background:var(--sel)">${ic('check', 's14 c-ac')}<div class="grow"><div style="font-weight:500">JetBrainsMono Nerd Font</div><div class="t3 fs-cap">已安装 · Nerd Font</div></div></div>
         <div class="f ai g2" style="height:40px;padding:0 8px"><span style="width:14px"></span><div class="grow"><div style="font-weight:500">Fira Code</div><div class="t3 fs-cap" style="color:var(--warn)">未安装</div></div>${btn('安装', 'sm', 'download')}</div>
+        <div class="t3 fs-cap">没在这里选过字体时,终端跟随「编辑器 → 字体」的字体链(默认 JetBrains Mono → Fira Code → Menlo);选过之后用你选的,「恢复」按钮改为「跟随编辑器字体」。</div>
         <div class="t3 fs-cap">预览 · JetBrainsMono Nerd Font ${tag('当前使用', 'ac')}</div>
         <div class="mono fs-cap" style="padding:4px 10px;border:1px solid var(--bd-1);border-radius:var(--r-sm)">${[['字母数字', 'Aa Bb 0O 1lI {}[]', '自带'], ['中日韩', '中文 日本語 한국어', '回退补全'], ['盒绘 / 方块', '╭─┬─╮ ├─┼─┤ ▀▄█', '自带'], ['Powerline', '    ', '自带'], ['Nerd 图标', '    ', '自带'], ['Emoji', '😀 🚀 ✅', '回退补全']].map(r => `<div class="f ai g3" style="min-height:26px;border-top:1px solid var(--bd-1)"><span class="t3" style="width:78px">${r[0]}</span><span class="grow">${r[1]}</span><span class="t3">${r[2]}</span></div>`).join('')}</div>
         <div class="t3 fs-cap">规则:整行可点,已安装的点一下立刻应用;鼠标悬停 / 点选 / 手动输入都会让预览实时切换(没装的字体只预览回退效果)。名字用它自己的字体渲染。预览按终端真实的字体链逐类检查字形:自带(绿勾)/ 回退补全(灰字,悬停写明由哪个字体补)/ 缺字形 N(红标,终端会显示成方框)。Nerd 图标缺字形时出现黄条 +「安装」(后台 brew install --cask,行内显示安装中 / 失败原因 / 重试,装完立刻重新检测)。</div></div>`)}

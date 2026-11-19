@@ -147,5 +147,5 @@ func Txt(c *ui.Context, s string, size float32, col ui.Color) ui.Element {
 
 // Mono 是等宽文字(设计稿 .mono:11.5px)。
 func Mono(c *ui.Context, s string, col ui.Color) ui.Element {
-	return ui.Text(c, s).Font("monospace").FontSize(theme.Px(11.5)).TextColor(col)
+	return ui.Text(c, s).Font(theme.CodeFont()).FontSize(theme.Px(11.5)).TextColor(col)
 }

@@ -23,7 +23,11 @@ func (a *App) termScrollback() int {
 
 // termFontFamily 返回终端渲染用的字体链(MyGo 逗号分隔回退)。
 func (a *App) termFontFamily() string {
-	return buildTermFontChain(a.prefs.Str("term.font", ""), a.prefs.Bool("term.nerdFallback", true))
+	pref := a.prefs.Str("term.font", "")
+	if strings.TrimSpace(pref) == "" {
+		pref = a.codeFamilyForTerm() // 终端没单独选过字体:跟随编辑器的代码字体链(与 BaoCode 一致)
+	}
+	return buildTermFontChain(pref, a.prefs.Bool("term.nerdFallback", true))
 }
 
 func looksNerdFont(name string) bool {

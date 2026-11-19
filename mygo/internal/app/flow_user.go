@@ -8,6 +8,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 // 用户消息卡:长消息折叠、吸顶、就地编辑;会话样式(flowStyle)。
@@ -232,7 +233,7 @@ func (a *App) userMsgBody(c *ui.Context, u *core.User, folded bool) {
 			if m[2] >= 0 {
 				code := txt[m[2]:m[3]]
 				fg, bg := a.inlineCodeColors()
-				ui.Text(c, code).Font("monospace").FontSize(a.FlowMonoSize()).LineHeight(a.FlowReadLH()).TextColor(fg).
+				ui.Text(c, code).Font(theme.CodeFont()).FontSize(a.FlowMonoSize()).LineHeight(a.FlowReadLH()).TextColor(fg).
 					Background(bg).Radius(t.RXs()).PaddingX(5)
 			} else if m[10] >= 0 {
 				imgK++

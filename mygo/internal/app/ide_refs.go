@@ -55,7 +55,7 @@ func (a *App) refsHeadChrome(c *ui.Context, r *refsState) {
 	}
 	ui.Row(c).Gap(6).AlignItems(ui.Center).Margin(0, 4, 0, 0).Children(func() {
 		kit.Chip(c, r.word, kit.ChipOpt{Line: true, Tip: tip})
-		ui.Text(c, summary).Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
+		ui.Text(c, summary).Font(theme.CodeFont()).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 	})
 	if kit.Ib(c, "collapseAll", kit.IbOpt{Small: true, Tip: "全部折叠"}).Clicked() {
 		a.refsCollapseAll()

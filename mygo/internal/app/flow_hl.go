@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 // 命令卡的语法高亮(设计稿 flow.css 的 .term / 语法色令牌):
@@ -64,7 +65,7 @@ func (a *App) shellTokens(cmd string, size float32) []ui.Span {
 	var out []ui.Span
 	emit := func(s string, col ui.Color, weight int, italic bool) {
 		if s != "" {
-			out = append(out, ui.Span{Text: s, Font: "monospace", Size: size, Color: col, Weight: weight, Italic: italic})
+			out = append(out, ui.Span{Text: s, Font: theme.CodeFont(), Size: size, Color: col, Weight: weight, Italic: italic})
 		}
 	}
 	expect := true // 下一个词是命令名
@@ -260,7 +261,7 @@ func (a *App) termLineSz(line string, size float32) []ui.Span {
 func (a *App) termTokens(line string, size float32) []ui.Span {
 	t := a.tk
 	mk := func(s string, col ui.Color, weight int, italic bool) ui.Span {
-		return ui.Span{Text: s, Font: "monospace", Size: size, Color: col, Weight: weight, Italic: italic}
+		return ui.Span{Text: s, Font: theme.CodeFont(), Size: size, Color: col, Weight: weight, Italic: italic}
 	}
 	// 超长行(进度条、压缩后的单行 JSON)不跑正则,免得每帧白白耗时。
 	if len(line) > 600 {

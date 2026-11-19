@@ -207,7 +207,7 @@ func (a *App) wsGhost(c *ui.Context, r beltRect) {
 		})
 		if st := g.ghostSt; st != nil {
 			st.Theme = a.editorTheme()
-			st.Font = ui.Font{Family: "monospace", Size: 12}
+			st.Font = codeUIFont(12)
 			st.LineHeight = 20.0 / 12.0
 			ui.Column(c).Key("ghost-body").Grow(1).MinHeight(0).Clip().PassThrough().Children(func() {
 				editor.View(c.Key("ghost-ed"), st).Grow(1).MinWidth(0).FillHeight()

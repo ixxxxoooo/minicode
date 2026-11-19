@@ -206,7 +206,7 @@ func (a *App) terminal(c *ui.Context) {
 			for _, ln := range a.ide.termLines {
 				var spans []ui.Span
 				for _, s := range ln.segs {
-					sp := ui.Span{Text: s.text, Font: "monospace", Size: 11.5, Color: t.Tx1}
+					sp := ui.Span{Text: s.text, Font: theme.CodeFont(), Size: 11.5, Color: t.Tx1}
 					switch s.kind {
 					case 'p':
 						sp.Color = t.Ok
@@ -220,7 +220,7 @@ func (a *App) terminal(c *ui.Context) {
 					spans = append(spans, sp)
 				}
 				if len(spans) == 0 {
-					spans = append(spans, ui.Span{Text: " ", Font: "monospace", Size: 11.5})
+					spans = append(spans, ui.Span{Text: " ", Font: theme.CodeFont(), Size: 11.5})
 				}
 				row := ui.Row(c).MinHeight(18.4).AlignItems(ui.Center)
 				row.Children(func() {
@@ -307,7 +307,7 @@ func (a *App) cmdOutput(c *ui.Context, v cmdView) {
 	kit.VScroll(c).Key("cmdout-" + v.id).Grow(1).Children(func() {
 		ui.Column(c).Padding(6, 10).Children(func() {
 			ui.Row(c).MinHeight(monoLH).AlignItems(ui.Center).Children(func() {
-				ui.RichText(c, ui.Span{Text: "$ ", Font: "monospace", Size: 11.5, Color: t.Ok}, ui.Span{Text: v.title, Font: "monospace", Size: 11.5, Color: t.Tx1, Weight: 600}).NoWrap()
+				ui.RichText(c, ui.Span{Text: "$ ", Font: theme.CodeFont(), Size: 11.5, Color: t.Ok}, ui.Span{Text: v.title, Font: theme.CodeFont(), Size: 11.5, Color: t.Tx1, Weight: 600}).NoWrap()
 			})
 			for i, ln := range strings.Split(strings.TrimRight(v.output, "\n"), "\n") {
 				ui.Row(c).Key(i).MinHeight(monoLH).AlignItems(ui.Center).Children(func() {

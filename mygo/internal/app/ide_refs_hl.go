@@ -7,13 +7,14 @@ import (
 
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
+	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 // refLineSpans 给引用面板一行源码着色,并在 [hitLo,hitHi) 叠命中底色。
 func (a *App) refLineSpans(filePath, text string, hitLo, hitHi int) []ui.Span {
 	const size = 11.5
 	if text == "" {
-		return []ui.Span{{Text: " ", Font: "monospace", Size: size}}
+		return []ui.Span{{Text: " ", Font: theme.CodeFont(), Size: size}}
 	}
 	th := a.editorTheme()
 	key := fmt.Sprintf("%s|%v|%v|%v", a.pal.ID, a.tk.Ac, size, path.Ext(filePath))
@@ -32,7 +33,7 @@ func (a *App) refLineSpans(filePath, text string, hitLo, hitHi int) []ui.Span {
 
 func tokenLineSpans(lang *editor.Language, text string, th *editor.Theme, size float32) []ui.Span {
 	if lang == nil || lang.Tokenizer == nil {
-		return []ui.Span{{Text: text, Font: "monospace", Size: size, Color: th.Text}}
+		return []ui.Span{{Text: text, Font: theme.CodeFont(), Size: size, Color: th.Text}}
 	}
 	buf := editor.NewBuffer(text)
 	h := editor.NewTokenHighlighter(lang.Tokenizer, buf.Snapshot())
@@ -45,7 +46,7 @@ func tokenLineSpans(lang *editor.Language, text string, th *editor.Theme, size f
 // 返回值:覆盖整行的 span;没有词法结果时整行取正文色。
 func tokensToSpans(text string, toks []editor.Token, th *editor.Theme, size float32) []ui.Span {
 	if len(toks) == 0 {
-		return []ui.Span{{Text: text, Font: "monospace", Size: size, Color: th.Text}}
+		return []ui.Span{{Text: text, Font: theme.CodeFont(), Size: size, Color: th.Text}}
 	}
 	var out []ui.Span
 	at := 0
@@ -67,12 +68,12 @@ func tokensToSpans(text string, toks []editor.Token, th *editor.Theme, size floa
 			if st.Bold {
 				w = 600
 			}
-			out = append(out, ui.Span{Text: text[at:end], Font: "monospace", Size: size, Color: col, Italic: st.Italic, Weight: w})
+			out = append(out, ui.Span{Text: text[at:end], Font: theme.CodeFont(), Size: size, Color: col, Italic: st.Italic, Weight: w})
 		}
 		at = end
 	}
 	if at < len(text) {
-		out = append(out, ui.Span{Text: text[at:], Font: "monospace", Size: size, Color: th.Text})
+		out = append(out, ui.Span{Text: text[at:], Font: theme.CodeFont(), Size: size, Color: th.Text})
 	}
 	return out
 }
@@ -84,7 +85,7 @@ func applyRefHit(spans []ui.Span, text string, hitLo, hitHi int, size float32, a
 	}
 	if len(spans) == 0 {
 		return []ui.Span{{
-			Text: text, Font: "monospace", Size: size, Color: accent,
+			Text: text, Font: theme.CodeFont(), Size: size, Color: accent,
 			Background: accent.Alpha(.22),
 		}}
 	}

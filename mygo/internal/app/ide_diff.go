@@ -275,7 +275,7 @@ func (a *App) diffTab(c *ui.Context, tb *ideTab) {
 	a.scmTick() // 差异标签可见时也要定时重读仓库状态,暂存 / 外部修改后标签才会刷新(refreshDiffTabs)
 	a.syncDiffAnns(tb)
 	dv.Theme = a.editorTheme()
-	dv.Font = ui.Font{Family: "monospace", Size: 12}
+	dv.Font = codeUIFont(12)
 	dv.Wrap = a.prefs.Bool(pEdWrap, false) // 与编辑器同一个「自动换行」偏好
 	narrow := a.wsNarrow()
 	dv.Layout = a.diffLayout(tb, narrow)

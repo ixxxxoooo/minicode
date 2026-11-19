@@ -4,6 +4,7 @@ import (
 	"regexp"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 // 设计稿里 Rust 的极简分词(docs/design/js/ui.js 的 RX):注释 / 字符串 / 关键字 / 类型 / 数字 / 函数名。
@@ -13,7 +14,7 @@ var rustRx = regexp.MustCompile(`(//.*$)|("(?:[^"\\]|\\.)*"|'.')|\b(use|pub|stru
 // RustSpans 把一行 Rust 切成带颜色的片段(等宽 11.5px)。base 是默认文字色。
 func RustSpans(src string, base ui.Color, size float32) []ui.Span {
 	mk := func(t string, c ui.Color, italic bool) ui.Span {
-		return ui.Span{Text: t, Font: "monospace", Size: size, Color: c, Italic: italic}
+		return ui.Span{Text: t, Font: theme.CodeFont(), Size: size, Color: c, Italic: italic}
 	}
 	var out []ui.Span
 	last := 0

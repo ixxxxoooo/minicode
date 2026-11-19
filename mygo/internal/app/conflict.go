@@ -336,7 +336,7 @@ func (a *App) conflictCard(c *ui.Context, s *confState, g confSeg, k int, narrow
 						if txt == "" {
 							txt = " "
 						}
-						ui.Text(c, txt).Font("monospace").FontSize(theme.Px(12)).LineHeight(1.6).TextColor(t.Tx1)
+						ui.Text(c, txt).Font(theme.CodeFont()).FontSize(theme.Px(12)).LineHeight(1.6).TextColor(t.Tx1)
 					}
 				})
 			})
@@ -389,7 +389,7 @@ func (a *App) conflictResult(c *ui.Context, s *confState) {
 		if s.result != auto {
 			s.resultEdit = true
 		}
-		ui.TextArea(c.Key("cf-res"), &s.result).Lines(8, 24).Font("monospace").FontSize(theme.Px(12)).LineHeight(1.6).
+		ui.TextArea(c.Key("cf-res"), &s.result).Lines(8, 24).Font(theme.CodeFont()).FontSize(theme.Px(12)).LineHeight(1.6).
 			Background(t.Fill1).BorderWidth(0).Padding(8, 10)
 	})
 }

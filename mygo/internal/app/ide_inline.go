@@ -147,7 +147,7 @@ func (a *App) inlinePatchUI(c *ui.Context, tb *ideTab) {
 		ui.Text(c, "行内修改预览").TextColor(t.Ac)
 		kit.Btn(c, "接受", kit.BtnOpt{Small: true, Variant: kit.BtnPri}).OnClick(a.acceptInline)
 		kit.Btn(c, "撤销", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(a.revertInline)
-		ui.Text(c, ellipsize(p.new, 40)).TextColor(t.Tx3).Font("monospace")
+		ui.Text(c, ellipsize(p.new, 40)).TextColor(t.Tx3).Font(theme.CodeFont())
 	})
 	if !p.busy {
 		tb.st.TextBackgrounds = append(tb.st.TextBackgrounds, editor.TextBackground{

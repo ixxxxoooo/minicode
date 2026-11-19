@@ -40,7 +40,7 @@ func (a *App) mdHTMLBlock(c *ui.Context, raw string) {
 	// 复制按钮只有一个图标,浮在右上角,不单独占一行;正文右侧留出按钮的位置,免得第一行被盖住。
 	ui.Box(c).Background(t.Sunken).Radius(t.RSm()).Border(1, t.Bd1).Padding(8, 32, 8, 10).Children(func() {
 		ui.ScrollHorizontal(c).AlignSelf(ui.Stretch).Children(func() {
-			ui.Text(c, raw).Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx2).NoWrap()
+			ui.Text(c, raw).Font(theme.CodeFont()).FontSize(theme.FsCap).TextColor(t.Tx2).NoWrap()
 		})
 		kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制 HTML"}).Absolute().Top(3).Right(3).OnClick(func() {
 			a.copyOut(raw, "HTML")

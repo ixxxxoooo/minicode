@@ -8,17 +8,33 @@ import (
 
 // @author ixxxxoooo
 
-// termFontPreview 画字体预览:用终端真正会用的字体链渲染各类字符,右侧给每类的字形覆盖结论。
+// termFontPreview 画终端字体预览:用终端真正会用的字体链渲染各类字符,右侧给每类的字形覆盖结论。
 // 参数:pref 要预览的字体(可以是逗号分隔的回退链);applied 表示它就是当前生效的字体。
 func (a *App) termFontPreview(c *ui.Context, pref string, applied bool) {
+	chainStr := buildTermFontChain(pref, a.prefs.Bool("term.nerdFallback", true))
+	a.fontPreview(c, pref, applied, chainStr, float32(a.prefs.Int(pTermFont, 12)), "跟随编辑器字体")
+}
+
+// codeFontPreview 画代码字体预览:用编辑器真正会用的字体链(加连字设置)渲染各类字符。
+func (a *App) codeFontPreview(c *ui.Context, pref string, applied bool) {
+	use := pref
+	if firstFamily(use) == "" || firstFamily(use) == "monospace" {
+		use = theme.DefaultCodeFamilies
+	}
+	chainStr := buildTermFontChain(use, false)
+	a.fontPreview(c, pref, applied, chainStr, float32(a.prefs.Int(pEdFont, edFontDefault)), "默认字体链")
+}
+
+// fontPreview 是两种预览共用的画法。chainStr 是用来渲染与检查字形的完整字体链,fs 是预览字号,emptyTitle 是空值时的标题。
+func (a *App) fontPreview(c *ui.Context, pref string, applied bool, chainStr string, fs float32, emptyTitle string) {
 	t := a.tk
 	fam := firstFamily(pref)
-	chainStr := buildTermFontChain(pref, a.prefs.Bool("term.nerdFallback", true))
 	chain := parseFontFamilies(chainStr)
-	fs := float32(a.prefs.Int(pTermFont, 12))
 	title := "预览"
 	switch {
-	case fam == "" || fam == "monospace":
+	case fam == "":
+		title += " · " + emptyTitle
+	case fam == "monospace":
 		title += " · 系统等宽"
 	default:
 		title += " · " + fam

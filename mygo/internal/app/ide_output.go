@@ -144,7 +144,7 @@ func (a *App) outPanel(c *ui.Context) {
 					col = t.Warn
 				}
 				ln := ln
-				ui.Text(c, ln).Key("o" + itoa(i)).Font("monospace").FontSize(theme.Px(11.5)).LineHeight(1.5).TextColor(col).NoWrap().
+				ui.Text(c, ln).Key("o" + itoa(i)).Font(theme.CodeFont()).FontSize(theme.Px(11.5)).LineHeight(1.5).TextColor(col).NoWrap().
 					ContextMenu(func(m *ui.Menu) {
 						// 行上的菜单盖过了选区容器自带的菜单,所以「复制所选」要自己补(没有选区时置灰并写明原因)。
 						picked := selectedString(sel.SelectedTexts())

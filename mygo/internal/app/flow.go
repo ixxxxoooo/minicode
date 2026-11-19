@@ -328,7 +328,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			obj.Strikethrough().TextColor(t.Tx3)
 		}
 		if sp.meta != "" && a.chatTier() != tierNarrow { // 窄档:附注(路径、行区间)让位
-			ui.Text(c, sp.meta).Font("monospace").FontSize(theme.Px(11)).TextColor(t.Tx3).SingleLine().Shrink(1).MinWidth(0).LineHeight(1)
+			ui.Text(c, sp.meta).Font(theme.CodeFont()).FontSize(theme.Px(11)).TextColor(t.Tx3).SingleLine().Shrink(1).MinWidth(0).LineHeight(1)
 		}
 		if !mqOn {
 			ui.Spacer(c).Grow(1)
@@ -340,10 +340,10 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			}
 			if sp.add > 0 || sp.del > 0 {
 				if sp.add > 0 {
-					ui.Text(c, "+"+itoa(sp.add)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Ok)
+					ui.Text(c, "+"+itoa(sp.add)).Font(theme.CodeFont()).FontSize(theme.FsCap).TextColor(t.Ok)
 				}
 				if sp.del > 0 {
-					ui.Text(c, "−"+itoa(sp.del)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Err)
+					ui.Text(c, "−"+itoa(sp.del)).Font(theme.CodeFont()).FontSize(theme.FsCap).TextColor(t.Err)
 				}
 			}
 			if sp.right != "" && (a.chatTier() != tierNarrow || sp.state == "err") { // 窄档只留结果(错误仍显示)
@@ -502,8 +502,8 @@ func (a *App) diffCard(c *ui.Context, d *core.DiffBlock, head bool) {
 		h = func() {
 			a.fileIc(c, baseName(d.Path))
 			ui.Text(c, d.Path).Grow(1).SingleLine()
-			ui.Text(c, "+"+itoa(add)).Font("monospace").FontSize(a.FlowMonoSize()).TextColor(t.Ok)
-			ui.Text(c, "−"+itoa(del)).Font("monospace").FontSize(a.FlowMonoSize()).TextColor(t.Err)
+			ui.Text(c, "+"+itoa(add)).Font(theme.CodeFont()).FontSize(a.FlowMonoSize()).TextColor(t.Ok)
+			ui.Text(c, "−"+itoa(del)).Font(theme.CodeFont()).FontSize(a.FlowMonoSize()).TextColor(t.Err)
 			kit.Ib(c, "ext", kit.IbOpt{Small: true, Tip: "在工作区打开差异"}).OnClick(func() { a.OpenDiffTab(d.Path) })
 			kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制改动后的内容"}).OnClick(func() { a.copyOut(d.New, "改动后的内容") })
 		}
@@ -591,7 +591,7 @@ func (a *App) diffLine(c *ui.Context, i int, l diff.Line) {
 		case diff.Del:
 			ui.Box(c).Absolute().Left(0).Top(0).Bottom(0).Width(2).Background(t.Err)
 		}
-		ui.Text(c, itoa(no)).Font("monospace").FontSize(theme.Px(11.5)).TextColor(t.Tx4).TextAlign(ui.End).Width(30).PaddingEnd(8).Shrink(0)
+		ui.Text(c, itoa(no)).Font(theme.CodeFont()).FontSize(theme.Px(11.5)).TextColor(t.Tx4).TextAlign(ui.End).Width(30).PaddingEnd(8).Shrink(0)
 		ui.RichText(c, kit.RustSpans(l.Text, t.Tx1, 11.5)...).NoWrap().PaddingStart(4).Grow(1).MinWidth(0).Clip()
 	})
 }

@@ -333,8 +333,8 @@ func (a *App) reviewView(c *ui.Context) {
 			count += " · " + itoa(repoGroupCount(gs)) + " 个仓库"
 		}
 		ui.Text(c, count).TextColor(t.Tx3)
-		ui.Text(c, "+"+itoa(totalAdd)).Font("monospace").FontSize(theme.Px(11.5)).TextColor(t.Ok)
-		ui.Text(c, "−"+itoa(totalDel)).Font("monospace").FontSize(theme.Px(11.5)).TextColor(t.Err)
+		ui.Text(c, "+"+itoa(totalAdd)).Font(theme.CodeFont()).FontSize(theme.Px(11.5)).TextColor(t.Ok)
+		ui.Text(c, "−"+itoa(totalDel)).Font(theme.CodeFont()).FontSize(theme.Px(11.5)).TextColor(t.Err)
 		ui.Spacer(c).Grow(1)
 		if !a.wsNarrow() {
 			on := 0
@@ -459,10 +459,10 @@ func (a *App) reviewFile(c *ui.Context, f chFile, first bool) {
 			ui.Text(c, baseName(f.path)).FontWeight(500).SingleLine().Shrink(0)
 			ui.Text(c, a.fileDispDir(f.path)).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().Grow(1).Shrink(1)
 			if f.add > 0 {
-				ui.Text(c, "+"+itoa(f.add)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Ok)
+				ui.Text(c, "+"+itoa(f.add)).Font(theme.CodeFont()).FontSize(theme.FsCap).TextColor(t.Ok)
 			}
 			if f.del > 0 {
-				ui.Text(c, "−"+itoa(f.del)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Err)
+				ui.Text(c, "−"+itoa(f.del)).Font(theme.CodeFont()).FontSize(theme.FsCap).TextColor(t.Err)
 			}
 			// 「已查看」勾选
 			v := a.rv.viewed[f.path] || a.fileDecided(f)
@@ -623,7 +623,7 @@ func (a *App) diffSplitLines(c *ui.Context, ls []diff.Line) {
 					if side == 0 {
 						no = ln.OldNo
 					}
-					ui.Text(c, itoa(no)).Font("monospace").FontSize(theme.Px(11.5)).TextColor(t.Tx4).TextAlign(ui.End).Width(30).PaddingEnd(6).Shrink(0)
+					ui.Text(c, itoa(no)).Font(theme.CodeFont()).FontSize(theme.Px(11.5)).TextColor(t.Tx4).TextAlign(ui.End).Width(30).PaddingEnd(6).Shrink(0)
 					ui.RichText(c, kit.RustSpans(ln.Text, t.Tx1, 11.5)...).NoWrap().Grow(1).MinWidth(0).Clip()
 				})
 			}
