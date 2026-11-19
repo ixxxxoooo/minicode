@@ -89,21 +89,53 @@ func (a *App) welcome(c *ui.Context) {
 	})
 }
 
-// welcomeStarters 起手卡(设计稿 .starters):卡片固定 150 宽;宽档一排四张,中档 flex-wrap 居中
-// (放不下就 3+1 折行,「审查改动」居中落在第二行),窄档单列只留图标与标题。
+// 起手卡的三种排法:四张一排(放得下)/ 两列两行 / 单列(窄档)。不再出现 3+1 折行落单的样子。
+const (
+	starterCardW = 150 // 一排四张时每张的宽度
+	starterGap   = 8
+	starterMaxW  = 640
+)
+
+// welcomeStarters 起手卡(设计稿 .starters):按这一栏实际能用的宽度选排法——
+// 四张一排放得下就一排;放不下就 2×2 两列(卡片等分宽度);再窄就单列只留图标与标题。
 func (a *App) welcomeStarters(c *ui.Context) {
 	list := a.starterList()
-	if a.chatTier() == tierNarrow {
-		ui.Column(c).Gap(6).WidthPercent(100).PaddingX(20).Children(func() {
-			for _, s := range list {
-				a.starterCard(c, s)
-			}
-		})
-		return
+	box := ui.Column(c).Key("starters").WidthPercent(100).MaxWidth(starterMaxW).AlignItems(ui.Center).Gap(starterGap)
+	w := box.Bounds().W // 上一帧量到的宽度;第一帧还没有,按对话栏宽度估
+	if w <= 0 {
+		w = min(a.chatW-40, starterMaxW)
 	}
-	ui.Row(c).Gap(8).Wrap().Justify(ui.Center).WidthPercent(100).MaxWidth(640).Children(func() {
-		for _, s := range list {
-			a.starterCard(c, s)
+	cols := 1
+	switch {
+	case a.chatTier() == tierNarrow || w < 2*starterCardW+starterGap:
+		cols = 1
+	case w >= 4*starterCardW+3*starterGap:
+		cols = 4
+	default:
+		cols = 2
+	}
+	box.Children(func() {
+		switch cols {
+		case 4:
+			ui.Row(c).Gap(starterGap).Justify(ui.Center).Children(func() {
+				for _, s := range list {
+					a.starterCard(c, s, starterFixed)
+				}
+			})
+		case 2:
+			for i := 0; i < len(list); i += 2 {
+				ui.Row(c).Gap(starterGap).WidthPercent(100).Children(func() {
+					for _, s := range list[i:min(i+2, len(list))] {
+						a.starterCard(c, s, starterFlex)
+					}
+				})
+			}
+		default:
+			ui.Column(c).Gap(6).WidthPercent(100).PaddingX(20).Children(func() {
+				for _, s := range list {
+					a.starterCard(c, s, starterCompact)
+				}
+			})
 		}
 	})
 }
@@ -153,15 +185,25 @@ func (a *App) openWelcomeRecent(id, title string) {
 	}
 }
 
-func (a *App) starterCard(c *ui.Context, s starter) {
+type starterMode int
+
+const (
+	starterFixed   starterMode = iota // 固定 150 宽,一排四张
+	starterFlex                       // 两列时等分宽度
+	starterCompact                    // 单列:一行,只有图标与标题
+)
+
+func (a *App) starterCard(c *ui.Context, s starter, mode starterMode) {
 	t := a.tk
-	narrow := a.chatTier() == tierNarrow
+	narrow := mode == starterCompact
 	b := ui.ButtonBase(c).Key(s.title).Radius(t.RMd()).Background(t.Raised).Cursor(ui.CursorPointer).
 		Transition(ui.ElementTransition{Position: true, Shadows: true, Duration: kit.DurBase, Ease: kit.EaseOut})
 	if narrow {
 		b.WidthPercent(100).Height(theme.Px(32)).PaddingX(10).Gap(8).AlignItems(ui.Center).Justify(ui.Start)
+	} else if mode == starterFlex {
+		b.Grow(1).Basis(0).MinWidth(0).Padding(9, 10).Gap(3).AlignItems(ui.Start)
 	} else {
-		b.Width(150).Padding(9, 10).Gap(3).AlignItems(ui.Start)
+		b.Width(starterCardW).Padding(9, 10).Gap(3).AlignItems(ui.Start)
 	}
 	sh := t.Shadow1()
 	if b.Hovered() {
