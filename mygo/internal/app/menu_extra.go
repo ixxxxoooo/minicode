@@ -141,7 +141,11 @@ func stepHasMenu(sp step) bool {
 // 运行命令 = 复制命令 · 复制输出;搜索 = 复制搜索词;抓取网页 = 复制网址。
 func (a *App) stepMenu(m *ui.Menu, sp step) {
 	noReal := map[bool]string{true: "演示模式没有真实目录"}[a.proj == ""]
-	if sp.path != "" {
+	if sp.imgAbs != "" {
+		if menuItem(m, "查看图片").Chosen() {
+			a.openImageLightboxPath(sp.imgAbs)
+		}
+	} else if sp.path != "" {
 		if menuItem(m, "打开文件").Chosen() && !a.openPathRef(joinRef(sp.path, sp.line)) {
 			a.toast = "文件已不存在:" + baseName(sp.path)
 		}

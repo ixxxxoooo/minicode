@@ -107,7 +107,11 @@ func (a *App) linkMenu(m *ui.Menu, dest string) {
 
 // stepActions 是步骤行悬停时右侧出现的小按钮(只列这一行真正能做的事)。
 func (a *App) stepActions(c *ui.Context, sp step) {
-	if sp.path != "" {
+	if sp.imgAbs != "" { // 读图步骤:原文件可能早被清理,这里打开的是步骤里显示的那张图
+		if kit.Ib(c, "ext", kit.IbOpt{Small: true, Tip: "查看图片"}).Clicked() {
+			a.openImageLightboxPath(sp.imgAbs)
+		}
+	} else if sp.path != "" {
 		if kit.Ib(c, "ext", kit.IbOpt{Small: true, Tip: "在工作区打开文件"}).Clicked() && !a.openPathRef(joinRef(sp.path, sp.line)) {
 			a.toast = "文件已不存在:" + baseName(sp.path)
 		}

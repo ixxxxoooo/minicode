@@ -56,8 +56,10 @@ type step struct {
 	state      string // "" 完成 / run 运行中 / err 失败 / deny 已拒绝
 	open       bool   // 默认展开
 	hasBody    bool
-	imgRead    bool // 读取的是本机存在的图片:展开体里直接显示这张图(flow_read_image.go)
-	plainObj   bool // 对象是一句话(如联网搜索的查询词):与动词同色(Tx3),不按「对象」提亮
+	imgRead    bool     // 读取的是本机存在的图片:展开体里直接显示这张图(flow_read_image.go)
+	imgAbs     string   // 读图步骤显示的那张图的绝对路径(悬停动作 / 灯箱用;原文件可能已被清理)
+	thumbs     []string // 折叠的分组行 / 回合行里,右边缩略图显示的图片(绝对路径)
+	plainObj   bool     // 对象是一句话(如联网搜索的查询词):与动词同色(Tx3),不按「对象」提亮
 
 	// 行内动作(悬停出现,点对象名 / 图标也能跳):
 	path    string              // 涉及的文件(原样,可能是绝对路径),空 = 无
@@ -259,9 +261,10 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 		s.hasBody = true
 	}
 	a.applyToolDefaultOpen(&s, tc)
-	if a.readImagePath(tc) != "" { // 读图:行下面直接显示图(默认展开;精简档收起),点图片开灯箱
-		s.hasBody, s.imgRead = true, true
+	if p := a.readImagePath(tc); p != "" { // 读图:行下面直接显示图(默认展开;精简档收起),点图片开灯箱;路径附注不显示(图就在下面)
+		s.hasBody, s.imgRead, s.imgAbs = true, true, p
 		s.open = a.ToolDetailLevel() != 0
+		s.meta = ""
 	}
 	return s
 }

@@ -122,7 +122,7 @@ func (a *App) mergeGroup(c *ui.Context, g []*core.ToolCall) {
 	sum, running, failed := mergeSummary(g)
 	id := "mrg:" + g[0].ID
 	narrow := a.chatTier() == tierNarrow
-	sp := step{id: id, icon: "layers", verb: "", obj: sum, fam: famExplore, hasBody: true, open: false}
+	sp := step{id: id, icon: "layers", verb: "", obj: sum, fam: famExplore, hasBody: true, open: false, thumbs: a.imagesOf(g)}
 	if narrow && !running {
 		sp.obj = mergeSummaryNarrow(g)
 	}

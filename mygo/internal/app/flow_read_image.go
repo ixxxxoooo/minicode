@@ -69,3 +69,72 @@ func (a *App) readImageCard(c *ui.Context, abs string) {
 		ui.Image(c, src).Size(w, h).Fit(ui.Contain)
 	})
 }
+
+// imagesOf 收集一组工具调用里读取到的图片(本机绝对路径,按出现顺序,去重),折叠的分组行右边用缩略图显示。
+func (a *App) imagesOf(tcs []*core.ToolCall) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, tc := range tcs {
+		if p := a.readImagePath(tc); p != "" && !seen[p] {
+			seen[p] = true
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// imagesOfItems 同 imagesOf,输入是时间线条目(回合折叠行用;条目里可能是工具调用或待确认的权限请求)。
+func (a *App) imagesOfItems(items []core.Item) []string {
+	var tcs []*core.ToolCall
+	for _, it := range items {
+		if v := doneToolOf(it); v != nil {
+			tcs = append(tcs, v)
+		}
+	}
+	return a.imagesOf(tcs)
+}
+
+const (
+	stepThumbH   = 20 // 折叠行里缩略图的高(DIP)
+	stepThumbMax = 8  // 最多显示几张,其余写「+N」
+)
+
+// stepThumbs 在折叠的分组行 / 回合行里,给里面读取到的每张图画一枚小缩略图(点击开灯箱,可左右翻看全部)。
+func (a *App) stepThumbs(c *ui.Context, sp step) {
+	t := a.tk
+	ui.Row(c).Gap(4).Shrink(0).AlignItems(ui.Center).Margin(0, 0, 0, 2).Children(func() {
+		for i, abs := range sp.thumbs {
+			if i >= stepThumbMax {
+				ui.Text(c, "+"+itoa(len(sp.thumbs)-stepThumbMax)).FontSize(theme.FsCap).TextColor(t.Tx4)
+				break
+			}
+			src := a.localImage(abs)
+			h := theme.Px(stepThumbH)
+			w := h * 1.4
+			if src != nil {
+				if iw, ih := ui.ImageSize(src); iw > 0 && ih > 0 {
+					w = min(max(h*iw/ih, h*1.1), h*2.2)
+				}
+			}
+			idx := i
+			btn := ui.ButtonBase(c).Key("sthumb-"+sp.id+"-"+itoa(i)).Size(w, h).Radius(4).Cursor(ui.CursorPointer).Background(t.Fill1).Border(1, t.Bd2).Clip().Tooltip("点击查看")
+			if btn.Hovered() {
+				btn.Border(1, t.Bd3)
+			}
+			btn.OnClick(func() {
+				names := make([]string, len(sp.thumbs))
+				for k, p := range sp.thumbs {
+					names[k] = baseName(p)
+				}
+				a.openLightbox(sp.thumbs, names, idx)
+			})
+			btn.Children(func() {
+				if src != nil {
+					ui.Image(c, src).Size(w, h).Fit(ui.Cover)
+				} else {
+					kit.Ic(c, "image", kit.S12).TextColor(t.Tx4)
+				}
+			})
+		}
+	})
+}

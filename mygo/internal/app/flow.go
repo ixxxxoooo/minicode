@@ -147,7 +147,7 @@ func (a *App) exploreGroup(c *ui.Context, g []*core.ToolCall) {
 	} else if a.ToolDetailLevel() != 2 {
 		open = !a.prefs.Bool(pGroupFold, true)
 	}
-	sp := step{id: id, icon: "layers", verb: verb, obj: obj, fam: famExplore, state: state, hasBody: true, open: open}
+	sp := step{id: id, icon: "layers", verb: verb, obj: obj, fam: famExplore, state: state, hasBody: true, open: open, thumbs: a.imagesOf(g)}
 	a.stepRow(c, sp, func() {
 		a.nest(c, func() {
 			for _, tc := range g {
@@ -329,6 +329,9 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 		}
 		if sp.meta != "" && a.chatTier() != tierNarrow { // 窄档:附注(路径、行区间)让位
 			ui.Text(c, sp.meta).Font(theme.CodeFont()).FontSize(theme.Px(11)).TextColor(t.Tx3).SingleLine().Shrink(1).MinWidth(0).LineHeight(1)
+		}
+		if !open && len(sp.thumbs) > 0 && body != nil && sp.hasBody { // 折叠的分组 / 回合行:里面读到的图按张显示缩略图
+			a.stepThumbs(c, sp)
 		}
 		if !mqOn {
 			ui.Spacer(c).Grow(1)
