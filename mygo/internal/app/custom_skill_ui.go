@@ -7,7 +7,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/egoist/mygo/ui"
-	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/customize"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -133,7 +132,7 @@ func (a *App) cuSkillPreview(c *ui.Context) {
 	}
 	kit.VScroll(c).Key("sk-prev").MaxHeight(260).Children(func() {
 		if strings.HasSuffix(strings.ToLower(a.cu.skillFile), ".md") { // Markdown 文件(SKILL.md 等)按 Markdown 渲染,其余仍是等宽源码
-			ui.Column(c).Padding(8, 12).Children(func() { markdown.View(c, padCode(a.cu.skillPrev), a.mdOptions()) })
+			ui.Column(c).Padding(8, 12).Children(func() { a.mdDoc(c, "skill:"+a.cu.skillOf+"/"+a.cu.skillFile, a.cu.skillPrev, 0) })
 			return
 		}
 		kit.Mono(c, a.cu.skillPrev, t.Tx2).Padding(8, 10).LineHeight(1.45)

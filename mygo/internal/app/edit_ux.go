@@ -24,6 +24,7 @@ type uxState struct {
 	dropOn        bool            // 此刻有文件正拖在对话栏上:输入框画成虚线「拖入框」,松手即恢复(chat.go 每帧重算)
 	pendingPills  []pillData      // 排队等下一帧插进输入框光标处的胶囊(拖入 / 添加的文件、文件夹、折叠文本;见 composer_rich.go)
 	mdNoteOff     map[string]bool // 已点掉「写法会被规范化」提示条的文件
+	mdFrontOff    map[string]bool // 已折叠的 YAML 头属性卡片(键 = 标签 id / 技能文件)
 	demoHint      string          // 截图 / 调试:强制显示「可放」态的提示文字(ide_debug 的 -ed drag)
 	rt            *richtext.Theme // 所见即所得的外观(换主题时清掉)
 	blockCmtHint  string          // 块注释退化为行注释时的顶栏提示

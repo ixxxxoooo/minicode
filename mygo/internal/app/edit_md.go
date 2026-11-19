@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/egoist/mygo/ui"
-	"github.com/egoist/mygo/ui/markdown"
 	"github.com/egoist/mygo/ui/richtext"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
@@ -314,7 +313,7 @@ func (a *App) mdView(c *ui.Context, tb *ideTab) {
 			}
 			kit.VScroll(c).Key("mdprev-" + tb.id).Grow(1).MinHeight(0).Children(func() {
 				ui.Column(c).Padding(14, 34, 28, 34).MaxWidth(860).Children(func() {
-					markdown.View(c, tb.buf.String(), a.mdOptions())
+					a.mdDoc(c, tb.id, tb.buf.String(), 0) // 带 YAML 头时头是属性卡片,不再被渲染成分隔线 + 大标题
 				})
 			})
 			return
@@ -328,8 +327,8 @@ func (a *App) mdView(c *ui.Context, tb *ideTab) {
 				})
 			})
 		}
-		a.mdFront(c, md.front)
-		if md.segs != nil { // 含表格:正文 + 可编辑网格分段显示
+		a.mdFrontCard(c, tb.id, md.front, 150) // YAML 头:属性卡片,固定在正文上方,过高在卡片内滚动
+		if md.segs != nil {                    // 含表格:正文 + 可编辑网格分段显示
 			a.mdApplyReveal(tb, md)
 			a.mdSegsView(c, tb, md)
 			return
@@ -496,25 +495,4 @@ func langName(p string) string {
 		return "纯文本"
 	}
 	return ""
-}
-
-// mdFront 把文件开头的 YAML 头显示成一条只读的「属性」条(.mdc 规则文件常见);要改它请切到源码。
-func (a *App) mdFront(c *ui.Context, front string) {
-	if front == "" {
-		return
-	}
-	t := a.tk
-	ui.Row(c).Key("mdfront").Shrink(0).Padding(5, 12).Gap(8).AlignItems(ui.Center).Background(t.Fill1).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
-		ui.Text(c, "属性").FontSize(theme.FsMicro).FontWeight(500).TextColor(t.Tx4).Shrink(0)
-		for _, ln := range strings.Split(front, "\n") {
-			k, v, ok := strings.Cut(ln, ":")
-			if !ok || strings.TrimSpace(k) == "" || strings.HasPrefix(ln, " ") {
-				continue
-			}
-			ui.Row(c).Gap(4).Padding(1, 6).Radius(t.RXs()).Background(t.Fill2).Shrink(1).MinWidth(0).Children(func() {
-				ui.Text(c, strings.TrimSpace(k)).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Shrink(0)
-				ui.Text(c, strings.TrimSpace(v)).FontSize(theme.FsCap).Font("monospace").SingleLine().Shrink(1).MinWidth(0)
-			})
-		}
-	})
 }
