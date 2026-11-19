@@ -330,8 +330,8 @@ func (a *App) reviewGroupHead(c *ui.Context, g reviewGroup) {
 			kit.Tag(c, "未纳入 Git", kit.KNeutral)
 		}
 		ui.Text(c, itoa(len(g.files))+" 个文件").FontSize(theme.FsCap).TextColor(t.Tx4).Shrink(0)
-		ui.Text(c, "+"+itoa(g.add)).Font("monospace").FontSize(theme.FsMicro).TextColor(t.Ok).Shrink(0)
-		ui.Text(c, "−"+itoa(g.del)).Font("monospace").FontSize(theme.FsMicro).TextColor(t.Err).Shrink(0)
+		ui.Text(c, "+"+itoa(g.add)).Font(theme.CodeFont()).FontSize(theme.FsMicro).TextColor(t.Ok).Shrink(0)
+		ui.Text(c, "−"+itoa(g.del)).Font(theme.CodeFont()).FontSize(theme.FsMicro).TextColor(t.Err).Shrink(0)
 		ui.Spacer(c).Grow(1)
 		if g.hasRepo {
 			idx := g.idx

@@ -67,7 +67,7 @@ func (a *App) scmWorktreeList(c *ui.Context) {
 			kit.Ic(c, "branch", kit.S12).TextColor(t.Tx3)
 			ui.Column(c).Gap(2).Grow(1).Children(func() {
 				ui.Text(c, w.branch).FontWeight(500)
-				ui.Text(c, w.path).Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
+				ui.Text(c, w.path).Font(theme.CodeFont()).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 			})
 			if i == 0 {
 				// 第一项是主工作树,不能删除。

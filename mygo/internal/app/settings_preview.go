@@ -211,7 +211,7 @@ func (a *App) pvMiniDiff(c *ui.Context) {
 func (a *App) pvMiniTerm(c *ui.Context) {
 	t := a.tk
 	a.cardM(c, nil, nil, func() {
-		ui.Row(c).Padding(4, 8).Font("monospace").FontSize(a.FlowMonoSize()).TextColor(t.Tx3).Children(func() {
+		ui.Row(c).Padding(4, 8).Font(theme.CodeFont()).FontSize(a.FlowMonoSize()).TextColor(t.Tx3).Children(func() {
 			ui.Text(c, "test result: ")
 			ui.Text(c, "ok").TextColor(t.Ok)
 			ui.Text(c, ". 14 passed")

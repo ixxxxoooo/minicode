@@ -240,7 +240,7 @@ func (a *App) stickyScroll(c *ui.Context, tb *ideTab) {
 				if a.scopeOn() {
 					a.scopeStickyBar(c, s)
 				}
-				ui.Text(c, s.Detail).Font("monospace").FontSize(theme.Px(12)).SingleLine()
+				ui.Text(c, s.Detail).Font(theme.CodeFont()).FontSize(theme.Px(12)).SingleLine()
 			})
 		}
 	})
@@ -441,7 +441,7 @@ func (a *App) ovPanel(c *ui.Context, tb *ideTab) {
 		panel("ov-rename", 280).Children(func() {
 			ui.Text(c, "重命名符号").FontSize(theme.FsMicro).TextColor(t.Tx4).FontWeight(500).Margin(2, 6)
 			in := ui.TextInputBase(c.Key("ov-ren-in"), &ov.input).Height(theme.Px(28)).PaddingX(8).Radius(t.RSm()).Background(t.Fill1).Border(1, t.Ac).
-				Font("monospace").FontSize(theme.Px(12)).AutoFocus()
+				Font(theme.CodeFont()).FontSize(theme.Px(12)).AutoFocus()
 			in.OnSubmit(func() { a.applyRename(ov.word, strings.TrimSpace(ov.input)) })
 			esc(in)
 			ui.Text(c, "将更新 "+itoa(ov.hits)+" 处引用("+itoa(ov.files)+" 个文件) · ⏎ 应用 · Esc 取消").

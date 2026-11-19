@@ -233,7 +233,7 @@ func (a *App) graphBigRow(c *ui.Context, i int, cm vcs.Commit, gr vcs.GraphRow, 
 		})
 		ui.Text(c, cm.Author).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Width(110).Shrink(0)
 		ui.Text(c, cm.When).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Width(84).Shrink(0)
-		ui.Text(c, cm.Short()).FontSize(theme.FsCap).TextColor(t.Tx4).Font("monospace").SingleLine().Width(60).Shrink(0)
+		ui.Text(c, cm.Short()).FontSize(theme.FsCap).TextColor(t.Tx4).Font(theme.CodeFont()).SingleLine().Width(60).Shrink(0)
 	})
 }
 
@@ -254,7 +254,7 @@ func (a *App) graphDetail(c *ui.Context) {
 		ui.Row(c).Height(theme.Px(30)).Shrink(0).PaddingX(10).Gap(8).AlignItems(ui.Center).Children(func() {
 			ui.Text(c, cm.Subject).FontWeight(500).SingleLine().Shrink(1).MinWidth(0)
 			ui.Spacer(c).Grow(1)
-			ui.Text(c, cm.Short()+" · "+cm.Author+" · "+cm.When).FontSize(theme.FsCap).TextColor(t.Tx3).Font("monospace").SingleLine().Shrink(0)
+			ui.Text(c, cm.Short()+" · "+cm.Author+" · "+cm.When).FontSize(theme.FsCap).TextColor(t.Tx3).Font(theme.CodeFont()).SingleLine().Shrink(0)
 			if kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制完整哈希"}).Clicked() {
 				a.scmCommitOp(*cm, "copy")
 			}

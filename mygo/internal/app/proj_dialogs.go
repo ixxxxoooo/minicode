@@ -405,7 +405,7 @@ func (a *App) addProjectDialog(c *ui.Context) {
 					kit.Ic(c, icon, kit.S12).TextColor(t.Tx3)
 					ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 						ui.Text(c, f.name).SingleLine().TextColor(map[bool]ui.Color{true: t.Tx4, false: t.Tx1}[f.added])
-						ui.Text(c, f.path).Font("monospace").FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine()
+						ui.Text(c, f.path).Font(theme.CodeFont()).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine()
 					})
 					desc := "不是 Git 仓库"
 					if f.repo {
@@ -477,7 +477,7 @@ func (a *App) workspaceDialog(c *ui.Context) {
 					ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 						ui.Text(c, f.Label()).SingleLine().Shrink(1)
 					})
-					ui.Text(c, tildePath(f.Path)).Font("monospace").FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine()
+					ui.Text(c, tildePath(f.Path)).Font(theme.CodeFont()).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine()
 				})
 				ui.Text(c, a.repoNote(f.Path)).FontSize(theme.FsCap).TextColor(t.Tx3).Shrink(0)
 				// 文件树顺序 = 这里的顺序;所有文件夹平级,谁都可以上移 / 下移。
@@ -533,7 +533,7 @@ func (a *App) workspaceDialog(c *ui.Context) {
 				r.Children(func() {
 					kit.Ic(c, "plus", kit.S12).TextColor(t.Ac)
 					ui.Text(c, p.Name).Grow(1).SingleLine()
-					ui.Text(c, tildePath(p.Path)).Font("monospace").FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine()
+					ui.Text(c, tildePath(p.Path)).Font(theme.CodeFont()).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine()
 				})
 			}
 			if n == 0 {

@@ -102,7 +102,7 @@ func (a *App) faultView(c *ui.Context, f *viewFault, key string, kind guardKind)
 		ui.Text(c, "「"+f.name+"」出错了").FontSize(theme.FsHead).FontWeight(600)
 		ui.Text(c, "已写入日志,其它功能和会话不受影响。点「重试」重新加载这一块;反复出错请把错误信息发给开发者。").
 			TextColor(t.Tx3).LineHeight(1.5).MaxWidth(420).TextAlign(ui.Center)
-		ui.Text(c, msg).Font("monospace").FontSize(theme.Px(11)).TextColor(t.Tx3).MaxWidth(480).TextAlign(ui.Center)
+		ui.Text(c, msg).Font(theme.CodeFont()).FontSize(theme.Px(11)).TextColor(t.Tx3).MaxWidth(480).TextAlign(ui.Center)
 		ui.Row(c).Gap(8).Children(func() {
 			kit.Btn(c, "重试", kit.BtnOpt{Variant: kit.BtnPri, Icon: "refresh"}).OnClick(retry)
 			kit.Btn(c, "复制错误信息", kit.BtnOpt{Variant: kit.BtnGhost, Icon: "copy"}).OnClick(func() {

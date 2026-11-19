@@ -142,7 +142,7 @@ func (a *App) cuKV(c *ui.Context, rows [][2]string) {
 				ui.Text(c, r[0]).TextColor(t.Tx3).Width(72).Shrink(0)
 				v := ui.Text(c, r[1]).Grow(1).MinWidth(0).LineHeight(1.4)
 				if strings.ContainsAny(r[1], "/") || strings.Contains(r[1], "npx") || strings.Contains(r[1], ".md") {
-					v.Font("monospace").FontSize(theme.Px(11.5))
+					v.Font(theme.CodeFont()).FontSize(theme.Px(11.5))
 				}
 			})
 		}
@@ -152,14 +152,14 @@ func (a *App) cuKV(c *ui.Context, rows [][2]string) {
 func (a *App) cuField(c *ui.Context, key string, v *string, mono bool, ph string) {
 	in := ui.TextInput(c.Key(key), v).Height(theme.Px(26)).FontSize(theme.FsBody).Placeholder(ph).PlaceholderColor(a.tk.Tx4)
 	if mono {
-		in.Font("monospace").FontSize(theme.Px(11.5))
+		in.Font(theme.CodeFont()).FontSize(theme.Px(11.5))
 	}
 }
 
 func (a *App) cuArea(c *ui.Context, key string, v *string, h float32, mono bool) {
 	in := ui.TextArea(c.Key(key), v).Height(h).FontSize(theme.FsBody)
 	if mono {
-		in.Font("monospace").FontSize(theme.Px(11.5))
+		in.Font(theme.CodeFont()).FontSize(theme.Px(11.5))
 	}
 }
 

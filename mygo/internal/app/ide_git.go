@@ -276,7 +276,7 @@ func (a *App) timelineRows(c *ui.Context) {
 				ui.Text(c, cm.Subject).SingleLine().FontSize(theme.FsCap)
 				ui.Text(c, cm.Author+" · "+cm.When).SingleLine().FontSize(theme.FsMicro).TextColor(t.Tx4)
 			})
-			ui.Text(c, cm.Short()).Font("monospace").FontSize(theme.FsMicro).TextColor(t.Tx4).Shrink(0)
+			ui.Text(c, cm.Short()).Font(theme.CodeFont()).FontSize(theme.FsMicro).TextColor(t.Tx4).Shrink(0)
 		})
 	}
 	if g.busy && len(g.log) > 0 {

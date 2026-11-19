@@ -576,7 +576,7 @@ func (a *App) settingsField(c *ui.Context, r setRow) {
 		box.Height(theme.Px(26)).Width(w).Shrink(0).Grow(0) // 保留 kit.Field 自带的描边 / 聚焦环,一眼看出可编辑
 		in := ui.TextInputBase(c.Key("fld-"+r.key), buf).Grow(1).FontSize(theme.FsCap + .5).Placeholder(r.ph).PlaceholderColor(a.tk.Tx4)
 		if r.mono {
-			in.Font("monospace")
+			in.Font(theme.CodeFont())
 		}
 		in.OnChange(func() { a.setPref(r, *buf) })
 	})

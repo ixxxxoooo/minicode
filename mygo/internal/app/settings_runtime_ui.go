@@ -119,7 +119,7 @@ func (a *App) settingsFieldErr(c *ui.Context, r setRow, err string) {
 		})
 		kit.Field(c, r.key, kit.FieldOpt{Err: err}, func(box ui.Element) {
 			box.BorderWidth(0).Background(ui.Transparent).PaddingX(0).Height(theme.Px(24)).Width(r.w).Shrink(0)
-			in := ui.TextInputBase(c.Key("fld-"+r.key), buf).Grow(1).FontSize(theme.FsCap + .5).Font("monospace")
+			in := ui.TextInputBase(c.Key("fld-"+r.key), buf).Grow(1).FontSize(theme.FsCap + .5).Font(theme.CodeFont())
 			in.OnChange(func() { a.setPref(r, *buf) })
 		})
 		kit.Ib(c, "undo", kit.IbOpt{Small: true, Tip: "恢复默认"}).OnClick(func() { a.resetPref(r) })

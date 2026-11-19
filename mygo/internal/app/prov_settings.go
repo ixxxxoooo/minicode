@@ -63,7 +63,7 @@ func (a *App) provRow(c *ui.Context, pr *claudecfg.Provider, first bool) {
 					kit.Tag(c, pr.Status, provStatusKind(pr.Status))
 				}
 			})
-			ui.Text(c, sub).Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
+			ui.Text(c, sub).Font(theme.CodeFont()).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 			if pr == nil {
 				ui.Text(c, a.provOfficialMetaLine()).FontSize(theme.FsCap).TextColor(t.Tx4).SingleLine()
 			} else {
@@ -167,7 +167,7 @@ func (a *App) provAddMenu(c *ui.Context, anchor ui.Element) {
 				b.Children(func() {
 					ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 						ui.Text(c, ps.Name).SingleLine()
-						ui.Text(c, claudecfg.HostOf(ps.BaseURL)).Font("monospace").FontSize(theme.Px(10.5)).TextColor(t.Tx3).SingleLine()
+						ui.Text(c, claudecfg.HostOf(ps.BaseURL)).Font(theme.CodeFont()).FontSize(theme.Px(10.5)).TextColor(t.Tx3).SingleLine()
 					})
 				})
 			}
@@ -218,7 +218,7 @@ func (a *App) provEditor(c *ui.Context) {
 		a.provFieldRow(c, "Base URL", "Anthropic 协议兼容的地址", func() {
 			kit.Field(c, "prov-url", kit.FieldOpt{Err: p.errURL, ShakeAt: &p.shakeAt}, func(box ui.Element) {
 				a.provBoxStyle(box, 260)
-				ui.TextInputBase(c.Key("prov-url-in"), &d.BaseURL).Grow(1).FontSize(theme.FsCap + .5).Font("monospace").Placeholder("https://…").PlaceholderColor(t.Tx4)
+				ui.TextInputBase(c.Key("prov-url-in"), &d.BaseURL).Grow(1).FontSize(theme.FsCap + .5).Font(theme.CodeFont()).Placeholder("https://…").PlaceholderColor(t.Tx4)
 			})
 		})
 		ph := "sk-…"
@@ -228,7 +228,7 @@ func (a *App) provEditor(c *ui.Context) {
 		a.provFieldRow(c, "API Key", "保存后不再显示,留空保持原值", func() {
 			kit.Field(c, "prov-key", kit.FieldOpt{}, func(box ui.Element) {
 				a.provBoxStyle(box, 220)
-				in := ui.TextInputBase(c.Key("prov-key-in"), &p.keyDraft).Grow(1).FontSize(theme.FsCap + .5).Font("monospace").Placeholder(ph).PlaceholderColor(t.Tx4)
+				in := ui.TextInputBase(c.Key("prov-key-in"), &p.keyDraft).Grow(1).FontSize(theme.FsCap + .5).Font(theme.CodeFont()).Placeholder(ph).PlaceholderColor(t.Tx4)
 				if !p.keyShow {
 					in.Password()
 				}
@@ -252,7 +252,7 @@ func (a *App) provEditor(c *ui.Context) {
 		a.provFieldRow(c, "模型列表地址", "可选。留空自动尝试 Base URL 下的 /v1/models;有些服务商的列表在别处(如 DeepSeek 是 …/models)", func() {
 			kit.Field(c, "prov-murl", kit.FieldOpt{}, func(box ui.Element) {
 				a.provBoxStyle(box, 260)
-				ui.TextInputBase(c.Key("prov-murl-in"), &d.ModelsURL).Grow(1).FontSize(theme.FsCap + .5).Font("monospace").Placeholder("留空自动尝试 {Base URL}/v1/models").PlaceholderColor(t.Tx4)
+				ui.TextInputBase(c.Key("prov-murl-in"), &d.ModelsURL).Grow(1).FontSize(theme.FsCap + .5).Font(theme.CodeFont()).Placeholder("留空自动尝试 {Base URL}/v1/models").PlaceholderColor(t.Tx4)
 			})
 		})
 		a.provInventory(c)
@@ -538,7 +538,7 @@ func (a *App) provInventory(c *ui.Context) {
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 			kit.Field(c, "prov-manual", kit.FieldOpt{Err: p.manualErr, ShakeAt: &p.shakeAt}, func(box ui.Element) {
 				box.Height(theme.Px(24)).Grow(1).PaddingX(8)
-				in := ui.TextInputBase(c.Key("prov-manual-in"), &p.manual).Grow(1).FontSize(theme.FsCap + .5).Font("monospace").Placeholder("手动添加模型 ID").PlaceholderColor(t.Tx4)
+				in := ui.TextInputBase(c.Key("prov-manual-in"), &p.manual).Grow(1).FontSize(theme.FsCap + .5).Font(theme.CodeFont()).Placeholder("手动添加模型 ID").PlaceholderColor(t.Tx4)
 				if p.focusManual {
 					in.AutoFocus()
 					p.focusManual = false
@@ -571,7 +571,7 @@ func (a *App) provModelRow(c *ui.Context, d *claudecfg.Provider, m string) {
 	b.Children(func() {
 		kit.Chk(c, map[bool]int{true: 2, false: 0}[on])
 		kit.Logo(c, modelBrand(m, provBrand(d.Name, d.BaseURL)), 14, t.Tx2)
-		ui.Text(c, m).Font("monospace").FontSize(theme.FsCap + .5).SingleLine().Grow(1).MinWidth(0)
+		ui.Text(c, m).Font(theme.CodeFont()).FontSize(theme.FsCap + .5).SingleLine().Grow(1).MinWidth(0)
 		if manual {
 			kit.Tag(c, "手动", kit.KInfo)
 			if kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "移除"}).Key("prov-mrm-" + m).Clicked() {
@@ -712,7 +712,7 @@ func (a *App) mappingBody(a2 *App, c *ui.Context) {
 		rowBox(a, c, false, 40).Children(func() {
 			ui.Column(c).Grow(1).MinWidth(0).Gap(1).Children(func() {
 				ui.Text(c, sl.Label).FontWeight(500).SingleLine().Tooltip(sl.Env)
-				ui.Text(c, sl.Env).Font("monospace").FontSize(theme.Px(10.5)).TextColor(t.Tx4).SingleLine()
+				ui.Text(c, sl.Env).Font(theme.CodeFont()).FontSize(theme.Px(10.5)).TextColor(t.Tx4).SingleLine()
 			})
 			var items []selItem
 			if !sl.Required {

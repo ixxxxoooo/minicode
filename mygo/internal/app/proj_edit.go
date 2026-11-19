@@ -68,7 +68,7 @@ func (a *App) projectDialog(c *ui.Context) {
 		ui.Text(c, "位置").FontSize(theme.FsCap).TextColor(t.Tx3).Margin(6, 0, 0, 0)
 		ui.Row(c).Gap(6).AlignItems(ui.Center).Padding(4, 8).Radius(t.RSm()).Background(t.Fill1).Children(func() {
 			kit.Ic(c, "folder", kit.S12).TextColor(t.Tx3)
-			ui.Text(c, tildePath(d.projPath)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx2).SingleLine().Grow(1).Shrink(1)
+			ui.Text(c, tildePath(d.projPath)).Font(theme.CodeFont()).FontSize(theme.FsCap).TextColor(t.Tx2).SingleLine().Grow(1).Shrink(1)
 			if a.isRepoDir(d.projPath) {
 				kit.Tag(c, "Git 仓库", kit.KOk)
 			} else {

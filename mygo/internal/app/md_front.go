@@ -242,7 +242,7 @@ func (a *App) mdFrontCard(c *ui.Context, id, front string, maxH float32) {
 				for _, e := range ents {
 					e := e
 					ui.Row(c).Gap(10).AlignItems(ui.Start).Children(func() {
-						ui.Text(c, e.Key).Font("monospace").FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().Width(kw).Shrink(0)
+						ui.Text(c, e.Key).Font(theme.CodeFont()).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().Width(kw).Shrink(0)
 						ui.Column(c).Grow(1).MinWidth(0).Children(func() { a.fmValue(c, e) })
 					})
 				}
@@ -261,7 +261,7 @@ func (a *App) fmValue(c *ui.Context, e fmEntry) {
 	t := a.tk
 	chip := func(s string, col ui.Color) {
 		ui.Row(c).Padding(1, 6).Radius(t.RXs()).Background(t.Fill2).Shrink(0).Children(func() {
-			ui.Text(c, s).Font("monospace").FontSize(theme.FsMicro).TextColor(col).SingleLine()
+			ui.Text(c, s).Font(theme.CodeFont()).FontSize(theme.FsMicro).TextColor(col).SingleLine()
 		})
 	}
 	switch e.Kind {
@@ -279,7 +279,7 @@ func (a *App) fmValue(c *ui.Context, e fmEntry) {
 		ui.Row(c).Children(func() { chip(e.Text, col) })
 	default:
 		if strings.EqualFold(e.Key, "name") { // 名字是标识:加粗等宽
-			ui.Text(c, e.Text).Font("monospace").FontSize(theme.FsCap).FontWeight(600).TextColor(t.Tx1)
+			ui.Text(c, e.Text).Font(theme.CodeFont()).FontSize(theme.FsCap).FontWeight(600).TextColor(t.Tx1)
 			return
 		}
 		ui.Text(c, e.Text).FontSize(theme.FsCap).TextColor(t.Tx2).LineHeight(1.55)

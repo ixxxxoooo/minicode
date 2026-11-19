@@ -53,7 +53,7 @@ func (a *App) selectBox(c *ui.Context, key string, w float32, items []selItem, c
 		}
 		tx := ui.Text(c, label).SingleLine().Grow(1).MinWidth(0).Justify(ui.Start)
 		if mono {
-			tx.Font("monospace")
+			tx.Font(theme.CodeFont())
 		}
 		if cur == "" || label == empty {
 			tx.TextColor(t.Tx3)
@@ -103,7 +103,7 @@ func (a *App) selRow(c *ui.Context, key string, it selItem, on bool, pick func()
 			}
 			tx := ui.Text(c, it.label).SingleLine().Grow(1)
 			if it.mono {
-				tx.Font("monospace")
+				tx.Font(theme.CodeFont())
 			}
 			if it.hint != "" {
 				ui.Text(c, it.hint).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
@@ -126,7 +126,7 @@ func (a *App) selRow(c *ui.Context, key string, it selItem, on bool, pick func()
 		}
 		tx := ui.Text(c, it.label).SingleLine().Grow(1).MinWidth(0)
 		if it.mono {
-			tx.Font("monospace")
+			tx.Font(theme.CodeFont())
 		}
 		if it.hint != "" {
 			ui.Text(c, it.hint).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()

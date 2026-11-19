@@ -93,11 +93,11 @@ func (a *App) cuMCPEditDlg(c *ui.Context, st *customize.Store) {
 		}
 		if d.Transport == "http" || d.Transport == "sse" {
 			a.cuLbl(c, "请求头(每行 名称: 值,如 Cookie / Authorization;值里可写 ${环境变量})", func() {
-				ui.TextArea(c.Key("mcp-hdr"), &s.mcpHdr).Lines(3, 6).Font("monospace").FontSize(theme.Px(11.5))
+				ui.TextArea(c.Key("mcp-hdr"), &s.mcpHdr).Lines(3, 6).Font(theme.CodeFont()).FontSize(theme.Px(11.5))
 			})
 		}
 		a.cuLbl(c, "环境变量(每行 KEY=VALUE)", func() {
-			ui.TextArea(c.Key("mcp-env"), &s.mcpEnv).Lines(3, 6).Font("monospace").FontSize(theme.Px(11.5))
+			ui.TextArea(c.Key("mcp-env"), &s.mcpEnv).Lines(3, 6).Font(theme.CodeFont()).FontSize(theme.Px(11.5))
 		})
 		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
 			ui.Text(c, "配置层").TextColor(t.Tx3).Width(72).Shrink(0)

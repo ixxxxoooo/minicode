@@ -174,7 +174,7 @@ func (a *App) netCheckBody(a2 *App, c *ui.Context) {
 				cs = kit.ConnFail
 				res = claudecfg.ProvFail
 			}
-			ui.Text(c, h).Font("monospace").Grow(1)
+			ui.Text(c, h).Font(theme.CodeFont()).Grow(1)
 			kit.ConnTestRow(c, "net-"+h, cs, "测试", res, func() { a2.runNetCheck([]string{h}) })
 		})
 	}

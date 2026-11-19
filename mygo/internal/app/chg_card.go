@@ -98,10 +98,10 @@ func (a *App) changesFileRow(c *ui.Context, i int, f chFile) {
 		a.fileIc(c, name)
 		ui.Text(c, name).FontSize(theme.FsCap).SingleLine().Grow(1).MinWidth(0)
 		if f.add > 0 {
-			ui.Text(c, "+"+itoa(f.add)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Ok).Shrink(0)
+			ui.Text(c, "+"+itoa(f.add)).Font(theme.CodeFont()).FontSize(theme.FsCap).TextColor(t.Ok).Shrink(0)
 		}
 		if f.del > 0 {
-			ui.Text(c, "−"+itoa(f.del)).Font("monospace").FontSize(theme.FsCap).TextColor(t.Err).Shrink(0)
+			ui.Text(c, "−"+itoa(f.del)).Font(theme.CodeFont()).FontSize(theme.FsCap).TextColor(t.Err).Shrink(0)
 		}
 	})
 }

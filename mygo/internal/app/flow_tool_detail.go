@@ -93,7 +93,7 @@ func (a *App) toolDetail(c *ui.Context, tc *core.ToolCall) {
 			})
 		}
 		a.detailSection(c, "结果", func() { a.toolResult(c, tc) })
-		ui.Text(c, toolMetaLine(tc)).Font("monospace").FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine()
+		ui.Text(c, toolMetaLine(tc)).Font(theme.CodeFont()).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine()
 	})
 }
 

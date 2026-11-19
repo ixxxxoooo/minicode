@@ -202,7 +202,7 @@ func (a *App) drawCommitCard(c *ui.Context, tb *ideTab, bl vcs.BlameLine, right,
 				meta = fmt.Sprintf("%s · 本次修改影响 %d 个文件", short, n)
 			}
 		}
-		ui.Text(c, meta).Font("monospace").FontSize(theme.FsMicro).TextColor(t.Tx4)
+		ui.Text(c, meta).Font(theme.CodeFont()).FontSize(theme.FsMicro).TextColor(t.Tx4)
 		ui.Row(c).Gap(8).Children(func() {
 			kit.Btn(c, "查看提交", kit.BtnOpt{Small: true, Icon: "commit", Disabled: bl.Uncommitted || bl.Hash == "", Tip: map[bool]string{true: "未提交的改动没有提交", false: ""}[bl.Uncommitted]}).OnClick(func() {
 				if bl.Hash == "" {

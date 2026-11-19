@@ -310,7 +310,7 @@ func Kbd(c *ui.Context, keys ...string) ui.Element {
 	return ui.Row(c).Gap(2).Shrink(0).AlignItems(ui.Center).Children(func() {
 		for _, k := range keys {
 			ui.Row(c).MinWidth(theme.Px(16)).Height(theme.Px(15)).PaddingX(4).Radius(T.RXs()).Background(T.Fill1).Border(1, T.Bd2).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, k).Font("monospace").FontSize(theme.Px(10)).TextColor(T.Tx3).SingleLine()
+				ui.Text(c, k).Font(theme.CodeFont()).FontSize(theme.Px(10)).TextColor(T.Tx3).SingleLine()
 			})
 		}
 	})

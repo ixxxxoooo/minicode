@@ -235,7 +235,7 @@ func (a *App) lspCard(c *ui.Context, s *lspSess) {
 			kit.Ic(c, "alert", kit.S14).TextColor(t.Warn)
 			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 				ui.Text(c, "未安装 "+s.spec.Name+"("+s.spec.Lang+" 语言服务)").FontWeight(500)
-				ui.Text(c, s.spec.Install+" · "+s.spec.Hint).Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
+				ui.Text(c, s.spec.Install+" · "+s.spec.Hint).Font(theme.CodeFont()).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 			})
 			if s.spec.Installable() { // 应用自己装,不开终端:依赖 Node 的下载 Node + 固定版本的包,其余后台执行安装命令
 				tip := "在后台执行 " + s.spec.Install + ";需要本机已有对应的工具链(点了才执行)"

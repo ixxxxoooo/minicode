@@ -131,7 +131,7 @@ func (a *App) scmStashFileRows(c *ui.Context, i int) {
 				ui.Text(c, d).FontSize(theme.FsMicro).TextColor(t.Tx4).SingleLine().Shrink(1).MinWidth(0)
 			}
 			ui.Spacer(c).Grow(1)
-			ui.Text(c, statusLetter(ch.Status)).Font("monospace").FontSize(theme.FsMicro).TextColor(t.Tx4)
+			ui.Text(c, statusLetter(ch.Status)).Font(theme.CodeFont()).FontSize(theme.FsMicro).TextColor(t.Tx4)
 		})
 	}
 	if !showAll && len(fs) > stashFilePreview {

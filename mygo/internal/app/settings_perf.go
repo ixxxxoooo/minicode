@@ -334,7 +334,7 @@ func perfLogViewerBody(a *App, c *ui.Context) {
 	ui.Row(c).Padding(0, 12, 8, 12).Gap(8).Children(func() {
 		inQ := ui.TextInputBase(c.Key("perf-log-q"), q).Grow(1).Placeholder("搜索日志…")
 		inQ.OnChange(func() { a.prefs.Set(qKey, *q) })
-		inM := ui.TextInputBase(c.Key("perf-log-m"), m).Width(100).Placeholder("模块").Font("monospace")
+		inM := ui.TextInputBase(c.Key("perf-log-m"), m).Width(100).Placeholder("模块").Font(theme.CodeFont())
 		inM.OnChange(func() { a.prefs.Set(mKey, *m) })
 	})
 	lv := diag.CurrentLevel()
@@ -353,7 +353,7 @@ func perfLogViewerBody(a *App, c *ui.Context) {
 			if strings.Contains(ln.Level, "ERROR") {
 				col = t.Err
 			}
-			ui.Text(c, ln.Text).Font("monospace").FontSize(theme.FsMicro).TextColor(col).SingleLine()
+			ui.Text(c, ln.Text).Font(theme.CodeFont()).FontSize(theme.FsMicro).TextColor(col).SingleLine()
 		}
 	})
 }

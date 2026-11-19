@@ -123,7 +123,7 @@ func (a *App) gotoLineStrip(c *ui.Context, tb *ideTab) {
 			ui.Row(c).Height(theme.Px(36)).PaddingX(12).Gap(8).AlignItems(ui.Center).Children(func() {
 				kit.Ic(c, "list", kit.S12).TextColor(t.Tx3)
 				ui.Text(c, "转到").TextColor(t.Tx2).FontWeight(500)
-				in := ui.TextInputBase(c.Key("goto-in"), &g.text).Width(84).Font("monospace").FontFeatures("tnum").
+				in := ui.TextInputBase(c.Key("goto-in"), &g.text).Width(84).Font(theme.CodeFont()).FontFeatures("tnum").
 					Placeholder(map[bool]string{true: "—", false: itoa(cur)}[n < 1]).Disabled(n < 1)
 				if g.err != "" {
 					in.Border(1, t.Err)

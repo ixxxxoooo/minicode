@@ -388,7 +388,7 @@ func (a *App) scmCommitDetail(c *ui.Context, cm vcs.Commit) {
 	t := a.tk
 	s := &a.sc
 	{
-		ui.Text(c, cm.Short()+" · "+cm.Author+" · "+cm.When).FontSize(theme.FsMicro).TextColor(t.Tx4).Font("monospace").Padding(2, 4)
+		ui.Text(c, cm.Short()+" · "+cm.Author+" · "+cm.When).FontSize(theme.FsMicro).TextColor(t.Tx4).Font(theme.CodeFont()).Padding(2, 4)
 		files, ok := s.files[cm.Hash]
 		if !ok {
 			return

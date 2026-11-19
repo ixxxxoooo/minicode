@@ -245,7 +245,7 @@ func (a *App) ghostPanel(c *ui.Context, g beltGeom) {
 		})
 		ui.Column(c).Key("ghost-pbody").Grow(1).MinHeight(0).Clip().Padding(4, 10, 0, 10).Children(func() {
 			for _, ln := range g.term {
-				ui.Text(c, ln).SingleLine().Font("monospace").FontSize(termFont).TextColor(t.Tx2)
+				ui.Text(c, ln).SingleLine().Font(termFamily).FontSize(termFont).TextColor(t.Tx2)
 			}
 		})
 	})

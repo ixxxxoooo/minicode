@@ -55,7 +55,7 @@ func titled(a *App, c *ui.Context, title, desc string, mono bool) {
 		if desc != "" {
 			d := ui.Text(c, desc).FontSize(theme.FsCap).TextColor(a.tk.Tx3).SingleLine()
 			if mono {
-				d.Font("monospace")
+				d.Font(theme.CodeFont())
 			}
 		}
 	})
@@ -656,7 +656,7 @@ func ignoreArea(a *App, c *ui.Context) {
 		a.set.bufs[key] = buf
 	}
 	ui.Column(c).Padding(10, 12).Gap(6).Children(func() {
-		in := ui.TextArea(c.Key("ign"), buf).Height(80).Font("monospace").FontSize(theme.FsCap + .5)
+		in := ui.TextArea(c.Key("ign"), buf).Height(80).Font(theme.CodeFont()).FontSize(theme.FsCap + .5)
 		in.OnChange(func() { a.prefs.Set(key, *buf) })
 		ui.Text(c, "同时作用于文件树、搜索与文件监视").FontSize(theme.FsCap).TextColor(t.Tx3)
 	})

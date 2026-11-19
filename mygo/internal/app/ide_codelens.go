@@ -44,7 +44,7 @@ func (a *App) codeLens(c *ui.Context, tb *ideTab) {
 		if a.wsW > 0 {
 			avail = a.wsW - edGutter*edScale - a.codeLensRight() - 150
 		}
-		if float32(len([]rune(tb.buf.Line(s.Line))))*7.3*edScale > avail {
+		if float32(len([]rune(tb.buf.Line(s.Line))))*edChar*edScale > avail {
 			continue
 		}
 		if y < codelensTop-lineH || s.Line < first || s.Line > last {
