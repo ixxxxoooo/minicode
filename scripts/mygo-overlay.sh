@@ -5,7 +5,8 @@
 # 补丁只改行为、不新增应用要调用的 API,所以未打补丁时依然能编译。
 # 补丁清单(目标文件相对 MyGo 模块根):
 #   ui/markdown/view.go  ← mygo/_patches/ui-markdown-view.go    带 mc-path: 前缀的链接悬停不画下划线、改手型光标 + 淡底
-#   ui/markdown/spans.go ← mygo/_patches/ui-markdown-spans.go   带 mc-path: 前缀的链接,图标自带行内代码底色,与代码底色连成一整条胶囊
+#   ui/markdown/spans.go ← mygo/_patches/ui-markdown-spans.go   带 mc-path: 前缀的链接:整枚路径胶囊由 LinkIcon 对象自画,链接文字不再另画
+#   ui/markdown/table.go ← mygo/_patches/ui-markdown-table.go   表格比容器窄时撑满容器(多出的宽度按列宽比例分给各列)
 # 升级 MyGo 版本后要对着新版本重做这些补丁(diff 旧版同名文件即可看到改了什么)。
 _root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _dir="$(cd "$_root/mygo" && go list -m -f '{{.Dir}}' github.com/egoist/mygo 2>/dev/null)"
@@ -20,6 +21,7 @@ if [ -n "$_dir" ] && [ -d "$_dir" ]; then
     chmod -R u+w "$_out"
     cp "$_root/mygo/_patches/ui-markdown-view.go" "$_out/ui/markdown/view.go"
     cp "$_root/mygo/_patches/ui-markdown-spans.go" "$_out/ui/markdown/spans.go"
+    cp "$_root/mygo/_patches/ui-markdown-table.go" "$_out/ui/markdown/table.go"
     echo "$_stamp" >"$_out/.stamp"
   fi
   cp "$_root/mygo/go.mod" "$_root/target/go.patched.mod"
