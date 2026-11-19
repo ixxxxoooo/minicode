@@ -54,17 +54,17 @@
 .term .pa { color: var(--info); } .term .h { color: var(--syn-num); } .term .u { color: var(--ac-tx); } .term .e { font-weight: var(--fw-medium); }
 .k { color: var(--syn-kw); } .s { color: var(--syn-str); } .fn { color: var(--syn-fn); } .ty { color: var(--syn-type); } .nu { color: var(--syn-num); } .mc { color: var(--syn-mac); } .cm { color: var(--syn-com); font-style: italic; }
 .think-body { color: var(--tx-3); font-size: 12px; line-height: 1.6; padding-left: 10px; box-shadow: inset 2px 0 var(--bd-2); }
-/* 思考折叠 + 流式:右侧单行跑马灯预览(参考 Claude / ChatGPT / Cursor) */
+/* 思考折叠 + 流式:右侧单行「上下翻」预览——只显示最新的一句,新一句开始时旧句向上滚出、新句从下面翻进来 */
 .step.think-marquee .so { flex: 0 1 38%; min-width: 4.5em; }
-.think-mq { position: relative; flex: 1 1 120px; min-width: 0; max-width: 52%; height: 20px; margin-left: 4px; overflow: hidden; text-align: right; }
-.think-mq-fade { position: absolute; left: 0; top: 0; bottom: 0; width: 32px; background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 92%, transparent), transparent); pointer-events: none; z-index: 1; }
-.step:hover .think-mq-fade { background: linear-gradient(90deg, color-mix(in srgb, var(--fill-1) 92%, transparent), transparent); }
-.think-mq-track { display: block; overflow: hidden; height: 100%; }
-.think-mq-txt { display: inline-block; white-space: nowrap; font-size: var(--fs-cap); color: var(--tx-3); line-height: 20px; padding-left: 8px; animation: think-marquee 9s var(--ease-io) infinite; }
-.think-mq.still .think-mq-txt { animation: none; transform: none; }
+.think-mq { position: relative; flex: 1 1 120px; min-width: 0; max-width: 52%; height: 20px; margin-left: 4px; overflow: hidden; text-align: left; }
+.think-mq-fade { display: none; }
+.think-mq-track { display: block; animation: think-roll 7.8s cubic-bezier(.2, .7, .2, 1) infinite; }
+.think-mq-line { display: block; height: 20px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--fs-cap); color: var(--tx-3); padding-left: 8px; }
+.think-mq.still .think-mq-track { animation: none; transform: none; }
 .think-mq.narrow { display: none; }
 .step.think-marquee.tier-narrow .sr .sm { display: none; }
-@keyframes think-marquee { 0% { transform: translateX(8%); } 45% { transform: translateX(-42%); } 100% { transform: translateX(-42%); } }
+/* 3 句 + 第 1 句的副本,翻到副本时无缝回到起点;每次翻页 260 ms 量级(这里放慢到 7.8s 一轮便于演示) */
+@keyframes think-roll { 0%, 22% { transform: translateY(0); } 33%, 55% { transform: translateY(-20px); } 66%, 88% { transform: translateY(-40px); } 100% { transform: translateY(-60px); } }
 .step.think-marquee:not(.run) .think-mq { opacity: 0; max-width: 0; transition: opacity var(--dur-fast), max-width var(--dur-slow); }
 
 /* 待办 */

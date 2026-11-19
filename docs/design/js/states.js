@@ -100,7 +100,7 @@
     ${sec('流光扫光', '对标 Vercel AI Shimmer / Claude Code 状态行:约 100° 斜向高光带(宽 ≈35–40%),Tx3 底 + Tx1 峰,1.6s 匀速 + 0.5s 停;同一屏共享相位;仅唯一进行中文字;MyGo 无 background-clip:text → Go 用 RichText 分段混色(≤48 字,约 30fps)。', `<div class="grid2">
       ${spec('新 · 扫光', ['.shimmer'], `<div class="f g4 ai wrap"><span class="m shimmer">正在生成提交说明…</span><span class="m shimmer">思考</span></div>`)}
       ${spec('旧 · 整段呼吸(降级)', ['.shimmer-legacy'], `<div class="m shimmer-legacy">正在生成提交说明…</div><p class="t3 fs-cap">appearance.shimmer = 呼吸 / 无 时回落</p>`)}</div>`)}
-    ${sec('思考跑马灯', '折叠且流式:右侧 NoWrap 预览(约 200 字尾部,换行压成 ·),左缘 32px 渐隐,文本向左缓动追赶。', `<div class="spec">${typeof F !== 'undefined' ? F.thinkMarquee({ stream: true }) : ''}</div>`)}
+    ${sec('思考跑马灯', '折叠且流式:右侧单行预览只显示最新一句,换句时旧句上滚、新句从下面翻进来(上下翻),不再横向滚动。', `<div class="spec">${typeof F !== 'undefined' ? F.thinkMarquee({ stream: true }) : ''}</div>`)}
     ${sec('过渡编排', '多个元素同时变化时,谁先谁后、各自多久。', chor)}
     ${sec('减弱动态与关闭动效', '两个来源,效果一致:设置 → 外观 → 动效 = 关闭,或系统「减弱动态效果」。', `<div class="grid2">
       ${spec('会变成什么', ['body.no-motion', 'prefers-reduced-motion'], '<div class="t2" style="line-height:1.7">· 所有时长令牌归 1ms:状态直接跳到终态,没有位移与缩放<br>· 循环动画停止:流光变成静态文字色、呼吸描边变成实线、不确定进度条变成静态条<br>· 形态切换仍然成立,只是瞬时完成;<span class="mono">.morphing</span> 锁定随之缩到 1 帧<br>· 状态的「含义」不靠动画传达:运行中始终有状态点与文字</div>')}

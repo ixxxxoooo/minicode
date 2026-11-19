@@ -149,7 +149,7 @@
       ['回复出完即结束', 'core.EvTurnPhase.Final → State.Phase 置空闲 + Settling;后端先发临时用时,result 到达再替换;收尾期间发送的消息记「接力」,result 后无缝开始下一回合(claude/backend.go carry)。未测试', st('part')],
       ['等待动画风格(6 种)', 'app/spinner_style.go:字符帧与动词表移植自主分支;设置 → 外观 → 等待动画(appearance.spinner,默认 Claude Code)。未测试', st('part')],
       ['沙漏等待图标', 'kit.Spin 默认沙漏(2.4s 全局相位);SpinRing 仅按钮 loading;appearance.waitAnim 沙漏/圆环/点阵/脉冲 + 旧偏好迁移。未测试', st('part')],
-      ['思考折叠跑马灯', 'flow_think_marquee.go:折叠且流式时右侧尾句预览;演示 scn:think-marquee;-ed thinking。未测试', st('part')],
+      ['思考折叠上下翻预览', 'flow_think_marquee.go:折叠且流式时右侧只显示最新一句,换句时上滚翻页(原为横向跑马灯);thinkLastLine 有单测;演示 scn:think-marquee;-ed thinking。动效未用 computer use 实测,未测试', st('part')],
       ['流光扫光', 'kit.RunTextS RichText 分段混色(无 background-clip:text);appearance.shimmer 流光/呼吸/无;约 30fps。未测试', st('part')],
       ['慢因提示卡', 'flow_wait_hint.go 优先级表 + 动作;chat.slowHint;cmd/shot scn:resp-wait-slow 琥珀 + 压缩按钮已对照。未 computer use', st('part')],
       ['脚注迷你分段条 + 瀑布弹卡', 'turn_timing_pop.go:迷你条 + 点击瀑布(非悬停);scn:resp-multi-timing 脚注条已对照。弹卡明细未截图。未 computer use', st('part')],

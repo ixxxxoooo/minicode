@@ -10,27 +10,49 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
+// 思考折叠 + 流式时,标题右侧的单行预览:只显示思考里「最新的一句」,新的一句开始时
+// 旧句向上滚出、新句从下面翻进来(上下翻页),不再横向平移。
+
 const (
-	thinkPreviewRunes = 200
-	thinkMqMinW       = 96
+	thinkLineMaxRunes = 160                    // 一句话最多取多少字(再长也只显示一行,超出省略)
+	thinkMqMinW       = 96                     // 预览框比这还窄就不画
+	thinkMqRollDur    = 260 * time.Millisecond // 上下翻一次的时长
+	thinkMqLineH      = 20                     // 预览行高
 )
 
 type thinkMqSt struct {
-	X, Show float32
-	TW      float32 // 上一帧量到的预览文本宽度
+	Line string    // 当前显示的句子
+	Prev string    // 正在翻出去的上一句;空 = 没在翻
+	At   time.Time // 这次翻页的开始时刻
 }
 
-// thinkPreviewPlain 取思考正文尾部,换行压成「 · 」。
-func thinkPreviewPlain(text string) string {
-	text = strings.TrimSpace(text)
-	text = strings.ReplaceAll(text, "\r\n", "\n")
-	text = strings.ReplaceAll(text, "\n", " · ")
-	text = strings.ReplaceAll(text, " ·  · ", " · ")
-	if utf8.RuneCountInString(text) <= thinkPreviewRunes {
-		return text
+// thinkLastLine 取思考正文里最新的一句:按换行 / 句末标点(。！？；与后面跟空格的 . ! ? ;)切分,
+// 取最后一句;刚写完一句、末尾是标点时,取的仍是这一句(下一句出了第一个字才翻页)。
+func thinkLastLine(text string) string {
+	rs := []rune(strings.TrimSpace(strings.ReplaceAll(text, "\r\n", "\n")))
+	isTerm := func(i int) bool {
+		switch rs[i] {
+		case '\n', '。', '！', '？', '；', '!', '?', ';':
+			return true
+		case '.':
+			return i+1 >= len(rs) || rs[i+1] == ' ' || rs[i+1] == '\n'
+		}
+		return false
 	}
-	rs := []rune(text)
-	return string(rs[len(rs)-thinkPreviewRunes:])
+	end := len(rs)
+	for end > 0 && (isTerm(end-1) || rs[end-1] == ' ' || rs[end-1] == '\t') {
+		end--
+	}
+	start := end
+	for start > 0 && !isTerm(start-1) {
+		start--
+	}
+	line := strings.TrimSpace(string(rs[start:end]))
+	line = strings.TrimLeft(line, "#*->` \t") // 去掉 Markdown 的标题 / 列表 / 引用 / 加粗记号
+	if utf8.RuneCountInString(line) > thinkLineMaxRunes {
+		line = string([]rune(line)[:thinkLineMaxRunes])
+	}
+	return line
 }
 
 func (a *App) thinkMarqueeVisible(sp step, open bool) bool {
@@ -54,8 +76,8 @@ func (a *App) thinkMarqueeRow(c *ui.Context, sp step, tone ui.Color, open bool, 
 		return ui.Box(c).Width(0).Shrink(0)
 	}
 	t := a.tk
-	preview := thinkPreviewPlain(sp.thinkText)
-	if preview == "" {
+	line := thinkLastLine(sp.thinkText)
+	if line == "" {
 		return ui.Box(c).Width(0).Shrink(0)
 	}
 	rowW := float32(0)
@@ -66,91 +88,61 @@ func (a *App) thinkMarqueeRow(c *ui.Context, sp step, tone ui.Color, open bool, 
 	if maxW > 0 && maxW < thinkMqMinW {
 		return ui.Box(c).Width(0).Shrink(0)
 	}
-	box := ui.Box(c).Height(20).Grow(1).MinWidth(0).Shrink(1).Clip().MarginStart(4)
-	if maxW > 0 {
-		box.MaxWidth(maxW)
-	} else {
-		box.MaxWidth(rowW * 0.52)
-	}
-	id := sp.id
-	st := a.thinkMq[id]
-	boxW := float32(0)
-	if b := box.Bounds(); b.W > 8 {
-		boxW = b.W
-	} else if rowW > 0 {
-		boxW = maxW
-	}
-	if boxW > 0 && boxW < thinkMqMinW {
+	box := ui.Box(c).Height(thinkMqLineH).Grow(1).MinWidth(0).Shrink(1).Clip().MarginStart(4)
+	box.MaxWidth(maxW)
+	if b := box.Bounds(); b.W > 8 && b.W < thinkMqMinW {
 		return ui.Box(c).Width(0).Shrink(0)
 	}
-	textW := st.TW
-	if textW <= 0 {
-		textW = thinkMqEstimateWidth(preview)
-	}
-	target := textW - boxW + 4
-	if target < 0 {
-		target = 0
-	}
+
 	still := !kit.MotionOn() || kit.SystemReduceMotion() || (a.win != nil && !a.win.IsFocused())
-	if still {
-		st.Show = target
-	} else if diff := target - st.Show; diff > 0.5 || diff < -0.5 {
-		st.Show += diff * .22
-		a.frameSoon()
-	} else {
-		st.Show = target
+	id := sp.id
+	st := a.thinkMq[id]
+	now := a.now()
+	if line != st.Line {
+		// 还是同一句、只是又长了几个字:原地接着写,不翻页;换了一句才翻
+		grow := st.Line != "" && strings.HasPrefix(line, st.Line)
+		switch {
+		case grow:
+		case st.Line != "" && !still:
+			st.Prev, st.At = st.Line, now
+		default:
+			st.Prev = ""
+		}
+		st.Line = line
+	}
+	p := float32(1) // 翻页进度 0→1(缓出)
+	if st.Prev != "" {
+		if d := now.Sub(st.At); d < thinkMqRollDur {
+			x := 1 - float32(d)/float32(thinkMqRollDur)
+			p = 1 - x*x*x
+			a.frameSoon()
+		} else {
+			st.Prev = ""
+		}
+	}
+	a.thinkMq[id] = st
+
+	one := func(s string, alpha float32) {
+		r := ui.Row(c).Height(thinkMqLineH).Shrink(0).MinWidth(0).AlignItems(ui.Center)
+		if alpha < 1 {
+			r.Opacity(alpha)
+		}
+		r.Children(func() {
+			ui.Text(c, s).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Ellipsis("…").Shrink(1).MinWidth(0).PaddingStart(8)
+		})
 	}
 	box.Children(func() {
-		// 文字还没超出框时靠左排(紧挨标题);超出后才靠右并向左平移跑马。
-		// 一直靠右的话,刚开始思考、文字很短时,标题与文字之间会空出一大截。
-		just := ui.Start
-		if target > 0 {
-			just = ui.End
+		if st.Prev == "" {
+			one(st.Line, 1)
+			return
 		}
-		inner := ui.Row(c).Height(20).Grow(1).MinWidth(0).Justify(just).AlignItems(ui.Center)
-		if st.Show > 0 {
-			inner.Translate(-st.Show, 0)
-		}
-		inner.Children(func() {
-			tx := ui.Text(c, preview).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().NoWrap().Shrink(0).PaddingStart(8)
-			if w := tx.Bounds().W; w > 0 {
-				st.TW = w
-			}
+		// 两句上下叠放,整体向上平移一行:旧句滚出、新句从下面翻进来
+		ui.Column(c).Height(2*thinkMqLineH).Shrink(0).Grow(1).MinWidth(0).Translate(0, -thinkMqLineH*p).Children(func() {
+			one(st.Prev, 1-p)
+			one(st.Line, p)
 		})
-		if target > 0 {
-			bg := t.BG.Over(t.Fill1)
-			if hov := row.Hovered(); hov {
-				bg = t.Fill1
-			}
-			ui.Box(c).Width(32).Height(20).Absolute().HitTest(func(_, _ float32, _ ui.Rect) bool { return false }).
-				MaskLinearGradient(ui.LinearGradient{
-					Angle: 90,
-					Stops: []ui.GradientStop{
-						{Color: bg, At: 0},
-						{Color: ui.Transparent, At: 1},
-					},
-				})
-		}
 	})
-	a.thinkMq[id] = st
-	if !still {
-		_ = box.Loop("think-mq", 33*time.Millisecond, ui.Linear)
-	}
 	return box
-}
-
-// thinkMqEstimateWidth 估算一段文字单行宽度:中日韩全角约 1 em,其余约 0.55 em。
-func thinkMqEstimateWidth(s string) float32 {
-	var w float32
-	em := float32(theme.FsCap)
-	for _, r := range s {
-		if r >= 0x2E80 {
-			w += em
-		} else {
-			w += em * 0.55
-		}
-	}
-	return w
 }
 
 func (a *App) noteThinkStreamEnd(id string) {

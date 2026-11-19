@@ -40,7 +40,7 @@ ${live ? 'test matches_trailing_slash ... <span class="caret"></span>' : 'test r
     const pr = o.prompt ? `<div class="sub-task"><div class="sub-task-h"><span class="t3 fs-cap m">任务</span><span class="grow"></span>${ib('copy', 'sm', '复制')}${o.long ? btn('展开', 'ghost sm') : ''}</div><div class="sub-task-b ${o.long ? 'clamp' : ''}">${o.prompt}</div></div>` : '';
     return `<div class="sub" data-act="open" data-id="sub:handlers"><div class="sub-h"><span class="si" style="color:var(--tool-agent)">${ico}</span><b class="ell">${title}</b>${tag(typeChip)}${o.pend ? tag('待确认 ' + o.pend, 'warn') : ''}<span class="grow"></span>${btn('查看过程', 'sm ghost', 'ext')}${o.run ? ib('stop', 'sm', '停止') : ''}</div>${pr}<div class="stat">${o.stat || ''}${o.bg ? '<span>后台</span>' : ''}</div>${o.run ? `<div class="ticker" data-ticks="grep|expect(;read|session.rs"></div>` : (o.sum ? `<div class="sub-sum t3">${o.sum}</div>` : '')}</div>`; };
   F.think = () => '<div class="think-body">路由表用原始路径做键,注册与匹配两处都没有归一化。最小改动是抽一个 normalize,两处共用,顺带处理末尾斜杠。</div>';
-  /** 思考折叠态跑马灯预览。o: stream / open / narrow / reduce / preview / el / title */
+  /** 思考折叠态「上下翻」预览(只显示最新一句,换句时上滚)。preview 里各句用「 · 」分隔。o: stream / open / narrow / reduce / preview / el / title */
   F.thinkMarquee = (o = {}) => {
     const stream = o.stream !== false;
     const open = !!o.open;
@@ -48,7 +48,11 @@ ${live ? 'test matches_trailing_slash ... <span class="caret"></span>' : 'test r
     const title = o.title || '定位大小写敏感的来源';
     const el = o.el || (stream ? '5.8s' : '4 秒');
     const mq = (!open && stream && preview)
-      ? `<span class="think-mq${o.narrow ? ' narrow' : ''}${o.reduce ? ' still' : ''}" title=""><span class="think-mq-fade" aria-hidden="true"></span><span class="think-mq-track"><span class="think-mq-txt">${preview}</span></span></span>`
+      ? `<span class="think-mq${o.narrow ? ' narrow' : ''}${o.reduce ? ' still' : ''}" title=""><span class="think-mq-track">${(() => {
+        const ls = preview.replace(/^…/, '').split(' · ').map(s => s.trim()).filter(Boolean).slice(-3);
+        const shown = o.reduce ? ls.slice(-1) : ls.concat(ls.slice(0, 1)); // 减弱动态:静态只显示最新一句;否则末尾补第 1 句副本以便无缝循环
+        return shown.map(s => `<span class="think-mq-line">${s}</span>`).join('');
+      })()}</span></span>`
       : '';
     const si = stream ? ic('hourglass', 's12 hg-wait') : ic('brain', 's12');
     const body = open ? `<div class="fold open"><div class="fold-in"><div>${F.think()}</div></div></div>` : '';

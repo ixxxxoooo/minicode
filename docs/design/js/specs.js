@@ -22,13 +22,13 @@
       ${spec('展开:差异', ['.fold', '--dur-slow', '--diff-add'], F.step('edit', 'router.rs', 'src/', '<span class="c-ok">+4</span><span class="c-err">−1</span>', { open: true, body: F.diff(false) }))}
       ${spec('展开:终端(运行中贴底跟随)', ['--bg-sunken', '.caret'], F.step('bash', 'cargo test router', '', '', { state: 'run', open: true, body: F.term(true) }))}
       ${spec('思考 · 待办', ['--tool-think', '.chk'], F.step('think', '定位大小写敏感的来源', '', '4 秒', { open: true, body: F.think() }) + F.step('todo', '2 / 3 完成', '', '', { open: true, body: F.todo(2) }))}
-      ${spec('思考 · 折叠跑马灯', ['.think-mq', '--ease-io'], `<div class="fc g2">${[
+      ${spec('思考 · 折叠上下翻', ['.think-mq', '--ease-io'], `<div class="fc g2">${[
         ['流式折叠', F.thinkMarquee({ stream: true, preview: '…注册与匹配都没有归一化 · 最小改动是抽 normalize · 末尾斜杠与大小写要一致' })],
         ['刚结束', F.thinkMarquee({ stream: false, el: '4 秒' })],
         ['展开正文', F.thinkMarquee({ stream: false, open: true, el: '4 秒' })],
         ['窄档隐藏', F.thinkMarquee({ stream: true, narrow: true })],
-        ['减弱动态', F.thinkMarquee({ stream: true, reduce: true, preview: '静态显示最后一句,不滚动' })],
-      ].map(([l, h]) => `<div><div class="t3 fs-cap m">${l}</div>${h}</div>`).join('')}</div><p class="t2 fs-cap" style="margin-top:8px">参考 Claude.ai 末行摘要、ChatGPT Thinking 行、Cursor shimmer+预览:只在<strong>流式且折叠</strong>时出现;展开态正文自带流,不重复预览;窗口失焦 / 减弱动态时静态末句。</p>`)}
+        ['减弱动态', F.thinkMarquee({ stream: true, reduce: true, preview: '静态显示最新一句,不翻页' })],
+      ].map(([l, h]) => `<div><div class="t3 fs-cap m">${l}</div>${h}</div>`).join('')}</div><p class="t2 fs-cap" style="margin-top:8px">参考 Claude.ai 末行摘要、ChatGPT Thinking 行、Cursor shimmer+预览:只在<strong>流式且折叠</strong>时出现;样式是<strong>上下翻</strong>(只显示最新一句,换句时旧句上滚、新句翻入,不再横向跑马灯);展开态正文自带流,不重复预览;窗口失焦 / 减弱动态时静态显示最新一句。</p>`)}
       ${spec('子 Agent · 调用卡(主流不内联)', ['--tool-agent', '.sub-task', '.ticker'], F.sub('审查 handlers 的错误处理', 'code-reviewer', { run: 1, pend: 1, stat: '<span>48 秒</span><span>7 次工具</span><span>12.4k</span>', prompt: '只读扫描 unwrap,不要改文件。' }) + F.sub('调研 axum 路由', 'Explore', { stat: '<span>1 分 20 秒</span><span>11 次工具</span>', sum: 'axum 类型安全路由更值得迁移。' }))}
       ${spec('子 Agent · 并行组', ['--tool-agent', '.ticker'], F.step('agent', '并行 2 个', '', '1 个运行中', { verb: '子 Agent', open: true, body: `<div class="nest" style="gap:6px;padding-top:4px">${F.sub('代码审查', 'code-reviewer', { run: 1, stat: '<span>48 秒</span>' })}${F.sub('调研路由', 'Explore', { stat: '<span>1 分 20 秒</span>' })}</div>` }))}</div>`)}
     ${sec('交互卡', '需要你决定的事就地替换输入框:权限、提问。处理完输入框原位回来,视线不用移动。计划卡留在正文里。',
