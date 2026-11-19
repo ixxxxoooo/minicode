@@ -9,8 +9,9 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/diag"
-	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/matico"
 	"github.com/ixxxxoooo/minicode/internal/mdcompat"
+	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
 // @author ixxxxoooo
@@ -108,25 +109,36 @@ func (a *App) pathRefOf(code string) pathRefState {
 	return pathRefNone
 }
 
-// linkIcon 是 markdown.Options.LinkIcon:路径链接前面一枚文件 / 文件夹小图标(别的链接不画)。
-// 参数 dest 是链接目的地,size 是周围文字大小。
+// linkIcon 是 markdown.Options.LinkIcon:路径链接前面一块带底色的彩色文件 / 文件夹图标,与后面的行内代码底色连成一条
+// (参照 BaoCode:图标按文件名 / 扩展名 / 文件夹名取 Material Icon Theme,见 matico 包;.html 是网页图标,.py 是 Python 图标……)。
+// 参数 dest 是链接目的地,size 是周围正文的字号;别的链接不画。
 func (a *App) linkIcon(dest string, size float32) (markdown.InlineObject, bool) {
-	st, ok := a.pathRefs.m[strings.TrimSpace(dest)]
+	dest = strings.TrimSpace(dest)
+	st, ok := a.pathRefs.m[dest]
 	if !ok || (st != pathRefFile && st != pathRefDir) {
 		return markdown.InlineObject{}, false
 	}
-	name := "folder"
-	if st == pathRefFile {
-		p, _, _ := splitPathRef(dest)
-		name = fileIcon(baseName(p))
+	p, _, _ := splitPathRef(dest)
+	if i := strings.IndexByte(p, '#'); i >= 0 {
+		p = p[:i]
 	}
-	svg := kit.IconSVG(name)
-	sz := size * .95
-	t := a.tk
+	var svg *ui.SVG
+	if st == pathRefDir {
+		svg = matico.Folder(p, false)
+	} else {
+		svg = matico.File(p)
+	}
+	if svg == nil {
+		return markdown.InlineObject{}, false
+	}
+	cs := size * 11.5 / theme.FsRead // 行内代码的字号(mdTheme 的 CodeSize 是它与正文的比):底色高度按它算
+	ic := cs * 1.15
+	_, bg := a.inlineCodeColors() // 与行内代码底色同色
 	return markdown.InlineObject{
-		Width: sz + 3, Height: sz*.82 + 1, Depth: sz * .18,
-		Draw: func(p *ui.Painter, r ui.Rect) {
-			p.Icon(svg, ui.Rect{X: r.X, Y: r.Y + (r.H-sz)/2, W: sz, H: sz}, t.Tx3)
+		Width: ic + 7, Height: cs * .98, Depth: cs * .34, // 与框架画行内代码底色的范围一致:基线上 0.98 倍、共 1.32 倍字号高
+		Draw: func(pt *ui.Painter, r ui.Rect) {
+			pt.FillRadii(r, [4]float32{3, 0, 0, 3}, bg) // 只圆左边两个角,右边与后面的行内代码底色连起来
+			pt.Image(svg, ui.Rect{X: r.X + 3.5, Y: r.Y + (r.H-ic)/2, W: ic, H: ic}, ui.Contain)
 		},
 	}, true
 }

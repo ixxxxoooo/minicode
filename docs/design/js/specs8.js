@@ -106,13 +106,13 @@
       ].map(([a, b, c]) => `<tr><td><b>${a}</b></td><td class="t2">${b}</td><td>${st(c)}</td></tr>`).join('')}
     </tbody></table>`)}
     ${sec('正文里的路径与代码块', '参照 BaoCode:正文里出现的文件 / 文件夹可以直接点开;行内代码与代码块的样子一起收拾得精致些。', grid(
-      cell('可点路径 + 行内代码', `<div class="md" style="padding:10px 14px;line-height:1.9"><p>入口在 <span class="pathref">${ic('folder', 's12')}<code>src/router</code></span>,处理函数见 <span class="pathref">${ic('code', 's12')}<code>src/router/match.rs:42</code></span>,配置是 <span class="pathref">${ic('gear', 's12')}<code>Cargo.toml</code></span>。不存在的 <code>src/ghost.rs</code> 和命令 <code>cargo test</code> 只是普通行内代码。</p></div>`, '只有本机真实存在的路径才成为链接并带图标(后台探测一次、缓存;探测完下一帧才变成链接)。点文件 = 在工作区打开(带 :行:列 就跳到行);点文件夹 = 切到左栏「文件」并展开选中(项目外的在访达里显示)。右键:在工作区打开 / 在访达中显示 / 复制路径。'),
+      cell('可点路径 + 行内代码', `<div class="md" style="padding:10px 14px;line-height:1.9"><p>入口在 <span class="pathref">${ic('folder', 's12')}<code>src/router</code></span>,处理函数见 <span class="pathref">${ic('code', 's12')}<code>src/router/match.rs:42</code></span>,配置是 <span class="pathref">${ic('gear', 's12')}<code>Cargo.toml</code></span>。不存在的 <code>src/ghost.rs</code> 和命令 <code>cargo test</code> 只是普通行内代码。</p></div>`, '只有本机真实存在的路径才成为链接并带图标(图标按类型取彩色的 Material Icon Theme,放在与代码底色连成一条的小方块里,如 index.html 是网页图标、gen_icon.py 是 Python 图标、SHA256SUMS 是钥匙)(后台探测一次、缓存;探测完下一帧才变成链接)。点文件 = 在工作区打开(带 :行:列 就跳到行);点文件夹 = 切到左栏「文件」并展开选中(项目外的在访达里显示)。右键:在工作区打开 / 在访达中显示 / 复制路径。'),
       cell('代码块:带语言', `<div class="md" style="padding:6px 0"><pre><div class="ph"><span class="grow">rust</span>${ib('copy', 'sm', '复制')}</div><code>fn main() {\n    println!("你好");\n}</code></pre></div>`, '标题栏 26px:语言名(tx-3)+ 复制钮,复制钮悬停代码块时才出现;圆角 r-lg,内边距 8 / 12,字体用「设置 → 编辑器 → 字体」的代码字体链。'),
       cell('代码块:纯文本', `<div class="md" style="padding:6px 0"><pre><span class="cp">${ib('copy', 'sm', '复制')}</span><code>目录结构\n├─ src\n└─ Cargo.toml</code></pre></div>`, '没写语言(或 text)的块不画标题栏,复制钮悬停时浮在右上角。')
     ))}
     ${sec('正文路径与代码块 · 实现状态', '', `<table class="ia-tbl"><tbody>${[
       ['行内代码配色不变 + 跟随代码字体链', '仍是强调色字 + 强调色 11% 底(中性配色的尝试已按要求撤回);Markdown 主题 CodeFont 跟随设置里的代码字体;未测试', 'part'],
-      ['会话里的路径可点', 'path_ref.go:后台探测存在性并缓存;存在的路径在渲染前被改写成 [`路径`](<路径>) 链接(框架自带的 CodeLink 画不了图标),LinkIcon 在代码前画文件 / 文件夹图标,点击打开 / 文件树定位,右键加「在访达中显示」。已知缺口:图标在代码底色之外(框架行内对象的位置);只在助手正文里生效(用户消息、工具输出里的路径不链接);相对路径只按项目根解析;未测试', 'part'],
+      ['会话里的路径可点', 'path_ref.go:后台探测存在性并缓存;存在的路径在渲染前被改写成 [`路径`](<路径>) 链接(框架自带的 CodeLink 画不了图标),LinkIcon 在代码前画带底色的彩色类型图标(matico 包,取自 Material Icon Theme,MIT,与 BaoCode 同一份),点击打开 / 文件树定位,右键加「在访达中显示」。已知缺口:图标方块与代码底色是两块拼接(接缝处可能有 1–2px 差异,未实测);只在助手正文里生效(用户消息、工具输出里的路径不链接);相对路径只按项目根解析;未测试', 'part'],
       ['代码块标题栏 / 悬停复制', '带语言 = 标题栏 + 悬停才出现的复制钮,纯文本块无标题栏、复制钮浮在右上;圆角 r-lg、内边距 8 / 12;未测试', 'part']
     ].map(([a, b, c]) => `<tr><td><b>${a}</b></td><td class="t2">${b}</td><td>${st(c)}</td></tr>`).join('')}
     </tbody></table>`)}
