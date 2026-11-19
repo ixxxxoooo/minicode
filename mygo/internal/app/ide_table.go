@@ -77,7 +77,49 @@ func buildTableView(sh *tabular.Sheet, sheet int, header bool) *tableView {
 	}
 	tv.list.Sort = &tv.sort
 	tv.setHeader(sh, header)
+	tv.autoHide(sh)
 	return tv
+}
+
+// unnamedHeader 判断表头是不是「没起名」:空,或 pandas 导出留下的 Unnamed: 5 这种。
+func unnamedHeader(h string) bool {
+	h = strings.TrimSpace(h)
+	if h == "" {
+		return true
+	}
+	if rest, ok := strings.CutPrefix(h, "Unnamed:"); ok {
+		_, err := strconv.Atoi(strings.TrimSpace(rest))
+		return err == nil
+	}
+	return false
+}
+
+// autoHide 默认隐藏「没起名且整列都是空」的列(多半是导出工具留下的空列);
+// 「列」菜单里可以重新显示。至少留一列。
+func (tv *tableView) autoHide(sh *tabular.Sheet) {
+	if tv.start != 1 {
+		return
+	}
+	n := 0
+	for j := 0; j < sh.Cols; j++ {
+		if !unnamedHeader(sh.Cell(0, j)) {
+			continue
+		}
+		empty := true
+		for r := 1; r < len(sh.Rows); r++ {
+			if strings.TrimSpace(sh.Cell(r, j)) != "" {
+				empty = false
+				break
+			}
+		}
+		if empty && n < sh.Cols-1 {
+			tv.hidden[j] = true
+			n++
+		}
+	}
+	if n > 0 {
+		tv.rebuildCols()
+	}
 }
 
 // setHeader 切换「首行作表头」:重算列标题与列宽,保留搜索 / 筛选 / 排序。
