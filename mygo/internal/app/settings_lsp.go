@@ -224,6 +224,9 @@ func (a *App) lspBody(a2 *App, c *ui.Context) {
 			case !row.OK && row.Install != "":
 				if row.CanInst { // 应用自己装,不开终端:依赖 Node 的下载 Node + 语言包,其余后台执行安装命令
 					tip := "在后台执行 " + row.Install + ";需要本机已有对应的工具链(点了才执行)"
+					if sp.CanBootstrapTool() {
+						tip = "在后台执行 " + row.Install + ";本机没有对应工具链时会先用官方脚本装上(无需管理员权限,体积较大,需要几分钟)"
+					}
 					if row.Managed {
 						tip = "用 " + a2.lspMirror().Label() + " 下载固定版本的语言包;本机没有合适的 Node 时会先下载一份(点了才联网)"
 					}
