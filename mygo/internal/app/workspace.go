@@ -114,6 +114,12 @@ func (a *App) wsPane(c *ui.Context, gap float32) {
 		p.Children(func() {})
 		return
 	}
+	// 窄窗口下工作区以浮层形式在画(overlayLayer):行内这一份收起动画里的残留内容不能再画,
+	// 否则同一帧里标签栏等控件被构建两次,滚动状态重复绑定(panic: Handle bound to two controls)。
+	if !ide && a.screen == ScreenWork && a.useWsOverlay() && a.rightOn && a.wsFloat {
+		p.Children(func() {})
+		return
+	}
 	if w := p.Bounds().W; w > 0 {
 		a.wsW = w
 	}
