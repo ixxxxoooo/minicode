@@ -22,8 +22,8 @@
     <div class="row on" style="height:28px">${ic('chatPlus', 's12', 'c-ac')}<span class="grow b">新对话</span>${kbd('⌘', 'N')}</div>
     <div class="grp-h" style="margin-top:6px"><span class="grow">项目与工作区</span>${ib('folderPlus', 'sm', '添加项目或工作区')}</div>
     <div class="row" style="height:30px;margin-top:2px">${ic('layersOpen', 's16', 'c-ac')}<span class="grow b">全栈工作区</span>${ib('chatPlus', 'sm')}${ib('more', 'sm')}</div>
-    <div class="row" style="height:28px;margin-left:18px">完整修复一个 Bug:路由大小写<span class="aux">刚刚</span></div>
-    <div class="row" style="height:28px;margin-left:18px">权限请求:修改配置…<span class="aux">5 分钟</span></div>
+    <div class="row" style="height:28px;margin-left:12px;padding-left:17px">完整修复一个 Bug:路由大小写<span class="aux">刚刚</span></div>
+    <div class="row" style="height:28px;margin-left:12px;padding-left:17px">权限请求:修改配置…<span class="aux">5 分钟</span></div>
     <div class="row" style="height:30px;margin-top:2px">${ic('folder', 's16')}<span class="grow b">scenario-lab</span></div>
     <div class="row" style="height:24px">${ic('chevR', 's12')}${ic('folder', 's12')}<span class="grow b">design-assets</span><span class="nonrepo t4 fs-micro">非仓库</span></div></div>`;
   const field = (l, v, ph, extra = '') => `<div class="fc g1" style="margin-bottom:8px"><div class="t3 fs-cap">${l}</div><div class="inp ${v ? '' : 'fill'}" ${extra}>${v ? `<span class="v">${v}</span>` : `<span class="t4">${ph}</span>`}</div></div>`;
@@ -192,14 +192,14 @@
     </div>`)}
     ${sec('会话行 · 置顶 / 归档 / 重命名 / 删除', '会话的这四个动作只改「本机的整理信息」(置顶 / 归档 / 自定义标题),不改 Claude 的会话文件;删除才会移除磁盘上的会话记录。整理信息存 ' + mono('~/.minicode/session-meta.json') + '(原子落盘,损坏改名留底)。', grid(
       cell('侧栏:置顶与已归档', '', box(`<div style="padding:8px"><div class="row" style="height:28px">${ic('chevD', 's12')}${ic('folder', 's12')}<span class="grow b">router-demo</span><span class="t4 fs-micro">7</span></div>
-        <div class="row" style="height:28px;margin-left:18px">${ic('pin', 's12', 'c-ac')}<span class="grow ell">完整修复一个 Bug:路由大小写</span><span class="aux">刚刚</span></div>
-        <div class="row" style="height:28px;margin-left:18px">${ic('pin', 's12', 'c-ac')}<span class="grow ell">给 router 补一组基准测试</span><span class="aux">昨天</span></div>
-        <div class="row" style="height:28px;margin-left:18px"><span class="grow ell">权限请求:修改配置…</span><span class="aux">5 分钟</span></div>
-        <div class="row" style="height:28px;margin-left:18px"><span class="grow ell">梳理路由表的内存占用</span><span class="aux">周一</span></div>
-        <div class="row" style="height:24px;margin-left:18px;color:var(--tx-3)">${ic('chevR', 's12')}${ic('archive', 's12')}<span class="grow">已归档</span><span class="t4 fs-micro">2</span></div></div>`, 250, 330), '置顶的会话排在项目的最前,标题前带强调色图钉(代替时间位置的留白,时间仍在行尾);归档的会话从列表里收进该项目底部的「已归档 N」折叠行,默认收起,展开后文字变淡、菜单里的「归档」变「取消归档」。当前会话被归档时仍留在对话栏,不会被关掉。'),
-      cell('重命名 · 行内编辑', '', box(`<div style="padding:8px"><div class="row" style="height:28px;margin-left:18px">${ic('pin', 's12', 'c-ac')}<span class="grow ell">完整修复一个 Bug:路由大小写</span><span class="aux">刚刚</span></div>
-        <div class="row on" style="height:30px;margin-left:18px"><div class="inp focus grow" style="height:24px"><span class="v caret">路由大小写匹配的修复</span></div>${ib('check', 'sm', '确认 ⏎')}${ib('x', 'sm', '取消 Esc')}</div>
-        <div class="row" style="height:28px;margin-left:18px"><span class="grow ell">权限请求:修改配置…</span><span class="aux">5 分钟</span></div>
+        <div class="row" style="height:28px;margin-left:12px;padding-left:17px"><span class="grow ell">完整修复一个 Bug:路由大小写</span>${ic('pin', 's12', 'c-ac')}<span class="aux">刚刚</span></div>
+        <div class="row" style="height:28px;margin-left:12px;padding-left:17px"><span class="grow ell">给 router 补一组基准测试</span>${ic('pin', 's12', 'c-ac')}<span class="aux">昨天</span></div>
+        <div class="row" style="height:28px;margin-left:12px;padding-left:17px"><span class="grow ell">权限请求:修改配置…</span><span class="aux">5 分钟</span></div>
+        <div class="row" style="height:28px;margin-left:12px;padding-left:17px"><span class="grow ell">梳理路由表的内存占用</span><span class="aux">周一</span></div>
+        <div class="row" style="height:24px;margin-left:12px;padding-left:17px;color:var(--tx-3)">${ic('chevR', 's12')}${ic('archive', 's12')}<span class="grow">已归档</span><span class="t4 fs-micro">2</span></div></div>`, 250, 330), '置顶的会话排在项目的最前,标题前带强调色图钉(代替时间位置的留白,时间仍在行尾);归档的会话从列表里收进该项目底部的「已归档 N」折叠行,默认收起,展开后文字变淡、菜单里的「归档」变「取消归档」。当前会话被归档时仍留在对话栏,不会被关掉。'),
+      cell('重命名 · 行内编辑', '', box(`<div style="padding:8px"><div class="row" style="height:28px;margin-left:12px;padding-left:17px"><span class="grow ell">完整修复一个 Bug:路由大小写</span>${ic('pin', 's12', 'c-ac')}<span class="aux">刚刚</span></div>
+        <div class="row on" style="height:30px;margin-left:12px;padding-left:17px"><div class="inp focus grow" style="height:24px"><span class="v caret">路由大小写匹配的修复</span></div>${ib('check', 'sm', '确认 ⏎')}${ib('x', 'sm', '取消 Esc')}</div>
+        <div class="row" style="height:28px;margin-left:12px;padding-left:17px"><span class="grow ell">权限请求:修改配置…</span><span class="aux">5 分钟</span></div>
         <div class="t3 fs-cap" style="padding:8px 10px;line-height:1.7">· 菜单「重命名…」或双击标题进入,全选当前标题<br>· ⏎ 保存,Esc / 点别处取消;留空 = 恢复 Claude 生成的原标题<br>· 对话栏头部与面包屑同步显示新标题</div></div>`, 250, 330), '自定义标题只存在本机整理信息里;原标题仍在会话文件里,「恢复原标题」= 清空输入后回车。'),
       cell('删除会话 · 确认与限制', '', box(`<div style="padding:12px 14px" class="fc g3"><div class="f ai g3"><span class="dlg-i err">${ic('trash')}</span><b class="fs-title">删除这个会话?</b></div><div class="t3" style="line-height:1.55">「梳理路由表的内存占用」的会话记录会从磁盘移除,无法恢复。</div><div class="f g2" style="justify-content:flex-end">${btn('取消', 'ghost')}${btn('删除', 'danger')}</div>
         <div class="sep"></div><div class="t3 fs-cap" style="line-height:1.7">· 正在运行的会话「删除会话…」置灰,提示「会话正在运行,先停止或等它结束」<br>· 当前打开的会话可删除:删除后切到该项目的下一个会话,没有就进入新会话<br>· 置顶 / 归档 / 自定义标题的记录随会话一起清掉<br>· 演示模式只从内存列表里移除</div></div>`, 250, 330), '真实模式走 claude.DeleteSession(只认字母 / 数字 / - / _ 的 id,不会越出会话目录);失败给出原因的提示条。'),

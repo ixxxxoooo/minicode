@@ -264,8 +264,9 @@ func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 
 // 项目 / 工作区行比会话行高一截并在上方留一点空隙,各项目之间不再挤在一起。
 const (
-	projRowExtra = 6 // 比列表行高多出的像素
-	projRowGap   = 2 // 与上一行的间距
+	projRowExtra = 6  // 比列表行高多出的像素
+	projRowGap   = 2  // 与上一行的间距
+	sessIndent   = 12 // 会话行(含高亮)相对项目行的缩进
 )
 
 func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
@@ -276,9 +277,9 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 		kit.CollapseHide(r, t0, t.Scheme.RowH, a.frameSoon)
 	}
 	if indent {
-		// 整行(含选中高亮与左侧竖条)用外边距缩进,而不是在行内左边留一块空白:
-		// 会话标题落在项目名右侧约 14px,高亮从项目图标之后开始。
-		r.Margin(0, 0, 0, 18)
+		// 会话标题与项目名左对齐(项目行:左内边距 8 + 图标 16 + 间距 5 = 29):整行(含选中高亮与左侧竖条)外边距缩进 12,
+		// 左内边距 17,状态点画在这段内边距里(绝对定位,不占文字的位置)。
+		r.Margin(0, 0, 0, sessIndent).PaddingStart(29 - sessIndent)
 	}
 	hov := r.Hovered()
 	if a.ren.id == s.ID { // 行内重命名:整行换成输入框
@@ -298,7 +299,7 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 			kit.SelBar(c) // 选中行左侧一道强调色竖线(所有布局方案统一)
 		}
 		state := a.sessState(s.ID)
-		ui.Row(c).Width(14).Height(14).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).Margin(0, -2, 0, 0).Children(func() {
+		dot := func() {
 			switch state {
 			case "run":
 				a.glyph(c, t.Ac)
@@ -307,13 +308,18 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 			case "unread":
 				ui.Box(c).Size(6, 6).Radius(3).Background(t.Ac)
 			}
-		})
-		if s.Pinned {
-			kit.Ic(c, "pin", kit.S12).TextColor(t.Ac).Tooltip("已置顶")
+		}
+		if indent { // 状态点在标题前面的空隙里,标题位置不随有无状态变化
+			ui.Row(c).Absolute().Left(3).Top(0).Bottom(0).Width(14).Justify(ui.Center).AlignItems(ui.Center).Children(dot)
+		} else {
+			ui.Row(c).Width(14).Height(14).Justify(ui.Center).AlignItems(ui.Center).Shrink(0).Margin(0, -2, 0, 0).Children(dot)
 		}
 		title := ui.Text(c, s.Title).Grow(1).SingleLine()
 		if s.Archived {
 			title.TextColor(t.Tx3)
+		}
+		if s.Pinned { // 置顶图标放在标题后,不挤动标题的左边缘
+			kit.Ic(c, "pin", kit.S12).TextColor(t.Ac).Tooltip("已置顶").Shrink(0)
 		}
 		// 菜单打开期间按钮必须留着:菜单一弹出行就不再被「悬停」,按钮若只看 hov 会被拆掉,菜单随之消失
 		mo := a.sessMenuOpenFor(s.ID)
