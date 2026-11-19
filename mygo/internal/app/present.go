@@ -56,6 +56,7 @@ type step struct {
 	state      string // "" 完成 / run 运行中 / err 失败 / deny 已拒绝
 	open       bool   // 默认展开
 	hasBody    bool
+	imgRead    bool // 读取的是本机存在的图片:展开体里直接显示这张图(flow_read_image.go)
 	plainObj   bool // 对象是一句话(如联网搜索的查询词):与动词同色(Tx3),不按「对象」提亮
 
 	// 行内动作(悬停出现,点对象名 / 图标也能跳):
@@ -258,6 +259,10 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 		s.hasBody = true
 	}
 	a.applyToolDefaultOpen(&s, tc)
+	if a.readImagePath(tc) != "" { // 读图:行下面直接显示图(默认展开;精简档收起),点图片开灯箱
+		s.hasBody, s.imgRead = true, true
+		s.open = a.ToolDetailLevel() != 0
+	}
 	return s
 }
 
