@@ -77,6 +77,7 @@ func (a *App) codeLens(c *ui.Context, tb *ideTab) {
 			if ask.Clicked() {
 				a.draft = strings.TrimSpace(appendRefAtoms(a.draftNow(), refText(tb.path, false)) + "\n解释一下 " + s.Name)
 				a.ux.focusDraft = true
+				a.revealChat()
 			}
 		})
 	}

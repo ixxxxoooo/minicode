@@ -264,7 +264,7 @@ func (a *App) conflictView(c *ui.Context, tb *ideTab) {
 		}
 		if kit.Btn(c, "让 Claude 解决", kit.BtnOpt{Small: true, Icon: "star"}).Clicked() {
 			a.draft = strings.TrimSpace(a.draft + "\n请帮我解决 " + tb.ref + " 里的合并冲突,说明每处你选择的理由。")
-			a.rightOn = a.rightOn || a.mode == ModeIDE
+			a.revealChat()
 			a.toast = "已把冲突文件引用到对话"
 		}
 		ready := total > 0 && done == total

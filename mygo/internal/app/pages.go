@@ -93,9 +93,7 @@ func writeTemp(name, content string) (string, error) {
 func (a *App) AskClaude(prompt string) {
 	a.draft = prompt
 	a.screen = ScreenWork
-	if a.mode != ModeAgent {
-		a.SetMode(ModeAgent)
-	}
+	a.revealChat() // IDE 形态留在 IDE,只把对话栏展开;不再跳去 Agent 形态
 }
 
 // miniComposer 是抽屉底部的迷你输入框:一行输入 + 工具行(附件、可选标签、发送)。

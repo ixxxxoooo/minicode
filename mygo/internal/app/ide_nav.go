@@ -496,9 +496,7 @@ func (a *App) askClaude(kind string) {
 	lead := map[string]string{"问": "", "解释": "请解释一下这段代码:", "编辑": "请修改这段代码:"}[kind]
 	a.draft = strings.TrimSpace(a.draft + "\n" + lead + ref)
 	_ = text
-	if a.mode == ModeIDE { // IDE 里对话栏在右侧:确保它可见
-		a.rightOn = true
-	}
+	a.revealChat() // IDE 里对话栏在右侧:确保它可见
 	a.toast = "已把选区引用到对话"
 }
 

@@ -615,6 +615,7 @@ func (a *App) OpenSession(id string) {
 	start := time.Now()
 	prev := a.curSess
 	log.Info("切换会话", "from", prev, "to", id)
+	a.revealChat() // IDE 形态下对话栏收着时,新建 / 打开的会话也得看得见
 	end := diag.SpanSlow("app", "打开会话", 300*time.Millisecond, "from", a.curSess, "to", id)
 	if a.curSess != "" {
 		a.saveFlowScroll(a.curSess)

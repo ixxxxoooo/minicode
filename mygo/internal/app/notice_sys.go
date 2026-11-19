@@ -149,8 +149,14 @@ func (a *App) onNeedsApproval(what string, r *core.PermissionRequest) {
 	if !a.prefs.Bool("general.notifyAsk", true) {
 		return
 	}
-	act := []noticeAction{{"打开会话", func() { a.screen = ScreenWork }}}
+	act := []noticeAction{{"打开会话", func() { a.screen = ScreenWork; a.revealChat() }}}
 	if a.appInForeground() {
+		if a.screen == ScreenWork && !a.chatVisible() {
+			// IDE 形态里对话栏收着:权限卡 / 问答卡在对话栏里,看不见。只提示、不自动展开(不打断编辑器里的操作),
+			// 「打开会话」才展开
+			a.postNotice("warn", what, "对话栏已收起,点「打开会话」查看并处理", act)
+			return
+		}
 		if a.screen == ScreenWork {
 			// 正在看会话:权限卡 / 问答卡就在输入框上方,不再弹浮层遮挡它
 			a.postNoticeQuiet("warn", what, "已在会话中显示", act)

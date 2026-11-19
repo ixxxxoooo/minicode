@@ -31,6 +31,7 @@ func (a *App) subView(c *ui.Context, id string) {
 		ui.Text(c, meta).TextColor(t.Tx3).FontSize(theme.FsCap).FontFeatures("tnum").SingleLine()
 		kit.Btn(c, "引用到对话", kit.BtnOpt{Small: true, Icon: "quote"}).OnClick(func() {
 			a.draft = strings.TrimSpace(a.draft + "\n> 子 Agent「" + s.Description + "」:" + s.Summary)
+			a.revealChat()
 		})
 		kit.Btn(c, "复制全部", kit.BtnOpt{Variant: kit.BtnGhost, Small: true, Icon: "copy"}).OnClick(func() {
 			c.WriteClipboard(a.subExportText(s))

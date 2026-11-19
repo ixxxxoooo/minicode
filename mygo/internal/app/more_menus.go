@@ -143,9 +143,7 @@ func (a *App) problemMenu(m *ui.Menu, file string, line int, msg string, all fun
 	}
 	if menuItem(m, "让 Claude 修复").Chosen() {
 		a.draft = strings.TrimSpace(a.draft + "\n请修复这个问题:" + file + ":" + itoa(line) + " " + msg)
-		if a.mode == ModeIDE {
-			a.rightOn = true
-		}
+		a.revealChat()
 		a.toast = "已把问题放进输入框"
 	}
 	m.Separator()
@@ -228,9 +226,7 @@ func (a *App) virtMenu(m *ui.Menu, tb *ideTab) {
 			q = string(r[:1500]) + "…"
 		}
 		a.draft = strings.TrimSpace(a.draft + "\n> " + strings.ReplaceAll(q, "\n", "\n> "))
-		if a.mode == ModeIDE {
-			a.rightOn = true
-		}
+		a.revealChat()
 		a.toast = "已引用到对话"
 	}
 }

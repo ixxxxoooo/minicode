@@ -95,6 +95,34 @@ func (a *App) revealWorkspace() {
 	a.flashAt = kit.Now()
 }
 
+// chatVisible 报告对话栏此刻看不看得见:Agent 形态里对话栏永远在;IDE 形态里要「对话占满」,
+// 或右侧栏开着(窄窗口下对话栏是浮层 / 图标条,只有浮层展开了才算看得见)。
+func (a *App) chatVisible() bool {
+	if a.mode != ModeIDE {
+		return true
+	}
+	if a.chatMax {
+		return true
+	}
+	if a.useDockRail() {
+		return a.rightOn && a.dockFloat
+	}
+	return a.rightOn
+}
+
+// revealChat 保证对话栏可见(IDE 形态;Agent 形态对话栏本来就在):与 revealWorkspace 对称。
+// 所有「要在对话里看到 / 操作东西」的入口都走这里:打开 / 新建会话、往输入框填引用、问 Claude……
+// 窄窗口下对话栏是浮层,要同时展开浮层(与 toggleRight 一致),只设 rightOn 会落成图标条。
+func (a *App) revealChat() {
+	if a.mode != ModeIDE || a.chatVisible() {
+		return
+	}
+	a.rightOn = true
+	if a.useDockRail() {
+		a.dockFloat = true
+	}
+}
+
 // toggleRight 切换右侧栏(Agent = 工作区,IDE = 对话栏)。
 func (a *App) toggleRight() {
 	a.rightOn = !a.rightOn

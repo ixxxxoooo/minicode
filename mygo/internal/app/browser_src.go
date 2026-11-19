@@ -100,7 +100,5 @@ func (a *App) pageRefForChat(pg browser.Page) string {
 func (a *App) fillDraftWithPage(pg browser.Page, question string) {
 	a.draft = question + "\n\n" + a.pageRefForChat(pg)
 	a.screen = ScreenWork
-	if a.mode != ModeAgent {
-		a.SetMode(ModeAgent)
-	}
+	a.revealChat() // IDE 形态留在 IDE,只把对话栏展开
 }

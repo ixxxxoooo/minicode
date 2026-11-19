@@ -44,9 +44,7 @@ func (a *App) submitTreeClaudeAsk() {
 	}
 	a.draft = strings.TrimSpace(a.draft + "\n" + line)
 	a.ux.focusDraft = true
-	if a.mode == ModeIDE {
-		a.rightOn = true
-	}
+	a.revealChat()
 	a.closeTreeClaudeAsk()
 	uxLog.Info("让 Claude…", "path", d.rel)
 }
