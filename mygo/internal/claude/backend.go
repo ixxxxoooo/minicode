@@ -926,11 +926,19 @@ func (b *Backend) onControlResponse(v obj) {
 			if val == "" {
 				continue
 			}
-			name := str(mm, "displayName")
+			name, desc := str(mm, "displayName"), str(mm, "description")
 			if name == "" {
 				name = val
 			}
-			models = append(models, core.ModelInfo{ID: val, Name: name, Description: str(mm, "description")})
+			// opus / sonnet / haiku 三个别名的显示名是 claude 按「握手当时的环境变量」解析出来的:会话在第三方服务商下启动,
+			// 它们就叫 deepseek-xxx;之后切回官方只是热应用环境变量,列表不会重取,「Claude 官方」分组就显示成服务商的模型。
+			// 别名一律用自带的官方名称与说明,服务商的模型由服务商分组自己列。
+			for _, d := range core.DefaultModels() {
+				if d.ID == val {
+					name, desc = d.Name, d.Description
+				}
+			}
+			models = append(models, core.ModelInfo{ID: val, Name: name, Description: desc})
 		}
 		if len(models) > 0 {
 			b.models = models
