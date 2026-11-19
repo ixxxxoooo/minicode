@@ -10,12 +10,12 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
-// 思考折叠 + 流式时,标题右侧的单行预览:只显示思考里「最新的一句」,新的一句开始时
-// 旧句向上滚出、新句从下面翻进来(上下翻页),不再横向平移。
+// 思考折叠 + 流式时,「思考」后面不再放静态标题,而是一行上下翻的预览:只显示思考里「最新的一句」,
+// 新的一句开始时旧句向上滚出、新句从下面翻进来,上下边缘渐隐;只按宽度省略,不按字数截断。
+// 思考结束后行内是静态标题(第一句,同样只按宽度省略)。
 
 const (
-	thinkLineMaxRunes = 160                    // 一句话最多取多少字(再长也只显示一行,超出省略)
-	thinkMqMinW       = 96                     // 预览框比这还窄就不画
+	thinkLineMaxRunes = 300                    // 一句话最多取多少字(只是防极端长句;显示上只按宽度省略,不按字数截断)
 	thinkMqRollDur    = 260 * time.Millisecond // 上下翻一次的时长
 	thinkMqLineH      = 20                     // 预览行高
 )
@@ -26,37 +26,57 @@ type thinkMqSt struct {
 	At   time.Time // 这次翻页的开始时刻
 }
 
-// thinkLastLine 取思考正文里最新的一句:按换行 / 句末标点(。！？；与后面跟空格的 . ! ? ;)切分,
-// 取最后一句;刚写完一句、末尾是标点时,取的仍是这一句(下一句出了第一个字才翻页)。
-func thinkLastLine(text string) string {
-	rs := []rune(strings.TrimSpace(strings.ReplaceAll(text, "\r\n", "\n")))
-	isTerm := func(i int) bool {
-		switch rs[i] {
-		case '\n', '。', '！', '？', '；', '!', '?', ';':
-			return true
-		case '.':
-			return i+1 >= len(rs) || rs[i+1] == ' ' || rs[i+1] == '\n'
-		}
-		return false
+// thinkTermAt 第 i 个字是不是句末:换行 / 。！？； / ! ? ;,以及后面跟空格(或在末尾)的英文句点。
+func thinkTermAt(rs []rune, i int) bool {
+	switch rs[i] {
+	case '\n', '。', '！', '？', '；', '!', '?', ';':
+		return true
+	case '.':
+		return i+1 >= len(rs) || rs[i+1] == ' ' || rs[i+1] == '\n'
 	}
-	end := len(rs)
-	for end > 0 && (isTerm(end-1) || rs[end-1] == ' ' || rs[end-1] == '\t') {
-		end--
-	}
-	start := end
-	for start > 0 && !isTerm(start-1) {
-		start--
-	}
-	line := strings.TrimSpace(string(rs[start:end]))
-	line = strings.TrimLeft(line, "#*->` \t") // 去掉 Markdown 的标题 / 列表 / 引用 / 加粗记号
+	return false
+}
+
+// thinkClean 去掉一句话两端的空白与开头的 Markdown 记号(标题 # / 列表 - / 引用 > / 加粗 * / 反引号),并限制长度。
+func thinkClean(rs []rune) string {
+	line := strings.TrimLeft(strings.TrimSpace(string(rs)), "#*->` \t")
 	if utf8.RuneCountInString(line) > thinkLineMaxRunes {
 		line = string([]rune(line)[:thinkLineMaxRunes])
 	}
 	return line
 }
 
+// thinkLastLine 取思考正文里最新的一句:按换行 / 句末标点切分,取最后一句;
+// 刚写完一句、末尾是标点时,取的仍是这一句(下一句出了第一个字才翻页)。
+func thinkLastLine(text string) string {
+	rs := []rune(strings.TrimSpace(strings.ReplaceAll(text, "\r\n", "\n")))
+	end := len(rs)
+	for end > 0 && (thinkTermAt(rs, end-1) || rs[end-1] == ' ' || rs[end-1] == '\t') {
+		end--
+	}
+	start := end
+	for start > 0 && !thinkTermAt(rs, start-1) {
+		start--
+	}
+	return thinkClean(rs[start:end])
+}
+
+// thinkFirstLine 取思考正文的第一句(折叠行的标题);第一句还没写完时就是已有的全部文字。
+func thinkFirstLine(text string) string {
+	rs := []rune(strings.TrimSpace(strings.ReplaceAll(text, "\r\n", "\n")))
+	start := 0
+	for start < len(rs) && (thinkTermAt(rs, start) || rs[start] == ' ' || rs[start] == '\t') {
+		start++ // 跳过开头的空行 / 标点
+	}
+	end := start
+	for end < len(rs) && !thinkTermAt(rs, end) {
+		end++
+	}
+	return thinkClean(rs[start:end])
+}
+
 func (a *App) thinkMarqueeVisible(sp step, open bool) bool {
-	if !sp.thinkLive || open || !sp.hasBody || strings.TrimSpace(sp.thinkText) == "" {
+	if !sp.thinkLive || open || !sp.hasBody || thinkLastLine(sp.thinkText) == "" {
 		return false
 	}
 	if a.thinkMq == nil {
@@ -76,23 +96,14 @@ func (a *App) thinkMarqueeRow(c *ui.Context, sp step, tone ui.Color, open bool, 
 		return ui.Box(c).Width(0).Shrink(0)
 	}
 	t := a.tk
-	line := thinkLastLine(sp.thinkText)
-	if line == "" {
-		return ui.Box(c).Width(0).Shrink(0)
-	}
-	rowW := float32(0)
-	if b := row.Bounds(); b.W > 0 {
-		rowW = b.W
-	}
-	maxW := rowW * 0.52
-	if maxW > 0 && maxW < thinkMqMinW {
-		return ui.Box(c).Width(0).Shrink(0)
-	}
-	box := ui.Box(c).Height(thinkMqLineH).Grow(1).MinWidth(0).Shrink(1).Clip().MarginStart(4)
-	box.MaxWidth(maxW)
-	if b := box.Bounds(); b.W > 8 && b.W < thinkMqMinW {
-		return ui.Box(c).Width(0).Shrink(0)
-	}
+	line := thinkLastLine(sp.thinkText) // 可见条件已保证非空
+	// 预览顶替标题的位置(流式折叠时标题不再单独显示):占满「思考」与用时之间的整段宽度,
+	// 上下边缘渐隐——翻页时滚出 / 滚入的句子在边缘淡出淡入,稳态的一行在中间、不受影响。
+	box := ui.Box(c).Height(thinkMqLineH).Grow(1).MinWidth(0).Shrink(1).Clip()
+	black := ui.RGB(0, 0, 0)
+	box.MaskLinearGradient(ui.LinearGradient{Angle: 180, Stops: []ui.GradientStop{
+		{Color: ui.Transparent, At: 0}, {Color: black, At: .2}, {Color: black, At: .8}, {Color: ui.Transparent, At: 1},
+	}})
 
 	still := !kit.MotionOn() || kit.SystemReduceMotion() || (a.win != nil && !a.win.IsFocused())
 	id := sp.id
@@ -128,7 +139,7 @@ func (a *App) thinkMarqueeRow(c *ui.Context, sp step, tone ui.Color, open bool, 
 			r.Opacity(alpha)
 		}
 		r.Children(func() {
-			ui.Text(c, s).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Ellipsis("…").Shrink(1).MinWidth(0).PaddingStart(8)
+			ui.Text(c, s).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Ellipsis("…").Shrink(1).MinWidth(0)
 		})
 	}
 	box.Children(func() {

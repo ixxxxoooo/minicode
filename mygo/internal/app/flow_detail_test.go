@@ -67,7 +67,7 @@ func TestMergeSummaryOrderAndNarrow(t *testing.T) {
 	}
 }
 
-// 思考标题:第一句 ≤28 字;流式尚无正文写「思考中」。
+// 思考标题:取第一句、不按字数截断(放不下由控件按宽度省略);流式尚无正文写「思考中」。
 func TestThinkTitle(t *testing.T) {
 	if thinkTitle("") != "思考中" {
 		t.Fatal("空正文应写「思考中」")
@@ -76,8 +76,14 @@ func TestThinkTitle(t *testing.T) {
 		t.Fatalf("应取第一句,实际 %q", got)
 	}
 	long := "The user wants me to check whether the app router handles trailing slashes correctly"
-	if r := []rune(thinkTitle(long)); len(r) > 29 {
-		t.Fatalf("标题最多 28 字加省略号,实际 %d", len(r))
+	if got := thinkTitle(long); got != long {
+		t.Fatalf("标题不该按字数截断,实际 %q", got)
+	}
+	if got := thinkTitle(`The user just said "思考一下" (the thinking request). Then more`); got != `The user just said "思考一下" (the thinking request)` {
+		t.Fatalf("第一句应完整,实际 %q", got)
+	}
+	if got := thinkTitle("看 router.rs 里的 match。再看测试"); got != "看 router.rs 里的 match" {
+		t.Fatalf("文件名里的点不能当句号,实际 %q", got)
 	}
 }
 

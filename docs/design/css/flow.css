@@ -56,10 +56,12 @@
 .think-body { color: var(--tx-3); font-size: 12px; line-height: 1.6; padding-left: 10px; box-shadow: inset 2px 0 var(--bd-2); }
 /* 思考折叠 + 流式:右侧单行「上下翻」预览——只显示最新的一句,新一句开始时旧句向上滚出、新句从下面翻进来 */
 .step.think-marquee .so { flex: 0 1 38%; min-width: 4.5em; }
-.think-mq { position: relative; flex: 1 1 120px; min-width: 0; max-width: 52%; height: 20px; margin-left: 4px; overflow: hidden; text-align: left; }
+/* 流式折叠时预览顶替标题的位置(不并排放两份文字),占满「思考」与用时之间的整段宽度;上下边缘各 20% 渐隐 */
+.think-mq { position: relative; flex: 1 1 auto; min-width: 0; height: 20px; overflow: hidden; text-align: left;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 20%, #000 80%, transparent); mask-image: linear-gradient(180deg, transparent, #000 20%, #000 80%, transparent); }
 .think-mq-fade { display: none; }
 .think-mq-track { display: block; animation: think-roll 7.8s cubic-bezier(.2, .7, .2, 1) infinite; }
-.think-mq-line { display: block; height: 20px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--fs-cap); color: var(--tx-3); padding-left: 8px; }
+.think-mq-line { display: block; height: 20px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--fs-cap); color: var(--tx-3); }
 .think-mq.still .think-mq-track { animation: none; transform: none; }
 .think-mq.narrow { display: none; }
 .step.think-marquee.tier-narrow .sr .sm { display: none; }

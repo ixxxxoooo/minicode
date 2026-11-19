@@ -302,7 +302,9 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			if sp.fam == famThink || sp.fam == famExec || sp.path != "" || sp.plainObj { // 命令 / 文件名 / 联网搜索的查询词同色(Tx3,与动词一致):对象是长串 / 一句话,不比动词更深
 				objCol = t.Tx3
 			}
-			obj = ui.Text(c, sp.obj).TextColor(objCol).SingleLine().Shrink(1).MinWidth(0).LineHeight(1)
+			if !(sp.fam == famThink && mqOn) { // 流式折叠的思考:标题位置让给下面的上下翻预览,不并排放两份文字
+				obj = ui.Text(c, sp.obj).TextColor(objCol).SingleLine().Shrink(1).MinWidth(0).LineHeight(1).Ellipsis("…")
+			}
 		}
 		mq := a.thinkMarqueeRow(c, sp, tone, open, row)
 		if at, ok := a.thinkMqHide[sp.id]; ok && kit.MotionOn() {

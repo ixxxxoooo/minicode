@@ -314,18 +314,10 @@ func firstNonEmpty(ss ...string) string {
 
 // thinkTitle 取思考内容的第一句作标题(流式尚无正文时写「思考中」)。
 func thinkTitle(text string) string {
-	text = strings.TrimSpace(text)
-	if text == "" {
-		return "思考中"
+	if t := thinkFirstLine(text); t != "" { // 不按字数截断:行放不下时由文字控件按宽度省略
+		return t
 	}
-	if i := strings.IndexAny(text, "。.\n"); i > 0 {
-		text = text[:i]
-	}
-	r := []rune(text)
-	if len(r) > 28 {
-		text = string(r[:28]) + "…"
-	}
-	return text
+	return "思考中"
 }
 
 // isExplore 探索类工具(读 / 搜 / 查找),连续的两个以上会收成一个分组行。

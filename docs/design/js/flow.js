@@ -57,7 +57,7 @@ ${live ? 'test matches_trailing_slash ... <span class="caret"></span>' : 'test r
     const si = stream ? ic('hourglass', 's12 hg-wait') : ic('brain', 's12');
     const body = open ? `<div class="fold open"><div class="fold-in"><div>${F.think()}</div></div></div>` : '';
     return `<div class="step think-marquee ${stream ? 'run' : ''} ${open ? 'open' : ''}${o.narrow ? ' tier-narrow' : ''}" data-tool="think" ${open ? 'data-act="fold"' : ''}>
-      <span class="si">${si}</span><span class="sv">思考</span><span class="so ell">${title}</span>${mq}<span class="sr"><span class="sm num">${el}</span>${open ? ic('chevR', 's12 chev') : ''}</span></div>${body}`;
+      <span class="si">${si}</span><span class="sv">思考</span>${mq && !o.narrow ? '' : `<span class="so ell">${title}</span>`}${mq}<span class="sr"><span class="sm num">${el}</span>${open ? ic('chevR', 's12 chev') : ''}</span></div>${body}`;
   };
 
   /** 权限卡(就地替换输入框) */
