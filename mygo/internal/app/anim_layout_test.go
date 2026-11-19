@@ -242,6 +242,26 @@ func TestAnimBeltPushWorkspace(t *testing.T) {
 	beltChain(t, a, "Agent→IDE(无对话栏)", fr)
 }
 
+// Agent 只有会话(工作区收起)↔ IDE 只有编辑器(对话栏收起):同样是对话栏把编辑器挤过去并压窄,
+// 编辑器不能一开始就摆在终点位置被对话栏盖着(回归:要求两个形态的工作区都开着才走「挤过去」,这种组合走了刚性公式)。
+func TestAnimBeltPushWorkspaceAgentNoWs(t *testing.T) {
+	a, tt := quickApp(t)
+	a.SetMode(ModeAgent)
+	tt.Frame()
+	a.rightOn = false // Agent:只有会话
+	tt.Advance(time.Second)
+	a.SetMode(ModeIDE)
+	tt.Advance(time.Second)
+	a.rightOn, a.sideOpen = false, true // IDE:只有编辑器
+	tt.Advance(time.Second)
+	fr := animRun(t, a, tt, "IDE(只有编辑器)→Agent(只有会话)", func() { a.SetMode(ModeAgent) }, 800*time.Millisecond)
+	animCheck(t, "IDE→Agent(无工作区)", fr)
+	beltChain(t, a, "IDE→Agent(无工作区)", fr)
+	fr = animRun(t, a, tt, "Agent(只有会话)→IDE(只有编辑器)", func() { a.SetMode(ModeIDE) }, 800*time.Millisecond)
+	animCheck(t, "Agent→IDE(无工作区)", fr)
+	beltChain(t, a, "Agent→IDE(无工作区)", fr)
+}
+
 // 拖窗口边缘(逐帧改窗口宽):跨过 1040 / 900 / 720 断点时导航栏、工作区、对话栏都是连续变化,
 // 舞台右缘始终贴着窗口右缘,没有空白、没有一帧跳几百像素。
 func TestAnimResize(t *testing.T) {
