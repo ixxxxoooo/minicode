@@ -384,6 +384,7 @@ type App struct {
 	cuMcpManageLoaded bool                    // 本次进入自定义 MCP 页是否已触发加载
 	sideBF            string                  // 方案 B 侧栏当前浏览的项目 id
 	sessCtxWs         string                  // 侧栏正在画哪个工作区的会话行(点会话时先进入该工作区)
+	sessMenuOpen      map[string]*bool        // 会话行「⋯」菜单是否打开(按会话 id;打开期间按钮不随悬停消失)
 	sessFork          func(fromID string) (newID string, err error)
 	brand             brand // Dock / 托盘(brand.go)
 }

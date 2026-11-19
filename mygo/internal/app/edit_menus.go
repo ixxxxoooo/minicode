@@ -336,6 +336,19 @@ func (a *App) treeHeadMenu(m *ui.Menu) {
 
 const noBackend = "后端暂未支持"
 
+// sessMenuOpenFor 返回某个会话行「⋯」菜单的开合标志(地址稳定,框架在菜单开合时写入)。
+func (a *App) sessMenuOpenFor(id string) *bool {
+	if a.sessMenuOpen == nil {
+		a.sessMenuOpen = map[string]*bool{}
+	}
+	p := a.sessMenuOpen[id]
+	if p == nil {
+		p = new(bool)
+		a.sessMenuOpen[id] = p
+	}
+	return p
+}
+
 // sessionMenu 是会话的「···」/ 右键菜单(导航栏会话行与对话栏头部共用)。
 // 重命名 / 置顶 / 归档 / 复制为 Markdown / 删除见 session_meta.go;分叉走 CmdForkSession(演示 / 真实均已接)。
 func (a *App) sessionMenu(m *ui.Menu, id, title string, inHead bool) {

@@ -313,8 +313,10 @@ func (a *App) sessRow(c *ui.Context, s core.SessionInfo, indent bool) {
 		if s.Archived {
 			title.TextColor(t.Tx3)
 		}
-		if hov {
-			kit.MenuBtn(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}).Margin(0, -4, 0, 0), func(m *ui.Menu) { a.sessionMenu(m, s.ID, s.Title, false) })
+		// 菜单打开期间按钮必须留着:菜单一弹出行就不再被「悬停」,按钮若只看 hov 会被拆掉,菜单随之消失
+		mo := a.sessMenuOpenFor(s.ID)
+		if hov || *mo {
+			kit.MenuBtnOpen(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作", On: *mo}).Margin(0, -4, 0, 0), mo, func(m *ui.Menu) { a.sessionMenu(m, s.ID, s.Title, false) })
 		} else {
 			lbl := s.Label
 			switch state {

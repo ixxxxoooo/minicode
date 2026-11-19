@@ -46,3 +46,14 @@ func MenuBtn(el ui.Element, build func(m *ui.Menu)) ui.Element {
 	}
 	return el.PopoverMenuButton(build, ui.PopoverMenuButtonOptions{Panel: glassMenuPanel, Item: glassMenuItem})
 }
+
+// MenuBtnOpen 同 MenuBtn,但把菜单的开合写进 *open,供「悬停才显示」的按钮在菜单打开期间保持存在:
+// 菜单一弹出,指针下的元素就成了浮层,宿主行的 Hovered() 变 false,按钮若随之被拆掉,菜单也跟着消失。
+// 参数 el:按钮元素;open:菜单是否正显示(框架在开合时写入);build:构建菜单项的函数。返回 el。
+func MenuBtnOpen(el ui.Element, open *bool, build func(m *ui.Menu)) ui.Element {
+	opt := ui.PopoverMenuButtonOptions{Open: open}
+	if T.Glass() {
+		opt.Panel, opt.Item = glassMenuPanel, glassMenuItem
+	}
+	return el.PopoverMenuButton(build, opt)
+}
