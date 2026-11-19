@@ -1,12 +1,17 @@
 package app
 
 import (
+	"bytes"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"runtime/debug"
 	"strings"
 	"sync"
+	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/markdown"
@@ -283,4 +288,66 @@ func (a *App) padCodeLinks(src string) string {
 		}
 	}
 	return b.String()
+}
+
+// openPathSmart 打开会话里点中的路径(文件):图片开灯箱;PDF / Office / 压缩包 / 音视频等不是文本的文件交给系统默认程序;
+// 文本文件在工作区编辑器里打开(带 :行:列 就跳过去)。参数 ref 是路径原文。返回是否已处理(路径不存在返回 false)。
+func (a *App) openPathSmart(ref string) bool {
+	p, _, _ := splitPathRef(ref)
+	if i := strings.IndexByte(p, '#'); i >= 0 {
+		p = p[:i]
+	}
+	abs, ok := a.resolveUserPath(p)
+	if !ok {
+		return a.openPathRef(ref)
+	}
+	fi, err := os.Stat(abs)
+	if err != nil || fi.IsDir() {
+		return a.openPathRef(ref)
+	}
+	if isImageExt(strings.ToLower(filepath.Ext(abs))) {
+		a.openImageLightboxPath(abs)
+		return true
+	}
+	if !isTextFile(abs) {
+		log.Info("会话里的路径:交给系统默认程序打开", "path", abs)
+		if testing.Testing() { // 单测里不要真的拉起外部程序
+			return true
+		}
+		if err := exec.Command("open", abs).Start(); err != nil {
+			a.toast = "无法打开:" + err.Error()
+		}
+		return true
+	}
+	return a.openPathRef(ref)
+}
+
+// binaryExts 是一定不是文本、交给系统打开的常见扩展名。
+var binaryExts = map[string]bool{
+	".pdf": true, ".doc": true, ".docx": true, ".xls": true, ".xlsx": true, ".ppt": true, ".pptx": true, ".key": true, ".pages": true, ".numbers": true,
+	".zip": true, ".gz": true, ".tgz": true, ".tar": true, ".7z": true, ".rar": true, ".dmg": true, ".pkg": true, ".app": true,
+	".mp4": true, ".mov": true, ".mkv": true, ".avi": true, ".mp3": true, ".wav": true, ".flac": true, ".m4a": true, ".aac": true,
+	".psd": true, ".sketch": true, ".fig": true, ".ttf": true, ".otf": true, ".woff": true, ".woff2": true, ".sqlite": true, ".db": true,
+}
+
+// isTextFile 判断文件能不能当文本在编辑器里打开:已知二进制扩展名直接否;其余读开头 8KB,含 NUL 或不是合法 UTF-8 就否。
+func isTextFile(abs string) bool {
+	if binaryExts[strings.ToLower(filepath.Ext(abs))] {
+		return false
+	}
+	f, err := os.Open(abs)
+	if err != nil {
+		return true // 读不了就交给编辑器路径去报具体原因
+	}
+	defer f.Close()
+	buf := make([]byte, 8192)
+	n, _ := f.Read(buf)
+	buf = buf[:n]
+	if bytes.IndexByte(buf, 0) >= 0 {
+		return false
+	}
+	if len(buf) == cap(buf) { // 可能切在一个多字节字符中间:去掉最后几个字节再判
+		buf = buf[:len(buf)-3]
+	}
+	return utf8.Valid(buf)
 }

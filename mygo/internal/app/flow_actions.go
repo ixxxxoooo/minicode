@@ -75,7 +75,7 @@ func (a *App) openMdLink(dest string) {
 	if a.openDirRef(dest) {
 		return
 	}
-	if !a.openPathRef(dest) {
+	if !a.openPathSmart(dest) {
 		a.toast = "找不到 " + dest
 	}
 }
