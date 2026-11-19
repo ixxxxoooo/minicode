@@ -8,19 +8,27 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
+// beltChatMinW 是形态切换传送带里对话栏内容的最小排版宽度(dp):栏比它窄时内容仍按它排版、被裁剪显示。
+const beltChatMinW = 360
+
 // chatPane 是对话栏:标题行 + 会话流 + 任务坞 + 输入框。
 func (a *App) chatPane(c *ui.Context, gap float32) {
 	t := a.tk
 	// 宽度 / 间距 = 开合因子(stageFactors)× 满开值,不用元素过渡(见 paneOpen 的说明)
 	p := a.pane(c).Key("chat").Transition(noMotion)
-	shown := true  // 目标状态:对话栏此刻是否应该在场(决定透明度与收起后内容保留多久)
-	slide := false // IDE 对话栏开合动画途中:内容保持定宽、随栏滑动,不逐帧重排
+	shown := true      // 目标状态:对话栏此刻是否应该在场(决定透明度与收起后内容保留多久)
+	slide := false     // IDE 对话栏开合动画途中:内容保持定宽、随栏滑动,不逐帧重排
+	var slideW float32 // slide 时内容的固定宽度
 	switch {
 	case a.belt.on:
 		// 形态切换的传送带平移:绝对定位 + 逐帧摆位(morph_belt.go),不走弹性布局与宽度过渡
 		r := a.belt.chat
 		p.Absolute().Left(r.x).Top(0).Bottom(0).Width(max(0, r.w)).Shrink(0).Transition(noMotion)
 		shown = r.w > .5
+		// 传送带里栏宽从几像素一路涨到几百(或反过来):内容若按逐帧宽度排版,栏宽只有几像素到几十像素时
+		// 文字几乎一个字一行,布局暴涨到 40–100 ms(日志里切形态掉帧都落在这些帧)。
+		// 所以内容宽度不低于 beltChatMinW,窄于它时只是被外层裁掉一截,宽度够大后与按栏宽排版完全一样。
+		slide, slideW = true, max(r.w, beltChatMinW)
 	case a.mode == ModeAgent:
 		// Agent:占满型不带自己的动画,宽度完全跟着相邻栏(左栏 / 右栏)每一帧的宽度走(设计稿里它是 flex: 1)
 		p.Grow(1).Basis(0)
@@ -39,6 +47,7 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 			}
 			p.Width(w).Shrink(0).Margin(0, 0, 0, gap*fd*(1-fm))
 			slide = fm <= 0 && fd < .999
+			slideW = a.dockW()
 		}
 	}
 	// 透明度 260ms ease-io(设计稿 .pane);形态切换那 440ms 里改走 chat-dock / chat-center:
@@ -109,7 +118,7 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		if slide {
 			// 内容固定在停靠宽度、靠左,栏的左缘一路移动,整块就像贴着右缘滑进 / 滑出;
 			// 不逐帧按变化的宽度重排会话(长会话重排很重,是掉帧、宽度「先小后突然变大」的来源)
-			ui.Column(c).Key("chat-fix").Width(a.dockW()).Grow(1).MinHeight(0).Shrink(0).Children(build)
+			ui.Column(c).Key("chat-fix").Width(slideW).Grow(1).MinHeight(0).Shrink(0).Children(build)
 			return
 		}
 		build()
