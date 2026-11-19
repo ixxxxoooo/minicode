@@ -172,19 +172,25 @@ func (a *App) linkIcon(dest string, size float32) (markdown.InlineObject, bool) 
 		return w
 	}
 	label := clipMiddle(dest, pathChipMaxText, span)
+	_, lineH := c.MeasureText(0, ui.Span{Text: "Ag", Font: font, Size: cs}) // 这个字体这个字号的真实行高:文字按它在胶囊里垂直居中
 	const padL, gap, padR, margin = 6, 4, 7, 1.5
 	w := padL + ic + gap + span(label) + padR
-	h := cs * 1.7
+	h := cs * 1.5 // 比行内代码底色(1.32 倍)略高一点,算上细边
+	// 胶囊中线放在基线上方约 0.31 倍正文字号处(介于小写字母与大写字母的视觉中心之间),与周围文字对齐
+	up := size * .31
+	// 配色跟主题强调色走,与旁边的行内代码同一族:淡强调色底 + 稍深一点的强调色细边 + 强调色文字
 	t := a.tk
-	fill, line, ink := t.Fill2, t.Bd2, t.Tx1
+	ink, fill := a.inlineCodeColors()
+	line := t.Ac.Alpha(.26)
 	return markdown.InlineObject{
-		Width: w + 2*margin, Height: h * .66, Depth: h * .34, // 胶囊中心略高于基线,与周围文字的视觉中心对齐
+		Width: w + 2*margin, Height: h/2 + up, Depth: h/2 - up,
 		Draw: func(pt *ui.Painter, r ui.Rect) {
 			box := ui.Rect{X: r.X + margin, Y: r.Y, W: w, H: r.H}
-			pt.Fill(box, fill, 5)
-			pt.Stroke(box, line, 5, 1)
-			pt.Image(svg, ui.Rect{X: box.X + padL, Y: box.Y + (box.H-ic)/2, W: ic, H: ic}, ui.Contain)
-			pt.RichText(box.X+padL+ic+gap, box.Y+(box.H-cs*1.25)/2, 0, ui.Span{Text: label, Font: font, Size: cs, Color: ink})
+			pt.Fill(box, fill, 4)
+			pt.Stroke(box, line, 4, 1)
+			cy := box.Y + box.H/2 // 图标与文字共用这条水平中线
+			pt.Image(svg, ui.Rect{X: box.X + padL, Y: cy - ic/2, W: ic, H: ic}, ui.Contain)
+			pt.RichText(box.X+padL+ic+gap, cy-lineH/2, 0, ui.Span{Text: label, Font: font, Size: cs, Color: ink})
 		},
 	}, true
 }
