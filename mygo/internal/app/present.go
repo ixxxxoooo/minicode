@@ -221,9 +221,13 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 		s.copyStr = s.obj // 复制拿到的永远是命令本身
 		// Bash 的 input 里 Claude 自己写了一句 description(如「List MiniPost design files in Downloads」),标题用它,
 		// 比一长串命令好读;完整命令在悬停提示里、展开的终端卡头部和复制里
-		if d := strings.TrimSpace(inputStr(tc, "description")); d != "" && tc.Name == "Bash" {
-			s.tip = s.obj
-			s.obj = d
+		if tc.Name == "Bash" {
+			if d := strings.TrimSpace(inputStr(tc, "description")); d != "" {
+				s.tip, s.obj = s.obj, d
+			} else if ct := cmdTitle(s.obj); ct != "" && ct != s.obj {
+				// 没有描述时:从命令里提炼一句短标题(去掉开头的 cd / 变量铺垫,按命令名套规则),完整命令放悬停提示
+				s.tip, s.obj = s.obj, ct
+			}
 		}
 		for _, ct := range tc.Content {
 			if tb, ok := ct.(*core.TerminalBlock); ok {
