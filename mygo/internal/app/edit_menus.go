@@ -321,7 +321,7 @@ func (a *App) treeHeadMenu(m *ui.Menu) {
 	}
 	m.Separator()
 	if menuItem(m, "刷新").Chosen() {
-		a.ide.listCache, a.ide.filesCache = nil, nil
+		a.ide.dropLists()
 	}
 	if menuItem(m, "全部折叠").Disabled(a.treeOpenCount() == 0).Tooltip(map[bool]string{true: "没有展开的文件夹"}[a.treeOpenCount() == 0]).Chosen() {
 		a.collapseTree()

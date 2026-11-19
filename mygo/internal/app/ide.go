@@ -271,10 +271,17 @@ func newIDE() *ide {
 	return d
 }
 
+// dropLists 清掉目录列表缓存、文件搜索缓存和拍平的文件树行(刷新 / 切换显示隐藏文件 / 文件变化后调用)。
+// 树行缓存(treeLineCache)的签名只看展开 / 过滤 / 重命名,不看目录列表,所以只清 listCache 树不会重建、界面不变;
+// 必须一并清 treeLineBuf,下一帧才会重新 listing(后台重读)并拍平。
+func (d *ide) dropLists() {
+	d.listCache, d.filesCache, d.treeLineBuf = nil, nil, nil
+}
+
 func (d *ide) useFS(fs workspace.FS, git map[string]string, head func(string) (string, bool)) {
 	d.fs, d.git, d.headOf = fs, git, head
 	d.tabs, d.active, d.sel = nil, "", ""
-	d.filesCache, d.listCache = nil, nil
+	d.dropLists()
 	d.listLast, d.listPend = nil, nil // 换了文件系统:上一个项目的目录列表不能当占位显示
 	d.nav, d.ni, d.refs, d.ov = nil, 0, nil, ideOv{}
 	d.invalidate()

@@ -122,7 +122,7 @@ func (a *App) treePasteFile(into string) {
 		}
 		a.renameTabs(clip.rel, dest)
 		a.treeClip = fileTreeClip{}
-		a.ide.listCache, a.ide.filesCache = nil, nil
+		a.ide.dropLists()
 		a.toast = "已移动"
 		return
 	}
@@ -151,7 +151,7 @@ func (a *App) treePasteFile(into string) {
 		_ = mu.Remove(dest)
 		return
 	}
-	a.ide.listCache, a.ide.filesCache = nil, nil
+	a.ide.dropLists()
 	a.toast = "已粘贴"
 }
 

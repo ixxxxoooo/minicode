@@ -170,7 +170,7 @@ func (a *App) syncTreeGit() {
 	// 改动里出现 / 消失了文件(Claude 或外部新建、删除):文件树的目录缓存已经过期,清掉才会重新读盘。
 	// 没有这一步,新建的文件只在「源代码管理」里有,文件树要手动点刷新才出现。
 	if treeKeysChanged(a.ide.git, m) {
-		a.ide.listCache, a.ide.filesCache = nil, nil
+		a.ide.dropLists()
 	}
 	a.ide.git = m
 	a.rebuildTreeDirGit(m)

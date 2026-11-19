@@ -117,7 +117,7 @@ func (a *App) filesView(c *ui.Context) {
 							} else {
 								shut.Opacity(0.4).Cursor(ui.CursorDefault)
 							}
-							kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(func() { d.listCache, d.filesCache = nil, nil })
+							kit.Ib(c, "refresh", kit.IbOpt{Small: true, Tip: "刷新"}).OnClick(d.dropLists)
 							kit.MenuBtn(kit.Ib(c, "more", kit.IbOpt{Small: true, Tip: "更多操作"}), a.treeHeadMenu)
 						})
 					})
@@ -591,7 +591,7 @@ func (a *App) setTreeHidden(show bool) {
 	} else {
 		a.prefs.Set(pTreeHidden, false)
 	}
-	a.ide.listCache, a.ide.filesCache = nil, nil
+	a.ide.dropLists() // 清目录缓存 + 树行缓存:下一帧后台重读并重新拍平,树立刻按新设置重画
 	a.toast = map[bool]string{true: "已显示隐藏文件", false: "已不显示隐藏文件"}[show]
 	diag.L("ide").Info("切换显示隐藏文件", "显示", show)
 }

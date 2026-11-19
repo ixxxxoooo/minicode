@@ -35,6 +35,7 @@ func (a *App) listDirAsync(dir string) {
 			}
 			es = d.visible(es) // 按「显示隐藏文件」过滤后再进缓存
 			d.listCache[dir] = es
+			d.treeLineBuf = nil // 新列表到了:拍平的树行要重算,否则缓存了读之前的占位内容
 			if d.listLast == nil {
 				d.listLast = map[string][]workspace.Entry{}
 			}

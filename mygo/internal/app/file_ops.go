@@ -174,7 +174,7 @@ func (a *App) moveFile(from, dir string) {
 
 // afterFileChange 磁盘上的文件结构变了:清树缓存、符号索引,刷新 Git 状态。
 func (a *App) afterFileChange() {
-	a.ide.listCache, a.ide.filesCache = nil, nil
+	a.ide.dropLists()
 	a.ide.invalidate()
 	a.scmRefresh()
 }
