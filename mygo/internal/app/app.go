@@ -528,7 +528,7 @@ func (a *App) afterEvent(ev core.Event) {
 	replay := a.st != nil && (a.st.Replaying || isReplayEv(ev))
 	a.warmOnEvent(ev)
 	// 新会话的 id 在握手后才知道:记下来,侧栏就能高亮它(演示后端的占位 id 不记)
-	if e, ok := ev.(core.EvReady); ok {
+	if _, ok := ev.(core.EvReady); ok {
 		isNew := a.curSess == "" || strings.HasPrefix(a.curSess, "new:")
 		// 切换会话里开的新会话由 pickOnReady 标记;启动时直接落在新会话(没有恢复历史会话)没经过 OpenSession,
 		// 同样要沿用上次选的模型 / 思考强度
@@ -536,13 +536,7 @@ func (a *App) afterEvent(ev core.Event) {
 			a.pickOnReady = false
 			a.applySavedPicks()
 		}
-		if a.st != nil && isNew {
-			want := a.DefaultPermMode()
-			if e.Mode != want {
-				a.send(core.CmdSetMode{Mode: want})
-				a.st.Mode = want
-			}
-		}
+		a.syncGlobalPermMode(isNew) // 权限模式全局生效:新会话 / 恢复的历史会话都对齐最后一次的选择
 	}
 	if e, ok := ev.(core.EvReady); ok && a.curSess == "" && e.SessionID != "" && !strings.HasPrefix(e.SessionID, "demo-") {
 		a.curSess = e.SessionID
@@ -653,6 +647,7 @@ func (a *App) OpenSession(id string) {
 		a.flowList = ui.ListState{}
 		a.restoreFlowScroll(id)
 		a.triggerFlowRise()
+		a.syncGlobalPermMode(false) // 后台会话离开时的模式可能已过时
 		end()
 		log.Info("接回后台会话", "id", id, "耗时", time.Since(start))
 		diag.LogUISwitch("session:"+prev, "session:"+id, time.Since(start))

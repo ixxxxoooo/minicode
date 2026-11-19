@@ -49,6 +49,26 @@ func (a *App) rememberPermMode(m core.PermissionMode) {
 	}
 }
 
+// syncGlobalPermMode 让当前会话的权限模式对齐全局选择(DefaultPermMode = 最后一次选的模式)。
+// 权限模式是全局偏好,不是会话属性:新会话、恢复历史会话(--resume 握手上报的是会话文件里存的旧模式)、
+// 接回后台会话(沿用它离开时的模式)都要对齐,否则切换会话后选择就丢了。
+// 演示后端的会话自带脚本化的模式(用来演示各种状态),只对新会话对齐。
+func (a *App) syncGlobalPermMode(isNew bool) {
+	if a.st == nil || a.be == nil || a.prefs == nil {
+		return
+	}
+	if !isNew && a.be.Name() == "demo" {
+		return
+	}
+	want := a.DefaultPermMode()
+	if a.st.Mode == want {
+		return
+	}
+	log.Info("权限模式对齐全局选择", "from", a.st.Mode.CLI(), "to", want.CLI(), "new", isNew)
+	a.send(core.CmdSetMode{Mode: want})
+	a.st.Mode = want
+}
+
 func (a *App) hasActiveSession() bool {
 	if a.st == nil || a.be == nil {
 		return false
