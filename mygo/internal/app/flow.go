@@ -174,6 +174,8 @@ func (a *App) stepItem(c *ui.Context, it core.Item) {
 			sp.state, sp.thinkLive = "run", true
 			if lv := a.st.Live; lv != nil && lv.Kind == core.StageThink && !lv.Since.IsZero() { // 进行中:右侧显示已思考多久(设计稿 5.8s)
 				sp.right = elapsedText(a.now().Sub(lv.Since))
+			} else if v.StartMs > 0 { // 阶段信息不是「思考」(或没有)时,按这条思考自己的开始时刻算
+				sp.right = elapsedText(time.Duration(a.st.Now()-v.StartMs) * time.Millisecond)
 			}
 			a.thinkWasLive[v.ID] = true
 		} else {

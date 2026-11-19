@@ -156,7 +156,7 @@
       R('工具调用详细程度三档:精简(相邻调用合并为一行摘要)/ 标准(仅探索类合并)/ 详细(逐条展开)', 'flow_merge.go + present.applyToolDefaultOpen;进行中/失败/窄档短句与详细档探索组默认展开已接线;仅 cmd/shot 截图,未 computer use', 'part', 'B4'),
       R('设置页外观预览(字号 / 宽度 / 详细程度 / 流光 / 等待字符与指示动画)', 'settings_preview.go 六块与 settings-pv.js 结构对齐;cmd/shot settings motion+chat 静态核对,动画未实机验证', 'part', 'B6'),
       R('字号预设(紧凑 / 标准 / 舒适 / 大字 / 自定义)与会话 / 设置页内容宽度多档', 'typography_prefs.go;预设联动界面大小与正文字号、还原联动、会话宽 6 档、设置页宽 5 档;已用 computer use 实测设置页预设联动与宽度档位(会话宽「占满」仅在窄窗口里点过,未在宽屏对照);未做 appearance.dockW(IDE 对话栏预设宽)', 'part', 'B6'),
-      R('折叠的思考流式预览(上下翻)与等待沙漏', 'flow_think_marquee.go:只显示最新一句、换句时上下翻页(thinkLastLine 单测),标题常驻+预览 flex(最大 52% 行宽、<96px 隐藏)、无 Spacer 抢位;cmd/shot welcome+thinking 宽/中/窄对照 flow-detail;流式用时未接;未 computer use', 'part', 'B6'),
+      R('折叠的思考流式预览(上下翻)与等待沙漏', 'flow_think_marquee.go:只显示最新一句、换句时上下翻页(thinkLastLine 单测),标题常驻+预览 flex(最大 52% 行宽、<96px 隐藏)、无 Spacer 抢位;cmd/shot welcome+thinking 宽/中/窄对照 flow-detail;思考用时已接(核心在思考开始 / 结束时记录,实时会话结束后行右侧保留「N 秒」;此前只有历史回放 / 演示有,thinkDuration 单测);未 computer use', 'part', 'B6'),
       R('终端标题自适应截断与竖向标签列表', 'term_title.go / term_tabs.go;已用 computer use 在开发版(真实模式)走过:≥2 个终端出竖列(贴顶、状态点、选中行 ✕)、窄面板自动横向、默认标题只留路径、同名加序号;未做:前台进程名作标题(PTY 层未接)、列表拖拽排序', 'part', 'B6'),
       R('界面大小(默认 110%,90–150%)与正文字号', 'theme.SetUIScale / Px:字号令牌、行高、控件、图标一起缩放(设置 → 外观 → 字号与大小,appearance.uiScale);正文字号 appearance.fontScale 在其上再缩放;未测试', 'part', 'B6'),
       R('列表选中态统一(强调色底 + 左侧 3px 竖线 + 半粗体):会话行 / 文件树 / 各列表', 'kit.RowEl + kit.SelBar;文件夹行选中也高亮;未测试', 'part', 'B6'),

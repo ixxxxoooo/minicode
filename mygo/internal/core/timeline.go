@@ -96,6 +96,7 @@ type Assistant struct {
 type Thinking struct {
 	ID, Text  string
 	Streaming bool
+	StartMs   int64 // 这条思考开始流式的时刻(State.Now 毫秒);0 = 未知(历史回放),用时由 EvDuration 给
 }
 
 // Todos 是待办清单。

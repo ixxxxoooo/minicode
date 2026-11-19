@@ -334,7 +334,11 @@ func (s *State) Apply(ev Event) {
 				return
 			}
 		}
-		*l = append(*l, &Thinking{ID: e.ID, Text: e.Delta, Streaming: true})
+		th := &Thinking{ID: e.ID, Text: e.Delta, Streaming: true}
+		if !s.Replaying {
+			th.StartMs = s.Now()
+		}
+		*l = append(*l, th)
 	case EvToolUpdate:
 		s.touch(e.Parent)
 		l := *s.itemsOf(e.Parent)
@@ -361,7 +365,7 @@ func (s *State) Apply(ev Event) {
 			case *Assistant:
 				x.Streaming = false
 			case *Thinking:
-				x.Streaming = false
+				s.endThinking(x)
 			}
 		}
 	case EvSubagentStatus:
@@ -532,6 +536,25 @@ func lastOf(items []Item) Item {
 	return items[len(items)-1]
 }
 
+// endThinking 一条思考流式结束:停掉流式,并记下这次思考的用时(秒,至少 1 秒)。
+// 实时会话里后端不发 EvDuration(只有历史回放 / 演示发),不在这里补记,结束后的思考行右侧就没有耗时。
+// 已有记录(历史回放给的)不覆盖;回放期间没有起点(StartMs=0),也不记。
+func (s *State) endThinking(x *Thinking) {
+	was := x.Streaming
+	x.Streaming = false
+	if !was || x.StartMs <= 0 || s.Replaying {
+		return
+	}
+	if _, ok := s.Durations[x.ID]; ok {
+		return
+	}
+	secs := uint64((s.Now() - x.StartMs + 500) / 1000)
+	if secs < 1 {
+		secs = 1
+	}
+	s.Durations[x.ID] = secs
+}
+
 // finishStreaming 回合结束时收尾:停止所有流式条目;取消时把未完成的工具标为被中断。
 func (s *State) finishStreaming(cancelled bool) {
 	var walk func(items []Item)
@@ -541,7 +564,7 @@ func (s *State) finishStreaming(cancelled bool) {
 			case *Assistant:
 				x.Streaming = false
 			case *Thinking:
-				x.Streaming = false
+				s.endThinking(x)
 			case *Compaction:
 				if x.State == CompactRunning { // 回合结束了还没有结果:取消 / 没有完成,不能一直转
 					x.State, x.DoneAt = CompactFailed, time.Now()
