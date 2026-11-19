@@ -18,6 +18,7 @@ echo "==> 编译发布版 (v$VERSION, build $BUILD, $(uname -m))"
 mkdir -p dist
 # 部署目标固定 13.0(否则链接器取当前 SDK 版本,二进制 minos 会变成构建机系统,低版本 Mac 上图标显示禁止符号);
 # arm64 + x86_64 各编一份再 lipo 合成通用二进制,Intel 与 Apple Silicon 通用。
+source scripts/mygo-overlay.sh # 带上 MyGo 补丁(与开发版一致)
 export MACOSX_DEPLOYMENT_TARGET=13.0 CGO_ENABLED=1
 export CGO_CFLAGS="-mmacosx-version-min=13.0" CGO_LDFLAGS="-mmacosx-version-min=13.0"
 for ARCH in arm64 amd64; do

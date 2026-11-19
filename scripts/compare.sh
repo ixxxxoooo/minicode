@@ -7,6 +7,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 page=$1; mode=$2; shift 2
 mkdir -p /tmp/minicode-cmp
 unset GOROOT
+source "$root/scripts/mygo-overlay.sh"
 (cd "$root/mygo" && go build -o /tmp/minicode-cmp/shot ./cmd/shot)
 for v in "$@"; do
   s=${v%%:*}; t=${v##*:}

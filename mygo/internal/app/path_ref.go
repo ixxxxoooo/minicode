@@ -31,6 +31,10 @@ const (
 	pathRefDir                         // 存在的文件夹
 )
 
+// pathLinkScheme 是路径链接目的地的前缀。打了 MyGo 补丁(scripts/mygo-overlay.sh)时,带它的链接悬停不画下划线,
+// 改成手型光标 + 淡底;没打补丁时就是普通链接(悬停有下划线,功能一样)。
+const pathLinkScheme = "mc-path:"
+
 // pathRefCap 是缓存条数上限,超了整表清空(会话很长时防止无限增长)。
 const pathRefCap = 4000
 
@@ -113,7 +117,7 @@ func (a *App) pathRefOf(code string) pathRefState {
 // (参照 BaoCode:图标按文件名 / 扩展名 / 文件夹名取 Material Icon Theme,见 matico 包;.html 是网页图标,.py 是 Python 图标……)。
 // 参数 dest 是链接目的地,size 是周围正文的字号;别的链接不画。
 func (a *App) linkIcon(dest string, size float32) (markdown.InlineObject, bool) {
-	dest = strings.TrimSpace(dest)
+	dest = strings.TrimPrefix(strings.TrimSpace(dest), pathLinkScheme)
 	st, ok := a.pathRefs.m[dest]
 	if !ok || (st != pathRefFile && st != pathRefDir) {
 		return markdown.InlineObject{}, false
@@ -221,7 +225,7 @@ func (a *App) padCodeLinks(src string) string {
 			inLink := (i > 0 && rs[i-1] == '[') || (end+2 < len(rs) && rs[end+1] == ']' && rs[end+2] == '(')
 			if !inLink {
 				if st := a.pathRefOf(strings.TrimSpace(code)); st == pathRefFile || st == pathRefDir {
-					b.WriteString("[`" + thin + code + thin + "`](<" + strings.TrimSpace(code) + ">)")
+					b.WriteString("[`" + thin + code + thin + "`](<" + pathLinkScheme + strings.TrimSpace(code) + "> \"点击打开\")")
 					i = end
 					continue
 				}

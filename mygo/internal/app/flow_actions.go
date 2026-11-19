@@ -65,6 +65,7 @@ func (a *App) openURL(u string) bool {
 
 // openMdLink 是 Markdown 链接的点击处理:网址交给系统,路径在工作区打开。
 func (a *App) openMdLink(dest string) {
+	dest = strings.TrimPrefix(dest, pathLinkScheme)
 	if strings.HasPrefix(dest, "#") {
 		return
 	}
@@ -81,6 +82,7 @@ func (a *App) openMdLink(dest string) {
 
 // linkMenu 是链接的右键菜单:路径 → 打开 / 复制;网址 → 打开 / 复制。
 func (a *App) linkMenu(m *ui.Menu, dest string) {
+	dest = strings.TrimPrefix(dest, pathLinkScheme)
 	if strings.HasPrefix(dest, "http") {
 		if menuItem(m, "在浏览器中打开").Chosen() {
 			a.openURL(dest)

@@ -7,6 +7,8 @@ cd "$(dirname "$0")/.."
 unset GOROOT
 # 存在本地 go.work(例如排查用的 MyGo 副本)时,用户级 GOFLAGS=-mod=mod 与工作区模式冲突,这里覆盖掉
 [ -f go.work ] && export GOFLAGS=-mod=readonly
+# 带上 MyGo 补丁(路径链接悬停不画下划线等),见 scripts/mygo-overlay.sh
+source scripts/mygo-overlay.sh
 APP="$PWD/target/dev/MiniCode Dev.app"
 PID_FILE="$PWD/target/dev.pid"
 mkdir -p target/dev
