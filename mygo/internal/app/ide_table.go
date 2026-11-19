@@ -397,12 +397,19 @@ func (a *App) tableView(c *ui.Context, tb *ideTab) {
 		v.sheet = 0
 	}
 	sh := &wb.Sheets[v.sheet]
-	if v.tv == nil || v.tv.sheet != v.sheet {
-		v.tv = buildTableView(sh, v.sheet, !v.noHeader)
-	} else if v.tv.header != !v.noHeader {
-		v.tv.setHeader(sh, !v.noHeader)
+	if v.tvs == nil {
+		v.tvs = map[int]*tableView{}
 	}
-	tv := v.tv
+	tv := v.tvs[v.sheet]
+	if tv == nil {
+		tv = buildTableView(sh, v.sheet, !v.noHeader)
+		v.tvs[v.sheet] = tv
+	} else if tv.header != !v.noHeader {
+		tv.setHeader(sh, !v.noHeader)
+	}
+	if len(wb.Sheets) > 1 { // 多工作表:底部放表标签(同传统表格软件),空表 / 无命中等提前返回时也要画
+		defer a.tblSheetTabs(c, tb, v, wb)
+	}
 	tv.refresh(sh)
 	total := len(sh.Rows) - tv.start
 	if total < 0 {
@@ -417,25 +424,6 @@ func (a *App) tableView(c *ui.Context, tb *ideTab) {
 	}
 
 	a.viewerBar(c, func() {
-		if k := len(wb.Sheets); k > 1 {
-			if k <= 5 {
-				items := make([]kit.SegItem, k)
-				for i := range wb.Sheets {
-					items[i] = kit.SegItem{Text: clipRunes(wb.Sheets[i].Name, 12)}
-				}
-				if i := kit.Seg(c, items, v.sheet, kit.SegOpt{Key: "tbl-sheets"}); i >= 0 && i != v.sheet {
-					v.sheet = i
-				}
-			} else {
-				kit.MenuBtn(kit.Btn(c, clipRunes(sh.Name, 16)+"  ▾", kit.BtnOpt{Small: true, Tip: "切换工作表"}), func(m *ui.Menu) {
-					for i := range wb.Sheets {
-						if menuItem(m, wb.Sheets[i].Name).Chosen() {
-							v.sheet = i
-						}
-					}
-				})
-			}
-		}
 		stat := fmt.Sprintf("%d 行 × %d 列", total, sh.Cols)
 		if n != total {
 			stat = fmt.Sprintf("%d / %d 行 × %d 列", n, total, sh.Cols)
@@ -753,4 +741,39 @@ func (a *App) textAsTable(tb *ideTab) {
 	// 不能在这里清 buf / st:本函数在面包屑里被调用,同一帧后面的 codeView 还要用它们(清了会空指针)。
 	// 切成查看器后下一帧走 viewerTab 分支,tableView 开头再释放。
 	tb.viewer, tb.vw = "table", &viewerState{}
+}
+
+// tblSheetTabs 是底部的工作表标签条(同传统表格软件):一排标签,放不下就横向滚动,当前表高亮并带强调色下划线。
+func (a *App) tblSheetTabs(c *ui.Context, tb *ideTab, v *viewerState, wb *tabular.Workbook) {
+	t := a.tk
+	ui.Row(c).Height(theme.Px(28)).Shrink(0).AlignItems(ui.Stretch).Background(t.Fill1).BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1).Children(func() {
+		kit.HScroll(c).Key("tbl-sheettabs-" + tb.id).Grow(1).MinWidth(0).Children(func() {
+			ui.Row(c).AlignItems(ui.Stretch).PaddingX(6).Gap(2).Children(func() {
+				for i := range wb.Sheets {
+					on := i == v.sheet
+					b := ui.ButtonBase(c).PaddingX(14).Justify(ui.Center).AlignItems(ui.Center).Cursor(ui.CursorPointer).KeepFocus().
+						Tooltip(wb.Sheets[i].Name).Label(wb.Sheets[i].Name)
+					col := t.Tx3
+					switch {
+					case on:
+						b.Background(t.BG).BorderWidth(0, 0, 2, 0).BorderColor(t.Ac)
+						col = t.Tx1
+					case b.Hovered():
+						b.Background(t.Fill1)
+						col = t.Tx1
+					}
+					b.Children(func() {
+						tx := ui.Text(c, clipRunes(wb.Sheets[i].Name, 20)).FontSize(theme.FsCap + .5).TextColor(col).SingleLine()
+						if on {
+							tx.FontWeight(600)
+						}
+					})
+					if b.Clicked() {
+						v.sheet = i
+					}
+				}
+			})
+		})
+		ui.Text(c, fmt.Sprintf("%d 张工作表", len(wb.Sheets))).FontSize(theme.FsCap).TextColor(t.Tx4).Margin(0, 10, 0, 6).AlignSelf(ui.Center)
+	})
 }

@@ -88,8 +88,8 @@ type viewerState struct {
 	// 表格
 	wb       *tabular.Workbook
 	sheet    int
-	noHeader bool // 首行不当表头
-	tv       *tableView
+	noHeader bool               // 首行不当表头
+	tvs      map[int]*tableView // 每张工作表各自的显示状态(搜索 / 筛选 / 排序 / 隐藏列),切表再切回来还在
 }
 
 type viewerResult struct {
