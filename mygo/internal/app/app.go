@@ -227,6 +227,7 @@ type App struct {
 	// Markdown 选项(随主题重建)
 	md         *markdown.Options
 	mdThemeKey string
+	pathRefs   pathRefCache      // 会话里行内代码写的路径是否真实存在(path_ref.go)
 	planMd     *markdown.Options // 计划小卡概要用的小号 Markdown 选项
 	planMdKey  string
 	thinkMd    *markdown.Options // 思考正文用的 Markdown 选项(说明字号、次要灰)

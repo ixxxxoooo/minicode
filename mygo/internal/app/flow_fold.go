@@ -89,6 +89,9 @@ func (a *App) foldBodyHL(c *ui.Context, key, full string, live bool, mono bool, 
 	// 只创建一个元素:先建 Column 再换成 Scroll 会让同一个键注册两次(同父下重复键 panic)。
 	inner := func() {
 		body := ui.Column(c).Padding(6, 10).Gap(0)
+		if strings.HasPrefix(key, "cb:") {
+			body.Padding(8, 12) // 围栏代码块的内边距(参照 BaoCode 8 / 12)
+		}
 		if own {
 			body.Selectable()
 		}
@@ -159,19 +162,25 @@ func (a *App) hookMDFold(o *markdown.Options) {
 		t := a.tk
 		lang := mdCodeLang(b.Info)
 		hl := a.mdCodeLines(lang, b.Code(), a.FlowMonoSize(), b.Open)
-		box := ui.Column(c).Background(t.Sunken).Radius(t.RMd()).Border(1, t.Bd1).Clip()
+		// 参照 BaoCode:纯文本块没有标题栏,复制钮悬停时浮在右上角;带语言的块有一条标题栏(语言名 + 悬停才出现的复制钮)
+		box := ui.Column(c).Background(t.Sunken).Radius(t.RLg()).Border(1, t.Bd1).Clip()
+		hov := box.Hovered()
+		plain := codeBlockPlain(b.Info)
 		box.Children(func() {
-			ui.Row(c).Height(theme.Px(24)).PaddingX(8).Gap(6).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
-				if b.Info != "" {
-					ui.Text(c, b.Info).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Grow(1)
-				} else {
-					ui.Spacer(c).Grow(1)
-				}
-				b.CopyButton(c)
-			})
+			if !plain {
+				ui.Row(c).Height(theme.Px(26)).PaddingX(12).PaddingEnd(6).Gap(6).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(t.Bd1).Children(func() {
+					ui.Text(c, codeBlockLang(b.Info)).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine().Grow(1)
+					if hov {
+						b.CopyButton(c)
+					}
+				})
+			}
 			a.foldBodyHL(c, foldKey("cb", itoa(b.Index)), bodyTrim(b.Code()), false, true, func() {
 				a.copyOut(b.Code(), "代码")
 			}, hl)
+			if plain && hov {
+				ui.Row(c).Absolute().Top(5).Right(6).Background(t.Sunken).Radius(t.RSm()).Children(func() { b.CopyButton(c) })
+			}
 		})
 	}
 }
@@ -182,6 +191,23 @@ func (a *App) codeLineSpans(hl [][]ui.Span, i int, ln string) []ui.Span {
 		return hl[i]
 	}
 	return a.termLineSz(ln, a.FlowMonoSize())
+}
+
+// codeBlockLang 取围栏信息串的第一个词作语言名(```python title="a.py" → python)。
+func codeBlockLang(info string) string {
+	if f := strings.Fields(info); len(f) > 0 {
+		return f[0]
+	}
+	return ""
+}
+
+// codeBlockPlain 报告围栏代码块是否「纯文本」(没写语言或写的是 text / txt / plaintext):这种块不画标题栏。
+func codeBlockPlain(info string) bool {
+	switch strings.ToLower(codeBlockLang(info)) {
+	case "", "text", "txt", "plaintext":
+		return true
+	}
+	return false
 }
 
 func bodyTrim(s string) string { return strings.TrimRight(s, "\n") }

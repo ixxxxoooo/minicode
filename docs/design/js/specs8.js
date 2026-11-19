@@ -8,7 +8,7 @@
    每页都带「实现状态」列,与 Go 代码保持一致。
    @author ixxxxoooo */
 (function () {
-  const { ic, tag } = U;
+  const { ic, ib, tag } = U;
   const { head, sec } = P.h;
   const F = window.F;
   const tbl = (cols, rows) => `<table class="ia-tbl"><thead><tr>${cols.map(([t, w]) => `<th ${w ? `style="width:${w}px"` : ''}>${t}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, k) => `<td ${k === 0 ? '' : 'class="t2"'}>${k === 0 ? `<b>${c}</b>` : c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
@@ -104,6 +104,17 @@
         ['精简摘要行结束时 120 ms 淡入换句', 'mergeGroup 记 runWas / fadeAt,stepRow 按 fadeAt 画 120 ms 透明度淡入(仅编译,未测试)', 'part'],
         ['「最新一步」翻滚(.ticker)', 'tickerRow:换步时新行自下滑入 + 淡入、旧行向上顶出 + 淡出,200 ms 缓出;探索组、子 Agent 调用卡、并行组共用,减弱动态直接换(仅编译,未测试)', 'part']
       ].map(([a, b, c]) => `<tr><td><b>${a}</b></td><td class="t2">${b}</td><td>${st(c)}</td></tr>`).join('')}
+    </tbody></table>`)}
+    ${sec('正文里的路径与代码块', '参照 BaoCode:正文里出现的文件 / 文件夹可以直接点开;行内代码与代码块的样子一起收拾得精致些。', grid(
+      cell('可点路径 + 行内代码', `<div class="md" style="padding:10px 14px;line-height:1.9"><p>入口在 <code class="pathref">${ic('folder', 's12')}src/router</code>,处理函数见 <code class="pathref">${ic('code', 's12')}src/router/match.rs:42</code>,配置是 <code class="pathref">${ic('gear', 's12')}Cargo.toml</code>。不存在的 <code>src/ghost.rs</code> 和命令 <code>cargo test</code> 只是普通行内代码。</p></div>`, '只有本机真实存在的路径才成为链接并带图标(后台探测一次、缓存;探测完下一帧才变成链接)。点文件 = 在工作区打开(带 :行:列 就跳到行);点文件夹 = 切到左栏「文件」并展开选中(项目外的在访达里显示)。右键:在工作区打开 / 在访达中显示 / 复制路径。'),
+      cell('代码块:带语言', `<div class="md" style="padding:6px 0"><pre><div class="ph"><span class="grow">rust</span>${ib('copy', 'sm', '复制')}</div><code>fn main() {\n    println!("你好");\n}</code></pre></div>`, '标题栏 26px:语言名(tx-3)+ 复制钮,复制钮悬停代码块时才出现;圆角 r-lg,内边距 8 / 12,字体用「设置 → 编辑器 → 字体」的代码字体链。'),
+      cell('代码块:纯文本', `<div class="md" style="padding:6px 0"><pre><span class="cp">${ib('copy', 'sm', '复制')}</span><code>目录结构\n├─ src\n└─ Cargo.toml</code></pre></div>`, '没写语言(或 text)的块不画标题栏,复制钮悬停时浮在右上角。')
+    ))}
+    ${sec('正文路径与代码块 · 实现状态', '', `<table class="ia-tbl"><tbody>${[
+      ['行内代码中性配色 + 代码字体链', '字色正文色、底 fill-2(原先强调色字 + 强调色 11% 底);Markdown 主题 CodeFont 跟随设置里的代码字体;未测试', 'part'],
+      ['会话里的路径可点', 'markdown 的 CodeLink + LinkIcon + path_ref.go:后台探测存在性并缓存,文件 / 文件夹图标,点击打开 / 文件树定位,右键加「在访达中显示」。已知缺口:悬停没有底色变化(框架的行内代码链接只保留原样式);只在助手正文里生效(用户消息、工具输出里的路径不链接);相对路径只按项目根解析;未测试', 'part'],
+      ['代码块标题栏 / 悬停复制', '带语言 = 标题栏 + 悬停才出现的复制钮,纯文本块无标题栏、复制钮浮在右上;圆角 r-lg、内边距 8 / 12;未测试', 'part']
+    ].map(([a, b, c]) => `<tr><td><b>${a}</b></td><td class="t2">${b}</td><td>${st(c)}</td></tr>`).join('')}
     </tbody></table>`)}
   </div>`;
 })();

@@ -71,6 +71,9 @@ func (a *App) openMdLink(dest string) {
 	if a.openURL(dest) {
 		return
 	}
+	if a.openDirRef(dest) {
+		return
+	}
 	if !a.openPathRef(dest) {
 		a.toast = "找不到 " + dest
 	}
@@ -89,6 +92,11 @@ func (a *App) linkMenu(m *ui.Menu, dest string) {
 	}
 	if menuItem(m, "在工作区打开").Chosen() {
 		a.openMdLink(dest)
+	}
+	if p, _, _ := splitPathRef(dest); p != "" {
+		if abs, ok := a.resolveUserPath(p); ok && menuItem(m, "在访达中显示").Chosen() {
+			a.revealInFinder(abs)
+		}
 	}
 	if menuItem(m, "复制路径").Chosen() {
 		a.copyOut(dest, "路径")
