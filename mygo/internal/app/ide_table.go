@@ -514,6 +514,26 @@ func (a *App) tableView(c *ui.Context, tb *ideTab) {
 		return
 	}
 
+	// 选中态(参考表格软件):选中的块只是淡淡的强调色底 + 强调色字,所在行整行轻染,
+	// 横轴(行号)与竖轴(列头)跟着高亮——行号变强调色加粗,列头染淡底并加一条强调色下划线;
+	// 没选中的行隔行极淡的条纹,宽表更好对齐。
+	tv.list.CellsStyle = ui.CellsStyle{
+		Cell:     t.Ac.Alpha(0.15),
+		CellText: t.AcTx,
+		Row:      t.Ac.Alpha(0.06),
+		Stripe:   t.Tx1.Alpha(0.025),
+	}
+	selCols := map[string]bool{}
+	if tv.sel.Len() > 0 {
+		for _, id := range tv.list.SelectedColumns() {
+			selCols[id] = true
+		}
+	}
+	tv.list.HeaderCell = func(cell ui.Element, col int) {
+		if col > 0 && col-1 < len(tv.vis) && selCols[tv.allCols[tv.vis[col-1]].ID] {
+			cell.Background(t.Ac.Alpha(0.13)).BorderWidth(0, 0, 2, 0).BorderColor(t.Ac)
+		}
+	}
 	tv.list.HeaderMenu = func(m *ui.Menu, col int) { a.tblHeaderMenu(m, tv, sh, col) }
 	tv.list.CellMenu = func(m *ui.Menu, row, col int) { a.tblCellMenu(m, tv, sh, row, col) }
 	// Key 必须在构造 Table 之前给(构造之后再 .Key 会 panic:Key on a Table, whose state was initialized)
@@ -523,7 +543,10 @@ func (a *App) tableView(c *ui.Context, tb *ideTab) {
 		}
 		r := tv.rows[row]
 		if col == 0 {
-			ui.Text(c, strconv.Itoa(r+1)).FontSize(theme.FsCap).TextColor(t.Tx4).SingleLine()
+			num := ui.Text(c, strconv.Itoa(r+1)).FontSize(theme.FsCap).TextColor(t.Tx4).SingleLine()
+			if tv.sel.Has(r) {
+				num.TextColor(t.AcTx).FontWeight(650)
+			}
 			return
 		}
 		if col-1 >= len(tv.vis) {
