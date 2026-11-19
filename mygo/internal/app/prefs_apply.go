@@ -43,6 +43,7 @@ const (
 	pFmtSave       = "editor.formatOnSave" // 保存时格式化
 	pTrimSave      = "editor.trimOnSave"   // 保存时去掉行尾空白
 	pBlameInline   = "editor.blameInline"
+	pTreeHidden    = "explorer.showHidden" // 文件树显示隐藏文件(. 开头的文件 / 目录),默认开
 	pTermFont      = "term.fontSize"
 	pTermIntegrate = "term.shellIntegration"
 	pTermLogin     = "term.login"

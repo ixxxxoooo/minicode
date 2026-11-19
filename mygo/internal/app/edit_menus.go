@@ -326,6 +326,10 @@ func (a *App) treeHeadMenu(m *ui.Menu) {
 	if menuItem(m, "全部折叠").Disabled(a.treeOpenCount() == 0).Tooltip(map[bool]string{true: "没有展开的文件夹"}[a.treeOpenCount() == 0]).Chosen() {
 		a.collapseTree()
 	}
+	showHidden := a.prefs.Bool(pTreeHidden, true) // 勾选项,默认开:文件树显示 . 开头的文件 / 目录
+	if menuItem(m, "显示隐藏文件").Checked(showHidden).Chosen() {
+		a.setTreeHidden(!showHidden)
+	}
 	m.Separator()
 	if menuItem(m, "在访达中显示项目").Disabled(a.proj == "").Tooltip(map[bool]string{true: "演示模式没有真实目录"}[a.proj == ""]).Chosen() {
 		a.revealInFinder(a.proj)

@@ -33,6 +33,7 @@ func (a *App) listDirAsync(dir string) {
 			if d.listCache == nil || gen == nil || reflect.ValueOf(d.listCache).Pointer() != reflect.ValueOf(gen).Pointer() {
 				return // 读的途中缓存被清空了:结果可能已过期,丢弃,下一帧重新请求
 			}
+			es = d.visible(es) // 按「显示隐藏文件」过滤后再进缓存
 			d.listCache[dir] = es
 			if d.listLast == nil {
 				d.listLast = map[string][]workspace.Entry{}

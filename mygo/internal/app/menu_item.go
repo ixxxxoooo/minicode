@@ -18,7 +18,7 @@ var menuIconTable = map[string]string{
 	// 打开 / 导航
 	"打开": "code", "打开文件": "code", "在工作区打开": "code", "用编辑器打开": "edit",
 	"打开更改": "diff", "打开该次提交里的改动": "diff", "查看差异": "diff",
-	"在审查标签中查看": "eye", "在终端面板查看": "terminal",
+	"在审查标签中查看": "eye", "显示隐藏文件": "eye", "在终端面板查看": "terminal",
 	"在侧边打开": "split", "在侧边预览": "eye", "向右拆分": "split", "向下拆分": "split",
 	"在浏览器中打开": "globe", "在新窗口中打开": "arrow", "在此处打开终端": "terminal",
 	"在文件树中定位": "tree", "全部折叠": "collapseAll", "全部展开": "tree", "折叠其它": "collapseAll",

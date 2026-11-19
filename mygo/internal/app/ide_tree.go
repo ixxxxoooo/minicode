@@ -254,14 +254,30 @@ func (d *ide) listing(dir string) []workspace.Entry {
 				return es
 			}
 		}
-		return d.listLast[dir]
+		return d.visible(d.listLast[dir]) // 占位用的上一次列表也要按当前「显示隐藏文件」过滤
 	}
 	es, err := d.fs.List(dir)
 	if err != nil {
 		diag.L("ide").Warn("列目录失败", "dir", dir, "err", err)
 	}
+	es = d.visible(es)
 	d.listCache[dir] = es
 	return es
+}
+
+// visible 按「显示隐藏文件」过滤目录列表:关闭时去掉以 . 开头的文件和目录;开启(默认)或没接偏好时原样返回。
+// 缓存里存的是过滤后的列表,所以切换开关要清缓存重读(setTreeHidden)。
+func (d *ide) visible(es []workspace.Entry) []workspace.Entry {
+	if d.hideDot == nil || !d.hideDot() {
+		return es
+	}
+	out := make([]workspace.Entry, 0, len(es))
+	for _, e := range es {
+		if !strings.HasPrefix(e.Name, ".") {
+			out = append(out, e)
+		}
+	}
+	return out
 }
 
 func (a *App) treeDir(c *ui.Context, dir string, depth int) {
@@ -565,6 +581,19 @@ func (a *App) treeOpenCount() int {
 		}
 	}
 	return n
+}
+
+// setTreeHidden 切换文件树是否显示隐藏文件(. 开头的文件 / 目录):默认开,所以开 = 清掉偏好,关 = 存 false。
+// 目录缓存里是过滤后的列表,必须清掉重读;文件搜索缓存也一并清。
+func (a *App) setTreeHidden(show bool) {
+	if show {
+		a.prefs.Reset(pTreeHidden)
+	} else {
+		a.prefs.Set(pTreeHidden, false)
+	}
+	a.ide.listCache, a.ide.filesCache = nil, nil
+	a.toast = map[bool]string{true: "已显示隐藏文件", false: "已不显示隐藏文件"}[show]
+	diag.L("ide").Info("切换显示隐藏文件", "显示", show)
 }
 
 // collapseTree 一键收起整棵文件树(标题行按钮与 ··· 菜单共用);选中项若落在被收起的文件夹里,改选它所在的最外层文件夹,避免选中一个看不见的行。

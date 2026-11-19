@@ -241,6 +241,7 @@ type ide struct {
 	listLast  map[string][]workspace.Entry // 每个目录最近一次读到的列表:重读期间继续显示它,树不闪空
 	listPend  map[string]bool              // 正在后台读的目录
 	listAsync func(dir string)             // 由 App 接上;为 nil(测试 / 无窗口)时同步读
+	hideDot   func() bool                  // 由 App 接上:true = 文件树不显示以 . 开头的文件 / 目录(偏好 explorer.showHidden 关);nil = 都显示
 
 	diskSnaps   map[string]diskSnap // 已打开文件的磁盘快照(外部修改检测)
 	extmodLast  time.Time
