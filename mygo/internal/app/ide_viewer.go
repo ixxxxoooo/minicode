@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -91,15 +90,6 @@ type viewerState struct {
 	sheet    int
 	noHeader bool // 首行不当表头
 	tv       *tableView
-}
-
-// tableView 是某张表在某种表头设置下的列定义与列表状态(切换时重建)。
-type tableView struct {
-	sheet  int
-	header bool
-	start  int // 数据从第几行开始(首行作表头时为 1)
-	cols   []ui.TableColumn
-	list   *ui.ListState
 }
 
 type viewerResult struct {
@@ -381,112 +371,4 @@ func clipRunes(s string, n int) string {
 		return string(r[:n]) + "…"
 	}
 	return s
-}
-
-// buildTableView 按当前表与表头设置算列定义:列宽取前 200 行的最宽内容(60–320px)。
-func buildTableView(sh *tabular.Sheet, sheet int, header bool) *tableView {
-	tv := &tableView{sheet: sheet, header: header, list: &ui.ListState{}}
-	if header && len(sh.Rows) > 0 {
-		tv.start = 1
-	}
-	tv.cols = append(tv.cols, ui.TableColumn{Title: "#", ID: "#", Width: 52, Fixed: true, Align: ui.End})
-	sample := len(sh.Rows)
-	if sample > 200 {
-		sample = 200
-	}
-	for j := 0; j < sh.Cols; j++ {
-		title := tabular.ColName(j)
-		if tv.start == 1 {
-			if h := strings.TrimSpace(sh.Cell(0, j)); h != "" {
-				title = clipRunes(h, 40)
-			}
-		}
-		u := textWidthUnits(title)
-		for i := 0; i < sample; i++ {
-			if n := textWidthUnits(sh.Cell(i, j)); n > u {
-				u = n
-			}
-		}
-		w := float32(u)*7 + 28
-		if w < 60 {
-			w = 60
-		}
-		if w > 320 {
-			w = 320
-		}
-		tv.cols = append(tv.cols, ui.TableColumn{Title: title, ID: "c" + strconv.Itoa(j), Width: w, MinWidth: 40, MaxWidth: 800})
-	}
-	return tv
-}
-
-func (a *App) tableView(c *ui.Context, tb *ideTab) {
-	v, t := tb.vw, a.tk
-	wb := v.wb
-	if wb == nil || len(wb.Sheets) == 0 {
-		a.viewerFail(c, tb, "这个文件里没有可显示的内容")
-		return
-	}
-	if v.sheet < 0 || v.sheet >= len(wb.Sheets) {
-		v.sheet = 0
-	}
-	sh := &wb.Sheets[v.sheet]
-	if v.tv == nil || v.tv.sheet != v.sheet || v.tv.header != !v.noHeader {
-		v.tv = buildTableView(sh, v.sheet, !v.noHeader)
-	}
-	tv := v.tv
-	n := len(sh.Rows) - tv.start
-	if n < 0 {
-		n = 0
-	}
-	a.viewerBar(c, func() {
-		if k := len(wb.Sheets); k > 1 {
-			if k <= 5 {
-				items := make([]kit.SegItem, k)
-				for i := range wb.Sheets {
-					items[i] = kit.SegItem{Text: clipRunes(wb.Sheets[i].Name, 12)}
-				}
-				if i := kit.Seg(c, items, v.sheet, kit.SegOpt{Key: "tbl-sheets"}); i >= 0 && i != v.sheet {
-					v.sheet = i
-				}
-			} else {
-				kit.MenuBtn(kit.Btn(c, clipRunes(sh.Name, 16)+"  ▾", kit.BtnOpt{Small: true, Tip: "切换工作表"}), func(m *ui.Menu) {
-					for i := range wb.Sheets {
-						if menuItem(m, wb.Sheets[i].Name).Chosen() {
-							v.sheet = i
-						}
-					}
-				})
-			}
-		}
-		stat := fmt.Sprintf("%d 行 × %d 列", len(sh.Rows), sh.Cols)
-		if sh.Truncated {
-			stat = fmt.Sprintf("仅显示前 %d 行 × %d 列", tabular.MaxRows, tabular.MaxCols)
-		}
-		ui.Text(c, stat+" · "+v.info).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
-		if v.note != "" {
-			ui.Text(c, "· "+v.note).FontSize(theme.FsCap).TextColor(t.Warn).SingleLine()
-		}
-	}, func() {
-		ui.Text(c, "首行作表头").FontSize(theme.FsCap).TextColor(t.Tx3)
-		if kit.Tog(c, !v.noHeader, "tbl-hdr") {
-			v.noHeader = !v.noHeader
-		}
-		if ext := strings.ToLower(path.Ext(tb.path)); ext == ".csv" || ext == ".tsv" {
-			kit.Btn(c, "以文本打开", kit.BtnOpt{Small: true, Icon: "fileText", Tip: "改用文本编辑器打开,可以编辑与保存"}).OnClick(func() { a.viewerAsText(tb) })
-		}
-		kit.Ib(c, "folder", kit.IbOpt{Small: true, Tip: "在访达中显示", Disabled: a.proj == ""}).OnClick(func() { a.revealInFinder(a.absPath(tb.path)) })
-	})
-	if n == 0 {
-		ui.Column(c).Grow(1).Justify(ui.Center).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, "这张表是空的").TextColor(t.Tx3)
-		})
-		return
-	}
-	ui.Table(c, tv.list, tv.cols, n, func(row, col int) {
-		if col == 0 {
-			ui.Text(c, strconv.Itoa(row+tv.start+1)).FontSize(theme.FsCap).TextColor(t.Tx4).SingleLine()
-			return
-		}
-		ui.Text(c, sh.Cell(row+tv.start, col-1)).FontSize(theme.Px(12)).TextColor(t.Tx1).SingleLine()
-	}).Key("tbl-" + tb.id).Grow(1).MinHeight(0)
 }

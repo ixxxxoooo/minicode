@@ -1,6 +1,9 @@
 package app
 
 import (
+	"path"
+	"strings"
+
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 )
@@ -58,6 +61,10 @@ func (a *App) crumbTools(c *ui.Context, tb *ideTab) {
 			if kit.Ib(c, "align", kit.IbOpt{Small: true, Tip: "格式化文档 ⇧⌥F"}).Clicked() {
 				a.formatDoc()
 			}
+		}
+		if ext := strings.ToLower(path.Ext(tb.path)); tb.buf != nil && tb.virt == "" && (ext == ".csv" || ext == ".tsv") {
+			a.tableTextSeg(c, tb) // csv / tsv 的源码标签:切回「预览」就是表格查看器
+			ui.Box(c).Size(6, 1)
 		}
 		if md {
 			a.mdModeSeg(c, tb) // 在换行 / 格式化图标右边、语言 / 编码左边:右侧文字固定,图标增减只改变分段左边,分段不会跳
