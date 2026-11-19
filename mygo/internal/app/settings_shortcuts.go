@@ -23,6 +23,10 @@ var shortcutTable = []shortcutSpec{
 	{id: "toggleMode", title: "切换 Agent / IDE", group: "形态与面板", def: "⌘ E"},
 	{id: "nav", title: "显示 / 隐藏导航栏", group: "形态与面板", def: "⌘ B"},
 	{id: "right", title: "显示 / 隐藏右侧栏", group: "形态与面板", def: "⌥ ⌘ B"},
+	{id: "goChat", title: "导航栏 · 会话", group: "形态与面板", def: "⌘ 1"},
+	{id: "goFiles", title: "导航栏 · 文件", group: "形态与面板", def: "⌘ 2"},
+	{id: "goSearch", title: "导航栏 · 搜索", group: "形态与面板", def: "⌘ 3"},
+	{id: "goScm", title: "导航栏 · 源代码管理", group: "形态与面板", def: "⌘ 4"},
 	{id: "panel", title: "底部面板", group: "形态与面板", def: "⌘ J"},
 	{id: "scm", title: "源代码管理", group: "形态与面板", def: "⌃ ⇧ G"},
 	{id: "find", title: "当前文件查找", group: "编辑器", def: "⌘ F"},
@@ -78,6 +82,14 @@ func keyName(s string) ui.Key {
 		return ui.KeyO
 	case "b":
 		return ui.KeyB
+	case "1":
+		return ui.Key1
+	case "2":
+		return ui.Key2
+	case "3":
+		return ui.Key3
+	case "4":
+		return ui.Key4
 	case "tab":
 		return ui.KeyTab
 	case "esc", "escape":
@@ -133,6 +145,14 @@ func keyLabel(k ui.Key) string {
 		return "O"
 	case ui.KeyB:
 		return "B"
+	case ui.Key1:
+		return "1"
+	case ui.Key2:
+		return "2"
+	case ui.Key3:
+		return "3"
+	case ui.Key4:
+		return "4"
 	case ui.KeyTab:
 		return "Tab"
 	case ui.KeyEscape:
@@ -228,6 +248,7 @@ var recordBinds = []struct {
 	{ui.Cmd, ui.KeyK}, {ui.Cmd, ui.KeyN}, {ui.Cmd, ui.KeyE}, {ui.Cmd, ui.KeyJ},
 	{ui.Cmd, ui.KeyF}, {ui.Cmd, ui.KeyS}, {ui.Cmd, ui.KeyO}, {ui.Cmd, ui.KeyB},
 	{ui.Cmd, ui.KeyComma}, {ui.Cmd, ui.KeySlash}, {ui.Cmd, ui.KeyTab},
+	{ui.Cmd, ui.Key1}, {ui.Cmd, ui.Key2}, {ui.Cmd, ui.Key3}, {ui.Cmd, ui.Key4},
 	{ui.Cmd | ui.Shift, ui.KeyN}, {ui.Cmd | ui.Shift, ui.KeyF}, {ui.Cmd | ui.Shift, ui.KeyO},
 	{ui.Cmd | ui.Shift, ui.KeyTab}, {ui.Cmd | ui.Shift, ui.KeyM},
 	{ui.Cmd | ui.Alt, ui.KeyB}, {ui.Ctrl | ui.Shift, ui.KeyG},

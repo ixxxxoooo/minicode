@@ -161,7 +161,7 @@ func (a *App) sideTop(c *ui.Context) {
 		on := 0
 		nChg, conflict := a.scmBadge()
 		for i, n := range navs {
-			items[i] = kit.SegItem{Icon: n.icon, Tip: n.name}
+			items[i] = kit.SegItem{Icon: n.icon, Tip: n.name + " " + a.shortcutLabel(navShortcutIDs[i])}
 			if n.id == "scm" { // 有未提交改动时,图标右上角亮一个点,不用切过去也知道
 				items[i].Tip = scmTip(nChg, conflict)
 				items[i].Dot, items[i].DotKind = nChg > 0, scmDotKind(conflict)
@@ -171,15 +171,25 @@ func (a *App) sideTop(c *ui.Context) {
 			}
 		}
 		if i := kit.Seg(c, items, on, kit.SegOpt{Icons: true, Fill: true, Key: "navseg"}); i >= 0 {
-			old := a.nav
-			a.nav = navs[i].id
-			if old != a.nav {
-				diag.LogUISwitch("nav:"+old, "nav:"+a.nav, 0)
-			}
-			a.leavePage()
-			a.focusSearchOnEnter(navs[i].id)
+			a.switchNav(navs[i].id)
 		}
 	})
+}
+
+// navShortcutIDs 是导航栏四个分段对应的快捷键 id(与 navs 同序:⌘1 会话 / ⌘2 文件 / ⌘3 搜索 / ⌘4 源代码管理)。
+var navShortcutIDs = []string{"goChat", "goFiles", "goSearch", "goScm"}
+
+// switchNav 切换导航栏分段(点分段与 ⌘1–⌘4 共用):侧栏收起时先展开,离开整页功能,切到搜索时把焦点交给搜索框。
+// 参数:id 是 navs 里的分段 id(chat / files / search / scm)。
+func (a *App) switchNav(id string) {
+	old := a.nav
+	a.nav = id
+	a.sideOpen = true
+	if old != a.nav {
+		diag.LogUISwitch("nav:"+old, "nav:"+a.nav, 0)
+	}
+	a.leavePage()
+	a.focusSearchOnEnter(id)
 }
 
 func (a *App) sideFoot(c *ui.Context) {

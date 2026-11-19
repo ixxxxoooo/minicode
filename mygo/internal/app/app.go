@@ -977,6 +977,14 @@ func (a *App) shortcuts(c *ui.Context) {
 	switch {
 	case a.shortcutHit(c, "nav", ui.Cmd, ui.KeyB):
 		a.sideOpen = !a.sideOpen
+	case a.shortcutHit(c, "goChat", ui.Cmd, ui.Key1):
+		a.switchNav("chat")
+	case a.shortcutHit(c, "goFiles", ui.Cmd, ui.Key2):
+		a.switchNav("files")
+	case a.shortcutHit(c, "goSearch", ui.Cmd, ui.Key3):
+		a.switchNav("search")
+	case a.shortcutHit(c, "goScm", ui.Cmd, ui.Key4):
+		a.switchNav("scm")
 	case a.shortcutHit(c, "right", ui.Cmd|ui.Alt, ui.KeyB):
 		a.toggleRight()
 	case a.shortcutHit(c, "toggleMode", ui.Cmd, ui.KeyE):
