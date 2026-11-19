@@ -22,7 +22,7 @@ func openSessionIsNew(id string) bool {
 	return id == "" || strings.HasPrefix(id, "new:")
 }
 
-// showChatWelcome 是否应显示新会话欢迎页(仅无 id 且无在途载入)。
+// showChatWelcome 是否应显示新会话欢迎页(无 id 或本次新开的会话还没有条目,且无在途载入)。
 func (a *App) showChatWelcome() bool {
 	if a.st == nil || len(a.st.Items) > 0 {
 		return false
@@ -30,7 +30,9 @@ func (a *App) showChatWelcome() bool {
 	if a.sessLoad.active || a.sessLoad.err != "" {
 		return false
 	}
-	return a.curSess == ""
+	// 新会话握手后 curSess 会换成真实 id(afterEvent):此前一握手欢迎页就消失,落成「空白 + 输入框贴底」,
+	// 跟设计稿居中的新会话对不上;freshSess 记着这个 id 是本次新开的,没条目时仍走欢迎页
+	return a.curSess == "" || (a.freshSess != "" && a.freshSess == a.curSess)
 }
 
 func (a *App) beginSessLoad(id string) {

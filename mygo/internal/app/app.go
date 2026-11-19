@@ -165,6 +165,7 @@ type App struct {
 	// 侧栏数据
 	projects   []core.ProjectInfo
 	curSess    string
+	freshSess  string // 本次运行里新开的会话在握手后拿到的 id:还没有条目时仍显示居中的欢迎页(session_load.go showChatWelcome)
 	projOpen   map[string]bool
 	reg        *projects.Store     // 手动添加的项目与工作区(真实:~/.minicode/workspaces.json;演示:内存)
 	ws         *projects.Workspace // 当前激活的工作区(nil = 单项目)
@@ -541,6 +542,7 @@ func (a *App) afterEvent(ev core.Event) {
 	}
 	if e, ok := ev.(core.EvReady); ok && a.curSess == "" && e.SessionID != "" && !strings.HasPrefix(e.SessionID, "demo-") {
 		a.curSess = e.SessionID
+		a.freshSess = e.SessionID // 新会话握手拿到 id 不等于「已有会话」:没发消息前还是欢迎页
 	}
 	if _, ok := ev.(core.EvTurnStarted); ok {
 		a.sessProcLive = true
