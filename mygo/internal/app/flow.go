@@ -1,6 +1,7 @@
 package app
 
 import (
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -253,8 +254,16 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			a.folds[sp.id] = !open
 			a.foldAt[sp.id] = time.Now()
 		})
-	case sp.path != "": // 没有可展开内容的文件步骤(读取):点整行 = 在工作区打开文件
+	case sp.path != "": // 没有可展开内容的文件步骤(读取):点整行 = 在工作区打开文件;读的是图片则打开图片灯箱
 		row.Cursor(ui.CursorPointer).OnClick(func() {
+			if isImageExt(strings.ToLower(filepath.Ext(sp.path))) {
+				if abs := a.resolveUserImage(sp.path); abs != "" {
+					a.openImageLightboxPath(abs)
+				} else {
+					a.toast = "文件已不存在:" + baseName(sp.path)
+				}
+				return
+			}
 			if !a.openPathRef(joinRef(sp.path, sp.line)) {
 				a.toast = "文件已不存在:" + baseName(sp.path)
 			}
