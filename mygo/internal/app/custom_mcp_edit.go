@@ -157,11 +157,10 @@ func (a *App) cuMCPSaveEdit(st *customize.Store, it *customize.Item) {
 			log.Warn("MCP 保存失败", "name", it.Name, "err", err)
 			return
 		}
-		// 刷新状态要跑 claude mcp list 子进程(实测 130 ms ~ 1 s,上限 45 s),不能卡在界面线程里
-		a.bg("刷新MCP状态", func() func() {
-			ds.RefreshMCPStatus()
-			return func() {}
-		})
+		// 保存后重新检测连接状态:要跑 claude mcp list 子进程(实测 130 ms ~ 1 s,上限 45 s),不能卡在界面线程里。
+		// 必须走「后台只取、结果回主线程再写」的 mcpFetchListBG:此前这里在后台线程直接调 ds.RefreshMCPStatus()
+		// (注释写明「只在测试里用」),它会在后台改界面正读的条目;连续保存几台就并发几份,实测引发进程静默崩溃。
+		a.mcpFetchListBG(true)
 	}
 	it.EnvVals = env
 	*it = d

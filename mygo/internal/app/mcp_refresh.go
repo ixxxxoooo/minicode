@@ -64,9 +64,18 @@ func (a *App) mcpRefresh(opts mcpRefreshOpts) {
 
 // mcpFetchListBG 没有会话进程时,用 claude mcp list 给配置里的服务器补连接状态(后台跑,结果回主线程合并)。
 // 它会逐个探活,实测要几十秒,所以同一时刻只跑一个,自动触发的 60 秒内不重复,手动刷新(force)不受限。
+//
+// 手动 / 保存配置后触发的(force)若撞上正在跑的那一次:不叠着起,记下 mcpListAgain,
+// 当前这次跑完后立刻再测一遍——这样连续保存几台服务器,最后一次改动一定被检测到。
 func (a *App) mcpFetchListBG(force bool) {
 	ds := a.cuDisk()
-	if ds == nil || a.mcpListBusy || a.cuDemo() {
+	if ds == nil || a.cuDemo() {
+		return
+	}
+	if a.mcpListBusy {
+		if force {
+			a.mcpListAgain = true
+		}
 		return
 	}
 	if !force && time.Since(a.mcpListAt) < 60*time.Second {
@@ -74,15 +83,17 @@ func (a *App) mcpFetchListBG(force bool) {
 	}
 	a.mcpListBusy, a.mcpRefreshing, a.mcpRefreshAt = true, true, time.Now()
 	a.bg("查询MCP连接状态", func() func() {
-		st, err := ds.FetchMCPStatus()
+		st, err := ds.FetchMCPStatus() // 只跑子进程并解析,不碰 ds;结果在主线程里写
 		return func() {
 			a.mcpListBusy, a.mcpRefreshing, a.mcpListAt = false, false, time.Now()
 			if err != nil {
 				mcpLog.Warn("查询 MCP 状态失败", "err", err)
-				return
-			}
-			if a.cu.disk == ds {
+			} else if a.cu.disk == ds {
 				ds.ApplyMCPStatus(st)
+			}
+			if a.mcpListAgain { // 跑的时候又有人改了配置:按最新配置再测一遍
+				a.mcpListAgain = false
+				a.mcpFetchListBG(true)
 			}
 		}
 	})

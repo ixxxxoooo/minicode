@@ -376,6 +376,7 @@ type App struct {
 	mdChunks          map[string]mdChunkEntry // 长助手正文的分块缓存(见 chunksOf)
 	ctxSent           string                  // 本会话已发给模型的 IDE 上下文(相同内容不重复发)
 	mcpListBusy       bool                    // claude mcp list 正在后台跑(它会逐个探活,可能要几十秒,不能叠着起)
+	mcpListAgain      bool                    // 跑的时候又有人要求刷新(如连续保存多台 MCP):跑完后再测一遍
 	mcpListAt         time.Time               // 上次拿到 mcp list 结果的时间
 	mcpDeny           map[string]bool         // 本地层被禁用的 MCP 工具规则(缓存,弹层打开 / 切换后后台重读)
 	mcpRuntimeAt      int64                   // 最近一次 mcp_status 成功的 Unix 秒
