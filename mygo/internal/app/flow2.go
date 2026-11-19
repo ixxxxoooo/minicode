@@ -17,9 +17,9 @@ func (a *App) assistant(c *ui.Context, m *core.Assistant) {
 	box := ui.Column(c).Key("asst-" + m.ID)
 	box.Children(func() {
 		if m.Streaming {
-			markdown.Stream(c, padCode(m.Text), a.mdOptions())
+			markdown.Stream(c, a.padCodeLinks(m.Text), a.mdOptions())
 		} else {
-			markdown.View(c, padCode(m.Text), a.mdOptions())
+			markdown.View(c, a.padCodeLinks(m.Text), a.mdOptions())
 		}
 	})
 }
@@ -31,9 +31,9 @@ func (a *App) assistantChunk(c *ui.Context, m *core.Assistant, text string, last
 	}
 	ui.Column(c).Key("asst-" + m.ID).Children(func() { // 每块在自己的行上下文里,键不会冲突;不能带随内容变化的值
 		if m.Streaming && last {
-			markdown.Stream(c, padCode(text), a.mdOptions())
+			markdown.Stream(c, a.padCodeLinks(text), a.mdOptions())
 		} else {
-			markdown.View(c, padCode(text), a.mdOptions())
+			markdown.View(c, a.padCodeLinks(text), a.mdOptions())
 		}
 	})
 }

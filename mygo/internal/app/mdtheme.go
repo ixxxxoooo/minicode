@@ -17,7 +17,7 @@ func (a *App) mdTheme() *markdown.Theme {
 	th.Text, th.Strong, th.Muted = t.Tx1, t.Tx1, t.Tx3
 	th.Link = t.AcTx
 	th.CodeFont = theme.CodeFont() // 行内代码与代码块用同一条代码字体链(设置 → 编辑器 → 字体)
-	th.CodeSize = 12 / theme.FsRead
+	th.CodeSize = 11.5 / theme.FsRead
 	// 行内代码跟随主题强调色(设计稿 .md code):字色 AcTx,底色强调色 11%。
 	th.Code, th.CodeBackground = a.inlineCodeColors()
 	th.BlockSpacing = .46
@@ -35,11 +35,11 @@ func (a *App) mdTheme() *markdown.Theme {
 	return th
 }
 
-// inlineCodeColors 返回行内代码的字色与底色:中性(正文色 + 8.5% 墨色底),参照 BaoCode,
-// 不再满屏强调色(强调色留给链接、选中与可点的路径)。助手正文(Markdown)与用户消息共用,保证两处一致。
+// inlineCodeColors 返回行内代码的字色与底色:都取自当前主题的强调色,换主题 / 换强调色自动跟随。
+// 助手正文(Markdown)与用户消息共用,保证两处一致。
 func (a *App) inlineCodeColors() (fg, bg ui.Color) {
 	t := a.tk
-	return t.Tx1, t.Fill2
+	return t.AcTx, t.Ac.Alpha(.11)
 }
 
 // mdOptions 返回(并缓存)会话流用的 Markdown 选项;换主题时清掉。
@@ -50,7 +50,7 @@ func (a *App) mdOptions() *markdown.Options {
 	if a.md == nil || a.mdThemeKey != key {
 		a.mdThemeKey = key
 		opts := &markdown.Options{Theme: th, OnLink: a.openMdLink, LinkMenu: a.linkMenu, HTML: a.mdHTMLBlock,
-			CodeLink: a.codeLink, LinkIcon: a.linkIcon} // 行内代码写的本机路径可点开,前面带文件 / 文件夹图标(path_ref.go)
+			LinkIcon: a.linkIcon} // 路径链接前面带文件 / 文件夹图标(路径在 padCodeLinks 里改写成链接,见 path_ref.go)
 		if a.proj != "" {
 			opts.LoadImage = markdown.FileImages(a.proj)
 		} else if a.ide.fs != nil {

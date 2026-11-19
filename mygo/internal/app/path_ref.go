@@ -10,6 +10,7 @@ import (
 	"github.com/egoist/mygo/ui/markdown"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/mdcompat"
 )
 
 // @author ixxxxoooo
@@ -107,15 +108,6 @@ func (a *App) pathRefOf(code string) pathRefState {
 	return pathRefNone
 }
 
-// codeLink 是 markdown.Options.CodeLink:本机存在的路径 → 链接(目的地就是原文,点击交给 openMdLink)。
-func (a *App) codeLink(code string) (string, bool) {
-	code = strings.TrimSpace(code)
-	if st := a.pathRefOf(code); st == pathRefFile || st == pathRefDir {
-		return code, true
-	}
-	return "", false
-}
-
 // linkIcon 是 markdown.Options.LinkIcon:路径链接前面一枚文件 / 文件夹小图标(别的链接不画)。
 // 参数 dest 是链接目的地,size 是周围文字大小。
 func (a *App) linkIcon(dest string, size float32) (markdown.InlineObject, bool) {
@@ -174,4 +166,57 @@ func (a *App) openDirRef(ref string) bool {
 	}
 	a.revealInFinder(abs)
 	return true
+}
+
+// padCodeLinks 在 padCode 的基础上,把「本机存在的路径」行内代码改写成指向自己的链接 [`路径`](<路径>):
+// 这样框架会给链接前面画文件 / 文件夹图标(LinkIcon),点击走 openMdLink。框架自带的 CodeLink 保留代码原样,
+// 画不了图标,所以改在源码这一层做;源码前面的部分变了,框架会整篇重解析,流式输出不受影响。
+// 已经在链接里的代码([`x`](..))、围栏代码块里的、还没查出来的路径都不动(查出来后下一帧才变成链接)。
+func (a *App) padCodeLinks(src string) string {
+	src = mdcompat.Prepare(src)
+	const thin = "\u2009"
+	var b strings.Builder
+	fenced := false
+	for _, line := range strings.SplitAfter(src, "\n") {
+		if strings.HasPrefix(strings.TrimLeft(line, " "), "```") {
+			fenced = !fenced
+			b.WriteString(line)
+			continue
+		}
+		if fenced || !strings.Contains(line, "`") {
+			b.WriteString(line)
+			continue
+		}
+		rs := []rune(line)
+		for i := 0; i < len(rs); i++ {
+			if rs[i] != '`' {
+				b.WriteRune(rs[i])
+				continue
+			}
+			// 找同一行里配对的结束反引号(只处理单反引号;没配上的原样写出)
+			end := -1
+			for k := i + 1; k < len(rs); k++ {
+				if rs[k] == '`' {
+					end = k
+					break
+				}
+			}
+			if end < 0 {
+				b.WriteRune('`')
+				continue
+			}
+			code := string(rs[i+1 : end])
+			inLink := (i > 0 && rs[i-1] == '[') || (end+2 < len(rs) && rs[end+1] == ']' && rs[end+2] == '(')
+			if !inLink {
+				if st := a.pathRefOf(strings.TrimSpace(code)); st == pathRefFile || st == pathRefDir {
+					b.WriteString("[`" + thin + code + thin + "`](<" + strings.TrimSpace(code) + ">)")
+					i = end
+					continue
+				}
+			}
+			b.WriteString("`" + thin + code + thin + "`")
+			i = end
+		}
+	}
+	return b.String()
 }

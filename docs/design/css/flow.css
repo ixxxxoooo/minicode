@@ -109,10 +109,10 @@
 .md { font-size: var(--fs-read); line-height: var(--lh-read); color: var(--tx-1); }
 .md p { margin: 0 0 8px; } .md h3 { font-size: var(--fs-title); margin: 10px 0 4px; font-weight: var(--fw-strong); }
 .md ul { margin: 0 0 6px; padding-left: 18px; } .md li { margin: 1px 0; } .md li::marker { color: var(--tx-4); }
-/* 行内代码(参照 BaoCode):中性——正文色字 + fill-2 底,左右各 5px 内边距,12px 代码字体链;不再满屏强调色。助手正文与用户消息共用。
-   本机真实存在的路径(文件 / 文件夹)是「可点路径」:前面一枚 12px 图标(文件 / 文件夹,tx-3),悬停底变强调色 14% + 手型光标,点击在工作区打开(文件;`路径:行:列` 跳到行)/ 在文件树定位(文件夹);不存在的路径仍是普通行内代码 */
-.md code, .msg-u code { font: 12px var(--font-mono); color: var(--tx-1); background: var(--fill-2); padding: 1px 5px; border-radius: var(--r-xs); }
-.md code.pathref { cursor: pointer; display: inline-flex; align-items: center; gap: 3px; } .md code.pathref svg { width: 12px; height: 12px; color: var(--tx-3); flex: none; } .md code.pathref:hover { background: color-mix(in srgb, var(--ac) 14%, transparent); } .md code.pathref:hover svg { color: var(--ac); }
+/* 行内代码跟随主题强调色:字色 ac-tx、底色强调色 11%,左右各 5px 内边距,代码字体链(设置 → 编辑器 → 字体);助手正文与用户消息共用。
+   本机真实存在的路径(文件 / 文件夹)是「可点路径」:代码前面多一枚 12px 图标(文件 / 文件夹,tx-3,在底色之外),点击在工作区打开(文件;`路径:行:列` 跳到行)/ 在文件树定位(文件夹);不存在的路径仍是普通行内代码 */
+.md code, .msg-u code { font: var(--fs-mono) var(--font-mono); color: var(--ac-tx); background: color-mix(in srgb, var(--ac) 11%, transparent); padding: 1px 5px; border-radius: var(--r-xs); }
+.md .pathref { cursor: pointer; white-space: nowrap; } .md .pathref > svg { width: 12px; height: 12px; color: var(--tx-3); vertical-align: -2px; margin-right: 3px; }
 /* 围栏代码块:凹槽底 + 1px 边 + r-md;头一行 24px(语言名 tx-3 + 复制按钮),正文等宽 1.6 行高,按语言着色(取 --syn-* 与编辑器同一套:kw / str / fn / type / num / mac / com);无语言标注或语言不认识 = 全部正文色;超 12 行限高折叠 */
 .md pre { margin: 0 0 8px; border-radius: var(--r-lg); position: relative; background: var(--bg-sunken); box-shadow: inset 0 0 0 1px var(--bd-1); overflow: hidden; }
 .md pre .ph { height: 26px; display: flex; align-items: center; gap: 6px; padding: 0 6px 0 12px; color: var(--tx-3); font-size: var(--fs-cap); box-shadow: inset 0 -1px var(--bd-1); }
