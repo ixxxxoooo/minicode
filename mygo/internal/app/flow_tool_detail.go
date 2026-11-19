@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -117,6 +118,29 @@ func toolResultIsMarkdown(tc *core.ToolCall) bool {
 	return false
 }
 
+// monoResultText 判断一段「Markdown 类」结果该不该改用等宽文本卡,并给出要显示的文本。
+// MCP 工具常返回一整行 JSON、base64、长 URL:没有空格 / 标点可折行,放进 Markdown 的双向滚动里,
+// 高度按「折行后」测量、实际却不折行,结果卡被撑到上限、下面一大片空白。
+// JSON 先缩进成多行(保持键序);其它含「超长且无空白」行的文本原样用等宽卡。
+func monoResultText(text string) (string, bool) {
+	s := strings.TrimSpace(text)
+	if s == "" {
+		return "", false
+	}
+	if (s[0] == '{' || s[0] == '[') && len(s) <= 2<<20 && json.Valid([]byte(s)) {
+		var out bytes.Buffer
+		if json.Indent(&out, []byte(s), "", "  ") == nil {
+			return out.String(), true
+		}
+	}
+	for _, ln := range strings.Split(s, "\n") {
+		if len([]rune(ln)) > 160 && !strings.ContainsAny(ln, " \t") {
+			return s, true
+		}
+	}
+	return "", false
+}
+
 // mdResultCard 把 Markdown 结果画进一张卡:最高 foldExpandMax,超出在卡内滚动。
 func (a *App) mdResultCard(c *ui.Context, key, text string, live bool) {
 	a.card(c, nil, func() {
@@ -141,6 +165,12 @@ func (a *App) toolResult(c *ui.Context, tc *core.ToolCall) {
 			shown++
 			text := v.Text
 			if toolResultIsMarkdown(tc) {
+				if mono, ok := monoResultText(text); ok {
+					a.card(c, nil, func() {
+						a.foldBody(c, foldKey("tout", tc.ID+":"+itoa(i)), mono, !tc.Status.Finished(), true, func() { a.copyOut(text, "结果") })
+					})
+					continue
+				}
 				a.mdResultCard(c, foldKey("tmd", tc.ID+":"+itoa(i)), text, !tc.Status.Finished())
 				continue
 			}
