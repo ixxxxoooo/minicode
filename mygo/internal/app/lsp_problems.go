@@ -228,12 +228,22 @@ func (a *App) lspCard(c *ui.Context, s *lspSess) {
 			ui.Text(c, s.spec.Name+"("+s.spec.Lang+")启动中…").TextColor(t.Tx2)
 			return
 		case lspMissing:
+			if j := a.lspJobOf(s.spec); j != nil { // 正在下载安装 / 失败了:卡片显示任务状态
+				a.lspCardJob(c, s, j)
+				return
+			}
 			kit.Ic(c, "alert", kit.S14).TextColor(t.Warn)
 			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 				ui.Text(c, "未安装 "+s.spec.Name+"("+s.spec.Lang+" 语言服务)").FontWeight(500)
 				ui.Text(c, s.spec.Install+" · "+s.spec.Hint).Font("monospace").FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
 			})
-			kit.Btn(c, "安装", kit.BtnOpt{Small: true, Variant: kit.BtnPri, Icon: "terminal"}).OnClick(func() { a.lspInstall(s) })
+			if s.spec.Managed() { // 依赖 Node 的服务器:主按钮是下载安装(托管 Node + 固定版本的包),终端安装留作备选
+				kit.Btn(c, "下载安装", kit.BtnOpt{Small: true, Variant: kit.BtnPri, Icon: "download"}).
+					Tooltip("用" + a.lspMirror().Label() + "下载固定版本的语言包;本机没有合适的 Node 时先下载一份(点了才联网)").OnClick(func() { a.lspInstallManaged(s.spec) })
+				kit.Btn(c, "在终端安装", kit.BtnOpt{Small: true, Variant: kit.BtnGhost, Icon: "terminal"}).OnClick(func() { a.lspInstall(s) })
+			} else {
+				kit.Btn(c, "安装", kit.BtnOpt{Small: true, Variant: kit.BtnPri, Icon: "terminal"}).OnClick(func() { a.lspInstall(s) })
+			}
 			if kit.Ib(c, "copy", kit.IbOpt{Small: true, Tip: "复制安装命令"}).Clicked() {
 				a.copyText = s.spec.Install
 				a.toast = "已复制安装命令"
@@ -250,6 +260,27 @@ func (a *App) lspCard(c *ui.Context, s *lspSess) {
 			kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnSoft, Icon: "refresh"}).OnClick(func() { a.lspRetry(s) })
 		}
 	})
+}
+
+// lspCardJob 是服务器状态卡里「下载安装」任务的状态:进行中(可取消)或失败(可重试 / 看日志)。
+func (a *App) lspCardJob(c *ui.Context, s *lspSess, j *lspJob) {
+	t := a.tk
+	if j.err == "" {
+		kit.Spin(c, t.Ac)
+		ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+			ui.Text(c, "正在下载安装 "+s.spec.Name).FontWeight(500)
+			ui.Text(c, lspJobText(j)).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
+		})
+		kit.Btn(c, "取消", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(func() { a.lspJobCancel(s.spec) })
+		return
+	}
+	kit.Ic(c, "errc", kit.S14).TextColor(t.Err)
+	ui.Column(c).Grow(1).MinWidth(0).Children(func() {
+		ui.Text(c, "下载安装 "+s.spec.Name+" 失败").FontWeight(500)
+		ui.Text(c, j.err).FontSize(theme.FsCap).TextColor(t.Tx3).SingleLine()
+	})
+	kit.Btn(c, "重试", kit.BtnOpt{Small: true, Variant: kit.BtnSoft, Icon: "refresh"}).OnClick(func() { a.lspInstallManaged(s.spec) })
+	kit.Btn(c, "查看日志", kit.BtnOpt{Small: true, Variant: kit.BtnGhost}).OnClick(a.lspShowLog)
 }
 
 // allProblemsText 把全部诊断拼成「文件:行 消息」的多行文本(右键「复制全部」)。

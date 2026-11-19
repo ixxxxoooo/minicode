@@ -166,6 +166,10 @@ func LSPDemoRows() []LSPDemoRow {
 		{ID: "ts", Name: "typescript-language-server", Lang: "TypeScript / JavaScript", Exts: ".ts, .tsx, .js", Status: "未安装", Install: "npm install -g typescript-language-server", OK: false, Enabled: false},
 		{ID: "c", Name: "clangd", Lang: "C / C++", Exts: ".c, .cpp, …", Status: "已安装", Path: "/usr/bin/clangd", OK: true, Enabled: true},
 		{ID: "swift", Name: "SourceKit-LSP", Lang: "Swift", Exts: ".swift", Status: "已安装", Path: "/usr/bin/sourcekit-lsp", OK: true, Enabled: true},
+		// 下面三行演示「托管 Node 与语言包」的各态:下载中(设置页另有任务状态)、已装(托管)、已装但有新版本
+		{ID: "php", Name: "Intelephense", Lang: "PHP", Exts: ".php, .phtml", Status: "未安装", Install: "npm install -g intelephense", OK: false, Enabled: true},
+		{ID: "bash", Name: "bash-language-server", Lang: "Shell", Exts: ".sh, .bash, .zsh", Status: "已安装", Path: "~/.minicode/lsp/bash/node_modules/.bin/bash-language-server", OK: true, Enabled: true},
+		{ID: "yaml", Name: "yaml-language-server", Lang: "YAML", Exts: ".yaml, .yml", Status: "可更新", Path: "~/.minicode/lsp/yaml/node_modules/.bin/yaml-language-server", OK: true, Enabled: true},
 	}
 }
 
