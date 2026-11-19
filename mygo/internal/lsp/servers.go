@@ -23,6 +23,12 @@ type Spec struct {
 	Install string   // 安装命令(在终端里运行)
 	Hint    string   // 安装前提 / 备注
 	Roots   []string // 项目根标记文件(向上找)
+
+	// 托管安装(npm 系的服务器):NPM 是固定版本的包(如 "pyright@1.1.414"),空 = 不支持下载安装;
+	// NPMGroup 让同一个包提供的多个服务器共用一个目录;MinNode 是它要求的最低 Node 版本(本机 Node 不够就用托管的)。
+	NPM      []string
+	NPMGroup string
+	MinNode  string
 }
 
 // Specs 是内置的服务器清单。
@@ -33,13 +39,13 @@ var Specs = []Spec{
 		Install: "go install golang.org/x/tools/gopls@latest", Hint: "需要 Go 工具链", Roots: []string{"go.work", "go.mod"}},
 	{ID: "python", Name: "Pyright", Lang: "Python", Exts: []string{".py", ".pyi"},
 		Bins: []string{"pyright-langserver", "basedpyright-langserver"}, Args: []string{"--stdio"},
-		Install: "npm install -g pyright", Hint: "需要 Node.js / npm", Roots: []string{"pyproject.toml", "setup.py", "requirements.txt", "pyrightconfig.json"}},
+		NPM: []string{"pyright@1.1.414"}, MinNode: "18.0.0", Install: "npm install -g pyright", Hint: "需要 Node.js / npm", Roots: []string{"pyproject.toml", "setup.py", "requirements.txt", "pyrightconfig.json"}},
 	{ID: "lua", Name: "lua-language-server", Lang: "Lua", Exts: []string{".lua"}, Bins: []string{"lua-language-server"},
 		Install: "brew install lua-language-server", Hint: "需要 Homebrew", Roots: []string{".luarc.json", ".luarc.jsonc", ".stylua.toml"}},
 	{ID: "ts", Name: "typescript-language-server", Lang: "TypeScript / JavaScript", Exts: []string{".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"},
 		LangIDs: map[string]string{".ts": "typescript", ".tsx": "typescriptreact", ".js": "javascript", ".jsx": "javascriptreact", ".mjs": "javascript", ".cjs": "javascript"},
 		Bins:    []string{"typescript-language-server"}, Args: []string{"--stdio"},
-		Install: "npm install -g typescript typescript-language-server", Hint: "需要 Node.js / npm", Roots: []string{"tsconfig.json", "package.json"}},
+		NPM: []string{"typescript@7.0.2", "typescript-language-server@6.1.0"}, MinNode: "22.22.2", Install: "npm install -g typescript typescript-language-server", Hint: "需要 Node.js / npm", Roots: []string{"tsconfig.json", "package.json"}},
 	{ID: "c", Name: "clangd", Lang: "C / C++", Exts: []string{".c", ".h", ".cc", ".cpp", ".hpp", ".cxx", ".m", ".mm"},
 		LangIDs: map[string]string{".c": "c", ".h": "c", ".cc": "cpp", ".cpp": "cpp", ".hpp": "cpp", ".cxx": "cpp", ".m": "objective-c", ".mm": "objective-cpp"},
 		Bins:    []string{"clangd"}, Install: "brew install llvm", Hint: "Xcode 命令行工具自带 clangd", Roots: []string{"compile_commands.json", "CMakeLists.txt", ".clangd"}},
@@ -52,35 +58,35 @@ var Specs = []Spec{
 	{ID: "csharp", Name: "csharp-ls", Lang: "C#", Exts: []string{".cs", ".csx"}, Bins: []string{"csharp-ls"},
 		Install: "dotnet tool install --global csharp-ls", Hint: "需要 .NET SDK;装完把 ~/.dotnet/tools 加进 PATH", Roots: []string{"*.sln", "*.csproj", "global.json"}},
 	{ID: "php", Name: "Intelephense", Lang: "PHP", Exts: []string{".php", ".phtml"}, Bins: []string{"intelephense"}, Args: []string{"--stdio"},
-		Install: "npm install -g intelephense", Hint: "需要 Node.js / npm", Roots: []string{"composer.json", ".git"}},
+		NPM: []string{"intelephense@1.18.5"}, MinNode: "18.0.0", Install: "npm install -g intelephense", Hint: "需要 Node.js / npm", Roots: []string{"composer.json", ".git"}},
 	{ID: "ruby", Name: "ruby-lsp", Lang: "Ruby", Exts: []string{".rb", ".rake", ".gemspec", ".erb"}, Bins: []string{"ruby-lsp"},
 		LangIDs: map[string]string{".erb": "erb"},
 		Install: "gem install ruby-lsp", Hint: "需要 Ruby / RubyGems", Roots: []string{"Gemfile", ".ruby-version"}},
 	{ID: "html", Name: "vscode-html-language-server", Lang: "HTML", Exts: []string{".html", ".htm"}, Bins: []string{"vscode-html-language-server"}, Args: []string{"--stdio"},
-		Install: "npm install -g vscode-langservers-extracted", Hint: "需要 Node.js / npm;同一个包也提供 CSS / JSON", Roots: []string{"package.json", "index.html"}},
+		NPM: []string{"vscode-langservers-extracted@4.10.0"}, NPMGroup: "vscode-langservers", MinNode: "18.0.0", Install: "npm install -g vscode-langservers-extracted", Hint: "需要 Node.js / npm;同一个包也提供 CSS / JSON", Roots: []string{"package.json", "index.html"}},
 	{ID: "css", Name: "vscode-css-language-server", Lang: "CSS / SCSS / Less", Exts: []string{".css", ".scss", ".less"}, Bins: []string{"vscode-css-language-server"}, Args: []string{"--stdio"},
 		LangIDs: map[string]string{".css": "css", ".scss": "scss", ".less": "less"},
-		Install: "npm install -g vscode-langservers-extracted", Hint: "需要 Node.js / npm;同一个包也提供 HTML / JSON", Roots: []string{"package.json"}},
+		NPM:     []string{"vscode-langservers-extracted@4.10.0"}, NPMGroup: "vscode-langservers", MinNode: "18.0.0", Install: "npm install -g vscode-langservers-extracted", Hint: "需要 Node.js / npm;同一个包也提供 HTML / JSON", Roots: []string{"package.json"}},
 	{ID: "json", Name: "vscode-json-language-server", Lang: "JSON", Exts: []string{".json", ".jsonc"}, Bins: []string{"vscode-json-language-server"}, Args: []string{"--stdio"},
 		LangIDs: map[string]string{".json": "json", ".jsonc": "jsonc"},
-		Install: "npm install -g vscode-langservers-extracted", Hint: "需要 Node.js / npm;同一个包也提供 HTML / CSS", Roots: []string{"package.json"}},
+		NPM:     []string{"vscode-langservers-extracted@4.10.0"}, NPMGroup: "vscode-langservers", MinNode: "18.0.0", Install: "npm install -g vscode-langservers-extracted", Hint: "需要 Node.js / npm;同一个包也提供 HTML / CSS", Roots: []string{"package.json"}},
 	{ID: "yaml", Name: "yaml-language-server", Lang: "YAML", Exts: []string{".yaml", ".yml"}, Bins: []string{"yaml-language-server"}, Args: []string{"--stdio"},
-		Install: "npm install -g yaml-language-server", Hint: "需要 Node.js / npm"},
+		NPM: []string{"yaml-language-server@2.0.0"}, MinNode: "22.13.0", Install: "npm install -g yaml-language-server", Hint: "需要 Node.js / npm"},
 	{ID: "toml", Name: "taplo", Lang: "TOML", Exts: []string{".toml"}, Bins: []string{"taplo"}, Args: []string{"lsp", "stdio"},
 		Install: "brew install taplo", Hint: "需要 Homebrew(或 cargo install taplo-cli --features lsp)"},
 	{ID: "sql", Name: "sqls", Lang: "SQL", Exts: []string{".sql"}, Bins: []string{"sqls"},
 		Install: "go install github.com/sqls-org/sqls@latest", Hint: "需要 Go 工具链;补全 / 诊断要在项目里放 .sqls/config.yml 配数据库连接,没配时只有语法层面的功能"},
 	{ID: "bash", Name: "bash-language-server", Lang: "Shell", Exts: []string{".sh", ".bash", ".zsh"}, Bins: []string{"bash-language-server"}, Args: []string{"start"},
 		LangIDs: map[string]string{".sh": "shellscript", ".bash": "shellscript", ".zsh": "shellscript"},
-		Install: "npm install -g bash-language-server", Hint: "需要 Node.js / npm;装 shellcheck(brew install shellcheck)后诊断更全"},
+		NPM:     []string{"bash-language-server@5.8.1"}, MinNode: "20.0.0", Install: "npm install -g bash-language-server", Hint: "需要 Node.js / npm;装 shellcheck(brew install shellcheck)后诊断更全"},
 	{ID: "docker", Name: "docker-langserver", Lang: "Dockerfile", Exts: []string{".dockerfile"}, Names: []string{"Dockerfile", "Containerfile"},
 		Bins: []string{"docker-langserver"}, Args: []string{"--stdio"}, LangIDs: map[string]string{"": "dockerfile", ".dockerfile": "dockerfile"},
-		Install: "npm install -g dockerfile-language-server-nodejs", Hint: "需要 Node.js / npm"},
+		NPM: []string{"dockerfile-language-server-nodejs@0.15.0"}, MinNode: "18.0.0", Install: "npm install -g dockerfile-language-server-nodejs", Hint: "需要 Node.js / npm"},
 	{ID: "terraform", Name: "terraform-ls", Lang: "Terraform", Exts: []string{".tf", ".tfvars"}, Bins: []string{"terraform-ls"}, Args: []string{"serve"},
 		LangIDs: map[string]string{".tf": "terraform", ".tfvars": "terraform-vars"},
 		Install: "brew install hashicorp/tap/terraform-ls", Hint: "需要 Homebrew", Roots: []string{".terraform", "main.tf"}},
 	{ID: "svelte", Name: "svelte-language-server", Lang: "Svelte", Exts: []string{".svelte"}, Bins: []string{"svelteserver"}, Args: []string{"--stdio"},
-		Install: "npm install -g svelte-language-server", Hint: "需要 Node.js / npm", Roots: []string{"svelte.config.js", "svelte.config.ts", "package.json"}},
+		NPM: []string{"svelte-language-server@0.18.6"}, MinNode: "18.0.0", Install: "npm install -g svelte-language-server", Hint: "需要 Node.js / npm", Roots: []string{"svelte.config.js", "svelte.config.ts", "package.json"}},
 	{ID: "dart", Name: "Dart 分析服务", Lang: "Dart / Flutter", Exts: []string{".dart"}, Bins: []string{"dart"}, Args: []string{"language-server", "--protocol=lsp"},
 		Install: "brew install dart-sdk", Hint: "Flutter 自带 dart;需要 Dart SDK", Roots: []string{"pubspec.yaml"}},
 	{ID: "zig", Name: "zls", Lang: "Zig", Exts: []string{".zig", ".zon"}, Bins: []string{"zls"},
@@ -133,9 +139,7 @@ func searchDirs() []string {
 	if home != "" {
 		dirs = append(dirs, filepath.Join(home, "go", "bin"), filepath.Join(home, ".cargo", "bin"), filepath.Join(home, ".local", "bin"),
 			filepath.Join(home, ".bun", "bin"))
-		if m, _ := filepath.Glob(filepath.Join(home, ".nvm", "versions", "node", "*", "bin")); len(m) > 0 {
-			dirs = append(dirs, m...)
-		}
+		dirs = append(dirs, nvmBins(home)...) // 新版本在前(Glob 是字典序,v9 会排到 v24 后面)
 		// rustup 工具链里的真实 rust-analyzer(~/.cargo/bin 里的是转发到 rustup 的代理,没装组件时一启动就退出)
 		if m, _ := filepath.Glob(filepath.Join(home, ".rustup", "toolchains", "*", "bin")); len(m) > 0 {
 			dirs = append(m, dirs...)
@@ -160,7 +164,7 @@ func (s *Spec) Find() (string, bool) {
 			return p, true
 		}
 	}
-	return "", false
+	return s.ManagedBin() // 用户自己装的都没有,再用应用下载安装的
 }
 
 // isRustupProxy:~/.cargo/bin 里的 rust-analyzer 若是指向 rustup 的符号链接就是代理。
@@ -198,7 +202,7 @@ func (s *Spec) Root(file, fallback string) string {
 // 用 npm 装的服务器(intelephense、pyright、typescript-language-server…)开头是 `#!/usr/bin/env node`,
 // 找不到 node 就以 127 立刻退出,界面只看到「语言服务器已退出」。npm 全局安装时 node 与服务器在同一个 bin 目录,
 // 所以把它所在目录放最前面,既能找到 node,也保证是装它时用的那一版。
-func toolEnv(bin string) []string {
+func (s *Spec) toolEnv(bin string) []string {
 	var dirs []string
 	seen := map[string]bool{}
 	add := func(d string) {
@@ -208,6 +212,11 @@ func toolEnv(bin string) []string {
 		}
 	}
 	add(filepath.Dir(bin))
+	if IsManagedPath(bin) { // 托管目录的 .bin 里没有 node:加上选中的那个(本机优先,其次托管下载的)
+		if n, ok := ResolveNode(s.MinNode, false); ok {
+			add(n.Dir)
+		}
+	}
 	for _, d := range searchDirs() {
 		add(d)
 	}
@@ -227,7 +236,7 @@ func toolEnv(bin string) []string {
 func (s *Spec) Start(bin, root string, h Handlers, logf func(string)) (*Client, *exec.Cmd, error) {
 	cmd := exec.Command(bin, s.Args...)
 	cmd.Dir = root
-	cmd.Env = toolEnv(bin)
+	cmd.Env = s.toolEnv(bin)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, nil, err
