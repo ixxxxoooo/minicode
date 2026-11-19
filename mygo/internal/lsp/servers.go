@@ -1,10 +1,12 @@
 package lsp
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -190,10 +192,42 @@ func (s *Spec) Root(file, fallback string) string {
 	return fallback
 }
 
-// Start 启动服务器进程并完成握手。stderr 的内容经 logf 送出(进「输出 → 语言服务」)。
+// toolEnv 给语言服务器进程的环境:PATH 里先放可执行文件自己所在的目录,再放 searchDirs(本进程 PATH + 常见安装目录)。
+//
+// 为什么:从访达 / Dock 启动的应用只继承 launchd 的 PATH(/usr/bin:/bin:…),看不到 nvm / homebrew 的目录。
+// 用 npm 装的服务器(intelephense、pyright、typescript-language-server…)开头是 `#!/usr/bin/env node`,
+// 找不到 node 就以 127 立刻退出,界面只看到「语言服务器已退出」。npm 全局安装时 node 与服务器在同一个 bin 目录,
+// 所以把它所在目录放最前面,既能找到 node,也保证是装它时用的那一版。
+func toolEnv(bin string) []string {
+	var dirs []string
+	seen := map[string]bool{}
+	add := func(d string) {
+		if d != "" && !seen[d] {
+			seen[d] = true
+			dirs = append(dirs, d)
+		}
+	}
+	add(filepath.Dir(bin))
+	for _, d := range searchDirs() {
+		add(d)
+	}
+	path := "PATH=" + strings.Join(dirs, string(os.PathListSeparator))
+	env := os.Environ()
+	out := make([]string, 0, len(env)+1)
+	for _, kv := range env {
+		if !strings.HasPrefix(kv, "PATH=") {
+			out = append(out, kv)
+		}
+	}
+	return append(out, path)
+}
+
+// Start 启动服务器进程并完成握手。stderr 的内容经 logf 送出(进「输出 → 语言服务」);
+// 握手失败时把 stderr 最后几行拼进错误(否则只剩一句「语言服务器已退出」,看不出为什么)。
 func (s *Spec) Start(bin, root string, h Handlers, logf func(string)) (*Client, *exec.Cmd, error) {
 	cmd := exec.Command(bin, s.Args...)
 	cmd.Dir = root
+	cmd.Env = toolEnv(bin)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, nil, err
@@ -209,12 +243,18 @@ func (s *Spec) Start(bin, root string, h Handlers, logf func(string)) (*Client, 
 	if err := cmd.Start(); err != nil {
 		return nil, nil, err
 	}
+	var (
+		tailMu     sync.Mutex
+		tail       []string // stderr 最后几行,握手失败时拼进错误
+		stderrDone = make(chan struct{})
+	)
 	go func() {
+		defer close(stderrDone)
 		buf := make([]byte, 4096)
 		var carry string
 		for {
 			n, err := stderr.Read(buf)
-			if n > 0 && logf != nil {
+			if n > 0 {
 				carry += string(buf[:n])
 				for {
 					i := strings.IndexByte(carry, '\n')
@@ -222,7 +262,14 @@ func (s *Spec) Start(bin, root string, h Handlers, logf func(string)) (*Client, 
 						break
 					}
 					if ln := strings.TrimSpace(carry[:i]); ln != "" {
-						logf(ln)
+						if logf != nil {
+							logf(ln)
+						}
+						tailMu.Lock()
+						if tail = append(tail, ln); len(tail) > 4 {
+							tail = tail[1:]
+						}
+						tailMu.Unlock()
 					}
 					carry = carry[i+1:]
 				}
@@ -236,6 +283,19 @@ func (s *Spec) Start(bin, root string, h Handlers, logf func(string)) (*Client, 
 	go func() { <-c.Done(); _ = cmd.Wait() }()
 	if err := c.Initialize(PathToURI(root), filepath.Base(root), 60*time.Second); err != nil {
 		_ = cmd.Process.Kill()
+		select { // 给 stderr 一点时间读完,错误里带上服务器自己说的话
+		case <-stderrDone:
+		case <-time.After(500 * time.Millisecond):
+		}
+		tailMu.Lock()
+		why := strings.Join(tail, " | ")
+		tailMu.Unlock()
+		if r := []rune(why); len(r) > 300 {
+			why = string(r[:300]) + "…"
+		}
+		if why != "" {
+			err = fmt.Errorf("%w(服务器输出:%s)", err, why)
+		}
 		return nil, nil, err
 	}
 	return c, cmd, nil

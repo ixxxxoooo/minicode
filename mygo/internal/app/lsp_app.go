@@ -220,6 +220,7 @@ func (a *App) lspStart(key string, s *lspSess) {
 			}
 			if err != nil {
 				s.state, s.err = lspFailed, err.Error()
+				diag.L("lsp").Warn("语言服务器启动失败", "server", s.spec.Name, "bin", bin, "root", s.root, "err", err)
 				a.outAppend(outLSP, s.spec.Name+" 启动失败:"+err.Error())
 				return
 			}
