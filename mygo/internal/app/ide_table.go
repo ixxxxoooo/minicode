@@ -342,6 +342,9 @@ func fmtNum(f float64) string {
 // ───────── 界面 ─────────
 
 func (a *App) tableView(c *ui.Context, tb *ideTab) {
+	if tb.buf != nil { // 从源码标签切回预览:文本缓冲区在这一帧才释放(见 textAsTable)
+		tb.buf, tb.st = nil, nil
+	}
 	v, t := tb.vw, a.tk
 	wb := v.wb
 	if wb == nil || len(wb.Sheets) == 0 {
@@ -682,6 +685,7 @@ func (a *App) textAsTable(tb *ideTab) {
 		return
 	}
 	viewLog.Info("改用表格预览", "path", tb.path)
+	// 不能在这里清 buf / st:本函数在面包屑里被调用,同一帧后面的 codeView 还要用它们(清了会空指针)。
+	// 切成查看器后下一帧走 viewerTab 分支,tableView 开头再释放。
 	tb.viewer, tb.vw = "table", &viewerState{}
-	tb.buf, tb.st = nil, nil
 }

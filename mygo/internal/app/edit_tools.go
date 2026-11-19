@@ -62,7 +62,7 @@ func (a *App) crumbTools(c *ui.Context, tb *ideTab) {
 				a.formatDoc()
 			}
 		}
-		if ext := strings.ToLower(path.Ext(tb.path)); tb.buf != nil && tb.virt == "" && (ext == ".csv" || ext == ".tsv") {
+		if ext := strings.ToLower(path.Ext(tb.path)); tb.viewer == "" && tb.buf != nil && tb.virt == "" && (ext == ".csv" || ext == ".tsv") {
 			a.tableTextSeg(c, tb) // csv / tsv 的源码标签:切回「预览」就是表格查看器
 			ui.Box(c).Size(6, 1)
 		}
