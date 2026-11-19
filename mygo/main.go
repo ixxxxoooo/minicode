@@ -30,7 +30,7 @@ import (
 // 构建时可用 -ldflags "-X main.version=..." 覆盖。
 var log = diag.L("app")
 
-var version = "0.3.10-mygo"
+var version = "0.3.11-mygo"
 
 func env(k, def string) string {
 	if v := os.Getenv(k); v != "" {
