@@ -102,7 +102,7 @@ func (a *App) applyBehavior() {
 	a.applyTermRuntimePrefs()
 	fam := a.termFontFamily()
 	lh := []float32{1.4, 1.6, 1.8}[min(max(a.prefs.Int("term.lineHeight", 1), 0), 2)]
-	f := float32(a.prefs.Int(pTermFont, 12)) - .5
+	f := float32(a.prefs.Int(pTermFont, termFontDefault)) // 设置里的字号就是实际字号(与编辑器一致,默认 13)
 	if f != termFont || fam != termFamily || f*lh != termLineH {
 		termFont, termLineH, termFamily = f, f*lh, fam
 		for _, tp := range a.ide.tps {
@@ -236,6 +236,9 @@ func d2active(d *ide, t *ideTab) func() {
 
 // edFontDefault 是编辑器字号的默认值(与设置页「字号」一致)。
 const edFontDefault = theme.DefaultCodeSize
+
+// termFontDefault 是终端字号的默认值(与编辑器同为 13,设置页「字号」一致)。
+const termFontDefault = theme.DefaultCodeSize
 
 // setEditorFont 改编辑器字号(9–24):⌘+ / ⌘- / 状态栏芯片 / 命令面板共用;等于默认值时删键,设置页的「已修改」点随之消失。
 func (a *App) setEditorFont(n int) {

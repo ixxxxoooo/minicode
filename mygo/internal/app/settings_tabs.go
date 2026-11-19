@@ -498,7 +498,7 @@ var settingsTabs = []setTabDef{
 
 	{id: "terminal", title: "终端", icon: "terminal", desc: "内置终端的外观与 Shell。", groups: []setGroup{
 		{title: "外观", rows: []setRow{
-			rStp("term.fontSize", "字号", "终端文字大小,行高自动按比例换算", 12, 9, 24, 1, "px"),
+			rStp("term.fontSize", "字号", "终端文字大小,默认 13(与编辑器一致),行高自动按比例换算", 13, 9, 24, 1, "px"),
 			rSeg(pTermFontWeight, "字重", "普通文本的默认粗细;ANSI 粗体仍为 700", 0, "常规", "粗体"),
 			rSeg("term.lineHeight", "行高", "", 1, "紧凑", "标准", "宽松"),
 			rStp(pTermLetterSpacing, "字间距", "暂未接列宽调节(仅占位偏好);盒绘字符仍按等宽格对齐", 0, 0, 0, 1, "px"),

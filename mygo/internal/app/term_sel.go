@@ -654,11 +654,11 @@ func (a *App) termShortcuts(c *ui.Context) bool {
 	case (a.termHasFocus || tp.find.open) && a.shortcutHit(c, "termFind", ui.Cmd, ui.KeyF):
 		a.openTermFind()
 	case a.termHasFocus && c.Shortcut(ui.Cmd, ui.KeyEqual), a.termHasFocus && c.Shortcut(ui.Cmd|ui.Shift, ui.KeyEqual):
-		a.setTermFont(a.prefs.Int(pTermFont, 12) + 1)
+		a.setTermFont(a.prefs.Int(pTermFont, termFontDefault) + 1)
 	case a.termHasFocus && c.Shortcut(ui.Cmd, ui.KeyMinus):
-		a.setTermFont(a.prefs.Int(pTermFont, 12) - 1)
+		a.setTermFont(a.prefs.Int(pTermFont, termFontDefault) - 1)
 	case a.termHasFocus && c.Shortcut(ui.Cmd, ui.Key0):
-		a.setTermFont(12)
+		a.setTermFont(termFontDefault)
 	default:
 		return false
 	}

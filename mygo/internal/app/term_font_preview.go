@@ -12,7 +12,7 @@ import (
 // 参数:pref 要预览的字体(可以是逗号分隔的回退链);applied 表示它就是当前生效的字体。
 func (a *App) termFontPreview(c *ui.Context, pref string, applied bool) {
 	chainStr := buildTermFontChain(pref, a.prefs.Bool("term.nerdFallback", true))
-	a.fontPreview(c, pref, applied, chainStr, float32(a.prefs.Int(pTermFont, 12)), "跟随编辑器字体")
+	a.fontPreview(c, pref, applied, chainStr, float32(a.prefs.Int(pTermFont, termFontDefault)), "跟随编辑器字体")
 }
 
 // codeFontPreview 画代码字体预览:用编辑器真正会用的字体链(加连字设置)渲染各类字符。

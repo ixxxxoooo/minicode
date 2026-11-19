@@ -26,8 +26,8 @@ const termHistory = 200 // 面板里最多带的历史行数
 
 // 终端字号与行高(设置「终端 → 字号」改它;行高 = 字号 × 1.6)。
 var (
-	termFont   float32 = 11.5
-	termLineH  float32 = 18.4
+	termFont   float32 = 13
+	termLineH  float32 = 13 * 1.6
 	termFamily         = "monospace" // 终端字体(设置 → 终端 → 字体;空 = 系统等宽)
 )
 

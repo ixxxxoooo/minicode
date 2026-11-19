@@ -206,7 +206,7 @@
       ${G('忽略规则', `<div style="padding:10px 12px">${area('target\nnode_modules\n.git\ndist', { mono: 1, id: 'ign', rows: 4 })}<div class="d t3 fs-cap" style="margin-top:6px">同时作用于文件树、搜索与文件监视</div></div>`)}`; } },
 
     terminal: { t: '终端', d: '内置终端的外观与 Shell。', body: () => `
-      ${G('外观', R('字号', '终端文字大小', stp(12, 'px', { min: 9, max: 24 })), R('字重', '常规 / 粗体默认', seg(['常规', '粗体'], 0)), R('行高', '', seg(['紧凑', '标准', '宽松'], 1)), R('光标形状', '', seg(['块', '竖线', '下划线'], 0)), R('选择即复制', '', tog(0)), R('滚轮灵敏度', '回看历史每次滚动行数', stp(3, '行', { min: 1, max: 5 })), R('字体连字', 'calt / liga', tog(0)), R('标签排列', '竖向时单终端也竖排;自动 ≥2 且面板 ≥640', seg(['横向', '竖向', '自动'], 2)))}
+      ${G('外观', R('字号', '终端文字大小,默认 13(与编辑器一致),行高自动按比例换算', stp(13, 'px', { min: 9, max: 24 })), R('字重', '常规 / 粗体默认', seg(['常规', '粗体'], 0)), R('行高', '', seg(['紧凑', '标准', '宽松'], 1)), R('光标形状', '', seg(['块', '竖线', '下划线'], 0)), R('选择即复制', '', tog(0)), R('滚轮灵敏度', '回看历史每次滚动行数', stp(3, '行', { min: 1, max: 5 })), R('字体连字', 'calt / liga', tog(0)), R('标签排列', '竖向时单终端也竖排;自动 ≥2 且面板 ≥640', seg(['横向', '竖向', '自动'], 2)))}
       ${G('字体', `<div style="padding:8px 12px 10px;display:flex;flex-direction:column;gap:8px">${seg(['常见等宽', '全部字体'], 0)}
         <div class="f ai g2" style="height:40px;padding:0 8px;border-radius:var(--r-sm);background:var(--sel)">${ic('check', 's14 c-ac')}<div class="grow"><div style="font-weight:500">JetBrainsMono Nerd Font</div><div class="t3 fs-cap">已安装 · Nerd Font</div></div></div>
         <div class="f ai g2" style="height:40px;padding:0 8px"><span style="width:14px"></span><div class="grow"><div style="font-weight:500">Fira Code</div><div class="t3 fs-cap" style="color:var(--warn)">未安装</div></div>${btn('安装', 'sm', 'download')}</div>
