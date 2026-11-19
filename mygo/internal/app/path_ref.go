@@ -309,7 +309,8 @@ func (a *App) openPathSmart(ref string) bool {
 		a.openImageLightboxPath(abs)
 		return true
 	}
-	if !isTextFile(abs) {
+	// 网页(.html / .htm)交给系统默认浏览器;PDF / Office / 压缩包 / 音视频等非文本文件交给系统默认程序
+	if ext := strings.ToLower(filepath.Ext(abs)); ext == ".html" || ext == ".htm" || ext == ".xhtml" || !isTextFile(abs) {
 		log.Info("会话里的路径:交给系统默认程序打开", "path", abs)
 		if testing.Testing() { // 单测里不要真的拉起外部程序
 			return true
