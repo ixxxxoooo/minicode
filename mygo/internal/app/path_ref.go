@@ -3,7 +3,9 @@ package app
 import (
 	"os"
 	"regexp"
+	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -37,6 +39,9 @@ const pathLinkScheme = "mc-path:"
 
 // pathRefCap 是缓存条数上限,超了整表清空(会话很长时防止无限增长)。
 const pathRefCap = 4000
+
+// pathChipMaxText 是路径胶囊里文字的最大宽度(DIP),超出从中间省略。
+const pathChipMaxText = 380
 
 // pathRefCache 缓存「路径文字 → 探测结果」,只在界面线程读写。
 type pathRefCache struct {
@@ -113,9 +118,24 @@ func (a *App) pathRefOf(code string) pathRefState {
 	return pathRefNone
 }
 
-// linkIcon 是 markdown.Options.LinkIcon:路径链接前面一块带底色的彩色文件 / 文件夹图标,与后面的行内代码底色连成一条
-// (参照 BaoCode:图标按文件名 / 扩展名 / 文件夹名取 Material Icon Theme,见 matico 包;.html 是网页图标,.py 是 Python 图标……)。
-// 参数 dest 是链接目的地,size 是周围正文的字号;别的链接不画。
+// mygoPatched 报告当前二进制是不是链到了打过补丁的 MyGo(scripts/mygo-overlay.sh 用 -modfile 把依赖 replace 到 target/mygo-patched,
+// 构建信息里能看到)。补丁让路径链接的 LinkIcon 对象成为整枚胶囊;没打补丁时只画图标,链接文字照常显示。
+var mygoPatched = sync.OnceValue(func() bool {
+	bi, ok := debug.ReadBuildInfo()
+	if !ok {
+		return false
+	}
+	for _, d := range bi.Deps {
+		if d.Path == "github.com/egoist/mygo" && d.Replace != nil && strings.Contains(d.Replace.Path, "mygo-patched") {
+			return true
+		}
+	}
+	return false
+})
+
+// linkIcon 是 markdown.Options.LinkIcon:路径链接。打了补丁时它画整枚胶囊(参照会话输入框里的胶囊:淡灰底 + 细边 + 圆角,
+// 左边是按文件名 / 扩展名 / 文件夹名取的彩色类型图标 Material Icon Theme(matico 包),右边是路径文字);
+// 没打补丁时只在链接文字前画一枚图标。参数 dest 是链接目的地,size 是周围正文的字号;别的链接不画。
 func (a *App) linkIcon(dest string, size float32) (markdown.InlineObject, bool) {
 	dest = strings.TrimPrefix(strings.TrimSpace(dest), pathLinkScheme)
 	st, ok := a.pathRefs.m[dest]
@@ -137,12 +157,34 @@ func (a *App) linkIcon(dest string, size float32) (markdown.InlineObject, bool) 
 	}
 	cs := size * 11.5 / theme.FsRead // 行内代码的字号(mdTheme 的 CodeSize 是它与正文的比)
 	ic := cs * 1.15
-	// 底色由补丁里的图标 span 自带(与后面的行内代码底色在框架里连成一整条胶囊),这里只画图标;
-	// 没打补丁时图标没有底色,仍能正常显示。
+	c := a.buildCtx
+	if !mygoPatched() || c == nil {
+		return markdown.InlineObject{
+			Width: ic + 6, Height: cs * .98, Depth: cs * .34,
+			Draw: func(pt *ui.Painter, r ui.Rect) {
+				pt.Image(svg, ui.Rect{X: r.X + 2, Y: r.Y + (r.H-ic)/2, W: ic, H: ic}, ui.Contain)
+			},
+		}, true
+	}
+	font := theme.CodeFont()
+	span := func(s string) float32 {
+		w, _ := c.MeasureText(0, ui.Span{Text: s, Font: font, Size: cs})
+		return w
+	}
+	label := clipMiddle(dest, pathChipMaxText, span)
+	const padL, gap, padR, margin = 6, 4, 7, 1.5
+	w := padL + ic + gap + span(label) + padR
+	h := cs * 1.7
+	t := a.tk
+	fill, line, ink := t.Fill2, t.Bd2, t.Tx1
 	return markdown.InlineObject{
-		Width: ic + 4, Height: cs * .98, Depth: cs * .34,
+		Width: w + 2*margin, Height: h * .66, Depth: h * .34, // 胶囊中心略高于基线,与周围文字的视觉中心对齐
 		Draw: func(pt *ui.Painter, r ui.Rect) {
-			pt.Image(svg, ui.Rect{X: r.X + 2, Y: r.Y + (r.H-ic)/2, W: ic, H: ic}, ui.Contain)
+			box := ui.Rect{X: r.X + margin, Y: r.Y, W: w, H: r.H}
+			pt.Fill(box, fill, 5)
+			pt.Stroke(box, line, 5, 1)
+			pt.Image(svg, ui.Rect{X: box.X + padL, Y: box.Y + (box.H-ic)/2, W: ic, H: ic}, ui.Contain)
+			pt.RichText(box.X+padL+ic+gap, box.Y+(box.H-cs*1.25)/2, 0, ui.Span{Text: label, Font: font, Size: cs, Color: ink})
 		},
 	}, true
 }

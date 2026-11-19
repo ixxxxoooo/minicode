@@ -227,6 +227,7 @@ type App struct {
 	// Markdown 选项(随主题重建)
 	md         *markdown.Options
 	mdThemeKey string
+	buildCtx   *ui.Context       // 本帧的构建上下文(只在 View 调用期间有效,回调里不能用)
 	pathRefs   pathRefCache      // 会话里行内代码写的路径是否真实存在(path_ref.go)
 	planMd     *markdown.Options // 计划小卡概要用的小号 Markdown 选项
 	planMdKey  string
@@ -805,6 +806,7 @@ var viewFirstFrame sync.Once
 
 // View 是窗口的根视图。
 func (a *App) View(c *ui.Context) {
+	a.buildCtx = c // 构建期间有效:Markdown 的链接图标回调(path_ref.go linkIcon)要量字
 	viewFirstFrame.Do(diag.MarkFirstFrame)
 	viewStart := time.Now()
 	var gap time.Duration

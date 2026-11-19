@@ -361,8 +361,10 @@ func (sb *spanBuilder) inlines(from, to int, s spanStyle) {
 			cs.color = Color{} // the link's
 			save := sb.linkIndex
 			sb.linkIndex = k
-			sb.addLinkIcon(n, cs, k)
-			sb.inlines(k+1, n.Next, cs)
+			chip := sb.addLinkIcon(n, cs, k)
+			if !(chip && strings.HasPrefix(n.Dest, PathLinkMarker)) {
+				sb.inlines(k+1, n.Next, cs)
+			} // MiniCode 补丁:路径链接的 LinkIcon 对象就是整枚胶囊(底色 + 图标 + 路径文字都由它画),链接自己的文字不再另画
 			sb.linkIndex = save
 		case parser.Image:
 			// Images within text show their description; a paragraph of
@@ -414,9 +416,9 @@ const linkIconJoiner = '\u2060'
 // addLinkIcon adds the object Options.LinkIcon makes for link n, the
 // inline k of its block, in style s. It comes from no source, so that it
 // copies as nothing.
-func (sb *spanBuilder) addLinkIcon(n *parser.Inline, s spanStyle, k int) {
+func (sb *spanBuilder) addLinkIcon(n *parser.Inline, s spanStyle, k int) bool {
 	if sb.linkIcon == nil || n.Pending {
-		return
+		return false
 	}
 	size := sb.th.FontSize
 	if s.size != 0 {
@@ -427,17 +429,11 @@ func (sb *spanBuilder) addLinkIcon(n *parser.Inline, s spanStyle, k int) {
 	}
 	o, ok := sb.linkIcon(n.Dest, size)
 	if !ok || !(o.Width > 0) {
-		return
+		return false
 	}
 	p := sb.p
 	p.objects = append(p.objects, mathObject{rune: p.runes, src: n.Start, end: n.Start, draw: o.Draw})
 	sp := ui.Span{Text: "\uFFFC", Size: size, ObjectWidth: o.Width, ObjectHeight: max(o.Height, 0), ObjectDescent: max(o.Depth, 0)}
-	if strings.HasPrefix(n.Dest, PathLinkMarker) {
-		// MiniCode 补丁:路径链接的图标自己带行内代码的底色(同字号、同圆角),与后面的代码底色在框架画底色时连成一整条胶囊,没有接缝。
-		sp.Size = size * sb.th.CodeSize
-		sp.Background = sb.th.CodeBackground
-		sp.Radius = max(3, sp.Size/4)
-	}
 	if sb.fade != nil {
 		p.fading = p.fading || sb.fade(n.Start) < 1
 	}
@@ -446,6 +442,7 @@ func (sb *spanBuilder) addLinkIcon(n *parser.Inline, s spanStyle, k int) {
 	p.marks = append(p.marks, runMark{rune: p.runes, src: n.Start, end: n.Start})
 	p.runes++
 	sb.addSpan(string(linkIconJoiner), n.Start, n.Start, false, s, k, 1)
+	return true
 }
 
 // mathObject adds math n, within text of style s, as the object
