@@ -372,6 +372,15 @@ go test ./internal/app -run 'TestBracketDepth|BenchmarkBracketDepth' -bench=. -c
 - 切换首帧「舞台空白」若仍出现:查 `beltStep` 首帧几何与 `probe` 空白判定(与底栏跳变已分拆);大文件下 `构建界面` 慢帧需对照 `diag.SpanSlow`。
 - MyGo `scanBracket` 已有 `bracketScanLines=1000` 上限;其它叠层(折叠 / 引导线 / 查找)全量扫描尚未逐一带 benchmark。
 
+## 窗口拖拽偶发「漂到左上角又弹回」排查(进行中)
+
+- **现象**:拖标题栏时窗口偶尔瞬间跑到屏幕左上方,随即又回到鼠标下。
+- **结论(静态分析,未复现)**:应用侧只有 `titlebar.go` 的 `.DragWindow()`,没有任何代码在拖拽时改窗口位置;窗口移动在 MyGo `internal/darwin/window_drag.go`:先向窗口服务器请求原生拖动(`performWindowDragWithEvent:`),它没开始就改由框架 `setFrameOrigin:` 手动跟随。两套机制可能同时挪窗口(上游 issue #528)。本机 `minicode.log` 里有 `Window move completed without beginning`(11-17 03:01、11-18 11:33、11-18 16:31)。MyGo v0.10.0 已是最新版,升级无用。
+- **取证手段**:本机在 `~/.minicode/mygo-patched` 放了带 `[dragtrace]` 日志的 MyGo 副本,经**不入库**的根目录 `go.work`(`replace github.com/egoist/mygo`)接入;补丁见 `scripts/mygo-dragtrace.patch`(相对 v0.10.0 的 `internal/darwin`)。`dev.sh` 检测到 `go.work` 会把 `GOFLAGS` 覆盖为 `-mod=readonly`(用户级 go env 的 `-mod=mod` 与工作区模式冲突)。
+- **重建副本**:`cp -R $(go env GOMODCACHE)/github.com/egoist/mygo@v0.10.0 ~/.minicode/mygo-patched && chmod -R u+w ~/.minicode/mygo-patched && (cd ~/.minicode/mygo-patched && patch -p1 < <仓库>/scripts/mygo-dragtrace.patch)`,再在仓库根写 `go.work`(`use ./mygo` + `replace`)。
+- **怎么看**:漂移发生后 `grep dragtrace ~/.minicode/logs/minicode.log | tail -60`。重点看:`按下` 的窗口原点、`StartDrag` 走原生还是手动、`阶段` 变化、`手动移动` 里 `目标` 与 `夹后`(被菜单栏夹住)/`屏幕=-1`(没找到指针所在屏幕)/`与上次相差`(跳变)、以及 `windowDidMove` 的原点序列。
+- **取证完成后**:删 `go.work`、`~/.minicode/mygo-patched` 与本节,按结论决定是否改成「始终手动跟随」。
+
 ## 目录结构
 
 见 `AGENTS.md` 的「结构」表;运行、打包、发布命令也在那里。旧 Rust 实现(crate 表、`cargo` 命令、各功能的 `.rs` 实现细节)已从本文件删除,需要时从 git 历史取(删除前最后一个提交的父提交是 `ddd7452`)。

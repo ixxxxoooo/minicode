@@ -9,3 +9,7 @@ mygo/.mygo/
 # 应用按偏好写入项目的 Claude 设置与其备份(本机权限设置,不入库)
 .claude/settings.json
 .claude/settings.json.mini-backup
+
+# 本地 MyGo 副本的工作区(排查用,见 scripts/mygo-dragtrace.patch)
+go.work
+go.work.sum

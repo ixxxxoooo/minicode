@@ -1,0 +1,133 @@
+--- a/internal/darwin/window_drag.go
++++ b/internal/darwin/window_drag.go
+@@ -3,11 +3,28 @@
+ package darwin
+ 
+ import (
++	"fmt"
+ 	"math"
++	"os"
++	"time"
+ 
+ 	"github.com/ebitengine/purego/objc"
+ )
+ 
++// MiniCode 排查补丁:窗口拖拽偶发「漂到左上角又弹回」。只写 stderr(应用会收进
++// ~/.minicode/logs/minicode.log,前缀 [dragtrace]),不改变任何行为。
++var dragT0 time.Time
++
++func dragTrace(format string, a ...any) {
++	fmt.Fprintf(os.Stderr, "[dragtrace] +%dms "+format+"\n", append([]any{time.Since(dragT0).Milliseconds()}, a...)...)
++}
++
++// dragMoves 数本次按下之后手动移动窗口的次数;dragLastPut 是上一次手动放置的原点。
++var (
++	dragMoves   int
++	dragLastPut NSPoint
++)
++
+ // Drag regions move the window with a press (StartDrag): the press of a
+ // page's `--app-region: drag`, which the page tells a few milliseconds
+ // after the web view got it, or of native UI's DragWindow, which asks while
+@@ -97,6 +114,9 @@
+ // willMove notes that the window server begins to move win, which it
+ // does only when asked, though it may be after MyGo took over.
+ func (d *windowDrag) willMove(win id) {
++	if d.phase != dragIdle {
++		dragTrace("windowWillMove 阶段=%s win匹配=%v", d.phase, d.win == win)
++	}
+ 	if (d.phase == dragNative || d.phase == dragManual) && d.win == win {
+ 		d.phase = dragServer
+ 	}
+@@ -201,7 +221,13 @@
+ 	watchWindowDrags()
+ 	release(w.lastMouseDown)
+ 	w.lastMouseDown = retain(ev)
++	if theDrag.phase != dragIdle {
++		dragTrace("新按下时上一次拖拽未收尾 阶段=%s", theDrag.phase)
++	}
+ 	theDrag.down(w.win, eventPoint(ev))
++	dragT0, dragMoves = time.Now(), 0
++	f := msgRect(w.win, sel("frame"))
++	dragTrace("按下 press=(%.1f,%.1f) 窗口原点=(%.1f,%.1f) 尺寸=%.0fx%.0f", theDrag.press.X, theDrag.press.Y, f.Origin.X, f.Origin.Y, f.Size.Width, f.Size.Height)
+ }
+ 
+ func watchWindowDrags() {
+@@ -218,7 +244,12 @@
+ 			if send(ev, "window") != theDrag.win {
+ 				return ev
+ 			}
+-			eat, move := theDrag.dragged(eventPoint(ev), msgRect(theDrag.win, sel("frame")).Origin)
++			before := theDrag.phase
++			pt, fo := eventPoint(ev), msgRect(theDrag.win, sel("frame")).Origin
++			eat, move := theDrag.dragged(pt, fo)
++			if before != theDrag.phase || theDrag.drags <= 4 && before != dragManual {
++				dragTrace("拖动 指针=(%.1f,%.1f) 窗口原点=(%.1f,%.1f) 阶段 %s→%s drags=%d move=%v", pt.X, pt.Y, fo.X, fo.Y, before, theDrag.phase, theDrag.drags, move)
++			}
+ 			if move {
+ 				moveDraggedWindow()
+ 			}
+@@ -228,6 +259,8 @@
+ 		default:
+ 			// A release, or a press the window has yet to see, which
+ 			// notes itself if it may drag.
++			dragTrace("收尾(松开/他处按下) 类型=%d 阶段=%s 手动移动次数=%d 窗口原点=(%.1f,%.1f)", sendInt(ev, "type"), theDrag.phase, dragMoves,
++				msgRect(theDrag.win, sel("frame")).Origin.X, msgRect(theDrag.win, sel("frame")).Origin.Y)
+ 			theDrag.up()
+ 		}
+ 		return ev
+@@ -250,18 +283,28 @@
+ func moveDraggedWindow() {
+ 	d := &theDrag
+ 	origin := d.target()
++	raw := origin
++	screen := -1
+ 	screens := arrayItems(send(class("NSScreen"), "screens"))
+ 	if len(screens) > 0 {
+ 		primary := msgRect(screens[0], sel("frame"))
+ 		p := NSPoint{d.at.X, primary.Origin.Y + primary.Size.Height - d.at.Y}
+-		for _, s := range screens {
++		for i, s := range screens {
+ 			if f := msgRect(s, sel("frame")); p.X >= f.Origin.X && p.X < f.Origin.X+f.Size.Width && p.Y >= f.Origin.Y && p.Y < f.Origin.Y+f.Size.Height {
+ 				v := msgRect(s, sel("visibleFrame"))
+ 				origin = belowMenuBar(origin, msgRect(d.win, sel("frame")).Size.Height, v.Origin.Y+v.Size.Height)
++				screen = i
+ 				break
+ 			}
+ 		}
+ 	}
++	// 排查:前 3 次、被菜单栏夹住、没找到指针所在屏幕、或与上次放置相差超过 120 点时记一行。
++	dragMoves++
++	if jump := distance(origin, dragLastPut); dragMoves <= 3 || raw != origin || screen < 0 || jump > 120 {
++		dragTrace("手动移动#%d 指针=(%.1f,%.1f) press=(%.1f,%.1f) 起点=(%.1f,%.1f) 目标=(%.1f,%.1f) 夹后=(%.1f,%.1f) 屏幕=%d/%d 与上次相差=%.0f",
++			dragMoves, d.at.X, d.at.Y, d.press.X, d.press.Y, d.origin.X, d.origin.Y, raw.X, raw.Y, origin.X, origin.Y, screen, len(screens), jump)
++	}
++	dragLastPut = origin
+ 	d.placed(origin)
+ 	msgSetPoint(d.win, sel("setFrameOrigin:"), origin)
+ }
+@@ -272,7 +315,10 @@
+ 	if w.closed || w.lastMouseDown == 0 || !sendBool(w.win, "isMovable") || w.hasStyle(styleFullScreen) {
+ 		return
+ 	}
+-	switch theDrag.start(w.win, msgRect(w.win, sel("frame")).Origin) {
++	fo := msgRect(w.win, sel("frame")).Origin
++	r := theDrag.start(w.win, fo)
++	dragTrace("StartDrag 结果=%d(0无/1原生/2手动) 窗口原点=(%.1f,%.1f) 已移动=%.1f", r, fo.X, fo.Y, distance(theDrag.at, theDrag.press))
++	switch r {
+ 	case startNative:
+ 		send(w.win, "performWindowDragWithEvent:", uintptr(w.lastMouseDown))
+ 	case startManual:
+--- a/internal/darwin/window.go
++++ b/internal/darwin/window.go
+@@ -2471,6 +2471,10 @@
+ 			}),
+ 			method("windowDidMove:", func(self id, _ objc.SEL, n id) {
+ 				if w := b().windowFor(self); w != nil {
++					if theDrag.phase != dragIdle { // MiniCode 排查补丁
++						f := msgRect(w.win, sel("frame"))
++						dragTrace("windowDidMove 阶段=%s 原点=(%.1f,%.1f)", theDrag.phase, f.Origin.X, f.Origin.Y)
++					}
+ 					if inputRegionMoved != nil {
+ 						inputRegionMoved(w)
+ 					}
