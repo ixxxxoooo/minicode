@@ -220,7 +220,7 @@ func (a *App) sessions(c *ui.Context) {
 	})
 }
 
-// projRow 项目行:点行 = 选中这个项目(聊天栏与 IDE 一起切过来)并展开;已选中时再点 = 展开 / 收起;没有行首箭头,图标本身表达展开(folder ⇄ folderOpen)。
+// projRow 项目行:点行只展开 / 收起(不选中、不打开任何会话);没有行首箭头,图标本身表达展开(folder ⇄ folderOpen)。
 func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 	t := a.tk
 	open := a.projOpen[p.ID]
@@ -234,13 +234,7 @@ func (a *App) projRow(c *ui.Context, p core.ProjectInfo) {
 		nameCol = t.Tx1
 	}
 	r.TextColor(nameCol)
-	r.OnClick(func() {
-		if !on {
-			a.selectProject(p)
-			return
-		}
-		a.projOpen[p.ID] = !open
-	})
+	r.OnClick(func() { a.projOpen[p.ID] = !open }) // 只展开 / 收起,不切换项目、不自动打开任何会话;进入项目靠点里面的会话或「+」
 	kit.CtxMenu(r, func(m *ui.Menu) { a.projMenu(m, p) })
 	r.Children(func() {
 		// 没有行首箭头:图标本身表达展开(展开 = 翻开的文件夹),整行可点
