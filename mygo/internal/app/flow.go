@@ -220,6 +220,15 @@ func (a *App) stepItem(c *ui.Context, it core.Item) {
 // ───────── 步骤行 ─────────
 
 // stepRow 画一行步骤。body 非 nil 时行可展开(点击切换,默认展开状态取 sp.open)。
+// objShrink 是步骤行里「对象」(文件名 / 命令)的收缩权重:带路径附注的文件步骤,宽度不够时先让路径附注收缩,
+// 文件名几乎不动(否则文件名被省略成「mp-ic…」,路径却占着一大片);其余步骤维持 1。
+func objShrink(sp step) float32 {
+	if sp.path != "" && sp.meta != "" {
+		return .02
+	}
+	return 1
+}
+
 func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 	t := a.tk
 	open, set := a.folds[sp.id]
@@ -300,7 +309,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			// 设计稿:动词与对象一样的 .shimmer(底色 tx-3,高亮带扫到 tx-1),字号颜色同源,不让对象单独提亮成深色
 			sep()
 			obj = kit.RunTextS(c, sp.obj, t.Tx1, func(e ui.Element) ui.Element {
-				return e.TextColor(t.Tx2).SingleLine().Shrink(1).MinWidth(0).LineHeight(1)
+				return e.TextColor(t.Tx2).SingleLine().Shrink(objShrink(sp)).MinWidth(0).LineHeight(1)
 			})
 		} else {
 			// 字重规范(设计稿 v4):工具行的动词与对象都是常规字重,靠颜色分层——动词 Tx3 → 对象 Tx2 → 附注 Tx3 → 结果 Tx4;
@@ -314,7 +323,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 				objCol = t.Tx3
 			}
 			if !(sp.fam == famThink && mqOn) { // 流式折叠的思考:标题位置让给下面的上下翻预览,不并排放两份文字
-				obj = ui.Text(c, sp.obj).TextColor(objCol).SingleLine().Shrink(1).MinWidth(0).LineHeight(1).Ellipsis("…")
+				obj = ui.Text(c, sp.obj).TextColor(objCol).SingleLine().Shrink(objShrink(sp)).MinWidth(0).LineHeight(1).Ellipsis("…")
 			}
 		}
 		mq := a.thinkMarqueeRow(c, sp, tone, open, row)
@@ -328,7 +337,7 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 			obj.Strikethrough().TextColor(t.Tx3)
 		}
 		if sp.meta != "" && a.chatTier() != tierNarrow { // 窄档:附注(路径、行区间)让位
-			ui.Text(c, sp.meta).Font(theme.CodeFont()).FontSize(theme.Px(11)).TextColor(t.Tx3).SingleLine().Shrink(1).MinWidth(0).LineHeight(1)
+			ui.Text(c, sp.meta).Font(theme.CodeFont()).FontSize(theme.Px(11)).TextColor(t.Tx3).SingleLine().Shrink(1).MinWidth(0).LineHeight(1).Ellipsis("…")
 		}
 		if !open && len(sp.thumbs) > 0 && body != nil && sp.hasBody { // 折叠的分组 / 回合行:里面读到的图按张显示缩略图
 			a.stepThumbs(c, sp)
