@@ -94,8 +94,9 @@
   const openPop = (kind, html, w) => { const cur = $('.acct, .sb-pop', w); const same = cur && cur.dataset.kind === kind; closePop(); if (same) return;
     later(cur ? 170 : 0, () => { w.insertAdjacentHTML('beforeend', html); w.lastElementChild.dataset.kind = kind; }); };
   ACT.acct = (el, w) => openPop('acct', W.acctMenu(), w);
+  ACT['lay-pop'] = (el, w) => openPop('lay', W.layoutPop(((el.closest('[data-scheme]') || {}).dataset || {}).scheme || 'a'), w);
   ACT.sbpop = (el, w) => openPop(el.dataset.pop, W.sbPop(el.dataset.pop), w);
-  document.addEventListener('mousedown', (e) => { if (!$('.acct, .sb-pop') || !e.target.closest || e.target.closest('.acct, .sb-pop, [data-act="acct"], [data-act="sbpop"]')) return; closePop(); });
+  document.addEventListener('mousedown', (e) => { if (!$('.acct, .sb-pop') || !e.target.closest || e.target.closest('.acct, .sb-pop, [data-act="acct"], [data-act="sbpop"], [data-act="lay-pop"]')) return; closePop(); });
   document.addEventListener('mousedown', (e) => { if (!$('.prov-preset') || e.target.closest('.prov-preset, [data-act="prov-add-menu"]')) return; $('.prov-preset')?.remove(); });
 
   /* ═════════ 上下文弹层(输入框圆环;状态栏那份走 sbpop,内容同一份 F.ctxBody) ═════════ */

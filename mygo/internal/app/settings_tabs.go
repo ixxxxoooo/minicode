@@ -121,9 +121,16 @@ func layCards(a *App, c *ui.Context) {
 }
 
 // layPreview 是方案卡里的微缩示意图:侧栏 / 主区(三条横线)/ 工作区。
-func layPreview(a *App, c *ui.Context, id string) {
+func layPreview(a *App, c *ui.Context, id string) { layPreviewSized(a, c, id, 0, 70) }
+
+// layPreviewSized 同 layPreview,可指定宽(0 = 随父级撑满)与高;标题栏「布局」浮窗里用小一号的。
+func layPreviewSized(a *App, c *ui.Context, id string, w, h float32) {
 	t := a.tk
-	box := ui.Row(c).Height(70).Padding(4).Gap(1).Radius(t.RSm()).Background(t.Chrome).Border(1, t.Bd1).Clip().AlignItems(ui.Stretch)
+	box := ui.Row(c).Height(h).Padding(4)
+	if w > 0 {
+		box.Width(w).Shrink(0)
+	}
+	box = box.Padding(4).Gap(1).Radius(t.RSm()).Background(t.Chrome).Border(1, t.Bd1).Clip().AlignItems(ui.Stretch)
 	if id == "b" {
 		box.Gap(3)
 	}

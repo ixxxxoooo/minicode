@@ -131,6 +131,7 @@
 
   const extra = () => sec('补充浮层与反馈', '设置、自定义与账号相关的交互,逐个给出静态样子;动起来的版本在对应页面里可以点。', `<div class="grid2">
     ${spec('账号菜单', ['acct', '从触发点向上展开'], `<div class="fc g3" style="position:relative;display:flex;flex-direction:column;align-items:center">${acctStatic}${W.acctMenu({ loading: true })}${W.acctMenu({ empty: true, noCost: true, noLim: true })}</div>`)}
+    ${spec('布局切换浮窗', ['lay-pop', '从标题栏「布局」图标向下展开'], `<div class="fc g3" style="position:relative;display:flex;flex-direction:column;align-items:center">${W.layoutPop('a').replace('a-pop-up', 'a-pop-up static')}</div>`)}
     ${spec('设置搜索结果', ['⌘F 聚焦', '键盘 ↑↓ ↩'], searchSample)}
     ${spec('需要重启条', ['rbar', '设置页底部固定'], rbar)}
     ${spec('快捷键录制与冲突', ['keycap.rec', '冲突就地提示'], recSample)}

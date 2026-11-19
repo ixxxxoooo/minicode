@@ -24,7 +24,7 @@
   const crumb = (st) => `<div class="crumb">${ic('folder', 's12')}<span>router-demo</span>${ic('chevR', 's12')}<b class="ell">${CRUMB[st.screen] || '路由大小写匹配'}</b></div>`;
   const titlebar = (st) => {
     const lead = `<span class="lights"><i></i><i></i><i></i></span>${ib('panelL', '', '导航栏 ⌘B', 'data-act="side"')}<span class="navh">${ib('arrowL', 'dis', '后退 ⌃-')}${ib('arrow', '', '前进 ⌃⇧-')}</span>`;
-    const tools = `${ib('panelB', 'on', '底部面板 ⌘J', 'data-act="panel"')}${ib('panelR', 'on', '右侧栏 ⌥⌘B(Agent = 工作区,IDE = 对话)', 'data-act="right"')}${ib('bell', '', '通知')}`;
+    const tools = `${ib('layout', '', '布局:墨线 / 浮岛 / 轨道', 'data-act="lay-pop"')}${ib('panelB', 'on', '底部面板 ⌘J', 'data-act="panel"')}${ib('panelR', 'on', '右侧栏 ⌥⌘B(Agent = 工作区,IDE = 对话)', 'data-act="right"')}${ib('bell', '', '通知')}`;
     const parts = {
       a: [lead + crumb(st), modeSeg(st), cmdk + tools],
       b: [lead + modeSeg(st), cmdk, tools + '<button class="avatar acct-btn" style="margin-left:4px" data-act="acct" data-tip="账号与设置">L</button>'],
@@ -133,6 +133,8 @@
     return `<div class="acct pop a-pop-up">${who}<div class="quota"><div class="q"><span style="width:62px" class="t3">本月费用</span>${cost}</div>${lim}</div>
     <div class="menu">${ami('sliders', '设置', kbd('⌘', ','), 'data-act="screen" data-screen="settings"')}${ami('chart', '用量与成本', '', 'data-act="screen" data-screen="usage"')}${ami('kbd', '快捷键', '', 'data-act="settab" data-tab="shortcuts" data-goto="settings"')}<div class="sep"></div>${ami('refresh', '检查更新', '', 'data-act="settab" data-tab="about" data-goto="settings"')}${ami('info', '关于 MiniCode', '0.2.0', 'data-act="settab" data-tab="about" data-goto="settings"')}</div></div>`;
   };
+  /** 布局切换浮窗:标题栏右侧「布局」图标的弹层,三行(微缩示意 + 名称 + 一句话 + 当前对勾),点哪行立即切换整个窗口 */
+  W.layoutPop = (cur) => `<div class="sb-pop pop lay-pop a-pop-up"><div class="lay-h"><b>布局</b><span class="t3 fs-cap">点一下立即切换,Agent 与 IDE 同步</span></div>${U.SCHEMES.map(s => `<div class="lay-row ${s.id === cur ? 'on' : ''}" data-act="layout" data-id="${s.id}" tabindex="0"><div class="lay-prev" data-lay="${s.id}"><i class="rl"></i><i class="sd"></i><i class="mn"><b></b><b></b><b></b></i><i class="rt"></i></div><div class="grow" style="min-width:0"><div class="f ai g2"><b>${s.name}</b><span class="t4 fs-micro">${s.en}</span></div><div class="t3 fs-cap" style="line-height:1.4">${s.tagline}</div></div>${s.id === cur ? ic('check', 's14 c-ac') : ''}</div>`).join('')}<div class="lay-f t3 fs-cap">也可在命令面板输入「布局」,或在 设置 → 外观 里切换</div></div>`;
   /** 状态栏弹层:ctx 上下文 / upd 更新 / cfg 运行配置 */
   W.sbPop = (kind) => ({
     ctx: `<div class="sb-pop pop a-pop-up" data-state="ok">${F.ctxBody()}</div>`,

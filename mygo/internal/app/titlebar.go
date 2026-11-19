@@ -82,6 +82,9 @@ func (a *App) titlebar(c *ui.Context) {
 			} else if t.Scheme.ID == "a" {
 				a.cmdk(c)
 			}
+			lay := kit.Ib(c, "layout", kit.IbOpt{Tip: "布局:" + t.Scheme.Name, On: a.popup == "layout", Toggle: true})
+			lay.OnClick(func() { a.togglePop("layout") })
+			a.layoutPopup(c, lay)
 			kit.Ib(c, "panelB", kit.IbOpt{Tip: "底部面板 ⌘J", On: a.ide.bottomOpen, Toggle: true}).OnClick(func() { a.ide.bottomOpen = !a.ide.bottomOpen })
 			rt := "工作区 ⌥⌘B"
 			if a.mode == ModeIDE {
