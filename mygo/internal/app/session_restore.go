@@ -204,6 +204,8 @@ func (a *App) ApplySavedRuntime() string {
 	for _, p := range st.PinnedTabs {
 		pinned[p] = true
 	}
+	a.ide.noReveal = true // 恢复上次的标签不展开工作区,尊重记住的开合
+	defer func() { a.ide.noReveal = false }()
 	for _, p := range st.EditorTabs {
 		a.ide.openFile(p, true)
 		if pinned[p] {

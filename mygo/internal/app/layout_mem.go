@@ -25,6 +25,7 @@ func (a *App) currentLayMem() layMem {
 
 func (a *App) applyLayMem(m layMem) {
 	a.rightOn, a.ide.bottomOpen = m.right, m.panel
+	a.bottomSeen = false // 切形态套用记住的开合不算「面板被打开」,别触发展开
 	a.sideOpen, a.chatMax = m.side, m.chatMax
 }
 

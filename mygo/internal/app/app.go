@@ -74,6 +74,8 @@ type App struct {
 	edThemeKey string
 	brTheme    *editor.Theme // 带括号深度色的编辑器配色(ide_brackets.go)
 	brThemeKey string
+	bottomPrev bottomSig // 上一帧的底部面板状态(ws_tabs.go revealOnBottomChange)
+	bottomSeen bool
 	csvTh      *editor.Theme // csv / tsv 彩虹列配色(ide_csv_color.go)
 	csvThKey   string
 	flowSt     ui.ScrollState // 会话流滚动状态(与虚拟列表同步,供「回到最新」等读取)
@@ -453,6 +455,7 @@ func New(o Options) *App {
 	a.ide.onSaved = a.lspSaved
 	a.ide.beforeSave = a.beforeSave
 	a.ide.onDiskSnap = func(t *ideTab) { a.recordDiskSnap(t) }
+	a.ide.onReveal = a.ensureWorkspace
 	a.ide.listAsync = a.listDirAsync // 目录列表缓存失效后在后台读,不在界面线程同步读盘(见 ide_tree_async.go)
 	return a
 }

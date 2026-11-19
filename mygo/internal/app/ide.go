@@ -175,6 +175,8 @@ type ide struct {
 	onSaved    func(path string) // 保存成功后(语言服务 didSave)
 	beforeSave func(*ideTab)     // 保存前(设置:保存时格式化 / 去行尾空白)
 	onDiskSnap func(*ideTab)     // 打开 / 保存后记录磁盘快照(外部修改检测)
+	onReveal   func()            // 打开 / 激活标签时保证工作区可见(Agent 形态右侧栏收着就展开,ws_tabs.go ensureWorkspace)
+	noReveal   bool              // 恢复上次会话的标签时不展开(尊重记住的开合)
 	closed     []string          // 最近关闭的文件标签(⇧⌘T 重新打开,最多 20 个)
 	panelTop   float32           // 底部面板上缘(上一帧)
 	bottomTab  string            // term / problems / output
@@ -345,6 +347,7 @@ func (d *ide) paneActive(pane int8) *string {
 
 // openFile 打开文件。pin=false 打开预览标签(替换已有的预览标签),pin=true 固定。
 func (d *ide) openFile(p string, pin bool) {
+	d.reveal()
 	if t := d.tab(p); t != nil {
 		if pin {
 			t.preview = false
@@ -428,6 +431,7 @@ func (d *ide) openAt(p string, line, col, end int, pin bool) {
 // openRevDiff 打开某次提交里某个文件的对比标签(父提交 ↔ 该提交)。
 func (d *ide) openRevDiff(short, p, old, nw string, pin bool) {
 	id := "diff:rev-" + short + ":" + p
+	d.reveal()
 	if t := d.tab(id); t != nil {
 		if pin {
 			t.preview = false
@@ -492,7 +496,15 @@ func (d *ide) addTab(t *ideTab) {
 	d.addTabTo(d.paneSel, t)
 }
 
+// reveal 通知应用「有标签要显示」:工作区收着就展开,免得在不可见的地方悄悄开了标签。
+func (d *ide) reveal() {
+	if d.onReveal != nil && !d.noReveal {
+		d.onReveal()
+	}
+}
+
 func (d *ide) addTabTo(pane int8, t *ideTab) {
+	d.reveal()
 	tabs := &d.tabs
 	active := &d.active
 	if pane == 1 && d.splitDir != 0 {

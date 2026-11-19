@@ -34,6 +34,7 @@ func (t *ideTab) isVirt() bool { return t != nil && t.virt != "" }
 
 // openVirtual 打开(或激活)一个虚拟标签。
 func (d *ide) openVirtual(kind, ref string, pin bool) *ideTab {
+	d.reveal()
 	id := virtID(kind, ref)
 	if t := d.tab(id); t != nil {
 		if pin {
@@ -80,6 +81,47 @@ func (a *App) OpenWorkspaceByName(name string) {
 	case "review":
 		a.OpenReview()
 	}
+}
+
+// ensureWorkspace 是 revealWorkspace 的轻量版(不闪边框、不切屏幕),给「任何标签被打开 / 激活」用:
+// Agent 形态右侧栏(工作区)收着就展开,窄窗口下同时展开浮层;IDE 形态对话占满时恢复工作区。
+func (a *App) ensureWorkspace() {
+	switch a.mode {
+	case ModeAgent:
+		if !a.rightOn {
+			a.rightOn = true
+			a.openWsOverlay()
+		} else if a.useWsOverlay() && !a.wsFloat {
+			a.wsFloat = true
+		}
+	case ModeIDE:
+		a.chatMax = false
+	}
+}
+
+// revealOnBottomChange 每帧调用:底部面板(终端 / 问题 / 引用)被打开、换了分页或多了终端标签时,
+// 工作区若收着就展开——否则「在终端运行」「新建终端」「⌘J」都发生在看不见的地方。
+// 只认「新出现」的变化(面板刚打开 / 换分页 / 终端变多),关闭与切项目清空终端不触发。
+func (a *App) revealOnBottomChange() {
+	d := a.ide
+	if d == nil {
+		return
+	}
+	cur := bottomSig{open: d.bottomOpen, tab: d.bottomTab, terms: len(d.tps)}
+	prev, seen := a.bottomPrev, a.bottomSeen
+	a.bottomPrev, a.bottomSeen = cur, true
+	if !seen || !cur.open || a.screen != ScreenWork {
+		return
+	}
+	if !prev.open || cur.tab != prev.tab || cur.terms > prev.terms {
+		a.ensureWorkspace()
+	}
+}
+
+type bottomSig struct {
+	open  bool
+	tab   string
+	terms int
 }
 
 // revealWorkspace 保证工作区可见,并让它的边框闪一下。

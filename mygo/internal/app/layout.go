@@ -160,6 +160,7 @@ func (a *App) instantLayout() bool {
 
 // trackLayout 每帧调用:记录窗口宽度是否在变,以及栏的开合结构是否变了(变了才值得做收起 / 展开动画)。
 func (a *App) trackLayout() {
+	a.revealOnBottomChange()
 	if a.winW != a.ly.lastW {
 		if a.ly.lastW != 0 {
 			a.ly.winResizeAt = kit.Now()
