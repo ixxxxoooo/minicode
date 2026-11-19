@@ -165,16 +165,16 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 		// 还没有结果时只有 limit 才知道终点。读取行不展开(没有可看的内容,点整行 = 在工作区打开并定位到起点)。
 		start := max(inputInt(tc, "offset"), 1)
 		s.line = start
-		s.meta = dirOf(a.shortPath(path))
+		// 附注只写读了哪几行,不再写目录路径(路径常是很长的临时目录,把文件名挤没;完整路径在文件名的悬停提示里)
 		n := textLines(firstText(tc))
 		if lim := inputInt(tc, "limit"); lim > 0 && (n == 0 || n > lim) {
 			n = lim
 		}
 		if n > 0 {
-			s.meta += fmt.Sprintf(" · L%d–%d", start, start+n-1)
+			s.meta = fmt.Sprintf("L%d–%d", start, start+n-1)
 			s.right = fmt.Sprintf("%d 行", n)
 		} else if inputInt(tc, "offset") > 0 {
-			s.meta += fmt.Sprintf(" · L%d 起", start)
+			s.meta = fmt.Sprintf("L%d 起", start)
 		}
 	case core.KindSearch:
 		pat := inputStr(tc, "pattern")
@@ -201,7 +201,7 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 		}
 	case core.KindEdit, core.KindWrite:
 		s.fam = famEdit
-		s.icon, s.verb, s.obj, s.meta = "edit", "编辑", baseName(path), dirOf(a.shortPath(path))
+		s.icon, s.verb, s.obj = "edit", "编辑", baseName(path) // 不写目录路径(见读取行),完整路径在文件名的悬停提示里
 		if tc.Kind == core.KindWrite {
 			s.icon, s.verb = "file", "写入"
 		}

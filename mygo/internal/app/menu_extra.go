@@ -146,10 +146,11 @@ func (a *App) stepMenu(m *ui.Menu, sp step) {
 			a.openImageLightboxPath(sp.imgAbs)
 		}
 	} else if sp.path != "" {
-		if menuItem(m, "打开文件").Chosen() && !a.openPathRef(joinRef(sp.path, sp.line)) {
+		gone := !a.stepFileExists(sp.path)
+		if menuItem(m, "打开文件").Disabled(gone).Tooltip(map[bool]string{true: "文件已不存在"}[gone]).Chosen() && !a.openPathRef(joinRef(sp.path, sp.line)) {
 			a.toast = "文件已不存在:" + baseName(sp.path)
 		}
-		if sp.diffAs {
+		if sp.diffAs && !gone {
 			if menuItem(m, "查看差异").Chosen() {
 				a.OpenDiffTab(sp.path)
 			}

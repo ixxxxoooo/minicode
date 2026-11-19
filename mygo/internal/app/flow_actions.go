@@ -105,13 +105,22 @@ func (a *App) linkMenu(m *ui.Menu, dest string) {
 	}
 }
 
+// stepFileExists 报告步骤涉及的文件现在是否还在(结果带缓存,界面线程每帧调用也不会反复查盘)。
+func (a *App) stepFileExists(p string) bool {
+	if a.proj == "" { // 演示模式:文件在沙盒文件系统里,不在磁盘上,沿用原来的行为
+		return true
+	}
+	abs, ok := a.resolveUserPath(p)
+	return ok && fileExistsCached(abs)
+}
+
 // stepActions 是步骤行悬停时右侧出现的小按钮(只列这一行真正能做的事)。
 func (a *App) stepActions(c *ui.Context, sp step) {
 	if sp.imgAbs != "" { // 读图步骤:原文件可能早被清理,这里打开的是步骤里显示的那张图
 		if kit.Ib(c, "ext", kit.IbOpt{Small: true, Tip: "查看图片"}).Clicked() {
 			a.openImageLightboxPath(sp.imgAbs)
 		}
-	} else if sp.path != "" {
+	} else if sp.path != "" && a.stepFileExists(sp.path) { // 文件已不存在(如临时目录被清)就不给「打开 / 查看差异」按钮,免得点了只弹提示
 		if kit.Ib(c, "ext", kit.IbOpt{Small: true, Tip: "在工作区打开文件"}).Clicked() && !a.openPathRef(joinRef(sp.path, sp.line)) {
 			a.toast = "文件已不存在:" + baseName(sp.path)
 		}
