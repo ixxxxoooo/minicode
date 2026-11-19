@@ -17,7 +17,7 @@ const (
 	pShimmer       = "appearance.shimmer"
 	pNavDrop       = "appearance.navDrop" // 导航栏列表落下速度:0 慢,1 标准(默认),2 快,3 无
 	pFontScale     = "appearance.fontScale"
-	pUIScale       = "appearance.uiScale" // 界面大小(百分数,默认 110)
+	pUIScale       = "appearance.uiScale" // 界面大小(百分数,默认 100,见 theme.DefaultUIScale)
 	pThinkOpen     = "chat.thinkOpen"
 	pStats         = "chat.stats"
 	pGroupFold     = "chat.groupFold"
