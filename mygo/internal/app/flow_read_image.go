@@ -19,10 +19,18 @@ const (
 	readImgMaxH = 320 // 缩略预览的最大高(DIP)
 )
 
-// readImagePath 返回 Read 工具读取的图片的本机绝对路径;不是读图片、读失败、文件已不存在时返回空串。
+// readImagePath 返回 Read 工具读取的图片的本机绝对路径:先看工具结果里带回来的图片,再看原文件;不是读图片、读失败、都不存在时返回空串。
 func (a *App) readImagePath(tc *core.ToolCall) string {
 	if tc == nil || tc.Kind != core.KindRead || tc.Status != core.ToolCompleted {
 		return ""
+	}
+	// 优先用工具结果里带回来的图片(翻译器已把 base64 落盘到临时目录):原文件被清掉(如 /tmp 下的截图)也能看
+	for _, ct := range tc.Content {
+		if ib, ok := ct.(*core.ImageBlock); ok && ib.Path != "" {
+			if abs := a.resolveUserImage(ib.Path); abs != "" {
+				return abs
+			}
+		}
 	}
 	p := inputStr(tc, "file_path")
 	if p == "" && len(tc.Locations) > 0 {

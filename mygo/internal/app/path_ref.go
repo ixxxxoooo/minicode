@@ -50,24 +50,24 @@ type pathRefCache struct {
 	ver int
 }
 
-var (
-	pathExtRe  = regexp.MustCompile(`^[\w.\-@+]+\.[A-Za-z0-9]{1,10}$`)
-	pathCharRe = regexp.MustCompile(`^[\w.\-@+~/\\()\[\]:#]+$`)
-)
+// pathExtRe 匹配「没有目录、只有文件名」的写法(名字里可以有空格和中文):name.ext。
+var pathExtRe = regexp.MustCompile(`^[^/\\]+\.[A-Za-z0-9]{1,10}$`)
 
-// looksLikePath 判断一段行内代码是否「长得像路径」,没通过就不去查磁盘。
-// 条件:无空白、不是网址、不太长,且含 / 或形如 name.ext。参数 code 是行内代码原文。
+// looksLikePath 判断一段行内代码是否「长得像路径」,没通过就不去查磁盘(查盘本身不贵,但没必要)。
+// 条件:不是网址、不太长、不含换行 / 尖括号 / 反引号,且含 /(绝对路径、~/、相对路径)或形如 name.ext;
+// 路径里允许空格、中文与各种标点(如「~/Downloads/MiniPost 界面重设计 — 组件 · 标题栏.html」)。参数 code 是行内代码原文。
 func looksLikePath(code string) bool {
 	if code == "" || len(code) > 240 || strings.Contains(code, "://") || strings.HasPrefix(code, "-") {
 		return false
 	}
-	if !pathCharRe.MatchString(code) {
+	if strings.ContainsAny(code, "<>\n\r\t`") {
 		return false
 	}
 	p, _, _ := splitPathRef(code)
 	if i := strings.IndexByte(p, '#'); i >= 0 {
 		p = p[:i]
 	}
+	p = strings.TrimSpace(p)
 	if p == "" || p == "/" || p == "." || p == ".." {
 		return false
 	}
