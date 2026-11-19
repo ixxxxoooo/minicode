@@ -336,8 +336,12 @@ func (a *App) stepRow(c *ui.Context, sp step, body func()) {
 		if sp.state == "deny" {
 			obj.Strikethrough().TextColor(t.Tx3)
 		}
-		if sp.path != "" && obj.Valid() { // 路径不在行上写了:悬停文件名看完整路径
-			obj.Tooltip(sp.path)
+		if obj.Valid() { // 路径不在行上写了,悬停文件名看完整路径;Bash 用描述作标题时,悬停看完整命令
+			if sp.path != "" {
+				obj.Tooltip(sp.path)
+			} else if sp.tip != "" {
+				obj.Tooltip(sp.tip)
+			}
 		}
 		if sp.meta != "" && a.chatTier() != tierNarrow { // 窄档:附注(路径、行区间)让位
 			ui.Text(c, sp.meta).Font(theme.CodeFont()).FontSize(theme.Px(11)).TextColor(t.Tx3).SingleLine().Shrink(1).MinWidth(0).LineHeight(1).Ellipsis("…")

@@ -56,6 +56,7 @@ type step struct {
 	state      string // "" 完成 / run 运行中 / err 失败 / deny 已拒绝
 	open       bool   // 默认展开
 	hasBody    bool
+	tip        string   // 对象文字的悬停提示(Bash 用描述作标题时放完整命令)
 	imgRead    bool     // 读取的是本机存在的图片:展开体里直接显示这张图(flow_read_image.go)
 	imgAbs     string   // 读图步骤显示的那张图的绝对路径(悬停动作 / 灯箱用;原文件可能已被清理)
 	thumbs     []string // 折叠的分组行 / 回合行里,右边缩略图显示的图片(绝对路径)
@@ -217,7 +218,13 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 		}
 		s.right = durText(tc.DurationMs)
 		a.execTokens(&s, tc)
-		s.copyStr = s.obj
+		s.copyStr = s.obj // 复制拿到的永远是命令本身
+		// Bash 的 input 里 Claude 自己写了一句 description(如「List MiniPost design files in Downloads」),标题用它,
+		// 比一长串命令好读;完整命令在悬停提示里、展开的终端卡头部和复制里
+		if d := strings.TrimSpace(inputStr(tc, "description")); d != "" && tc.Name == "Bash" {
+			s.tip = s.obj
+			s.obj = d
+		}
 		for _, ct := range tc.Content {
 			if tb, ok := ct.(*core.TerminalBlock); ok {
 				s.term = tb
