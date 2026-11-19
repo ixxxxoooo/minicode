@@ -115,12 +115,16 @@ func (a *App) chatPane(c *ui.Context, gap float32) {
 		_ = t
 	}
 	p.Children(func() {
+		// 内容永远包在同一个 chat-fix 外壳里,只改它的宽度:slide(传送带 / IDE 开合动画)时定宽、靠左,栏的左缘一路移动,
+		// 整块就像贴着右缘滑进 / 滑出,不逐帧按变化的宽度重排会话(长会话重排很重);稳态时占满。
+		// 外壳不能只在动画里才有:动画一结束外壳消失,整棵会话流子树换了父级,会被整个重建、列表重新定位——
+		// 表现就是切回 Agent 后会话页最后「抖一抖」。
+		w := ui.Column(c).Key("chat-fix").Grow(1).MinHeight(0).Shrink(0)
 		if slide {
-			// 内容固定在停靠宽度、靠左,栏的左缘一路移动,整块就像贴着右缘滑进 / 滑出;
-			// 不逐帧按变化的宽度重排会话(长会话重排很重,是掉帧、宽度「先小后突然变大」的来源)
-			ui.Column(c).Key("chat-fix").Width(slideW).Grow(1).MinHeight(0).Shrink(0).Children(build)
-			return
+			w.Width(slideW)
+		} else {
+			w.WidthPercent(100)
 		}
-		build()
+		w.Children(build)
 	})
 }
