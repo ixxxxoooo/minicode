@@ -1,0 +1,58 @@
+/* MiniCode 设计稿 · 背景与表面(设置 → 主题与布局 → 背景与表面)
+   两个互相独立的偏好,都不改主题本身的 13 色色板与语义色(成功 / 报错 / 警告 / 语法高亮 / 差异):
+   ① 背景样式 data-bg:不写 = 跟随主题(方案 B 浮岛 + 非流光有强调色光晕,其余纯色);flat = 纯色;glow = 柔光(任何主题 / 方案,强度 --glow-k)。
+   ② 表面色调 data-tint:用「色相 --th + 浓淡 --tk(0–1)」重写 5 个表面 / 墨色。明度梯度固定(各层之间的明暗差不变),
+      只让中性灰带一点色相,所以文字对比度与原主题一致、不会因为选了色调而变差。
+      浅色:窗口底 .945 < 凹槽 .962 < 面板 .978 < 卡片 1.0;深色:窗口底 .17 < 凹槽 .185 < 面板 .205 < 卡片 .245。
+      流光(玻璃)的暖色染色 / 高光 / 玻璃底色也随同一个色相走(原来写死的 150 120 90 与 255 235 220 暖色)。
+   阴影基色(--c-shade)不随色调变:阴影本来就该是中性的暗。
+   Go 版对应 mygo/internal/theme/tint.go(WithTint),本文件的数值与它一一对应。
+   @author ixxxxoooo */
+
+/* ───────── ② 表面色调:浅色 ───────── */
+.frame[data-tint] {
+  --c-base: oklch(.945 calc(var(--tk) * .026) var(--th));
+  --c-surface: oklch(.978 calc(var(--tk) * .014) var(--th));
+  --c-raised: oklch(1 calc(var(--tk) * .004) var(--th));
+  --c-sunken: oklch(.962 calc(var(--tk) * .020) var(--th));
+  --c-ink: oklch(.22 calc(var(--tk) * .012) var(--th));
+  /* 流光:壁纸之上的暖色染色(侧栏最深 / 工作区居中 / 对话栏最亮)、面板「深度」与高光,统一改成同色相 */
+  --glass-side-tint: oklch(.62 calc(var(--tk) * .070) var(--th) / .17);
+  --glass-ws-tint: oklch(.62 calc(var(--tk) * .070) var(--th) / .07);
+  --glass-depth: oklch(.62 calc(var(--tk) * .070) var(--th) / .07);
+  --glass-chat-tint: oklch(.62 calc(var(--tk) * .070) var(--th) / .02);
+}
+/* ───────── ② 表面色调:深色(墨夜 / 石墨 / 极光 / 流光·夜) ───────── */
+[data-theme="ink"] .frame[data-tint], [data-theme="graphite"] .frame[data-tint], [data-theme="aurora"] .frame[data-tint], [data-theme="glow-night"] .frame[data-tint] {
+  --c-base: oklch(.170 calc(var(--tk) * .021) var(--th));
+  --c-surface: oklch(.205 calc(var(--tk) * .018) var(--th));
+  --c-raised: oklch(.245 calc(var(--tk) * .016) var(--th));
+  --c-sunken: oklch(.185 calc(var(--tk) * .020) var(--th));
+  --c-ink: oklch(.93 calc(var(--tk) * .010) var(--th));
+}
+[data-theme="glow-night"] .frame[data-tint] {
+  --glass-1: oklch(.30 calc(var(--tk) * .015) var(--th) / .38);
+  --glass-2: oklch(.27 calc(var(--tk) * .012) var(--th) / .60);
+  --glass-3: oklch(.94 calc(var(--tk) * .025) var(--th) / .08);
+  --glass-card: oklch(.33 calc(var(--tk) * .014) var(--th) / .46);
+  --glass-sel: oklch(.94 calc(var(--tk) * .025) var(--th) / .16);
+  --glass-sheen: linear-gradient(180deg, oklch(.95 calc(var(--tk) * .020) var(--th) / .14), oklch(.95 calc(var(--tk) * .020) var(--th) / 0) 26%);
+  --glass-rim: oklch(.95 calc(var(--tk) * .015) var(--th) / .30); --glass-rim-lo: oklch(.95 calc(var(--tk) * .015) var(--th) / .09); --glass-hi: oklch(.96 calc(var(--tk) * .015) var(--th) / .34);
+  --glass-side-tint: rgb(0 0 0 / .36); --glass-ws-tint: rgb(0 0 0 / .20); --glass-depth: rgb(0 0 0 / .16); --glass-chat-tint: rgb(0 0 0 / .06);
+}
+
+/* ───────── ① 背景样式 ───────── */
+.frame[data-bg="flat"] .win { background: var(--bg-chrome); }   /* 纯色:窗口底就是 --bg-chrome,没有渐变与光晕;玻璃主题的壁纸本来就是它 */
+.frame[data-bg="glow"] .win {                                   /* 柔光:强调色径向光晕,从左上角铺开;--glow-k 为强调色占比(淡 5 / 标准 9 / 浓 14) */
+  background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--ac) calc(var(--glow-k, 9) * 1%), var(--bg-chrome)), var(--bg-chrome) 55%);
+}
+
+/* ───────── 设置页:色调圆点与层次预览 ───────── */
+.swatch.tint { width: 18px; height: 18px; box-shadow: inset 0 0 0 1px var(--bd-2); }
+.swatch.tint.on { box-shadow: 0 0 0 2px var(--bg-raised), 0 0 0 3.5px var(--tx-1); }
+.swatch.tint.follow { background: linear-gradient(135deg, var(--bg-chrome) 50%, var(--bg-raised) 50%); }          /* 「跟随主题」:对角分半 */
+.swatch.tint.custom { background: conic-gradient(in oklch longer hue, oklch(.85 .08 0), oklch(.85 .08 360)); }   /* 「自定义」:色相环 */
+.tint-pv { display: flex; gap: 0; border-radius: var(--r-md); overflow: hidden; box-shadow: inset 0 0 0 1px var(--bd-2); margin: 10px 12px; height: 54px; }
+.tint-pv > i { flex: 1; display: flex; align-items: flex-end; padding: 6px 8px; font-style: normal; font-size: var(--fs-micro); color: var(--tx-3); }
+.tint-pv > i:nth-child(1) { background: var(--bg-chrome); } .tint-pv > i:nth-child(2) { background: var(--bg); }
+.tint-pv > i:nth-child(3) { background: var(--bg-raised); } .tint-pv > i:nth-child(4) { background: var(--bg-sunken); }

@@ -46,6 +46,23 @@
   /** 会实时改变界面的分段(密度、圆角……):data-key 交给 behave.js 的 live 处理 */
   const segL = (items, on, key) => seg(items, on, '', 'live').replace('<div class="seg ', `<div data-key="${key}" class="seg `);
   const accents = ['--ac-theme', '--c-info', '--c-ok', '--c-cyan', '--c-vio', '--c-pink', '--c-err', '--c-warn'];
+  /** 表面色调预设(设置 → 背景与表面):h 色相(OKLCH 度)、k 浓淡(0–100)、a / ad 推荐强调色(浅 / 深)。下标 0 = 跟随主题,8 = 自定义。
+      参考:Radix Colors 的 sand / sage / slate / mauve 带色相灰阶、Rosé Pine Dawn、Kanagawa、GitHub 中性灰。Go 版同表见 theme/tint.go。 */
+  W.TINTS = [null,
+    { n: '燕麦', h: 85, k: 40, a: '#BD5A36', ad: '#E8967A' },
+    { n: '鼠尾草', h: 150, k: 38, a: '#2F7D5B', ad: '#6FCB9B' },
+    { n: '石板', h: 255, k: 38, a: '#3D5FD0', ad: '#7F9CFF' },
+    { n: '藕荷', h: 320, k: 30, a: '#8A56C2', ad: '#B994E8' },
+    { n: '黛青', h: 215, k: 42, a: '#0E7C86', ad: '#4CC3CF' },
+    { n: '玫瑰灰', h: 10, k: 36, a: '#C0486A', ad: '#EE8AA6' },
+    { n: '石墨灰', h: 0, k: 0, a: '#4662E8', ad: '#8AA0FF' },
+    { n: '自定义' }];
+  /** 背景与表面的当前偏好(没改过取默认) */
+  const pf = (st) => Object.assign({ bgStyle: 0, glowK: 1, tint: 0, tintH: 85, tintK: 40 }, st && st.prefs);
+  const hideIf = (cond, html) => cond ? html.replace('<div class="set-row"', '<div class="set-row" style="display:none"') : html;
+  const tintSwatches = (cur) => `<span class="f g2">${W.TINTS.map((t, i) => `<span class="swatch tint ${i === 0 ? 'follow' : i === 8 ? 'custom' : ''} ${i === cur ? 'on' : ''}" data-act="tint" data-i="${i}" tabindex="0" data-tip="${i ? t.n : '跟随主题'}"${t && t.h != null ? ` style="background:oklch(.86 ${(t.k * .0016).toFixed(3)} ${t.h})"` : ''}></span>`).join('')}</span>`;
+  /** 带 data-pref 的步进器:点击即写进偏好并实时重绘(behave.js ACT.step) */
+  const stpP = (key, v, u, o) => stp(v, u, o).replace('<span class="stp"', `<span data-pref="${key}" class="stp"`);
   const goto = (label, screen, cust = '') => btn(label, 'sm', 'arrow', `data-act="screen" data-screen="${screen}" ${cust ? `data-cust="${cust}"` : ''}`);
 
   /** 外观 → 应用图标 / 菜单栏图标:样式卡、外观、配色、Dock 与菜单栏行为(控件与预览在 brand.js,改动即时生效) */
@@ -105,10 +122,17 @@
         R('通知声音', 'general.sound 控制 UN 通知 / osascript 是否带声(未测试)', seg(['静音', '轻提示'], 1)))}
       ${G('菜单栏', R('菜单栏图标与托盘', '是否显示、样式、状态徽标与动画在「应用与菜单栏图标」', btn('前往', 'sm', 'arrow', 'data-act="settab" data-tab="brand"')))}` },
 
-    appearance: { t: '主题与布局', d: '界面布局、主题、强调色与密度。所有选项都落在设计令牌上,即改即生效。', body: (st) => `
+    appearance: { t: '主题与布局', d: '界面布局、主题、强调色、背景与表面色调、密度与形状。所有选项都落在设计令牌上,即改即生效。', body: (st) => `
       ${G('界面布局', `<div style="padding:10px 12px 12px"><div class="d t3 fs-cap" style="margin-bottom:8px">三种布局共用同一份令牌与组件,只在「面板怎么分隔、导航放在哪、步骤怎么串」上不同。点一下立即切换,Agent 与 IDE 形态同步变化。</div>${layCards(st.scheme)}</div>`)}
       ${G('主题', `<div style="padding:10px 12px">${W.themeCards(st.theme)}</div>`, R('跟随系统深浅色', '浅色用「宣纸」,深色用「墨夜」', tog(0)))}
       ${G('强调色', R('强调色', '按钮、选中态、焦点环、选区、链接等使用的主题色;每个主题单独记忆,并按明暗自动调整明度', `<span class="f g2">${accents.map((a, k) => `<span class="swatch ${k ? '' : 'on'}" data-act="accent" data-v="${k ? a : ''}" tabindex="0" style="background:var(${a})"></span>`).join('')}</span>`))}
+      ${G('背景与表面',
+        R('背景样式', '跟随主题:现状(浮岛布局带一抹强调色光晕,其余纯色);纯色:窗口底是一个平色,没有任何渐变与光晕;柔光:任何主题与布局都在左上角铺一抹强调色光晕。流光主题的壁纸同样适用', segL(['跟随主题', '纯色', '柔光'], pf(st).bgStyle, 'bgStyle')),
+        hideIf(pf(st).bgStyle !== 2, R('柔光强度', '强调色在光晕中心的占比:淡 5% / 标准 9% / 浓 14%;只在「柔光」下可调', segL(['淡', '标准', '浓'], pf(st).glowK, 'glowK'))),
+        R('表面色调', '给窗口底、侧栏、面板、卡片、凹槽这几层中性灰一个色相;各层之间的明暗差不变,所以不是整体刷成一个色,文字对比度也不变。选一个预设,或在「自定义」里自己调;不影响成功 / 报错 / 警告与语法高亮的颜色。选了预设后,强调色选「沿用主题」会换成该色调的推荐色(仍可单独改)', tintSwatches(pf(st).tint)),
+        hideIf(pf(st).tint !== 8, R('色相', '自定义色调的色相,0–355°(0 红 · 85 黄褐 · 150 绿 · 255 蓝 · 320 紫);只在选了「自定义」时出现', stpP('tintH', pf(st).tintH, '°', { min: 0, max: 355, step: 5 }))),
+        hideIf(pf(st).tint !== 8, R('浓淡', '自定义色调的饱和度,0 = 纯中性灰,100 = 最浓(仍是很淡的灰,不会变成彩色底);只在选了「自定义」时出现', stpP('tintK', pf(st).tintK, '', { min: 0, max: 100, step: 5 }))),
+        `<div class="tint-pv" aria-label="层次预览"><i>窗口底</i><i>面板</i><i>卡片</i><i>凹槽</i></div>`)}
       ${G('密度与形状', R('界面密度', '行高令牌 --h-row:紧凑 −2 / 标准 / 宽松 +2(在当前布局的基础上)', segL(['紧凑', '标准', '宽松'], 1, 'density')), R('圆角', '圆角倍率 --r-k:利落 ×0.55 / 适中 / 圆润 ×1.35', segL(['利落', '适中', '圆润'], 1, 'radius')))}` },
 
     typography: { t: '字体与尺寸', d: '界面缩放、会话正文字号与内容宽度。', body: (st) => `

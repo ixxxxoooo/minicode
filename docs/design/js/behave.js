@@ -19,18 +19,29 @@
   const idxOn = (box, sel = '.on') => [...box.children].findIndex(c => c.matches(sel));
 
   /* ═════════ 偏好:密度 / 圆角 / 强调色 / 动效(设计令牌的倍率,即改即生效) ═════════ */
-  st.prefs = Object.assign({ density: 1, radius: 1, accent: '', motion: 1, stickyUser: 1, flowStyle: 0 }, st.prefs);
+  st.prefs = Object.assign({ density: 1, radius: 1, accent: '', motion: 1, stickyUser: 1, flowStyle: 0, bgStyle: 0, glowK: 1, tint: 0, tintH: 85, tintK: 40 }, st.prefs);
   const BASE = { a: { h: 24, r: .8 }, b: { h: 26, r: 1.4 }, c: { h: 22, r: 1 } };
+  const DARK_THEMES = ['ink', 'graphite', 'aurora', 'glow-night'];
   const applyPrefs = () => {
     const p = st.prefs;
+    const tn = (W.TINTS || [])[p.tint] || null, dark = DARK_THEMES.includes(document.body.dataset.theme);
     $$('.frame').forEach(f => { const b = BASE[f.dataset.scheme] || BASE.a;
       f.style.setProperty('--h-row', (b.h + [-2, 0, 2][p.density]) + 'px');
       f.style.setProperty('--r-k', +(b.r * [.55, 1, 1.35][p.radius]).toFixed(3));
-      p.accent ? f.style.setProperty('--c-accent', `var(${p.accent})`) : f.style.removeProperty('--c-accent');
+      /* 背景与表面(css/tint.css):背景样式 0 跟随主题(不写属性)/ 1 纯色 / 2 柔光;表面色调 0 跟随主题 / 1–7 预设 / 8 自定义 */
+      p.bgStyle ? f.dataset.bg = ['', 'flat', 'glow'][p.bgStyle] : delete f.dataset.bg;
+      f.style.setProperty('--glow-k', [5, 9, 14][p.glowK]);
+      if (p.tint) { f.dataset.tint = ''; f.style.setProperty('--th', p.tint === 8 ? p.tintH : tn.h); f.style.setProperty('--tk', (p.tint === 8 ? p.tintK : tn.k) / 100); }
+      else { delete f.dataset.tint; f.style.removeProperty('--th'); f.style.removeProperty('--tk'); }
+      /* 强调色:自己选的优先;选「沿用主题」且套了预设色调时,用该色调的推荐色(自定义色调没有推荐色) */
+      p.accent ? f.style.setProperty('--c-accent', `var(${p.accent})`) : tn && tn.a ? f.style.setProperty('--c-accent', dark ? tn.ad : tn.a) : f.style.removeProperty('--c-accent');
       /* 会话样式:0 跟随布局(不写属性)/ 1 对话 / 2 通栏 */
       p.flowStyle ? f.dataset.flow = ['', 'chat', 'wide'][p.flowStyle] : delete f.dataset.flow; });
     document.body.classList.toggle('no-motion', !p.motion);
     document.body.classList.toggle('no-sticky-user', !p.stickyUser); if (A.stickyChanged) A.stickyChanged();
+    /* 条件行:柔光强度只在「柔光」下出现;色相 / 浓淡只在「自定义」色调下出现 */
+    const showRow = (k, on) => $$(`.set-row[data-k="${k}"]`).forEach(r => { r.style.display = on ? '' : 'none'; });
+    showRow('柔光强度', p.bgStyle === 2); showRow('色相', p.tint === 8); showRow('浓淡', p.tint === 8);
   };
   /** 设置页里的实时控件:分段(data-key)与动效开关(data-live="motion") */
   ACT.live = (el) => {
@@ -42,9 +53,11 @@
   const syncLive = (row) => {
     $$('[data-key]', row).forEach(s => { st.prefs[s.dataset.key] = segIdx(s); });
     $$('.tog[data-live]', row).forEach(t => { st.prefs[t.dataset.live] = t.classList.contains('on') ? 1 : 0; });
-    $$('.swatch', row).forEach((w, k, all) => { if (w.dataset.act === 'accent' && w.classList.contains('on')) st.prefs.accent = w.dataset.v || ''; });
+    $$('.swatch', row).forEach((w, k, all) => { if (w.dataset.act === 'accent' && w.classList.contains('on')) st.prefs.accent = w.dataset.v || ''; if (w.dataset.act === 'tint' && w.classList.contains('on')) st.prefs.tint = +w.dataset.i; });
+    $$('.stp[data-pref]', row).forEach(s => { st.prefs[s.dataset.pref] = +$('b', s).textContent; });
     applyPrefs(); A.save();
   };
+  ACT.tint = (el) => { $$('.swatch', el.parentElement).forEach(s => cls(s, 'on', s === el)); st.prefs.tint = +el.dataset.i; applyPrefs(); A.save(); };
   ACT.accent = (el) => { $$('.swatch', el.parentElement).forEach(s => cls(s, 'on', s === el)); st.prefs.accent = el.dataset.v || ''; applyPrefs(); A.save(); };
   ACT['accent-pick'] = (el) => $$('.swatch', el.parentElement).forEach(s => cls(s, 'on', s === el));
 
@@ -180,7 +193,8 @@
 
   /* ═════════ 设置页:基础控件 ═════════ */
   ACT.step = (el) => { const s = el.closest('.stp'), b = $('b', s), min = +s.dataset.min, max = +s.dataset.max, stp = +s.dataset.step || 1, v = +b.textContent, n = Math.min(max, Math.max(min, v + stp * +el.dataset.d));
-    if (n === v) return shake(b); b.textContent = n; kick(b, 'a-ok'); };
+    if (n === v) return shake(b); b.textContent = n; kick(b, 'a-ok');
+    if (s.dataset.pref) { st.prefs[s.dataset.pref] = n; applyPrefs(); A.save(); } };   /* 带 data-pref 的步进器(色相 / 浓淡)实时写偏好 */
   ACT['chip-one'] = (el) => $$('.chip', el.parentElement).forEach(c => { const on = c === el; c.classList.toggle('on', on); c.classList.toggle('line', !on); });
   ACT['chip-tog'] = (el) => { el.classList.toggle('on'); const g = el.closest('.tgrid'); if (!g) return;
     const on = $$('.tsel.on', g).map(c => c.textContent), seg = g.parentElement.querySelector('.seg');
