@@ -441,19 +441,17 @@ func (a *App) nest(c *ui.Context, inner func()) {
 	})
 }
 
-// nestPlain 回合折叠「已处理」展开后的子项:不画引导线,只轻缩进(里面的摘要 / 探索组各有自己的线)。
-func (a *App) nestPlain(c *ui.Context, inner func()) {
-	ui.Column(c).Margin(0, 0, 0, 4).MinWidth(0).Gap(1).Children(inner)
-}
-
 // ───────── 展开内容 ─────────
 
 func (a *App) thinkBody(c *ui.Context, text string) {
 	t := a.tk
-	ui.Row(c).MinWidth(0).AlignItems(ui.Stretch).Children(func() {
-		ui.Box(c).Width(2).Background(t.Bd2).Margin(0, 8, 0, 0).Shrink(0)
-		ui.Column(c).Grow(1).MinWidth(0).Children(func() { // 思考正文按 Markdown 渲染(加粗 / 列表 / 行内代码 / 代码块)
-			markdown.View(c, padCode(strings.TrimSpace(text)), a.thinkMdOptions())
+	// 与 nest 同一条引导线:回拉到上一行图标列中线、1px、正文同缩进
+	ui.Column(c).Margin(0, 0, 0, 8-theme.FlowInset).MinWidth(0).Children(func() {
+		ui.Row(c).MinWidth(0).AlignItems(ui.Stretch).Children(func() {
+			ui.Box(c).Width(1).Background(t.Bd2).Margin(0, 8, 0, 0).Shrink(0)
+			ui.Column(c).Grow(1).MinWidth(0).Children(func() { // 思考正文按 Markdown 渲染(加粗 / 列表 / 行内代码 / 代码块)
+				markdown.View(c, padCode(strings.TrimSpace(text)), a.thinkMdOptions())
+			})
 		})
 	})
 }

@@ -125,7 +125,7 @@ func (a *App) turnFoldGroup(c *ui.Context, uid string, steps []core.Item) {
 	}
 	sp := step{id: id, icon: "layers", verb: "已处理", obj: elapsed, meta: meta, fam: famExplore, hasBody: true, open: open, thumbs: a.imagesOfItems(steps)}
 	a.stepRow(c, sp, func() {
-		a.nestPlain(c, func() {
+		a.nest(c, func() { // 与合并工具同一条引导线、同缩进
 			// 里面每一串按当前档位再排一次(精简档 = 摘要行,标准档 = 探索组 + 逐行);已答的提问卡把串断开
 			var run []core.Item
 			flush := func() {

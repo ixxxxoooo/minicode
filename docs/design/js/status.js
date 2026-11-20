@@ -210,7 +210,7 @@
       R('输入框 MCP chip 与弹层', 'mcp_model 统一视图+刷新/未启动提示/启动并查询;composer_mcp+palette;与自定义 MCP 列表同源;未测试', 'part'),
       R('会话流 · 后台任务完成通知行(TaskNote)', 'flow_user.go flowTail→taskNoteLine(flow_note.go);core.TaskNote 归约;flow_test TestFlowGapsTaskNoteAndFold;未测试', 'ok'),
       R('会话流 · 并行子 Agent 汇总行「并行 N 个」', 'flow.go stepGroup→parallelSubGroup(flow_parallel.go)连续≥2 子 Agent 卡;未测试', 'ok'),
-      R('会话流 · 回合折叠「已处理 1 分 13 秒」', 'flow_turn_fold.go 读 chat.fold;flow_user.go flowRound 折叠步骤组;失败/运行中/待处理保持展开;未测试', 'ok'),
+      R('会话流 · 回合折叠「已处理 1 分 13 秒」', 'flow_turn_fold.go 读 chat.fold;展开用 nest 引导线(与合并工具同位置同缩进),思考正文竖线同为 1px、同位置;flow_user.go flowRound 折叠步骤组;失败/运行中/待处理保持展开;未测试', 'ok'),
       R('用户消息 · 悬停动作条(回退文件 / 重试 / 复制)', 'flow_user.go userMsg 悬停→userMsgHoverBar(flow_user_actions.go)回退/重试/复制;未测试', 'ok'),
       R('「回退文件」预览对话框(用户消息入口)', 'flow_rewind.go userRewindBegin→CmdRewindFiles 预览;flow.go flowRewindCard 确认;审查页 review_turn.go 亦有入口;未测试', 'ok'),
       R('用户消息里的图片引用 / 缩略图 / 全屏', 'flow_user_img.go userMsgImages+img_cache 后台解码;文字里的「[Image #N]」占位标记不再显示,缩略图固定高 64、宽按比例夹在 64–112 并整排排在文字下方,点哪张在下方展开哪张(按比例缩到 360×280 内);未测试', 'ok'),

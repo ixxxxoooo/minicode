@@ -27,7 +27,6 @@
 .fold-in > * { margin: 3px 0 7px var(--flow-inset); }
 .ticker { margin-left: var(--flow-inset); font-size: var(--fs-ctl); color: var(--tx-3); }
 .nest { margin-left: -14px; padding-left: 8px; /* 引导线正对上一行的图标中线(图标列 16px → 中线 8px = 22 − 14),子项图标再缩进 9px */ box-shadow: inset 1px 0 var(--bd-2); display: flex; flex-direction: column; gap: 1px; }
-.nest.plain { margin-left: 4px; padding-left: 0; box-shadow: none; } /* 回合折叠「已处理」:不画引导线,只轻缩进 */
 
 /* 工具族色相(只染图标) */
 [data-tool="read"], [data-tool="grep"], [data-tool="glob"], [data-tool="group"] { --tone: var(--tool-explore); }
@@ -53,7 +52,7 @@
 .sh b { font-weight: var(--fw-medium); } .sh .sf { color: var(--syn-mac); } .sh .so { color: var(--tx-3); } .sh .sv { color: var(--syn-num); }
 .term .pa { color: var(--info); } .term .h { color: var(--syn-num); } .term .u { color: var(--ac-tx); } .term .e { font-weight: var(--fw-medium); }
 .k { color: var(--syn-kw); } .s { color: var(--syn-str); } .fn { color: var(--syn-fn); } .ty { color: var(--syn-type); } .nu { color: var(--syn-num); } .mc { color: var(--syn-mac); } .cm { color: var(--syn-com); font-style: italic; }
-.think-body { color: var(--tx-3); font-size: 12px; line-height: 1.6; padding-left: 10px; box-shadow: inset 2px 0 var(--bd-2); }
+.think-body { color: var(--tx-3); font-size: 12px; line-height: 1.6; margin-left: -14px; padding-left: 8px; box-shadow: inset 1px 0 var(--bd-2); } /* 与 .nest 同一条引导线:同位置(正对上一行图标中线)、同粗细(1px)、正文同缩进 */
 /* 思考折叠 + 流式:右侧单行「上下翻」预览——只显示最新的一句,新一句开始时旧句向上滚出、新句从下面翻进来 */
 .step.think-marquee .so { flex: 0 1 38%; min-width: 4.5em; }
 /* 流式折叠时预览顶替标题的位置(不并排放两份文字),占满「思考」与用时之间的整段宽度;上下边缘各 20% 渐隐 */
