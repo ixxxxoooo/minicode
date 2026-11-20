@@ -311,3 +311,16 @@ body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 
 .sr { display: flex; align-items: center; gap: 4px; height: 30px; padding: 0 8px; border-radius: var(--r-sm); color: var(--tx-2); font-size: 12.5px; } .sr.on { background: var(--fill-2); color: var(--tx-1); }
 .sr .sr-ind { width: 14px; flex: none; display: grid; place-items: center; }
 .sr-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ac); } .sr-dot.warn { background: var(--warn); }
+
+/* 下一步建议:每轮正常结束后,输入框正上方的一排建议胶囊,点一下直接发送(设计稿「会话流 · 排队引导 / 问答卡 / 回到最新」页「下一步建议」一节) */
+.nsteps { margin: 0 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 2px 2px 7px; }
+.nsteps .nl { display: inline-flex; align-items: center; gap: 4px; color: var(--tx-4); font-size: var(--fs-cap); flex: none; margin-right: 2px; }
+.nsteps .ns { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px; max-width: 100%; border-radius: var(--r-full); border: 1px solid var(--bd-2); background: var(--bg-raised); color: var(--tx-2); font-size: var(--fs-cap); cursor: pointer; white-space: nowrap; transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast), transform var(--dur-instant); }
+.nsteps .ns > span { overflow: hidden; text-overflow: ellipsis; }
+.nsteps .ns:hover { background: var(--fill-1); color: var(--tx-1); border-color: var(--bd-3); }
+.nsteps .ns:active { transform: scale(.97); }
+.nsteps .ns.rec { background: var(--ac-soft); color: var(--ac-tx); border-color: var(--ac-line); }   /* 第一条 = 最推荐 */
+.nsteps .ns .ed { display: none; flex: none; color: var(--tx-3); } .nsteps .ns:hover .ed { display: inline-flex; } .nsteps .ns .ed:hover { color: var(--tx-1); }   /* 悬停出现「放进输入框编辑」 */
+.nsteps .sk { width: 104px; height: 24px; border-radius: var(--r-full); }   /* 生成中:3 个骨架胶囊,复用 .skel 的呼吸 */
+.nsteps .nx { margin-left: auto; display: inline-flex; gap: 1px; flex: none; }
+.nsteps .ns.hov { background: var(--fill-1); color: var(--tx-1); border-color: var(--bd-3); } .nsteps .ns.hov .ed { display: inline-flex; }   /* 设计稿演示用:固定在悬停态 */

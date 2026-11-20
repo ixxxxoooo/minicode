@@ -108,6 +108,10 @@ ${live ? 'test matches_trailing_slash ... <span class="caret"></span>' : 'test r
     ${items.map((it, n) => it.k === 'steer'
       ? `<div class="row steer"><span class="qk">${ic('bolt', 's12')}引导</span><span class="grow ell">${it.t || '(图片)'}</span>${it.img ? `<span class="t3 fs-cap f ai g2">${ic('image', 's12')}${it.img} 张图</span>` : ''}<span class="qs"><span class="spin"></span>等 Claude 接收</span></div>`
       : `<div class="row queue-i"><span class="qk"><span class="num">${n + 1}</span>排队</span><span class="grow ell" data-tip="点击退回输入框编辑">${it.t || '(图片)'}</span>${it.img ? `<span class="t3 fs-cap f ai g2">${ic('image', 's12')}${it.img} 张图</span>` : ''}<span class="acts">${ib('bolt', 'sm', '改为引导:现在就插进当前回合')}${ib('stop', 'sm', '停止并发送')}${ib('trash', 'sm', '删除')}</span></div>`).join('')}</div>`; };
+  /** 下一步建议(输入框正上方):每轮正常结束后 3 条,点一下直接发送。items:建议文字;o.loading 生成中(3 个骨架胶囊) */
+  F.nextSteps = (items, o = {}) => `<div class="nsteps"><span class="nl">${ic('spark', 's12')}下一步</span>${o.loading
+    ? [0, 1, 2].map(() => '<span class="skel sk"></span>').join('')
+    : (items || ['运行测试确认没问题', '把这次改动提交', '再检查一下边界情况']).map((t, i) => `<span class="ns ${i === 0 ? 'rec' : ''}" data-tip="${t}"><span>${t}</span><span class="ed" data-tip="放进输入框编辑">${ic('edit', 's12')}</span></span>`).join('')}<span class="nx">${ib('refresh', 'sm', '换一批')}${ib('x', 'sm', '不再显示本轮建议')}</span></div>`;
   /** 回到最新:输入框正上方居中的圆形向下箭头。fresh:离开底部后又有新内容 */
   F.toLatest = (fresh) => `<div class="to-latest ${fresh ? 'fresh' : ''}" data-act="to-latest" data-tip="回到最新" role="button" aria-label="回到最新">${ic('arrowDown', 's12')}</div>`;
   /** 运行配置弹层:权限模式 + 按服务商分组的模型 + 思考强度(详情见 providers.js) */
