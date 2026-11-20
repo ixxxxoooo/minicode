@@ -163,6 +163,7 @@ func (a *App) chatDockColumn(c *ui.Context) {
 			a.todoDock(c)
 			if !a.dockCard(c) {
 				a.queueCard(c)
+				a.nextStepsBar(c)
 				a.composer(c)
 			}
 		})

@@ -401,6 +401,9 @@ var settingsTabs = []setTabDef{
 			rSeg(pPermMode, "默认权限模式", "新会话的起始模式;在输入框里切换后会自动记住,下次新会话沿用(「跳过权限确认」不记)", 0, "逐项确认", "自动接受编辑", "计划"),
 			rTog("chat.ding", "回合结束提示音", "", false),
 		}},
+		{title: "下一步建议", rows: []setRow{
+			rTog(kNextSteps, "回答后给出下一步建议", "每轮正常结束后,在输入框上方给 3 条可一键发送的建议。由 Haiku 根据最近一轮的要求、回复与改动文件生成,每轮多一次很小的调用(约 3 秒、约 1 美分,不带整个会话);关闭后不再生成。点一条直接发送,悬停出现的铅笔把它放进输入框再改", true),
+		}},
 		{title: "排队与引导", rows: []setRow{
 			rTog("chat.queueAtt", "排队消息带图片与文件引用", "", true),
 			rTog("chat.queuePause", "被中断后暂停队列", "中断或出错后不自动发送排队消息", true),

@@ -187,6 +187,7 @@ type App struct {
 	termRen    termRen               // 终端标签行内重命名
 	filesFocus bool                  // 文件树正在接键盘(F2 / ⌘⌫)
 	sg         *suggestSt            // 行内补全(ide_suggest.go)
+	ns         nextStepsState        // 回答后输入框上方的下一步建议(nextsteps.go)
 	inl        *inlinePatch          // 行内编辑预览(ide_inline.go)
 	claudeJob  context.CancelFunc    // 取消进行中的 Haiku 行内请求(ide_claude_edit.go)
 	codeActs   []lsp.CodeAction      // ⌘. 拉取的 LSP 代码操作
@@ -552,6 +553,7 @@ func (a *App) afterEvent(ev core.Event) {
 		a.freshSess = e.SessionID // 新会话握手拿到 id 不等于「已有会话」:没发消息前还是欢迎页
 	}
 	if _, ok := ev.(core.EvTurnStarted); ok {
+		a.nextStepsClear() // 新回合开始:上一轮的建议作废
 		a.sessProcLive = true
 		if a.cuDemo() && a.curSess == "b4-queue-img" && a.q.len() == 0 {
 			a.QueuePrompts(demo.QueuePromptSamples()...)
@@ -569,6 +571,9 @@ func (a *App) afterEvent(ev core.Event) {
 		a.drainQueue()
 		if e.Reason == core.StopEndTurn {
 			a.mcpAfterTurnEnd()
+			a.nextStepsOnTurnEnd() // 排队里的消息发出去后又是运行中,函数里会判断
+		} else {
+			a.nextStepsClear()
 		}
 	}
 	if e, ok := ev.(core.EvPlanUpdated); ok && e.Streaming && !replay {

@@ -32,7 +32,7 @@
         ['出口', '排队行:退回编辑 / 改为引导 / 停止并发送 / 删除 / 暂停后撤回;引导行发出后不可撤回(已写进 Claude 的输入)']])}</div>`, '输入框占位在回合进行中写明「⏎ 排队,⌘⏎ 引导」,不靠用户记快捷键。'))
     )}
     ${sec('下一步建议:回答之后,点一下就发', '每轮正常结束后,输入框正上方出现 3 条「下一步」建议胶囊(第一条是最推荐的,强调淡底),点哪条就把哪条当作你的消息直接发送,不用再手动输入。建议由小模型(Haiku)根据「你刚才的要求 + Claude 的回复 + 本轮改过的文件」生成,口吻是用户对 Claude 说的话,每条 ≤ 24 字、能直接执行(如「运行测试确认没问题」「把这次改动提交」),不是泛泛的「继续」。', grid(
-      cell('生成中 → 出现', '', snip(F.nextSteps(null, { loading: true }) + F.composer({ focus: false })) + snip(F.nextSteps() + F.composer({ focus: false })), '回合结束后先出 3 个骨架胶囊(约 1–3 秒),生成好换成真实建议;生成失败 / 超时(8 秒)就静默不显示,不打扰,日志记原因。'),
+      cell('生成中 → 出现', '', snip(F.nextSteps(null, { loading: true }) + F.composer({ focus: false })) + snip(F.nextSteps() + F.composer({ focus: false })), '回合结束后先出 3 个骨架胶囊(实测约 3 秒),生成好换成真实建议;生成失败 / 超时(15 秒)就静默不显示,不打扰,日志记原因。'),
       cell('悬停一条', '', snip(F.nextSteps().replace('class="ns "', 'class="ns hov"') + F.composer({ focus: false })), '悬停胶囊:背景加深并出现右侧小铅笔「放进输入框编辑」(把这句填进输入框、光标在末尾,不发送,适合想改几个字再发);提示里给完整文字(过长的胶囊单行省略)。点胶囊本身 = 立即发送。'),
       cell('什么时候出现 / 消失', '', `<div class="snip" style="height:auto;width:560px;padding:6px 14px">${tbl([['情况', 170], ['行为']], [
         ['出现', '回合正常结束(end_turn)、本轮 Claude 有文字回复、输入框是空的、没有待处理的权限 / 提问卡、没有排队消息'],
@@ -82,7 +82,7 @@
         ['减弱动态', '出现 / 消失不做位移,直接淡入淡出']])}</div>`, '任何滚动区都只有这一种「回到最新」形态。'))
     )}
     ${sec('实现状态', '与 Go 代码逐项对应;有 flow_test / dock_test 等单测,未经开发版 computer use 实测的仍标「未测试」。', tbl([['项', 220], ['说明', 0], ['状态', 70]], [
-      ['下一步建议:回答后输入框上方 3 个可一键发送的胶囊', '设计稿已补;Go 版开发中:Haiku 小调用生成、骨架态、点击发送 / 铅笔填入、↻ 换一批、✕ 关闭、设置开关、演示数据与 -ed 动作。尚未实现', st('todo')],
+      ['下一步建议:回答后输入框上方 3 个可一键发送的胶囊', 'nextsteps.go:回合正常结束(afterEvent)→ claude.RunPromptLeanCtx(haiku,--tools "" --disable-slash-commands --strict-mcp-config --system-prompt,实测约 3 秒 / 约 1 美分)只带最近一轮摘要 → 解析 JSON 数组 → session_load.go chatDockColumn 里 queueCard 与 composer 之间画建议条;骨架态 / 点击发送(submitPrompt)/ 铅笔填入 / ↻ 换一批(避开已给过的)/ ✕ / 开始输入即收起;设置 → 对话开关 chat.nextSteps;演示模式用写好的 3 条;-ed nextsteps[:loading|:none]。未做:⌥1/2/3 快捷键。已编译;未跑 vet / test、未用 computer use 实测(含真实 claude 调用的端到端)', st('part')],
       ['待发送区:排队 + 引导共用', 'dock.go queueCard + composer_queue.steerSend/syncSteers/visibleItems;引导行「等 Claude 接收」。未测试', st('ok')],
       ['问答卡 Esc 跳过', 'dock_ask.go:KeyEscape 调 skip()。未测试', st('ok')],
       ['回答卡 · 回合折叠', 'flow_turn_fold.turnFoldedItem 含已答 QuestionRequest;turnMustStayOpen 挡未完成提问。未测试', st('ok')],

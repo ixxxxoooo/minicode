@@ -30,6 +30,17 @@ func RunPromptModel(cwd, prompt, permMode, model string, timeout time.Duration) 
 }
 
 func RunPromptModelCtx(ctx context.Context, cwd, prompt, permMode, model string, timeout time.Duration) (string, error) {
+	return runPromptArgs(ctx, cwd, prompt, permMode, model, timeout, nil)
+}
+
+// RunPromptLeanCtx 同 RunPromptModelCtx,但是「纯文字问答」的精简调用:不给任何内置工具、不加载技能 / 斜杠命令、不连 MCP 服务器,
+// 每次只带很小的上下文(下一步建议这类每轮都要跑的小活用它,费用与耗时都比完整调用低一个量级)。
+// system 替换默认系统提示词(默认那份约 2k token,每次都要付)。实测:haiku 一次约 3 秒、约 1 美分。
+func RunPromptLeanCtx(ctx context.Context, cwd, system, prompt, model string, timeout time.Duration) (string, error) {
+	return runPromptArgs(ctx, cwd, prompt, "plan", model, timeout, []string{"--tools", "", "--disable-slash-commands", "--strict-mcp-config", "--system-prompt", system})
+}
+
+func runPromptArgs(ctx context.Context, cwd, prompt, permMode, model string, timeout time.Duration, extra []string) (string, error) {
 	path, ok := FindClaude("")
 	if !ok {
 		return "", fmt.Errorf("没有找到 claude 命令")
@@ -48,6 +59,7 @@ func RunPromptModelCtx(ctx context.Context, cwd, prompt, permMode, model string,
 	if model != "" {
 		args = append(args, "--model", model)
 	}
+	args = append(args, extra...)
 	cmd := exec.CommandContext(ctx, path, args...)
 	cmd.Dir = cwd
 	env := make([]string, 0, len(os.Environ()))
