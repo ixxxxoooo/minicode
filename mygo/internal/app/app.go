@@ -472,7 +472,10 @@ func (a *App) retheme() {
 	sch := a.sch
 	sch.RK *= [3]float32{.55, 1, 1.35}[a.radius]           // 圆角倍率
 	sch.RowH = theme.Px(sch.RowH) + float32(a.density-1)*2 // 行高随界面大小缩放,再按密度 ±2
-	a.tk = theme.Resolve(a.pal, sch, a.accent)
+	a.tk = theme.Resolve(a.tintedPal(a.pal), sch, a.accent)
+	// 表面色调变了,主题 id 没变:按「主题 id」缓存的编辑器配色与各处语法高亮要一并作废,否则代码块底色还是旧的
+	a.edTheme, a.brTheme, a.csvTh = nil, nil, nil
+	a.hlKey, a.refHlKey, a.mdCodeKey = "", "", ""
 	// 系统「降低透明度」/「增强对比度」:流光的染色 / 深度 / 高光 / 半透明卡片换成不透明色(见 Tokens.Tone);
 	// 玻璃插件自己会退成不透明表面。取值在换主题时刷新,运行中改系统设置要等下次换主题或重启。
 	a.tk.ReduceTransp = a11yReduceTransparency() || a11yIncreaseContrast()

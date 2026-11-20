@@ -56,7 +56,7 @@
       R('欢迎列表里的高频命令', 'palette.go palCommands:权限循环(⇧Tab 同源)、压缩 / 分叉 / 新会话、计划 / 审查 / 任务虚拟标签、除外观/通用外 12 类设置直达、演示/真实切换重启;addPal 无前置条件时置灰并 toast;未测试', 'ok'),
       R('⌘P 里输入 :行号 转到行', '与转到行共用 parseLineCol / parsePathLine(支持 :42、:42:8、路径:行:列),超界夹到末行;未测试', 'ok', 'B5')],
     settings: [
-      R('设置 → 外观 →「背景与表面」:背景样式(跟随主题 / 纯色 / 柔光 + 淡 / 标准 / 浓)与表面色调(7 个预设 + 自定义色相 / 浓淡)', '设计稿已补(css/tint.css + settings.js + behave.js,浏览器里可直接试);含流光玻璃主题的色相联动与「推荐强调色」预选;Go 版 theme/tint.go + shell.go + settings_tabs.go 开发中,未实现、未测试', 'todo', 'B9'),
+      R('设置 → 外观 →「背景与表面」:背景样式(跟随主题 / 纯色 / 柔光 + 淡 / 标准 / 浓)与表面色调(7 个预设 + 自定义色相 / 浓淡)', '设计稿已补(css/tint.css + settings.js + behave.js,浏览器里可直接试);含流光玻璃主题的色相联动与「推荐强调色」预选。Go 版已写:theme/tint.go(OKLCH 推导 5 个表面 / 墨色 + 流光染色覆盖,WithTint)、settings.go(偏好 appearance.bgStyle / glow / tint / tintHue / tintK、bgGlow、tintedPal、accentPref)、shell.go(光晕读偏好)、settings_tint.go(圆点行 + 层次预览 + 条件行 setRow.show);retheme 时作废按主题 id 缓存的编辑器配色与语法高亮。偏离设计稿一处:色调与背景样式是全局偏好,不按主题分别记忆。只通过 go build,未跑 vet / test、未用 computer use 实测', 'part', 'B9'),
       R('4 组 14 类导航、改动圆点与悬停还原、外观(主题 / 方案 / 强调色 / 密度 / 圆角 / 动效)即时生效', '', 'ok'),
       R('设置内搜索', '命中后跳进分类并滚动高亮目标行(约 1.4s)', 'ok', 'B6'),
       R('需重启条', '「立即重启」自启动进程并退出(开发版 .app 路径)', 'ok', 'B6'),

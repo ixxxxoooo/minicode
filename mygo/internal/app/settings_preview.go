@@ -18,6 +18,8 @@ const shimmerPreviewTick = 33 * time.Millisecond
 // settingsPreview 按 id 绘制设置页外观类实时预览(设计稿 js/settings-pv.js)。
 func (a *App) settingsPreview(c *ui.Context, id string) {
 	switch id {
+	case "tint":
+		a.pvTint(c)
 	case "typo":
 		a.pvTypo(c)
 	case "width":

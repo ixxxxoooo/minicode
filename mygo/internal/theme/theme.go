@@ -26,6 +26,8 @@ type Palette struct {
 	// 阴影的基色(RGB)与强度倍率:深色主题阴影更重
 	Shade  [3]uint8
 	KShade float32
+	// glass 是表面色调给玻璃主题的染色覆盖(只有 WithTint 会设置,见 tint.go;nil = 用 Tone 里写死的暖色)
+	glass *glassOv
 }
 
 // Scheme 是布局方案:只调倍率,不碰颜色。

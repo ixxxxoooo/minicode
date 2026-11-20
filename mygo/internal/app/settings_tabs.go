@@ -177,7 +177,7 @@ func themeCards(a *App, c *ui.Context) {
 	ui.Row(c).Gap(6).Wrap().Children(func() {
 		for _, p := range theme.Palettes {
 			on := a.pal.ID == p.ID
-			tk := theme.Resolve(p, t.Scheme, "")
+			tk := theme.Resolve(a.tintedPal(p), t.Scheme, "")
 			card := ui.ButtonBase(c).Key("th-" + p.ID).Width(92).Padding(4).Radius(t.RMd()).Cursor(ui.CursorPointer).Column().AlignItems(ui.Stretch).Transition(kit.Fade)
 			switch {
 			case on:
@@ -219,6 +219,9 @@ func accentSwatches(a *App, c *ui.Context) {
 			col := accentOf(a.pal, i)
 			if col == "" {
 				col = a.pal.Accent
+				if s := theme.TintAccent(a.prefs.Int(kTint, 0), a.pal.Dark); s != "" {
+					col = s // 套了预设色调:「沿用主题」这一格显示该色调的推荐强调色
+				}
 			}
 			b := ui.ButtonBase(c).Key("sw-"+itoa(i)).Size(16, 16).Radius(8).Background(ui.Hex(col)).Cursor(ui.CursorPointer).Shrink(0).
 				Transition(ui.ElementTransition{Size: true, Duration: kit.DurBase, Ease: kit.EaseSpring})
@@ -299,7 +302,7 @@ var settingsTabs = []setTabDef{
 		}},
 	}},
 
-	{id: "appearance", title: "主题与布局", icon: "palette", desc: "界面布局、主题、强调色与密度。改动即时生效。", groups: []setGroup{
+	{id: "appearance", title: "主题与布局", icon: "palette", desc: "界面布局、主题、强调色、背景与表面色调、密度与形状。改动即时生效。", groups: []setGroup{
 		{title: "界面布局", body: func(a *App, c *ui.Context) { layCards(a, c) }},
 		{title: "主题", body: func(a *App, c *ui.Context) {
 			ui.Column(c).Padding(10, 12).Children(func() { themeCards(a, c) })
@@ -309,6 +312,7 @@ var settingsTabs = []setTabDef{
 			{key: kAccent, title: "强调色", desc: "按钮、选中态、焦点环、选区、链接等使用的主题色;每个主题单独记忆,并按明暗自动调整明度", kind: kNone, def: 0,
 				right: func(a *App, c *ui.Context) { accentSwatches(a, c) }},
 		}},
+		{title: "背景与表面", rows: bgSurfaceRows()},
 		{title: "密度与形状", rows: []setRow{
 			{key: kDensity, title: "界面密度", desc: "行高:紧凑 −2 / 标准 / 宽松 +2(在当前布局的基础上)", kind: kSeg, def: 1, opts: []string{"紧凑", "标准", "宽松"}},
 			{key: kRadius, title: "圆角", desc: "圆角大小:利落 ×0.55 / 适中 / 圆润 ×1.35", kind: kSeg, def: 1, opts: []string{"利落", "适中", "圆润"}},

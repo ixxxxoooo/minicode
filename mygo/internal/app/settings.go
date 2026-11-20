@@ -41,6 +41,7 @@ type setRow struct {
 	ph               string
 	right            func(a *App, c *ui.Context) // kNone 时的自定义右侧内容
 	pvID             string                      // kPreview:settings_preview.go 里的预览 id
+	show             func(a *App) bool           // 非 nil 且返回 false 时这一行不显示(也搜不到),如「柔光强度」只在选了柔光时出现
 }
 
 // setGroup 是一个分组卡:rows 声明式的行,或 body 自定义整块内容。
@@ -234,7 +235,59 @@ const (
 	kAccent  = "appearance.accent"
 	kDensity = "appearance.density"
 	kRadius  = "appearance.radius"
+	// 背景与表面(设计稿 css/tint.css):背景样式 0 跟随主题 / 1 纯色 / 2 柔光;柔光强度 0 淡 / 1 标准 / 2 浓;
+	// 表面色调 0 跟随主题 / 1–7 预设 / 8 自定义(色相 0–355、浓淡 0–100 只在自定义下生效)
+	kBgStyle = "appearance.bgStyle"
+	kGlow    = "appearance.glow"
+	kTint    = "appearance.tint"
+	kTintHue = "appearance.tintHue"
+	kTintK   = "appearance.tintK"
 )
+
+// glowMix 是柔光里强调色在光晕中心的占比(淡 5% / 标准 9% / 浓 14%)。
+var glowMix = [3]float32{.05, .09, .14}
+
+// bgGlow 返回窗口底光晕里强调色的占比,0 = 纯色。
+// 跟随主题 = 现状:只有「浮岛」布局的非玻璃主题带光晕;纯色一律没有;柔光在任何主题 / 布局下都有。
+func (a *App) bgGlow() float32 {
+	if a.prefs == nil {
+		return 0
+	}
+	k := glowMix[min(max(a.prefs.Int(kGlow, 1), 0), 2)]
+	switch a.prefs.Int(kBgStyle, 0) {
+	case 1:
+		return 0
+	case 2:
+		return k
+	}
+	if a.sch.ID == "b" && !a.pal.Glass {
+		return glowMix[1]
+	}
+	return 0
+}
+
+// tintedPal 给主题套上用户选的表面色调(没选 = 原样返回)。
+func (a *App) tintedPal(p theme.Palette) theme.Palette {
+	if a.prefs == nil {
+		return p
+	}
+	i := a.prefs.Int(kTint, 0)
+	if i <= 0 || i >= len(theme.TintPresets) {
+		return p
+	}
+	if i == theme.TintCustom {
+		return theme.WithTint(p, a.prefs.Int(kTintHue, 85), a.prefs.Int(kTintK, 40))
+	}
+	return theme.WithTint(p, theme.TintPresets[i].Hue, theme.TintPresets[i].K)
+}
+
+// accentPref 是偏好选出的强调色:自己选的优先;选「沿用主题」且套了预设色调时用该色调的推荐色;都没有 = 空串(用主题自带)。
+func (a *App) accentPref() string {
+	if s := accentOf(a.pal, a.prefs.Int(kAccent, 0)); s != "" {
+		return s
+	}
+	return theme.TintAccent(a.prefs.Int(kTint, 0), a.pal.Dark)
+}
 
 // accentOf 返回强调色选项 i 的颜色(0 = 沿用主题自带);选项顺序与设计稿一致。
 func accentOf(p theme.Palette, i int) string {
@@ -266,7 +319,7 @@ func (a *App) applyPrefs() {
 	if a.prefs.Has(kScheme) {
 		a.sch = theme.FindScheme(a.prefs.Str(kScheme, a.sch.ID))
 	}
-	a.accent = accentOf(a.pal, a.prefs.Int(kAccent, 0))
+	a.accent = a.accentPref()
 	theme.SetUIScale(a.prefs.Int(pUIScale, theme.DefaultUIScale)) // 界面大小:先于 retheme,令牌与行高才按新倍率算
 	a.density = a.prefs.Int(kDensity, 1)
 	a.radius = a.prefs.Int(kRadius, 1)
@@ -431,6 +484,9 @@ func (a *App) settingsGroup(c *ui.Context, g setGroup, index int) {
 			// 同一分组既有行又有自定义块时,先画行再画块(原先有块就丢掉了行)。
 			first := true
 			for _, r := range g.rows {
+				if r.show != nil && !r.show(a) {
+					continue
+				}
 				if r.kind == kPreview {
 					if r.pvID != "" {
 						a.settingsPreview(c, r.pvID)
@@ -625,7 +681,7 @@ func (a *App) settingsHits(q string) []setHit {
 				rows = []setRow{{title: g.title}} // 自定义块按分组标题可被搜到
 			}
 			for _, r := range rows {
-				if r.kind == kPreview || r.title == "" {
+				if r.kind == kPreview || r.title == "" || (r.show != nil && !r.show(a)) {
 					continue
 				}
 				if strings.Contains(strings.ToLower(r.title+" "+r.desc+" "+g.title+" "+tab.title), k) {

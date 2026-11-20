@@ -13,15 +13,13 @@ func (a *App) t() *theme.Tokens { return a.tk }
 func (a *App) root(c *ui.Context) {
 	t := a.tk
 	root := ui.Column(c).Fill().FontSize(theme.FsBody).TextColor(t.Tx1)
-	if t.Scheme.ID == "b" && !t.Glass() { // 流光的壁纸是纯色(底色 t.Chrome),不要光晕
-		// 方案 B:底色带一抹强调色光晕(径向渐变)
-		root.Background(t.Chrome)
+	root.Background(t.Chrome)
+	// 窗口底光晕(设置 → 背景与表面):跟随主题时只有方案 B + 非流光带,纯色没有,柔光在任何主题 / 布局下都有;强度见 bgGlow
+	if k := a.bgGlow(); k > 0 {
 		root.RadialGradient(ui.RadialGradient{
 			Center: ui.Point{X: 0, Y: 0}, Radius: 1500,
-			Stops: []ui.GradientStop{{Color: t.Chrome.Mix(t.Ac, .09), At: 0}, {Color: t.Chrome, At: .55}},
+			Stops: []ui.GradientStop{{Color: t.Chrome.Mix(t.Ac, k), At: 0}, {Color: t.Chrome, At: .55}},
 		})
-	} else {
-		root.Background(t.Chrome)
 	}
 	// 「你在哪」(⌘W 关标签还是关窗口,见 close_ctx.go):根上先记成「其它」,工作区 / 底部面板再各自覆盖
 	root.ObserveInput(a.zoneObserve(zoneOther))

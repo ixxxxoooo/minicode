@@ -63,6 +63,19 @@ func (t *Tokens) Tone() GlassTone {
 	if !t.Palette.Glass || t.ReduceTransp {
 		return GlassTone{Thin: t.Fill1, Card: t.Raised, Sel: t.Raised, Rim: t.Bd1, RimLo: t.Bd1, Sheen: ui.Transparent, Mid: t.BG, SideTint: ui.Transparent, WsTint: ui.Transparent, Depth: ui.Transparent, ChatTint: ui.Transparent, Hair: t.Bd2, Hi: ui.Transparent}
 	}
+	g := t.toneBase()
+	if ov := t.Palette.glass; ov != nil { // 表面色调:暖色染色 / 高光换成同色相(见 tint.go)
+		if t.Palette.Dark {
+			g.Thin, g.Card, g.Sel, g.Rim, g.RimLo, g.Sheen, g.Mid, g.Hi = ov.thin, ov.card, ov.sel, ov.rim, ov.rimLo, ov.sheen, ov.mid, ov.hi
+		} else {
+			g.SideTint, g.WsTint, g.Depth, g.ChatTint = ov.sideTint, ov.wsTint, ov.depth, ov.chatTint
+		}
+	}
+	return g
+}
+
+// toneBase 是流光主题默认(没套表面色调)的玻璃半透明色。
+func (t *Tokens) toneBase() GlassTone {
 	if t.Palette.Dark {
 		return GlassTone{Thin: ui.RGBA(255, 235, 220, .08), Card: ui.RGBA(58, 50, 44, .46), Sel: ui.RGBA(255, 235, 220, .16),
 			Rim: ui.RGBA(255, 240, 230, .30), RimLo: ui.RGBA(255, 240, 230, .09), Sheen: ui.RGBA(255, 236, 222, .14), Mid: ui.RGBA(38, 34, 30, .60),

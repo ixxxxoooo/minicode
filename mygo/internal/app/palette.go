@@ -80,7 +80,7 @@ func (a *App) closePalette() {
 // previewPalette 临时套用主题(命令面板里上下移动时预览),不写偏好。
 func (a *App) previewPalette(id string) {
 	a.pal = theme.Find(id)
-	a.accent = accentOf(a.pal, a.prefs.Int(kAccent, 0))
+	a.accent = a.accentPref()
 	a.retheme()
 }
 
