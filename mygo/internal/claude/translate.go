@@ -27,6 +27,9 @@ type openBlock struct {
 	// pend 是还没建条目时收到的纯空白增量:模型在工具调用之间常吐只有 "\n\n" 的文本块,
 	// 不能为它建条目(会成空行、被算进步骤 / 回合统计);等来了真正的文字再连同这些空白一起发出。
 	pend string
+	// text 是正文块(不是思考);nsf 把正文末尾的 <next_steps> 块截走(下一步建议,见 core/nextsteps.go)
+	text bool
+	nsf  core.NextStepsFilter
 }
 
 type streamedBlock struct {
@@ -368,7 +371,7 @@ func (t *Translator) streamEvent(v obj) []core.Event {
 		if bt := str(block, "type"); bt != "text" && bt != "thinking" {
 			return nil
 		}
-		t.open[key] = &openBlock{id: fmt.Sprintf("%s:%d", msgID, index), parent: parent}
+		t.open[key] = &openBlock{id: fmt.Sprintf("%s:%d", msgID, index), parent: parent, text: str(block, "type") == "text"}
 	case "content_block_delta":
 		delta := sub(ev, "delta")
 		if str(delta, "type") == "input_json_delta" {
@@ -398,17 +401,28 @@ func (t *Translator) streamEvent(v obj) []core.Event {
 		if text == "" || b == nil {
 			return nil
 		}
+		var extra []core.Event
+		if kind == kindText {
+			// 正文末尾的 <next_steps> 块不进会话流:截走并解析成建议(只取主对话的,子 Agent 的丢弃)
+			show, items := b.nsf.Push(text)
+			if len(items) > 0 && b.parent == "" {
+				extra = append(extra, core.EvNextSteps{Items: items})
+			}
+			if text = show; text == "" {
+				return extra
+			}
+		}
 		if !b.created {
 			if strings.TrimSpace(text) == "" {
 				b.pend += text
-				return nil
+				return extra
 			}
 			text, b.pend = b.pend+text, ""
 			b.created = true
 			t.streamed[msgID] = append(t.streamed[msgID], &streamedBlock{kind: kind})
 		}
 		if kind == kindText {
-			return []core.Event{core.EvTextDelta{Parent: b.parent, ID: b.id, Delta: text}}
+			return append(extra, core.EvTextDelta{Parent: b.parent, ID: b.id, Delta: text})
 		}
 		return []core.Event{core.EvThinkingDelta{Parent: b.parent, ID: b.id, Delta: text}}
 	case "content_block_stop":
@@ -418,9 +432,21 @@ func (t *Translator) streamEvent(v obj) []core.Event {
 		}
 		if b := t.open[key]; b != nil {
 			delete(t.open, key)
-			if b.created {
-				return []core.Event{core.EvItemDone{Parent: b.parent, ID: b.id}}
+			var evs []core.Event
+			if b.text { // 末尾被扣住、其实不是 <next_steps> 开标签的字(如一个孤零零的 "<")补发出去
+				if tail := b.nsf.Flush(); tail != "" {
+					if !b.created {
+						tail, b.pend = b.pend+tail, ""
+						b.created = true
+						t.streamed[msgID] = append(t.streamed[msgID], &streamedBlock{kind: kindText})
+					}
+					evs = append(evs, core.EvTextDelta{Parent: b.parent, ID: b.id, Delta: tail})
+				}
 			}
+			if b.created {
+				evs = append(evs, core.EvItemDone{Parent: b.parent, ID: b.id})
+			}
+			return evs
 		}
 	}
 	return nil
@@ -457,6 +483,14 @@ func (t *Translator) assistant(v obj) []core.Event {
 		case "text":
 			text := str(block, "text")
 			if strings.TrimSpace(text) == "" || t.claimStreamed(msgID, kindText) {
+				continue
+			}
+			// 完整消息 / 历史回放:同样把末尾的 <next_steps> 块剥掉(流式时已截走的上面已 continue)
+			var nsItems []string
+			if text, nsItems = core.StripNextSteps(text); len(nsItems) > 0 && parent == "" {
+				out = append(out, core.EvNextSteps{Items: nsItems})
+			}
+			if strings.TrimSpace(text) == "" {
 				continue
 			}
 			// API 错误:合成的 assistant 消息与回合结束的 result 带同样的文字,实时流里只留 result 那条

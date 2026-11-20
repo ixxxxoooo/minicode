@@ -504,6 +504,8 @@ func (s *State) Apply(ev Event) {
 		}
 	case EvForkSession:
 		// 分叉由界面切换会话处理,状态机不归约
+	case EvNextSteps:
+		// 下一步建议只给界面(回合结束时显示成输入框上方的胶囊),不进时间线
 	case EvTurnEnded:
 		s.Phase = PhaseIdle
 		s.Live, s.LiveDone, s.TurnAt, s.Settling = nil, nil, time.Time{}, false

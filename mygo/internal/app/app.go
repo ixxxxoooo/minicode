@@ -559,6 +559,9 @@ func (a *App) afterEvent(ev core.Event) {
 			a.QueuePrompts(demo.QueuePromptSamples()...)
 		}
 	}
+	if e, ok := ev.(core.EvNextSteps); ok && !replay {
+		a.onNextSteps(e.Items) // 回答末尾带的下一步建议:先存着,回合正常结束才显示
+	}
 	if e, ok := ev.(core.EvTurnEnded); ok && !replay {
 		// 回合里 Claude 可能新建了被 .gitignore 忽略的文件(git 状态看不到),文件树缓存一并作废
 		a.ide.dropLists()

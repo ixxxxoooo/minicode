@@ -16,15 +16,10 @@ var flowDbgLog = diag.L("app.flowdbg")
 // flowDebug 处理会话流 / 排队 / 问答 / 滚动的 -ed 动作(cmd/shot 与开发版调试)。
 func (a *App) flowDebug(name, arg string) bool {
 	switch name {
-	case "nextsteps": // 下一步建议条:nextsteps(3 条)/ nextsteps:loading(骨架)/ nextsteps:none(清掉)
+	case "nextsteps": // 下一步建议条:nextsteps(3 条)/ nextsteps:none(清掉)
 		a.nextStepsClear()
-		a.ns.sess = a.curSess
-		switch arg {
-		case "loading":
-			a.ns.loading = true
-		case "none":
-		default:
-			a.ns.items = demoNextSteps()
+		if arg != "none" {
+			a.ns.items, a.ns.sess = demoNextSteps(), a.curSess
 		}
 		return true
 	case "queue":

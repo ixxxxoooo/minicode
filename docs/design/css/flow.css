@@ -321,6 +321,5 @@ body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 
 .nsteps .ns:active { transform: scale(.97); }
 .nsteps .ns.rec { background: var(--ac-soft); color: var(--ac-tx); border-color: var(--ac-line); }   /* 第一条 = 最推荐 */
 .nsteps .ns .ed { display: none; flex: none; color: var(--tx-3); } .nsteps .ns:hover .ed { display: inline-flex; } .nsteps .ns .ed:hover { color: var(--tx-1); }   /* 悬停出现「放进输入框编辑」 */
-.nsteps .sk { width: 104px; height: 24px; border-radius: var(--r-full); }   /* 生成中:3 个骨架胶囊,复用 .skel 的呼吸 */
 .nsteps .nx { margin-left: auto; display: inline-flex; gap: 1px; flex: none; }
 .nsteps .ns.hov { background: var(--fill-1); color: var(--tx-1); border-color: var(--bd-3); } .nsteps .ns.hov .ed { display: inline-flex; }   /* 设计稿演示用:固定在悬停态 */

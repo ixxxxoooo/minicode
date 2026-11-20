@@ -136,6 +136,12 @@ func (a *App) FillClaudeConfig(cfg *claude.Config) {
 	a.SyncClaudeSettingsFromPrefs()
 	cfg.ClaudePath = strings.TrimSpace(a.prefs.Str(pRuntimeBin, ""))
 	cfg.AppendSystemPrompt = a.ChatSystemPrompt()
+	if np := a.nextStepsPrompt(); np != "" { // 下一步建议:让 Claude 在回答末尾顺带给出,不另发请求(nextsteps.go)
+		if cfg.AppendSystemPrompt != "" {
+			cfg.AppendSystemPrompt += "\n\n"
+		}
+		cfg.AppendSystemPrompt += np
+	}
 	if m := strings.TrimSpace(a.prefs.Str(prefModel, "")); m != "" {
 		cfg.Model = m
 	}
