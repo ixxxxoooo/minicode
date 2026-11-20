@@ -51,8 +51,7 @@ func (a *App) jumpToLSPAbs(abs string, r lsp.Range) {
 		a.ide.openAt(abs, r.Start.Line, c0, c1, true)
 		a.ide.sel = abs
 		a.ide.navPush(navPos{abs, r.Start.Line, c0})
-		a.SetMode(ModeIDE)
-		a.revealWorkspace()
+		a.revealWorkspace() // 不切形态:Agent 形态开在右侧工作区,IDE 形态开在编辑区
 		return
 	}
 	a.tryOpenDiskReadOnly(abs, r, false)
@@ -143,8 +142,7 @@ func (a *App) finishOpenDiskReadOnly(abs, src string, r lsp.Range) {
 	d.sel = abs
 	d.navPush(navPos{abs, r.Start.Line, c0})
 	d.active = t.id
-	a.SetMode(ModeIDE)
-	a.revealWorkspace()
+	a.revealWorkspace() // 不切形态(同 jumpToLSPAbs)
 	extOpenLog.Info("只读打开工作区外", "path", abs, "line", r.Start.Line+1)
 }
 

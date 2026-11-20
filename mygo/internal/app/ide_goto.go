@@ -68,8 +68,9 @@ func parseLineCol(s string) (line, col int, ok bool) {
 }
 
 // openFileAtLine 打开文件并跳到行(行号 0 起);列与行尾用于选中。
+// 不切换形态:在 Agent 形态就开在右侧工作区的编辑器里,在 IDE 形态就开在编辑区(会话里点文件走这里,见设计稿 arch.js「会话流里的文件链接」)。
+// 命令面板要「打开后进 IDE」的,由调用方自己 SetMode。
 func (a *App) openFileAtLine(p string, line, col int) {
-	a.SetMode(ModeIDE)
 	a.ide.openAt(p, line, col, col, true)
 	a.ide.sel = p
 }
@@ -107,6 +108,7 @@ func (a *App) paletteGotoLine(q string) bool {
 		return true
 	}
 	a.openFileAtLine(p, line, col)
+	a.SetMode(ModeIDE) // 命令面板打开文件仍进 IDE 形态(openFileAtLine 本身不切)
 	return true
 }
 
@@ -117,6 +119,7 @@ func (a *App) paletteOpenFile(p, query string) {
 		if line, col, ok := parseLineCol(tail); ok {
 			if head == p || fuzzy(head, p) >= 0 || fuzzy(head, path.Base(p)) >= 0 || strings.HasSuffix(p, head) {
 				a.openFileAtLine(p, line, col)
+				a.SetMode(ModeIDE)
 				return
 			}
 		}
