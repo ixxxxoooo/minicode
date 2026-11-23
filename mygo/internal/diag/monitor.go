@@ -1,9 +1,11 @@
 package diag
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -299,7 +301,7 @@ func FormatBytes(n uint64) string { return fmtBytes(n) }
 // ───────── 主线程卡死看门狗 ─────────
 
 // Watchdog 周期性地让界面主线程执行一个回执:超过 warn 没回执记 WARN,超过 dump 就把全部 goroutine 栈
-// 落到 crashes/hang-*.txt 并写一条 hang 记录。ping 由调用方实现(通常是 mygo.RunOnMain),
+// 落到 crashes/<时间>-hang-<pid>.txt 并写一条 hang 记录;卡在原生代码里时另采一份 <时间>-hang-native-<pid>.txt。ping 由调用方实现(通常是 mygo.RunOnMain),
 // 它必须在主线程上执行完后调用 done。窗口空闲时也能判断,因为用的是主动探测而不是帧心跳。
 func Watchdog(ping func(done func()), warn, dump time.Duration) {
 	go func() {
@@ -332,6 +334,11 @@ func Watchdog(ping func(done func()), warn, dump time.Duration) {
 					write(LevelWarn, "hang", "主线程停滞", []any{"已停滞", stall.Round(time.Millisecond)})
 					RecordHang("stall", stall, stk, "")
 					NewCounter("hang.warn").Inc()
+					// 主线程卡在原生代码(Cocoa / Metal)里时,Go 栈只剩一层 purego 系统调用,看不出原因
+					// (一周 62 条停滞栈里 51 条是这样):补采一份原生调用栈
+					if strings.HasPrefix(mainStackSummary(1), "purego.") {
+						nativeSample(stall)
+					}
 				}
 				// 停滞期间每 100 ms 抓一次主 goroutine 的调用栈摘要(最多 3 次):
 				// 3 秒才落盘的完整栈抓不到 400~1000 ms 的短卡顿,而这类卡顿(切形态、开会话)正是最常见的。
@@ -405,12 +412,55 @@ func mainStackAppFrames(inner int) string {
 	return strings.Join(out, " <- ")
 }
 
+// nativeSampleEvery 两次原生采样的最小间隔:sample 会短暂挂起进程的各线程,不能每次停滞都采。
+const nativeSampleEvery = 5 * time.Minute
+
+var lastNativeSample atomic.Int64 // UnixNano
+
+// nativeSample 用 macOS 自带的 /usr/bin/sample 对本进程采样 1 秒,把含原生帧的调用栈存进 crashes/。
+// 在后台进行,不阻塞看门狗;停滞若在采样开始前就已结束,采到的是恢复后的栈(日志里能看出来)。
+func nativeSample(stall time.Duration) {
+	if runtime.GOOS != "darwin" || os.Getenv("MINI_NO_NATIVE_SAMPLE") != "" {
+		return
+	}
+	now := time.Now()
+	last := lastNativeSample.Load()
+	if last != 0 && now.Sub(time.Unix(0, last)) < nativeSampleEvery {
+		return
+	}
+	if !lastNativeSample.CompareAndSwap(last, now.UnixNano()) {
+		return
+	}
+	go func() {
+		defer Recover("diag.nativeSample")
+		dir := CrashDir()
+		_ = os.MkdirAll(dir, 0o755)
+		// 文件名以时间开头:与其它记录一起按时间被 pruneCrashes 清理
+		path := filepath.Join(dir, fmt.Sprintf("%s-hang-native-%d.txt", now.Format("20060102-150405"), os.Getpid()))
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		t0 := time.Now()
+		out, err := exec.CommandContext(ctx, "/usr/bin/sample", strconv.Itoa(os.Getpid()), "1", "-mayDie", "-file", path).CombinedOutput()
+		if err != nil {
+			msg := strings.TrimSpace(string(out))
+			if len(msg) > 200 {
+				msg = msg[len(msg)-200:]
+			}
+			write(LevelWarn, "hang", "原生调用栈采样失败", []any{"err", err, "输出", msg})
+			return
+		}
+		write(LevelWarn, "hang", "已采样主线程停滞时的原生调用栈", []any{"停滞", stall.Round(time.Millisecond), "文件", path, "耗时", time.Since(t0).Round(time.Millisecond)})
+		pruneCrashes(dir, 50)
+	}()
+}
+
 func dumpHang(stall time.Duration) {
 	buf := make([]byte, 1<<20)
 	n := runtime.Stack(buf, true)
 	dir := CrashDir()
 	_ = os.MkdirAll(dir, 0o755)
-	name := fmt.Sprintf("hang-%s-%d.txt", time.Now().Format("20060102-150405"), os.Getpid())
+	// 文件名以时间开头(原先叫 hang-<时间>,字典序排在所有记录之后,pruneCrashes 永远删不到它,反而把真崩溃记录挤掉)
+	name := fmt.Sprintf("%s-hang-%d.txt", time.Now().Format("20060102-150405"), os.Getpid())
 	path := filepath.Join(dir, name)
 	_ = os.WriteFile(path, buf[:n], 0o644)
 	write(LevelError, "hang", "主线程长时间停滞,已保存全部 goroutine 栈", []any{"停滞", stall.Round(time.Millisecond), "文件", path})
