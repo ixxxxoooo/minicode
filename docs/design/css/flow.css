@@ -312,14 +312,18 @@ body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 
 .sr .sr-ind { width: 14px; flex: none; display: grid; place-items: center; }
 .sr-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ac); } .sr-dot.warn { background: var(--warn); }
 
-/* 下一步建议:每轮正常结束后,输入框正上方的一排建议胶囊,点一下直接发送(设计稿「会话流 · 排队引导 / 问答卡 / 回到最新」页「下一步建议」一节) */
-.nsteps { margin: 0 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 2px 2px 7px; }
-.nsteps .nl { display: inline-flex; align-items: center; gap: 4px; color: var(--tx-4); font-size: var(--fs-cap); flex: none; margin-right: 2px; }
-.nsteps .ns { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px; max-width: 100%; border-radius: var(--r-full); border: 1px solid var(--bd-2); background: var(--bg-raised); color: var(--tx-2); font-size: var(--fs-cap); cursor: pointer; white-space: nowrap; transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast), transform var(--dur-instant); }
-.nsteps .ns > span { overflow: hidden; text-overflow: ellipsis; }
-.nsteps .ns:hover { background: var(--fill-1); color: var(--tx-1); border-color: var(--bd-3); }
-.nsteps .ns:active { transform: scale(.97); }
-.nsteps .ns.rec { background: var(--ac-soft); color: var(--ac-tx); border-color: var(--ac-line); }   /* 第一条 = 最推荐 */
-.nsteps .ns .ed { display: none; flex: none; color: var(--tx-3); } .nsteps .ns:hover .ed { display: inline-flex; } .nsteps .ns .ed:hover { color: var(--tx-1); }   /* 悬停出现「放进输入框编辑」 */
-.nsteps .nx { margin-left: auto; display: inline-flex; gap: 1px; flex: none; }
-.nsteps .ns.hov { background: var(--fill-1); color: var(--tx-1); border-color: var(--bd-3); } .nsteps .ns.hov .ed { display: inline-flex; }   /* 设计稿演示用:固定在悬停态 */
+/* 下一步建议:每轮正常结束后,作为这一轮回答的延续排在会话流末尾(回合脚注之后),竖排 3 行,整行可点,点一下直接发送(设计稿「会话流 · 排队引导 / 问答卡 / 回到最新」页「下一步建议」一节)。随时间线滚动,不贴输入框 */
+.nsteps { margin: 6px 0 0; display: flex; flex-direction: column; }
+.nsteps .nh { display: flex; align-items: center; gap: 4px; height: 22px; color: var(--tx-4); font-size: var(--fs-cap); }
+.nsteps .nh .nx { margin-left: auto; display: inline-flex; gap: 1px; flex: none; }
+.nsteps .ns { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border-top: 1px solid var(--bd-1); color: var(--tx-2); font-size: var(--fs-body); cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
+.nsteps .ns:last-child { border-bottom: 1px solid var(--bd-1); }
+.nsteps .ns .lead { flex: none; color: var(--tx-4); display: inline-flex; transition: color var(--dur-fast); }
+.nsteps .ns .tx { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nsteps .ns .acts { display: none; flex: none; align-items: center; gap: 2px; color: var(--tx-3); }
+.nsteps .ns .go { color: var(--ac-tx); }
+.nsteps .ns:hover, .nsteps .ns.hov { background: var(--fill-1); color: var(--tx-1); } .nsteps .ns:hover .lead, .nsteps .ns.hov .lead { color: var(--ac-tx); }
+.nsteps .ns:hover .acts, .nsteps .ns.hov .acts { display: inline-flex; }   /* 悬停出现「放进输入框编辑」铅笔 + 「发送」箭头 */
+.nsteps .ns:active { background: var(--fill-2); }
+.nsteps .ns.rec .lead { color: var(--ac); }   /* 第一条 = 最推荐:只把行首图标染成强调色,不加描边 / 底色 */
+.nsteps.fold .nh { cursor: pointer; }

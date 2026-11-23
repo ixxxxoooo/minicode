@@ -83,6 +83,9 @@ func (a *App) buildFlowRows(items []core.Item) []flowRow {
 	if a.st.Rewind != nil {
 		add(flowRow{key: "rewind", build: plainRow(a.flowRewindCard)})
 	}
+	if a.nextStepsVisible() { // 下一步建议:最后一轮回答的延续,排在回合脚注之后
+		add(flowRow{key: "nsteps", build: plainRow(a.nextStepsRow)})
+	}
 	return rows
 }
 

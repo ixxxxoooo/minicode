@@ -31,16 +31,16 @@
         ['引导被接收', '工具调用一结束 / 回合结束 / 流里出现新的步骤即视为接收:该行淡出,会话流里出现这条用户消息'],
         ['出口', '排队行:退回编辑 / 改为引导 / 停止并发送 / 删除 / 暂停后撤回;引导行发出后不可撤回(已写进 Claude 的输入)']])}</div>`, '输入框占位在回合进行中写明「⏎ 排队,⌘⏎ 引导」,不靠用户记快捷键。'))
     )}
-    ${sec('下一步建议:回答之后,点一下就发', '每轮正常结束后,输入框正上方出现 3 条「下一步」建议胶囊(第一条是最推荐的,强调淡底),点哪条就把哪条当作你的消息直接发送,不用再手动输入。建议随回答一起给出,不另发请求:系统提示词里约定 Claude 在整个回合最后一条回复的末尾带一个 <next_steps>…</next_steps> 块(3 行,口吻是用户对 Claude 说的话,每条 ≤ 24 字、能直接执行,如「运行测试确认没问题」「把这次改动提交」),界面在流式正文里把它截走、不进会话流,回合结束时才显示成胶囊。', grid(
-      cell('回合结束后出现', '', snip(F.nextSteps() + F.composer({ focus: false })), '建议在回答流到末尾时就已收齐,回合一结束立刻出现,没有等待、没有骨架态。Claude 这一轮没带(只跑了工具 / 简单问答 / 它省略了)就不显示,不会补发请求。块不会在会话流里露出来,历史会话回放同样被剥掉。'),
-      cell('悬停一条', '', snip(F.nextSteps().replace('class="ns "', 'class="ns hov"') + F.composer({ focus: false })), '悬停胶囊:背景加深并出现右侧小铅笔「放进输入框编辑」(把这句填进输入框、光标在末尾,不发送,适合想改几个字再发);提示里给完整文字(过长的胶囊单行省略)。点胶囊本身 = 立即发送。'),
+    ${sec('下一步建议:回答之后,点一下就发', '每轮正常结束后,在这一轮回答的末尾(回合脚注「复制 / 重试 / 分叉 · 模型 · 用时」之后)排出 3 行竖排的「下一步」建议,整行可点,点哪行就把哪句当作你的消息直接发送,不用再手动输入。它是回答的延续、会话流的一部分,随时间线一起滚动,<b>不贴在输入框上方</b>(原横排胶囊句子长了会折成参差的两行,又像输入框的附属物,已废弃)。第一条是最推荐的,只把行首图标染成强调色,不加描边 / 底色。建议随回答一起给出,不另发请求:系统提示词里约定 Claude 在整个回合最后一条回复的末尾带一个 <next_steps>…</next_steps> 块(3 行,口吻是用户对 Claude 说的话,每条 ≤ 24 字、能直接执行,如「运行测试确认没问题」「把这次改动提交」),界面在流式正文里把它截走、不进会话流,回合结束时才显示成胶囊。', grid(
+      cell('回合结束后出现', '', snip(F.tfoot() + F.nextSteps() + F.composer({ focus: false })), '建议在回答流到末尾时就已收齐,回合一结束立刻出现,没有等待、没有骨架态。Claude 这一轮没带(只跑了工具 / 简单问答 / 它省略了)就不显示,不会补发请求。块不会在会话流里露出来,历史会话回放同样被剥掉。'),
+      cell('悬停一条', '', snip(F.tfoot() + F.nextSteps().replace('class="ns "', 'class="ns hov"') + F.composer({ focus: false })), '悬停一行:整行浅底色、行首图标变强调色,右侧出现小铅笔「放进输入框编辑」(把这句填进输入框、光标在末尾,不发送,适合想改几个字再发)与「发送」字样;提示里给完整文字(过长的行单行省略)。点行本身 = 立即发送。行间 1px 细分隔线,分隔线与悬停底色占满正文列,行首图标缩进 8px。'),
       cell('什么时候出现 / 消失', '', `<div class="snip" style="height:auto;width:560px;padding:6px 14px">${tbl([['情况', 170], ['行为']], [
         ['出现', '回合正常结束(end_turn)、本轮 Claude 有文字回复、输入框是空的、没有待处理的权限 / 提问卡、没有排队消息'],
         ['不出现', '回合被中断 / 出错 / 拒绝、历史会话回放、设置里关了、对话栏被权限卡或提问卡占用、排队里还有消息(下一轮马上开始)'],
-        ['消失', '开始输入(输入框非空)· 发送任意消息 · 新回合开始 · 切换会话 · 点右侧 ✕(本轮不再显示);清空输入框后同一轮建议会重新出现'],
-        ['没有「换一批」', '建议是回答的一部分,不单独生成;想要别的方向就直接在输入框里说。'],
+        ['消失', '发送任意消息 · 新回合开始 · 切换会话 · 点标题行右侧 ✕(本轮不再显示)。在输入框里打字<b>不</b>收起(它在时间线里,不挡输入,收起会让列表跳动)。只保留最后一轮的建议,上一轮的随新回合开始直接移除,不留历史残影'],
+        ['没有「换一批」', '建议是回答的一部分,不单独生成;想要别的方向就直接在输入框里说。标题行只有 ✕,与「下一步」同在一行最右。'],
         ['发送方式', '等同于在输入框里敲完这句再回车:走同一条发送路径(斜杠命令、附件规则不变);排队 / 引导只在回合进行中才有,而建议只在空闲时出现,所以总是直接发送']])}</div>`, '没做:⌥1 / ⌥2 / ⌥3 快捷键直接发送第 N 条(待用户确认后再加)。'),
-      cell('窄档对话栏', '', `<div class="snip" style="height:auto;width:360px;padding:12px 14px">${F.nextSteps(['运行测试确认没问题', '把这次改动提交', '再检查一下边界情况'])}${F.composer({ focus: false })}</div>`, '对话栏窄时胶囊自动换行,一条一行最多占满宽度,过长省略;右侧 ✕ 靠最右。'),
+      cell('窄档对话栏', '', `<div class="snip" style="height:auto;width:360px;padding:12px 14px">${F.nextSteps(['运行测试确认没问题', '把这次改动提交', '再检查一下边界情况'])}${F.composer({ focus: false })}</div>`, '竖排不需要为窄档单独适配:每条仍是一行,过长省略,悬停提示给全文;窄档悬停时只留铅笔,「发送」字样隐去。'),
       cell('设置', '', `<div class="snip" style="height:auto;width:560px;padding:6px 14px">${tbl([['设置', 190], ['说明']], [
         ['设置 → 对话 → 下一步建议', '开关,默认开。新会话生效:说明随系统提示词在启动 claude 时传入;每轮只多几十个输出 token,没有额外请求。关掉后新会话不再要求 Claude 给'],
         ['演示模式', '演示后端不会带建议块,用写好的 3 条,便于复现界面;不是真实能力']])}</div>`, ''))
@@ -82,7 +82,7 @@
         ['减弱动态', '出现 / 消失不做位移,直接淡入淡出']])}</div>`, '任何滚动区都只有这一种「回到最新」形态。'))
     )}
     ${sec('实现状态', '与 Go 代码逐项对应;有 flow_test / dock_test 等单测,未经开发版 computer use 实测的仍标「未测试」。', tbl([['项', 220], ['说明', 0], ['状态', 70]], [
-      ['下一步建议:回答后输入框上方 3 个可一键发送的胶囊', '随回答一起给出(不另发请求):core/nextsteps.go 的 NextStepsPrompt 经 settings_wire.go FillClaudeConfig 追加到 --append-system-prompt(设置 chat.nextSteps 开着时);claude/translate.go 在流式正文里用 NextStepsFilter 截走 <next_steps> 块(开标签被切在两段增量之间也处理)、完整消息 / 历史回放用 StripNextSteps 剥掉,发 core.EvNextSteps;app/nextsteps.go 先存 pending,回合正常结束才显示,session_load.go chatDockColumn 里 queueCard 与 composer 之间画建议条;点击发送(submitPrompt)/ 铅笔填入 / ✕ / 开始输入即收起;演示模式用写好的 3 条;-ed nextsteps[:none]。未做:⌥1/2/3 快捷键。已编译;未跑 vet / test、未用 computer use 实测(含 Claude 是否真的按约定带块、第三方服务商是否照做)', st('part')],
+      ['下一步建议:回答末尾 3 行可一键发送的竖排列表', '随回答一起给出(不另发请求):core/nextsteps.go 的 NextStepsPrompt 经 settings_wire.go FillClaudeConfig 追加到 --append-system-prompt(设置 chat.nextSteps 开着时);claude/translate.go 在流式正文里用 NextStepsFilter 截走 <next_steps> 块(开标签被切在两段增量之间也处理)、完整消息 / 历史回放用 StripNextSteps 剥掉,发 core.EvNextSteps;app/nextsteps.go 先存 pending,回合正常结束才显示,flow_rows.go buildFlowRows 在末尾追加一行 "nsteps"(回合脚注之后,随虚拟列表滚动),nextsteps.go nextStepsRow 画竖排列表;点击发送(submitPrompt)/ 铅笔填入 / ✕ / 新回合 / 切会话即收起,打字不收起;演示模式用写好的 3 条;-ed nextsteps[:none]。未做:⌥1/2/3 快捷键。已编译;未跑 vet / test、未用 computer use 实测(含 Claude 是否真的按约定带块、第三方服务商是否照做)', st('part')],
       ['待发送区:排队 + 引导共用', 'dock.go queueCard + composer_queue.steerSend/syncSteers/visibleItems;引导行「等 Claude 接收」。未测试', st('ok')],
       ['问答卡 Esc 跳过', 'dock_ask.go:KeyEscape 调 skip()。未测试', st('ok')],
       ['回答卡 · 回合折叠', 'flow_turn_fold.turnFoldedItem 含已答 QuestionRequest;turnMustStayOpen 挡未完成提问。未测试', st('ok')],

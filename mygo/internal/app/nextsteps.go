@@ -9,9 +9,9 @@ import (
 )
 
 // 下一步建议(设计稿「会话流 · 排队引导 / 问答卡 / 回到最新」页「下一步建议」一节):
-// 每轮正常结束后,输入框正上方给 3 条可一键发送的建议胶囊。建议不另发请求:系统提示词里要求 Claude 在回答末尾顺带给出一个
+// 每轮正常结束后,在最后一轮回答的末尾(回合脚注之后)竖排 3 行可一键发送的建议,是时间线的一部分、随会话流滚动。建议不另发请求:系统提示词里要求 Claude 在回答末尾顺带给出一个
 // <next_steps> 块(core.NextStepsPrompt),翻译器在流式正文里把它截走、发 core.EvNextSteps(见 core/nextsteps.go),
-// 这里先存着(pending),回合正常结束时才显示。点胶囊 = 当作用户消息直接发送;悬停出现的铅笔 = 填进输入框再改。
+// 这里先存着(pending),回合正常结束时才显示。点一行 = 当作用户消息直接发送;悬停出现的铅笔 = 填进输入框再改。
 //
 // @author ixxxxoooo
 
@@ -24,7 +24,7 @@ const kNextSteps = "chat.nextSteps"
 type nextStepsState struct {
 	pending []string // 本回合回答里带的建议,等回合正常结束才显示
 	items   []string // 正在显示的建议
-	hidden  bool     // 点了 ✕:本轮不再显示
+	hidden  bool     // 点了 ✕:本轮不再显示(新回合 / 发送 / 切会话时随 nextStepsClear 复位)
 	sess    string   // 这批建议属于哪个会话,切走就不显示
 }
 
@@ -79,10 +79,8 @@ func (a *App) nextStepsVisible() bool {
 	if !a.nextStepsEnabled() || a.ns.hidden || a.ns.sess != a.curSess || len(a.ns.items) == 0 {
 		return false
 	}
-	if a.st.Phase != core.PhaseIdle || a.q.len()+len(a.q.steers) > 0 {
-		return false
-	}
-	return trim(a.draftNow()) == "" // 开始输入就收起,清空后同一批建议重新出现
+	// 在输入框里打字不收起:建议在时间线里不挡输入,收起会让列表跳动。
+	return a.st.Phase == core.PhaseIdle && a.q.len()+len(a.q.steers) == 0
 }
 
 // nextStepSend 点了一条建议:当作用户消息直接发送(与在输入框里敲完回车同一条路径)。
@@ -92,50 +90,52 @@ func (a *App) nextStepSend(text string) {
 	a.submitPrompt(text, false)
 }
 
-// nextStepsBar 是输入框正上方的建议条:「下一步」+ 最多 3 个胶囊 + 右侧 ✕(本轮不再显示)。
-func (a *App) nextStepsBar(c *ui.Context) {
-	if !a.nextStepsVisible() {
-		return
-	}
+// nextStepsRow 是会话流末尾(回合脚注之后)的建议列表:标题行「下一步」+ 右侧 ✕(本轮不再显示),下面竖排最多 3 行,
+// 行间 1px 细线,整行可点。它是最后一轮回答的延续,随虚拟列表滚动(flow_rows.go 在行表末尾追加),不再贴着输入框。
+func (a *App) nextStepsRow(c *ui.Context) {
 	t := a.tk
-	ui.Row(c).Key("nsteps").Margin(0, 14, 6, 14).Gap(8).Children(func() {
-		ui.Row(c).Grow(1).MinWidth(0).Wrap().Gap(6).AlignItems(ui.Center).Children(func() {
-			ui.Row(c).Gap(4).AlignItems(ui.Center).Shrink(0).Margin(0, 2, 0, 0).TextColor(t.Tx4).FontSize(theme.FsCap).Children(func() {
-				kit.Ic(c, "spark", kit.S12)
-				ui.Text(c, "下一步")
-			})
-			for i, s := range a.ns.items {
-				a.nextStepChip(c, i, s)
-			}
+	ui.Column(c).Key("nsteps").Margin(6, 0, 0, 0).Children(func() {
+		ui.Row(c).Height(theme.Px(22)).Gap(4).AlignItems(ui.Center).TextColor(t.Tx4).FontSize(theme.FsCap).Children(func() {
+			kit.Ic(c, "spark", kit.S12)
+			ui.Text(c, "下一步")
+			ui.Box(c).Grow(1)
+			kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "本轮不再显示"}).OnClick(func() { a.ns.hidden = true })
 		})
-		kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "本轮不再显示"}).OnClick(func() { a.ns.hidden = true })
+		for i, s := range a.ns.items {
+			a.nextStepLine(c, i, s)
+		}
+		ui.Box(c).Height(1).Background(t.Bd1)
 	})
 }
 
-// nextStepChip 画一个建议胶囊:第一条(最推荐)是强调淡底;点胶囊发送,悬停出现铅笔把它放进输入框编辑。
-func (a *App) nextStepChip(c *ui.Context, i int, text string) {
+// nextStepLine 画一行建议:行首 ↵ 图标(第一条染强调色 = 最推荐),正文单行省略;悬停整行浅底色,
+// 右侧出现铅笔(放进输入框编辑)与「发送」(窄档只留铅笔);点行本身 = 直接发送。
+func (a *App) nextStepLine(c *ui.Context, i int, text string) {
 	t := a.tk
-	rec := i == 0
-	row := ui.Row(c).Key("ns-" + itoa(i) + text).Height(theme.Px(24)).MaxWidth(420).Radius(theme.RFull).AlignItems(ui.Center).Shrink(1)
+	ui.Box(c).Height(1).Background(t.Bd1)
+	row := ui.Row(c).Key("ns-" + itoa(i) + text).Height(theme.Px(32)).AlignItems(ui.Center)
 	hov := row.Hovered()
-	bg, bd, fg := t.Raised, t.Bd2, t.Tx2
-	switch {
-	case rec && hov:
-		bg, bd, fg = t.AcSoft, t.Ac, t.AcTx
-	case rec:
-		bg, bd, fg = t.AcSoft, t.AcLine, t.AcTx
-	case hov:
-		bg, bd, fg = t.Fill1.Over(t.Raised), t.Bd3, t.Tx1
+	bg, fg, lead := ui.Transparent, t.Tx2, t.Tx4
+	if hov {
+		bg, fg, lead = t.Fill1, t.Tx1, t.AcTx
+	} else if i == 0 {
+		lead = t.Ac
 	}
-	row.Background(bg).Border(1, bd).TextColor(fg).FontSize(theme.FsCap).Transition(kit.Fade)
+	row.Background(bg).Radius(t.RSm()).TextColor(fg).FontSize(theme.FsBody).Transition(kit.Fade)
 	row.Children(func() {
-		b := ui.ButtonBase(c).Key("nsb-" + itoa(i)).Height(theme.Px(22)).PaddingX(10).AlignItems(ui.Center).Cursor(ui.CursorPointer).Grow(1).MinWidth(0).Tooltip(text)
-		b.Children(func() { ui.Text(c, text).SingleLine() })
+		b := ui.ButtonBase(c).Key("nsb-" + itoa(i)).Height(theme.Px(32)).PaddingX(8).Gap(8).AlignItems(ui.Center).Cursor(ui.CursorPointer).Grow(1).MinWidth(0).Tooltip(text)
+		b.Children(func() {
+			ui.Row(c).TextColor(lead).Shrink(0).Children(func() { kit.Ic(c, "ret", kit.S12) })
+			ui.Text(c, text).SingleLine().Grow(1).MinWidth(0)
+			if hov && a.chatTier() != tierNarrow {
+				ui.Text(c, "发送").TextColor(t.AcTx).FontSize(theme.FsCap).Shrink(0)
+			}
+		})
 		if b.Clicked() {
 			a.nextStepSend(text)
 		}
 		if hov {
-			kit.Ib(c, "edit", kit.IbOpt{Small: true, Tip: "放进输入框编辑"}).Margin(0, 3, 0, 0).OnClick(func() {
+			kit.Ib(c, "edit", kit.IbOpt{Small: true, Tip: "放进输入框编辑"}).Margin(0, 6, 0, 0).OnClick(func() {
 				a.nextStepsClear()
 				a.draft = text
 				a.ux.focusDraft = true

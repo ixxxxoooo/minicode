@@ -402,7 +402,7 @@ var settingsTabs = []setTabDef{
 			rTog("chat.ding", "回合结束提示音", "", false),
 		}},
 		{title: "下一步建议", rows: []setRow{
-			rTog(kNextSteps, "回答后给出下一步建议", "每轮正常结束后,在输入框上方给 3 条可一键发送的建议。建议由 Claude 在回答末尾顺带给出(不另发请求,只多几十个输出 token),界面把它从正文里截走;点一条直接发送,悬停出现的铅笔把它放进输入框再改。新会话生效(说明随系统提示词启动时传给 claude);关闭后新会话不再要求 Claude 给", true),
+			rTog(kNextSteps, "回答后给出下一步建议", "每轮正常结束后,在回答末尾给 3 条可一键发送的竖排建议。建议由 Claude 在回答末尾顺带给出(不另发请求,只多几十个输出 token),界面把它从正文里截走;点一条直接发送,悬停出现的铅笔把它放进输入框再改。新会话生效(说明随系统提示词启动时传给 claude);关闭后新会话不再要求 Claude 给", true),
 		}},
 		{title: "排队与引导", rows: []setRow{
 			rTog("chat.queueAtt", "排队消息带图片与文件引用", "", true),
