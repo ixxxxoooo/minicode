@@ -549,6 +549,9 @@ func (a *App) afterEvent(ev core.Event) {
 		a.syncGlobalPermMode(isNew) // 权限模式全局生效:新会话 / 恢复的历史会话都对齐最后一次的选择
 	}
 	if e, ok := ev.(core.EvReady); ok && a.curSess == "" && e.SessionID != "" && !strings.HasPrefix(e.SessionID, "demo-") {
+		if len(a.ns.items) > 0 && a.ns.sess == "" { // 启动时恢复会话:回放结束时 curSess 还是空,还原的建议在这里认领真实会话 id
+			a.ns.sess = e.SessionID
+		}
 		a.curSess = e.SessionID
 		a.freshSess = e.SessionID // 新会话握手拿到 id 不等于「已有会话」:没发消息前还是欢迎页
 	}
