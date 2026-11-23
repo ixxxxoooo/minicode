@@ -12,10 +12,18 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/claude"
 )
 
-// PluginInstallResult 是一次插件安装的结果。
+// PluginInstallResult 是一次插件安装的结果。Code 非 0 即失败(调用方只看 Code)。
 type PluginInstallResult struct {
 	Code int
 	Err  string
+}
+
+// codeNoCLI 是「找不到 claude 命令」的退出码(沿用 shell 的 127 = command not found)。
+// 原先这种情况 Code 留 0,调用方按 Code != 0 判失败,于是没装 claude 时安装 / 卸载 / 启停插件都被当成成功。
+const codeNoCLI = 127
+
+func noCLI() PluginInstallResult {
+	return PluginInstallResult{Code: codeNoCLI, Err: "没有找到 claude 命令"}
 }
 
 // RunPluginInstall 调用 claude plugin install。
@@ -26,7 +34,7 @@ func RunPluginInstall(name, marketplace string) PluginInstallResult {
 	}
 	path, ok := claude.FindClaude("")
 	if !ok {
-		return PluginInstallResult{Err: "没有找到 claude 命令"}
+		return noCLI()
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
@@ -58,7 +66,7 @@ func RunPluginInstall(name, marketplace string) PluginInstallResult {
 func RunPluginUninstall(name string) PluginInstallResult {
 	path, ok := claude.FindClaude("")
 	if !ok {
-		return PluginInstallResult{Err: "没有找到 claude 命令"}
+		return noCLI()
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -145,7 +153,7 @@ func (ds *DiskStore) Reload() {
 func runClaudeCLI(timeout time.Duration, dir string, args ...string) PluginInstallResult {
 	path, ok := claude.FindClaude("")
 	if !ok {
-		return PluginInstallResult{Err: "没有找到 claude 命令"}
+		return noCLI()
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
