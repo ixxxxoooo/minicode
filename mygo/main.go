@@ -145,10 +145,18 @@ func (r *realSetup) open(id string) backend.Backend {
 	return claude.New(cfg)
 }
 
-// startUsage 后台统计用量(启动后立刻扫一次,之后每分钟增量重扫),返回给用量页读的数据源。
+// usageIdle 超过这么久没人看用量(用量页 / 账号弹层),后台就不再定时扫描。
+const usageIdle = 2 * time.Minute
+
+// startUsage 后台统计用量,返回给用量页读的数据源。
+// 启动时扫一次(打开用量页 / 账号弹层时立刻有数据);之后只在最近 usageIdle 内有人看时每分钟增量重扫,
+// 看的时候数据旧于一分钟就立即补扫一次(不阻塞界面)。窗口在后台时不构建界面,自然也不会触发。
+// 原先不论有没有人看都每分钟扫一次,进行中的长会话文件(可达几十 MB)每次都整份重读。
 func startUsage(rs *realSetup, win *mygo.Window) func(rng int) core.UsageReport {
 	var sc claude.UsageScanner
 	var recs atomic.Pointer[[]claude.UsageRec]
+	var lastWant, lastScan atomic.Int64 // UnixNano:最近一次有人看 / 最近一次开始扫描
+	kick := make(chan struct{}, 1)
 	title := func(id string) (string, string) {
 		rs.mu.Lock()
 		ix := rs.ix
@@ -160,31 +168,57 @@ func startUsage(rs *realSetup, win *mygo.Window) func(rng int) core.UsageReport 
 		}
 		return "", ""
 	}
-	go func() {
-		defer diag.Recover("用量统计")
-		for {
-			end := diag.SpanSlow("app", "扫描用量", time.Second)
-			r := sc.Scan(claude.ProjectsDir())
-			end()
+	scan := func() {
+		lastScan.Store(time.Now().UnixNano()) // 开始时就记:扫描期间界面不会反复要求补扫
+		end := diag.SpanSlow("app", "扫描用量", time.Second)
+		r, st := sc.ScanStats(claude.ProjectsDir())
+		end()
+		diag.L("app").Debug("用量扫描", "文件", st.Files, "整读", st.Full, "增量", st.Incremental, "未变", st.Unchanged, "读取字节", st.BytesRead)
+		if st.Changed || recs.Load() == nil {
 			recs.Store(&r)
 			win.Update(func() {})
-			time.Sleep(time.Minute)
+		}
+	}
+	go func() {
+		defer diag.Recover("用量统计")
+		scan()
+		tick := time.NewTicker(time.Minute)
+		defer tick.Stop()
+		for {
+			select {
+			case <-tick.C:
+				if time.Since(time.Unix(0, lastWant.Load())) > usageIdle {
+					continue // 最近没人看:不扫
+				}
+			case <-kick:
+			}
+			scan()
 		}
 	}()
 	cache := map[int]core.UsageReport{}
 	var cached *[]claude.UsageRec
+	cachedDay := ""
 	return func(rng int) core.UsageReport {
+		now := time.Now()
+		lastWant.Store(now.UnixNano())
+		if now.Sub(time.Unix(0, lastScan.Load())) > time.Minute {
+			select { // 数据旧了:让后台补扫一次(已排队就不再排)
+			case kick <- struct{}{}:
+			default:
+			}
+		}
 		p := recs.Load()
 		if p == nil {
 			return core.UsageReport{}
 		}
-		if p != cached { // 有新数据:丢掉旧报告
-			cache, cached = map[int]core.UsageReport{}, p
+		// 有新数据,或过了零点(报告按「今天」划分日期范围):丢掉旧报告
+		if day := now.Format("2006-01-02"); p != cached || day != cachedDay {
+			cache, cached, cachedDay = map[int]core.UsageReport{}, p, day
 		}
 		if r, ok := cache[rng]; ok {
 			return r
 		}
-		r := claude.BuildReport(*p, rng, time.Now(), title)
+		r := claude.BuildReport(*p, rng, now, title)
 		cache[rng] = r
 		return r
 	}
