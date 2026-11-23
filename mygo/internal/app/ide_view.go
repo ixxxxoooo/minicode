@@ -7,6 +7,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/symbols"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
@@ -43,7 +44,7 @@ func (a *App) crumbs(c *ui.Context, tb *ideTab) {
 				// 光标所在的符号链:impl Router › match_path(点击打开符号选择器)
 				if tb.st != nil && tb.buf != nil {
 					syms := a.ide.fileSyms(tb.path)
-					for _, k := range enclosing(syms, tb.st.CursorPos().Line) {
+					for _, k := range symbols.Enclosing(syms, tb.st.CursorPos().Line) {
 						kit.Ic(c, "chevR", kit.S12).TextColor(t.Tx4)
 						a.crumbSymSegment(c, tb, syms, k)
 					}

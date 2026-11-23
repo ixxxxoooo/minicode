@@ -8,6 +8,7 @@ import (
 	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/demo"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/symbols"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
@@ -156,7 +157,7 @@ func (a *App) decorate(tb *ideTab) {
 		for i := 0; i < n && len(tbs) < 300; i++ {
 			ln := tb.buf.Line(i)
 			base := tb.buf.Offset(editor.Pos{Line: i, Col: 0})
-			for _, c := range wordHits(ln, w) {
+			for _, c := range symbols.WordHits(ln, w) {
 				tbs = append(tbs, editor.TextBackground{Start: base + c, End: base + c + len(w), Color: t.Info.Alpha(.18)})
 			}
 		}
@@ -180,7 +181,7 @@ func (a *App) decorate(tb *ideTab) {
 			}
 			ln := tb.buf.Line(p.Line - 1)
 			col := -1
-			if h := wordHits(ln, p.Word); len(h) > 0 {
+			if h := symbols.WordHits(ln, p.Word); len(h) > 0 {
 				col = h[0]
 			}
 			if col < 0 {
@@ -213,8 +214,8 @@ func (a *App) stickyScroll(c *ui.Context, tb *ideTab) {
 		return
 	}
 	syms := a.ide.fileSyms(tb.path)
-	var rows []symbol
-	for _, k := range enclosing(syms, first) {
+	var rows []symbols.Symbol
+	for _, k := range symbols.Enclosing(syms, first) {
 		if syms[k].Line < first && syms[k].Kind != "h" {
 			rows = append(rows, syms[k])
 		}
@@ -308,7 +309,7 @@ func (a *App) openPeek() {
 		return
 	}
 	w, _, _ := wordUnder(tb, tb.st.Cursor())
-	if w == "" || isKeyword(w) {
+	if w == "" || symbols.IsKeyword(w) {
 		return
 	}
 	defs := a.ide.findDefs(w, tb.path)
@@ -331,7 +332,7 @@ func (a *App) openRename() {
 		return
 	}
 	w, _, _ := wordUnder(tb, tb.st.Cursor())
-	if w == "" || isKeyword(w) {
+	if w == "" || symbols.IsKeyword(w) {
 		a.toast = "把光标放在要重命名的符号上"
 		return
 	}
@@ -375,7 +376,7 @@ func (a *App) renameLocal(word, to string) {
 				b.WriteByte('\n')
 			}
 			prev := 0
-			for _, c := range wordHits(ln, word) {
+			for _, c := range symbols.WordHits(ln, word) {
 				b.WriteString(ln[prev:c])
 				b.WriteString(to)
 				prev = c + len(word)
@@ -476,7 +477,7 @@ func (a *App) ovPanel(c *ui.Context, tb *ideTab) {
 			}
 			item("fix", "spark", "让 Claude 修复", "", func() { a.askClaude("编辑") })
 			item("exp", "bulb", "让 Claude 解释", "", func() { a.askClaude("解释") })
-			if word != "" && !isKeyword(word) {
+			if word != "" && !symbols.IsKeyword(word) {
 				item("def", "arrow", "转到定义", "F12", a.goDef)
 				item("ref", "search", "查找所有引用", "⇧F12", func() { a.showRefs(word) })
 				item("ren", "edit", "重命名「"+word+"」", "F2", a.openRename)

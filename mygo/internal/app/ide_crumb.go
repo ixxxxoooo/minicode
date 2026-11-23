@@ -8,6 +8,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/symbols"
 	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
 
@@ -101,13 +102,13 @@ func (a *App) crumbSegment(c *ui.Context, tb *ideTab, name string, partIx int, l
 }
 
 // crumbSymSegment 符号段同级下拉(LSP 大纲数据与本地符号索引同源)。
-func (a *App) crumbSymSegment(c *ui.Context, tb *ideTab, syms []symbol, symIx int) {
+func (a *App) crumbSymSegment(c *ui.Context, tb *ideTab, syms []symbols.Symbol, symIx int) {
 	if symIx < 0 || symIx >= len(syms) {
 		return
 	}
 	sy := syms[symIx]
 	t := a.tk
-	active := a.scopeOn() && symIx == len(enclosing(syms, tb.st.CursorPos().Line))-1
+	active := a.scopeOn() && symIx == len(symbols.Enclosing(syms, tb.st.CursorPos().Line))-1
 	b := kit.MenuBtn(ui.ButtonBase(c).Key("crumb-sym-"+tb.path+"-"+itoa(symIx)).Height(18).PaddingX(3).Gap(3).
 		Radius(t.RXs()).AlignItems(ui.Center).Cursor(ui.CursorPointer), func(m *ui.Menu) {
 		a.crumbSymMenu(m, tb, syms, symIx)
@@ -127,7 +128,7 @@ func (a *App) crumbSymSegment(c *ui.Context, tb *ideTab, syms []symbol, symIx in
 	})
 }
 
-func (a *App) crumbSymMenu(m *ui.Menu, tb *ideTab, syms []symbol, symIx int) {
+func (a *App) crumbSymMenu(m *ui.Menu, tb *ideTab, syms []symbols.Symbol, symIx int) {
 	if len(syms) == 0 {
 		m.Item("没有同级项").Disabled(true)
 		return
@@ -156,7 +157,7 @@ func (a *App) crumbSymMenu(m *ui.Menu, tb *ideTab, syms []symbol, symIx int) {
 }
 
 // siblingSymbols 返回与 symIx 同父的符号下标(含自身)。
-func siblingSymbols(syms []symbol, symIx int) []int {
+func siblingSymbols(syms []symbols.Symbol, symIx int) []int {
 	if symIx < 0 || symIx >= len(syms) {
 		return nil
 	}
@@ -170,7 +171,7 @@ func siblingSymbols(syms []symbol, symIx int) []int {
 	return out
 }
 
-func (a *App) gotoSymbol(tb *ideTab, s symbol) {
+func (a *App) gotoSymbol(tb *ideTab, s symbols.Symbol) {
 	if tb == nil || tb.st == nil || tb.buf == nil {
 		return
 	}
@@ -178,7 +179,7 @@ func (a *App) gotoSymbol(tb *ideTab, s symbol) {
 	tb.st.GoTo(p0)
 	endCol := s.Col
 	if s.Line < tb.buf.LineCount() {
-		_, endCol, _ = wordAt(tb.buf.Line(s.Line), s.Col)
+		_, endCol, _ = symbols.WordAt(tb.buf.Line(s.Line), s.Col)
 		if endCol <= s.Col {
 			endCol = s.Col + len(s.Name)
 		}

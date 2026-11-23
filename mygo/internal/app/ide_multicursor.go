@@ -5,6 +5,7 @@ import (
 	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/symbols"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
@@ -234,7 +235,7 @@ func (a *App) dbgMultiCursor(tb *ideTab) {
 	for i := 0; i < tb.buf.LineCount() && len(sels) < 3; i++ {
 		ln := tb.buf.Line(i)
 		base := tb.buf.Offset(editor.Pos{Line: i, Col: 0})
-		for _, c := range wordHits(ln, word) {
+		for _, c := range symbols.WordHits(ln, word) {
 			off := base + c
 			sels = append(sels, editor.Selection{Anchor: off, Head: off + len(word)})
 			if len(sels) >= 3 {

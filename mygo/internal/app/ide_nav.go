@@ -8,6 +8,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/symbols"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
@@ -96,7 +97,7 @@ func (a *App) jumpTo(p string, line, col, end int) {
 
 type symEntry struct {
 	ver  uint64
-	syms []symbol
+	syms []symbols.Symbol
 }
 
 // fileText 返回文件内容:已打开的取缓冲区(含未保存修改),其余读磁盘并缓存。
@@ -119,8 +120,8 @@ func (d *ide) fileText(p string) (string, bool) {
 }
 
 // fileSyms 返回文件的符号(随缓冲区版本重算)。
-func (d *ide) fileSyms(p string) []symbol {
-	if symbolLang(p) == "" {
+func (d *ide) fileSyms(p string) []symbols.Symbol {
+	if symbols.Lang(p) == "" {
 		return nil
 	}
 	var ver uint64
@@ -137,7 +138,7 @@ func (d *ide) fileSyms(p string) []symbol {
 	if d.symCache == nil {
 		d.symCache = map[string]symEntry{}
 	}
-	e := symEntry{ver, parseSymbols(p, src)}
+	e := symEntry{ver, symbols.Parse(p, src)}
 	d.symCache[p] = e
 	return e.syms
 }
@@ -151,7 +152,7 @@ func (d *ide) invalidate() {
 func (d *ide) codeFiles() []string {
 	var out []string
 	for _, p := range d.allFiles() {
-		if symbolLang(p) != "" {
+		if symbols.Lang(p) != "" {
 			out = append(out, p)
 			if len(out) >= 600 {
 				break
@@ -164,7 +165,7 @@ func (d *ide) codeFiles() []string {
 // defHit 是一处定义。
 type defHit struct {
 	path string
-	sym  symbol
+	sym  symbols.Symbol
 }
 
 // findDefs 找名字为 name 的声明,当前文件排最前。
@@ -211,7 +212,7 @@ func (d *ide) findRefs(word string) []refItem {
 			continue
 		}
 		for i, ln := range strings.Split(src, "\n") {
-			for _, c := range wordHits(codePart(ln), word) {
+			for _, c := range symbols.WordHits(codePart(ln), word) {
 				out = append(out, refItem{p, i, c, strings.TrimSpace(ln)})
 				if len(out) >= 500 {
 					return out
@@ -239,7 +240,7 @@ func codePart(ln string) string {
 // showRefs 在底部面板的「引用」分段列出 word 的全部引用。
 func (a *App) showRefs(word string) {
 	d := a.ide
-	if word == "" || isKeyword(word) {
+	if word == "" || symbols.IsKeyword(word) {
 		a.toast = "把光标放在一个符号上再查找引用"
 		return
 	}
@@ -285,7 +286,7 @@ func (a *App) attachEditor(tb *ideTab) {
 func wordUnder(tb *ideTab, off int) (w string, start, end int) {
 	p := tb.buf.Pos(off)
 	ln := tb.buf.Line(p.Line)
-	w, a, b := wordAt(ln, p.Col)
+	w, a, b := symbols.WordAt(ln, p.Col)
 	if w == "" {
 		return "", 0, 0
 	}
@@ -304,7 +305,7 @@ func (a *App) goDefAt(tb *ideTab, off int) {
 // goDefLocal 用本地符号索引转到定义(没有语言服务器、服务器没答案时的退路)。
 func (a *App) goDefLocal(tb *ideTab, off int) {
 	w, _, _ := wordUnder(tb, off)
-	if w == "" || isKeyword(w) {
+	if w == "" || symbols.IsKeyword(w) {
 		return
 	}
 	defs := a.ide.findDefs(w, tb.path)
@@ -365,7 +366,7 @@ func (a *App) hoverAt(tb *ideTab, req editor.HoverRequest) {
 		return
 	}
 	w, s, e := wordUnder(tb, req.Offset)
-	if w == "" || isKeyword(w) {
+	if w == "" || symbols.IsKeyword(w) {
 		return
 	}
 	if a.lspHover(tb, req, s, e, func() { a.hoverLocal(tb, req, w, s, e) }) {
@@ -434,15 +435,15 @@ func (a *App) completeLocal(tb *ideTab, req editor.CompletionRequest) {
 	src := tb.buf.String()
 	for _, ln := range strings.Split(src, "\n") {
 		for from := 0; from < len(ln); {
-			if !isWordByte(ln[from]) {
+			if !symbols.IsWordByte(ln[from]) {
 				from++
 				continue
 			}
 			to := from
-			for to < len(ln) && isWordByte(ln[to]) {
+			for to < len(ln) && symbols.IsWordByte(ln[to]) {
 				to++
 			}
-			if w := ln[from:to]; len(w) > 3 && !isKeyword(w) {
+			if w := ln[from:to]; len(w) > 3 && !symbols.IsKeyword(w) {
 				add(w, "当前文件", editor.CompletionText, "")
 			}
 			from = to

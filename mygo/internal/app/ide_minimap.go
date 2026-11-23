@@ -8,6 +8,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/diff"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/symbols"
 )
 
 // 迷你地图 = 缩略的「语法色块」+ 视口滑块;右侧另有一条概览标尺(整篇缩放到面板高度)。
@@ -54,15 +55,15 @@ func lineRuns(ln string) []run {
 			}
 			out = append(out, run{i, min(j, len(ln)), 's'})
 			i = min(j, len(ln))
-		case isWordByte(ch):
+		case symbols.IsWordByte(ch):
 			j := i
-			for j < len(ln) && isWordByte(ln[j]) {
+			for j < len(ln) && symbols.IsWordByte(ln[j]) {
 				j++
 			}
 			w := ln[i:j]
 			k := byte(0)
 			switch {
-			case isKeyword(w):
+			case symbols.IsKeyword(w):
 				k = 'k'
 			case w[0] >= 'A' && w[0] <= 'Z':
 				k = 't'
@@ -73,7 +74,7 @@ func lineRuns(ln string) []run {
 			i = j
 		default:
 			j := i
-			for j < len(ln) && !isWordByte(ln[j]) && ln[j] != ' ' && ln[j] != '"' {
+			for j < len(ln) && !symbols.IsWordByte(ln[j]) && ln[j] != ' ' && ln[j] != '"' {
 				j++
 			}
 			if j == i {
@@ -136,7 +137,7 @@ func (a *App) overlayInfo(tb *ideTab) *mmInfo {
 	n := tb.buf.LineCount()
 	for i := 0; i < n && i < 5000; i++ {
 		ln := tb.buf.Line(i)
-		if word != "" && len(wordHits(ln, word)) > 0 {
+		if word != "" && len(symbols.WordHits(ln, word)) > 0 {
 			m.word_ = append(m.word_, i)
 		}
 		if q != "" {
@@ -163,7 +164,7 @@ func (a *App) tabWord(tb *ideTab) string {
 		return ""
 	}
 	w, _, _ := wordUnder(tb, s.Head)
-	if len(w) < 2 || isKeyword(w) {
+	if len(w) < 2 || symbols.IsKeyword(w) {
 		return ""
 	}
 	return w

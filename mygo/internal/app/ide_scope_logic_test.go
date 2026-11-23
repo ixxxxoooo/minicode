@@ -1,10 +1,14 @@
 package app
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/ixxxxoooo/minicode/internal/symbols"
+)
 
 func TestInnermostSymbolNested(t *testing.T) {
 	src := "impl Router {\n    pub fn match_path() {\n        let x = 1;\n    }\n}\n"
-	syms := parseSymbols("router.rs", src)
+	syms := symbols.Parse("router.rs", src)
 	inner := innermostSymbol(syms, 2)
 	if inner < 0 || syms[inner].Name != "match_path" {
 		n := ""
@@ -24,7 +28,7 @@ func TestInnermostSymbolNested(t *testing.T) {
 
 func TestParentChain(t *testing.T) {
 	src := "impl Router {\n    fn inner() {\n    }\n}\n"
-	syms := parseSymbols("router.rs", src)
+	syms := symbols.Parse("router.rs", src)
 	ch := parentChain(syms, 1)
 	if len(ch) != 2 {
 		t.Fatalf("嵌套应有 2 层,得 %d", len(ch))
@@ -42,7 +46,7 @@ func TestParentChain(t *testing.T) {
 
 func TestScopeIndentLevel(t *testing.T) {
 	src := "    fn foo() {\n"
-	syms := parseSymbols("x.rs", src)
+	syms := symbols.Parse("x.rs", src)
 	lines := []string{src}
 	if n := scopeIndentLevel(syms, 0, func(i int) string { return lines[i] }); n != 4 {
 		t.Fatalf("缩进应为 4,得 %d", n)

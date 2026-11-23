@@ -4,17 +4,18 @@ import (
 	"path/filepath"
 
 	"github.com/ixxxxoooo/minicode/internal/lsp"
+	"github.com/ixxxxoooo/minicode/internal/symbols"
 )
 
 // lspHub 的大纲缓存附在会话外,按文件路径存。
 type outlineEntry struct {
 	ver  uint64
-	syms []symbol
+	syms []symbols.Symbol
 	busy bool
 }
 
 // symbolsForFile 优先用语言服务器的 documentSymbol,失败退回本地索引。
-func (a *App) symbolsForFile(p string) []symbol {
+func (a *App) symbolsForFile(p string) []symbols.Symbol {
 	if e, ok := a.lspH.outline[p]; ok && !e.busy && len(e.syms) > 0 {
 		if tb := a.ide.tab(p); tb != nil && tb.buf != nil && e.ver == tb.buf.Version() {
 			return e.syms
@@ -64,15 +65,15 @@ func (a *App) scheduleLspSymbols(rel string) {
 	})
 }
 
-func lspDocSymbols(items []lsp.DocSymbol) []symbol {
-	var out []symbol
+func lspDocSymbols(items []lsp.DocSymbol) []symbols.Symbol {
+	var out []symbols.Symbol
 	var walk func(list []lsp.DocSymbol, parent int)
 	walk = func(list []lsp.DocSymbol, parent int) {
 		for _, it := range list {
 			kind := lspSymKind(it.Kind)
 			col := lsp.ColFromUTF16("", it.Range.Start.Character)
 			idx := len(out)
-			out = append(out, symbol{
+			out = append(out, symbols.Symbol{
 				Name: it.Name, Kind: kind, Line: it.Range.Start.Line, Col: col,
 				End: it.Range.End.Line, Parent: parent, Detail: it.Detail,
 			})

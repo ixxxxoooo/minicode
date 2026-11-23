@@ -1,5 +1,7 @@
 package app
 
+import "github.com/ixxxxoooo/minicode/internal/symbols"
+
 // stickyRows 返回粘性滚动条占用的行数(供 CodeLens 下移避免重叠)。
 func (a *App) stickyRows(tb *ideTab, first int) int {
 	if tb == nil || tb.st == nil {
@@ -7,7 +9,7 @@ func (a *App) stickyRows(tb *ideTab, first int) int {
 	}
 	syms := a.ide.fileSyms(tb.path)
 	var rows int
-	for _, k := range enclosing(syms, first) {
+	for _, k := range symbols.Enclosing(syms, first) {
 		if syms[k].Line < first && syms[k].Kind != "h" {
 			rows++
 		}

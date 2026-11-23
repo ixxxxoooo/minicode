@@ -10,6 +10,7 @@ import (
 
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/lsp"
+	"github.com/ixxxxoooo/minicode/internal/symbols"
 )
 
 // ⌘ 悬停可跳转(设计稿 ide-nav「⌘ 悬停可跳转」):按住 ⌘,指针下能跳转的标识符
@@ -137,7 +138,7 @@ func linkLineAt(tb *ideTab, y float32) (int, bool) {
 
 // linkJumpable 判断这个词能不能转到定义:本地索引或已确认的 LSP 答案;未确认前不加下划线。
 func (a *App) linkJumpable(tb *ideTab, w string, off int) bool {
-	if w == "" || isKeyword(w) {
+	if w == "" || symbols.IsKeyword(w) {
 		return false
 	}
 	c := a.ide.linkMemo
@@ -218,7 +219,7 @@ func (a *App) linkHover(c *ui.Context, tb *ideTab, ev ui.Element) {
 	ln := tb.buf.Line(l)
 	cell := int((x - gw) / (edChar * edScale))
 	col := byteAtCell(ln, cell, tb.st.TabSize)
-	w, b0, b1 := wordAt(ln, col)
+	w, b0, b1 := symbols.WordAt(ln, col)
 	off := tb.buf.Offset(editor.Pos{Line: l, Col: col})
 	if w == "" || col >= len(ln) || !a.linkJumpable(tb, w, off) {
 		return

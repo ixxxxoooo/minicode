@@ -4,6 +4,8 @@ import (
 	"path"
 	"regexp"
 	"strings"
+
+	"github.com/ixxxxoooo/minicode/internal/symbols"
 )
 
 var (
@@ -13,12 +15,12 @@ var (
 )
 
 // testsForSymbol 从本地符号索引推断某声明旁的测试数(0 = 不显示测试胶囊)。
-func (a *App) testsForSymbol(tb *ideTab, sym symbol) int {
+func (a *App) testsForSymbol(tb *ideTab, sym symbols.Symbol) int {
 	if tb == nil || sym.Kind != "fn" {
 		return 0
 	}
 	name := sym.Name
-	switch symbolLang(tb.path) {
+	switch symbols.Lang(tb.path) {
 	case "go":
 		return a.countGoTests(tb.path, name)
 	case "rust":

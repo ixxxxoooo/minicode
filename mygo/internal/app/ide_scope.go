@@ -7,6 +7,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/editor"
 	"github.com/ixxxxoooo/minicode/internal/diag"
+	"github.com/ixxxxoooo/minicode/internal/symbols"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
@@ -185,7 +186,7 @@ func boolInt(b bool) int {
 	return 0
 }
 
-func (a *App) selectSymbolBlock(tb *ideTab, s symbol) {
+func (a *App) selectSymbolBlock(tb *ideTab, s symbols.Symbol) {
 	if tb == nil || tb.st == nil || tb.buf == nil {
 		return
 	}
@@ -200,7 +201,7 @@ func (a *App) selectSymbolBlock(tb *ideTab, s symbol) {
 }
 
 // scopeStickyBar 在粘性滚动行左侧画竖条色标。
-func (a *App) scopeStickyBar(c *ui.Context, sym symbol) {
+func (a *App) scopeStickyBar(c *ui.Context, sym symbols.Symbol) {
 	if !a.scopeOn() {
 		return
 	}
@@ -222,7 +223,7 @@ func (a *App) toggleScopeHighlight() {
 	scopeLog.Info("切换所在范围高亮", "开", on)
 }
 
-func scopeTip(sym symbol) string {
+func scopeTip(sym symbols.Symbol) string {
 	return fmt.Sprintf("光标所在的符号 · 第 %d–%d 行", sym.Line+1, sym.End+1)
 }
 

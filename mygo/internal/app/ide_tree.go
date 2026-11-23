@@ -7,6 +7,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/symbols"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 	"github.com/ixxxxoooo/minicode/internal/workspace"
 )
@@ -502,7 +503,7 @@ func (a *App) outlineRows(c *ui.Context) {
 		return
 	}
 	cur := -1
-	if ch := enclosing(syms, tb.st.CursorPos().Line); len(ch) > 0 {
+	if ch := symbols.Enclosing(syms, tb.st.CursorPos().Line); len(ch) > 0 {
 		cur = ch[len(ch)-1]
 	}
 	for i, s := range syms {

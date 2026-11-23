@@ -3,10 +3,12 @@ package app
 import (
 	"strings"
 	"testing"
+
+	"github.com/ixxxxoooo/minicode/internal/symbols"
 )
 
 func TestSiblingSymbols(t *testing.T) {
-	syms := []symbol{
+	syms := []symbols.Symbol{
 		{Name: "Router", Kind: "struct", Line: 0, Parent: -1},
 		{Name: "add", Kind: "fn", Line: 5, Parent: 0},
 		{Name: "match_path", Kind: "fn", Line: 10, Parent: 0},

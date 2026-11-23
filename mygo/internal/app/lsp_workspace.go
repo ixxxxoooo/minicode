@@ -8,6 +8,7 @@ import (
 
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/lsp"
+	"github.com/ixxxxoooo/minicode/internal/symbols"
 	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
 
@@ -160,7 +161,7 @@ func (a *App) lspWorkspaceStart(files []string, limit int) {
 func (a *App) lspWorkspaceCandidates(includeIgnored bool) []string {
 	var files []string
 	for _, p := range a.ide.allFiles() {
-		if a.lspFor(p) == nil && symbolLang(p) == "" {
+		if a.lspFor(p) == nil && symbols.Lang(p) == "" {
 			continue
 		}
 		if !includeIgnored && skipWorkspacePath(p) {

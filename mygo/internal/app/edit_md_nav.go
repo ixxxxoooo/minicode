@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui/richtext"
+	"github.com/ixxxxoooo/minicode/internal/symbols"
 )
 
 // mdScrollToLine 在所见即所得里滚到源码第 line(0 起)附近:按标题序号或行比例估算段落。
@@ -40,7 +41,7 @@ func mdHeadingOffset(body string, line int, doc richtext.Text) int {
 		return -1
 	}
 	ln := lines[line]
-	if m := reMd.FindStringSubmatch(ln); m != nil {
+	if m := symbols.MarkdownHeading.FindStringSubmatch(ln); m != nil {
 		wantLvl := len(m[1])
 		want := strings.TrimSpace(m[2])
 		paras := doc.ParagraphCount()
@@ -60,7 +61,7 @@ func mdHeadingOffset(body string, line int, doc richtext.Text) int {
 		if i > line {
 			break
 		}
-		if m := reMd.FindStringSubmatch(ln); m != nil {
+		if m := symbols.MarkdownHeading.FindStringSubmatch(ln); m != nil {
 			hix++
 		}
 	}
