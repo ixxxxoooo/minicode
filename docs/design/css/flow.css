@@ -313,17 +313,16 @@ body:not(.no-sticky-user) .flow-wrap { --fade: linear-gradient(#000 calc(100% - 
 .sr-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ac); } .sr-dot.warn { background: var(--warn); }
 
 /* 下一步建议:每轮正常结束后,作为这一轮回答的延续排在会话流末尾(回合脚注之后),竖排 3 行,整行可点,点一下直接发送(设计稿「会话流 · 排队引导 / 问答卡 / 回到最新」页「下一步建议」一节)。随时间线滚动,不贴输入框 */
-.nsteps { margin: 6px 0 0; display: flex; flex-direction: column; }
-.nsteps .nh { display: flex; align-items: center; gap: 4px; height: 22px; color: var(--tx-4); font-size: var(--fs-cap); }
+.nsteps { margin: 6px 0 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.nsteps .nh { align-self: stretch; display: flex; align-items: center; gap: 4px; height: 22px; color: var(--tx-4); font-size: var(--fs-cap); }
 .nsteps .nh .nx { margin-left: auto; display: inline-flex; gap: 1px; flex: none; }
-.nsteps .ns { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border-top: 1px solid var(--bd-1); color: var(--tx-2); font-size: var(--fs-body); cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
-.nsteps .ns:last-child { border-bottom: 1px solid var(--bd-1); }
+/* 胶囊:每个独占一行、宽度随内容、左对齐;句子长了单行省略,不折行 */
+.nsteps .ns { display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 4px 0 11px; max-width: 100%; border-radius: var(--r-full); border: 1px solid var(--bd-2); background: var(--bg-raised); color: var(--tx-2); font-size: var(--fs-body); cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast), transform var(--dur-instant); }
 .nsteps .ns .lead { flex: none; color: var(--tx-4); display: inline-flex; transition: color var(--dur-fast); }
-.nsteps .ns .tx { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nsteps .ns .acts { display: none; flex: none; align-items: center; gap: 2px; color: var(--tx-3); }
-.nsteps .ns .go { color: var(--ac-tx); }
-.nsteps .ns:hover, .nsteps .ns.hov { background: var(--fill-1); color: var(--tx-1); } .nsteps .ns:hover .lead, .nsteps .ns.hov .lead { color: var(--ac-tx); }
-.nsteps .ns:hover .acts, .nsteps .ns.hov .acts { display: inline-flex; }   /* 悬停出现「放进输入框编辑」铅笔 + 「发送」箭头 */
-.nsteps .ns:active { background: var(--fill-2); }
-.nsteps .ns.rec .lead { color: var(--ac); }   /* 第一条 = 最推荐:只把行首图标染成强调色,不加描边 / 底色 */
+.nsteps .ns .tx { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nsteps .ns .acts { flex: none; display: inline-flex; align-items: center; color: var(--tx-3); visibility: hidden; }   /* 位置始终预留,悬停才显示,胶囊宽度不跳 */
+.nsteps .ns:hover, .nsteps .ns.hov { background: var(--fill-1); color: var(--tx-1); border-color: var(--bd-3); } .nsteps .ns:hover .lead, .nsteps .ns.hov .lead { color: var(--ac-tx); }
+.nsteps .ns:hover .acts, .nsteps .ns.hov .acts { visibility: visible; }   /* 悬停出现「放进输入框编辑」铅笔 */
+.nsteps .ns:active { transform: scale(.98); }
+.nsteps .ns.rec .lead { color: var(--ac); }   /* 第一条 = 最推荐:只把行首图标染成强调色,不改胶囊底色 / 描边 */
 .nsteps.fold .nh { cursor: pointer; }

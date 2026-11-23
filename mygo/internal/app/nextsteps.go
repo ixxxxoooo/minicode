@@ -103,52 +103,51 @@ func (a *App) nextStepSend(text string) {
 	a.submitPrompt(text, false)
 }
 
-// nextStepsRow 是会话流末尾(回合脚注之后)的建议列表:标题行「下一步」+ 右侧 ✕(本轮不再显示),下面竖排最多 3 行,
-// 行间 1px 细线,整行可点。它是最后一轮回答的延续,随虚拟列表滚动(flow_rows.go 在行表末尾追加),不再贴着输入框。
+// nextStepsRow 是会话流末尾(回合脚注之后)的建议列表:标题行「下一步」+ 右侧 ✕(本轮不再显示),下面竖排最多 3 个胶囊,
+// 每个胶囊独占一行、宽度随内容、左对齐(横排并排的胶囊句子一长就折行,竖排各占一行则高度稳定)。
+// 它是最后一轮回答的延续,随虚拟列表滚动(flow_rows.go 在行表末尾追加),不再贴着输入框。
 func (a *App) nextStepsRow(c *ui.Context) {
 	t := a.tk
-	ui.Column(c).Key("nsteps").Margin(6, 0, 0, 0).Children(func() {
-		ui.Row(c).Height(theme.Px(22)).Gap(4).AlignItems(ui.Center).TextColor(t.Tx4).FontSize(theme.FsCap).Children(func() {
+	ui.Column(c).Key("nsteps").Margin(6, 0, 0, 0).Gap(6).AlignItems(ui.Start).Children(func() {
+		ui.Row(c).Height(theme.Px(22)).Gap(4).AlignItems(ui.Center).AlignSelf(ui.Stretch).TextColor(t.Tx4).FontSize(theme.FsCap).Children(func() {
 			kit.Ic(c, "spark", kit.S12)
 			ui.Text(c, "下一步")
 			ui.Box(c).Grow(1)
 			kit.Ib(c, "x", kit.IbOpt{Small: true, Tip: "本轮不再显示"}).OnClick(func() { a.ns.hidden = true })
 		})
 		for i, s := range a.ns.items {
-			a.nextStepLine(c, i, s)
+			a.nextStepChip(c, i, s)
 		}
-		ui.Box(c).Height(1).Background(t.Bd1)
 	})
 }
 
-// nextStepLine 画一行建议:行首 ↵ 图标(第一条染强调色 = 最推荐),正文单行省略;悬停整行浅底色,
-// 右侧出现铅笔(放进输入框编辑)与「发送」(窄档只留铅笔);点行本身 = 直接发送。
-func (a *App) nextStepLine(c *ui.Context, i int, text string) {
+// nextStepChip 画一个建议胶囊:行首 ↵ 图标(第一条染强调色 = 最推荐),正文单行省略;悬停底色加深、边框加重,
+// 右侧铅笔(放进输入框编辑)出现——铅笔位置始终预留(平时透明),悬停时胶囊宽度不跳;点胶囊本身 = 直接发送。
+func (a *App) nextStepChip(c *ui.Context, i int, text string) {
 	t := a.tk
-	ui.Box(c).Height(1).Background(t.Bd1)
-	row := ui.Row(c).Key("ns-" + itoa(i) + text).Height(theme.Px(32)).AlignItems(ui.Center)
+	row := ui.Row(c).Key("ns-" + itoa(i) + text).Height(theme.Px(28)).MaxWidthPercent(100).Radius(theme.RFull).AlignItems(ui.Center).Shrink(1)
 	hov := row.Hovered()
-	bg, fg, lead := ui.Transparent, t.Tx2, t.Tx4
+	bg, bd, fg, lead := t.Raised, t.Bd2, t.Tx2, t.Tx4
 	if hov {
-		bg, fg, lead = t.Fill1, t.Tx1, t.AcTx
+		bg, bd, fg, lead = t.Fill1.Over(t.Raised), t.Bd3, t.Tx1, t.AcTx
 	} else if i == 0 {
 		lead = t.Ac
 	}
-	row.Background(bg).Radius(t.RSm()).TextColor(fg).FontSize(theme.FsBody).Transition(kit.Fade)
+	row.Background(bg).Border(1, bd).TextColor(fg).FontSize(theme.FsBody).Transition(kit.Fade)
 	row.Children(func() {
-		b := ui.ButtonBase(c).Key("nsb-" + itoa(i)).Height(theme.Px(32)).PaddingX(8).Gap(8).AlignItems(ui.Center).Cursor(ui.CursorPointer).Grow(1).MinWidth(0).Tooltip(text)
+		b := ui.ButtonBase(c).Key("nsb-"+itoa(i)).Height(theme.Px(26)).Padding(0, 4, 0, 11).Gap(7).AlignItems(ui.Center).Cursor(ui.CursorPointer).Grow(1).MinWidth(0).Tooltip(text)
 		b.Children(func() {
 			ui.Row(c).TextColor(lead).Shrink(0).Children(func() { kit.Ic(c, "ret", kit.S12) })
-			ui.Text(c, text).SingleLine().Grow(1).MinWidth(0)
-			if hov && a.chatTier() != tierNarrow {
-				ui.Text(c, "发送").TextColor(t.AcTx).FontSize(theme.FsCap).Shrink(0)
-			}
+			ui.Text(c, text).SingleLine().MinWidth(0)
 		})
 		if b.Clicked() {
 			a.nextStepSend(text)
 		}
-		if hov {
-			kit.Ib(c, "edit", kit.IbOpt{Small: true, Tip: "放进输入框编辑"}).Margin(0, 6, 0, 0).OnClick(func() {
+		ed := kit.Ib(c, "edit", kit.IbOpt{Small: true, Tip: "放进输入框编辑"}).Margin(0, 3, 0, 0)
+		if !hov {
+			ed.Opacity(0)
+		} else {
+			ed.OnClick(func() {
 				a.nextStepsClear()
 				a.draft = text
 				a.ux.focusDraft = true
