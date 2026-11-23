@@ -1,0 +1,5 @@
+# 历史会话里的子 Agent:启动卡 + 完成结果(过程在单独文件里,这里只有这两条);用时来自 toolUseResult
+{"type":"user","uuid":"u1","timestamp":"2026-10-09T10:00:00Z","message":{"content":"并行查一下两个目录"}}
+{"type":"assistant","timestamp":"2026-10-09T10:00:03Z","message":{"id":"m1","content":[{"type":"tool_use","id":"ag1","name":"Task","input":{"description":"查 handlers","subagent_type":"general-purpose","prompt":"只读检查"}}]}}
+{"type":"user","timestamp":"2026-10-09T10:00:20Z","message":{"content":[{"type":"tool_result","tool_use_id":"ag1","content":"handlers 里只有一个入口。"}]},"toolUseResult":{"totalTokens":2100,"totalToolUseCount":3,"totalDurationMs":15000}}
+{"type":"assistant","timestamp":"2026-10-09T10:00:24Z","message":{"id":"m2","content":[{"type":"text","text":"查完了。"}]}}

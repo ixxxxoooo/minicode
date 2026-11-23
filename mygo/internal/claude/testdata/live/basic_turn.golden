@@ -1,0 +1,54 @@
+# 摘要:条目 3 个 · 阶段 1 · 会话 "" · 标题 "帮我解释一下这个项目"
+State{
+  Title: "帮我解释一下这个项目"
+  Phase: PhaseIdle(1)
+  Items: [
+    - User{
+      ID: "lu1"
+      Text: "帮我解释一下这个项目"
+    }
+    - Thinking{
+      ID: "m1:0"
+      Text: "先看目录结构"
+      StartMs: 1700000000000
+    }
+    - Assistant{
+      ID: "m1:1"
+      Text: "这是一个 Go 项目。"
+    }
+  ]
+  Model: "sonnet"
+  Effort: EffortMedium(1)
+  Usage: Usage{
+    ContextUsed: 1070
+    ContextSize: 200000
+    CostUSD: 0.01
+    CacheLast: CacheTokens{
+      Read: 900
+      Written: 10
+      Uncached: 120
+    }
+    CacheTotal: CacheTokens{
+      Read: 900
+      Written: 10
+      Uncached: 120
+    }
+  }
+  LastStop: StopEndTurn(0)
+  Durations: map{
+    m1:0: 1
+  }
+  TurnStats: map{
+    lu1: TurnStats{
+      Input: 120
+      Output: 40
+      CacheRead: 900
+      CacheWrite: 10
+      ApiMs: 800
+      Calls: 1
+    }
+  }
+  UserUUIDs: map{
+    lu1: "uuid-2"
+  }
+}

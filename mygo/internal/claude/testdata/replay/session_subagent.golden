@@ -1,0 +1,36 @@
+# 摘要:条目 3 个 · 阶段 0 · 会话 "" · 标题 "并行查一下两个目录"
+State{
+  Title: "并行查一下两个目录"
+  Items: [
+    - User{
+      ID: "u1"
+      Text: "并行查一下两个目录"
+    }
+    - SubagentCard{
+      ID: "ag1"
+      AgentType: "general-purpose"
+      Description: "查 handlers"
+      Prompt: "只读检查"
+      Status: SubCompleted(3)
+      StartedMs: 1699999985000
+      EndedMs: 1700000000000
+      Tokens: 2100
+      ToolCount: 3
+      Summary: "handlers 里只有一个入口。"
+      LastActivityMs: 1700000000000
+    }
+    - Assistant{
+      ID: "a2"
+      Text: "查完了。"
+    }
+  ]
+  Model: "sonnet"
+  Effort: EffortMedium(1)
+  Durations: map{
+    u1: 24
+  }
+  TurnStats: map{}
+  UserUUIDs: map{
+    u1: "u1"
+  }
+}

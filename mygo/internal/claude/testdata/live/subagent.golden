@@ -1,0 +1,75 @@
+# 摘要:条目 3 个 · 阶段 1 · 会话 "" · 标题 "派个子 Agent 查一下 handlers"
+State{
+  Title: "派个子 Agent 查一下 handlers"
+  Phase: PhaseIdle(1)
+  Items: [
+    - User{
+      ID: "lu1"
+      Text: "派个子 Agent 查一下 handlers"
+    }
+    - SubagentCard{
+      ID: "ag1"
+      AgentType: "general-purpose"
+      Description: "审查 handlers"
+      Prompt: "只读检查 handlers 目录"
+      Status: SubCompleted(3)
+      Children: [
+        - ToolCall{
+          ID: "c1"
+          Name: "Grep"
+          Kind: KindSearch(5)
+          Title: "搜索 func Handle"
+          Status: ToolCompleted(2)
+          Input: map{
+            path: "handlers"
+            pattern: "func Handle"
+          }
+          Content: [
+            - TextBlock{
+              Text: "handlers/a.go:3:func Handle()"
+            }
+          ]
+          Locations: [
+            - "handlers"
+          ]
+        }
+        - Assistant{
+          ID: "la2"
+          Text: "只有一个入口。"
+        }
+      ]
+      StartedMs: 1699999996000
+      EndedMs: 1700000000000
+      Tokens: 1200
+      ToolCount: 1
+      Summary: "只有一个入口 Handle。"
+      LastActivityMs: 1700000000000
+    }
+    - Assistant{
+      ID: "la3"
+      Text: "子 Agent 查完了。"
+    }
+  ]
+  Model: "sonnet"
+  Effort: EffortMedium(1)
+  Usage: Usage{
+    CacheLast: CacheTokens{
+      Uncached: 50
+    }
+    CacheTotal: CacheTokens{
+      Uncached: 50
+    }
+  }
+  LastStop: StopEndTurn(0)
+  Durations: map{}
+  TurnStats: map{
+    lu1: TurnStats{
+      Input: 50
+      Output: 10
+      Calls: 2
+    }
+  }
+  UserUUIDs: map{
+    lu1: "uuid-2"
+  }
+}

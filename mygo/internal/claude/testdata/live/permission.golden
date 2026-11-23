@@ -1,0 +1,66 @@
+# 摘要:条目 3 个 · 阶段 0 · 会话 "" · 标题 "清理一下构建产物"
+State{
+  Title: "清理一下构建产物"
+  Items: [
+    - User{
+      ID: "lu1"
+      Text: "清理一下构建产物"
+    }
+    - PermissionRequest{
+      ID: "b1"
+      Tool: ToolCall{
+        ID: "b1"
+        Name: "Bash"
+        Kind: KindExecute(6)
+        Title: "rm -rf dist"
+        Status: ToolDenied(4)
+        Input: map{
+          command: "rm -rf dist"
+        }
+      }
+      Options: [
+        - PermissionOption{
+          ID: "allow_once"
+          Label: "允许一次"
+        }
+        - PermissionOption{
+          ID: "allow_always"
+          Label: "总是允许此类操作"
+          Kind: 1
+        }
+        - PermissionOption{
+          ID: "reject"
+          Label: "拒绝"
+          Kind: 2
+        }
+      ]
+      Resolved: "reject"
+    }
+    - QuestionRequest{
+      ID: "q1"
+      Questions: [
+        - Question{
+          Header: "范围"
+          Question: "清理哪些?"
+          Options: [
+            - QuestionOption{
+              Label: "只 dist"
+              Description: "仅构建产物"
+            }
+            - QuestionOption{
+              Label: "全部"
+              Description: "含缓存"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+  Model: "sonnet"
+  Effort: EffortMedium(1)
+  Durations: map{}
+  TurnStats: map{}
+  UserUUIDs: map{
+    lu1: "uuid-2"
+  }
+}

@@ -1,0 +1,44 @@
+# 摘要:条目 2 个 · 阶段 0 · 会话 "" · 标题 "后台跑 dev server"
+State{
+  Title: "后台跑 dev server"
+  Items: [
+    - User{
+      ID: "lu1"
+      Text: "后台跑 dev server"
+    }
+    - TaskNote{
+      ID: "tasknote-tk1-1"
+      TaskID: "tk1"
+      Text: "完成"
+      Kind: TaskShell(1)
+      Status: TaskCompleted(1)
+    }
+  ]
+  Model: "sonnet"
+  Effort: EffortMedium(1)
+  Durations: map{}
+  TurnStats: map{}
+  Tasks: [
+    - BackgroundTask{
+      TaskID: "tk1"
+      RunID: "run-abc"
+      ProcessID: 4242
+      ToolUseID: "u1"
+      Kind: TaskShell(1)
+      Description: "dev server"
+      Status: TaskCompleted(1)
+      StartedMs: 1700000000000
+      EndedMs: 1700000000000
+      Tokens: 900
+      ToolUses: 2
+      LastTool: "Bash"
+      LastActivityMs: 1700000000000
+      Summary: "完成"
+      OutputFile: "/tmp/out.log"
+      Backgrounded: true
+    }
+  ]
+  UserUUIDs: map{
+    lu1: "uuid-2"
+  }
+}

@@ -1,0 +1,11 @@
+# 工具流:读取成功 → 编辑(带 Diff)→ Bash 失败(is_error + 退出码)→ 收尾文字
+{"type":"system","subtype":"init","session_id":"sess-tools","cwd":"/work/demo"}
+#user 修一下 main.go 的拼写,再跑测试
+{"type":"assistant","message":{"id":"a1","content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"/work/demo/main.go"}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"t1","content":"package main\n\nfunc mian() {}\n"}]}}
+{"type":"assistant","message":{"id":"a2","content":[{"type":"tool_use","id":"t2","name":"Edit","input":{"file_path":"/work/demo/main.go","old_string":"mian","new_string":"main"}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"t2","content":"The file has been updated."}]}}
+{"type":"assistant","message":{"id":"a3","content":[{"type":"tool_use","id":"t3","name":"Bash","input":{"command":"go test ./..."}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"t3","is_error":true,"content":"Exit code 1\nFAIL demo 0.01s"}]}}
+{"type":"assistant","message":{"id":"a4","content":[{"type":"text","text":"测试没过,需要再看一下。"}]}}
+{"type":"result","is_error":false,"num_turns":4,"usage":{"input_tokens":300,"output_tokens":90}}

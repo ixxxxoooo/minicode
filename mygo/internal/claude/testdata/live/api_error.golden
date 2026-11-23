@@ -1,0 +1,25 @@
+# 摘要:条目 2 个 · 阶段 1 · 会话 "" · 标题 "继续"
+State{
+  Title: "继续"
+  Phase: PhaseIdle(1)
+  Items: [
+    - User{
+      ID: "lu1"
+      Text: "继续"
+    }
+    - Notice{
+      ID: "notice-1"
+      Level: NoticeError(2)
+      Text: "额度用完"
+    }
+  ]
+  Model: "sonnet"
+  Effort: EffortMedium(1)
+  LastStop: StopError(4)
+  Durations: map{}
+  TurnStats: map{}
+  UserUUIDs: map{
+    lu1: "uuid-2"
+  }
+  noticeSeq: 1
+}

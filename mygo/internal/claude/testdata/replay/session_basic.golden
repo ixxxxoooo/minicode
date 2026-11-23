@@ -1,0 +1,79 @@
+# 摘要:条目 6 个 · 阶段 0 · 会话 "" · 标题 "解释 demo 项目"
+State{
+  Title: "解释 demo 项目"
+  Items: [
+    - User{
+      ID: "u1"
+      Text: "看看 main.go 写了什么"
+    }
+    - Thinking{
+      ID: "th2"
+      Text: "先读文件"
+    }
+    - ToolCall{
+      ID: "t1"
+      Name: "Read"
+      Title: "读取 main.go"
+      Status: ToolCompleted(2)
+      Input: map{
+        file_path: "/work/demo/main.go"
+      }
+      Locations: [
+        - "/work/demo/main.go"
+      ]
+    }
+    - Assistant{
+      ID: "a3"
+      Text: "main.go 只有一个空的 main 函数。"
+    }
+    - User{
+      ID: "u4"
+      Text: "那加点内容吧"
+    }
+    - Assistant{
+      ID: "a5"
+      Text: "已经加好了。"
+    }
+  ]
+  Model: "sonnet"
+  Effort: EffortMedium(1)
+  Usage: Usage{
+    ContextUsed: 4380
+    ContextSize: 200000
+    ContextCategories: [
+      - ContextCategory{
+        Name: "消息"
+        Tokens: 4380
+      }
+      - ContextCategory{
+        Name: "空闲"
+        Tokens: 195620
+        Kind: 1
+      }
+    ]
+    ContextEstimated: true
+  }
+  Durations: map{
+    th2: 4
+    u1: 9
+    u4: 12
+  }
+  TurnStats: map{
+    u1: TurnStats{
+      Model: "claude-sonnet-5-5"
+      Input: 8200
+      Output: 160
+      Calls: 2
+    }
+    u4: TurnStats{
+      Model: "claude-sonnet-5-5"
+      Input: 4300
+      Output: 80
+      Calls: 1
+    }
+  }
+  UserUUIDs: map{
+    u1: "u1"
+    u4: "u2"
+  }
+}

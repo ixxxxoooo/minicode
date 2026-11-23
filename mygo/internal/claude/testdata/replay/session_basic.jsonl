@@ -1,0 +1,8 @@
+# 历史会话:两轮对话。第一轮 思考 + 读文件 + 回答(带用量);第二轮有 <next_steps> 建议块
+{"type":"ai-title","aiTitle":"解释 demo 项目"}
+{"type":"user","uuid":"u1","timestamp":"2026-10-09T10:00:00Z","message":{"content":"看看 main.go 写了什么"}}
+{"type":"assistant","timestamp":"2026-10-09T10:00:04Z","message":{"id":"m1","model":"claude-sonnet-5-5","usage":{"input_tokens":4000,"output_tokens":100},"content":[{"type":"thinking","thinking":"先读文件"},{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"/work/demo/main.go"}}]}}
+{"type":"user","timestamp":"2026-10-09T10:00:05Z","message":{"content":[{"type":"tool_result","tool_use_id":"t1","content":"package main\n\nfunc main() {}\n"}]},"toolUseResult":{}}
+{"type":"assistant","timestamp":"2026-10-09T10:00:09Z","message":{"id":"m2","model":"claude-sonnet-5-5","usage":{"input_tokens":4200,"output_tokens":60},"content":[{"type":"text","text":"main.go 只有一个空的 main 函数。"}]}}
+{"type":"user","uuid":"u2","timestamp":"2026-10-09T10:01:00Z","message":{"content":"那加点内容吧"}}
+{"type":"assistant","timestamp":"2026-10-09T10:01:12Z","message":{"id":"m3","model":"claude-sonnet-5-5","usage":{"input_tokens":4300,"output_tokens":80},"content":[{"type":"text","text":"已经加好了。\n\n<next_steps>\n- 跑一遍测试\n- 补充 README\n</next_steps>"}]}}

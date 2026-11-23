@@ -1,0 +1,88 @@
+# 摘要:条目 5 个 · 阶段 1 · 会话 "" · 标题 "修一下 main.go 的拼写,再跑测试"
+State{
+  Title: "修一下 main.go 的拼写,再跑测试"
+  Phase: PhaseIdle(1)
+  Items: [
+    - User{
+      ID: "lu1"
+      Text: "修一下 main.go 的拼写,再跑测试"
+    }
+    - ToolCall{
+      ID: "t1"
+      Name: "Read"
+      Title: "读取 main.go"
+      Status: ToolCompleted(2)
+      Input: map{
+        file_path: "/work/demo/main.go"
+      }
+      Locations: [
+        - "/work/demo/main.go"
+      ]
+    }
+    - ToolCall{
+      ID: "t2"
+      Name: "Edit"
+      Kind: KindEdit(1)
+      Title: "编辑 main.go"
+      Status: ToolCompleted(2)
+      Input: map{
+        file_path: "/work/demo/main.go"
+        new_string: "main"
+        old_string: "mian"
+      }
+      Content: [
+        - DiffBlock{
+          Path: "/work/demo/main.go"
+          Old: "mian"
+          New: "main"
+        }
+      ]
+      Locations: [
+        - "/work/demo/main.go"
+      ]
+    }
+    - ToolCall{
+      ID: "t3"
+      Name: "Bash"
+      Kind: KindExecute(6)
+      Title: "go test ./..."
+      Status: ToolFailed(3)
+      Input: map{
+        command: "go test ./..."
+      }
+      Content: [
+        - TerminalBlock{
+          Command: "go test ./..."
+          Output: "Exit code 1\nFAIL demo 0.01s"
+          ExitCode: 1
+        }
+      ]
+    }
+    - Assistant{
+      ID: "la2"
+      Text: "测试没过,需要再看一下。"
+    }
+  ]
+  Model: "sonnet"
+  Effort: EffortMedium(1)
+  Usage: Usage{
+    CacheLast: CacheTokens{
+      Uncached: 300
+    }
+    CacheTotal: CacheTokens{
+      Uncached: 300
+    }
+  }
+  LastStop: StopEndTurn(0)
+  Durations: map{}
+  TurnStats: map{
+    lu1: TurnStats{
+      Input: 300
+      Output: 90
+      Calls: 4
+    }
+  }
+  UserUUIDs: map{
+    lu1: "uuid-2"
+  }
+}

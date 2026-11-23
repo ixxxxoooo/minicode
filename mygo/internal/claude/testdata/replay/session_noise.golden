@@ -1,0 +1,40 @@
+# 摘要:条目 3 个 · 阶段 0 · 会话 "" · 标题 "现在的 git 状态?"
+State{
+  Title: "现在的 git 状态?"
+  Items: [
+    - User{
+      ID: "u1"
+      Text: "现在的 git 状态?"
+    }
+    - ToolCall{
+      ID: "b1"
+      Name: "Bash"
+      Kind: KindExecute(6)
+      Title: "git status --short"
+      Status: ToolCompleted(2)
+      Input: map{
+        command: "git status --short"
+      }
+      Content: [
+        - TerminalBlock{
+          Command: "git status --short"
+          Output: " M main.go\n"
+          ExitCode: 0
+        }
+      ]
+    }
+    - Assistant{
+      ID: "a2"
+      Text: "有一处改动:main.go。"
+    }
+  ]
+  Model: "sonnet"
+  Effort: EffortMedium(1)
+  Durations: map{
+    u1: 20
+  }
+  TurnStats: map{}
+  UserUUIDs: map{
+    u1: "u4"
+  }
+}

@@ -1,0 +1,4 @@
+# 失败回合:额度用完,result 带 is_error;回合应以错误结束且界面有提示
+{"type":"system","subtype":"init","session_id":"sess-err","cwd":"/work/demo"}
+#user 继续
+{"type":"result","is_error":true,"result":"额度用完","usage":{}}

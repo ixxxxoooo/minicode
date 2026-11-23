@@ -1,0 +1,6 @@
+# 后台任务:本地 Bash 任务启动 → 进度 → 完成通知;任务表里应保留已结束项
+{"type":"system","subtype":"init","session_id":"sess-bg","cwd":"/work/demo"}
+#user 后台跑 dev server
+{"type":"system","subtype":"task_started","task_id":"tk1","tool_use_id":"u1","task_type":"local_bash","description":"dev server","run_id":"run-abc","pid":4242,"is_backgrounded":true}
+{"type":"system","subtype":"task_progress","task_id":"tk1","last_tool_name":"Bash","summary":"编译中","usage":{"total_tokens":900,"tool_uses":2}}
+{"type":"system","subtype":"task_notification","task_id":"tk1","status":"completed","summary":"完成","output_file":"/tmp/out.log"}
