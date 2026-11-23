@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/fonts"
 	"github.com/ixxxxoooo/minicode/internal/term"
 )
 
@@ -12,7 +13,7 @@ import (
 func setFakeFonts(t *testing.T, raw ...string) {
 	t.Helper()
 	oldHas := fontHasFn // 不问真实的 CoreText:只认下面的假清单
-	fontHasFn = func(string, glyphCat) ([]bool, bool, bool) { return nil, false, false }
+	fontHasFn = func(string, fonts.GlyphCat) ([]bool, bool, bool) { return nil, false, false }
 	oldF, oldR, oldD := fontScan.files, fontScan.raw, fontScan.done.Load()
 	fontScan.files, fontScan.raw = nil, nil
 	for _, r := range raw {

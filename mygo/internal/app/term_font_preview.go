@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/fonts"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -52,9 +53,9 @@ func (a *App) fontPreview(c *ui.Context, pref string, applied bool, chainStr str
 	}
 	var nerdMissing bool
 	ui.Column(c).Padding(4, 10).Radius(t.RSm()).Background(t.BG).Border(1, t.Bd1).Children(func() {
-		for i, cat := range glyphCats {
-			res := chainCoverage(chain, cat)
-			if cat.nerd && res.level == covMissing {
+		for i, cat := range fonts.GlyphCats {
+			res := fonts.ChainCoverage(chain, cat)
+			if cat.Nerd && res.Level == fonts.CovMissing {
 				nerdMissing = true
 			}
 			r := ui.Row(c).MinHeight(theme.Px(26)).Gap(10).AlignItems(ui.Center)
@@ -62,8 +63,8 @@ func (a *App) fontPreview(c *ui.Context, pref string, applied bool, chainStr str
 				r.BorderWidth(1, 0, 0, 0).BorderColor(t.Bd1)
 			}
 			r.Children(func() {
-				ui.Text(c, cat.name).FontSize(theme.FsCap).TextColor(t.Tx3).Width(theme.Px(78)).Shrink(0).SingleLine()
-				ui.Text(c, cat.sample).Font(chainStr).FontSize(fs).TextColor(t.Tx1).NoWrap().Grow(1).MinWidth(0)
+				ui.Text(c, cat.Name).FontSize(theme.FsCap).TextColor(t.Tx3).Width(theme.Px(78)).Shrink(0).SingleLine()
+				ui.Text(c, cat.Sample).Font(chainStr).FontSize(fs).TextColor(t.Tx1).NoWrap().Grow(1).MinWidth(0)
 				covChip(c, t, res)
 			})
 		}
@@ -74,21 +75,21 @@ func (a *App) fontPreview(c *ui.Context, pref string, applied bool, chainStr str
 }
 
 // covChip 是一类字符右侧的覆盖结论小标。
-func covChip(c *ui.Context, t *theme.Tokens, r catResult) {
-	switch r.level {
-	case covOwn:
+func covChip(c *ui.Context, t *theme.Tokens, r fonts.CatResult) {
+	switch r.Level {
+	case fonts.CovOwn:
 		ui.Row(c).Gap(3).AlignItems(ui.Center).Shrink(0).Children(func() {
 			kit.Ic(c, "check", kit.S12).TextColor(t.Ok)
 			ui.Text(c, "自带").FontSize(theme.FsCap).TextColor(t.Ok)
 		})
-	case covFallback:
+	case fonts.CovFallback:
 		tip := "这个字体没有这些字形,由回退字体补上(显示正常)"
-		if r.by != "" {
-			tip = "这个字体没有这些字形,由「" + r.by + "」补上(显示正常)"
+		if r.By != "" {
+			tip = "这个字体没有这些字形,由「" + r.By + "」补上(显示正常)"
 		}
 		ui.Text(c, "回退补全").FontSize(theme.FsCap).TextColor(t.Tx3).Tooltip(tip).Shrink(0)
-	case covMissing:
-		kit.Tag(c, "缺字形 "+itoa(r.miss), kit.KErr).Tooltip("整条字体链里都没有这些字符,终端会显示成方框")
+	case fonts.CovMissing:
+		kit.Tag(c, "缺字形 "+itoa(r.Miss), kit.KErr).Tooltip("整条字体链里都没有这些字符,终端会显示成方框")
 	}
 }
 

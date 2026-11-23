@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/fonts"
 )
 
 // 已安装字体的文件名清单(扫用户 / 全局字体目录)与系统字体族列表(后台 ui.FontFamilies)。
@@ -82,9 +83,9 @@ func (a *App) startSystemFontScan() {
 	})
 }
 
-// fontHasFn 是 fontHas 的可替换入口:测试里换成「平台没有字形查询」,用假字体清单驱动判断,
+// fontHasFn 是 fonts.Has 的可替换入口:测试里换成「平台没有字形查询」,用假字体清单驱动判断,
 // 不受本机真实装了哪些字体影响(否则装了 Nerd Font 的机器上「未装」的断言会失败)。
-var fontHasFn = fontHas
+var fontHasFn = fonts.Has
 
 // fontInstalled 判断字体族是否装了:installed 为结果,known 表示扫描已完成(未完成时 installed 无意义)。
 func fontInstalled(family string) (installed, known bool) {
@@ -92,7 +93,7 @@ func fontInstalled(family string) (installed, known bool) {
 		return true, true
 	}
 	// macOS:直接问 CoreText,即时且准确(装完字体立刻能认出来,不用等目录重新扫描)
-	if _, inst, known := fontHasFn(family, glyphCats[0]); known {
+	if _, inst, known := fontHasFn(family, fonts.GlyphCats[0]); known {
 		return inst, true
 	}
 	sysDone := systemFontScan.done.Load()
@@ -168,5 +169,5 @@ func resetFontScans() {
 	fontScan.once, systemFontScan.once = sync.Once{}, sync.Once{}
 	fontScan.done.Store(false)
 	systemFontScan.done.Store(false)
-	resetFontCoverage()
+	fonts.ResetCoverage()
 }
