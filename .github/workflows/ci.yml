@@ -1,6 +1,6 @@
-# 最小 CI:只保证 HEAD「格式对、能编译、vet 过」。
-# 项目的工作流是先提交后测试(go test 与 computer use 实测由人在阶段三触发),所以这里不跑 go test,
-# 也不做打包 / 发布(那些走 scripts/package.sh、scripts/publish.sh)。
+# 最小 CI:保证 HEAD「格式对、能编译、vet 过」,并跑除 internal/app 外各包的单元测试(约 7 秒)。
+# internal/app 的界面测试多且重,仍按项目工作流在阶段三集中跑(连同 computer use 实测);
+# 真实 claude 的测试需 MINI_REAL_CLAUDE=1,这里自动跳过。不做打包 / 发布(走 scripts/package.sh、publish.sh)。
 name: CI
 
 on:
@@ -38,3 +38,5 @@ jobs:
         run: go build ./...
       - name: vet
         run: go vet ./...
+      - name: test(除 internal/app)
+        run: go test -count=1 $(go list ./... | grep -v -E '/internal/app$|/cmd/')

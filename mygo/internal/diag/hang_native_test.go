@@ -44,6 +44,9 @@ func TestNativeSampleWritesCallGraph(t *testing.T) {
 	if _, err := os.Stat("/usr/bin/sample"); err != nil {
 		t.Skip("本机没有 /usr/bin/sample")
 	}
+	if os.Getenv("CI") != "" {
+		t.Skip("CI 机器上的采样权限不确定:只在本机跑")
+	}
 	setup(t)
 	lastNativeSample.Store(0)
 	nativeSample(500 * time.Millisecond)
