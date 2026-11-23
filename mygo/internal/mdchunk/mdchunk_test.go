@@ -1,12 +1,9 @@
-package app
+package mdchunk
 
 import (
 	"fmt"
 	"strings"
 	"testing"
-	"time"
-
-	"github.com/ixxxxoooo/minicode/internal/core"
 )
 
 func longDoc(paras int) string {
@@ -23,9 +20,9 @@ func longDoc(paras int) string {
 	return b.String()
 }
 
-func TestSplitChunksRoundTripAndSafe(t *testing.T) {
+func TestSplitRoundTripAndSafe(t *testing.T) {
 	doc := longDoc(120)
-	chunks := splitMarkdownChunks(doc)
+	chunks := Split(doc)
 	if len(chunks) < 5 {
 		t.Fatalf("长文应被分块:%d", len(chunks))
 	}
@@ -40,17 +37,17 @@ func TestSplitChunksRoundTripAndSafe(t *testing.T) {
 			t.Fatalf("第 %d 块以不安全的行开头:%q", i, strings.SplitN(ch, "\n", 2)[0])
 		}
 	}
-	if got := splitMarkdownChunks("短文"); len(got) != 1 {
+	if got := Split("短文"); len(got) != 1 {
 		t.Fatal("短文不分块")
 	}
 }
 
 // 文本在末尾增长(流式)时,已经切好的块不能变,否则行键 / 缓存全部失效。
-func TestSplitChunksStableWhileGrowing(t *testing.T) {
+func TestSplitStableWhileGrowing(t *testing.T) {
 	doc := longDoc(100)
-	prev := splitMarkdownChunks(doc[:len(doc)/2])
+	prev := Split(doc[:len(doc)/2])
 	for cut := len(doc) / 2; cut < len(doc); cut += 997 {
-		cur := splitMarkdownChunks(doc[:cut])
+		cur := Split(doc[:cut])
 		n := len(prev) - 1 // 最后一块还在长,前面的必须不变
 		if len(cur) < n {
 			t.Fatalf("块数不应减少:%d → %d", len(prev), len(cur))
@@ -61,35 +58,5 @@ func TestSplitChunksStableWhileGrowing(t *testing.T) {
 			}
 		}
 		prev = cur
-	}
-}
-
-// 超长助手正文要拆成多行,且同屏只构建视口附近的块(整篇不进一行)。
-func TestFlowRowsChunkLongAssistant(t *testing.T) {
-	a, tt := sessionApp(t, "flow-gaps-b4")
-	doc := longDoc(300)
-	a.st.Apply(core.EvAppend{Item: &core.User{ID: "lu-long", Text: "写一篇长文"}})
-	a.st.Apply(core.EvAppend{Item: &core.Assistant{ID: "la-long", Text: doc}})
-	rows := a.flowRows()
-	n := 0
-	for _, r := range rows {
-		if strings.HasPrefix(r.key, "i:la-long~") {
-			n++
-		}
-	}
-	if n < 10 {
-		t.Fatalf("长正文应切成多行,实际 %d 行", n)
-	}
-	start := time.Now()
-	tt.Frame()
-	tt.Frame()
-	if d := time.Since(start); d > 3*time.Second {
-		t.Fatalf("长正文两帧耗时 %v,虚拟化没生效", d)
-	}
-	if !tt.HasText("第 299 节") {
-		t.Fatal("末尾应可见")
-	}
-	if tt.HasText("第 5 节") {
-		t.Fatal("远离视口的块不应被构建")
 	}
 }

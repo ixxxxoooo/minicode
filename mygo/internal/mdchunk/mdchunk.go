@@ -1,20 +1,23 @@
-package app
+// Package mdchunk 把长 Markdown 文本切成块(会话流虚拟化的第二层)。纯函数,不依赖界面。
+//
+// 一条助手正文可能有几千行。放在一行里,只要露出一角整段 Markdown 都要解析 + 排版;分成若干块、每块一行,
+// 虚拟列表就只构建视口附近的块,屏幕外的块用占位高度。流式输出时已完成的块用静态渲染(有缓存),只有最后一块在重新解析。
+package mdchunk
 
 import "strings"
 
-// 长文本分块(会话流虚拟化的第二层):
-// 一条助手正文可能有几千行。放在一行里,只要露出一角整段 Markdown 都要解析 + 排版;分成若干块、每块一行,
-// 虚拟列表就只构建视口附近的块,屏幕外的块用占位高度。流式输出时已完成的块用静态渲染(有缓存),只有最后一块在重新解析。
 const (
-	mdChunkMin    = 4000 // 短于它不分块
-	mdChunkTarget = 2400 // 每块的目标大小(字节),在其后的第一个安全边界切
+	// Min 短于它(含)不分块。
+	Min = 4000
+	// target 每块的目标大小(字节),在其后的第一个安全边界切。
+	target = 2400
 )
 
-// splitMarkdownChunks 把长 Markdown 按「安全边界」切成块,拼起来等于原文。
+// Split 把长 Markdown 按「安全边界」切成块,拼起来等于原文。
 // 安全边界 = 围栏代码块之外、空行之后、下一行是新块起点(不缩进、不是列表项 / 引用 / 表格续行)的位置,
 // 所以不会把列表、引用、代码块、表格从中间切开。边界只由它前面的内容决定,文本在末尾增长时已有的块不变(流式时键稳定)。
-func splitMarkdownChunks(text string) []string {
-	if len(text) <= mdChunkMin {
+func Split(text string) []string {
+	if len(text) <= Min {
 		return []string{text}
 	}
 	var chunks []string
@@ -40,7 +43,7 @@ func splitMarkdownChunks(text string) []string {
 		} else {
 			if f := fenceOf(trim, len(line)-len(trim)); f != "" {
 				inFence, fence = true, f
-			} else if prevBlank && pos-start >= mdChunkTarget && isBlockStart(line) {
+			} else if prevBlank && pos-start >= target && isBlockStart(line) {
 				chunks = append(chunks, text[start:pos])
 				start = pos
 			}

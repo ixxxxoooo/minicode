@@ -8,6 +8,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/mdchunk"
 )
 
 // 会话流虚拟化(设计稿 resp 页「拖动 / 重排要丝滑」):
@@ -148,10 +149,10 @@ func (a *App) addRoundRows(add func(flowRow), u *core.User, rest []core.Item, st
 	}
 }
 
-// addItemRows 为一条非步骤条目加行。助手正文很长时按 splitMarkdownChunks 切成多行,
+// addItemRows 为一条非步骤条目加行。助手正文很长时按 mdchunk.Split 切成多行,
 // 虚拟列表只构建视口附近的块(整条放一行时,露出一角就要整段解析与排版)。
 func (a *App) addItemRows(add func(flowRow), it core.Item) {
-	if m, ok := it.(*core.Assistant); ok && len(m.Text) > mdChunkMin {
+	if m, ok := it.(*core.Assistant); ok && len(m.Text) > mdchunk.Min {
 		if chunks := a.chunksOf(m); len(chunks) > 1 {
 			for k, ch := range chunks {
 				ch, last := ch, k == len(chunks)-1
@@ -313,7 +314,7 @@ func (a *App) chunksOf(m *core.Assistant) []string {
 	if a.mdChunks == nil || len(a.mdChunks) > 64 {
 		a.mdChunks = map[string]mdChunkEntry{}
 	}
-	ch := splitMarkdownChunks(m.Text)
+	ch := mdchunk.Split(m.Text)
 	a.mdChunks[m.ID] = mdChunkEntry{n: len(m.Text), chunks: ch}
 	return ch
 }
