@@ -22,10 +22,11 @@ const kNextSteps = "chat.nextSteps"
 
 // nextStepsState 是下一步建议条的状态(只在界面线程读写)。
 type nextStepsState struct {
-	pending []string // 本回合回答里带的建议,等回合正常结束才显示
-	items   []string // 正在显示的建议
-	hidden  bool     // 点了 ✕:本轮不再显示(新回合 / 发送 / 切会话时随 nextStepsClear 复位)
-	sess    string   // 这批建议属于哪个会话,切走就不显示
+	pending  []string // 本回合回答里带的建议,等回合正常结束才显示
+	items    []string // 正在显示的建议
+	hidden   bool     // 点了 ✕:本轮不再显示(新回合 / 发送 / 切会话时随 nextStepsClear 复位)
+	sess     string   // 这批建议属于哪个会话,切走就不显示
+	replayed []string // 历史回放里最后一轮回答带的建议,回放结束才还原显示
 }
 
 func (a *App) nextStepsEnabled() bool {
@@ -68,6 +69,18 @@ func (a *App) nextStepsOnTurnEnd() {
 	}
 	a.ns.items, a.ns.sess = items, a.curSess
 	nsLog.Info("显示下一步建议", "条数", len(items))
+}
+
+// nextStepsOnReplayEnd 在历史回放结束时调用:最后一轮回答里留着的 <next_steps> 块(会话文件里本来就有)还原成建议,
+// 重启 / 重新打开会话后仍能看到上次给的下一步;之后又有新提问、设置关着、或建议不属于最后一轮就不显示。
+func (a *App) nextStepsOnReplayEnd() {
+	items := a.ns.replayed
+	a.nextStepsClear()
+	if !a.nextStepsEnabled() || len(items) == 0 {
+		return
+	}
+	a.ns.items, a.ns.sess = items, a.curSess
+	nsLog.Info("还原下一步建议", "条数", len(items))
 }
 
 func demoNextSteps() []string {

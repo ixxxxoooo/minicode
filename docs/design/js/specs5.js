@@ -36,7 +36,8 @@
       cell('悬停一条', '', snip(F.tfoot() + F.nextSteps().replace('class="ns "', 'class="ns hov"') + F.composer({ focus: false })), '悬停一行:整行浅底色、行首图标变强调色,右侧出现小铅笔「放进输入框编辑」(把这句填进输入框、光标在末尾,不发送,适合想改几个字再发)与「发送」字样;提示里给完整文字(过长的行单行省略)。点行本身 = 立即发送。行间 1px 细分隔线,分隔线与悬停底色占满正文列,行首图标缩进 8px。'),
       cell('什么时候出现 / 消失', '', `<div class="snip" style="height:auto;width:560px;padding:6px 14px">${tbl([['情况', 170], ['行为']], [
         ['出现', '回合正常结束(end_turn)、本轮 Claude 有文字回复、输入框是空的、没有待处理的权限 / 提问卡、没有排队消息'],
-        ['不出现', '回合被中断 / 出错 / 拒绝、历史会话回放、设置里关了、对话栏被权限卡或提问卡占用、排队里还有消息(下一轮马上开始)'],
+        ['不出现', '回合被中断 / 出错 / 拒绝、设置里关了、对话栏被权限卡或提问卡占用、排队里还有消息(下一轮马上开始)'],
+        ['重启 / 重新打开会话', '会话文件里最后一轮回答本来就带着 <next_steps> 块,回放结束后把它还原成建议(只还原最后一轮;之后又有新提问、设置关着、或最后一轮没带块就不显示),所以重启后上次给的下一步还在。回放期间不弹通知、不发请求。'],
         ['消失', '发送任意消息 · 新回合开始 · 切换会话 · 点标题行右侧 ✕(本轮不再显示)。在输入框里打字<b>不</b>收起(它在时间线里,不挡输入,收起会让列表跳动)。只保留最后一轮的建议,上一轮的随新回合开始直接移除,不留历史残影'],
         ['没有「换一批」', '建议是回答的一部分,不单独生成;想要别的方向就直接在输入框里说。标题行只有 ✕,与「下一步」同在一行最右。'],
         ['发送方式', '等同于在输入框里敲完这句再回车:走同一条发送路径(斜杠命令、附件规则不变);排队 / 引导只在回合进行中才有,而建议只在空闲时出现,所以总是直接发送']])}</div>`, '没做:⌥1 / ⌥2 / ⌥3 快捷键直接发送第 N 条(待用户确认后再加)。'),
@@ -82,7 +83,7 @@
         ['减弱动态', '出现 / 消失不做位移,直接淡入淡出']])}</div>`, '任何滚动区都只有这一种「回到最新」形态。'))
     )}
     ${sec('实现状态', '与 Go 代码逐项对应;有 flow_test / dock_test 等单测,未经开发版 computer use 实测的仍标「未测试」。', tbl([['项', 220], ['说明', 0], ['状态', 70]], [
-      ['下一步建议:回答末尾 3 行可一键发送的竖排列表', '随回答一起给出(不另发请求):core/nextsteps.go 的 NextStepsPrompt 经 settings_wire.go FillClaudeConfig 追加到 --append-system-prompt(设置 chat.nextSteps 开着时);claude/translate.go 在流式正文里用 NextStepsFilter 截走 <next_steps> 块(开标签被切在两段增量之间也处理)、完整消息 / 历史回放用 StripNextSteps 剥掉,发 core.EvNextSteps;app/nextsteps.go 先存 pending,回合正常结束才显示,flow_rows.go buildFlowRows 在末尾追加一行 "nsteps"(回合脚注之后,随虚拟列表滚动),nextsteps.go nextStepsRow 画竖排列表;点击发送(submitPrompt)/ 铅笔填入 / ✕ / 新回合 / 切会话即收起,打字不收起;演示模式用写好的 3 条;-ed nextsteps[:none]。未做:⌥1/2/3 快捷键。已编译;未跑 vet / test、未用 computer use 实测(含 Claude 是否真的按约定带块、第三方服务商是否照做)', st('part')],
+      ['下一步建议:回答末尾 3 行可一键发送的竖排列表', '随回答一起给出(不另发请求):core/nextsteps.go 的 NextStepsPrompt 经 settings_wire.go FillClaudeConfig 追加到 --append-system-prompt(设置 chat.nextSteps 开着时);claude/translate.go 在流式正文里用 NextStepsFilter 截走 <next_steps> 块(开标签被切在两段增量之间也处理)、完整消息 / 历史回放用 StripNextSteps 剥掉,发 core.EvNextSteps;app/nextsteps.go 先存 pending,回合正常结束才显示,flow_rows.go buildFlowRows 在末尾追加一行 "nsteps"(回合脚注之后,随虚拟列表滚动),nextsteps.go nextStepsRow 画竖排列表;点击发送(submitPrompt)/ 铅笔填入 / ✕ / 新回合 / 切会话即收起,打字不收起;历史回放结束时 nextStepsOnReplayEnd 把最后一轮带的块还原显示(重启后仍在);演示模式用写好的 3 条;-ed nextsteps[:none]。未做:⌥1/2/3 快捷键。已编译;未跑 vet / test、未用 computer use 实测(含 Claude 是否真的按约定带块、第三方服务商是否照做)', st('part')],
       ['待发送区:排队 + 引导共用', 'dock.go queueCard + composer_queue.steerSend/syncSteers/visibleItems;引导行「等 Claude 接收」。未测试', st('ok')],
       ['问答卡 Esc 跳过', 'dock_ask.go:KeyEscape 调 skip()。未测试', st('ok')],
       ['回答卡 · 回合折叠', 'flow_turn_fold.turnFoldedItem 含已答 QuestionRequest;turnMustStayOpen 挡未完成提问。未测试', st('ok')],

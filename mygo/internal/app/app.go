@@ -559,8 +559,24 @@ func (a *App) afterEvent(ev core.Event) {
 			a.QueuePrompts(demo.QueuePromptSamples()...)
 		}
 	}
-	if e, ok := ev.(core.EvNextSteps); ok && !replay {
-		a.onNextSteps(e.Items) // 回答末尾带的下一步建议:先存着,回合正常结束才显示
+	if e, ok := ev.(core.EvNextSteps); ok {
+		if replay {
+			a.ns.replayed = e.Items // 历史回放:只记最后一次,回放结束时还原成最后一轮的建议
+		} else {
+			a.onNextSteps(e.Items) // 回答末尾带的下一步建议:先存着,回合正常结束才显示
+		}
+	}
+	if ap, ok := ev.(core.EvAppend); ok && replay && ap.Parent == "" {
+		if _, isUser := ap.Item.(*core.User); isUser {
+			a.ns.replayed = nil // 后面又有新的一轮提问:之前的建议已经不是「最后一轮」的了
+		}
+	}
+	if r, ok := ev.(core.EvReplay); ok {
+		if r.On {
+			a.nextStepsClear()
+		} else {
+			a.nextStepsOnReplayEnd()
+		}
 	}
 	if e, ok := ev.(core.EvTurnEnded); ok && !replay {
 		// 回合里 Claude 可能新建了被 .gitignore 忽略的文件(git 状态看不到),文件树缓存一并作废
