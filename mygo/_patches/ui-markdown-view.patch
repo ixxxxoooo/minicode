@@ -1,0 +1,30 @@
+--- a/ui/markdown/view.go
++++ b/ui/markdown/view.go
+@@ -698,6 +698,10 @@
+ 		st.link(c, &in, func() { ui.RichText(c, pc.spans...) })
+ 	}
+ }
++
++// PathLinkMarker 是 MiniCode 给「本机路径链接」目的地加的前缀(补丁新增,见 scripts/mygo-overlay.sh):
++// 带它的链接悬停不画下划线,改成手型光标 + 淡底;不打补丁时它只是一个普通链接。
++const PathLinkMarker = "mc-path:"
+ 
+ // link builds a link to in.Dest whose text children builds.
+ func (st *viewState) link(c *ui.Context, in *parser.Inline, children func()) {
+@@ -706,6 +710,16 @@
+ 	switch {
+ 	case in.Pending:
+ 		l = ui.Link(c, "", "")
++	case st.o.OnLink != nil && strings.HasPrefix(dest, PathLinkMarker):
++		// MiniCode 补丁:会话里指向本机文件 / 文件夹的路径链接。框架自带的 Link 悬停时画下划线,路径芯片不要;
++		// 这里改成「手型光标 + 悬停时一圈强调色淡底」告诉用户可以点(点击仍交给 OnLink)。
++		l = ui.Text(c, "").Cursor(ui.CursorPointer).Radius(5)
++		if l.Hovered() {
++			l.Background(st.th.Link.Alpha(.16))
++		}
++		if l.Clicked() {
++			st.o.OnLink(dest)
++		}
+ 	case st.o.OnLink != nil:
+ 		l = ui.Link(c, "", "")
+ 		if l.Clicked() {

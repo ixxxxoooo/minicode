@@ -113,7 +113,7 @@
     ))}
     ${sec('正文路径与代码块 · 实现状态', '', `<table class="ia-tbl"><tbody>${[
       ['行内代码配色不变 + 跟随代码字体链', '仍是强调色字 + 强调色 11% 底(中性配色的尝试已按要求撤回);Markdown 主题 CodeFont 跟随设置里的代码字体;未测试', 'part'],
-      ['会话里的路径可点', 'path_ref.go:后台探测存在性并缓存;存在的路径在渲染前被改写成 [`路径`](<路径>) 链接(框架自带的 CodeLink 画不了图标),LinkIcon 在代码前画带底色的彩色类型图标(matico 包,取自 Material Icon Theme,MIT,与 BaoCode 同一份),点击打开 / 文件树定位,右键加「在访达中显示」。悬停效果与「无下划线」靠 MyGo 补丁(scripts/mygo-overlay.sh,mygo/_patches/ui-markdown-view.go;dev / package / compare 脚本自动带上,直接 go build 则没有补丁、悬停仍是框架自带的下划线)。胶囊由补丁让 LinkIcon 对象整枚自画(底色 + 边 + 图标 + 路径文字),链接自己的文字不再另画;所以胶囊里的路径文字不能单独选中复制(右键「复制路径」可以),过长的路径从中间省略(≤380px);没打补丁时退回「图标 + 链接文字」。已知缺口:只在助手正文里生效(用户消息、工具输出里的路径不链接);相对路径只按项目根解析;未测试', 'part'],
+      ['会话里的路径可点', 'path_ref.go:后台探测存在性并缓存;存在的路径在渲染前被改写成 [`路径`](<路径>) 链接(框架自带的 CodeLink 画不了图标),LinkIcon 在代码前画带底色的彩色类型图标(matico 包,取自 Material Icon Theme,MIT,与 BaoCode 同一份),点击打开 / 文件树定位,右键加「在访达中显示」。悬停效果与「无下划线」靠 MyGo 补丁(scripts/mygo-overlay.sh,补丁是 mygo/_patches/*.patch 里的统一 diff,与上游对不上时脚本会报警、package 直接失败;dev / package / compare 脚本自动带上,直接 go build 则没有补丁、悬停仍是框架自带的下划线)。胶囊由补丁让 LinkIcon 对象整枚自画(底色 + 边 + 图标 + 路径文字),链接自己的文字不再另画;所以胶囊里的路径文字不能单独选中复制(右键「复制路径」可以),过长的路径从中间省略(≤380px);没打补丁时退回「图标 + 链接文字」。已知缺口:只在助手正文里生效(用户消息、工具输出里的路径不链接);相对路径只按项目根解析;未测试', 'part'],
       ['读取图片的步骤直接显示图 + 折叠行缩略图', 'imagesOf / stepThumbs:探索组、精简合并行、回合折叠行折叠时,右侧按张显示缩略图,点开灯箱;悬停动作 / 右键「查看图片」不再走原路径;present.go 读图时 hasBody / imgRead,toolBody 走 readImageCard(flow_read_image.go):localImage 后台解码,480×320 内按比例缩放,点击开灯箱;分组里的读图行(groupChild)也默认展开;未测试', 'part'],
       ['代码块标题栏 / 悬停复制', '带语言 = 标题栏 + 悬停才出现的复制钮,纯文本块无标题栏、复制钮浮在右上;圆角 r-lg、内边距 8 / 12;未测试', 'part']
     ].map(([a, b, c]) => `<tr><td><b>${a}</b></td><td class="t2">${b}</td><td>${st(c)}</td></tr>`).join('')}

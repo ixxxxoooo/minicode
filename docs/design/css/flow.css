@@ -120,7 +120,7 @@
 .md pre > .cp { position: absolute; top: 5px; right: 6px; background: var(--bg-sunken); border-radius: var(--r-sm); }
 .md pre code { display: block; padding: 8px 12px; border-radius: 0; background: none; color: var(--tx-1); font: var(--fs-mono)/1.6 var(--font-mono); white-space: pre; overflow-x: auto; }
 /* 表格:1px bd-1 边 + r-sm 圆角,表头底 fill-1 + 粗体,单元格 5px 10px;单元格里的行内代码与正文同一套胶囊(ac-tx 字 + ac 11% 底) */
-.md table { width: 100%; /* 表格撑满正文宽度:比容器窄时多出的宽度按各列宽度比例分给各列(Go 靠 MyGo 补丁 ui-markdown-table.go),比容器宽仍横向滚动 */ border-collapse: separate; border-spacing: 0; margin: 0 0 8px; border-radius: var(--r-sm); box-shadow: 0 0 0 1px var(--bd-1); overflow: hidden; }
+.md table { width: 100%; /* 表格撑满正文宽度:比容器窄时多出的宽度按各列宽度比例分给各列(Go 靠 MyGo 补丁 ui-markdown-table.patch),比容器宽仍横向滚动 */ border-collapse: separate; border-spacing: 0; margin: 0 0 8px; border-radius: var(--r-sm); box-shadow: 0 0 0 1px var(--bd-1); overflow: hidden; }
 .md th, .md td { padding: 5px 10px; text-align: left; box-shadow: inset -1px -1px var(--bd-1); } .md th { background: var(--fill-1); font-weight: var(--fw-strong); }
 .tfoot { display: flex; align-items: center; gap: 2px; color: var(--tx-4); font-size: var(--fs-cap); height: 22px; margin-left: -4px; font-variant-numeric: tabular-nums; }
 .tfoot .meta { margin-left: 6px; display: flex; gap: 6px; align-items: center; }

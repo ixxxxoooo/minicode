@@ -1,0 +1,44 @@
+--- a/ui/markdown/spans.go
++++ b/ui/markdown/spans.go
+@@ -361,8 +361,10 @@
+ 			cs.color = Color{} // the link's
+ 			save := sb.linkIndex
+ 			sb.linkIndex = k
+-			sb.addLinkIcon(n, cs, k)
+-			sb.inlines(k+1, n.Next, cs)
++			chip := sb.addLinkIcon(n, cs, k)
++			if !(chip && strings.HasPrefix(n.Dest, PathLinkMarker)) {
++				sb.inlines(k+1, n.Next, cs)
++			} // MiniCode 补丁:路径链接的 LinkIcon 对象就是整枚胶囊(底色 + 图标 + 路径文字都由它画),链接自己的文字不再另画
+ 			sb.linkIndex = save
+ 		case parser.Image:
+ 			// Images within text show their description; a paragraph of
+@@ -414,9 +416,9 @@
+ // addLinkIcon adds the object Options.LinkIcon makes for link n, the
+ // inline k of its block, in style s. It comes from no source, so that it
+ // copies as nothing.
+-func (sb *spanBuilder) addLinkIcon(n *parser.Inline, s spanStyle, k int) {
++func (sb *spanBuilder) addLinkIcon(n *parser.Inline, s spanStyle, k int) bool {
+ 	if sb.linkIcon == nil || n.Pending {
+-		return
++		return false
+ 	}
+ 	size := sb.th.FontSize
+ 	if s.size != 0 {
+@@ -427,7 +429,7 @@
+ 	}
+ 	o, ok := sb.linkIcon(n.Dest, size)
+ 	if !ok || !(o.Width > 0) {
+-		return
++		return false
+ 	}
+ 	p := sb.p
+ 	p.objects = append(p.objects, mathObject{rune: p.runes, src: n.Start, end: n.Start, draw: o.Draw})
+@@ -440,6 +442,7 @@
+ 	p.marks = append(p.marks, runMark{rune: p.runes, src: n.Start, end: n.Start})
+ 	p.runes++
+ 	sb.addSpan(string(linkIconJoiner), n.Start, n.Start, false, s, k, 1)
++	return true
+ }
+ 
+ // mathObject adds math n, within text of style s, as the object
