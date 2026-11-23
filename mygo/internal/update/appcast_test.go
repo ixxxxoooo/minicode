@@ -38,7 +38,7 @@ func TestPkgFileName(t *testing.T) {
 	for in, want := range map[string]string{
 		"https://github.com/o/r/releases/download/v0.3.0/MiniCode-0.3.0.dmg":     "download.dmg",
 		"https://github.com/o/r/releases/download/v0.3.0/MiniCode-0.3.0.ZIP?x=1": "download.zip",
-		"https://example.com/latest":                                             "download.pkg",
+		"https://example.com/latest": "download.pkg",
 	} {
 		if got := pkgFileName(in); got != want {
 			t.Errorf("pkgFileName(%q) = %q,想要 %q", in, got, want)

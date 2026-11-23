@@ -9,7 +9,7 @@ macOS 原生的 Claude Code 工作台。Go 1.27 + [MyGo](https://mygo.run/zh)(Go
 
 ```sh
 cd mygo && unset GOROOT                       # 每次执行 Go 命令前(残留的 GOROOT 会让工具链对不上)
-gofmt -l . ; go build ./...                   # 日常:能编译即可
+"$(go env GOROOT)/bin/gofmt" -l . ; go build ./...  # 日常:能编译即可。gofmt 必须用工具链自带的(与 CI 同版本):PATH 里的 Homebrew gofmt 是旧版,对齐规则不同,按它改会让 CI 报未格式化
 go vet ./... && go test ./...                 # 集中测试阶段才跑
 scripts/dev.sh [--demo|--real]                # 编译(先 go vet)→ 杀旧实例 → 在 target/dev/MiniCode Dev.app 里启动唯一的新实例
 scripts/package.sh [--dmg]                    # 打包正式版 dist/MiniCode.app(--dmg 另出 dist/MiniCode-<版本>.dmg);版本取 mygo/main.go 的 version(去 -mygo)
