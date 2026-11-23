@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/ixxxxoooo/minicode/internal/cmdtitle"
 	"github.com/ixxxxoooo/minicode/internal/core"
 )
 
@@ -224,7 +225,7 @@ func (a *App) presentTool(tc *core.ToolCall) step {
 		if tc.Name == "Bash" {
 			if d := strings.TrimSpace(inputStr(tc, "description")); d != "" {
 				s.tip, s.obj = s.obj, d
-			} else if ct := cmdTitle(s.obj); ct != "" && ct != s.obj {
+			} else if ct := cmdtitle.Title(s.obj); ct != "" && ct != s.obj {
 				// 没有描述时:从命令里提炼一句短标题(去掉开头的 cd / 变量铺垫,按命令名套规则),完整命令放悬停提示
 				s.tip, s.obj = s.obj, ct
 			}

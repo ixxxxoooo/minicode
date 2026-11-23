@@ -1,4 +1,12 @@
-package app
+// Package cmdtitle 把一条 shell 命令提炼成一句简短的中文步骤标题。纯函数,不依赖界面。
+//
+// Claude 调用 Bash 时不一定写 description(有的会话、有的调用没有),这时步骤行标题退回命令本身,
+// 一长串 cd /private/tmp/... && ls ... 很难读。Title 先去掉开头的 cd / 变量赋值 / export 之类的「铺垫」,
+// 再按第一条真正的命令套规则(查看 / 列出 / 搜索 / Git / 编译 / 测试…);
+// 认不出来的返回清理掉铺垫后的命令本身。完整命令始终在悬停提示、展开的终端卡头部和复制里。
+//
+// @author ixxxxoooo
+package cmdtitle
 
 import (
 	"fmt"
@@ -7,16 +15,9 @@ import (
 	"unicode/utf8"
 )
 
-// @author ixxxxoooo
-
-// Claude 调用 Bash 时不一定写 description(有的会话、有的调用没有),这时步骤行标题退回命令本身,
-// 一长串 cd /private/tmp/... && ls ... 很难读。cmdTitle 从命令里提炼一句简短的中文标题:
-// 先去掉开头的 cd / 变量赋值 / export 之类的「铺垫」,再按第一条真正的命令套规则(查看 / 列出 / 搜索 / Git / 编译 / 测试…)。
-// 认不出来的返回清理掉铺垫后的命令本身。完整命令始终在悬停提示、展开的终端卡头部和复制里。
-
-// cmdTitle 返回命令 cmd 的步骤行标题。参数 cmd 是完整命令(可多行、可 && 串联)。
+// Title 返回命令 cmd 的步骤行标题。参数 cmd 是完整命令(可多行、可 && 串联)。
 // 返回:标题文字,永不为空(cmd 为空才返回空串)。
-func cmdTitle(cmd string) string {
+func Title(cmd string) string {
 	cmd = strings.TrimSpace(cmd)
 	if cmd == "" {
 		return ""

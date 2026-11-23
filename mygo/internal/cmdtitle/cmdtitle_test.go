@@ -1,8 +1,8 @@
-package app
+package cmdtitle
 
 import "testing"
 
-func TestCmdTitle(t *testing.T) {
+func TestTitle(t *testing.T) {
 	cases := map[string]string{
 		"cd /private/tmp/x && ls -la":                "列出目录",
 		"cat internal/gui/open.go | head -60":        "查看 open.go",
@@ -18,8 +18,8 @@ func TestCmdTitle(t *testing.T) {
 		"curl -s https://postman-echo.com/get?name=test -o /dev/null": "请求 postman-echo.com",
 	}
 	for in, want := range cases {
-		if got := cmdTitle(in); got != want {
-			t.Errorf("cmdTitle(%q) = %q, 想要 %q", in, got, want)
+		if got := Title(in); got != want {
+			t.Errorf("Title(%q) = %q, 想要 %q", in, got, want)
 		}
 	}
 }
