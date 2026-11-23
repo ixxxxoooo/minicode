@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/update"
 )
 
@@ -202,6 +203,7 @@ func (a *App) applyUpdateRestart() {
 					log.Warn("开发版重启失败", "err", err)
 					return
 				}
+				diag.CleanExit("开发版更新重启") // 不调就退出,下次启动会把这次更新误记成「异常退出」
 				os.Exit(0)
 			}
 		})
@@ -225,6 +227,7 @@ func (a *App) applyUpdateRestart() {
 				return
 			}
 			log.Info("退出以应用更新")
+			diag.CleanExit("应用更新") // 不调就退出,下次启动会把这次更新误记成「异常退出」
 			os.Exit(0)
 		}
 	})
