@@ -849,7 +849,8 @@ func (a *App) View(c *ui.Context) {
 	defer func() {
 		diag.RecordUIFrame(time.Since(viewStart), gap)
 	}()
-	defer diag.SpanSlow("app", "构建界面", 33*time.Millisecond)()
+	// 慢的时候带上所在页面 / 形态 / 弹层:日志里才看得出是哪个界面慢(原先只有耗时,一周 1362 次无从定位)
+	defer diag.SpanSlow("app", "构建界面", 33*time.Millisecond, "页面", string(a.screen), "形态", a.mode.String(), "弹层", a.popup)()
 	kit.SetViewActive(a.win != nil && a.win.IsFocused())
 	a.autoPersist()
 	// 界面构建中 panic:不能吞(控件树做到一半会错乱),但崩溃前必须把调用栈写进日志与 crashes/,
