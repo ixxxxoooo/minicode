@@ -11,6 +11,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
+	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
 
 // pScmWorktrees 是 worktree 存放位置偏好(与 settings_tabs.go 里的键一致)
@@ -168,5 +169,5 @@ func friendlyWorktreeRmErr(raw string) string {
 	case strings.Contains(m, "is a main working tree"):
 		return "主工作树不能删除"
 	}
-	return friendlyGitErr(raw)
+	return vcs.FriendlyErr(raw)
 }

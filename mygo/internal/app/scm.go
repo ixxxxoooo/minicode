@@ -224,11 +224,11 @@ func (a *App) scmAct(what string, f func(r vcs.Repo) error, onOK ...func()) {
 			}
 			if err != nil {
 				if what == "提交" {
-					a.sc.commitErr = "提交失败:" + friendlyGitErr(err.Error())
+					a.sc.commitErr = "提交失败:" + vcs.FriendlyErr(err.Error())
 				}
 				a.outAppend(outGit, what+"失败:"+err.Error())
 				log.Warn(what+"失败", "err", err)
-				a.toast = what + "失败:" + friendlyGitErr(err.Error())
+				a.toast = what + "失败:" + vcs.FriendlyErr(err.Error())
 				if what == "推送" || what == "同步" || what == "提交并同步" {
 					a.notePushFail(err)
 				}

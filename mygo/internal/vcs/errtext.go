@@ -1,10 +1,10 @@
-package app
+package vcs
 
 import "strings"
 
-// friendlyGitErr 把 git 的英文报错压成一句带「下一步」的中文提示,给 toast / 提交框用。
+// FriendlyErr 把 git 的英文报错压成一句带「下一步」的中文提示,给 toast / 提交框用。
 // 完整原文仍写进输出面板与日志,所以这里只管好读:认不出的取第一行并截断,不再把整段多行英文糊在界面上。
-func friendlyGitErr(raw string) string {
+func FriendlyErr(raw string) string {
 	low := strings.ToLower(raw)
 	has := func(ss ...string) bool {
 		for _, s := range ss {

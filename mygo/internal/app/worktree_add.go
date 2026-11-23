@@ -13,6 +13,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/theme"
+	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
 
 // 设置 → 源代码管理 → Worktree 的「新建」:输入分支名,在存放位置下建 <项目名>-<分支名> 目录。
@@ -68,7 +69,7 @@ func worktreeAdd(repo, base, branch string) (string, error) {
 		args = []string{"worktree", "add", "-b", branch, dir}
 	}
 	if out, err := run(args...); err != nil {
-		return "", fmt.Errorf("%s", friendlyGitErr(string(out)))
+		return "", fmt.Errorf("%s", vcs.FriendlyErr(string(out)))
 	}
 	return dir, nil
 }

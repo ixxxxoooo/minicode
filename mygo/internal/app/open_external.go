@@ -9,6 +9,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/canvas"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/projects"
+	"github.com/ixxxxoooo/minicode/internal/vcs"
 )
 
 // 系统要求用本应用打开文件(访达双击 / 拖到 Dock 图标 / `open -a` / 命令行参数)。
@@ -136,7 +137,7 @@ func (a *App) applyImportedWorkspace(path string, w projects.Workspace, err erro
 	}
 	saved, err := a.registry().SaveWorkspace(w)
 	if err != nil {
-		a.toast = "导入工作区失败:" + friendlyGitErr(err.Error())
+		a.toast = "导入工作区失败:" + vcs.FriendlyErr(err.Error())
 		extLog.Warn("保存导入的工作区失败", "err", err)
 		return
 	}
