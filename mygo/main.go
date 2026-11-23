@@ -464,7 +464,10 @@ func main() {
 	// 系统要求用本应用打开文件(访达双击 / 拖到 Dock / open -a):窗口出来前先排队,出来后处理
 	a.HoldExternalOpen(true)
 	mygo.App.OnOpenFile(a.OpenExternalFile)
-	mygo.App.OnQuitCanceled(func() { app.SetQuitting(false) })
+	mygo.App.OnQuitCanceled(func() {
+		app.SetQuitting(false)
+		diag.Rearm("取消退出") // OnBeforeQuit 已经 CleanExit 过:进程继续运行,恢复运行标记
+	})
 	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) {
 		app.SetQuitting(true) // 之后 mygo 会逐个关闭窗口,关闭钩子据此放行
 		a.SaveLayMemToPrefs()

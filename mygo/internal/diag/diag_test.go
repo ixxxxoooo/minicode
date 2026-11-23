@@ -16,6 +16,9 @@ func setup(t *testing.T) string {
 	SetLevel(LevelDebug)
 	openLog(LogPath())
 	ResetStats()
+	markerMu.Lock() // 运行标记的状态是包级的:上一个测试的 CleanExit 不能漏到下一个测试里
+	exitAt, startedAt = time.Time{}, time.Now()
+	markerMu.Unlock()
 	return dir
 }
 
@@ -151,6 +154,56 @@ func TestCleanExitRemovesMarker(t *testing.T) {
 	CleanExit("test")
 	if _, err := os.Stat(markerPath(os.Getpid())); !os.IsNotExist(err) {
 		t.Fatal("标记应被删除")
+	}
+}
+
+func markerExists() bool {
+	_, err := os.Stat(markerPath(os.Getpid()))
+	return err == nil
+}
+
+// 回归:CleanExit 之后心跳曾在 5 秒内把标记写回来,正常退出(收尾稍慢时)下次启动被补记成「异常退出」。
+// 现在宽限期内心跳不写;过了宽限期进程还活着(退出被取消 / 窗口关了进程还在),心跳恢复标记,真崩溃仍能被识别。
+func TestHeartbeatPausedAfterCleanExit(t *testing.T) {
+	setup(t)
+	heartbeatTick(time.Now()) // 正常运行:写标记
+	if !markerExists() {
+		t.Fatal("正常运行时心跳应写标记")
+	}
+	CleanExit("test")
+	markerMu.Lock()
+	at := exitAt
+	markerMu.Unlock()
+	heartbeatTick(at.Add(5 * time.Second))
+	if markerExists() {
+		t.Fatal("正常退出后的宽限期内,心跳不能把标记写回来")
+	}
+	heartbeatTick(at.Add(exitGrace + time.Second))
+	if !markerExists() {
+		t.Fatal("超过宽限期进程仍在运行,心跳应恢复标记")
+	}
+	markerMu.Lock()
+	rearmed := exitAt.IsZero()
+	markerMu.Unlock()
+	if !rearmed {
+		t.Fatal("恢复标记后应回到「正常运行中」")
+	}
+}
+
+func TestRearmAfterCanceledQuit(t *testing.T) {
+	setup(t)
+	Rearm("没有退出过") // 没走过 CleanExit:什么也不做
+	if markerExists() {
+		t.Fatal("没有 CleanExit 时 Rearm 不应写标记")
+	}
+	CleanExit("test")
+	Rearm("取消退出")
+	if !markerExists() {
+		t.Fatal("取消退出后应立即恢复标记")
+	}
+	heartbeatTick(time.Now()) // 已恢复:心跳照常写
+	if !markerExists() {
+		t.Fatal("恢复后心跳应照常刷新标记")
 	}
 }
 

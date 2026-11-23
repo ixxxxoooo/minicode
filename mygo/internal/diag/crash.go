@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -135,6 +136,48 @@ type runMarker struct {
 
 func markerPath(pid int) string { return filepath.Join(RunDir(), fmt.Sprintf("%d.json", pid)) }
 
+// 运行标记的状态。标记的写入(启动 / 心跳 / 恢复)与删除(CleanExit)都在 markerMu 下进行:
+// 否则心跳刚判断完「没在退出」、正要写入时,CleanExit 恰好删掉标记,心跳随即又把它写回来,
+// 正常退出就会在下次启动时被补记成「异常退出」。
+var (
+	markerMu  sync.Mutex
+	startedAt time.Time // 本进程启动时刻(写进标记)
+	exitAt    time.Time // 最近一次 CleanExit 的时刻;零值 = 正常运行中
+)
+
+// exitGrace 是 CleanExit 之后心跳暂停写标记的宽限期。正常退出(收尾、关窗口、关终端)远短于它;
+// 过了宽限期进程还活着,说明其实没有退出(退出被取消、窗口关了但进程留在托盘 / Dock 里),
+// 心跳会恢复标记,之后的真崩溃照样能被识别。
+const exitGrace = 30 * time.Second
+
+// heartbeatTick 是心跳的一拍:正常运行时刷新标记;刚走过 CleanExit 时不写(免得把正常退出写成异常);
+// CleanExit 之后超过宽限期仍在运行,则恢复标记并记一条告警。
+func heartbeatTick(now time.Time) {
+	markerMu.Lock()
+	defer markerMu.Unlock()
+	if !exitAt.IsZero() {
+		if now.Sub(exitAt) < exitGrace {
+			return
+		}
+		write(LevelWarn, "diag", "正常退出之后进程仍在运行,恢复运行标记", []any{"距离正常退出", now.Sub(exitAt).Round(time.Second)})
+		exitAt = time.Time{}
+	}
+	writeMarker(startedAt)
+}
+
+// Rearm 撤销此前的 CleanExit(例如用户取消了退出):立刻恢复运行标记,之后的异常退出照常被识别。
+// 没有走过 CleanExit 时什么也不做。
+func Rearm(reason string) {
+	markerMu.Lock()
+	defer markerMu.Unlock()
+	if exitAt.IsZero() {
+		return
+	}
+	exitAt = time.Time{}
+	writeMarker(startedAt)
+	write(LevelInfo, "diag", "撤销正常退出标记", []any{"原因", reason})
+}
+
 func writeMarker(started time.Time) {
 	m := runMarker{PID: os.Getpid(), Started: started.Format(time.RFC3339), Heartbeat: time.Now().Format(time.RFC3339), Version: meta.Version, Mode: meta.Mode}
 	data, _ := json.Marshal(m)
@@ -179,11 +222,14 @@ func ScanStale() int {
 }
 
 // CleanExit 标记正常退出:删除运行标记。所有退出路径(⌘Q、托盘退出、更新重启、切换模式)必须在退出前调用,
-// 否则下次启动会被误判为崩溃。
+// 否则下次启动会被误判为崩溃。之后 exitGrace 内心跳不会把标记写回来;退出若被取消,调用 Rearm。
 func CleanExit(reason string) {
 	write(LevelInfo, "diag", "正常退出", []any{"原因", reason})
 	for _, l := range SummaryLines() {
 		write(LevelDebug, "perf", l, nil)
 	}
+	markerMu.Lock()
+	exitAt = time.Now()
 	_ = os.Remove(markerPath(os.Getpid()))
+	markerMu.Unlock()
 }

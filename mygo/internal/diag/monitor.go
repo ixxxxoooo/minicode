@@ -46,22 +46,25 @@ func Init(o Options) {
 	if n := ScanStale(); n > 0 {
 		write(LevelWarn, "diag", "补记了异常退出记录", []any{"条数", n, "目录", CrashDir()})
 	}
+	markerMu.Lock()
+	startedAt = started
 	writeMarker(started)
+	markerMu.Unlock()
 	if os.Getenv("MINI_KEEP_STDERR") == "" { // 命令行工具(截图)设它,崩溃信息直接打在终端上
 		captureStderr()
 	}
-	go heartbeatLoop(started)
+	go heartbeatLoop()
 	StartSampler()
 	StartTrendSampler()
 	StartProctreeSampler()
 }
 
-// heartbeatLoop 每 5 秒刷新运行标记的心跳时间。
-func heartbeatLoop(started time.Time) {
+// heartbeatLoop 每 5 秒刷新运行标记的心跳时间(刚走过 CleanExit 时暂停,见 heartbeatTick)。
+func heartbeatLoop() {
 	defer Recover("diag.heartbeat")
 	for {
 		time.Sleep(5 * time.Second)
-		writeMarker(started)
+		heartbeatTick(time.Now())
 	}
 }
 
