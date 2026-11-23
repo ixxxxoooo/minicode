@@ -62,7 +62,9 @@ func (a *App) acctRefresh(force bool) {
 			}
 			a.acctApplyProfile(p)
 			a.usageRefreshLimits(false)
-			a.acctApplyUsage()
+			if strings.HasPrefix(a.popup, "acct@") { // 弹层没开就不取用量(打开时会自己取)
+				a.acctApplyUsage()
+			}
 		}
 	})
 }

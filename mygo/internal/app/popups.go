@@ -233,8 +233,12 @@ func trimZero(f float64) string {
 
 func (a *App) acctPopup(c *ui.Context, which string, anchor ui.Element) {
 	t := a.tk
-	a.acctRefresh(false)
-	a.acctApplyUsage() // 用量扫描比资料读取晚完成,每次打开都按最新扫描结果取本月费用(有缓存,开销小)
+	a.acctRefresh(false) // 只在第一次真正读资料,之后立即返回
+	// 本函数每帧都会被调用(按钮与弹层一起构建,popOpen 决定画不画):只在弹层开着 / 正在收起时取用量。
+	// 原先每帧都取,等于「一直有人在看用量」,后台用量扫描永远不会空闲。
+	if key := "acct@" + which; a.popup == key || a.popClosing == key {
+		a.acctApplyUsage() // 用量扫描比资料读取晚完成,开着时按最新扫描结果取本月费用(有缓存,开销小)
+	}
 	a.popOpen("acct@"+which, func(open *bool) {
 		ui.PopoverBase(c, anchor, open, func(panel ui.Element) {
 			a.popPanel(panel, 252).Padding(0).Clip().AttachTo(anchor, ui.AnchorTopLeft, ui.AnchorBottomLeft).Margin(0, 0, 6, 0)
