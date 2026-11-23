@@ -433,7 +433,10 @@ func (a *App) onUsageEvent(u core.Usage) {
 		a.ctxCompacting = false
 	}
 	a.usageLimitsFromSession()
-	if a.acct.profileReady || a.popup != "" && strings.HasPrefix(a.popup, "acct@") {
+	// 只在账号弹层开着时同步刷新:弹层每次打开都会自己 acctApplyUsage(popups.go)。
+	// 原先只要读过账号资料,每个用量事件都去读一次用量数据源,等于「一直有人在看用量」,
+	// 后台的用量扫描因此永远不会进入空闲。
+	if strings.HasPrefix(a.popup, "acct@") {
 		a.acctApplyUsage()
 	}
 }
