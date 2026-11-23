@@ -84,6 +84,17 @@ type Translator struct {
 	IDGen int
 	// liveTasks:本进程见过、还没收到终态通知的后台任务。历史里遗留的任务不在其中,无法再停止。
 	liveTasks map[string]bool
+
+	// Clock 可注入的时钟,为空用 time.Now。只有测试(回放快照要可复现)会设它。
+	Clock func() time.Time
+}
+
+// now 当前时间;翻译器里所有「取现在时刻」都走这里。
+func (t *Translator) now() time.Time {
+	if t.Clock != nil {
+		return t.Clock()
+	}
+	return time.Now()
 }
 
 // NewTranslator 创建实时翻译器。
@@ -328,7 +339,7 @@ func (t *Translator) taskFrom(v obj) *core.BackgroundTask {
 	if r := []rune(line); len(r) > 120 {
 		line = string(r[:120])
 	}
-	task := core.NewBackgroundTask(time.Now().UnixMilli(), str(v, "task_id"), kind, line)
+	task := core.NewBackgroundTask(t.now().UnixMilli(), str(v, "task_id"), kind, line)
 	task.ToolUseID = toolUse
 	task.RunID = str(v, "run_id")
 	if p, ok := num(v, "pid"); ok {
@@ -517,7 +528,7 @@ func (t *Translator) toolUse(block obj, parent string) []core.Event {
 	input := sub(block, "input")
 	info := &toolInfo{name: name, input: input, parent: parent}
 	if !t.replay {
-		info.started = time.Now()
+		info.started = t.now()
 	}
 	t.tools[id] = info
 	switch name {
@@ -723,7 +734,7 @@ func (t *Translator) toolResult(block, tur obj, parent string) []core.Event {
 		patch.Status = core.Status(core.ToolCompleted)
 	}
 	if !info.started.IsZero() {
-		patch.DurationMs = time.Since(info.started).Milliseconds()
+		patch.DurationMs = t.now().Sub(info.started).Milliseconds()
 	}
 	if parent == "" {
 		parent = info.parent
@@ -943,10 +954,10 @@ func (t *Translator) rateLimit(v obj) []core.Event {
 		return nil
 	}
 	if p := pct("five_hour"); p != nil {
-		t.usage.FiveHourPct, t.usage.LimitsAt = p, time.Now().Unix()
+		t.usage.FiveHourPct, t.usage.LimitsAt = p, t.now().Unix()
 	}
 	if p := pct("seven_day"); p != nil {
-		t.usage.WeeklyPct, t.usage.LimitsAt = p, time.Now().Unix()
+		t.usage.WeeklyPct, t.usage.LimitsAt = p, t.now().Unix()
 	}
 	out := []core.Event{core.EvUsage{Usage: t.usage}}
 	status := str(info, "status")
@@ -1127,7 +1138,7 @@ func (t *Translator) AccountUsage(body obj, ok bool) core.Event {
 		if weekly != nil {
 			t.usage.WeeklyPct = weekly
 		}
-		t.usage.LimitsState, t.usage.LimitsAt = core.LimitsIdle, time.Now().Unix()
+		t.usage.LimitsState, t.usage.LimitsAt = core.LimitsIdle, t.now().Unix()
 	} else {
 		t.usage.LimitsState = core.LimitsUnavailable
 	}
