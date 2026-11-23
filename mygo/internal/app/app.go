@@ -4,6 +4,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -1253,8 +1254,11 @@ func runCtxLegacy(ctx context.Context, it automation.Automation, dir string, run
 	}
 	ch := make(chan res, 1)
 	go func() {
-		o, e := run(it, dir)
-		ch <- res{o, e}
+		var r res
+		// 注入的运行器 panic 时也要回一个结果,否则外面只能干等到 ctx 结束。
+		defer diag.RecoverWith("app.autorun", func(v any) { ch <- res{err: fmt.Errorf("自动化运行器崩溃:%v", v)} })
+		r.out, r.err = run(it, dir)
+		ch <- r
 	}()
 	select {
 	case <-ctx.Done():

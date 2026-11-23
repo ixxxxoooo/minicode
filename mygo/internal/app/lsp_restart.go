@@ -3,8 +3,6 @@ package app
 import (
 	"fmt"
 	"time"
-
-	"github.com/ixxxxoooo/minicode/internal/diag"
 )
 
 // lspOnCrash 语言服务器进程退出后的自动重启(指数退避,最多 3 次)。
@@ -29,13 +27,7 @@ func (a *App) lspOnCrash(key string, s *lspSess) {
 			if hub.sess[key] != s {
 				return
 			}
-			if s.c != nil && s.cmd != nil && s.cmd.Process != nil {
-				go func() {
-					defer diag.Recover("lsp.kill")
-					s.c.Shutdown()
-					_ = s.cmd.Process.Kill()
-				}()
-			}
+			lspStop(s.c, s.cmd) // 先取值再置 nil:goroutine 里不再回头读 s.c / s.cmd
 			s.c, s.cmd = nil, nil
 			s.state = lspStarting
 			a.lspStart(key, s)

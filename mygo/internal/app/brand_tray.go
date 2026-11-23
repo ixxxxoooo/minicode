@@ -416,6 +416,7 @@ func (a *App) scheduleTrayAnim() {
 	}
 	a.brand.animStop = make(chan struct{})
 	go func(stop <-chan struct{}) {
+		defer diag.Recover("app.trayanim")
 		tick := time.NewTicker(180 * time.Millisecond)
 		defer tick.Stop()
 		for {

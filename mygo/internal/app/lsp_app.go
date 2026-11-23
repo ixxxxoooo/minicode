@@ -124,19 +124,26 @@ func (a *App) drainUI() {
 // lspOn 当前能不能用语言服务:真实项目 + 偏好开着。
 func (a *App) lspOn() bool { return a.proj != "" && a.prefs.Bool("editor.lsp", true) }
 
+// lspStop 在后台优雅关闭一台语言服务器并确保进程被杀(Shutdown 可能卡住,所以不在界面线程做)。
+// 调用方必须把 c / cmd 当场取出再传进来:不能让 goroutine 回头读 s.c / s.cmd,
+// 否则调用方随后把它们置 nil 就是数据竞争,旧进程还可能漏杀。c 为 nil 时什么都不做。
+func lspStop(c *lsp.Client, cmd *exec.Cmd) {
+	if c == nil {
+		return
+	}
+	go func() {
+		defer diag.Recover("lsp.stop")
+		c.Shutdown()
+		if cmd != nil && cmd.Process != nil {
+			_ = cmd.Process.Kill()
+		}
+	}()
+}
+
 // lspReset 项目切换 / 退出时结束所有服务器。
 func (a *App) lspReset() {
 	for _, s := range a.lspH.sess {
-		s := s
-		if s.c != nil {
-			go func() {
-				defer diag.Recover("lsp.shutdown")
-				s.c.Shutdown()
-				if s.cmd != nil && s.cmd.Process != nil {
-					_ = s.cmd.Process.Kill()
-				}
-			}()
-		}
+		lspStop(s.c, s.cmd)
 	}
 	a.lspH = lspHub{}
 }
@@ -213,9 +220,7 @@ func (a *App) lspStart(key string, s *lspSess) {
 		end()
 		return func() {
 			if hub.sess[key] != s { // 期间项目换了:这个服务器作废
-				if c != nil {
-					go func() { c.Shutdown(); _ = cmd.Process.Kill() }()
-				}
+				lspStop(c, cmd)
 				return
 			}
 			if err != nil {
@@ -227,6 +232,7 @@ func (a *App) lspStart(key string, s *lspSess) {
 			s.c, s.cmd, s.state = c, cmd, lspReady
 			a.outAppend(outLSP, s.spec.Name+" 已启动("+s.root+")")
 			go func() { // 服务器退出:自动重启(带退避)
+				defer diag.Recover("lsp.watch")
 				<-c.Done()
 				a.onUI(func() {
 					if hub.sess[key] == s {
@@ -246,9 +252,7 @@ func (a *App) lspRetry(s *lspSess) {
 		}
 	}
 	delete(a.lspH.noted, s.spec.ID)
-	if s.c != nil {
-		go func() { s.c.Shutdown(); _ = s.cmd.Process.Kill() }()
-	}
+	lspStop(s.c, s.cmd)
 	a.redraw()
 }
 
