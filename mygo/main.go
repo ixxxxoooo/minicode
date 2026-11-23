@@ -149,9 +149,10 @@ func (r *realSetup) open(id string) backend.Backend {
 const usageIdle = 2 * time.Minute
 
 // startUsage 后台统计用量,返回给用量页读的数据源。
-// 启动时扫一次(打开用量页 / 账号弹层时立刻有数据);之后只在最近 usageIdle 内有人看时每分钟增量重扫,
-// 看的时候数据旧于一分钟就立即补扫一次(不阻塞界面)。窗口在后台时不构建界面,自然也不会触发。
-// 原先不论有没有人看都每分钟扫一次,进行中的长会话文件(可达几十 MB)每次都整份重读。
+// 启动时不扫:第一次打开用量页 / 账号弹层时才在后台首扫(整读全部会话文件,本机约 640MB、1 秒多;
+// 开发版一天重启几十次,原先每次启动都整读一遍),期间用量页显示「正在统计会话记录…」骨架。
+// 之后只在最近 usageIdle 内有人看时每分钟增量重扫,看的时候数据旧于一分钟就立即补扫一次(不阻塞界面)。
+// 窗口在后台时不构建界面,自然也不会触发。原先不论有没有人看都每分钟扫一次,长会话文件每次整份重读。
 func startUsage(rs *realSetup, win *mygo.Window) func(rng int) core.UsageReport {
 	var sc claude.UsageScanner
 	var recs atomic.Pointer[[]claude.UsageRec]
@@ -181,8 +182,7 @@ func startUsage(rs *realSetup, win *mygo.Window) func(rng int) core.UsageReport 
 	}
 	go func() {
 		defer diag.Recover("用量统计")
-		scan()
-		tick := time.NewTicker(time.Minute)
+		tick := time.NewTicker(time.Minute) // 首扫由第一次读数据源时的 kick 触发(lastScan 为 0 = 过期)
 		defer tick.Stop()
 		for {
 			select {
