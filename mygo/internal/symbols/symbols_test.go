@@ -1,4 +1,4 @@
-package app
+package symbols
 
 import "testing"
 
@@ -25,8 +25,8 @@ fn normalize(path: &str) -> String {
 `
 
 func TestParseSymbolsRust(t *testing.T) {
-	ss := parseSymbols("src/router.rs", rustSrc)
-	names := map[string]symbol{}
+	ss := Parse("src/router.rs", rustSrc)
+	names := map[string]Symbol{}
 	for _, s := range ss {
 		names[s.Name] = s
 	}
@@ -42,7 +42,7 @@ func TestParseSymbolsRust(t *testing.T) {
 	if ss[m.Parent].Name != "impl Router" {
 		t.Errorf("match_path 的外层应是 impl Router,得到 %q", ss[m.Parent].Name)
 	}
-	chain := enclosing(ss, 13)
+	chain := Enclosing(ss, 13)
 	if len(chain) != 2 || ss[chain[0]].Name != "impl Router" || ss[chain[1]].Name != "match_path" {
 		t.Errorf("第 13 行的符号链不对:%v", chain)
 	}
@@ -52,26 +52,26 @@ func TestParseSymbolsRust(t *testing.T) {
 }
 
 func TestParseSymbolsOthers(t *testing.T) {
-	py := parseSymbols("a.py", "class A:\n    def f(self):\n        pass\n\ndef g():\n    pass\n")
+	py := Parse("a.py", "class A:\n    def f(self):\n        pass\n\ndef g():\n    pass\n")
 	if len(py) != 3 || py[1].Parent != 0 || py[0].End != 2 || py[2].Parent != -1 {
 		t.Errorf("python 符号不对:%+v", py)
 	}
-	md := parseSymbols("a.md", "# 一\n正文\n## 二\n文\n# 三\n")
+	md := Parse("a.md", "# 一\n正文\n## 二\n文\n# 三\n")
 	if len(md) != 3 || md[0].End != 3 || md[1].Parent != 0 {
 		t.Errorf("markdown 符号不对:%+v", md)
 	}
-	g := parseSymbols("a.go", "package a\n\ntype T struct {\n\tx int\n}\n\nfunc (t T) M() {\n}\n")
+	g := Parse("a.go", "package a\n\ntype T struct {\n\tx int\n}\n\nfunc (t T) M() {\n}\n")
 	if len(g) != 2 || g[0].Kind != "struct" || g[1].Name != "M" {
 		t.Errorf("go 符号不对:%+v", g)
 	}
 }
 
 func TestWordHelpers(t *testing.T) {
-	w, a, b := wordAt("    let key = normalize(path);", 17)
+	w, a, b := WordAt("    let key = normalize(path);", 17)
 	if w != "normalize" || a != 14 || b != 23 {
 		t.Errorf("wordAt = %q %d %d", w, a, b)
 	}
-	if got := wordHits("normalize(a) + my_normalize(b) + normalize(c)", "normalize"); len(got) != 2 || got[0] != 0 {
+	if got := WordHits("normalize(a) + my_normalize(b) + normalize(c)", "normalize"); len(got) != 2 || got[0] != 0 {
 		t.Errorf("wordHits 应只命中整词:%v", got)
 	}
 }

@@ -1,4 +1,7 @@
-package app
+// Package symbols 是符号索引:没有接语言服务器时,用「按行的正则 + 括号 / 缩进配对」从源码里取出
+// 函数、类型、实现块等声明。它支撑大纲、面包屑、粘性滚动、转到定义、引用、悬停、补全、重命名;
+// 精度比 LSP 低(不懂作用域与类型),界面上不假装是语言服务器。纯函数,不依赖界面。
+package symbols
 
 import (
 	"path"
@@ -6,12 +9,8 @@ import (
 	"strings"
 )
 
-// 符号索引:没有接语言服务器时,用「按行的正则 + 括号 / 缩进配对」从源码里取出
-// 函数、类型、实现块等声明。它支撑大纲、面包屑、粘性滚动、转到定义、引用、悬停、补全、重命名;
-// 精度比 LSP 低(不懂作用域与类型),界面上不假装是语言服务器。
-
-// symbol 是一处声明。
-type symbol struct {
+// Symbol 是一处声明。
+type Symbol struct {
 	Name   string
 	Kind   string // fn / struct / enum / trait / impl / mod / type / const / class / h(标题)
 	Line   int    // 声明所在行(0 起)
@@ -31,12 +30,13 @@ var (
 	reTS      = regexp.MustCompile(`^\s*(?:export\s+)?(?:default\s+)?(?:async\s+)?(function|class|interface|enum|type)\s+(\w+)`)
 	reTSConst = regexp.MustCompile(`^\s*(?:export\s+)?const\s+(\w+)\s*=\s*(?:async\s*)?(?:\([^)]*\)|\w+)\s*=>`)
 	rePy      = regexp.MustCompile(`^(\s*)(def|class)\s+(\w+)`)
-	reMd      = regexp.MustCompile(`^(#{1,6})\s+(.+?)\s*#*$`)
-	reToml    = regexp.MustCompile(`^\[+([^\]]+)\]+`)
+	// MarkdownHeading 匹配 Markdown 标题行(# 一级到 ###### 六级);大纲与 Markdown 导航共用。
+	MarkdownHeading = regexp.MustCompile(`^(#{1,6})\s+(.+?)\s*#*$`)
+	reToml          = regexp.MustCompile(`^\[+([^\]]+)\]+`)
 )
 
-// symbolLang 按扩展名决定用哪套规则("" = 不支持)。
-func symbolLang(p string) string {
+// Lang 按扩展名决定用哪套规则("" = 不支持)。
+func Lang(p string) string {
 	switch strings.ToLower(path.Ext(p)) {
 	case ".rs":
 		return "rust"
@@ -54,16 +54,16 @@ func symbolLang(p string) string {
 	return ""
 }
 
-// parseSymbols 取出一份源码里的全部声明(按出现顺序),并算出每个声明块的结束行与外层关系。
-func parseSymbols(p, src string) []symbol {
-	lang := symbolLang(p)
+// Parse 取出一份源码里的全部声明(按出现顺序),并算出每个声明块的结束行与外层关系。
+func Parse(p, src string) []Symbol {
+	lang := Lang(p)
 	if lang == "" {
 		return nil
 	}
 	lines := strings.Split(src, "\n")
-	var out []symbol
+	var out []Symbol
 	add := func(name, kind string, line, col int) {
-		out = append(out, symbol{Name: name, Kind: kind, Line: line, Col: col, End: line, Parent: -1,
+		out = append(out, Symbol{Name: name, Kind: kind, Line: line, Col: col, End: line, Parent: -1,
 			Detail: strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(lines[line]), "{"))})
 	}
 	for i, ln := range lines {
@@ -103,7 +103,7 @@ func parseSymbols(p, src string) []symbol {
 				add(ln[m[6]:m[7]], k, i, m[6])
 			}
 		case "md":
-			if m := reMd.FindStringSubmatchIndex(ln); m != nil {
+			if m := MarkdownHeading.FindStringSubmatchIndex(ln); m != nil {
 				add(ln[m[4]:m[5]], "h", i, m[4])
 				out[len(out)-1].Detail = ln[m[2]:m[3]] // 标题级别(#、## …)
 			}
@@ -194,13 +194,13 @@ func braceEnd(lines []string, start int) int {
 
 // pyEnd 按缩进找 Python 块的结束行。
 func pyEnd(lines []string, start int) int {
-	ind := indentOf(lines[start])
+	ind := IndentOf(lines[start])
 	end := start
 	for i := start + 1; i < len(lines); i++ {
 		if strings.TrimSpace(lines[i]) == "" {
 			continue
 		}
-		if indentOf(lines[i]) <= ind {
+		if IndentOf(lines[i]) <= ind {
 			break
 		}
 		end = i
@@ -208,7 +208,8 @@ func pyEnd(lines []string, start int) int {
 	return end
 }
 
-func indentOf(s string) int {
+// IndentOf 返回行首缩进宽度:空格算 1,制表符算 4,遇到第一个非空白字符停。
+func IndentOf(s string) int {
 	n := 0
 	for _, r := range s {
 		switch r {
@@ -223,8 +224,8 @@ func indentOf(s string) int {
 	return n
 }
 
-// enclosing 返回包住第 line 行的符号链(从外到内的下标)。
-func enclosing(syms []symbol, line int) []int {
+// Enclosing 返回包住第 line 行的符号链(从外到内的下标)。
+func Enclosing(syms []Symbol, line int) []int {
 	best := -1
 	for i, s := range syms {
 		if s.Line <= line && line <= s.End && s.Kind != "const" {
@@ -242,12 +243,12 @@ func enclosing(syms []symbol, line int) []int {
 
 // ───────── 单词 ─────────
 
-func isWordByte(b byte) bool {
+func IsWordByte(b byte) bool {
 	return b == '_' || b >= '0' && b <= '9' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= 0x80
 }
 
-// wordAt 返回 s 里第 col 列(字节)所在的单词及其起止;不在单词上返回空。
-func wordAt(s string, col int) (string, int, int) {
+// WordAt 返回 s 里第 col 列(字节)所在的单词及其起止;不在单词上返回空。
+func WordAt(s string, col int) (string, int, int) {
 	if col > len(s) {
 		col = len(s)
 	}
@@ -255,10 +256,10 @@ func wordAt(s string, col int) (string, int, int) {
 		return "", 0, 0
 	}
 	a, b := col, col
-	for a > 0 && isWordByte(s[a-1]) {
+	for a > 0 && IsWordByte(s[a-1]) {
 		a--
 	}
-	for b < len(s) && isWordByte(s[b]) {
+	for b < len(s) && IsWordByte(s[b]) {
 		b++
 	}
 	if a == b {
@@ -267,8 +268,8 @@ func wordAt(s string, col int) (string, int, int) {
 	return s[a:b], a, b
 }
 
-// wordHits 返回 word 作为整词在 s 里的全部起始列。
-func wordHits(s, word string) []int {
+// WordHits 返回 word 作为整词在 s 里的全部起始列。
+func WordHits(s, word string) []int {
 	if word == "" {
 		return nil
 	}
@@ -280,15 +281,15 @@ func wordHits(s, word string) []int {
 		}
 		i += from
 		end := i + len(word)
-		if (i == 0 || !isWordByte(s[i-1])) && (end >= len(s) || !isWordByte(s[end])) {
+		if (i == 0 || !IsWordByte(s[i-1])) && (end >= len(s) || !IsWordByte(s[end])) {
 			out = append(out, i)
 		}
 		from = end
 	}
 }
 
-// isKeyword 判断是不是各语言的关键字(悬停 / 引用 / 重命名不处理它们)。
-func isKeyword(w string) bool { return keywordSet[w] }
+// IsKeyword 判断是不是各语言的关键字(悬停 / 引用 / 重命名不处理它们)。
+func IsKeyword(w string) bool { return keywordSet[w] }
 
 var keywordSet = func() map[string]bool {
 	m := map[string]bool{}
