@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ixxxxoooo/minicode/internal/diag"
+	"github.com/ixxxxoooo/minicode/internal/macos"
 )
 
 // appBundlePath 当前进程所在的 .app 包路径;不是从 .app 里启动(go run / 测试)返回空。
@@ -75,7 +76,7 @@ func (a *App) syncFinderIcon(dark bool) {
 	}
 	a.bg("finder-icon", func() func() {
 		defer diag.SpanSlow("brand", "更换访达图标", 2*time.Second)()
-		ok := setFinderIcon(bundle, png)
+		ok := macos.SetFinderIcon(bundle, png)
 		if ok {
 			// 碰一下包目录的修改时间,提醒访达与启动台重新读取图标(系统的图标缓存有时不会立刻刷新)
 			now := time.Now()

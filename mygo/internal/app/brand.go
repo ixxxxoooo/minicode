@@ -11,6 +11,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/diag"
+	"github.com/ixxxxoooo/minicode/internal/macos"
 )
 
 var brandLog = diag.L("brand")
@@ -194,7 +195,7 @@ func (a *App) syncTray(dark bool) {
 		tr.OnAppearanceChange(func() { a.refreshTrayIcon() })
 		if a11y != a.brand.lastA11y {
 			a.brand.lastA11y = a11y
-			postA11yAnnouncement(a11y)
+			macos.PostAnnouncement(a11y)
 		}
 		brandLog.Info("菜单栏图标已创建", "style", appStyles[a.trayStyleIndex()], "click", map[bool]string{true: "弹出菜单", false: "打开窗口"}[clickMenu])
 		a.reconcileTrayAnim(sum)
@@ -212,7 +213,7 @@ func (a *App) syncTray(dark bool) {
 	a.reconcileTrayAnim(sum)
 	if a11y != a.brand.lastA11y {
 		a.brand.lastA11y = a11y
-		postA11yAnnouncement(a11y)
+		macos.PostAnnouncement(a11y)
 	}
 }
 

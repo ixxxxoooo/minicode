@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo"
+	"github.com/ixxxxoooo/minicode/internal/macos"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
@@ -21,7 +22,7 @@ func (a *App) dockIconSuffix(dark bool) (suffix string, isDark bool) {
 		dark = false
 	}
 	suffix = map[bool]string{true: "-dark", false: ""}[dark]
-	reduced := a11yReduceTransparency() || a11yIncreaseContrast() // 透明 / 着色在这两种无障碍设置下退回实色
+	reduced := macos.ReduceTransparency() || macos.IncreaseContrast() // 透明 / 着色在这两种无障碍设置下退回实色
 	switch {
 	case mode == 3 && !reduced:
 		suffix = "-clear"
@@ -101,7 +102,7 @@ func (a *App) dockIconData(dark bool) []byte {
 			continue
 		}
 		if strings.HasSuffix(p, ".icns") {
-			if png, ok := loadIcnsAsPNG(p); ok {
+			if png, ok := macos.LoadIcnsAsPNG(p); ok {
 				return png
 			}
 			continue

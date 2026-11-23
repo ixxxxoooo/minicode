@@ -1,6 +1,6 @@
 //go:build darwin && cgo
 
-package app
+package macos
 
 /*
 #cgo darwin CFLAGS: -x objective-c -fobjc-arc
@@ -51,7 +51,8 @@ import (
 	"unsafe"
 )
 
-func loadIcnsAsPNG(path string) ([]byte, bool) {
+// LoadIcnsAsPNG 把 .icns 文件渲染成 512px 的 PNG 字节;读不出来返回 false。
+func LoadIcnsAsPNG(path string) ([]byte, bool) {
 	cpath := C.CString(path)
 	defer C.free(unsafe.Pointer(cpath))
 	var out *C.uchar
@@ -71,8 +72,8 @@ func loadIcnsAsPNG(path string) ([]byte, bool) {
 	return b, true
 }
 
-// setFinderIcon 设置(png 非空)或清除(png 为空)path 在访达里的图标。
-func setFinderIcon(path string, png []byte) bool {
+// SetFinderIcon 设置(png 非空)或清除(png 为空)path 在访达里的图标。
+func SetFinderIcon(path string, png []byte) bool {
 	cpath := C.CString(path)
 	defer C.free(unsafe.Pointer(cpath))
 	if len(png) == 0 {

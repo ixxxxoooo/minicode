@@ -1,6 +1,6 @@
 //go:build darwin && cgo
 
-package app
+package macos
 
 /*
 #cgo darwin LDFLAGS: -framework Cocoa
@@ -12,4 +12,5 @@ static int isDark(void) {
 */
 import "C"
 
-func systemIsDark() bool { return C.isDark() != 0 }
+// SystemIsDark 系统当前是否是深色外观。
+func SystemIsDark() bool { return C.isDark() != 0 }

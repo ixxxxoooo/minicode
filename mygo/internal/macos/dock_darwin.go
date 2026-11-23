@@ -1,6 +1,6 @@
 //go:build darwin && cgo
 
-package app
+package macos
 
 /*
 #cgo darwin CFLAGS: -x objective-c -fobjc-arc
@@ -47,7 +47,8 @@ static void dockSetProgress(double frac) {
 */
 import "C"
 
-func dockRequestAttention(critical bool) int {
+// DockRequestAttention 让 Dock 图标弹跳(critical 为 true 则持续弹跳到被激活),返回请求 id,0 表示没发出。
+func DockRequestAttention(critical bool) int {
 	crit := 0
 	if critical {
 		crit = 1
@@ -55,12 +56,14 @@ func dockRequestAttention(critical bool) int {
 	return int(C.dockAttention(C.int(crit)))
 }
 
-func dockCancelAttention(id int) {
+// DockCancelAttention 取消 DockRequestAttention 发出的弹跳。
+func DockCancelAttention(id int) {
 	if id > 0 {
 		C.dockCancelAttention(C.int(id))
 	}
 }
 
-func dockSetProgress(frac float64) {
+// DockSetProgress 在 Dock 图标下方画进度条(frac 取 0~1 之外则清除)。
+func DockSetProgress(frac float64) {
 	C.dockSetProgress(C.double(frac))
 }

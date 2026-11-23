@@ -26,6 +26,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/lsp"
+	"github.com/ixxxxoooo/minicode/internal/macos"
 	"github.com/ixxxxoooo/minicode/internal/prefs"
 	"github.com/ixxxxoooo/minicode/internal/projects"
 	"github.com/ixxxxoooo/minicode/internal/sessmeta"
@@ -480,7 +481,7 @@ func (a *App) retheme() {
 	a.hlKey, a.refHlKey, a.mdCodeKey = "", "", ""
 	// 系统「降低透明度」/「增强对比度」:流光的染色 / 深度 / 高光 / 半透明卡片换成不透明色(见 Tokens.Tone);
 	// 玻璃插件自己会退成不透明表面。取值在换主题时刷新,运行中改系统设置要等下次换主题或重启。
-	a.tk.ReduceTransp = a11yReduceTransparency() || a11yIncreaseContrast()
+	a.tk.ReduceTransp = macos.ReduceTransparency() || macos.IncreaseContrast()
 	kit.Use(a.tk)
 	a.syncTermColors()
 	a.md = nil

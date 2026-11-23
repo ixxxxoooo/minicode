@@ -7,6 +7,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/macos"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
 
@@ -217,7 +218,7 @@ func (a *App) brandLivePreview(c *ui.Context) {
 		if a.prefs != nil && !a.prefs.Bool(pTrayDyn, true) {
 			ui.Text(c, "「随会话状态变化」已关闭:菜单栏里实际始终显示空闲图标,上面是各状态本来的样子。").FontSize(theme.FsCap).TextColor(t.Warn)
 		}
-		if kit.SystemReduceMotion() || a11yReduceMotion() {
+		if kit.SystemReduceMotion() || macos.ReduceMotion() {
 			ui.Text(c, "系统开启了「减弱动态效果」:预览与菜单栏都停在静态图。").FontSize(theme.FsCap).TextColor(t.Tx3)
 		}
 	})

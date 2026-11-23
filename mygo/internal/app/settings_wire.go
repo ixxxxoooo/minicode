@@ -12,6 +12,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/claude"
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/diag"
+	"github.com/ixxxxoooo/minicode/internal/macos"
 	"github.com/ixxxxoooo/minicode/internal/term"
 	"github.com/ixxxxoooo/minicode/internal/theme"
 )
@@ -230,7 +231,7 @@ func (a *App) ApplySystemAppearance() {
 		return
 	}
 	baseID := a.prefs.Str(kTheme, a.pal.ID)
-	sysDark := systemIsDark()
+	sysDark := macos.SystemIsDark()
 	pair := themePairFor(baseID, sysDark)
 	if pair != "" && pair != a.pal.ID {
 		a.pal = theme.Find(pair)

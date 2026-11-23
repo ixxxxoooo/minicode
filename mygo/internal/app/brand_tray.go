@@ -12,6 +12,7 @@ import (
 	"github.com/ixxxxoooo/minicode/internal/core"
 	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
+	"github.com/ixxxxoooo/minicode/internal/macos"
 )
 
 // trayStyleIndex 菜单栏图标样式下标:与应用图标样式是同一个偏好(pAppStyle),越界按默认 0。
@@ -68,7 +69,7 @@ func (a *App) trayAnimStatic() bool {
 	if a.prefs != nil && a.trayAnimMode() == 2 { // 无
 		return true
 	}
-	return a11yReduceMotion() || kit.SystemReduceMotion()
+	return macos.ReduceMotion() || kit.SystemReduceMotion()
 }
 
 // trayBreathK 「呼吸」动画第 frame 帧的不透明度(一个周期 8 帧,在 45%~100% 之间起伏)。
@@ -116,7 +117,7 @@ func (a *App) trayIconData(sum traySum) (data []byte, template bool, err error) 
 
 // trayWantsColor 是否使用彩色徽标:偏好开启,且没有「增强对比度 / 降低透明度」。
 func (a *App) trayWantsColor() bool {
-	return a.prefs != nil && a.prefs.Bool(pTrayColor, true) && !a11yIncreaseContrast() && !a11yReduceTransparency()
+	return a.prefs != nil && a.prefs.Bool(pTrayColor, true) && !macos.IncreaseContrast() && !macos.ReduceTransparency()
 }
 
 // trayMenuBarDark 菜单栏当前是否是深色(随壁纸 / 系统外观变,不等同于应用主题)。
@@ -124,7 +125,7 @@ func (a *App) trayMenuBarDark() bool {
 	if a.brand.tray != nil {
 		return a.brand.tray.Dark()
 	}
-	return systemIsDark()
+	return macos.SystemIsDark()
 }
 
 func (a *App) trayCountTitle(sum traySum) string {
@@ -508,14 +509,14 @@ func (a *App) maybeDockBounce() {
 	if mode == 0 {
 		return
 	}
-	if a11yReduceMotion() || kit.SystemReduceMotion() {
+	if macos.ReduceMotion() || kit.SystemReduceMotion() {
 		return
 	}
 	critical := mode >= 2
 	if a.brand.bounceID > 0 {
-		dockCancelAttention(a.brand.bounceID)
+		macos.DockCancelAttention(a.brand.bounceID)
 	}
-	a.brand.bounceID = dockRequestAttention(critical)
+	a.brand.bounceID = macos.DockRequestAttention(critical)
 }
 
 // trayClip 把菜单里的会话标题截到 n 个字符(按字符,不按字节),过长加省略号,免得托盘菜单被长标题撑得很宽。

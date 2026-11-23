@@ -1,6 +1,6 @@
 //go:build darwin && cgo
 
-package app
+package macos
 
 /*
 #cgo darwin CFLAGS: -x objective-c -fobjc-arc
@@ -32,11 +32,17 @@ static void postA11yAnnouncement(const char *utf8) {
 import "C"
 import "unsafe"
 
-func a11yReduceTransparency() bool { return C.a11yReducedTransparency() != 0 }
-func a11yIncreaseContrast() bool   { return C.a11yIncreasedContrast() != 0 }
-func a11yReduceMotion() bool       { return C.a11yReducedMotion() != 0 }
+// ReduceTransparency 系统「降低透明度」是否开启。
+func ReduceTransparency() bool { return C.a11yReducedTransparency() != 0 }
 
-func postA11yAnnouncement(text string) {
+// IncreaseContrast 系统「提高对比度」是否开启。
+func IncreaseContrast() bool { return C.a11yIncreasedContrast() != 0 }
+
+// ReduceMotion 系统「减弱动态效果」是否开启。
+func ReduceMotion() bool { return C.a11yReducedMotion() != 0 }
+
+// PostAnnouncement 让 VoiceOver 朗读一句话(空串忽略)。
+func PostAnnouncement(text string) {
 	if text == "" {
 		return
 	}

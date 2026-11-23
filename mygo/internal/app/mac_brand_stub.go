@@ -1,9 +1,0 @@
-//go:build !darwin || !cgo
-
-package app
-
-// loadIcnsAsPNG 非 macOS 或无 cgo 时不可用。
-func loadIcnsAsPNG(path string) ([]byte, bool) { return nil, false }
-
-// setFinderIcon 非 macOS 或无 cgo 时不可用。
-func setFinderIcon(path string, png []byte) bool { return false }
