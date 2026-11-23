@@ -1,0 +1,40 @@
+# 最小 CI:只保证 HEAD「格式对、能编译、vet 过」。
+# 项目的工作流是先提交后测试(go test 与 computer use 实测由人在阶段三触发),所以这里不跑 go test,
+# 也不做打包 / 发布(那些走 scripts/package.sh、scripts/publish.sh)。
+name: CI
+
+on:
+  push:
+    branches: [main, feat/mygo]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    # MyGo 是 macOS 原生界面,依赖系统框架,只能在 macOS 上编译
+    runs-on: macos-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mygo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: mygo/go.mod
+          cache-dependency-path: mygo/go.sum
+      - name: gofmt
+        run: |
+          out="$(gofmt -l .)"
+          if [ -n "$out" ]; then
+            echo "以下文件未格式化(请在本地运行 gofmt -w):"
+            echo "$out"
+            exit 1
+          fi
+      - name: build
+        run: go build ./...
+      - name: vet
+        run: go vet ./...
