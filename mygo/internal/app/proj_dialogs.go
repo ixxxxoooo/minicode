@@ -9,6 +9,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/demo"
+	"github.com/ixxxxoooo/minicode/internal/diag"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 	"github.com/ixxxxoooo/minicode/internal/projects"
 	"github.com/ixxxxoooo/minicode/internal/theme"
@@ -48,7 +49,23 @@ type projDlg struct {
 
 	branchName string
 	branchFn   func()
+
+	// 磁盘探测缓存:界面每帧都会重建,渲染线程不碰磁盘;过期后由 a.bg 后台重读(见 discoverCached / repoNote)
+	found     []foundItem
+	foundAt   time.Time
+	foundBusy bool
+	notes     map[string]dlgNote
 }
+
+// dlgNote 是工作区对话框里某个文件夹的「分支 · 改动」说明缓存。
+type dlgNote struct {
+	text string
+	at   time.Time
+	busy bool
+}
+
+// dlgProbeTTL 对话框里磁盘探测结果的有效期。
+const dlgProbeTTL = 5 * time.Second
 
 func (a *App) closeProjDlg() { a.pd = projDlg{} }
 
@@ -331,21 +348,53 @@ type foundItem struct {
 	repo, added        bool
 }
 
-// discoverProjects 列出可添加的项目:演示是内置样例,真实是当前项目的同级仓库。
-func (a *App) discoverProjects() []foundItem {
+// addedProjectSet 已在侧栏里的项目路径集合(已 Clean)。
+func (a *App) addedProjectSet() map[string]bool {
 	added := map[string]bool{}
 	for _, p := range a.sideProjects() {
 		added[projects.Clean(p.Path)] = true
 	}
-	var out []foundItem
+	return added
+}
+
+// discoverProjects 列出可添加的项目:演示是内置样例,真实是当前项目的同级仓库。
+// 真实模式会读盘,界面构建里请用 discoverCached。
+func (a *App) discoverProjects() []foundItem {
+	added := a.addedProjectSet()
 	if a.demoWs() {
+		var out []foundItem
 		for _, f := range demo.Discovered() {
 			p := projects.Clean(f.Path)
 			out = append(out, foundItem{name: f.Name, path: f.Path, branch: f.Branch, repo: f.Branch != "", added: added[p]})
 		}
 		return out
 	}
-	parent := filepath.Dir(a.proj)
+	return scanSiblingRepos(filepath.Dir(a.proj), added)
+}
+
+// discoverCached 是 discoverProjects 的界面线程版:演示直接算(纯内存),真实模式返回缓存,
+// 过期(或第一次)在后台重读同级目录,算完经 a.bg 回主线程并触发重绘。
+func (a *App) discoverCached() []foundItem {
+	if a.demoWs() {
+		return a.discoverProjects()
+	}
+	d := &a.pd
+	if !d.foundBusy && time.Since(d.foundAt) > dlgProbeTTL {
+		d.foundBusy = true
+		parent, added := filepath.Dir(a.proj), a.addedProjectSet()
+		a.bg("discover-projects", func() func() {
+			end := diag.SpanSlow("app", "扫描同级仓库", 200*time.Millisecond, "dir", parent)
+			items := scanSiblingRepos(parent, added)
+			end()
+			return func() { a.pd.found, a.pd.foundAt, a.pd.foundBusy = items, time.Now(), false }
+		})
+	}
+	return d.found
+}
+
+// scanSiblingRepos 读 parent 下最多 6 个含 .git 的文件夹。会读盘,不要在界面线程调用。
+func scanSiblingRepos(parent string, added map[string]bool) []foundItem {
+	var out []foundItem
 	es, _ := os.ReadDir(parent)
 	for _, e := range es {
 		if !e.IsDir() || strings.HasPrefix(e.Name(), ".") || len(out) >= 6 {
@@ -388,7 +437,7 @@ func (a *App) addProjectDialog(c *ui.Context) {
 			})
 		})
 		a.dlgMsg(c)
-		items := a.discoverProjects()
+		items := a.discoverCached()
 		if len(items) > 0 {
 			ui.Text(c, "最近 · 发现的项目").FontSize(theme.FsCap).TextColor(t.Tx3).Margin(8, 0, 0, 0)
 			for i, f := range items {
@@ -447,10 +496,29 @@ func (a *App) repoNote(path string) string {
 		}
 		return ""
 	}
-	if !dirHasGit(path) {
-		return "非仓库"
+	// 真实模式:界面每帧、每行都会问,只读缓存;没有或过期就后台重读(读到之前先留空 / 沿用旧值)
+	d := &a.pd
+	if d.notes == nil {
+		d.notes = map[string]dlgNote{}
 	}
-	return gitBranchOf(path)
+	e := d.notes[path]
+	if !e.busy && time.Since(e.at) > dlgProbeTTL {
+		e.busy = true
+		d.notes[path] = e
+		a.bg("repo-note", func() func() {
+			text := "非仓库"
+			if dirHasGit(path) {
+				text = gitBranchOf(path)
+			}
+			return func() {
+				if a.pd.notes == nil {
+					a.pd.notes = map[string]dlgNote{}
+				}
+				a.pd.notes[path] = dlgNote{text: text, at: time.Now()}
+			}
+		})
+	}
+	return d.notes[path].text // 无 a.win(测试)时 a.bg 同步执行,这里已是新值
 }
 
 func (a *App) workspaceDialog(c *ui.Context) {

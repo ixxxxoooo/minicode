@@ -1,8 +1,6 @@
 package app
 
 import (
-	"os"
-
 	"github.com/egoist/mygo/ui"
 	"github.com/ixxxxoooo/minicode/internal/kit"
 )
@@ -52,7 +50,7 @@ func (a *App) attachImageCard(c *ui.Context, rel string) {
 	card.Children(func() {
 		var src ui.ImageSource
 		if abs != "" {
-			if _, err := os.Stat(abs); err == nil {
+			if fileExistsCached(abs) { // 带 TTL 的缓存:附件卡每帧重建,不能每帧 stat
 				src = a.localImage(abs)
 			}
 		}
