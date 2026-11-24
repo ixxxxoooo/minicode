@@ -2,7 +2,8 @@
 # 发布正式版:在干净的 HEAD 检出里打包 dmg → 生成 appcast.json → 打 tag → 推送 → 创建 GitHub Release。
 # 应用内「检查更新」读取 releases/latest/download/appcast.json,发布后自动生效。
 #
-# 用法:先在 mygo/main.go 把 var version 改成新版本(如 "0.3.1-mygo")并提交推送,再运行  scripts/publish.sh
+# 用法:先在 mygo/main.go 把 var version 改成新版本(如 "0.3.1-mygo"),并把 mygo/mygo.json 的 version 同步成 "0.3.1"
+#       (不一致时 package.sh 会报错),提交推送,再运行  scripts/publish.sh
 #   MINI_NOTES="更新说明"        可选,缺省取上一个 tag 以来的提交标题(最多 30 条)
 #   DEVELOPER_ID="Developer ID Application: 名字 (TEAMID)"   可选,缺省为临时签名
 #   MINI_DRY_RUN=1               只打包并生成 appcast,不打 tag、不推送、不创建 Release

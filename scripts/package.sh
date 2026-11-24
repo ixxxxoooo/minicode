@@ -12,6 +12,12 @@ unset GOROOT
 VERSION=$(sed -n 's/^var version = "\(.*\)"$/\1/p' mygo/main.go | head -1)
 VERSION="${VERSION%-mygo}"
 case "$VERSION" in [0-9]*.[0-9]*.[0-9]*) ;; *) echo "错误:取不到版本号(mygo/main.go 的 var version):'$VERSION'" >&2; exit 1;; esac
+# mygo/mygo.json 的 version 供 MyGo 自带的 `mygo build` 写 Info.plist;本脚本不用它,但两处必须一致(此前停在 0.3.1 没人发现)
+MYGO_JSON_VER=$(sed -n 's/^ *"version": *"\([^"]*\)".*/\1/p' mygo/mygo.json | head -1)
+if [ "$MYGO_JSON_VER" != "$VERSION" ]; then
+  echo "错误:mygo/mygo.json 的 version($MYGO_JSON_VER)与 mygo/main.go 的版本($VERSION)不一致,请同步后再打包" >&2
+  exit 1
+fi
 BUILD="${MINI_BUILD:-$(git rev-list --count HEAD 2>/dev/null || echo 0)}"
 
 echo "==> 编译发布版 (v$VERSION, build $BUILD, $(uname -m))"
